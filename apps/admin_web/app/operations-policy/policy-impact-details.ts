@@ -187,9 +187,9 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.preferred_accept_mode': {
       area: 'Customer choice',
-      title: 'Requires customer final partner choice',
+      title: 'Controls first-pick priority and customer fallback',
       detail:
-        'Partner response keeps the booking open after partner accept so the customer can make the final choice. Historical auto-match values are ignored by the API.',
+        'The first-pick Partner can match first under API rules. If first-pick does not validly win, the customer selects from participating Partners.',
       saveChecks: [
         {
           label: 'Customer choice queue',
@@ -207,7 +207,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Marketplace flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace alerts and participation until the first-pick response window passes, but opens immediately after first-pick decline.',
+        'Immediate mode keeps marketplace participation parallel with the first-pick window. Delayed mode is a non-default operator policy that waits until the timer passes, but opens immediately after first-pick decline.',
       saveChecks: [
         {
           label: 'Open matching timeline',
@@ -226,7 +226,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Wallet controls',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
-        'Policy controls cash-fee debt settlement. Marketplace requests remain visible, but participation and downstream booking gates stay blocked while the wallet is negative.',
+        'Policy controls cash-fee debt settlement. Marketplace requests remain visible, while final acceptance, service start, and payout release stay blocked while the wallet is negative.',
       saveChecks: [
         {
           label: 'Cash debt queue',

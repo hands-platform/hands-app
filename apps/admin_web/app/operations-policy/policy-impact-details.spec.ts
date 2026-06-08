@@ -18,11 +18,26 @@ describe('operations policy impact details', () => {
 
     expect(details.area).toBe('Wallet controls');
     expect(details.detail).toContain('Marketplace requests remain visible');
-    expect(details.detail).toContain('participation and downstream booking gates stay blocked');
+    expect(details.detail).toContain('final acceptance, service start, and payout release');
     expect(details.saveChecks.map((check) => check.href)).toEqual([
       '/partners?review=cash-debt',
       '/cash-settlements',
     ]);
+  });
+
+  it('describes first-pick priority with customer fallback instead of always-customer final choice', () => {
+    const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.preferredAcceptMode);
+
+    expect(details.title).toBe('Controls first-pick priority and customer fallback');
+    expect(details.detail).toContain('first-pick Partner can match first');
+    expect(details.detail).toContain('customer selects from participating Partners');
+  });
+
+  it('keeps marketplace open mode copy explicit about delayed mode being non-default', () => {
+    const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode);
+
+    expect(details.detail).toContain('Immediate mode keeps marketplace participation parallel');
+    expect(details.detail).toContain('Delayed mode is a non-default operator policy');
   });
 
   it('returns a safe operations fallback for future policy keys', () => {
