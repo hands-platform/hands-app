@@ -68,6 +68,7 @@ import {
   readFailureStatus,
   readLastAttempt,
 } from './partner-list-profile';
+import { buildPartnerMarketplaceEligibility } from './partner-marketplace-eligibility';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProviderCommandLane = {
@@ -284,6 +285,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       wallet_balance_vnd: operations.walletBalance,
       can_accept_booking: operations.acceptanceLabel,
       acceptance_detail: operations.acceptanceDetail,
+      can_view_marketplace_requests: operations.marketplaceCanView ? 'yes' : 'no',
+      can_receive_marketplace_alerts: operations.marketplaceCanReceiveAlerts ? 'yes' : 'no',
+      can_participate_marketplace: operations.marketplaceCanParticipate ? 'yes' : 'no',
+      marketplace_partner_app_message: operations.marketplacePartnerAppMessage ?? '',
       next_operator_status: operations.nextAction.status,
       next_operator_action: operations.nextAction.operatorAction,
       admin_memo_count: master.auditLogCount,
@@ -332,6 +337,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'wallet_balance_vnd',
     'can_accept_booking',
     'acceptance_detail',
+    'can_view_marketplace_requests',
+    'can_receive_marketplace_alerts',
+    'can_participate_marketplace',
+    'marketplace_partner_app_message',
     'next_operator_status',
     'next_operator_action',
     'admin_memo_count',
@@ -759,10 +768,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <p className="muted" style={{ marginTop: 8 }}>
                       {row.marketplaceAccessDetail}
                     </p>
-                    {row.walletBalance < 0 ? (
+                    {row.marketplacePartnerAppMessage ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        Partner app message: Unpaid HANDS fees must be settled before you can participate in
-                        marketplace bookings.
+                        Partner app message: {row.marketplacePartnerAppMessage}
                       </p>
                     ) : null}
                   </td>
@@ -1788,6 +1796,10 @@ type PartnerOperationRow = {
   marketplaceAccessLabel: string;
   marketplaceAccessDetail: string;
   marketplaceAccessTone: ProviderCommandLane['tone'];
+  marketplaceCanView: boolean;
+  marketplaceCanReceiveAlerts: boolean;
+  marketplaceCanParticipate: boolean;
+  marketplacePartnerAppMessage: string | null;
   completedWorkCount: number;
   lastWorkAt: string | null;
   walletBalance: number;
@@ -1968,6 +1980,10 @@ function buildPartnerOperationRow(
         ? 'Partner may see marketplace requests, but the Partner app must block marketplace alerts and booking participation until HANDS fee settlement is posted.'
         : backupEligibility.detail,
     marketplaceAccessTone: backupEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
+    marketplaceCanView: backupEligibility.canViewMarketplace,
+    marketplaceCanReceiveAlerts: backupEligibility.canReceiveMarketplaceAlerts,
+    marketplaceCanParticipate: backupEligibility.canParticipateInMarketplace,
+    marketplacePartnerAppMessage: backupEligibility.partnerAppMessage,
     completedWorkCount,
     lastWorkAt: providerLastCompletedWorkAt(provider),
     walletBalance,
@@ -2956,60 +2972,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
 }
 
 function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
-  const blockers: Array<{ label: string; severity: 'hard' | 'soft' }> = [];
-  const locationState = providerLocationStatus(provider, opsPolicy);
-  const securityState = providerSecurityStatus(provider);
-
-  if (provider.blockedAt) {
-    blockers.push({ label: 'account blocked', severity: 'hard' });
-  }
-  if (provider.verification?.status !== 'APPROVED') {
-    blockers.push({ label: `verification ${provider.verification?.status ?? 'DRAFT'}`, severity: 'hard' });
-  }
-  if (provider.kyc?.status !== 'APPROVED') {
-    blockers.push({ label: `KYC ${provider.kyc?.status ?? 'MISSING'}`, severity: 'hard' });
-  }
-  if (!hasApprovedRequiredKycDocuments(provider)) {
-    blockers.push({ label: 'identity documents', severity: 'hard' });
-  }
-  if (!hasApprovedBankAccount(provider)) {
-    blockers.push({ label: 'bank account', severity: 'hard' });
-  }
-  if (providerUnsettledWalletBalance(provider) < 0) {
-    blockers.push({ label: 'cash fee debt', severity: 'hard' });
-  }
-  if (provider.status !== 'ONLINE_AVAILABLE') {
-    blockers.push({ label: 'not online available', severity: 'soft' });
-  }
-  if (locationState !== 'recent') {
-    blockers.push({
-      label: `location ${locationState}`,
-      severity: locationState === 'missing' ? 'hard' : 'soft',
-    });
-  }
-  if (!hasHealthyPush(provider)) {
-    blockers.push({ label: 'push missing', severity: 'soft' });
-  }
-  if (!['clear', 'missing'].includes(securityState)) {
-    blockers.push({ label: providerSecurityLabel(securityState).toLowerCase(), severity: 'hard' });
-  }
-
-  const eligible = blockers.length === 0;
-
-  return {
-    eligible,
-    blockers,
-    detail: eligible
-      ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
-          opsPolicy.backupRadiusMeters,
-        )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks marketplace alerts and participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
-          opsPolicy.backupRadiusMeters,
-        )}.`,
-    operatorAction: eligible
-      ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
-      : 'Fix identity, account, location, or alert blockers before relying on this partner for marketplace participation or customer choice list recovery.',
-  };
+  return buildPartnerMarketplaceEligibility(provider, opsPolicy);
 }
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
