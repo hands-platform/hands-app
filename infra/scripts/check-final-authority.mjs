@@ -546,6 +546,8 @@ function checkBookingDetailIsSourceOfTruth() {
 function checkOperationsPolicyControlPlane() {
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
+  const operationsOwnerDecisionBacklog = read('apps/admin_web/app/operations-policy/owner-decision-backlog.ts');
+  const operationsMatchingPlaybook = read('apps/admin_web/app/operations-policy/matching-playbook.ts');
   const apiPolicyCoverage = read('infra/scripts/check-api-policy-coverage.mjs');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
@@ -567,10 +569,21 @@ function checkOperationsPolicyControlPlane() {
     'operationalPolicyAnchor(setting.key)',
     "api: 'POST /customer/bookings'",
     "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
-    'href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
     'id={operationalPolicyAnchor(setting.key)}',
     'Keep customer final confirmation as the operating rule.',
     'The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner.',
+  ]);
+  requireMarkers('apps/admin_web/app/operations-policy/owner-decision-backlog.ts', operationsOwnerDecisionBacklog, [
+    'Marketplace partner radius',
+    'Negative wallet direct-request boundary',
+    'href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
+  ]);
+  requireMarkers('apps/admin_web/app/operations-policy/matching-playbook.ts', operationsMatchingPlaybook, [
+    'Customer picks one first-pick partner',
+    'Marketplace partners can participate by policy',
+    'displayPolicyByKey(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
+    'Customer sees available partner choices',
+    'Matched chat opens',
   ]);
   requireMarkers('infra/scripts/check-api-policy-coverage.mjs', apiPolicyCoverage, [
     'operational policy metadata',
