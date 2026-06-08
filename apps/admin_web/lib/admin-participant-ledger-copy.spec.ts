@@ -62,10 +62,10 @@ describe('marketplaceParticipantLedgerBoundaryCopy', () => {
   it('explains that only actual marketplace participation is retained', () => {
     expect(marketplaceParticipantLedgerBoundaryCopy()).toEqual({
       helper:
-        'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app blocks marketplace alerts and booking participation with an unpaid HANDS fee message before any participant row is created.',
+        'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app warns before final acceptance or service start while actual participant rows remain the evidence source.',
       pills: [
         'Actual participant rows only',
-        'Negative wallet blocks marketplace alerts and participation',
+        'Negative wallet blocks final acceptance and service start',
         'No view-only activity log',
         'Customer-selected final partner only',
         'No automatic final assignment',

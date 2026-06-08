@@ -78,7 +78,7 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Wallet gate',
         value: walletDebt ? 'Settlement needed' : 'Clear',
         helper: walletDebt
-          ? 'Cash-fee debt blocks marketplace alerts, participation, and payout release.'
+          ? 'Cash-fee debt blocks final acceptance, service start, and payout release.'
           : 'No active cash-fee wallet block is visible for this booking.',
         href: walletDebt ? '/cash-settlements' : '#finance',
       },
@@ -120,9 +120,9 @@ export function bookingMarketplaceWalletEvidence({
       },
       {
         label: 'Wallet/cash fee gate',
-        value: walletDebt ? 'Participation blocked' : 'Gate clear',
+        value: walletDebt ? 'Settlement gate active' : 'Gate clear',
         helper: walletDebt
-          ? 'Cash-fee debt blocks marketplace alerts and participation before a participant row can be created.'
+          ? 'Cash-fee debt blocks final acceptance and service start while participant rows remain visible.'
           : 'No active cash-fee wallet block is attached to this booking evidence.',
         href: walletDebt ? '/cash-settlements' : '#finance',
       },
@@ -165,15 +165,15 @@ export function bookingMarketplaceWalletEvidence({
           'Use this lane to confirm that the customer, not the system, created the final match before chat and service handoff.',
       },
       {
-        lane: 'Wallet participation gate',
+        lane: 'Wallet settlement gate',
         scope:
-          'Negative partner wallet keeps marketplace requests visible but blocks marketplace alerts and participation before the join is recorded.',
+          'Negative partner wallet keeps marketplace requests visible and participation open, but final acceptance and service start wait for settlement.',
         status: walletDebt ? 'Settlement needed' : 'Clear',
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings. Collect the HANDS fee deposit or apply an approved offset before this partner can receive marketplace alerts or participate in new marketplace bookings.'
-          : 'No active cash-fee wallet debt from this booking is currently gating marketplace participation.',
+          ? 'Partner app message: Unpaid HANDS fees must be settled before final acceptance or service start. Collect the HANDS fee deposit or apply an approved offset before final acceptance, service start, or payout release.'
+          : 'No active cash-fee wallet debt from this booking is currently gating final acceptance or service start.',
       },
       {
         lane: 'Cash fee accounting',

@@ -34,19 +34,19 @@ function baseInput(overrides = {}) {
 describe('booking marketplace wallet evidence', () => {
   it('does not repeat settlement block copy when the wallet gate is clear', () => {
     const evidence = bookingMarketplaceWalletEvidence(baseInput());
-    const walletRow = evidence.rows.find((row) => row.lane === 'Wallet participation gate');
+    const walletRow = evidence.rows.find((row) => row.lane === 'Wallet settlement gate');
 
     expect(walletRow).toMatchObject({
       status: 'Clear',
       tone: 'pill-success',
     });
     expect(walletRow?.operatorUse).toBe(
-      'No active cash-fee wallet debt from this booking is currently gating marketplace participation.',
+      'No active cash-fee wallet debt from this booking is currently gating final acceptance or service start.',
     );
     expect(walletRow?.operatorUse).not.toContain('Unpaid HANDS fees must be settled');
   });
 
-  it('keeps settlement instructions when cash-fee debt blocks marketplace alerts and participation', () => {
+  it('keeps settlement instructions when cash-fee debt blocks final acceptance and service start', () => {
     const evidence = bookingMarketplaceWalletEvidence(
       baseInput({
         walletDebt: true,
@@ -60,13 +60,13 @@ describe('booking marketplace wallet evidence', () => {
         },
       }),
     );
-    const walletRow = evidence.rows.find((row) => row.lane === 'Wallet participation gate');
+    const walletRow = evidence.rows.find((row) => row.lane === 'Wallet settlement gate');
 
     expect(walletRow).toMatchObject({
       status: 'Settlement needed',
       tone: 'pill-danger',
     });
-    expect(walletRow?.operatorUse).toContain('marketplace bookings');
-    expect(walletRow?.operatorUse).toContain('marketplace alerts');
+    expect(walletRow?.operatorUse).toContain('final acceptance');
+    expect(walletRow?.operatorUse).toContain('service start');
   });
 });

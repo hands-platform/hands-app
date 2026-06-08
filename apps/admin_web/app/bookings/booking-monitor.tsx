@@ -4975,9 +4975,9 @@ function buildMarketplaceOperatingQueue(
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see marketplace requests, but cannot receive marketplace alerts or join marketplace bookings. App message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
+        'Negative wallet partners can see and participate in marketplace requests, but final acceptance, service start, and payout release wait for settlement. App message: Unpaid HANDS fees must be settled before final acceptance or service start.',
       operatorAction:
-        'Confirm HANDS fee deposit or approved admin offset before marketplace alerts, participation, and payout release reopen.',
+        'Confirm HANDS fee deposit or approved admin offset before final acceptance, service start, and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
       bookings: cashDebtBookings,
     },
