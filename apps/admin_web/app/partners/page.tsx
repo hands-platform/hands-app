@@ -71,7 +71,6 @@ import {
 } from './partner-kyc-facts';
 import {
   partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal,
-  partnerPayoutSetupNeedsReview as providerPayoutSetupNeedsReview,
   partnerTaxNeedsReview as providerTaxNeedsReview,
   partnerTaxPillClass as providerTaxPillClass,
 } from './partner-finance-readiness-facts';
@@ -120,6 +119,7 @@ import {
   buildPartnerDailyActionQueue,
   partnerDetailActionHref,
 } from './partner-daily-action-queue';
+import { buildPartnerDispatchForecast } from './partner-dispatch-forecast';
 import { buildPartnerDispatchHandoff } from './partner-dispatch-handoff';
 import { buildPartnerKycReviewBoard } from './partner-kyc-review-board';
 import {
@@ -129,30 +129,6 @@ import {
 } from './partner-shift-handoff';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-type PartnerDispatchForecast = {
-  totals: Array<{
-    label: string;
-    value: string;
-    detail: string;
-    tone: ProviderCommandLane['tone'];
-    href: string;
-  }>;
-  blockers: Array<{
-    label: string;
-    count: number;
-    detail: string;
-    href: string;
-    tone: ProviderCommandLane['tone'];
-  }>;
-  supplyLanes: Array<{
-    city: string;
-    total: number;
-    ready: number;
-    online: number;
-    locationNeedsRefresh: number;
-    blocked: number;
-  }>;
-};
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const PROVIDER_LIST_RENDER_LIMIT = 40;
 const PARTNER_LIST_QUERY_DEPS: PartnerListQueryDeps = {
@@ -178,7 +154,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const commandCenter = buildProviderCommandCenter(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const reviewQueue = buildProviderReviewQueue(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
-  const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
+  const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy, {
+    dispatchReady: providerDispatchReady,
+    hasHardAcceptanceBlocker: partnerHasHardAcceptanceBlocker,
+  });
   const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(
     providers,
     opsPolicy,
@@ -2483,120 +2462,6 @@ function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
   return 'Clear';
 }
 
-function buildPartnerDispatchForecast(
-  providers: AdminProvider[],
-  opsPolicy: ProviderOpsPolicy,
-): PartnerDispatchForecast {
-  const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
-  const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const bookingBase = providers.filter((provider) => !partnerHasHardAcceptanceBlocker(provider)).length;
-  const locationNeedsRefresh = providers.filter((provider) =>
-    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
-  ).length;
-  const pushMissing = providers.filter((provider) => !hasHealthyPush(provider)).length;
-  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
-  const deviceSessionFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
-  ).length;
-  const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
-  const payoutLocked = providers.filter(providerPayoutSetupNeedsReview).length;
-  const approvedOffline = providers.filter(
-    (provider) => !partnerHasHardAcceptanceBlocker(provider) && provider.status !== 'ONLINE_AVAILABLE',
-  ).length;
-  const recoverableNow = providers.filter((provider) => {
-    if (providerDispatchReady(provider, opsPolicy)) return false;
-    if (partnerHasHardAcceptanceBlocker(provider)) return false;
-    if (!['clear', 'missing'].includes(providerSecurityStatus(provider))) return false;
-    return (
-      provider.status !== 'ONLINE_AVAILABLE' ||
-      providerLocationStatus(provider, opsPolicy) !== 'recent' ||
-      !hasHealthyPush(provider)
-    );
-  }).length;
-
-  return {
-    totals: [
-      {
-        label: 'Ready now',
-        value: `${readyNow}/${providers.length}`,
-        detail: 'Approved, online, fresh location, clear device checks, and push-ready partners.',
-        tone: readyNow > 0 ? 'ok' : 'warn',
-        href: '/partners?readiness=ready',
-      },
-      {
-        label: 'Recoverable today',
-        value: recoverableNow.toString(),
-        detail:
-          'Approved partners likely recoverable by going online, refreshing location, or enabling push.',
-        tone: recoverableNow > 0 ? 'info' : 'ok',
-        href: recoverableNow > 0 ? '/partners?readiness=approved-offline' : '/partners',
-      },
-      {
-        label: 'Online capacity',
-        value: `${online}/${bookingBase}`,
-        detail:
-          'Partners currently online versus the pool that has passed identity, bank, and control gates.',
-        tone: online > 0 ? 'info' : bookingBase > 0 ? 'warn' : 'danger',
-        href: '/partners?providerStatus=ONLINE_AVAILABLE',
-      },
-      {
-        label: 'Hard blockers',
-        value: hardBlocked.toString(),
-        detail:
-          'Identity, account, bank, or device/session blockers that should not be bypassed by dispatch.',
-        tone: hardBlocked > 0 ? 'danger' : 'ok',
-        href: hardBlocked > 0 ? '/partners?review=acceptance-blocked' : '/partners?review=security',
-      },
-    ],
-    blockers: [
-      {
-        label: 'Location refresh',
-        count: locationNeedsRefresh,
-        detail: `Partner location is missing, expired, or older than ${opsPolicy.staleLocationMinutes} minutes.`,
-        href: '/partners?review=location',
-        tone: locationNeedsRefresh > 0 ? 'warn' : 'ok',
-      },
-      {
-        label: 'Push alerts missing',
-        count: pushMissing,
-        detail: 'Direct booking and marketplace matching alerts may not reach these partners.',
-        href: '/partners?review=push',
-        tone: pushMissing > 0 ? 'warn' : 'ok',
-      },
-      {
-        label: 'Approved but offline',
-        count: approvedOffline,
-        detail: 'Approved partners who can become useful supply once they open the Partner app.',
-        href: '/partners?readiness=approved-offline',
-        tone: approvedOffline > 0 ? 'info' : 'ok',
-      },
-      {
-        label: 'Wallet debt',
-        count: walletDebt,
-        detail:
-          'Cash fee debt may keep demand visible, but marketplace alerts and participation wait for settlement.',
-        href: '/partners?review=cash-debt',
-        tone: walletDebt > 0 ? 'danger' : 'ok',
-      },
-      {
-        label: 'Payout/tax lock',
-        count: payoutLocked,
-        detail: 'First-earning partners who still need tax, bank, address, or agreement completion.',
-        href: '/partners?review=payout-setup',
-        tone: payoutLocked > 0 ? 'warn' : 'ok',
-      },
-      {
-        label: 'Device/session review',
-        count: deviceSessionFollowUp,
-        detail: 'Blocked, shared, checked, or account-blocked partner devices/sessions.',
-        href: '/partners?review=security',
-        tone: deviceSessionFollowUp > 0 ? 'danger' : 'ok',
-      },
-    ],
-    supplyLanes: buildPartnerSupplyLanes(providers, opsPolicy),
-  };
-}
-
 function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
   return (
     Boolean(provider.blockedAt) ||
@@ -2615,51 +2480,6 @@ function partnerCanAcceptBookingNow(provider: AdminProvider, opsPolicy: Provider
     providerLocationStatus(provider, opsPolicy) === 'recent' &&
     hasHealthyPush(provider)
   );
-}
-
-function buildPartnerSupplyLanes(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
-  const lanes = new Map<string, PartnerDispatchForecast['supplyLanes'][number]>();
-
-  for (const provider of providers) {
-    const city = provider.city?.trim() || 'Unknown city';
-    const lane = lanes.get(city) ?? {
-      city,
-      total: 0,
-      ready: 0,
-      online: 0,
-      locationNeedsRefresh: 0,
-      blocked: 0,
-    };
-
-    lane.total += 1;
-    if (providerDispatchReady(provider, opsPolicy)) {
-      lane.ready += 1;
-    }
-    if (provider.status === 'ONLINE_AVAILABLE') {
-      lane.online += 1;
-    }
-    if (providerLocationStatus(provider, opsPolicy) !== 'recent') {
-      lane.locationNeedsRefresh += 1;
-    }
-    if (
-      provider.blockedAt ||
-      provider.verification?.status !== 'APPROVED' ||
-      providerUnsettledWalletBalance(provider) < 0 ||
-      ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider))
-    ) {
-      lane.blocked += 1;
-    }
-    lanes.set(city, lane);
-  }
-
-  return Array.from(lanes.values())
-    .sort((left, right) => {
-      if (left.ready !== right.ready) return right.ready - left.ready;
-      if (left.online !== right.online) return right.online - left.online;
-      if (left.total !== right.total) return right.total - left.total;
-      return left.city.localeCompare(right.city);
-    })
-    .slice(0, 6);
 }
 
 function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
