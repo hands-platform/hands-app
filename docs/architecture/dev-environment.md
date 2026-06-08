@@ -106,7 +106,7 @@ Android builds on Windows should be run from an ASCII-only project path. If the 
 
 ```powershell
 cd C:\dev\massage-vn-workspace\repo\apps\customer_app
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3100/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3100
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3000
 ```
 
 If you want the HANDS customer/partner apps to render real MapTiler maps and Geoapify address search instead of fallback panels, set `MAPTILER_API_KEY` and `GEOAPIFY_API_KEY` in the ignored root `.env` or in your shell. The helper scripts pass them as Flutter defines:

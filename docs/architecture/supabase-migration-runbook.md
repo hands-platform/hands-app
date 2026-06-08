@@ -31,7 +31,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 Existing local run flags still apply:
 
 ```powershell
---dart-define=API_BASE_URL=http://10.0.2.2:3100/api
+--dart-define=API_BASE_URL=http://10.0.2.2:3000/api
 --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3000
 --dart-define=MAPTILER_API_KEY=your-maptiler-key
 --dart-define=GEOAPIFY_API_KEY=your-geoapify-key

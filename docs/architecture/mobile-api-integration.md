@@ -20,7 +20,7 @@ Run with custom endpoints:
 
 ```powershell
 cd C:\dev\massage-vn-workspace\repo\apps\customer_app
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3100/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3100
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3000
 ```
 
 ## Partner App
@@ -84,10 +84,10 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-mobile-device
 The script:
 
 - checks that exactly one Android device is connected, or requires `-DeviceId`
-- runs `adb reverse tcp:3100 tcp:3100`
+- runs `adb reverse tcp:3000 tcp:3000`
 - launches Flutter with:
-  - `API_BASE_URL=http://127.0.0.1:3100/api`
-  - `SOCKET_BASE_URL=http://127.0.0.1:3100`
+  - `API_BASE_URL=http://127.0.0.1:3000/api`
+  - `SOCKET_BASE_URL=http://127.0.0.1:3000`
 
 ## Emulator Run
 
@@ -104,5 +104,5 @@ The script:
 - starts `Pixel_6_API_33` if no emulator is already connected
 - waits for Android boot completion
 - launches Flutter with:
-  - `API_BASE_URL=http://10.0.2.2:3100/api`
-  - `SOCKET_BASE_URL=http://10.0.2.2:3100`
+  - `API_BASE_URL=http://10.0.2.2:3000/api`
+  - `SOCKET_BASE_URL=http://10.0.2.2:3000`

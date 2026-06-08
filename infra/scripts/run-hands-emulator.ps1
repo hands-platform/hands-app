@@ -3,7 +3,7 @@ param(
   [string]$App,
   [string]$AvdName = "Pixel_6_API_33",
   [string]$RepoRoot = "C:\dev\massage-vn-workspace\repo",
-  [int]$ApiPort = 3100
+  [int]$ApiPort = 3000
 )
 
 $ErrorActionPreference = "Stop"

@@ -1,6 +1,6 @@
 param(
   [string]$RepoRoot = "C:\dev\massage-vn-workspace\repo",
-  [int]$ApiPort = 3100,
+  [int]$ApiPort = 3000,
   [int]$AdminPort = 3101
 )
 
