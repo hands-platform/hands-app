@@ -107,7 +107,7 @@ export function bookingParticipantLedger(
         value: finalPartner.label,
         helper: selectedParticipant
           ? `${selectedParticipant.status} participant row retained.`
-          : 'No automatic assignment; the customer final choice remains required.',
+          : 'Customer final choice is required unless first-pick already matched first.',
         href: finalPartner.href,
       },
       {
@@ -166,7 +166,7 @@ export function bookingParticipantLedger(
         tone: customerSelectableParticipants.length ? 'pill-warn' : 'pill-info',
         value: `${customerSelectableParticipants.length} customer-selectable`,
         helper:
-          'Selectable means accepted first-pick partner, marketplace partner who participated/accepted, or the retained final selected row. Evidence-only rows are not customer choices.',
+          'Selectable means a marketplace participant, a legacy accepted first-pick fallback, or the retained final selected row. Evidence-only rows are not customer choices.',
       },
       {
         label: '4. Final match',
@@ -176,8 +176,8 @@ export function bookingParticipantLedger(
         helper: finalPartnerRecorded
           ? selectedFromMarketplace
             ? 'Customer selected a marketplace participant instead of the first-pick partner.'
-            : 'Customer selected the first-pick partner after acceptance.'
-          : 'No automatic assignment; customer final choice is required before matched service handoff.',
+            : 'First-pick partner is retained as the final matched partner.'
+          : 'Customer final choice is required unless first-pick already matched first.',
       },
     ],
     lifecycleRows: [
@@ -204,7 +204,7 @@ export function bookingParticipantLedger(
             : `${providerName(booking.preferredProvider)} has no participant response row yet.`
           : 'This booking does not have a preferred partner row.',
         operatorUse:
-          'Confirm the first-pick partner response without assigning the final partner manually.',
+          'Confirm first-pick response evidence without manually overriding the API matching decision.',
       },
       {
         stage: '2. Marketplace participation',
@@ -219,7 +219,7 @@ export function bookingParticipantLedger(
       },
       {
         stage: '3. Customer final choice',
-        scope: 'HANDS does not auto-assign. Customer selection is the authority for the final partner.',
+        scope: 'Customer selection is the fallback authority when first-pick does not validly match first.',
         status: finalPartnerRecorded
           ? 'Selected'
           : customerSelectableParticipants.length
@@ -238,14 +238,14 @@ export function bookingParticipantLedger(
       },
       {
         stage: '4. Chat and service handoff',
-        scope: 'Chat must open after final partner selection and stay retained in Admin as evidence.',
+        scope: 'Chat must open after first-pick match or customer final selection and stay retained in Admin as evidence.',
         status: booking.chatRoom ? 'Chat retained' : chatRequired ? 'Chat missing' : 'Not opened yet',
         tone: booking.chatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-neutral',
         evidence: booking.chatRoom
           ? `Room ${shortId(booking.chatRoom.id)} / ${chatMessageCount} message(s).`
           : chatRequired
             ? 'Final/matched service flow exists but no chat room is attached.'
-            : 'Waiting for customer final choice before chat opens.',
+            : 'Waiting for first-pick match or customer final choice before chat opens.',
         operatorUse:
           'Use chat evidence for cancellation, no-show, dispute, and service handoff review.',
       },

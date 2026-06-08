@@ -166,7 +166,7 @@ describe('booking participant ledger', () => {
     expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
       status: 'Pending',
       value: 'No final partner yet',
-      helper: 'No automatic assignment; customer final choice is required before matched service handoff.',
+      helper: 'Customer final choice is required unless first-pick already matched first.',
     });
     expect(ledger.lifecycleRows.find((row) => row.stage === '3. Customer final choice')).toMatchObject({
       status: 'Waiting customer',
@@ -174,7 +174,7 @@ describe('booking participant ledger', () => {
     });
   });
 
-  it('makes an accepted first-pick partner customer-selectable without auto-matching', () => {
+  it('keeps a legacy accepted first-pick partner customer-selectable as fallback evidence', () => {
     const ledger = bookingParticipantLedger(
       booking({
         preferredProviderId: 'partner-first',
@@ -203,7 +203,7 @@ describe('booking participant ledger', () => {
     expect(ledger.status).toBe('Customer choice pending');
     expect(ledger.cards.find((card) => card.label === 'Customer final choice')).toMatchObject({
       value: 'Not selected',
-      helper: 'No automatic assignment; the customer final choice remains required.',
+      helper: 'Customer final choice is required unless first-pick already matched first.',
     });
     expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
       role: 'First-pick',
