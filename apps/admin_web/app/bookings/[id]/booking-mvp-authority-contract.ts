@@ -143,12 +143,12 @@ export function bookingMvpAuthorityContract({
     },
     {
       contract: 'Wallet participation gate',
-      scope: 'Negative wallet can see marketplace requests, but cannot participate',
+      scope: 'Negative wallet can see marketplace requests, but cannot receive marketplace alerts or participate',
       status: walletDebt ? 'Settlement needed' : 'Gate clear',
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,
       operatorUse:
-        'Cash fee debt blocks marketplace participation and payout release until settlement rules clear it.',
+        'Cash fee debt blocks marketplace alerts, participation, and payout release until settlement rules clear it.',
       href: '#finance',
     },
     {

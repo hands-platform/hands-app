@@ -170,7 +170,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             <h2>Cash settlement execution desk</h2>
             <p className="muted">
               Operator-first view for clearing partner cash-fee debt. It does not judge partner quality; it
-              only shows what must be evidenced before marketplace participation and payout release reopen.
+              only shows what must be evidenced before marketplace alerts, participation, and payout release reopen.
             </p>
           </div>
           <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
@@ -265,7 +265,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             <h2>Cash fee operating rules</h2>
             <p className="muted">
               Use this as the first read before finance calls a partner or clears a wallet. The rule is
-              factual: cash fee debt gates marketplace participation, not customer access or account status.
+              factual: cash fee debt gates marketplace alerts and participation, not customer access or account status.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy?review=wallet">
@@ -843,7 +843,7 @@ function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlemen
           ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
           : 'No open wallet debt remains on this earning row.',
       operatorRule:
-        'Settle only after deposit evidence or approved offset; marketplace participation and payout release stay gated until cleared.',
+        'Settle only after deposit evidence or approved offset; marketplace alerts, participation, and payout release stay gated until cleared.',
       pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
     },
     {
@@ -919,10 +919,10 @@ function buildWalletRecoverySteps(
       title: '4. Reopen marketplace and payout release',
       status: hasOpenDebt ? 'Still gated' : 'Unlocked',
       detail: hasOpenDebt
-        ? 'Marketplace participation and payout release remain blocked until the partner wallet is no longer negative.'
+        ? 'Marketplace alerts, participation, and payout release remain blocked until the partner wallet is no longer negative.'
         : 'Partners with cleared wallets can participate in eligible marketplace bookings and continue payout release checks.',
       operatorRule:
-        'Negative-wallet partners may still see marketplace requests. Only actual marketplace participation and payout release are gated.',
+        'Negative-wallet partners may still see marketplace requests. Only actual marketplace alerts, participation, and payout release are gated.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
     },
   ];
@@ -1026,7 +1026,7 @@ function buildCashSettlementEvidenceChecklist(
       title: 'Wallet participation gate',
       status: `${summary.providerCount} Partner(s)`,
       detail:
-        'Negative wallet partners can see marketplace requests, but cannot participate in marketplace bookings until settlement is confirmed.',
+        'Negative wallet partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings until settlement is confirmed.',
       operatorRule: 'Reopen marketplace participation only after settlement or approved offset is recorded.',
       href: '/partner-controls',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
@@ -1163,8 +1163,8 @@ function buildCashSettlementExecutionDesk(
       title: 'Marketplace unlock condition',
       status: summary.providerCount ? `${summary.providerCount} blocked` : 'Open',
       detail: summary.providerCount
-        ? 'Partners with negative cash-fee wallet debt can see marketplace requests but cannot participate until settlement is posted.'
-        : 'No partner is blocked from marketplace participation by cash-fee debt in the visible queue.',
+        ? 'Partners with negative cash-fee wallet debt can see marketplace requests but cannot receive marketplace alerts or participate until settlement is posted.'
+        : 'No partner is blocked from marketplace alerts and participation by cash-fee debt in the visible queue.',
       action: 'Unlock marketplace participation only when the partner wallet is no longer negative.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -1254,9 +1254,9 @@ function buildCashSettlementRuleCards(summary: CashSettlementSummary): CommandCa
       title: 'Marketplace gate',
       status: hasDebt ? 'Participation blocked' : 'Participation open',
       detail: hasDebt
-        ? 'Negative-wallet partners can see marketplace requests, but cannot participate in marketplace bookings.'
+        ? 'Negative-wallet partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings.'
         : 'No negative-wallet marketplace participation gate is active from the visible cash settlement queue.',
-      action: 'The partner app should guide the partner to settle the fee before marketplace participation.',
+      action: 'The partner app should guide the partner to settle the fee before marketplace alerts and participation.',
       className: hasDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: hasDebt ? 'pill-danger' : 'pill-success',
     },
@@ -1293,7 +1293,7 @@ function buildAppliedCashSettlementPolicyCards(
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace participation until settlement is posted.',
+      helper: 'Negative partner wallet blocks marketplace alerts and participation until settlement is posted.',
     },
     {
       label: 'Payout batch cycle',
@@ -1352,7 +1352,7 @@ function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before marketplace participation or payout release resumes.'
+        ? 'Collect partner deposit or approve admin offset before marketplace alerts, participation, or payout release resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -1370,7 +1370,7 @@ function buildCommandCards(
             .join(' / ')
         : 'No partner is above the high-debt review threshold.',
       action: highDebtProviders.length
-        ? 'Prioritize these partners before reopening marketplace participation or payout release.'
+        ? 'Prioritize these partners before reopening marketplace alerts, participation, or payout release.'
         : 'Normal settlement queue priority.',
       className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
@@ -1430,7 +1430,7 @@ function buildDebtCauseCards(rows: CashSettlementRow[], summary: CashSettlementS
         rows.reduce((sum, row) => sum + row.platformFee, 0),
         summary.currency,
       )} HANDS fee remains open across visible rows.`,
-      action: 'This is the main reason marketplace participation is blocked while the wallet is negative.',
+      action: 'This is the main reason marketplace alerts and participation are blocked while the wallet is negative.',
       className: rows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: rows.length ? 'pill-danger' : 'pill-success',
     },

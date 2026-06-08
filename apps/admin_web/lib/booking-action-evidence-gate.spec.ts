@@ -95,7 +95,7 @@ describe('bookingActionEvidenceGate', () => {
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     });
-    expect(result.rows[3].operatorRule).toContain('participation and payout actions wait');
+    expect(result.rows[3].operatorRule).toContain('marketplace alerts, participation, and payout actions wait');
   });
 
   it('shows matching expiry needs address when open matching has no snapshot', () => {

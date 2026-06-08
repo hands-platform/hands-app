@@ -24,7 +24,7 @@ export function bookingPaymentHint(
     return 'No-show requires payment decision before closing.';
   }
   if (options.cashDebtNeedsSettlement) {
-    return 'Cash fee debt is still unsettled; marketplace participation and payout release are blocked.';
+    return 'Cash fee debt is still unsettled; marketplace alerts, participation, and payout release are blocked.';
   }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';

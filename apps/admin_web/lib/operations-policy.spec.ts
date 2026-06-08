@@ -178,7 +178,7 @@ describe('admin live operations policy helpers', () => {
     expect(readiness.walletBalance).toBe(250000);
   });
 
-  it('keeps negative-wallet partners visible but blocks marketplace participation and final gate', () => {
+  it('keeps negative-wallet partners visible but blocks marketplace alerts, participation, and final gate', () => {
     const readiness = buildAdminPartnerMarketplaceReadiness({
       provider: {
         status: 'ONLINE_AVAILABLE',

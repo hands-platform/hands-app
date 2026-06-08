@@ -154,7 +154,7 @@ function financeRow(input: BookingCommandDecisionStripInput): BookingCommandDeci
     return {
       lane: 'Finance',
       state: 'Settlement required',
-      detail: 'Partner wallet debt blocks marketplace participation and payout release until settled.',
+      detail: 'Partner wallet debt blocks marketplace alerts, participation, and payout release until settled.',
       href: '#finance',
       tone: 'pill-danger',
     };

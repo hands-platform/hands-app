@@ -37,7 +37,7 @@ describe('primary booking ops instruction', () => {
     );
   });
 
-  it('explains cash fee debt blocks marketplace participation and payout release', () => {
+  it('explains cash fee debt blocks marketplace alerts, participation, and payout release', () => {
     const booking: PrimaryBookingOpsInstructionInput = {
       status: 'MATCHED',
       payment: { status: 'CAPTURED' },

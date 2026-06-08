@@ -585,7 +585,7 @@ function checkOperationsPolicyControlPlane() {
     "api: 'POST /customer/bookings'",
     "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
     'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
-    'Negative wallet gates marketplace participation',
+    'Negative wallet gates marketplace alerts and participation',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/owner-decision-backlog.ts', operationsOwnerDecisionBacklog, [
     'Marketplace partner radius',

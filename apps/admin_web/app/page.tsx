@@ -535,7 +535,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking marketplace participation and payout release.`,
+      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking marketplace alerts, participation, and payout release.`,
     ],
     [
       'Open payout batches',
@@ -902,7 +902,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{cashSettlementSummary.rowCount}</strong>
             <small>
               <Link className="text-link" href="/cash-settlements">
-                Cash fee debt rows before marketplace participation
+                Cash fee debt rows before marketplace alerts and participation
               </Link>
             </small>
           </div>
@@ -1884,7 +1884,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Cash debt gate</span>
               <strong>{partnerSupply.cashDebtPartners}</strong>
-              <small>Must settle before marketplace participation</small>
+              <small>Must settle before marketplace alerts and participation</small>
             </div>
             <div>
               <span>Verification queue</span>
@@ -3183,7 +3183,7 @@ function buildTodayCommandOrder(input: {
           ? `${money(
             input.cashSettlementSummary.totalDebtAmount,
             input.cashSettlementSummary.currency,
-          )} in open cash fee debt blocks marketplace participation and payout release until settled.`
+          )} in open cash fee debt blocks marketplace alerts, participation, and payout release until settled.`
         : 'No negative wallet cash fee block is loaded in the current snapshot.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -3289,12 +3289,12 @@ function buildShiftOperatingRoute(input: {
     {
       lane: 'Finance settlement route',
       owner: 'Finance',
-      title: 'Clear cash fee debt before marketplace participation',
+      title: 'Clear cash fee debt before marketplace alerts and participation',
       value: `${input.cashSettlementSummary.providerCount} partner(s)`,
       checkpoint:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can view marketplace requests, but marketplace participation and payout release wait for settlement.'
-          : 'No cash fee debt is blocking marketplace participation or payout release.',
+          ? 'Negative wallet partners can view marketplace requests, but marketplace alerts, participation, and payout release wait for settlement.'
+          : 'No cash fee debt is blocking marketplace alerts, participation, or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
     },
@@ -3469,7 +3469,7 @@ function buildOperationsCommandBoard(input: {
       value: `${financeRows} item(s)`,
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet keeps marketplace list visibility, but participation waits for cash fee settlement.'
+          ? 'Negative wallet keeps marketplace list visibility, but marketplace alerts and participation wait for cash fee settlement.'
           : 'Completed work, cash settlement, and payout batch rows are visible for batch closeout.',
       href: financeRows ? '/finance-closeout' : '/earnings',
       tone: financeRows ? 'warn' : 'ok',
@@ -3888,8 +3888,8 @@ function buildLiveOperationsRadar(input: {
       status: input.cashSettlementSummary.providerCount ? 'Gate' : 'Clear',
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can see marketplace requests but cannot participate until cash fee settlement is confirmed.'
-          : 'No cash fee debt is currently blocking marketplace participation or payout release.',
+          ? 'Negative wallet partners can see marketplace requests but cannot receive marketplace alerts or participate until cash fee settlement is confirmed.'
+          : 'No cash fee debt is currently blocking marketplace alerts, participation, or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
       checks: [
@@ -4361,7 +4361,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       owner: 'Finance',
       title: 'Clear cash fee debt',
       detail:
-        'Negative wallet partners can view marketplace requests, but marketplace participation and payout release are blocked until settlement.',
+        'Negative wallet partners can view marketplace requests, but marketplace alerts, participation, and payout release are blocked until settlement.',
       metricLabel: 'Debt partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',
@@ -4488,7 +4488,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Cash debt block',
       detail:
-        'Partner wallet is negative from cash fee/tax debt. Marketplace participation and payout release wait until finance records a deposit or offset.',
+        'Partner wallet is negative from cash fee/tax debt. Marketplace alerts, participation, and payout release wait until finance records a deposit or offset.',
       action: 'Open partner finance',
       href,
       className: 'ops-task-blocked',
@@ -5087,8 +5087,8 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
       detail: cashDebtRowCount
-        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before marketplace participation or payout release.`
-        : 'No open cash fee debt is blocking marketplace participation or payout release.',
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before marketplace alerts, participation, or payout release.`
+        : 'No open cash fee debt is blocking marketplace alerts, participation, or payout release.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
       priority: cashDebtRowCount ? 94 : 12,
@@ -5379,7 +5379,7 @@ function buildOpsQueue(input: {
       area: 'Finance',
       href: '/cash-settlements',
       label: 'Partner cash fee debt open',
-      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before marketplace participation or payout release.`,
+      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before marketplace alerts, participation, or payout release.`,
       severity: 'high',
       owner: 'Finance',
       priority: 98,
@@ -5673,7 +5673,7 @@ function buildOperatorStartChecklist(input: {
       title: 'Clear acceptance blockers',
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
-        ? `${cashDebtPartners} partner(s) have cash fee or tax debt blocking marketplace participation and payout release.`
+        ? `${cashDebtPartners} partner(s) have cash fee or tax debt blocking marketplace alerts, participation, and payout release.`
         : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutChecks} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',

@@ -179,7 +179,7 @@ describe('bookingFinanceFlags', () => {
         severity: 'high',
         title: 'Cash wallet debt blocks partner',
         detail:
-          'Linh Wellness owes 120000 VND before marketplace participation or payout release can continue.',
+          'Linh Wellness owes 120000 VND before marketplace alerts, participation, or payout release can continue.',
       }),
     ]);
   });

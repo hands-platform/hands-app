@@ -905,7 +905,7 @@ function buildImmediateActionQueue(input: {
       owner: 'Finance',
       title: 'Cash fee wallet gate',
       detail:
-        'Partners with negative wallet from cash bookings can stay visible, but marketplace participation and payout release wait for settlement.',
+        'Partners with negative wallet from cash bookings can stay visible, but marketplace alerts, participation, and payout release wait for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
@@ -1051,7 +1051,7 @@ function buildFinanceHandoffActionMap(input: {
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
-      nextAction: 'Record deposit reference or approved offset before marketplace participation or payout release reopens.',
+      nextAction: 'Record deposit reference or approved offset before marketplace alerts, participation, or payout release reopens.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },
@@ -1485,7 +1485,7 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
         status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: hasCashDebt
-          ? 'Open cash settlement before marketplace participation or payout release.'
+          ? 'Open cash settlement before marketplace alerts, participation, or payout release.'
           : hasKycPending
             ? 'Open partner documents for review.'
             : hasBankPending

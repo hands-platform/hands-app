@@ -30,7 +30,7 @@ export function bookingFinanceSummaryCards(
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates marketplace participation and payout release.'
+        ? 'Cash fee debt gates marketplace alerts, participation, and payout release.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 

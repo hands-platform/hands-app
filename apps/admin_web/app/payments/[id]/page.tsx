@@ -228,7 +228,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
             <EvidenceRow label="Gross" value={money(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
             <EvidenceRow label="HANDS fee" value={money(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
             <EvidenceRow label="Withholding" value={money(earning?.withholdingAmount, earning?.currency ?? payment.currency)} helper="Tax withholding saved by current policy." />
-            <EvidenceRow label="Partner net" value={money(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before marketplace participation.' : 'Net amount is not blocking marketplace participation.'} />
+            <EvidenceRow label="Partner net" value={money(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before marketplace alerts and participation.' : 'Net amount is not blocking marketplace alerts and participation.'} />
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
@@ -421,7 +421,7 @@ function cashDebtHint(payment: AdminPaymentDetail) {
     return 'No negative partner wallet gate from this payment.';
   }
   const amount = Math.abs(payment.booking?.earning?.netAmount ?? 0);
-  return `Partner owes ${money(amount, payment.currency)} before marketplace participation.`;
+  return `Partner owes ${money(amount, payment.currency)} before marketplace alerts and participation.`;
 }
 
 function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentActionExecutionRow[] {
@@ -513,7 +513,7 @@ function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentActionEx
         : payment.method === 'CASH'
           ? 'This cash payment has no open partner wallet debt on the linked earning.'
           : 'This payment is not a cash collection case.',
-      operatorRule: 'Settle with deposit reference or approved admin offset before marketplace participation.',
+      operatorRule: 'Settle with deposit reference or approved admin offset before marketplace alerts and participation.',
       pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
     },
   ];

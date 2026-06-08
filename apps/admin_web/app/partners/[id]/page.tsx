@@ -514,7 +514,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       href: '#cash-debt-origin',
       label: 'Cash debt',
       value: formatCurrency(cashFeeDebtAmount(provider)),
-      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace participation is blocked until settled.`,
+      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace alerts and participation are blocked until settled.`,
     },
     {
       href: '#payout',

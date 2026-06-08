@@ -114,7 +114,7 @@ export function bookingDecisionNotePresets(
       detail:
         'Use when cash collection created a partner wallet debt that should be cleared by deposit or offset.',
       preset:
-        'Cash settlement note: partner cash-fee debt remains open; marketplace participation and payout release should stay blocked until company deposit or admin offset is verified.',
+        'Cash settlement note: partner cash-fee debt remains open; marketplace alerts, participation, and payout release should stay blocked until company deposit or admin offset is verified.',
     });
   }
 

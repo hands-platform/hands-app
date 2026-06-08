@@ -207,7 +207,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Marketplace flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace participation until the first-pick response window passes, but opens immediately after first-pick decline.',
+        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace alerts and participation until the first-pick response window passes, but opens immediately after first-pick decline.',
       saveChecks: [
         {
           label: 'Open matching timeline',
@@ -231,7 +231,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Cash debt queue',
           detail:
-            'Review partners held from marketplace participation or payout release by unpaid HANDS cash fees before changing settlement gates.',
+            'Review partners held from marketplace alerts, participation, or payout release by unpaid HANDS cash fees before changing settlement gates.',
           href: '/partners?review=cash-debt',
         },
         {
@@ -275,7 +275,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Partner cash holds',
           detail:
-            'Check partners blocked from marketplace participation or payout release by unpaid platform fees.',
+            'Check partners blocked from marketplace alerts, participation, or payout release by unpaid platform fees.',
           href: '/partners?review=cash-debt',
         },
       ],

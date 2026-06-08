@@ -80,7 +80,7 @@ describe('bookingCloseoutChecklistRows', () => {
     });
   });
 
-  it('holds marketplace participation and payout release when cash debt remains', () => {
+  it('holds marketplace alerts, participation, and payout release when cash debt remains', () => {
     const rows = bookingCloseoutChecklistRows({
       ...baseInput,
       cashDebt: true,

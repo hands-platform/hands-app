@@ -7,7 +7,7 @@ import {
 } from './provider-wallet.policy';
 
 describe('provider wallet marketplace participation policy', () => {
-  it('blocks marketplace participation without hiding visible demand', () => {
+  it('blocks marketplace alerts and participation without hiding visible demand', () => {
     const response = providerWalletBlockedResponse({
       providerProfileId: 'provider-profile-abc12345',
       walletBalance: -145000,
@@ -25,8 +25,13 @@ describe('provider wallet marketplace participation policy', () => {
     expect(response.walletDebtAmount).toBe(145000);
     expect(response.walletSettlementMethod).toBe(PROVIDER_WALLET_SETTLEMENT_METHOD);
     expect(response.walletSettlementReference).toBe('HANDS-WALLET-ABC12345');
+    expect(response.message).toContain('marketplace alerts');
+    expect(response.walletBlockReason).toContain('marketplace alerts');
     expect(response.walletSettlementInstruction).toContain('Marketplace requests stay visible for review only');
-    expect(response.walletSettlementSteps.join(' ')).toContain('Marketplace participation and payout release resume');
+    expect(response.walletSettlementInstruction).toContain('marketplace alerts and participation');
+    expect(response.walletSettlementSteps.join(' ')).toContain(
+      'Marketplace alerts, participation, and payout release resume',
+    );
   });
 
   it('builds a stable settlement reference from the partner profile id', () => {

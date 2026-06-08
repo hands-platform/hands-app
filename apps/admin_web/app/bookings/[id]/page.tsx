@@ -1735,7 +1735,7 @@ function bookingCloseoutReadiness({
       label: 'Cash',
       status: cashDebtNeedsSettlement ? 'Cash fee settlement required' : 'No cash fee block',
       detail: cashDebtNeedsSettlement
-        ? 'Partner cash collection created company-fee debt; settle before marketplace participation or payout release.'
+        ? 'Partner cash collection created company-fee debt; settle before marketplace alerts, participation, or payout release.'
         : 'No negative cash-fee wallet block is active for this booking.',
       owner: 'Finance',
       href: '#finance',
@@ -2033,9 +2033,9 @@ function bookingOperatingTimeline({
     addItem({
       id: `cash-debt-${booking.earning?.id ?? booking.id}`,
       type: 'CASH',
-      title: 'Cash fee debt blocks marketplace participation',
+      title: 'Cash fee debt blocks marketplace alerts and participation',
       detail:
-        'Partner collected customer cash. Company fee must be deposited or admin-offset before marketplace participation and payout release.',
+        'Partner collected customer cash. Company fee must be deposited or admin-offset before marketplace alerts, participation, and payout release.',
       at: booking.earning?.createdAt ?? booking.updatedAt ?? booking.createdAt,
       status: 'Settlement needed',
     });
@@ -2420,7 +2420,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     return {
       title: 'Settle cash fee debt',
       detail:
-        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace participation or payout release resumes.',
+        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace alerts, participation, or payout release resumes.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };

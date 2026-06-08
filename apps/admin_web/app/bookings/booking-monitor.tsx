@@ -711,7 +711,7 @@ export function BookingMonitor({
     {
       label: 'Cash debt gate',
       value: `${bookingViewCounts.get('cash-debt') ?? 0}`,
-      detail: 'Cash bookings that can create partner fee debt and block marketplace participation.',
+      detail: 'Cash bookings that can create partner fee debt and block marketplace alerts and participation.',
       owner: 'Finance',
       action: 'Confirm partner fee collection or wallet debt state.',
       href: '/bookings?view=cash-debt',
@@ -2040,7 +2040,7 @@ const bookingViewOptions: Array<{
   {
     view: 'cash-debt',
     label: 'Cash debt',
-    description: 'cash bookings that created partner fee/tax debt and can block marketplace participation or payout release.',
+    description: 'cash bookings that created partner fee/tax debt and can block marketplace alerts, participation, or payout release.',
     operatorHint:
       'Use this with Cash Settlements to confirm deposit or admin offset before the partner participates in marketplace bookings again.',
   },

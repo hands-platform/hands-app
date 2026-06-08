@@ -76,7 +76,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Finance',
       title: 'Negative wallet marketplace policy',
       question:
-        'Should cash-fee debt block marketplace participation only, or marketplace participation plus payout release?',
+        'Should cash-fee debt block marketplace alerts and participation only, or also block payout release?',
       evidence:
         'Review cash settlement speed, repeated debt partners, marketplace participation, and payout exposure before changing wallet gate scope.',
       options: [
@@ -91,7 +91,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         },
       ],
       recommendation:
-        'Keep marketplace list visibility open; apply settlement checks at marketplace participation and payout release.',
+        'Keep marketplace list visibility open; apply settlement checks at marketplace alerts, participation, and payout release.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -102,14 +102,14 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Finance',
       title: 'Negative wallet direct-request boundary',
       question:
-        'Should unpaid cash-fee debt also block a first-pick partner from accepting a direct request, or only block marketplace participation and payout release?',
+        'Should unpaid cash-fee debt also block a first-pick partner from accepting a direct request, or only block marketplace alerts, participation, and payout release?',
       evidence:
         'Review how often negative-wallet partners are chosen first by customers, how quickly they settle fees, and whether blocking direct requests creates customer wait issues.',
       options: [
         {
           label: 'Keep current MVP boundary',
           tradeoff:
-            'Marketplace participation and payout release stay blocked, while first-pick direct requests remain a separate owner decision.',
+            'Marketplace alerts, participation, and payout release stay blocked, while first-pick direct requests remain a separate owner decision.',
         },
         {
           label: 'Block all new acceptance',

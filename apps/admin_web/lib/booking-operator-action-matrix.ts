@@ -84,7 +84,7 @@ export function bookingOperatorActionMatrix(
       status: input.cashDebtNeedsSettlement ? 'Available' : 'Locked',
       tone: input.cashDebtNeedsSettlement ? 'pill-danger' : 'pill-neutral',
       evidence: input.cashDebtNeedsSettlement
-        ? `${input.cashDebtAmountLabel} keeps marketplace participation and payout release blocked.`
+        ? `${input.cashDebtAmountLabel} keeps marketplace alerts, participation, and payout release blocked.`
         : input.paymentMethod === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${input.paymentMethod ?? 'No method'} booking.`,

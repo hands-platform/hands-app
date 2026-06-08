@@ -23,9 +23,9 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
   if (input.cashDebt) {
     return {
       title: 'Wallet debt gate',
-      detail: `${input.walletLedgerLabel}. Partner can see marketplace requests, but marketplace participation and payout release wait for settlement or approved offset.`,
+      detail: `${input.walletLedgerLabel}. Partner can see marketplace requests, but marketplace alerts, participation, and payout release wait for settlement or approved offset.`,
       operatorRule:
-        'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace participation or payout release.',
+        'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace alerts, participation, or payout release.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     };

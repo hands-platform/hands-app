@@ -1965,7 +1965,7 @@ function buildPartnerOperationRow(
     marketplaceAccessDetail: backupEligibility.eligible
       ? `Can participate in marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
       : walletBalance < 0
-        ? 'Partner may see marketplace requests, but the Partner app must block marketplace booking participation until HANDS fee settlement is posted.'
+        ? 'Partner may see marketplace requests, but the Partner app must block marketplace alerts and booking participation until HANDS fee settlement is posted.'
         : backupEligibility.detail,
     marketplaceAccessTone: backupEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
     completedWorkCount,

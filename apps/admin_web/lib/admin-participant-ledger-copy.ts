@@ -12,10 +12,10 @@ export type ParticipantChoicePresentationInput = ParticipantReadableDecisionInpu
 export function marketplaceParticipantLedgerBoundaryCopy() {
   return {
     helper:
-      'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app blocks marketplace booking participation with an unpaid HANDS fee message before any participant row is created.',
+      'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app blocks marketplace alerts and booking participation with an unpaid HANDS fee message before any participant row is created.',
     pills: [
       'Actual participant rows only',
-      'Negative wallet blocks marketplace participation',
+      'Negative wallet blocks marketplace alerts and participation',
       'No view-only activity log',
       'Customer-selected final partner only',
       'No automatic final assignment',

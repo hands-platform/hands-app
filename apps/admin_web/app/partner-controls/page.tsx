@@ -1022,7 +1022,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet partners must settle cash fee debt before marketplace participation or payout release.'
+        ? 'Negative wallet partners must settle cash fee debt before marketplace alerts, participation, or payout release.'
         : 'No partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
@@ -1252,13 +1252,13 @@ function buildBookingAcceptanceUnblockBoard(
   return [
     {
       id: 'wallet-debt',
-      title: 'Cash fee debt gates marketplace participation',
+      title: 'Cash fee debt gates marketplace alerts and participation',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
         ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests or receive payout release until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
-        'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace participation or payout release unlocks.',
+        'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace alerts, participation, or payout release unlocks.',
       customerImpact:
         'Customers can still see marketplace request flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
@@ -1410,7 +1410,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Negative wallet is the strongest marketplace gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Keeps marketplace visibility available, but marketplace participation waits until deposit, admin offset, or earning offset is recorded.',
+        'Keeps marketplace visibility available, but marketplace alerts and participation wait until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
@@ -1581,7 +1581,7 @@ function buildPartnerControlNextActions(input: {
       priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       status: 'WALLET',
       title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before marketplace participation or payout release.`,
+      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before marketplace alerts, participation, or payout release.`,
       operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
       href: '/cash-settlements',
       tags: [

@@ -2,12 +2,12 @@ import { BadRequestException } from '@nestjs/common';
 
 export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT';
 export const PROVIDER_WALLET_BLOCK_REASON =
-  'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.';
+  'Outstanding HANDS fee settlement must be completed before marketplace alerts, participation, or payout release.';
 export const PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE =
   'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review only, and participation is blocked until HANDS confirms the deposit or admin offset.';
+  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review only, and marketplace alerts and participation are blocked until HANDS confirms the deposit or admin offset.';
 
 export function providerWalletSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
@@ -18,7 +18,7 @@ export function providerWalletSettlementSteps(amount: number, currency: string, 
     `Settle ${amount.toLocaleString('vi-VN')} ${currency} for unpaid HANDS fees.`,
     `Use reference ${providerWalletSettlementReference(providerProfileId)} when reporting the deposit.`,
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'Marketplace participation and payout release resume when the wallet is no longer negative.',
+    'Marketplace alerts, participation, and payout release resume when the wallet is no longer negative.',
   ];
 }
 

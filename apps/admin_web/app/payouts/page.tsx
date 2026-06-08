@@ -132,7 +132,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             <h3>Applied operations policy</h3>
             <p className="muted">
               Live Admin policy values used by finance before payout release, cash-fee clearance, and
-              marketplace participation reopening.
+              marketplace alerts and participation reopening.
             </p>
           </div>
           <span className="pill pill-info">Live policy default</span>
@@ -203,7 +203,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             <h3>Marketplace and payout unblock bridge</h3>
             <p className="muted">
               Connects partner cash-fee debt to the two gates operators care about: marketplace participation and
-              payout release. Partners can see marketplace requests, but cannot participate in marketplace bookings while the wallet
+              payout release. Partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings while the wallet
               is negative.
             </p>
           </div>
@@ -1154,7 +1154,7 @@ function buildAppliedPayoutPolicyCards(policy: AdminLiveOperationsPolicy): Appli
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace participation and payout release until settled.',
+      helper: 'Negative partner wallet blocks marketplace alerts, participation, and payout release until settled.',
     },
     {
       label: 'Marketplace radius',
@@ -1217,7 +1217,7 @@ function buildPayoutReleaseCycleBoard(
       timing: 'Before release',
       status: `${cashDebt.length} held`,
       queue: 'Partner cash-fee wallet debt from cash bookings.',
-      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace participation and payout release resume.',
+      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace alerts, participation, and payout release resume.',
       nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
       pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
     },
@@ -1252,10 +1252,10 @@ function buildPayoutMarketplaceUnblockBridge(
       title: 'Marketplace participation gate',
       status: unbatchedCashDebt.length ? `${cashDebtPartnerCount} partner wallet(s)` : 'Clear',
       detail: unbatchedCashDebt.length
-        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks marketplace participation.`
-        : 'No negative partner wallet is blocking marketplace participation from the current earning range.',
+        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks marketplace alerts and participation.`
+        : 'No negative partner wallet is blocking marketplace alerts and participation from the current earning range.',
       action: unbatchedCashDebt.length
-        ? 'Partner can see marketplace requests, but marketplace participation is blocked until fee deposit or approved offset is posted.'
+        ? 'Partner can see marketplace requests, but marketplace alerts and participation are blocked until fee deposit or approved offset is posted.'
         : 'Marketplace participation follows booking-address radius, KYC, service, and app-presence rules.',
       href: unbatchedCashDebt.length ? '/cash-settlements' : '/bookings?view=marketplace',
       className: unbatchedCashDebt.length ? 'ops-task-blocked' : 'ops-task-done',

@@ -63,7 +63,7 @@ export function buildPolicyEnforcementTrace(
       scope: 'Location gate',
       title: `${backupLocationFreshnessMinutes} minute location freshness`,
       detail:
-        'Partners with stale or missing last location are flagged before marketplace participation and shown as dispatch checks.',
+        'Partners with stale or missing last location are flagged before marketplace alerts, participation, and shown as dispatch checks.',
       api: 'POST /provider/location, GET /provider/bookings/open',
       server: 'Marketplace eligibility pipeline -> providerLocationFreshEnough',
       verify:
@@ -97,10 +97,10 @@ export function buildPolicyEnforcementTrace(
     {
       scope: 'Wallet gate',
       title: adminWalletGateBlocksMarketplaceParticipation(walletGate)
-        ? 'Negative wallet gates marketplace participation'
+        ? 'Negative wallet gates marketplace alerts and participation'
         : 'Historical exception mode is not active for MVP',
       detail:
-        'Cash-service company fee debt is enforced before marketplace participation and payout release.',
+        'Cash-service company fee debt is enforced before marketplace alerts, participation, and payout release.',
       api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
       server: 'BookingsService.joinBooking wallet guard -> EarningsService wallet release guards',
       verify:

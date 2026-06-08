@@ -77,8 +77,8 @@ export function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Historical exception mode is visible for audit only; current operations still require debt settlement before marketplace participation.'
-            : 'Negative wallet partners can see marketplace requests, but marketplace participation and payout release are blocked.',
+            ? 'Historical exception mode is visible for audit only; current operations still require debt settlement before marketplace alerts and participation.'
+            : 'Negative wallet partners can see marketplace requests, but marketplace alerts, participation, and payout release are blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({
@@ -97,7 +97,7 @@ export function bookingOperationalPolicySnapshot(
         label: 'Cash fee clearance',
         helper:
           String(cashSettlementClearancePolicy?.value) === 'DEPOSIT_REFERENCE_REQUIRED'
-            ? 'Cash fee debt clearance should include a company deposit reference before marketplace participation reopens.'
+            ? 'Cash fee debt clearance should include a company deposit reference before marketplace alerts and participation reopen.'
             : 'Cash fee debt can clear through verified company deposit or approved admin offset with evidence.',
         enforced: false,
       }),

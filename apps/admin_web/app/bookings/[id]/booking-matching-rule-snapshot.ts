@@ -116,7 +116,7 @@ export function bookingDetailMatchingRuleSnapshot({
         label: 'Wallet gate',
         value: walletBlocked ? 'Settlement needed' : 'Clear',
         helper: walletBlocked
-          ? 'Negative cash-fee debt can block marketplace participation and payout release until settled or offset.'
+          ? 'Negative cash-fee debt can block marketplace alerts, participation, and payout release until settled or offset.'
           : 'No cash-fee debt block is visible for this booking.',
       },
     ],

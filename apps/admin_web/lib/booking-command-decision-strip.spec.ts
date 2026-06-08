@@ -68,7 +68,7 @@ describe('bookingCommandDecisionStrip', () => {
     });
   });
 
-  it('explains that partner cash debt blocks marketplace participation', () => {
+  it('explains that partner cash debt blocks marketplace alerts and participation', () => {
     const strip = bookingCommandDecisionStrip({
       ...baseInput,
       bookingStatus: 'COMPLETED',
@@ -83,7 +83,8 @@ describe('bookingCommandDecisionStrip', () => {
     expect(strip.primaryAction).toBe('Settle partner cash fee debt');
     expect(strip.rows.find((row) => row.lane === 'Finance')).toMatchObject({
       state: 'Settlement required',
-      detail: 'Partner wallet debt blocks marketplace participation and payout release until settled.',
+      detail:
+        'Partner wallet debt blocks marketplace alerts, participation, and payout release until settled.',
       href: '#finance',
     });
   });

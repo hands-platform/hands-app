@@ -83,7 +83,7 @@ describe('bookingFinanceSummaryCards', () => {
     );
 
     expect(debtCards[5].helper).toBe(
-      'Cash fee debt gates marketplace participation and payout release.',
+      'Cash fee debt gates marketplace alerts, participation, and payout release.',
     );
     expect(settledCards[5].helper).toBe('Cash settlement ledger is not negative.');
   });

@@ -146,7 +146,7 @@ describe('bookingOperatorCommandQueue', () => {
     expect(queue.commands.find((command) => command.id === 'cash-debt')).toMatchObject({
       title: 'Settle partner cash fee debt',
       detail:
-        'Cash service fee debt blocks marketplace participation and payout release until the company fee is settled.',
+        'Cash service fee debt blocks marketplace alerts, participation, and payout release until the company fee is settled.',
       owner: 'Finance operator',
     });
   });

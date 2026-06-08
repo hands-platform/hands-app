@@ -205,8 +205,8 @@ export default async function OperationsPolicyPage({
             <span className="pill pill-warn">Negative wallet gate</span>
             <h3>View demand, block participation</h3>
             <p>
-              A partner with a negative wallet may see marketplace requests, but cannot participate until the
-              unpaid platform fee is settled or cleared by finance.
+              A partner with a negative wallet may see marketplace requests, but cannot receive marketplace
+              alerts or participate until the unpaid platform fee is settled or cleared by finance.
             </p>
             <small>
               Direct first-pick response and already-matched service flow stay separate from this gate.
@@ -1022,8 +1022,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Negative wallet gate"
-            recommendation="Keep marketplace visibility open, but block marketplace participation and payout release."
-            detail="Cash services create company-fee debt. Partners can still see demand, while marketplace participation and payout release wait for settlement."
+            recommendation="Keep marketplace visibility open, but block marketplace alerts, participation, and payout release."
+            detail="Cash services create company-fee debt. Partners can still see demand, while marketplace alerts, participation, and payout release wait for settlement."
           />
           <DecisionHint
             title="Phone OTP"
@@ -1847,10 +1847,10 @@ function policyRecommendationPosture(
     return {
       status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
       detail: blocksMarketplace
-        ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
-        : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
+        ? 'Cash-debt exposure is contained at marketplace alerts, participation, and payout release gates.'
+        : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace alerts, participation, and payout release until settlement.',
       operatorAction:
-        'Keep marketplace list visibility open; use settlement evidence before marketplace participation or payout release.',
+        'Keep marketplace list visibility open; use settlement evidence before marketplace alerts, participation, or payout release.',
       alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
       className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
@@ -2059,8 +2059,8 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Negative wallet gate',
       status: hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
       detail: hardWalletBlock
-        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace participation and payout release wait for settlement.'
-        : 'Historical exception mode is retained for audit only. Marketplace participation and payout release should remain blocked until settlement.',
+        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace alerts, participation, and payout release wait for settlement.'
+        : 'Historical exception mode is retained for audit only. Marketplace alerts, participation, and payout release should remain blocked until settlement.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
         : 'Reset to the marketplace hold policy after reviewing the saved setting.',
@@ -2142,14 +2142,14 @@ function buildPartnerAcceptancePolicyImpact(
         .filter((provider) => partnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }))
         .length.toString(),
       helper:
-        'Account controls, identity failure, missing approved bank, or negative wallet can hold marketplace participation.',
+        'Account controls, identity failure, missing approved bank, or negative wallet can hold marketplace alerts and participation.',
     },
     {
       label: 'Cash debt gate',
       value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
-        ? 'Negative wallet gates marketplace participation and payout release.'
-        : 'Negative wallet still needs settlement before marketplace participation and payout release.',
+        ? 'Negative wallet gates marketplace alerts, participation, and payout release.'
+        : 'Negative wallet still needs settlement before marketplace alerts, participation, and payout release.',
     },
     {
       label: 'Identity block',
@@ -2410,7 +2410,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt can still see marketplace requests, but marketplace participation and payout release wait until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still see marketplace requests, but marketplace alerts, participation, and payout release wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
@@ -2524,7 +2524,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
         { label: booking.status, className: 'pill-neutral' },
       ],
       operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before marketplace participation or payout release.',
+        'Recent wallet entries are negative. Confirm settlement before marketplace alerts, participation, or payout release.',
     }));
 
   const lists: PolicyDrilldownListView[] = [
@@ -2550,7 +2550,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
       key: 'wallet-gate',
       title: 'Wallet gate queue',
       helper:
-        'Partners with negative recent wallet ledger entries that may hold marketplace participation or payout release.',
+        'Partners with negative recent wallet ledger entries that may hold marketplace alerts, participation, or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -2699,7 +2699,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'wallet.negative_balance_gate') {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
-      helper: 'Negative wallet records can hold marketplace participation or payout release.',
+      helper: 'Negative wallet records can hold marketplace alerts, participation, or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,

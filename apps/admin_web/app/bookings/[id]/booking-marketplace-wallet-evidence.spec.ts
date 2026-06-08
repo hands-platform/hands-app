@@ -46,7 +46,7 @@ describe('booking marketplace wallet evidence', () => {
     expect(walletRow?.operatorUse).not.toContain('Unpaid HANDS fees must be settled');
   });
 
-  it('keeps settlement instructions when cash-fee debt blocks marketplace participation', () => {
+  it('keeps settlement instructions when cash-fee debt blocks marketplace alerts and participation', () => {
     const evidence = bookingMarketplaceWalletEvidence(
       baseInput({
         walletDebt: true,
