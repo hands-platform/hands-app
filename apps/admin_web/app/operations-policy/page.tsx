@@ -4218,6 +4218,33 @@ function operationsOwnerDecisionBacklog() {
     },
     {
       owner: 'Finance',
+      title: 'Negative wallet direct-request boundary',
+      question:
+        'Should unpaid cash-fee debt also block a first-pick partner from accepting a direct request, or only block marketplace participation and payout release?',
+      evidence:
+        'Review how often negative-wallet partners are chosen first by customers, how quickly they settle fees, and whether blocking direct requests creates customer wait issues.',
+      options: [
+        {
+          label: 'Keep current MVP boundary',
+          tradeoff:
+            'Marketplace participation and payout release stay blocked, while first-pick direct requests remain a separate owner decision.',
+        },
+        {
+          label: 'Block all new acceptance',
+          tradeoff:
+            'Stronger cash-fee control, but can prevent a customer from using a partner they deliberately selected first.',
+        },
+      ],
+      recommendation:
+        'Keep the current marketplace/payout gate for MVP, then decide the direct-request gate after real cash-settlement data is visible.',
+      decisionTrigger:
+        'Revisit when repeated cash-fee debt appears after direct first-pick bookings, or settlement time exceeds the finance SLA.',
+      href: '/cash-settlements',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
+      owner: 'Finance',
       title: 'Payout batch cycle',
       question:
         'Should positive partner earnings be settled on a weekly rhythm, monthly rhythm, or admin-selected payout day?',
