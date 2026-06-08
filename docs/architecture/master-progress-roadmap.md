@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-06-07
+Last checked: 2026-06-08
 
 This is the single working board for day-to-day MVP execution. If this file conflicts with `docs/architecture/hands-mvp-final-authority.md`, the final authority file wins.
 
@@ -100,7 +100,7 @@ npm.cmd run external:check:production
 | Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. Date-range `Today` filters use the Vietnam business day. | Continue adding depth inside existing command lanes before creating new top-level pages. |
 | Customers admin | Active | Customer list/detail exists with factual records. No customer scoring. | Decide which fields are must-show above the fold. |
 | Partners admin | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. Legacy `/providers` routes stay as redirects only. | Continue improving partner list/detail depth without rebuilding separate partner-risk pages. |
-| Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout, and Admin/API policy-default consistency are guarded. | Decide next audit slice: mobile paired E2E consistency or payment/settlement gateway audit. |
+| Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout, and Admin/API policy-default consistency are guarded. Admin booking detail keeps actual participant records as evidence and does not list wallet-debt partners as booking-level candidates. | Decide next audit slice: mobile paired E2E consistency or payment/settlement gateway audit. |
 | Payments and gateway callbacks | Active | Payment callback audit, payment detail view, gateway reference wording, capture/release/refund/cash settlement actions are present. | Decide gateway sandbox E2E order: MoMo first, VNPay first, or keep both deferred. |
 | Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet keeps marketplace requests visible, but blocks marketplace participation/join and payout release until settlement or approved offset. Partner app block copy is aligned. | Decide finance SLA and deposit evidence requirements for production operations. |
 | Service pricing | Active | Admin service names, duration options, minimum price, price step, partner price, payout rules, and booking price snapshots are modeled. | Decide if service catalog should be frozen before final mobile UI. |

@@ -29,6 +29,7 @@
     "admin:shared-format": "node infra/scripts/check-admin-shared-format.mjs",
     "admin:query-guards": "node infra/scripts/check-admin-query-guards.mjs",
     "admin:chat-repair-check": "node infra/scripts/check-admin-chat-repair.mjs",
+    "vietnam:check": "node infra/scripts/check-vietnam-scope.mjs",
     "scope:vietnam": "node infra/scripts/check-vietnam-scope.mjs",
     "check:vietnam-scope": "node infra/scripts/check-vietnam-scope.mjs",
     "authority:check": "node infra/scripts/check-final-authority.mjs",
