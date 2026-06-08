@@ -72,7 +72,7 @@ This supports two settlement paths without hiding partners from the marketplace:
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
 
-The standard wallet recovery workflow is:
+The standard wallet settlement workflow is:
 
 1. Confirm why the wallet is negative from booking, payment, earning, wallet, and chat evidence.
 2. Collect a partner bank deposit to HANDS or approve an admin offset against later earnings.

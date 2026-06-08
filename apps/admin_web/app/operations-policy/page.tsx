@@ -1996,7 +1996,7 @@ function policyRecommendationPosture(
   if (setting.key === 'wallet.negative_balance_gate') {
     const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
     return {
-      status: blocksMarketplace ? 'Marketplace hold' : 'Future exception disabled',
+      status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
       detail: blocksMarketplace
         ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
         : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
@@ -2208,7 +2208,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Negative wallet gate',
-      status: hardWalletBlock ? 'Marketplace hold' : 'Future exception disabled',
+      status: hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
       detail: hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace participation and payout release wait for settlement.'
         : 'Historical exception mode is retained for audit only. Marketplace participation and payout release should remain blocked until settlement.',

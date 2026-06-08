@@ -77,7 +77,7 @@ export function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Historical recovery mode is visible for audit only; current operations should settle debt before marketplace participation.'
+            ? 'Historical exception mode is visible for audit only; current operations still require debt settlement before marketplace participation.'
             : 'Negative wallet partners can see marketplace requests, but marketplace participation and payout release are blocked.',
         enforced: false,
       }),
