@@ -447,7 +447,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="acceptance-blocked">Direct request held</option>
               <option value="direct-ready">Direct request ready</option>
               <option value="marketplace-ready">Marketplace ready</option>
-              <option value="marketplace-blocked">Marketplace blocked</option>
+              <option value="marketplace-blocked">Marketplace repair</option>
             </select>
           </label>
           <label>
@@ -1960,8 +1960,8 @@ function buildPartnerOperationRow(
     marketplaceAccessLabel: backupEligibility.eligible
       ? 'Marketplace ready'
       : walletBalance < 0
-        ? 'Marketplace blocked by wallet'
-        : 'Marketplace held',
+        ? 'Fee settlement required'
+        : 'Marketplace repair needed',
     marketplaceAccessDetail: backupEligibility.eligible
       ? `Can participate in marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
       : walletBalance < 0
@@ -2331,12 +2331,12 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
         : partnerAcceptBlockerSummary(provider, opsPolicy),
     },
     {
-      label: backupEligibility.eligible ? 'Marketplace ready' : 'Marketplace blocked',
+      label: backupEligibility.eligible ? 'Marketplace ready' : 'Marketplace repair',
       tone: backupEligibility.eligible ? 'success' : 'warn',
       detail: backupEligibility.eligible
         ? `Can participate in marketplace matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
         : backupEligibility.blockers.map((blocker) => blocker.label).join(', ') ||
-          'Marketplace matching is blocked by policy.',
+          'Marketplace participation needs policy repair.',
     },
     {
       label: walletBalance < 0 ? 'Cash debt' : 'Wallet clear',

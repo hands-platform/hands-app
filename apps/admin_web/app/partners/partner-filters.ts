@@ -197,7 +197,7 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Marketplace ready highlights partners who can receive availability alerts and join customer choice lists.';
   }
   if (kind === 'review' && value === 'marketplace-blocked') {
-    return 'Marketplace blocked highlights partners excluded from open matching until blockers are resolved.';
+    return 'Marketplace repair highlights partners who need wallet, location, status, identity, or alert fixes before participating.';
   }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
@@ -243,7 +243,7 @@ export function partnerReviewFilterLabel(review: string) {
     'acceptance-blocked': 'Direct request held',
     'direct-ready': 'Direct request ready',
     'marketplace-ready': 'Marketplace ready',
-    'marketplace-blocked': 'Marketplace blocked',
+    'marketplace-blocked': 'Marketplace repair',
   };
   return labels[review] ?? review;
 }

@@ -340,11 +340,11 @@ function bookingMarketplaceCandidateCommand(input: {
     return {
       status: 'REPAIR SUPPLY',
       tone: 'pill-warn',
-      title: 'Nearby partners exist but are blocked',
+      title: 'Nearby partners need supply repair',
       detail:
         'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
       href: '/partners?review=marketplace-blocked',
-      action: 'Open blocked partners',
+      action: 'Review supply blockers',
     };
   }
   if (input.outOfRadius > 0) {

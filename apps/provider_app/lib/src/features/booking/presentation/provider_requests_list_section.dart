@@ -70,7 +70,7 @@ class ProviderRequestsListSection extends StatelessWidget {
         if (walletBlocked) ...[
           const InfoCard(
             text:
-                '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review only. Direct first-pick requests are handled separately.',
+                '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible, but participation is locked until settlement is cleared. Direct first-pick requests are handled separately.',
           ),
           const SizedBox(height: 16),
         ],

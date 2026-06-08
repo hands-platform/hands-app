@@ -101,7 +101,7 @@ export function bookingCustomerWaitPanel(
     detail =
       'Ask partners to go online/refresh location, or review marketplace radius and location freshness policy.';
     nextActionHref = '/partners?review=marketplace-blocked';
-    nextActionLabel = 'Open blocked partners';
+    nextActionLabel = 'Review supply blockers';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
