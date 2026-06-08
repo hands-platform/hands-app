@@ -78,7 +78,7 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Wallet gate',
         value: walletDebt ? 'Settlement needed' : 'Clear',
         helper: walletDebt
-          ? 'Cash-fee debt blocks marketplace participation and payout release.'
+          ? 'Cash-fee debt blocks marketplace alerts, participation, and payout release.'
           : 'No active cash-fee wallet block is visible for this booking.',
         href: walletDebt ? '/cash-settlements' : '#finance',
       },
@@ -122,7 +122,7 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Wallet/cash fee gate',
         value: walletDebt ? 'Participation blocked' : 'Gate clear',
         helper: walletDebt
-          ? 'Cash-fee debt blocks marketplace participation before a participant row can be created.'
+          ? 'Cash-fee debt blocks marketplace alerts and participation before a participant row can be created.'
           : 'No active cash-fee wallet block is attached to this booking evidence.',
         href: walletDebt ? '/cash-settlements' : '#finance',
       },
@@ -167,12 +167,12 @@ export function bookingMarketplaceWalletEvidence({
       {
         lane: 'Wallet participation gate',
         scope:
-          'Negative partner wallet keeps marketplace requests visible but blocks marketplace participation before the join is recorded.',
+          'Negative partner wallet keeps marketplace requests visible but blocks marketplace alerts and participation before the join is recorded.',
         status: walletDebt ? 'Settlement needed' : 'Clear',
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings. Collect the HANDS fee deposit or apply an approved offset before this partner can participate in new marketplace bookings.'
+          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings. Collect the HANDS fee deposit or apply an approved offset before this partner can receive marketplace alerts or participate in new marketplace bookings.'
           : 'No active cash-fee wallet debt from this booking is currently gating marketplace participation.',
       },
       {

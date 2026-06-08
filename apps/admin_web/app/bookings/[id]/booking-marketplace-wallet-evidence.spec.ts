@@ -67,5 +67,6 @@ describe('booking marketplace wallet evidence', () => {
       tone: 'pill-danger',
     });
     expect(walletRow?.operatorUse).toContain('marketplace bookings');
+    expect(walletRow?.operatorUse).toContain('marketplace alerts');
   });
 });
