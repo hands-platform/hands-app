@@ -155,6 +155,49 @@ describe('booking participant ledger', () => {
     });
   });
 
+  it('makes an accepted first-pick partner customer-selectable without auto-matching', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        preferredProviderId: 'partner-first',
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Partner',
+        },
+        participants: [
+          {
+            id: 'participant-first',
+            providerProfileId: 'partner-first',
+            status: 'ACCEPTED',
+            joinedAt: '2026-06-07T01:00:00.000Z',
+            respondedAt: '2026-06-07T01:02:00.000Z',
+            providerProfile: {
+              id: 'partner-first',
+              displayName: 'First Partner',
+            },
+          },
+        ],
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.status).toBe('Customer choice pending');
+    expect(ledger.cards.find((card) => card.label === 'Customer final choice')).toMatchObject({
+      value: 'Not selected',
+      helper: 'No automatic assignment; the customer final choice remains required.',
+    });
+    expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
+      role: 'First-pick',
+      choiceState: 'Customer-selectable',
+      eligibilityLabel: 'Customer-selectable',
+      operatorStatus: 'Customer-selectable first-pick option',
+    });
+    expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
+      status: 'Pending',
+      value: 'No final partner yet',
+    });
+  });
+
   it('treats selectedProviderId as final choice even when the selected partner relation is omitted', () => {
     const ledger = bookingParticipantLedger(
       booking({
