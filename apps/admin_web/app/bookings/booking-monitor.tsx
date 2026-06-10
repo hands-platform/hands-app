@@ -47,9 +47,6 @@ import {
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
   providerLocationFreshnessFromTimestamp,
 } from '../../lib/booking-status-location-helpers';
-import { participantDistancePolicy } from '../../lib/admin-distance-policy';
-import { participantChatHandoffState } from '../../lib/admin-participant-chat-handoff';
-import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
@@ -70,8 +67,10 @@ import {
   type MarketplaceOperationsCard,
 } from '../../lib/marketplace-operations-cards';
 import {
+  buildMarketplaceParticipantLedgerRows as buildMarketplaceParticipantLedgerRowsFromFacts,
   buildMarketplaceParticipantLedgerPills,
   buildMarketplaceParticipantLedgerSummary,
+  type MarketplaceParticipantLedgerRow,
 } from '../../lib/marketplace-participant-ledger';
 import {
   buildMarketplaceOperatingQueueItems,
@@ -200,34 +199,7 @@ type BookingListActionChip = {
 
 type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 
-type MarketplaceParticipantLedgerRow = {
-  booking: AdminBooking;
-  participant: BookingParticipant;
-  partnerLabel: string;
-  roleLabel: string;
-  evidenceLabel: string;
-  evidenceDetail: string;
-  evidenceTone: string;
-  statusLabel: string;
-  statusTone: string;
-  distanceLabel: string;
-  distancePolicyLabel: string;
-  distancePolicyTone: string;
-  distancePolicyHelper: string;
-  joinedLabel: string;
-  respondedLabel: string;
-  choiceLabel: string;
-  choiceTone: string;
-  choiceReason: string;
-  choiceNextStep: string;
-  chatHandoffLabel: string;
-  chatHandoffTone: string;
-  windowLabel: string;
-  alertLabel: string;
-  alertTone: string;
-  walletLabel: string;
-  walletTone: string;
-};
+type AdminMarketplaceParticipantLedgerRow = MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>;
 
 type AdminMarketplaceBookingCoverageRow = MarketplaceBookingCoverageRow<AdminBooking>;
 
@@ -4267,75 +4239,49 @@ function buildMarketplaceParticipantLedgerRows(
   bookings: AdminBooking[],
   nowMs: number,
   marketplaceRadiusMeters: number,
-): MarketplaceParticipantLedgerRow[] {
+): readonly AdminMarketplaceParticipantLedgerRow[] {
   return bookings.flatMap((booking) =>
-    (booking.participants ?? [])
-      .filter((participant) => Boolean(participant.providerProfile?.id))
-      .map((participant) => {
+    buildMarketplaceParticipantLedgerRowsFromFacts(
+      (booking.participants ?? [])
+        .filter((participant) => Boolean(participant.providerProfile?.id))
+        .map((participant) => {
         const distanceMeters = typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null;
-        const distancePolicy = participantDistancePolicy(distanceMeters, marketplaceRadiusMeters);
         const selectedPartnerId = bookingSelectedPartnerIdForChoice(booking);
         const participantPartnerId = bookingParticipantPartnerId(participant);
-        const isFinal = Boolean(selectedPartnerId && participantPartnerId === selectedPartnerId);
-        const finalPartnerRecorded = Boolean(selectedPartnerId);
-        const customerSelectable = isCustomerSelectableBookingParticipant(
-          participant,
-          bookingPreferredPartnerIdForChoice(booking),
-        );
-        const chatRequired = Boolean(
-          finalPartnerRecorded ||
-            ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
-        );
-        const chatHandoff = participantChatHandoffState({
-          chatRequired,
-          customerSelectable,
-          finalPartnerRecorded,
-          hasChatRoom: Boolean(booking.chatRoom),
-          isFinal,
-          status: participant.status ?? 'UNKNOWN',
-        });
+        const preferredPartnerId = bookingPreferredPartnerIdForChoice(booking);
         return {
+          alertLabel: bookingBackupAlertTracePill(booking),
+          alertTone: bookingBackupAlertTraceTone(booking),
           booking,
-          participant,
-          partnerLabel: partnerDisplayName(participant.providerProfile),
-          roleLabel: marketplaceParticipantRoleLabel(booking, participant),
-          ...marketplaceParticipantEvidenceState(booking, participant),
-          statusLabel: marketplaceParticipantStatusLabel(participant.status),
-          statusTone: marketplaceParticipantStatusTone(participant.status),
-          distanceLabel: formatMeters(distanceMeters),
-          distancePolicyLabel: distancePolicy.label,
-          distancePolicyTone: distancePolicy.tone,
-          distancePolicyHelper: distancePolicy.helper,
+          bookingStatus: booking.status,
+          customerSelectable: isCustomerSelectableBookingParticipant(participant, preferredPartnerId),
+          distanceMeters,
+          hasChatRoom: Boolean(booking.chatRoom),
           joinedLabel: participant.joinedAt
             ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
             : 'Participation time not saved',
+          marketplaceRadiusMeters,
+          participant,
+          participantPartnerId,
+          partnerLabel: partnerDisplayName(participant.providerProfile),
+          preferredPartnerId,
           respondedLabel: participant.respondedAt
             ? `Responded ${formatDate(participant.respondedAt)}`
             : 'No response time saved',
-          windowLabel: bookingMatchingWindowLabel(booking, nowMs),
-          alertLabel: bookingBackupAlertTracePill(booking),
-          alertTone: bookingBackupAlertTraceTone(booking),
+          selectedPartnerId,
+          sortTimestamp: bookingParticipantTimestamp(participant),
+          status: participant.status ?? 'UNKNOWN',
           ...bookingMarketplaceWalletSignal(booking),
-          ...marketplaceParticipantChoiceState(booking, participant),
-          chatHandoffLabel: chatHandoff.label,
-          chatHandoffTone: chatHandoff.tone,
+          windowLabel: bookingMatchingWindowLabel(booking, nowMs),
         };
-      })
-      .sort((left, right) => {
-        if (left.choiceLabel === 'Selected by customer' && right.choiceLabel !== 'Selected by customer') {
-          return -1;
-        }
-        if (right.choiceLabel === 'Selected by customer' && left.choiceLabel !== 'Selected by customer') {
-          return 1;
-        }
-        return bookingParticipantTimestamp(right.participant) - bookingParticipantTimestamp(left.participant);
       }),
+    ),
   );
 }
 
 function buildMarketplaceOperationsCards(
   bookings: AdminBooking[],
-  ledgerRows: MarketplaceParticipantLedgerRow[],
+  ledgerRows: readonly AdminMarketplaceParticipantLedgerRow[],
   nowMs: number,
 ): MarketplaceOperationsCard[] {
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
@@ -4394,94 +4340,6 @@ function buildMarketplaceOperatingQueue(
   });
 }
 
-function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
-  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
-  if (bookingParticipantPartnerId(participant) === preferredProviderId) {
-    return 'First-pick partner';
-  }
-  return 'Marketplace participant';
-}
-
-function marketplaceParticipantEvidenceState(booking: AdminBooking, participant: BookingParticipant) {
-  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
-  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
-  const partnerId = bookingParticipantPartnerId(participant);
-
-  if (selectedProviderId && partnerId === selectedProviderId) {
-    return {
-      evidenceLabel: 'Final selected row',
-      evidenceDetail: 'Customer chose this partner; the row remains after matching for operations history.',
-      evidenceTone: 'pill-success',
-    };
-  }
-
-  if (participant.status === 'REJECTED') {
-    return {
-      evidenceLabel: 'Declined response row',
-      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable partner.',
-      evidenceTone: 'pill-info',
-    };
-  }
-
-  if (partnerId && partnerId === preferredProviderId) {
-    return {
-      evidenceLabel: 'First-pick response row',
-      evidenceDetail: 'Preferred partner response evidence from the 10-minute first-pick window.',
-      evidenceTone: 'pill-info',
-    };
-  }
-
-  return {
-    evidenceLabel: 'Marketplace participation row',
-    evidenceDetail: 'Partner entered the customer choice list from booking-address marketplace participation.',
-    evidenceTone: 'pill-info',
-  };
-}
-
-function marketplaceParticipantStatusLabel(status: string) {
-  if (status === 'ACCEPTED') {
-    return 'Accepted';
-  }
-  if (status === 'SELECTED') {
-    return 'Selected';
-  }
-  if (status === 'REJECTED') {
-    return 'Declined';
-  }
-  if (status === 'JOINED') {
-    return 'Participating';
-  }
-  return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase());
-}
-
-function marketplaceParticipantStatusTone(status: string) {
-  if (status === 'SELECTED') {
-    return 'pill-success';
-  }
-  if (status === 'JOINED' || status === 'ACCEPTED') {
-    return 'pill-info';
-  }
-  if (status === 'REJECTED') {
-    return 'pill-info';
-  }
-  return 'pill-neutral';
-}
-
-function marketplaceParticipantChoiceState(booking: AdminBooking, participant: BookingParticipant) {
-  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
-  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
-  const partnerId = bookingParticipantPartnerId(participant);
-  const isFinal = Boolean(selectedProviderId && partnerId === selectedProviderId);
-
-  return participantChoicePresentation({
-    isFinal,
-    isPreferred: Boolean(partnerId && partnerId === preferredProviderId),
-    status: participant.status,
-    customerSelectable: isCustomerSelectableMarketplaceParticipant(booking, participant),
-    anotherFinalPartnerSelected: Boolean(selectedProviderId && !isFinal),
-  });
-}
-
 function bookingParticipantTimestamp(participant: BookingParticipant) {
   const value = participant.respondedAt ?? participant.joinedAt;
   if (!value) {
@@ -4524,13 +4382,6 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
 
 function customerSelectableParticipants(booking: AdminBooking) {
   return buildBookingCustomerSelectableParticipants(booking);
-}
-
-function isCustomerSelectableMarketplaceParticipant(booking: AdminBooking, participant: BookingParticipant) {
-  return isCustomerSelectableBookingParticipant(
-    participant,
-    bookingPreferredPartnerIdForChoice(booking),
-  );
 }
 
 function bookingHasCustomerSelectablePartner(booking: AdminBooking) {
