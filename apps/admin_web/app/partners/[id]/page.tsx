@@ -77,6 +77,10 @@ import {
   partnerActivityRecordHref,
 } from './partner-detail-activity-model';
 import {
+  type PartnerBookingArchiveRecord as PartnerBookingArchiveModelRecord,
+  buildPartnerBookingArchive,
+} from './partner-detail-booking-model';
+import {
   buildPartnerAccountActionConfirmation,
   partnerAccountActionConfirmHref,
   readPartnerAccountConfirmationAction,
@@ -235,6 +239,7 @@ type PartnerDetailBooking = {
 type PartnerDetailChatMessage = NonNullable<
   NonNullable<PartnerDetailBooking['chatRoom']>['messages']
 >[number];
+type PartnerBookingArchiveRecord = PartnerBookingArchiveModelRecord<PartnerDetailBooking>;
 type PartnerDetailDevice = NonNullable<AdminProvider['devices']>[number];
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
@@ -3405,11 +3410,6 @@ type PartnerAcceptanceRepairCommand = {
     tone: ProviderOpsCard['tone'];
   }>;
 };
-type PartnerBookingArchiveRecord = {
-  relation: 'Preferred' | 'Selected' | 'Joined';
-  booking: PartnerDetailBooking;
-  lastMessage: string | null;
-};
 type PartnerOperatorCommand = {
   id: string;
   label: string;
@@ -3801,39 +3801,6 @@ function buildPartnerOperatorCommandQueue({
     ],
     commands: commands.slice(0, 10),
   };
-}
-
-function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArchiveRecord[] {
-  const records = new Map<string, PartnerBookingArchiveRecord>();
-
-  for (const booking of provider.preferredBookings ?? []) {
-    records.set(`${booking.id}:Preferred`, {
-      relation: 'Preferred',
-      booking,
-      lastMessage: lastBookingMessage(booking),
-    });
-  }
-  for (const booking of provider.selectedBookings ?? []) {
-    records.set(`${booking.id}:Selected`, {
-      relation: 'Selected',
-      booking,
-      lastMessage: lastBookingMessage(booking),
-    });
-  }
-  for (const participant of provider.participants ?? []) {
-    if (!participant.booking) continue;
-    records.set(`${participant.booking.id}:Joined`, {
-      relation: 'Joined',
-      booking: participant.booking,
-      lastMessage: lastBookingMessage(participant.booking),
-    });
-  }
-
-  return [...records.values()].sort(
-    (left, right) =>
-      dateValue(bookingRecordCreatedAt(right.booking)) -
-      dateValue(bookingRecordCreatedAt(left.booking)),
-  );
 }
 
 function buildPartnerBookingEvidenceRows(
@@ -5117,12 +5084,6 @@ function latestPartnerAccessAt(provider: ProviderDetail) {
   ]
     .filter(Boolean)
     .sort((left, right) => dateValue(right) - dateValue(left))[0];
-}
-
-function lastBookingMessage(booking: PartnerDetailBooking) {
-  const message = booking.chatRoom?.messages?.[0];
-  if (!message) return null;
-  return trimText(message.body, 80);
 }
 
 function readPartnerChatMessages(booking: PartnerDetailBooking) {
