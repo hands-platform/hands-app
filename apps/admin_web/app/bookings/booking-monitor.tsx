@@ -60,6 +60,7 @@ import {
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
+import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3418,31 +3419,6 @@ function bookingListCommandDecisionStrip(booking: AdminBooking) {
     cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
     closeoutOpenItemCount: bookingCompletedCloseoutNeedsOps(booking) ? 1 : 0,
   });
-}
-
-function bookingPrimaryCommandHref(status: string) {
-  if (status === 'Address check') {
-    return '/bookings?view=address';
-  }
-  if (status === 'Handoff repair') {
-    return '/bookings?view=chat-repair';
-  }
-  if (status === 'Finance gate') {
-    return '/bookings?view=cash-debt';
-  }
-  if (status === 'Customer choice') {
-    return '/bookings?view=customer-choice';
-  }
-  if (status === 'Matching watch') {
-    return '/bookings?view=matching';
-  }
-  if (status === 'Payment review') {
-    return '/bookings?view=payment';
-  }
-  if (status === 'Closeout review') {
-    return '/bookings?view=closeout';
-  }
-  return '/bookings?view=all';
 }
 
 function bookingAddressNeedsOps(booking: AdminBooking) {
