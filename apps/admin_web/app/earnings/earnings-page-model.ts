@@ -927,7 +927,7 @@ function canCreatePayout(earning: AdminEarning) {
   );
 }
 
-function isCashDebt(earning: AdminEarning) {
+export function isCashDebt(earning: AdminEarning) {
   return (
     earning.netAmount < 0 &&
     earning.status !== 'PAID' &&

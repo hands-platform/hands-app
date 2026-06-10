@@ -31,6 +31,7 @@ import {
   buildServiceEarningBridge,
   emptySummary,
   filterEarningsByBatchState,
+  isCashDebt,
   sortEarnings,
   summarizeEarnings,
 } from './earnings-page-model';
@@ -58,7 +59,10 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const sortedEarnings = sortEarnings(filteredEarnings);
   const ledgerEarnings = sortEarnings(filterEarningsByBatchState(filteredEarnings, filters.batchState));
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
-  const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
+  const cashDebtEarnings = sortedEarnings.filter((earning) => {
+    return isCashDebt(earning);
+  });
+  const cashDebtQueue = buildCashDebtQueue(cashDebtEarnings);
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
   const cashDebtItems = buildCashDebtQueueItems(cashDebtQueue);
   const financeSignals = buildFinanceSignals(
