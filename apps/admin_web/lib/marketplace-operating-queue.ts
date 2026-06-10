@@ -22,6 +22,47 @@ type MarketplaceOperatingQueueInput<TBooking> = {
   readonly noJoinedSupply: TBooking[];
 };
 
+export type MarketplaceOperatingQueueBookingFact<TBooking> = {
+  readonly booking: TBooking;
+  readonly cashDebtNeedsOps: boolean;
+  readonly chatRepairNeedsOps: boolean;
+  readonly hasCustomerSelectablePartner: boolean;
+  readonly hasPreferredPartner: boolean;
+  readonly marketplaceParticipantCount: number;
+  readonly preferredAwaitingDecision: boolean;
+  readonly responseWindowExpired: boolean;
+  readonly status: string;
+};
+
+export function buildMarketplaceOperatingQueueBuckets<TBooking>(
+  bookings: readonly MarketplaceOperatingQueueBookingFact<TBooking>[],
+): MarketplaceOperatingQueueInput<TBooking> {
+  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const firstPickWaiting = openBookings.filter(
+    (booking) => booking.hasPreferredPartner && booking.preferredAwaitingDecision,
+  );
+
+  return {
+    cashDebtBookings: bookings.filter((booking) => booking.cashDebtNeedsOps).map((booking) => booking.booking),
+    customerChoiceWaiting: openBookings
+      .filter((booking) => booking.hasCustomerSelectablePartner)
+      .map((booking) => booking.booking),
+    firstPickExpired: firstPickWaiting
+      .filter((booking) => booking.responseWindowExpired)
+      .map((booking) => booking.booking),
+    firstPickWaiting: firstPickWaiting.map((booking) => booking.booking),
+    marketplaceJoined: openBookings
+      .filter((booking) => booking.marketplaceParticipantCount > 0)
+      .map((booking) => booking.booking),
+    matchedWithoutChat: bookings.filter((booking) => booking.chatRepairNeedsOps).map((booking) => booking.booking),
+    noJoinedSupply: openBookings
+      .filter(
+        (booking) => booking.marketplaceParticipantCount === 0 && !booking.hasCustomerSelectablePartner,
+      )
+      .map((booking) => booking.booking),
+  };
+}
+
 export function buildMarketplaceOperatingQueueItems<TBooking>({
   cashDebtBookings,
   customerChoiceWaiting,

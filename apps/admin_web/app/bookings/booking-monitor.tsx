@@ -74,6 +74,7 @@ import {
   type MarketplaceParticipantLedgerRow,
 } from '../../lib/marketplace-participant-ledger';
 import {
+  buildMarketplaceOperatingQueueBuckets,
   buildMarketplaceOperatingQueueItems,
   type MarketplaceOperatingQueueItem,
 } from '../../lib/marketplace-operating-queue';
@@ -4304,32 +4305,21 @@ function buildMarketplaceOperatingQueue(
   bookings: AdminBooking[],
   nowMs: number,
 ): MarketplaceOperatingQueueItem<AdminBooking>[] {
-  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const firstPickWaiting = openBookings.filter(
-    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  return buildMarketplaceOperatingQueueItems(
+    buildMarketplaceOperatingQueueBuckets(
+      bookings.map((booking) => ({
+        booking,
+        cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+        chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
+        hasCustomerSelectablePartner: bookingHasCustomerSelectablePartner(booking),
+        hasPreferredPartner: Boolean(booking.preferredProvider),
+        marketplaceParticipantCount: marketplaceParticipants(booking).length,
+        preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+        responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+        status: booking.status,
+      })),
+    ),
   );
-  const firstPickExpired = firstPickWaiting.filter((booking) =>
-    bookingMatchingWindowExpired(booking, nowMs),
-  );
-  const noJoinedSupply = openBookings.filter(
-    (booking) => marketplaceParticipants(booking).length === 0 && !bookingHasCustomerSelectablePartner(booking),
-  );
-  const marketplaceJoined = openBookings.filter((booking) => marketplaceParticipants(booking).length > 0);
-  const customerChoiceWaiting = openBookings.filter((booking) =>
-    bookingHasCustomerSelectablePartner(booking),
-  );
-  const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
-  const cashDebtBookings = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-
-  return buildMarketplaceOperatingQueueItems({
-    cashDebtBookings,
-    customerChoiceWaiting,
-    firstPickExpired,
-    firstPickWaiting,
-    marketplaceJoined,
-    matchedWithoutChat,
-    noJoinedSupply,
-  });
 }
 
 function bookingParticipantTimestamp(participant: BookingParticipant) {

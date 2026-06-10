@@ -1,4 +1,7 @@
-import { buildMarketplaceOperatingQueueItems } from './marketplace-operating-queue';
+import {
+  buildMarketplaceOperatingQueueBuckets,
+  buildMarketplaceOperatingQueueItems,
+} from './marketplace-operating-queue';
 
 describe('marketplace operating queue', () => {
   it('prioritizes expired first-pick, supply gaps, chat repair, and wallet debt lanes', () => {
@@ -39,5 +42,75 @@ describe('marketplace operating queue', () => {
       ['Ready', 'ok'],
       ['Clear', 'ok'],
     ]);
+  });
+
+  it('groups booking facts into marketplace operating buckets', () => {
+    const buckets = buildMarketplaceOperatingQueueBuckets([
+      {
+        booking: 'first-pick',
+        cashDebtNeedsOps: false,
+        chatRepairNeedsOps: false,
+        hasCustomerSelectablePartner: false,
+        hasPreferredPartner: true,
+        marketplaceParticipantCount: 1,
+        preferredAwaitingDecision: true,
+        responseWindowExpired: false,
+        status: 'OPEN_MATCHING',
+      },
+      {
+        booking: 'expired',
+        cashDebtNeedsOps: false,
+        chatRepairNeedsOps: false,
+        hasCustomerSelectablePartner: false,
+        hasPreferredPartner: true,
+        marketplaceParticipantCount: 0,
+        preferredAwaitingDecision: true,
+        responseWindowExpired: true,
+        status: 'OPEN_MATCHING',
+      },
+      {
+        booking: 'choice',
+        cashDebtNeedsOps: false,
+        chatRepairNeedsOps: false,
+        hasCustomerSelectablePartner: true,
+        hasPreferredPartner: false,
+        marketplaceParticipantCount: 2,
+        preferredAwaitingDecision: false,
+        responseWindowExpired: false,
+        status: 'OPEN_MATCHING',
+      },
+      {
+        booking: 'chat',
+        cashDebtNeedsOps: false,
+        chatRepairNeedsOps: true,
+        hasCustomerSelectablePartner: false,
+        hasPreferredPartner: false,
+        marketplaceParticipantCount: 0,
+        preferredAwaitingDecision: false,
+        responseWindowExpired: false,
+        status: 'MATCHED',
+      },
+      {
+        booking: 'wallet',
+        cashDebtNeedsOps: true,
+        chatRepairNeedsOps: false,
+        hasCustomerSelectablePartner: false,
+        hasPreferredPartner: false,
+        marketplaceParticipantCount: 0,
+        preferredAwaitingDecision: false,
+        responseWindowExpired: false,
+        status: 'COMPLETED',
+      },
+    ]);
+
+    expect(buckets).toEqual({
+      cashDebtBookings: ['wallet'],
+      customerChoiceWaiting: ['choice'],
+      firstPickExpired: ['expired'],
+      firstPickWaiting: ['first-pick', 'expired'],
+      marketplaceJoined: ['first-pick', 'choice'],
+      matchedWithoutChat: ['chat'],
+      noJoinedSupply: ['expired'],
+    });
   });
 });
