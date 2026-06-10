@@ -1,10 +1,16 @@
 import { AdminCoupon, adminGet } from '../../lib/admin-api';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
-import { MetricCard } from '../../components/metric-card';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import Link from 'next/link';
+import { buildCouponToggleConfirmation, couponToggleConfirmHref } from './coupon-action-confirmation';
+import { CouponsTableSection, type CouponTableRow } from './coupons-table-section';
 import { createCoupon, toggleCoupon } from './actions';
 
-export default async function CouponsPage() {
+type CouponsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function CouponsPage({ searchParams }: { searchParams?: CouponsPageSearchParams }) {
+  const params = searchParams ? await searchParams : {};
   const coupons = await adminGet<AdminCoupon[]>('/admin/coupons', []);
   const orderedCoupons = [...coupons].sort((left, right) => couponPriority(right) - couponPriority(left));
   const liveCoupons = orderedCoupons.filter((coupon) => coupon.active && couponWindowState(coupon) === 'live');
@@ -20,35 +26,54 @@ export default async function CouponsPage() {
     pausedCoupons,
     needsReview,
   });
+  const couponRows = buildCouponTableRows(orderedCoupons);
+  const confirmation =
+    readSingleParam(params.confirm) === 'toggle'
+      ? buildCouponToggleConfirmation(orderedCoupons, readSingleParam(params.couponId))
+      : null;
 
   return (
-    <>
-      <h1>Coupons</h1>
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        <MetricCard label="Total" value={orderedCoupons.length} helper="Coupons loaded for admin review." />
-        <MetricCard label="Live now" value={liveCoupons.length} helper="Can be used in customer checkout." />
-        <MetricCard label="Active" value={activeCoupons.length} helper="Live or upcoming discounts." />
-        <MetricCard label="Scheduled" value={scheduledCoupons.length} helper="Approved, but start time is still ahead." />
-        <MetricCard label="Expired" value={expiredCoupons.length} helper="Candidates for pause or cleanup." />
-        <MetricCard label="Needs review" value={needsReview.length} helper="Expired active codes or paused campaigns." />
-      </section>
+    <AdminPageTemplate
+      description="Promotion control for customer booking checkout, campaign readiness, and expired code cleanup."
+      metrics={[
+        { label: 'Total', value: orderedCoupons.length, helper: 'Coupons loaded for admin review.' },
+        { label: 'Live now', value: liveCoupons.length, helper: 'Can be used in customer checkout.' },
+        { label: 'Active', value: activeCoupons.length, helper: 'Live or upcoming discounts.' },
+        {
+          label: 'Scheduled',
+          value: scheduledCoupons.length,
+          helper: 'Approved, but start time is still ahead.',
+        },
+        { label: 'Expired', value: expiredCoupons.length, helper: 'Candidates for pause or cleanup.' },
+        {
+          label: 'Needs review',
+          value: needsReview.length,
+          helper: 'Expired active codes or paused campaigns.',
+        },
+      ]}
+      title="Coupons"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={toggleCoupon}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={[
+            { name: 'couponId', value: confirmation.couponId },
+            { name: 'active', value: confirmation.currentActive },
+          ]}
+          id={`coupon-toggle-${confirmation.couponId}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
+
       <section className="card" style={{ marginBottom: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Campaign command board</h2>
-            <p className="muted">
-              Promotion control for customer acquisition, booking conversion, and codes that should not
-              accidentally remain visible in checkout.
-            </p>
-          </div>
-          <span
+        <AdminSectionHeader
+          description="Promotion control for customer acquisition, booking conversion, and codes that should not accidentally remain visible in checkout."
+          status={
+            <span
             className={`pill ${
               needsReview.length > 0 || expiredCoupons.some((coupon) => coupon.active)
                 ? 'pill-warn'
@@ -57,7 +82,9 @@ export default async function CouponsPage() {
           >
             {needsReview.length} review item(s)
           </span>
-        </div>
+          }
+          title="Campaign command board"
+        />
         <div className="ops-task-grid">
           {campaignBoard.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.title}>
@@ -96,70 +123,19 @@ export default async function CouponsPage() {
           <button type="submit">Create</button>
         </form>
       </section>
-      <section className="card" style={{ marginTop: 20 }}>
-        <div className="toolbar">
-          <div>
-            <h2 style={{ margin: 0 }}>Checkout Campaigns</h2>
-            <p className="muted">Use this board to confirm which codes are safe to expose in the customer booking flow.</p>
-          </div>
-          <div className="participant-list">
-            <span className="pill pill-success">{liveCoupons.length} live</span>
-            <span className="pill pill-info">{scheduledCoupons.length} scheduled</span>
-            <span className="pill pill-warn">{needsReview.length} review</span>
-            <span className="pill">{pausedCoupons.length} paused</span>
-          </div>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Description</th>
-              <th>Discount</th>
-              <th>Status</th>
-              <th>Window</th>
-              <th>Ops hint</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orderedCoupons.map((coupon) => (
-              <tr key={coupon.id}>
-                <td>
-                  <strong>{coupon.code}</strong>
-                  <div className="muted">Customer can enter {coupon.code.toLowerCase()} or {coupon.code}</div>
-                </td>
-                <td>{coupon.description ?? '-'}</td>
-                <td>{formatDiscount(coupon.discount)}</td>
-                <td>
-                  <span className={couponStatusClass(coupon)}>{couponStatusLabel(coupon)}</span>
-                  <div style={{ color: '#6b7280', fontSize: 12 }}>{couponWindowSignal(coupon)}</div>
-                </td>
-                <td>{couponWindowLabel(coupon)}</td>
-                <td>
-                  <div>{couponOpsHint(coupon)}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {couponCheckoutHint(coupon)}
-                  </div>
-                </td>
-                <td>
-                  <form action={toggleCoupon}>
-                    <input type="hidden" name="couponId" value={coupon.id} />
-                    <input type="hidden" name="active" value={String(coupon.active)} />
-                    <button type="submit">{coupon.active ? 'Pause' : 'Activate'}</button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-            {coupons.length === 0 && (
-              <tr>
-                <td colSpan={7}>No coupons loaded.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
-    </>
+      <CouponsTableSection
+        liveCount={liveCoupons.length}
+        pausedCount={pausedCoupons.length}
+        reviewCount={needsReview.length}
+        rows={couponRows}
+        scheduledCount={scheduledCoupons.length}
+      />
+    </AdminPageTemplate>
   );
+}
+
+function readSingleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
 type CampaignCommandTone = 'warn' | 'info' | 'ok';
@@ -173,6 +149,33 @@ type CampaignCommandItem = {
   tone: CampaignCommandTone;
   coupons: AdminCoupon[];
 };
+
+function buildCouponTableRows(coupons: readonly AdminCoupon[]): CouponTableRow[] {
+  return coupons.map((coupon) => ({
+    actions: [
+      {
+        description: coupon.active
+          ? 'Review before removing this code from checkout.'
+          : 'Review before making this code available to checkout.',
+        href: couponToggleConfirmHref(coupon.id),
+        kind: 'link',
+        label: coupon.active ? 'Pause' : 'Activate',
+        tone: coupon.active ? 'danger' : 'warning',
+      },
+    ],
+    checkoutHint: couponCheckoutHint(coupon),
+    code: coupon.code,
+    description: coupon.description ?? '-',
+    discountLabel: formatDiscount(coupon.discount),
+    id: coupon.id,
+    lowerCode: coupon.code.toLowerCase(),
+    opsHint: couponOpsHint(coupon),
+    statusClassName: couponStatusClass(coupon),
+    statusLabel: couponStatusLabel(coupon),
+    windowLabel: couponWindowLabel(coupon),
+    windowSignal: couponWindowSignal(coupon),
+  }));
+}
 
 function buildCampaignCommandBoard({
   liveCoupons,
