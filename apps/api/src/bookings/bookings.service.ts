@@ -1241,10 +1241,6 @@ export class BookingsService {
     forceOpen?: boolean;
     policy?: MatchingPolicy;
   }) {
-    if (!input.forceOpen && input.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
-      return [];
-    }
-
     const policy = input.policy ?? (await this.matching.getPolicy());
     const freshLocationAfter = new Date(Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000);
     const providers = await this.prisma.providerProfile.findMany({

@@ -101,36 +101,34 @@ Required replacement concept:
 
 ### Delayed Marketplace
 
-`AFTER_FIRST_PICK_DELAY` is currently implemented, documented, and tested.
+`AFTER_FIRST_PICK_DELAY` remains as a compatibility value, but MVP runtime behavior is normalized to immediate marketplace participation.
 
 Implemented in API:
 
 - `apps/api/src/matching/matching.policy.ts`
   - Exports `BACKUP_OPEN_AFTER_FIRST_PICK_DELAY`.
   - Allows it in `MatchingPolicy.backupOpenMode`.
-  - Shows it as an Operations Policy option.
-  - Parses it in `readBackupOpenMode()`.
+  - Shows it as a legacy Operations Policy compatibility value.
+  - Parses it in `readBackupOpenMode()` and normalizes it to `IMMEDIATE_WITHIN_WINDOW`.
 - `apps/api/src/bookings/bookings.policy.ts`
-  - `isMarketplaceParticipationWindowOpen()` supports delayed marketplace behavior.
+  - `isMarketplaceParticipationWindowOpen()` treats legacy delayed values as open for marketplace participation.
 - `apps/api/src/bookings/bookings.service.ts`
-  - `findEligibleBackupProviders()` returns no marketplace candidates when delayed mode is active and not force-opened.
   - Snapshot logic preserves delayed marketplace mode from booking metadata.
-  - Join/radius path can block participation while delayed mode has not opened.
+  - Candidate lookup and join/radius paths no longer block marketplace participation only because a legacy delayed value exists.
 
 Tested in API/tests:
 
 - `apps/api/src/bookings/bookings.policy.spec.ts`
-  - Tests delayed marketplace closed before first-pick window passes.
-  - Tests delayed marketplace opens after the response window.
-  - Tests delayed marketplace remains closed when opening evidence is missing.
+  - Tests legacy delayed marketplace values remain open during the first-pick response window.
+  - Tests legacy delayed marketplace values remain open even when old opening evidence is missing.
 - `apps/api/src/matching/matching.policy.spec.ts`
-  - Tests legacy and current policy keys accepting `AFTER_FIRST_PICK_DELAY`.
+  - Tests legacy and current policy keys accepting and normalizing `AFTER_FIRST_PICK_DELAY`.
 - `infra/scripts/api-smoke.mjs`
   - Sets `matching.marketplace_open_mode` to `AFTER_FIRST_PICK_DELAY`.
-  - Verifies non-preferred Partner cannot see/join delayed booking before opening.
-  - Verifies first-pick decline exposes delayed marketplace request.
+  - Verifies non-preferred Partner can see and join the request immediately.
+  - Verifies legacy delayed snapshots keep distance metadata and inactive participants cannot be selected.
 - `infra/scripts/check-api-policy-coverage.mjs`
-  - Requires delayed marketplace smoke markers.
+  - Requires legacy delayed normalization smoke markers.
 
 Documented/Admin surfaced in:
 
@@ -144,7 +142,7 @@ Documented/Admin surfaced in:
 
 Recommendation for MVP:
 
-**Disable/deprecate delayed marketplace for MVP.**
+**Disable/deprecate effective delayed marketplace for MVP.**
 
 Reason:
 
@@ -156,17 +154,17 @@ Recommended shape:
 
 - Keep `AFTER_FIRST_PICK_DELAY` parser compatibility for old rows temporarily.
 - Normalize effective runtime behavior to `IMMEDIATE_WITHIN_WINDOW`.
-- Mark delayed mode as deprecated/conflict in Admin and authority checks.
-- Remove delayed smoke expectations and replace them with a conflict guard.
+- Mark delayed mode as deprecated/compatibility-only in Admin and authority checks.
+- Replace delayed smoke expectations with normalization guards.
 - Plan full removal only after current protected API changes are reviewed.
 
 ### First-pick Exclusive Lock Before Acceptance
 
 No explicit "exclusive lock" copy was found as a first-class product claim.
 
-However, delayed marketplace behavior effectively creates a temporary exclusive first-pick period by hiding/blocking marketplace visibility and participation until the first-pick window passes or first-pick rejects.
+Previously, delayed marketplace behavior effectively created a temporary exclusive first-pick period by hiding/blocking marketplace visibility and participation until the first-pick window passed or first-pick rejected.
 
-Files creating that practical effect:
+Files that previously created that practical effect:
 
 - `apps/api/src/bookings/bookings.service.ts`
 - `apps/api/src/bookings/bookings.policy.ts`
@@ -568,7 +566,7 @@ Do not modify:
 
 3. Matching policy cleanup
    - Deprecate effective delayed marketplace behavior.
-   - Normalize `AFTER_FIRST_PICK_DELAY` to immediate for MVP runtime, or block it as policy conflict.
+   - Normalize `AFTER_FIRST_PICK_DELAY` to immediate for MVP runtime.
 
 4. Transactional match implementation
    - Centralize match finalization in one API method.

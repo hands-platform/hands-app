@@ -144,7 +144,7 @@ describe('booking policy helpers', () => {
     ).toBe(true);
   });
 
-  it('delays marketplace participation until the first-pick window passes', () => {
+  it('keeps marketplace participation open when legacy delayed policy values are present', () => {
     const openedAt = new Date('2026-06-07T01:00:00.000Z');
     jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 9 * 60_000);
 
@@ -153,7 +153,7 @@ describe('booking policy helpers', () => {
         { preferredProviderId: 'first-pick', openedAt },
         { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 },
       ),
-    ).toBe(false);
+    ).toBe(true);
 
     jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 10 * 60_000);
 
@@ -167,13 +167,13 @@ describe('booking policy helpers', () => {
     jest.restoreAllMocks();
   });
 
-  it('keeps delayed marketplace participation closed when opening evidence is missing', () => {
+  it('keeps marketplace participation open even when legacy delayed opening evidence is missing', () => {
     expect(
       isMarketplaceParticipationWindowOpen(
         { preferredProviderId: 'first-pick', openedAt: null },
         { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 },
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('opens marketplace participation when there is no first-pick or first-pick declined', () => {

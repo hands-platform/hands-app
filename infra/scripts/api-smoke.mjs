@@ -1846,7 +1846,7 @@ try {
   );
 }
 
-let delayedBackupBooking;
+let legacyDelayedMarketplaceBooking;
 let backupDeclineNotificationObserved = false;
 const backupOpenModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
@@ -1858,10 +1858,10 @@ await patchOperationalPolicyValue(
   'AFTER_FIRST_PICK_DELAY',
 );
 try {
-  delayedBackupBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  legacyDelayedMarketplaceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    address: { line1: 'Delayed marketplace visibility smoke flow' },
+    address: { line1: 'Legacy delayed marketplace compatibility smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
     paymentMethod: 'CASH',
@@ -1871,46 +1871,31 @@ try {
     'matching.marketplace_open_mode',
     'IMMEDIATE_WITHIN_WINDOW',
   );
-  const delayedBackupOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
-  if (delayedBackupOpenBookings.some((item) => item.id === delayedBackupBooking.id)) {
-    throw new Error(
-      `Delayed marketplace booking snapshot should hide request from non-preferred partner even after live policy changes: ${JSON.stringify(
-        delayedBackupOpenBookings,
-      )}`,
-    );
-  }
-  await expectRequestFailure(
-    'Delayed marketplace partner participation',
-    () => postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken),
-    400,
+  const legacyDelayedOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
+  const legacyDelayedRequest = legacyDelayedOpenBookings.find(
+    (item) => item.id === legacyDelayedMarketplaceBooking.id,
   );
-  await postJson(`/provider/bookings/${delayedBackupBooking.id}/reject`, providerAuth.accessToken);
-  const delayedBackupOpenAfterDecline = await getJson(
-    '/provider/bookings/open',
-    backupProviderAuth.accessToken,
-  );
-  const declinedRequest = delayedBackupOpenAfterDecline.find((item) => item.id === delayedBackupBooking.id);
-  if (!declinedRequest) {
+  if (!legacyDelayedRequest) {
     throw new Error(
-      `First-pick decline should immediately expose delayed marketplace request: ${JSON.stringify(
-        delayedBackupOpenAfterDecline,
+      `Legacy delayed marketplace policy should still expose request to non-preferred partner: ${JSON.stringify(
+        legacyDelayedOpenBookings,
       )}`,
     );
   }
-  if (typeof declinedRequest.distanceMeters !== 'number' || declinedRequest.distanceMeters > 10000) {
+  if (typeof legacyDelayedRequest.distanceMeters !== 'number' || legacyDelayedRequest.distanceMeters > 10000) {
     throw new Error(
-      `Declined first-pick marketplace request should keep 10km distance metadata: ${JSON.stringify(
-        declinedRequest,
+      `Legacy delayed marketplace request should keep 10km distance metadata: ${JSON.stringify(
+        legacyDelayedRequest,
       )}`,
     );
   }
-  await postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken);
-  await postJson(`/provider/bookings/${delayedBackupBooking.id}/reject`, backupProviderAuth.accessToken);
+  await postJson(`/provider/bookings/${legacyDelayedMarketplaceBooking.id}/join`, backupProviderAuth.accessToken);
+  await postJson(`/provider/bookings/${legacyDelayedMarketplaceBooking.id}/reject`, backupProviderAuth.accessToken);
   const rejectedMarketplaceSelectionError = await expectRequestFailure(
     'Customer final selection rejects inactive marketplace participant',
     () =>
       postJson(
-        `/customer/bookings/${delayedBackupBooking.id}/select-provider`,
+        `/customer/bookings/${legacyDelayedMarketplaceBooking.id}/select-provider`,
         customerAuth.accessToken,
         { providerId: backupProviderAuth.user.providerProfile.id },
       ),
@@ -1925,7 +1910,7 @@ try {
   backupDeclineNotificationObserved = delayedBackupCustomerNotifications.some(
     (notification) =>
       notification.type === 'provider.rejected' &&
-      notification.data?.bookingId === delayedBackupBooking.id &&
+      notification.data?.bookingId === legacyDelayedMarketplaceBooking.id &&
       notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
   );
   if (!backupDeclineNotificationObserved) {

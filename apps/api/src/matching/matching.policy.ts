@@ -247,7 +247,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'When marketplace partners can participate',
     description:
-      'Choose whether nearby marketplace partners can participate during the first-pick response window, or only after the timer passes. If the first-pick partner declines, marketplace partners open immediately.',
+      'Marketplace partners can participate during the first-pick response window. Legacy delayed values are accepted for compatibility and normalized to immediate participation.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
@@ -258,9 +258,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       },
       {
         value: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
-        label: 'Delay marketplace visibility',
+        label: 'Legacy delayed value',
         tradeoff:
-          'Less partner noise while the first-pick partner is deciding, with immediate recovery if that partner declines.',
+          'Deprecated compatibility value for old policy rows only. HANDS MVP normalizes it to immediate marketplace participation.',
       },
     ],
     enforced: true,
@@ -733,8 +733,11 @@ function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {
 }
 
 function readBackupOpenMode(value: unknown) {
-  if (value === BACKUP_OPEN_IMMEDIATE || value === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
-    return value;
+  if (value === BACKUP_OPEN_IMMEDIATE) {
+    return BACKUP_OPEN_IMMEDIATE;
+  }
+  if (value === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
+    return BACKUP_OPEN_IMMEDIATE;
   }
   return undefined;
 }

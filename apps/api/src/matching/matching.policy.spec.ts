@@ -59,7 +59,7 @@ describe('matching policy', () => {
     expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
   });
 
-  it('allows operations settings while keeping configured bounds', () => {
+  it('normalizes legacy delayed marketplace settings to immediate participation', () => {
     const policy = resolveMatchingPolicy(config(), {
       [MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY]: 15,
       [MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY]: 12000,
@@ -70,10 +70,10 @@ describe('matching policy', () => {
     expect(policy.providerResponseWindowMinutes).toBe(15);
     expect(policy.backupProviderRadiusMeters).toBe(12000);
     expect(policy.backupProviderInvitationLimit).toBe(75);
-    expect(policy.backupOpenMode).toBe(BACKUP_OPEN_AFTER_FIRST_PICK_DELAY);
+    expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
   });
 
-  it('prefers current marketplace policy keys while preserving legacy backup fallback', () => {
+  it('prefers current marketplace policy keys while normalizing legacy delayed values', () => {
     const policy = resolveMatchingPolicy(config(), {
       [MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY]: 9000,
       [MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY]: 12,
@@ -87,7 +87,7 @@ describe('matching policy', () => {
     expect(policy.backupProviderRadiusMeters).toBe(13000);
     expect(policy.backupProviderLocationMaxAgeMinutes).toBe(25);
     expect(policy.backupProviderInvitationLimit).toBe(30);
-    expect(policy.backupOpenMode).toBe(BACKUP_OPEN_AFTER_FIRST_PICK_DELAY);
+    expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
   });
 
   it('falls back when operations settings exceed policy bounds', () => {
@@ -155,6 +155,27 @@ describe('matching policy', () => {
     expect(policy?.backupProviderRadiusMeters).toBe(5000);
     expect(policy?.backupProviderLocationMaxAgeMinutes).toBe(20);
     expect(policy?.backupProviderInvitationLimit).toBe(25);
+    expect(policy?.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
+  });
+
+  it('normalizes delayed marketplace payload snapshots to immediate participation', () => {
+    const policy = resolveMatchingPolicyFromPayload({
+      matchingPolicy: {
+        providerResponseWindowMinutes: 12,
+        marketplaceRadiusMeters: 5000,
+        travelBufferMinutes: 30,
+        marketplaceLocationMaxAgeMinutes: 20,
+        marketplaceInvitationLimit: 25,
+        bookingMaxCustomerCurrentToAddressKm: 20,
+        bookingMaxPreferredProviderDistanceKm: 50,
+        bookingCurrentLocationFreshnessMinutes: 10,
+        bookingDistanceGateEnabled: true,
+        bookingServiceAreaRequired: true,
+        preferredAcceptMode: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+        marketplaceOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+      },
+    });
+
     expect(policy?.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
   });
 

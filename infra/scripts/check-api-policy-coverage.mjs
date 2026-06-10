@@ -95,9 +95,8 @@ const requiredCoverage = [
       'Direct booking should notify eligible marketplace partners',
       'trace.backupProviderRadiusMeters === 10000',
       "preferredAcceptPolicyMatched.status !== 'MATCHED'",
-      'Delayed marketplace booking snapshot should hide request from non-preferred partner',
-      'Delayed marketplace partner participation',
-      'First-pick decline should immediately expose delayed marketplace request',
+      'Legacy delayed marketplace policy should still expose request to non-preferred partner',
+      'Legacy delayed marketplace request should keep 10km distance metadata',
     ],
   },
   {

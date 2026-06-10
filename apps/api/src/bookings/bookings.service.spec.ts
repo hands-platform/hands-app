@@ -14,7 +14,10 @@ import {
 } from '@prisma/client';
 
 import { PROVIDER_WALLET_BLOCK_CODE } from '../provider-wallet/provider-wallet.policy';
-import { DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT } from '../matching/matching.policy';
+import {
+  BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+  DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
+} from '../matching/matching.policy';
 import { BookingsService } from './bookings.service';
 
 describe('BookingsService booking creation', () => {
@@ -227,7 +230,10 @@ describe('BookingsService booking creation', () => {
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      getPolicy: jest.fn().mockResolvedValue({
+        ...matchingPolicy(),
+        backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+      }),
       openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
       registerActiveBooking: jest.fn(),
       scheduleBookingTimeout: jest.fn(),
@@ -288,7 +294,7 @@ describe('BookingsService booking creation', () => {
     );
   });
 
-  it('excludes negative-wallet partners from marketplace invitation alerts while keeping requests visible elsewhere', async () => {
+  it('keeps marketplace invitation alerts open when a legacy delayed policy value is stored', async () => {
     const addressSnapshot = {
       id: 'snapshot-1',
       bookingId: 'booking-1',
@@ -1015,7 +1021,10 @@ describe('BookingsService marketplace participation', () => {
       },
     };
     const matching = {
-      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      getPolicy: jest.fn().mockResolvedValue({
+        ...matchingPolicy(),
+        backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+      }),
       registerParticipant: jest.fn(),
       joinBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
     };

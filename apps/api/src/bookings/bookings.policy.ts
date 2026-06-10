@@ -1,7 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import { BookingStatus, ParticipantStatus, PaymentMethod } from '@prisma/client';
 
-import { BACKUP_OPEN_IMMEDIATE, haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+import {
+  BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+  BACKUP_OPEN_IMMEDIATE,
+  haversineMeters,
+  roundTo100Meters,
+} from '../matching/matching.policy';
 
 export function isCustomerSelectableParticipantForFinalChoice(
   participant: { status: ParticipantStatus; providerProfileId: string },
@@ -36,7 +41,10 @@ export function isMarketplaceParticipationWindowOpen(
     providerResponseWindowMinutes: number;
   },
 ) {
-  if (policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE) {
+  if (
+    policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE ||
+    policy.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
+  ) {
     return true;
   }
   if (!booking.preferredProviderId || firstPickPartnerDeclined(booking)) {
