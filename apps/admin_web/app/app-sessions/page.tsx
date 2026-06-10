@@ -1,7 +1,21 @@
 import Link from 'next/link';
-import { InfoRow } from '../../components/info-row';
-import { AdminAppSession, adminGet } from '../../lib/admin-api';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import type { AdminAppSession } from '../../lib/admin-api';
+import { adminGet } from '../../lib/admin-api';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
+import {
+  AppSessionsBreakdownSection,
+  type AppSessionPlatformRow,
+  type AppSessionRoleRow,
+  type AppSessionVersionRow,
+} from './app-sessions-breakdown-section';
+import {
+  AppSessionsCommandBoardSection,
+  type SessionCommandCard,
+} from './app-sessions-command-board-section';
+import { AppSessionsCheckQueueSection, type SessionCheckQueueItem } from './app-sessions-check-queue-section';
+import { AppSessionsScopeSection, type AppSessionQuickFilter } from './app-sessions-scope-section';
+import { AppSessionsTableSection, type AppSessionTableRow } from './app-sessions-table-section';
 
 type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 type AppSessionsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -10,15 +24,26 @@ type SessionFilters = {
   state: SessionState | null;
   platform: string | null;
 };
-type SessionCommandCard = {
-  title: string;
-  value: string;
-  status: string;
-  detail: string;
-  action: string;
-  tone: 'ops-task-done' | 'ops-task-pending' | 'ops-task-blocked';
+type SessionRoleAccumulator = {
+  expired: number;
+  live: number;
+  recent: number;
+  role: string;
+  stale: number;
+  total: number;
 };
-
+type SessionPlatformAccumulator = {
+  live: number;
+  platform: string;
+  total: number;
+};
+type SessionVersionAccumulator = {
+  customer: number;
+  live: number;
+  partner: number;
+  total: number;
+  version: string;
+};
 const LIVE_WINDOW_MS = 5 * 60_000;
 const RECENT_WINDOW_MS = 30 * 60_000;
 const STALE_WINDOW_MS = 24 * 60 * 60_000;
@@ -37,219 +62,80 @@ export default async function AppSessionsPage({
   const versionRows = buildVersionRows(sessions);
   const checkRows = buildSessionCheckRows(sessions);
   const commandCards = buildSessionCommandCards(sessions, checkRows);
+  const sessionRows = buildAppSessionTableRows(sessions);
   const activeFilterLabel = sessionFilterLabel(filters);
 
   return (
-    <>
-      <section className="toolbar">
-        <div>
-          <h1>App Sessions</h1>
-          <p className="muted">
-            Customer and partner app heartbeat view for live operations, support, and version follow-up.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      actions={
+        <>
           <Link className="text-link" href="/">
             Dashboard
           </Link>
           <Link className="text-link" href="/notifications">
             Notifications
           </Link>
-        </div>
-      </section>
+        </>
+      }
+      description="Customer and Partner app heartbeat view for live operations, support, and version follow-up."
+      metrics={summary.map(([label, value, detail]) => ({ helper: detail, label, value }))}
+      title="App Sessions"
+    >
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Session scope</h2>
-            <p className="muted">
-              {activeFilterLabel}. Showing {sessions.length} of {allSessions.length} heartbeat record(s).
-            </p>
-          </div>
-          <Link className="text-link" href="/app-sessions">
-            Clear filters
-          </Link>
-        </div>
-        <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-start' }}>
-          {sessionQuickFilters.map((item) => (
-            <Link
-              className={`pill ${item.href === sessionFilterHref(filters) ? 'pill-success' : 'pill-info'}`}
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <AppSessionsScopeSection
+        activeFilterHref={sessionFilterHref(filters)}
+        activeFilterLabel={activeFilterLabel}
+        loadedCount={sessions.length}
+        quickFilters={sessionQuickFilters}
+        totalCount={allSessions.length}
+      />
 
-      <section className="grid" style={{ marginBottom: 16 }}>
-        {summary.map(([label, value, detail]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{value}</h2>
-            <span className="muted">{detail}</span>
-          </div>
-        ))}
-      </section>
+      <AppSessionsCommandBoardSection cards={commandCards} checkCount={checkRows.length} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Session command board</h2>
-            <p className="muted">
-              Live demand, partner supply, push reachability, and shared-device checks for the current shift.
-            </p>
-          </div>
-          <span className={`pill ${checkRows.length ? 'pill-warn' : 'pill-success'}`}>
-            {checkRows.length ? `${checkRows.length} check item(s)` : 'Clear'}
-          </span>
-        </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
-          {commandCards.map((card) => (
-            <div className={`ops-task-card ${card.tone}`} key={card.title}>
-              <small>{card.status}</small>
-              <h3>{card.title}</h3>
-              <strong>{card.value}</strong>
-              <p>{card.detail}</p>
-              <span className="ops-task-card-action">{card.action}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      <AppSessionsBreakdownSection
+        platformRows={platformRows}
+        roleRows={roleRows}
+        versionRows={versionRows}
+      />
 
-      <section className="detail-grid" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <h2>Role split</h2>
-          <table className="table">
-            <tbody>
-              {roleRows.map((row) => (
-                <InfoRow
-                  key={row.role}
-                  label={row.role}
-                  value={`${row.live} live / ${row.total} total`}
-                  detail={`${row.recent} recent, ${row.stale} stale, ${row.expired} expired`}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="card">
-          <h2>Platform and version</h2>
-          <table className="table">
-            <tbody>
-              {platformRows.map((row) => (
-                <InfoRow
-                  key={row.platform}
-                  label={row.platform}
-                  value={`${row.total} session(s)`}
-                  detail={`${row.live} live session(s) right now`}
-                />
-              ))}
-              {versionRows.slice(0, 4).map((row) => (
-                <InfoRow
-                  key={`version-${row.version}`}
-                  label={`Version ${row.version}`}
-                  value={`${row.total} session(s)`}
-                  detail={`${row.live} live, ${row.customer} customer, ${row.partner} partner`}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Session check queue</h2>
-            <p className="muted">
-              Check old app versions, stale sessions, missing push readiness, and duplicate device usage.
-            </p>
-          </div>
-          <span className={`pill ${checkRows.length ? 'pill-warn' : 'pill-success'}`}>
-            {checkRows.length ? `${checkRows.length} review` : 'No session check'}
-          </span>
-        </div>
-        {checkRows.length ? (
-          <div className="ops-task-grid" style={{ marginTop: 12 }}>
-            {checkRows.slice(0, 12).map((item) => (
-              <div className={`ops-task-card ${item.tone}`} key={item.key}>
-                <small>{item.status}</small>
-                <h3>{item.title}</h3>
-                <p>{item.detail}</p>
-                <span className="ops-task-card-action">{item.action}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No visible session issue in the latest heartbeat snapshot.</p>
-        )}
-      </section>
+      <AppSessionsCheckQueueSection items={checkRows} />
 
       <section className="card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Latest app sessions</h2>
-            <p className="muted">
-              Sorted by last heartbeat. Live means the session expiry is still in the future.
-            </p>
-          </div>
-          <span className="pill pill-info">{sessions.length} loaded</span>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>State</th>
-              <th>Platform</th>
-              <th>Version</th>
-              <th>Last seen</th>
-              <th>Device</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.slice(0, 80).map((session) => {
-              const state = sessionState(session);
-              const partnerId = session.user?.providerProfile?.id;
-              return (
-                <tr key={session.id}>
-                  <td>
-                    <strong>{sessionUserLabel(session)}</strong>
-                    <div className="muted">{session.user?.phone ?? session.userId}</div>
-                  </td>
-                  <td>{session.role === 'PROVIDER' ? 'PARTNER' : session.role}</td>
-                  <td>
-                    <span className={`pill ${sessionStatePill(state)}`}>{state}</span>
-                  </td>
-                  <td>{session.platform ?? 'unknown'}</td>
-                  <td>{session.appVersion ?? 'unknown'}</td>
-                  <td>
-                    {formatRelativeTime(session.lastSeenAt)}
-                    <div className="muted">{formatDateTime(session.lastSeenAt)}</div>
-                  </td>
-                  <td>
-                    <code>{shortDeviceId(session.deviceId)}</code>
-                    <div className="muted">{session.ipAddress ?? 'no ip'}</div>
-                    {partnerId ? (
-                      <Link className="text-link" href={`/partners/${partnerId}`}>
-                        Open partner
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <AdminSectionHeader
+          description="Sorted by last heartbeat. Live means the session expiry is still in the future."
+          status={<span className="pill pill-info">{sessions.length} loaded</span>}
+          title="Latest app sessions"
+        />
+        <AppSessionsTableSection emptyMessage="No app sessions loaded." rows={sessionRows} />
       </section>
-    </>
+    </AdminPageTemplate>
   );
 }
 
-const sessionQuickFilters = [
+function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSessionTableRow[] {
+  return sessions.slice(0, 80).map((session) => {
+    const state = sessionState(session);
+    const partnerId = session.user?.providerProfile?.id;
+
+    return {
+      appVersionLabel: session.appVersion ?? 'unknown',
+      deviceIdLabel: shortDeviceId(session.deviceId),
+      id: session.id,
+      ipAddressLabel: session.ipAddress ?? 'no ip',
+      lastSeenAtLabel: formatDateTime(session.lastSeenAt),
+      partnerHref: partnerId ? `/partners/${partnerId}` : null,
+      platformLabel: session.platform ?? 'unknown',
+      relativeLastSeenLabel: formatRelativeTime(session.lastSeenAt),
+      roleLabel: session.role === 'PROVIDER' ? 'PARTNER' : session.role,
+      stateLabel: state,
+      statePillClassName: sessionStatePill(state),
+      userLabel: sessionUserLabel(session),
+      userPhoneLabel: session.user?.phone ?? session.userId,
+    };
+  });
+}
+
+const sessionQuickFilters: AppSessionQuickFilter[] = [
   { label: 'All sessions', href: '/app-sessions' },
   { label: 'Live customers', href: '/app-sessions?role=CUSTOMER&state=live' },
   { label: 'Live partners', href: '/app-sessions?role=PROVIDER&state=live' },
@@ -422,11 +308,8 @@ function buildSessionCommandCards(
   ];
 }
 
-function buildRoleRows(sessions: AdminAppSession[]) {
-  const roles = new Map<
-    string,
-    { role: string; total: number; live: number; recent: number; stale: number; expired: number }
-  >();
+function buildRoleRows(sessions: AdminAppSession[]): AppSessionRoleRow[] {
+  const roles = new Map<string, SessionRoleAccumulator>();
   for (const session of sessions) {
     const role = session.role === 'PROVIDER' ? 'PARTNER' : session.role;
     const row = roles.get(role) ?? { role, total: 0, live: 0, recent: 0, stale: 0, expired: 0 };
@@ -437,8 +320,8 @@ function buildRoleRows(sessions: AdminAppSession[]) {
   return [...roles.values()].sort((left, right) => right.total - left.total);
 }
 
-function buildPlatformRows(sessions: AdminAppSession[]) {
-  const rows = new Map<string, { platform: string; total: number; live: number }>();
+function buildPlatformRows(sessions: AdminAppSession[]): AppSessionPlatformRow[] {
+  const rows = new Map<string, SessionPlatformAccumulator>();
   for (const session of sessions) {
     const platform = session.platform ?? 'unknown';
     const row = rows.get(platform) ?? { platform, total: 0, live: 0 };
@@ -451,11 +334,8 @@ function buildPlatformRows(sessions: AdminAppSession[]) {
   );
 }
 
-function buildVersionRows(sessions: AdminAppSession[]) {
-  const rows = new Map<
-    string,
-    { version: string; total: number; live: number; customer: number; partner: number }
-  >();
+function buildVersionRows(sessions: AdminAppSession[]): AppSessionVersionRow[] {
+  const rows = new Map<string, SessionVersionAccumulator>();
   for (const session of sessions) {
     const version = session.appVersion ?? 'unknown';
     const row = rows.get(version) ?? { version, total: 0, live: 0, customer: 0, partner: 0 };
@@ -470,15 +350,8 @@ function buildVersionRows(sessions: AdminAppSession[]) {
   );
 }
 
-function buildSessionCheckRows(sessions: AdminAppSession[]) {
-  const rows: Array<{
-    key: string;
-    status: string;
-    title: string;
-    detail: string;
-    action: string;
-    tone: string;
-  }> = [];
+function buildSessionCheckRows(sessions: AdminAppSession[]): SessionCheckQueueItem[] {
+  const rows: SessionCheckQueueItem[] = [];
   const byDevice = new Map<string, AdminAppSession[]>();
 
   for (const session of sessions) {
