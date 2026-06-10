@@ -66,6 +66,7 @@ import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-hre
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
+import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3592,33 +3593,17 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
 function customerVisibleStateLabel(booking: AdminBooking) {
   const selectableCount = customerSelectableParticipants(booking).length;
   const marketplaceCount = marketplaceParticipants(booking).length;
-
-  if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
-    return `Customer screen: closed as ${booking.status}`;
-  }
-  if (booking.selectedProvider) {
-    return `Customer screen: final partner ${partnerDisplayName(booking.selectedProvider, 'selected')}${
-      booking.chatRoom ? ' with chat ready' : ' but chat not ready'
-    }`;
-  }
-  if (selectableCount > 0) {
-    return `Customer screen: ${selectableCount} participating/accepted partner(s) ready for final choice`;
-  }
-  if (
-    booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
-  ) {
-    return marketplaceCount > 0
-      ? `Customer screen: first-pick wait plus ${marketplaceCount} marketplace option(s)`
-      : 'Customer screen: first-pick waiting only';
-  }
-  if (booking.status === 'OPEN_MATCHING') {
-    return marketplaceCount > 0
-      ? `Customer screen: ${marketplaceCount} partner option(s) waiting`
-      : 'Customer screen: waiting for partners';
-  }
-  return `Customer screen: ${booking.status.toLowerCase().replaceAll('_', ' ')}`;
+  return customerVisibleStateLabelFromFacts({
+    status: booking.status,
+    selectedPartnerLabel: booking.selectedProvider
+      ? partnerDisplayName(booking.selectedProvider, 'selected')
+      : null,
+    hasChatRoom: Boolean(booking.chatRoom),
+    customerSelectablePartnerCount: selectableCount,
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    marketplacePartnerCount: marketplaceCount,
+  });
 }
 
 function bookingBackupAlertTraceLabel(booking: AdminBooking, nowMs: number) {
