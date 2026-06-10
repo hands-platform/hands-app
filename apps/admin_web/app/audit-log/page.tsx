@@ -8,6 +8,7 @@ import {
   formatMoney as money,
   formatRelativeTime,
 } from '../../lib/admin-format';
+import { bookingMatchAuditHighlights } from '../../lib/booking-match-audit';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   AuditLogCommandBoardSection,
@@ -470,6 +471,11 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
 
   if (log.action === 'booking.create.rejected') {
     return bookingGateRejectionHighlights(log);
+  }
+
+  const matchHighlights = bookingMatchAuditHighlights(log);
+  if (matchHighlights.length > 0) {
+    return matchHighlights;
   }
 
   if (!isServicePricingAction(log.action)) {

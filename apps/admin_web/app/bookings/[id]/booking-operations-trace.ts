@@ -1,5 +1,9 @@
 import type { AdminAuditLog, AdminBookingDetail } from '../../../lib/admin-api';
 import { readPlainRecord } from '../../../lib/admin-format';
+import {
+  bookingMatchAuditSource,
+  bookingMatchAuditSummary,
+} from '../../../lib/booking-match-audit';
 import { formatDate, safeTime, shortId } from './booking-formatters';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
@@ -95,24 +99,35 @@ export function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminA
 }
 
 function bookingOperationsTraceRow(log: AdminAuditLog, bookingId: string) {
+  const matchAudit = bookingMatchAuditSource(log);
   const policyKey = auditPolicyKey(log);
   const isPolicy = log.action === 'operational_policy.update';
   const isMoney = log.action.startsWith('payment.') || log.action.startsWith('earning.');
   const isManual = isManualBookingAuditAction(log.action);
   const targetBookingId = auditMetadataBookingId(log);
-  const signal = isPolicy ? 'Policy' : isMoney ? 'Money' : isManual ? 'Manual' : 'Trace';
-  const signalClass = isPolicy || isManual ? 'signal-warn' : isMoney ? 'signal-info' : 'signal-ok';
+  const signal = matchAudit ? 'Match' : isPolicy ? 'Policy' : isMoney ? 'Money' : isManual ? 'Manual' : 'Trace';
+  const signalClass = matchAudit
+    ? 'signal-ok'
+    : isPolicy || isManual
+      ? 'signal-warn'
+      : isMoney
+        ? 'signal-info'
+        : 'signal-ok';
   const actor = log.actor?.fullName ?? log.actor?.phone ?? 'System';
 
   return {
     id: log.id,
     signal,
     signalClass,
-    title: `${humanizeAuditAction(log.action)} / ${actor}`,
-    detail: isPolicy
-      ? `${policyKey ?? 'Operational policy'} changed after booking open; existing matching behavior should still follow the saved booking snapshot when present.`
-      : `${log.target}${targetBookingId && targetBookingId !== bookingId ? ` / booking ${shortId(targetBookingId)}` : ''}`,
-    meta: [formatDate(log.createdAt), auditMetadataSummary(log.metadata)].filter(Boolean).join(' / '),
+    title: `${matchAudit?.label ?? humanizeAuditAction(log.action)} / ${actor}`,
+    detail: matchAudit
+      ? matchAudit.detail
+      : isPolicy
+        ? `${policyKey ?? 'Operational policy'} changed after booking open; existing matching behavior should still follow the saved booking snapshot when present.`
+        : `${log.target}${targetBookingId && targetBookingId !== bookingId ? ` / booking ${shortId(targetBookingId)}` : ''}`,
+    meta: [formatDate(log.createdAt), bookingMatchAuditSummary(log) || auditMetadataSummary(log.metadata)]
+      .filter(Boolean)
+      .join(' / '),
   };
 }
 
@@ -158,6 +173,8 @@ export function auditMetadataSummary(metadata: unknown) {
   if (!data) {
     return '';
   }
+  const matchSource = readOptionalString(data.matchSource);
+  const providerProfileId = readOptionalString(data.providerProfileId);
 
   const highlights = [
     readOptionalString(data.reason) ? `reason: ${readOptionalString(data.reason)}` : null,
@@ -169,6 +186,8 @@ export function auditMetadataSummary(metadata: unknown) {
     readOptionalNumber(data.amount) !== null ? `amount: ${readOptionalNumber(data.amount)?.toLocaleString()}` : null,
     readOptionalString(data.note) ? `note: ${readOptionalString(data.note)}` : null,
     data.paymentReleased !== undefined ? `payment released: ${String(data.paymentReleased)}` : null,
+    matchSource ? `match: ${matchSource}` : null,
+    providerProfileId ? `partner: ${shortId(providerProfileId)}` : null,
   ].filter(Boolean);
 
   return highlights.slice(0, 4).join(' / ');

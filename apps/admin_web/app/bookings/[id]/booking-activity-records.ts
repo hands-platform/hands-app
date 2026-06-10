@@ -2,6 +2,7 @@ import type { AdminBookingDetail, AdminLocationSnapshot, AdminNotification } fro
 import { bookingRecordCreatedAt, bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
+import { bookingMatchAuditDetail, bookingMatchAuditSummary } from '../../../lib/booking-match-audit';
 import {
   addressLabel,
   bookingServiceOptionLabel,
@@ -288,12 +289,18 @@ export function buildBookingActivityRecords({
   }
 
   for (const log of booking.auditLogs ?? []) {
+    const matchSummary = bookingMatchAuditSummary(log);
+    const matchDetail = bookingMatchAuditDetail(log);
+    const auditDetail = matchDetail
+      ? `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${matchSummary} / ${matchDetail}`
+      : `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditMetadataSummary(log.metadata) || log.target}`;
+
     records.push({
       id: log.id,
       type: 'AUDIT',
       at: log.createdAt,
-      title: humanizeAuditAction(log.action),
-      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditMetadataSummary(log.metadata) || log.target}`,
+      title: matchSummary || humanizeAuditAction(log.action),
+      detail: auditDetail,
       href: `/audit-log?q=${encodeURIComponent(booking.id)}`,
     });
   }
