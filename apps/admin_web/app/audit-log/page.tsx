@@ -878,4 +878,3 @@ function opsDetail(action: string) {
   }
   return 'Use this row to confirm who acted, when they acted, and what object changed.';
 }
-
