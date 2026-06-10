@@ -37,6 +37,7 @@ import {
   type BookingListStage,
   type BookingListStageKey,
 } from '../../lib/booking-list-stage';
+import { bookingCheckLevel } from '../../lib/booking-check-level';
 import {
   buildBookingCommandSummaryCards,
   buildBookingOperatorRouteCards,
@@ -1497,7 +1498,7 @@ export function BookingMonitor({
           <tbody>
             {visibleBookings.map((booking) => {
               const flags = bookingCheckFlags(booking, currentTimeMs);
-              const checkSignal = checkLevel(flags);
+              const checkSignal = bookingCheckLevel(flags);
               const servicePriceLabel = bookingServicePriceLabel(booking);
               const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
               const pricingPolicy = bookingPricingPolicySignal(booking);
@@ -3580,19 +3581,6 @@ function bookingFinalGateReason(booking: AdminBooking) {
     bookingId: booking.id,
     reason,
   });
-}
-
-function checkLevel(flags: BookingCheckFlag[]) {
-  if (flags.some((flag) => flag.severity === 'high')) {
-    return { label: 'Action', helper: `${flags.length} check(s)`, tone: 'signal-warn' };
-  }
-  if (flags.some((flag) => flag.severity === 'medium')) {
-    return { label: 'Monitor', helper: `${flags.length} check(s)`, tone: 'signal-info' };
-  }
-  if (flags.some((flag) => flag.severity === 'low')) {
-    return { label: 'Note', helper: `${flags.length} check(s)`, tone: 'signal-info' };
-  }
-  return { label: 'Clear', helper: 'No active checks', tone: 'signal-ok' };
 }
 
 function hasProviderLocation(booking: AdminBooking) {
