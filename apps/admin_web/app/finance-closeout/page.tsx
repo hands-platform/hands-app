@@ -135,4 +135,3 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
     </AdminPageTemplate>
   );
 }
-
