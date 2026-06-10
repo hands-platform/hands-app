@@ -39,4 +39,49 @@ describe('booking customer wait panel', () => {
       detail: 'Chat stays locked until first-pick match or customer final selection is recorded.',
     });
   });
+
+  it('uses API matching evidence to mark chat handoff ready', () => {
+    const panel = bookingCustomerWaitPanel(
+      booking({
+        status: 'MATCHED',
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Pick Partner',
+        },
+        participants: [
+          {
+            id: 'participant-first',
+            status: 'ACCEPTED',
+            providerProfile: {
+              id: 'partner-first',
+              displayName: 'First Pick Partner',
+            },
+          },
+        ],
+        matchingEvidence: {
+          stage: 'MATCHED',
+          firstPickStatus: 'ACCEPTED',
+          finalSelection: 'FIRST_PICK_ACCEPTED',
+          marketplaceParticipantCount: 1,
+          selectableParticipantCount: 0,
+          matchedAt: '2026-06-10T09:00:00.000Z',
+          matchSource: 'FIRST_PICK_ACCEPTED',
+          chatReady: true,
+        },
+        chatRoom: null,
+      }),
+      {
+        eligibleCount: 0,
+        decisionDetail: 'No eligible marketplace partners.',
+      },
+      [],
+    );
+
+    const chatCard = panel.cards.find((card) => card.title === 'Chat handoff');
+
+    expect(chatCard).toMatchObject({
+      status: 'Ready',
+      detail: 'API evidence reports chat is ready, but room details are not loaded in this response.',
+    });
+  });
 });

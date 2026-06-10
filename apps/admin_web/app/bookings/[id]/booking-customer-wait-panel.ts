@@ -1,4 +1,5 @@
 import type { AdminBookingDetail, AdminOperationalPolicySetting } from '../../../lib/admin-api';
+import { bookingChatReady } from './booking-chat-evidence';
 import { formatDate, providerName } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
@@ -59,6 +60,8 @@ export function bookingCustomerWaitPanel(
   const firstPickRejected = firstPickParticipant?.status === 'REJECTED';
   const finalPartner = bookingFinalPartnerSummary(booking);
   const selected = finalPartner.selected;
+  const chatReady = bookingChatReady(booking);
+  const chatMessageCount = booking.chatRoom?.messages?.length ?? 0;
   const selectedPartnerLabel = finalPartner.selected
     ? finalPartner.label
     : providerName(booking.preferredProvider);
@@ -114,12 +117,12 @@ export function bookingCustomerWaitPanel(
     signalTone = 'pill-info';
     headline = 'Preferred partner still has the first response window.';
     detail = `Monitor ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while marketplace supply stays visible to operators.`;
-  } else if (selected && booking.chatRoom) {
+  } else if (selected && chatReady) {
     signalStatus = 'Chat ready';
     signalTone = 'pill-success';
     headline = 'Final partner is selected and chat is ready.';
     detail = 'Monitor location sharing, arrival, service start, completion, and payment closeout.';
-  } else if (selected && !booking.chatRoom) {
+  } else if (selected && !chatReady) {
     signalStatus = 'Chat missing';
     signalTone = 'pill-danger';
     headline = 'Final partner is selected, but chat handoff is missing.';
@@ -181,17 +184,19 @@ export function bookingCustomerWaitPanel(
     },
     {
       title: 'Chat handoff',
-      status: booking.chatRoom ? 'Ready' : selected ? 'Missing' : 'Locked',
-      detail: booking.chatRoom
-        ? `${booking.chatRoom.messages?.length ?? 0} message(s) are visible in the room.`
+      status: chatReady ? 'Ready' : selected ? 'Missing' : 'Locked',
+      detail: chatReady
+        ? booking.chatRoom
+          ? `${chatMessageCount} message(s) are visible in the room.`
+          : 'API evidence reports chat is ready, but room details are not loaded in this response.'
         : selected
           ? 'Final partner is selected, but no chat room is attached.'
           : 'Chat stays locked until first-pick match or customer final selection is recorded.',
-      action: booking.chatRoom
+      action: chatReady
         ? 'Monitor coordination and location sharing.'
         : 'Unlock/repair after final match.',
-      className: booking.chatRoom ? 'ops-task-done' : selected ? 'ops-task-blocked' : 'ops-task-pending',
-      pillClass: booking.chatRoom ? 'pill-success' : selected ? 'pill-danger' : 'pill-info',
+      className: chatReady ? 'ops-task-done' : selected ? 'ops-task-blocked' : 'ops-task-pending',
+      pillClass: chatReady ? 'pill-success' : selected ? 'pill-danger' : 'pill-info',
     },
   ];
 

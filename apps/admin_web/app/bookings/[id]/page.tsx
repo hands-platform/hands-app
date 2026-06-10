@@ -78,6 +78,7 @@ import {
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
+import { bookingChatReady } from './booking-chat-evidence';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
@@ -238,6 +239,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
+  const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
   const participantCounts = bookingParticipantCounts(booking);
   const latestLocation = latestProviderLocation(booking);
@@ -809,7 +811,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       : null,
     participantCount: booking.participants?.length ?? 0,
     customerChoiceCandidates,
-    chatReady: Boolean(booking.chatRoom),
+    chatReady,
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     chatMessageCount: messages.length,
     latestChatMessageAtLabel: messages[messages.length - 1]?.createdAt
@@ -851,7 +853,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     chatNeeded: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
       booking.status,
     ),
-    chatReady: Boolean(booking.chatRoom),
+    chatReady,
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     chatMessageCount: messages.length,
     latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
@@ -1503,7 +1505,7 @@ function bookingEvidencePacket({
 }) {
   const trail = locationTrail(booking);
   return buildBookingEvidencePacket({
-    chatReady: Boolean(booking.chatRoom),
+    chatReady: bookingChatReady(booking),
     messageCount: messages.length,
     latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
     locationTrailCount: trail.length,
@@ -1540,14 +1542,14 @@ function bookingEvidencePacket({
 function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
   return buildBookingChatRepairNeedsOps({
     status: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingChatReady(booking),
   });
 }
 
 function bookingChatRepairActionState(booking: AdminBookingDetail) {
   return buildBookingChatRepairActionState({
     status: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingChatReady(booking),
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     hasSelectedPartner: bookingFinalPartnerSummary(booking).selected,
   });
@@ -1662,7 +1664,7 @@ function bookingCloseoutReadiness({
     booking.status === 'OPEN_MATCHING' ||
     finalPartner.selected ||
     ['CANCELLED', 'EXPIRED'].includes(booking.status);
-  const chatReady = !activeStatus && !terminalStatus ? true : Boolean(booking.chatRoom);
+  const chatReady = !activeStatus && !terminalStatus ? true : bookingChatReady(booking);
   const locationReady = !activeStatus || Boolean(latestLocation);
   const auditReady = (booking.auditLogs?.length ?? 0) > 0 || (booking.opsTasks?.length ?? 0) > 0;
 
