@@ -10,6 +10,10 @@ import {
   type BookingMatchingEscalationLane,
 } from '../../lib/booking-matching-escalation-board';
 import {
+  buildBookingMatchingEscalationRows as buildBookingMatchingEscalationRowsFromFacts,
+  type BookingMatchingEscalationRow,
+} from '../../lib/booking-matching-escalation-rows';
+import {
   buildBookingMatchingFlowTimeline,
   type BookingMatchingFlowStep,
 } from '../../lib/booking-matching-flow-timeline';
@@ -148,15 +152,7 @@ type BookingProtectionLane = {
 };
 
 type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBooking>;
-
-type BookingMatchingEscalationRow = {
-  booking: AdminBooking;
-  title: string;
-  detail: string;
-  operatorAction: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-  tags: string[];
-};
+type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooking>;
 
 type AdminBookingMatchingFlowStep = BookingMatchingFlowStep<AdminBooking>;
 
@@ -2583,113 +2579,24 @@ function stagePillClass(tone: BookingCommandLane['tone']) {
 function buildMatchingEscalationRows(
   bookings: AdminBooking[],
   nowMs: number,
-): BookingMatchingEscalationRow[] {
-  return bookings
-    .map<BookingMatchingEscalationRow | null>((booking) => {
-      if (!bookingMatchingEscalationNeedsOps(booking, nowMs)) {
-        return null;
-      }
-
-      const marketplaceCount = marketplaceParticipants(booking).length;
-      const selectableCount = customerSelectableParticipants(booking).length;
-      const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
-      const baseTags = [
-        booking.status,
-        windowLabel,
-        `${marketplaceCount} marketplace`,
-        `${selectableCount} selectable`,
-      ];
-
-      if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
-        return {
-          booking,
-          title: 'Response window expired',
-          detail: 'The booking is still open after its saved response window.',
-          operatorAction:
-            'Close or extend matching intentionally, then release payment if no final partner can be selected.',
-          tone: 'danger',
-          tags: baseTags,
-        };
-      }
-
-      if (booking.status === 'OPEN_MATCHING' && selectableCount > 0) {
-        return {
-          booking,
-          title: 'Customer fallback partner selection needed',
-          detail: 'One or more Partners are ready after first-pick did not validly win, but the booking has not moved to final match.',
-          operatorAction:
-            'Ask support to prompt the customer to choose a final partner from the waiting list.',
-          tone: 'warn',
-          tags: [...baseTags, selectionPathLabel(booking)],
-        };
-      }
-
-      if (
-        booking.status === 'OPEN_MATCHING' &&
-        booking.preferredProvider &&
-        isPreferredAwaitingDecision(booking) &&
-        marketplaceCount === 0
-      ) {
-        return {
-          booking,
-          title: 'First-pick pending with no marketplace option',
-          detail: 'The preferred partner is still deciding and no marketplace partner participation is recorded.',
-          operatorAction:
-            'Check push delivery and eligible partners within the configured radius before the customer loses patience.',
-          tone: 'warn',
-          tags: [...baseTags, 'customer waiting'],
-        };
-      }
-
-      if (
-        booking.status === 'OPEN_MATCHING' &&
-        booking.preferredProvider &&
-        isPreferredAwaitingDecision(booking) &&
-        marketplaceCount > 0
-      ) {
-        return {
-          booking,
-          title: 'First-pick pending with marketplace ready',
-          detail: 'Marketplace partners are visible while the preferred partner still has first chance.',
-          operatorAction:
-            'Let the timer run or guide the customer to select a marketplace partner when wait time is becoming visible.',
-          tone: 'info',
-          tags: [...baseTags, selectionPathLabel(booking)],
-        };
-      }
-
-      if (booking.status === 'OPEN_MATCHING' && marketplaceCount === 0) {
-        return {
-          booking,
-          title: 'Open request has no partner supply',
-          detail: 'No partner participation is recorded for the request yet.',
-          operatorAction: 'Review location, service price, radius policy, and partner alert delivery.',
-          tone: 'warn',
-          tags: baseTags,
-        };
-      }
-
-      if (booking.status === 'MATCHED' && !booking.chatRoom) {
-        return {
-          booking,
-          title: 'Matched booking missing chat',
-          detail: 'The final partner is selected, but customer and partner cannot coordinate in chat.',
-          operatorAction: 'Repair chat room creation before allowing service progress.',
-          tone: 'danger',
-          tags: [booking.status, selectionLabel(booking), 'chat missing'],
-        };
-      }
-
-      return null;
-    })
-    .filter((item): item is BookingMatchingEscalationRow => Boolean(item))
-    .sort((left, right) => {
-      const toneDelta = commandToneWeight(right.tone) - commandToneWeight(left.tone);
-      if (toneDelta !== 0) {
-        return toneDelta;
-      }
-      return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
-    });
+): readonly AdminBookingMatchingEscalationRow[] {
+  return buildBookingMatchingEscalationRowsFromFacts(
+    bookings.map((booking) => ({
+      booking,
+      hasChatRoom: Boolean(booking.chatRoom),
+      hasPreferredPartner: Boolean(booking.preferredProvider),
+      marketplaceCount: marketplaceParticipants(booking).length,
+      needsOps: bookingMatchingEscalationNeedsOps(booking, nowMs),
+      preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+      responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+      selectableCount: customerSelectableParticipants(booking).length,
+      selectionLabel: selectionLabel(booking),
+      selectionPathLabel: selectionPathLabel(booking),
+      sortTimestamp: bookingTimestamp(booking),
+      status: booking.status,
+      windowLabel: bookingMatchingWindowLabel(booking, nowMs),
+    })),
+  );
 }
 
 function metric(label: string, value: number) {
