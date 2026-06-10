@@ -1,0 +1,37 @@
+import type { AdminProvider } from '../../lib/admin-api';
+import {
+  hasProviderCoordinate,
+  providerLocationAgeLabel,
+  providerLocationLabel,
+  providerLocationPillClass,
+  providerLocationStatus,
+  type ProviderOpsPolicy,
+} from './partner-list-ops';
+
+type PartnerLocationCellProps = {
+  readonly opsPolicy: ProviderOpsPolicy;
+  readonly provider: AdminProvider;
+};
+
+export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCellProps) {
+  const status = providerLocationStatus(provider, opsPolicy);
+  const hasCoordinate = hasProviderCoordinate(provider);
+
+  return (
+    <div>
+      <div className="participant-list" style={{ marginBottom: 8 }}>
+        <span className={`pill ${providerLocationPillClass(status)}`}>{providerLocationLabel(status)}</span>
+      </div>
+      <p className="muted" style={{ marginBottom: 4 }}>
+        {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}
+      </p>
+      {hasCoordinate ? (
+        <p className="muted">
+          {Number(provider.currentLat).toFixed(4)}, {Number(provider.currentLng).toFixed(4)}
+        </p>
+      ) : (
+        <p className="muted">No saved coordinates yet.</p>
+      )}
+    </div>
+  );
+}

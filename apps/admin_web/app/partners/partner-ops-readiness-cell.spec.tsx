@@ -1,0 +1,177 @@
+import type { AdminProvider } from '../../lib/admin-api';
+import { DEFAULT_PROVIDER_OPS_POLICY } from './partner-list-ops';
+import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
+
+describe('PartnerOpsReadinessCell', () => {
+  it('renders next action, readiness badges, issue pills, action hint, eligibility, and open report link', () => {
+    const cell = PartnerOpsReadinessCell({
+      actionHint: 'Partner is ready for direct requests and marketplace matching.',
+      eligibility: {
+        blockers: [
+          { label: 'push missing', severity: 'soft' },
+          { label: 'bank account', severity: 'hard' },
+        ],
+        canParticipateInMarketplace: false,
+        canReceiveMarketplaceAlerts: false,
+        canViewMarketplace: true,
+        detail: 'Marketplace matching needs the listed blockers resolved.',
+        eligible: false,
+        operatorAction: 'Fix blockers before relying on marketplace participation.',
+        partnerAppMessage: null,
+        walletBalance: 0,
+      },
+      hasOpenControl: true,
+      issues: [
+        { label: 'KYC PENDING_REVIEW', severity: 'high' },
+        { label: 'push missing', severity: 'medium' },
+      ],
+      opsBadges: [
+        {
+          detail: 'Partner can receive a preferred direct booking now.',
+          label: 'Direct request ready',
+          tone: 'success',
+        },
+        {
+          detail: 'Marketplace participation needs policy repair.',
+          label: 'Marketplace repair',
+          tone: 'warn',
+        },
+      ],
+      opsPolicy: DEFAULT_PROVIDER_OPS_POLICY,
+      provider: {
+        id: 'partner-ready',
+      } as AdminProvider,
+      nextAction: {
+        detail: 'KYC status is PENDING_REVIEW.',
+        operatorAction: 'Approve or reject KYC with a clear reason.',
+        priority: 90,
+        status: 'KYC',
+        tone: 'blocked',
+      },
+    });
+
+    const rendered = normalizedText(cell);
+
+    expect(rendered).toContain('KYC');
+    expect(rendered).toContain('KYC status is PENDING_REVIEW.');
+    expect(rendered).toContain('Approve or reject KYC with a clear reason.');
+    expect(rendered).toContain('Direct request ready');
+    expect(rendered).toContain('Marketplace repair');
+    expect(rendered).toContain('KYC PENDING_REVIEW');
+    expect(rendered).toContain('push missing');
+    expect(rendered).toContain('Partner is ready for direct requests and marketplace matching.');
+    expect(rendered).toContain('Marketplace participation eligibility');
+    expect(rendered).toContain('Marketplace matching needs the listed blockers resolved.');
+    expect(rendered).toContain('Excluded');
+    expect(rendered).toContain('Radius:');
+    expect(rendered).toContain('First window:');
+    expect(rendered).toContain('Location:');
+    expect(rendered).toContain('Fix blockers before relying on marketplace participation.');
+    expect(rendered).toContain('Open reports');
+    expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partner-controls?q=partner-ready']));
+    expect(classNamesIn(cell)).toEqual(
+      expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'pill pill-success']),
+    );
+  });
+
+  it('renders empty issue state and candidate-ready eligibility', () => {
+    const cell = PartnerOpsReadinessCell({
+      actionHint: 'Partner is ready.',
+      eligibility: {
+        blockers: [],
+        canParticipateInMarketplace: true,
+        canReceiveMarketplaceAlerts: true,
+        canViewMarketplace: true,
+        detail: 'Can receive marketplace alerts.',
+        eligible: true,
+        operatorAction: 'Confirm booking radius before inviting.',
+        partnerAppMessage: null,
+        walletBalance: 0,
+      },
+      hasOpenControl: false,
+      issues: [],
+      opsBadges: [],
+      opsPolicy: DEFAULT_PROVIDER_OPS_POLICY,
+      provider: {
+        id: 'partner-clear',
+      } as AdminProvider,
+      nextAction: {
+        detail: 'No action required.',
+        operatorAction: 'Keep monitoring.',
+        priority: 0,
+        status: 'READY',
+        tone: 'done',
+      },
+    });
+
+    const rendered = normalizedText(cell);
+
+    expect(rendered).toContain('No blocking issues');
+    expect(rendered).toContain('Candidate ready');
+    expect(rendered).not.toContain('Open reports');
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function normalizedText(value: unknown): string {
+  return textContent(value).replace(/\s+/g, ' ').trim();
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
