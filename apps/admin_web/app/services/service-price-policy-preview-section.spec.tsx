@@ -1,0 +1,128 @@
+import type { AdminServiceCatalogItem, AdminServicePayoutRule } from '../../lib/admin-api';
+import type { ServicePricePolicyPreviewRow } from '../../lib/service-price-policy-preview-rows';
+import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
+
+describe('ServicePricePolicyPreviewSection', () => {
+  it('renders policy summary, visible preview rows, and hidden row copy', () => {
+    const section = ServicePricePolicyPreviewSection({
+      hiddenRowCount: 2,
+      rows: [previewRowFixture({ serviceName: 'Foot Massage' }), previewRowFixture({ serviceName: 'Thai Massage' })],
+      summary: {
+        balancedStepCommission: 600000,
+        currency: 'VND',
+        currentCommission: 300000,
+        customerStepCommission: 500000,
+        missingBaseRuleCount: 0,
+        policyCheckCount: 1,
+        providerStepCommission: 200000,
+      },
+      visibleRows: [previewRowFixture({ serviceName: 'Foot Massage' })],
+    });
+
+    const rendered = JSON.stringify(section);
+
+    expect(section.type).toBe('section');
+    expect(rendered).toContain('Price policy change preview');
+    expect(rendered).toContain('Foot Massage');
+    expect(rendered).toContain('policy check(s)');
+    expect(rendered).toContain('pill-warn');
+    expect(rendered).toContain('Showing first');
+  });
+
+  it('renders an empty state when no active service option is available', () => {
+    const section = ServicePricePolicyPreviewSection({
+      hiddenRowCount: 0,
+      rows: [],
+      summary: {
+        balancedStepCommission: 0,
+        currency: 'VND',
+        currentCommission: 0,
+        customerStepCommission: 0,
+        missingBaseRuleCount: 0,
+        policyCheckCount: 0,
+        providerStepCommission: 0,
+      },
+      visibleRows: [],
+    });
+
+    expect(JSON.stringify(section)).toContain('No active service option is available for price policy preview.');
+  });
+});
+
+function previewRowFixture({ serviceName }: { readonly serviceName: string }): ServicePricePolicyPreviewRow {
+  const service = serviceFixture(serviceName);
+  const baseRule = payoutRuleFixture(service.id);
+
+  return {
+    balancedStepScenario: {
+      currency: 'VND',
+      customerPrice: 500000,
+      finance: financeFixture(150000),
+      label: 'Customer and partner + step',
+      providerPayoutAmount: 350000,
+      status: 'Positive',
+      tone: 'pill-success',
+    },
+    baseRule,
+    checkLabel: 'Positive preview',
+    checkTone: 'pill-success',
+    currency: 'VND',
+    currentFinance: financeFixture(100000),
+    customerStepScenario: {
+      currency: 'VND',
+      customerPrice: 500000,
+      finance: financeFixture(200000),
+      label: 'Customer price + step',
+      providerPayoutAmount: 300000,
+      status: 'Positive',
+      tone: 'pill-success',
+    },
+    nextAction: 'These one-step scenarios keep a positive projected company commission.',
+    priceStep: 100000,
+    providerStepScenario: {
+      currency: 'VND',
+      customerPrice: 400000,
+      finance: financeFixture(0),
+      label: 'Partner payout + step',
+      providerPayoutAmount: 400000,
+      status: 'Check margin',
+      tone: 'pill-warn',
+    },
+    service,
+  };
+}
+
+function serviceFixture(name: string): AdminServiceCatalogItem {
+  return {
+    active: true,
+    basePrice: 400000,
+    displayOrder: 0,
+    durationMin: 60,
+    id: `${name}-service`,
+    name,
+    priceStep: 100000,
+  };
+}
+
+function payoutRuleFixture(serviceId: string): AdminServicePayoutRule {
+  return {
+    active: true,
+    currency: 'VND',
+    customerPrice: 400000,
+    id: `${serviceId}-rule`,
+    otherCostAmount: 0,
+    providerPayoutAmount: 300000,
+    serviceId,
+    vatBps: 0,
+  };
+}
+
+function financeFixture(actualCompanyCommission: number) {
+  return {
+    actualCompanyCommission,
+    fee: actualCompanyCommission,
+    taxRuleLabel: null,
+    vatAmount: 0,
+    withholdingAmount: 0,
+  };
+}

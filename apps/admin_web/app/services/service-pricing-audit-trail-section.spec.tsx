@@ -1,0 +1,57 @@
+import type { ServicePricingAuditRow } from '../../lib/service-pricing-audit-rows';
+import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
+
+describe('ServicePricingAuditTrailSection', () => {
+  it('renders audit rows with humanized action, changed fields, and pricing labels', () => {
+    const section = ServicePricingAuditTrailSection({
+      rows: [
+        pricingAuditRowFixture({
+          action: 'service_payout_rule.created',
+          changedFields: ['customerPrice', 'providerPayoutAmount'],
+          id: 'audit-1',
+          serviceLabel: 'Foot Massage / 90 min',
+        }),
+      ],
+    });
+
+    const rendered = JSON.stringify(section);
+
+    expect(section.type).toBe('section');
+    expect(rendered).toContain('Recent pricing audit trail');
+    expect(rendered).toContain('Service payout rule / Created');
+    expect(rendered).toContain('customerPrice');
+    expect(rendered).toContain('providerPayoutAmount');
+    expect(rendered).toContain('Foot Massage / 90 min');
+  });
+
+  it('renders an empty state when there are no recent service pricing audit events', () => {
+    const section = ServicePricingAuditTrailSection({ rows: [] });
+
+    expect(JSON.stringify(section)).toContain('No recent service pricing audit event has been recorded yet.');
+  });
+});
+
+function pricingAuditRowFixture({
+  action,
+  changedFields,
+  id,
+  serviceLabel,
+}: {
+  readonly action: string;
+  readonly changedFields: readonly string[];
+  readonly id: string;
+  readonly serviceLabel: string;
+}): ServicePricingAuditRow {
+  return {
+    action,
+    actorName: 'Ops Lead',
+    changedFields,
+    createdAt: '2026-06-09T10:00:00.000Z',
+    id,
+    payoutLabel: 'Partner 350.000 VND',
+    priceLabel: 'Customer 500.000 VND',
+    serviceLabel,
+    target: 'service_payout_rule:abcdef1234567890',
+    targetShort: 'service_payout_rule:abcdef12',
+  };
+}
