@@ -101,6 +101,25 @@ describe('bookingEvidenceBundleRows', () => {
     });
   });
 
+  it('describes chat opening after first-pick match or customer final selection before chat is required', () => {
+    const rows = bookingEvidenceBundleRows({
+      ...baseInput,
+      chatReady: false,
+      chatRoomShortId: null,
+      chatMessageCount: 0,
+      latestChatMessageAtLabel: null,
+      chatRepairNeeded: false,
+    });
+
+    expect(rows[3]).toMatchObject({
+      lane: 'Chat',
+      recordLabel: 'No room',
+      status: 'Missing',
+      evidence: 'Chat opens after first-pick match or customer final selection.',
+      href: '#chat',
+    });
+  });
+
   it('surfaces failed alert and empty operator trail facts without judging people', () => {
     const rows = bookingEvidenceBundleRows({
       ...baseInput,

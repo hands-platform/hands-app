@@ -98,7 +98,7 @@ export function bookingEvidenceBundleRows(
           }`
         : input.chatRepairNeeded
           ? 'Matched booking should have a retained chat archive.'
-          : 'Chat opens after customer final partner selection.',
+          : 'Chat opens after first-pick match or customer final selection.',
       operatorUse: 'Use the transcript for service handoff, cancellation, no-show, and refund context.',
       href: input.chatReady ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}` : '#chat',
     },

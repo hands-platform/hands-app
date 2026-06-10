@@ -3392,7 +3392,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
         ? 'Customer and partner apps may hide completed or closed chats, but admin keeps the archive.'
         : booking.chatRoom
           ? 'Room should remain visible until the service is completed or closed.'
-          : 'Chat opens after customer final partner selection.',
+          : 'Chat opens after first-pick match or customer final selection.',
       adminRetention: booking.chatRoom
         ? 'Admin archive retained'
         : requiresRoom

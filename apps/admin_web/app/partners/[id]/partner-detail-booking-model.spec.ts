@@ -111,6 +111,26 @@ describe('partner detail booking model', () => {
       ['Hidden in mobile', '1'],
     ]);
   });
+
+  it('describes chat opening after first-pick match or customer final selection before match', () => {
+    const rows = buildPartnerChatRetentionRows([
+      {
+        booking: booking({
+          createdAt: '2026-06-10T07:00:00.000Z',
+          id: 'booking-open',
+          status: 'OPEN_MATCHING',
+        }),
+        lastMessage: null,
+        relation: 'Preferred',
+      },
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      mobileVisibility: 'Not visible yet',
+      mobileVisibilityDetail: 'Chat opens after first-pick match or customer final selection.',
+      roomStatus: 'No room required yet',
+    });
+  });
 });
 
 function booking(input: {
