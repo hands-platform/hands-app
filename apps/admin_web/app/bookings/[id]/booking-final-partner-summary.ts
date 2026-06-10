@@ -19,9 +19,13 @@ export function bookingFinalPartnerSummary(booking: AdminBookingDetail): Booking
         (participant) => bookingParticipantProviderId(participant) === selectedPartnerId,
       )
     : null;
+  const firstPickAcceptedPartner =
+    booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED'
+      ? booking.preferredProvider
+      : null;
   const selectedProfile = booking.selectedProvider?.displayName
     ? booking.selectedProvider
-    : selectedParticipant?.providerProfile ?? booking.selectedProvider ?? null;
+    : selectedParticipant?.providerProfile ?? booking.selectedProvider ?? firstPickAcceptedPartner ?? null;
   const id = selectedPartnerId ?? selectedProfile?.id ?? null;
   const label = selectedProfile
     ? providerName(selectedProfile)

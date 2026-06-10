@@ -99,4 +99,32 @@ describe('booking final partner summary', () => {
       selected: false,
     });
   });
+
+  it('uses first-pick accepted matching evidence as the final Partner connection', () => {
+    const summary = bookingFinalPartnerSummary(
+      booking({
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Pick Partner',
+        },
+        matchingEvidence: {
+          stage: 'MATCHED',
+          finalSelection: 'FIRST_PICK_ACCEPTED',
+          firstPickStatus: 'SELECTED',
+          marketplaceParticipantCount: 0,
+          selectableParticipantCount: 0,
+          matchedAt: '2026-06-10T10:00:00.000Z',
+          matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
+          chatReady: true,
+        },
+      }),
+    );
+
+    expect(summary).toMatchObject({
+      id: 'partner-first',
+      label: 'First Pick Partner',
+      href: '/partners/partner-first',
+      selected: true,
+    });
+  });
 });
