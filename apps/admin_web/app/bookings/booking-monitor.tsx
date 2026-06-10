@@ -18,6 +18,12 @@ import {
   type BookingMatchingFlowStep,
 } from '../../lib/booking-matching-flow-timeline';
 import {
+  buildBookingMatchingRuleSnapshot,
+  matchingPolicySummaryLabel,
+  type BookingMatchingPolicySnapshot,
+  type BookingMatchingRuleSnapshot,
+} from '../../lib/booking-matching-rule-snapshot';
+import {
   bookingEventTimestamp,
   bookingListSortTimestamp,
   bookingRequestOpenedAt,
@@ -156,16 +162,6 @@ type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooki
 
 type AdminBookingMatchingFlowStep = BookingMatchingFlowStep<AdminBooking>;
 
-type BookingMatchingPolicySnapshot = {
-  providerResponseWindowMinutes: number | null;
-  backupProviderRadiusMeters: number | null;
-  backupProviderLocationMaxAgeMinutes: number | null;
-  backupProviderInvitationLimit: number | null;
-  preferredAcceptMode: string | null;
-  backupOpenMode: string | null;
-  travelBufferMinutes: number | null;
-};
-
 type BookingDispatchPartnerShortcut = {
   title: string;
   value: string;
@@ -197,16 +193,6 @@ type BookingListActionChip = {
   detail: string;
   tone: string;
   href: string;
-};
-
-type BookingMatchingRuleSnapshot = {
-  sourceLabel: string;
-  sourceTone: string;
-  windowLabel: string;
-  radiusLabel: string;
-  supplyLabel: string;
-  customerChoiceLabel: string;
-  operatorAction: string;
 };
 
 type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
@@ -3897,98 +3883,23 @@ function bookingServicePayoutRuleLabel(booking: AdminBooking) {
   return `Payout ${money(providerPayout, payoutRule.currency ?? currency)} / fee ${money(platformFee, payoutRule.currency ?? currency)}`;
 }
 
-function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | null) {
-  if (!snapshot) {
-    return 'Matching policy: live policy default';
-  }
-  const timer = snapshot.providerResponseWindowMinutes
-    ? `${snapshot.providerResponseWindowMinutes}m`
-    : 'timer ?';
-  const radius = snapshot.backupProviderRadiusMeters
-    ? `${(snapshot.backupProviderRadiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`
-    : 'radius ?';
-  const freshness = snapshot.backupProviderLocationMaxAgeMinutes
-    ? `${snapshot.backupProviderLocationMaxAgeMinutes}m fresh`
-    : 'freshness ?';
-  const inviteLimit = snapshot.backupProviderInvitationLimit
-    ? `${snapshot.backupProviderInvitationLimit} invite cap`
-    : 'invite cap ?';
-  const backupMode =
-    snapshot.backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-      ? 'marketplace immediate'
-      : snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_WINDOW_END'
-        ? 'marketplace delayed'
-        : 'marketplace ?';
-  const acceptMode =
-    snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
-      ? 'customer final'
-      : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
-        ? 'historical auto ignored'
-        : 'accept ?';
-  return `Saved policy: ${timer} / ${radius} / ${freshness} / ${inviteLimit} / ${backupMode} / ${acceptMode}`;
-}
-
 function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
   const policy = bookingMatchingPolicySnapshot(booking);
   const marketplaceCount = marketplaceParticipants(booking).length;
   const selectableCount = customerSelectableParticipants(booking).length;
-  const responseWindow = policy?.providerResponseWindowMinutes ?? 10;
-  const marketplaceRadius = policy?.backupProviderRadiusMeters ?? 10_000;
   const alertSummary = bookingBackupAlertTraceSummary(booking, nowMs);
-  const windowState =
-    booking.status === 'OPEN_MATCHING'
-      ? bookingMatchingWindowLabel(booking, nowMs)
-      : terminalBookingStatuses.has(booking.status)
-        ? 'closed'
-        : booking.selectedProvider
-          ? 'final partner selected'
-          : 'not in open matching';
-  const customerChoice = booking.selectedProvider
-    ? `Customer final choice: ${partnerDisplayName(booking.selectedProvider)}`
-    : selectableCount > 0
-    ? `Customer final choice: waiting, ${selectableCount} selectable partner(s)`
-      : 'Customer final choice: not ready yet';
 
-  return {
-    sourceLabel: policy ? 'Saved matching snapshot' : 'Default MVP rule',
-    sourceTone: policy ? 'pill-info' : 'pill-warn',
-    windowLabel: `First-pick window: ${responseWindow}m / ${windowState}`,
-    radiusLabel: `Marketplace radius: ${formatMeters(marketplaceRadius)} from booking address`,
-    supplyLabel: `Marketplace supply: ${marketplaceCount} participants / ${selectableCount} selectable / ${alertSummary.totalNotified} notified`,
-    customerChoiceLabel: `${customerChoice}; no automatic assignment`,
-    operatorAction: bookingMatchingRuleOperatorAction(
-      booking,
-      marketplaceCount,
-      selectableCount,
-      alertSummary.totalNotified,
-    ),
-  };
-}
-
-function bookingMatchingRuleOperatorAction(
-  booking: AdminBooking,
-  marketplaceCount: number,
-  selectableCount: number,
-  notifiedCount: number,
-) {
-  if (booking.selectedProvider) {
-    return booking.chatRoom
-      ? 'Chat is ready. Continue service handoff and closeout from booking detail.'
-      : 'Final partner exists. Repair or create chat before service movement continues.';
-  }
-  if (booking.status !== 'OPEN_MATCHING') {
-    return 'Open booking detail and continue from the latest factual status.';
-  }
-  if (selectableCount > 0) {
-    return 'Customer fallback selection is needed because first-pick did not validly win; do not auto-assign.';
-  }
-  if (marketplaceCount > 0) {
-    return 'Marketplace partners are visible. Monitor customer choice list and partner response evidence.';
-  }
-  if (notifiedCount > 0) {
-    return 'Push invitations were sent. Watch for partner participation before the first-pick window closes.';
-  }
-  return 'No marketplace supply is visible yet. Check partner radius, location freshness, and notification trace.';
+  return buildBookingMatchingRuleSnapshot({
+    hasChatRoom: Boolean(booking.chatRoom),
+    isTerminalStatus: terminalBookingStatuses.has(booking.status),
+    marketplaceCount,
+    openMatchingWindowLabel: bookingMatchingWindowLabel(booking, nowMs),
+    policy,
+    selectableCount,
+    selectedPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
+    status: booking.status,
+    totalNotified: alertSummary.totalNotified,
+  });
 }
 
 function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
