@@ -30,6 +30,38 @@ Treat the primary Codex thread as the main orchestrator agent.
 - Prefer parallel read-only investigation for large Admin, API, docs, and infra surfaces; avoid parallel write work unless the ownership boundaries are clearly separate and low risk.
 - The main agent must keep the final report consolidated: changed files, verification, protected areas, risks, commits, and next recommended task.
 
+## Continuous Review Lanes
+
+Use proactive read-only subagents to keep the main agent fast and well informed during larger work.
+
+- Static Analysis lane: inspect TypeScript, NestJS, Prisma, Flutter, scripts, and test patterns for compile, lint, import, dead-code, and contract-risk signals before edits are made.
+- Code Review lane: review the intended or current diff for bugs, missing tests, unclear ownership boundaries, unsafe copy changes, and behavior drift.
+- Architecture Review lane: map module boundaries, protected authority areas, API/client separation, and places where UI may be taking business decisions that belong to the NestJS API.
+- Design Review lane: inspect Admin Web screens for layout consistency, table/filter/action usability, responsive risks, and user-facing copy that should say Partner.
+- Technical Debt lane: find oversized files, duplicated helpers, stale mocks, brittle fixtures, missing page-model splits, and high-churn areas that slow future Admin/API work.
+- Refactoring lane: propose small, behavior-preserving extractions inside the current target area only; do not propose broad rewrites while business behavior is changing.
+- Profiling and Performance lane: inspect slow tests, large pages, heavy client bundles, excessive server fetches, N+1-looking API calls, Docker/service startup bottlenecks, and candidates for focused load or smoke checks.
+
+Subagent outputs should be concise and actionable:
+
+- scope inspected
+- top findings by severity
+- files likely worth changing
+- verification commands recommended
+- risks or stop conditions
+
+The main agent decides what to implement now versus backlog. Subagent findings are advisory until the main agent verifies them.
+
+## Performance and Load Work
+
+Use performance work deliberately instead of guessing.
+
+- Prefer static performance audits before adding instrumentation.
+- Run focused profiling or load tests only when a route, API endpoint, Docker service, or user workflow has a concrete performance question.
+- Do not run broad load tests against external services or production-like targets without explicit approval.
+- For local API/Admin performance checks, prefer lightweight smoke, endpoint timing, bundle/build warnings, and targeted scripts before full WithServices runs.
+- If a performance fix touches DB schema, Prisma migrations, payments, wallet, settlement, matching, realtime, or shared contracts, treat it as protected sequential work.
+
 ## Workflow Model
 
 Use Split Workflow with limited write parallelism.
