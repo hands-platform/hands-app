@@ -1,4 +1,8 @@
-import { bookingFinalGateReason, type BookingFinalGateReasonInput } from './booking-final-gate-reason';
+import {
+  bookingFinalGateReason,
+  bookingFinalGateReasonPresentation,
+  type BookingFinalGateReasonInput,
+} from './booking-final-gate-reason';
 
 const baseInput: BookingFinalGateReasonInput = {
   cashDebt: false,
@@ -102,6 +106,35 @@ describe('bookingFinalGateReason', () => {
       title: 'Final partner locked',
       className: 'ops-task-done',
       pillClass: 'pill-success',
+    });
+  });
+
+  it('builds admin presentation links from final gate titles', () => {
+    expect(
+      bookingFinalGateReasonPresentation({
+        bookingId: 'booking-1',
+        reason: bookingFinalGateReason({ ...baseInput, cashDebt: true }),
+      }),
+    ).toMatchObject({
+      label: 'Wallet debt gate',
+      href: '/cash-settlements',
+      tone: 'pill-danger',
+    });
+
+    expect(
+      bookingFinalGateReasonPresentation({
+        bookingId: 'booking-2',
+        reason: bookingFinalGateReason({
+          ...baseInput,
+          bookingStatus: 'MATCHED',
+          selected: true,
+          hasChatRoom: true,
+        }),
+      }),
+    ).toMatchObject({
+      label: 'Final partner locked',
+      href: '/bookings/booking-2',
+      tone: 'pill-success',
     });
   });
 });

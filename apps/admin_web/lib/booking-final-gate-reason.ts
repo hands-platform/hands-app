@@ -19,6 +19,13 @@ export type BookingFinalGateReason = {
   pillClass: 'pill-success' | 'pill-warn' | 'pill-danger';
 };
 
+export type BookingFinalGateReasonPresentation = {
+  readonly detail: string;
+  readonly href: string;
+  readonly label: string;
+  readonly tone: BookingFinalGateReason['pillClass'];
+};
+
 export function bookingFinalGateReason(input: BookingFinalGateReasonInput): BookingFinalGateReason {
   if (input.cashDebt) {
     return {
@@ -109,4 +116,41 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     className: 'ops-task-done',
     pillClass: 'pill-success',
   };
+}
+
+export function bookingFinalGateReasonPresentation({
+  bookingId,
+  reason,
+}: {
+  readonly bookingId: string;
+  readonly reason: BookingFinalGateReason;
+}): BookingFinalGateReasonPresentation {
+  return {
+    detail: reason.detail,
+    href: bookingFinalGateReasonHref(reason.title, bookingId),
+    label: reason.title,
+    tone: reason.pillClass,
+  };
+}
+
+function bookingFinalGateReasonHref(title: string, bookingId: string) {
+  if (title === 'Wallet debt gate') {
+    return '/cash-settlements';
+  }
+  if (title === 'Address snapshot gate') {
+    return '/bookings?view=address';
+  }
+  if (title === 'First-pick window') {
+    return '/bookings?view=first-pick';
+  }
+  if (title === 'Customer final choice') {
+    return '/bookings?view=customer-choice';
+  }
+  if (title === 'Partner supply wait') {
+    return '/bookings?view=no-supply';
+  }
+  if (title === 'Chat handoff gate') {
+    return '/bookings?view=chat-repair';
+  }
+  return `/bookings/${bookingId}`;
 }

@@ -93,6 +93,7 @@ import {
   bookingPaymentNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
+import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
 import {
   bookingCustomerSelectableParticipantsForBooking as buildBookingCustomerSelectableParticipants,
   bookingHasCustomerSelectablePartnerForBooking as hasBookingCustomerSelectablePartner,
@@ -3575,34 +3576,10 @@ function bookingFinalGateReason(booking: AdminBooking) {
     selected: Boolean(booking.selectedProvider),
     hasChatRoom: Boolean(booking.chatRoom),
   });
-  return {
-    label: reason.title,
-    detail: reason.detail,
-    tone: reason.pillClass,
-    href: bookingFinalGateReasonHref(reason.title, booking),
-  };
-}
-
-function bookingFinalGateReasonHref(title: string, booking: AdminBooking) {
-  if (title === 'Wallet debt gate') {
-    return '/cash-settlements';
-  }
-  if (title === 'Address snapshot gate') {
-    return '/bookings?view=address';
-  }
-  if (title === 'First-pick window') {
-    return '/bookings?view=first-pick';
-  }
-  if (title === 'Customer final choice') {
-    return '/bookings?view=customer-choice';
-  }
-  if (title === 'Partner supply wait') {
-    return '/bookings?view=no-supply';
-  }
-  if (title === 'Chat handoff gate') {
-    return '/bookings?view=chat-repair';
-  }
-  return `/bookings/${booking.id}`;
+  return bookingFinalGateReasonPresentation({
+    bookingId: booking.id,
+    reason,
+  });
 }
 
 function checkLevel(flags: BookingCheckFlag[]) {
