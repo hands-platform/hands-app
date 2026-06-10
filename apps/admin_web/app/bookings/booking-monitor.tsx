@@ -61,6 +61,7 @@ import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
+import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3569,60 +3570,17 @@ function hasProviderLocation(booking: AdminBooking) {
 }
 
 function nextAction(booking: AdminBooking) {
-  const participantCount = marketplaceParticipants(booking).length;
-  if (booking.status === 'NO_SHOW') {
-    return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
-      ? 'No-show is marked. Decide payment release, refund, or fee handling before closing.'
-      : 'No-show is marked and payment outcome is already closed. Confirm customer and partner notes.';
-  }
-  if (booking.status === 'EXPIRED') {
-    return booking.payment?.status === 'RELEASED'
-      ? 'Matching expired and the payment hold is released. Confirm customer communication.'
-      : 'Matching expired. Release or refund the linked payment before closing.';
-  }
-  if (booking.status === 'CANCELLED') {
-    return booking.payment?.status === 'RELEASED'
-      ? 'Customer cancelled before completion. Payment hold is released; confirm notifications were delivered.'
-      : 'Customer cancelled. Review the linked payment and release or refund before closing the case.';
-  }
-  if (booking.status === 'REFUNDED') {
-    return 'Refund is recorded. Check the refund board and customer communication.';
-  }
-  if (bookingCashDebtNeedsOps(booking)) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.';
-  }
-  if (
-    booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
-  ) {
-    return 'Wait for the first-pick partner, but monitor marketplace partner supply.';
-  }
-  if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return 'Check notifications and nearby partner supply.';
-  }
-  if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return 'Customer can keep waiting or switch to a marketplace partner.';
-  }
-  if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return 'Customer switched away from the first-pick partner. Confirm chat, route, and partner handoff.';
-  }
-  if (booking.status === 'MATCHED') {
-    return 'Customer selection is locked. Check chat creation, route tracking, and partner departure.';
-  }
-  if (booking.status === 'PROVIDER_ON_THE_WAY') {
-    return 'Monitor live location and arrival progress.';
-  }
-  if (booking.status === 'IN_SERVICE') {
-    return 'Track completion and payment capture.';
-  }
-  if (bookingCompletedCloseoutNeedsOps(booking)) {
-    return 'Completed service needs closeout reconciliation for payment, earning, tax, and wallet records.';
-  }
-  if (booking.status === 'COMPLETED') {
-    return 'Review payment, customer feedback, and closeout records.';
-  }
-  return 'Normal operating state.';
+  return bookingNextActionCopy({
+    status: booking.status,
+    hasPayment: Boolean(booking.payment),
+    paymentStatus: booking.payment?.status ?? null,
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    marketplaceParticipantCount: marketplaceParticipants(booking).length,
+    backupSelected: isBackupSelected(booking),
+    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+  });
 }
 
 function bookingServiceOptionLabel(booking: AdminBooking) {
