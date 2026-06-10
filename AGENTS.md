@@ -52,6 +52,28 @@ Subagent outputs should be concise and actionable:
 
 The main agent decides what to implement now versus backlog. Subagent findings are advisory until the main agent verifies them.
 
+## Persistent Subagent Work Queues
+
+Prefer stable work queues over one-off subagent role invention. The main agent should reuse these queue names and responsibilities across turns, refreshing the queue only when its findings become stale or the target area changes.
+
+- Admin Evidence Queue: keep mapping where Admin Web still derives booking, matching, payment, wallet, chat, closeout, and Partner evidence locally instead of reading API-provided facts.
+- Admin UI Velocity Queue: keep finding small Admin-only page-model, table, filter, action, and component slices that reduce large page files without changing behavior.
+- API Contract Queue: keep tracking Admin API response shapes, DTO gaps, shared enum/status use, Socket.IO event names, and places where the API should expose read-only evidence instead of making clients infer it.
+- API/DB Readiness Queue: keep mapping Prisma models, seed/smoke needs, migrations, DB-backed evidence gaps, and service-readiness checks. Treat schema/migration changes as protected sequential work.
+- Authority Boundary Queue: keep auditing matching, booking, payment, wallet, settlement, refund, verification, and final Partner connection authority so business decisions stay in NestJS API.
+- QA and Smoke Queue: keep recommending focused specs, smoke scenarios, and minimal verification commands for the current slice. Prefer scope checks over full local verification until merge readiness.
+- Performance Queue: keep watching slow tests, large Admin pages, repeated fetches, Docker/local-service startup cost, API query size, and candidates for targeted profiling.
+- Technical Debt Queue: keep a backlog of duplicated helpers, stale mock data, missing tests, oversized files, and safe refactor candidates grouped by owner area.
+
+Queue operating rules:
+
+- Subagents remain read-only unless the user explicitly approves separate write ownership.
+- The main agent owns the editable backlog and chooses the next commit-sized slice.
+- Queue findings should include `Now`, `Next`, and `Later` buckets so the main agent can move without re-triaging the same area.
+- If a queue finds protected API, DB, Docker, mobile, payment, wallet, matching, or settlement impact, it must label the finding as protected and recommend verification before any edit.
+- When a queue has already produced useful findings, continue from that queue's last report instead of spawning a new role with a new name.
+- Keep active queue count small for normal work: usually one implementation queue plus one review/QA queue. Use more only for broad inspection or pre-merge review.
+
 ## Performance and Load Work
 
 Use performance work deliberately instead of guessing.
