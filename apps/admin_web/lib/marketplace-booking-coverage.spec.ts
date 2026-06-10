@@ -1,7 +1,39 @@
 import {
+  buildMarketplaceBookingCoverageRows,
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
 } from './marketplace-booking-coverage';
+
+type TestBooking = {
+  readonly id: string;
+};
+
+function coverageInput(
+  id: string,
+  overrides: Partial<Parameters<typeof buildMarketplaceBookingCoverageRows<TestBooking>>[0][number]> = {},
+): Parameters<typeof buildMarketplaceBookingCoverageRows<TestBooking>>[0][number] {
+  return {
+    booking: { id },
+    chatRepairNeeded: false,
+    firstPickLabel: 'Open marketplace',
+    firstPickTone: 'pill-neutral',
+    marketplaceParticipantCount: 0,
+    nextActionLabel: 'Monitor',
+    nextActionTone: 'pill-info',
+    participantCount: 0,
+    selectableCount: 0,
+    selectedPartnerLabel: null,
+    sortTimestamp: 100,
+    status: 'OPEN_MATCHING',
+    traceBatchCount: 0,
+    traceLastAge: null,
+    traceLastStage: null,
+    traceTotalNotified: 0,
+    walletLabel: 'Wallet clear',
+    walletTone: 'pill-success',
+    ...overrides,
+  };
+}
 
 describe('marketplace booking coverage summary', () => {
   it('counts participant history, customer choice, final selection, and chat repair lanes', () => {
@@ -52,5 +84,46 @@ describe('marketplace booking coverage summary', () => {
       { label: 'Waiting customer choice 0', tone: 'pill-neutral' },
       { label: 'Chat handoff repair 1', tone: 'pill-danger' },
     ]);
+  });
+
+  it('builds prioritized coverage rows from booking facts', () => {
+    const rows = buildMarketplaceBookingCoverageRows([
+      coverageInput('monitor', { sortTimestamp: 500 }),
+      coverageInput('choice', {
+        nextActionLabel: 'Customer final choice',
+        nextActionTone: 'pill-warn',
+        selectableCount: 2,
+        traceBatchCount: 1,
+        traceTotalNotified: 3,
+      }),
+      coverageInput('chat', {
+        chatRepairNeeded: true,
+        nextActionLabel: 'Repair chat handoff',
+        nextActionTone: 'pill-danger',
+        selectedPartnerLabel: 'Partner Linh',
+        sortTimestamp: 10,
+      }),
+    ]);
+
+    expect(rows.map((row) => [row.booking.id, row.selectedPartnerLabel, row.selectedPartnerTone])).toEqual([
+      ['chat', 'Partner Linh', 'pill-success'],
+      ['choice', 'Awaiting customer choice', 'pill-warn'],
+      ['monitor', 'No final partner', 'pill-neutral'],
+    ]);
+    expect(rows[1]).toMatchObject({
+      alertLabel: '3 notified',
+      alertTone: 'pill-success',
+      selectedPartnerPresent: false,
+    });
+  });
+
+  it('marks open matching rows without alert batches as dangerous', () => {
+    const rows = buildMarketplaceBookingCoverageRows([coverageInput('missing-alert')]);
+
+    expect(rows[0]).toMatchObject({
+      alertDetail: 'Marketplace notification trace is not saved for this booking.',
+      alertLabel: 'No alert batch',
+      alertTone: 'pill-danger',
+    });
   });
 });

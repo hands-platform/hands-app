@@ -59,8 +59,11 @@ import {
 } from '../../lib/booking-chat-repair-action-state';
 import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
 import {
+  buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
+  type MarketplaceBookingCoverageRow,
+  type MarketplaceBookingCoverageTone,
 } from '../../lib/marketplace-booking-coverage';
 import {
   buildMarketplaceOperationsCards as buildMarketplaceOperationsCardItems,
@@ -226,24 +229,11 @@ type MarketplaceParticipantLedgerRow = {
   walletTone: string;
 };
 
-type MarketplaceBookingCoverageRow = {
-  booking: AdminBooking;
-  firstPickLabel: string;
-  firstPickTone: string;
-  participantCount: number;
-  marketplaceParticipantCount: number;
-  selectableCount: number;
-  selectedPartnerLabel: string;
-  selectedPartnerTone: string;
-  alertLabel: string;
-  alertTone: string;
-  alertDetail: string;
-  walletLabel: string;
-  walletTone: string;
-  selectedPartnerPresent: boolean;
-  chatRepairNeeded: boolean;
-  nextAction: string;
-  nextActionTone: string;
+type AdminMarketplaceBookingCoverageRow = MarketplaceBookingCoverageRow<AdminBooking>;
+
+type MarketplaceCoveragePillState = {
+  readonly label: string;
+  readonly tone: MarketplaceBookingCoverageTone;
 };
 
 export type BookingEvidenceFilter =
@@ -4182,89 +4172,42 @@ function marketplaceParticipants(booking: AdminBooking) {
 function buildMarketplaceBookingCoverageRows(
   bookings: AdminBooking[],
   nowMs: number,
-): MarketplaceBookingCoverageRow[] {
-  return bookings
-    .map((booking) => {
+): readonly AdminMarketplaceBookingCoverageRow[] {
+  return buildMarketplaceBookingCoverageRowsFromFacts(
+    bookings.map((booking) => {
       const participants = booking.participants ?? [];
       const marketplace = marketplaceParticipants(booking);
       const selectable = customerSelectableParticipants(booking);
-      const selectedPartnerLabel = booking.selectedProvider
-        ? partnerDisplayName(booking.selectedProvider)
-        : selectable.length > 0
-          ? 'Awaiting customer choice'
-          : 'No final partner';
-      const selectedPartnerTone = booking.selectedProvider
-        ? 'pill-success'
-        : selectable.length > 0
-          ? 'pill-warn'
-          : 'pill-neutral';
       const trace = bookingBackupAlertTraceSummary(booking, nowMs);
-      const alertLabel =
-        trace.batchCount === 0
-          ? booking.status === 'OPEN_MATCHING'
-            ? 'No alert batch'
-            : 'No alert trace'
-          : `${trace.totalNotified} notified`;
-      const alertTone =
-        trace.batchCount === 0 && booking.status === 'OPEN_MATCHING'
-          ? 'pill-danger'
-          : trace.totalNotified > 0
-            ? 'pill-success'
-            : trace.batchCount > 0
-              ? 'pill-warn'
-              : 'pill-neutral';
-      const alertDetail = trace.batchCount
-        ? `${trace.batchCount} batch(es), latest ${trace.lastStage ?? 'stage not saved'}${
-            trace.lastAge ? ` / ${trace.lastAge}` : ''
-          }`
-        : 'Marketplace notification trace is not saved for this booking.';
       const firstPick = firstPickCoverageState(booking, nowMs);
       const wallet = bookingMarketplaceWalletSignal(booking);
       const next = marketplaceBookingNextAction(booking, nowMs);
-      const selectedPartnerPresent = Boolean(booking.selectedProvider);
 
       return {
         booking,
+        chatRepairNeeded: bookingChatRepairNeedsOps(booking),
         firstPickLabel: firstPick.label,
         firstPickTone: firstPick.tone,
-        participantCount: participants.length,
         marketplaceParticipantCount: marketplace.length,
+        nextActionLabel: next.label,
+        nextActionTone: next.tone,
+        participantCount: participants.length,
         selectableCount: selectable.length,
-        selectedPartnerLabel,
-        selectedPartnerTone,
-        alertLabel,
-        alertTone,
-        alertDetail,
+        selectedPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
+        sortTimestamp: bookingCreatedTimestamp(booking),
+        status: booking.status,
+        traceBatchCount: trace.batchCount,
+        traceLastAge: trace.lastAge,
+        traceLastStage: trace.lastStage,
+        traceTotalNotified: trace.totalNotified,
         walletLabel: wallet.walletLabel,
         walletTone: wallet.walletTone,
-        selectedPartnerPresent,
-        chatRepairNeeded: bookingChatRepairNeedsOps(booking),
-        nextAction: next.label,
-        nextActionTone: next.tone,
       };
-    })
-    .sort((left, right) => {
-      const priority = (row: MarketplaceBookingCoverageRow) => {
-        if (row.nextActionTone === 'pill-danger') {
-          return 0;
-        }
-        if (row.nextActionTone === 'pill-warn') {
-          return 1;
-        }
-        if (row.selectedPartnerTone === 'pill-warn') {
-          return 2;
-        }
-        return 3;
-      };
-
-      return (
-        priority(left) - priority(right) ||
-        bookingCreatedTimestamp(right.booking) - bookingCreatedTimestamp(left.booking)
-      );
-    });
+    }),
+  );
 }
 
-function firstPickCoverageState(booking: AdminBooking, nowMs: number) {
+function firstPickCoverageState(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
   if (!booking.preferredProvider) {
     return { label: 'Open marketplace', tone: 'pill-neutral' };
   }
@@ -4286,7 +4229,7 @@ function firstPickCoverageState(booking: AdminBooking, nowMs: number) {
   return { label: 'First-pick recorded', tone: 'pill-info' };
 }
 
-function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number) {
+function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
   if (bookingCashDebtNeedsOps(booking)) {
     return { label: 'Clear cash fee debt', tone: 'pill-danger' };
   }
@@ -4548,7 +4491,10 @@ function bookingParticipantTimestamp(participant: BookingParticipant) {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function bookingMarketplaceWalletSignal(booking: AdminBooking) {
+function bookingMarketplaceWalletSignal(booking: AdminBooking): {
+  readonly walletLabel: string;
+  readonly walletTone: MarketplaceBookingCoverageTone;
+} {
   if (bookingHasPartnerWalletDebtSignal(booking)) {
     return {
       walletLabel: `Cash fee debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`,
