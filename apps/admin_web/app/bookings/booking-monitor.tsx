@@ -59,6 +59,7 @@ import {
 } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
+import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
@@ -3455,40 +3456,11 @@ function bookingAddressSnapshotState(booking: AdminBooking) {
 }
 
 function bookingChatListState(booking: AdminBooking) {
-  const messageCount = booking.chatRoom?.messages?.length ?? 0;
-  if (booking.chatRoom) {
-    return {
-      label: 'Chat ready',
-      detail: `${messageCount} message(s) retained for admin review.`,
-      tone: 'pill-success',
-    };
-  }
-
-  if (
-    booking.status === 'MATCHED' ||
-    booking.status === 'PROVIDER_ON_THE_WAY' ||
-    booking.status === 'IN_SERVICE'
-  ) {
-    return {
-      label: 'Chat missing',
-      detail: 'Customer and partner are matched, but no chat room is linked yet.',
-      tone: 'pill-danger',
-    };
-  }
-
-  if (booking.status === 'COMPLETED') {
-    return {
-      label: 'Chat archived',
-      detail: 'Service is completed. Admin should retain any linked chat history.',
-      tone: 'pill-info',
-    };
-  }
-
-  return {
-    label: 'Chat pending',
-    detail: 'Chat opens after the customer locks a final partner.',
-    tone: 'pill-neutral',
-  };
+  return bookingChatListStateFromFacts({
+    status: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount: booking.chatRoom?.messages?.length ?? 0,
+  });
 }
 
 function bookingListActionChips(booking: AdminBooking, nowMs: number): readonly BookingListActionChip[] {
