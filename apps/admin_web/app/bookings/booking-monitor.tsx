@@ -4018,10 +4018,7 @@ function bookingCustomerSelectableCount(booking: AdminBooking) {
 }
 
 function bookingFirstPickPending(booking: AdminBooking) {
-  if (booking.matchingEvidence) {
-    return booking.matchingEvidence.finalSelection === 'FIRST_PICK_PENDING';
-  }
-  return Boolean(booking.preferredProvider && isPreferredAwaitingDecision(booking));
+  return isPreferredAwaitingDecision(booking);
 }
 
 function bookingHasFinalPartner(booking: AdminBooking) {
@@ -4208,6 +4205,7 @@ function preferredParticipantState(booking: AdminBooking) {
 function isPreferredAwaitingDecision(booking: AdminBooking) {
   const participant = preferredParticipantState(booking);
   return isPreferredAwaitingDecisionByStatus({
+    finalSelection: booking.matchingEvidence?.finalSelection,
     hasPreferredPartner: Boolean(booking.preferredProvider),
     preferredParticipantStatus: participant?.status,
   });

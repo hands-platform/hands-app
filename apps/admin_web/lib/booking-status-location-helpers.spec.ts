@@ -34,6 +34,32 @@ describe('booking status location helpers', () => {
     ).toBe(true);
   });
 
+  it('uses API final selection before local preferred participant status', () => {
+    expect(
+      isPreferredAwaitingDecision({
+        finalSelection: 'FIRST_PICK_PENDING',
+        hasPreferredPartner: false,
+        preferredParticipantStatus: 'REJECTED',
+      }),
+    ).toBe(true);
+
+    expect(
+      isPreferredAwaitingDecision({
+        finalSelection: 'CUSTOMER_SELECTION_AVAILABLE',
+        hasPreferredPartner: true,
+        preferredParticipantStatus: 'JOINED',
+      }),
+    ).toBe(false);
+
+    expect(
+      isPreferredAwaitingDecision({
+        finalSelection: 'FIRST_PICK_ACCEPTED',
+        hasPreferredPartner: true,
+        preferredParticipantStatus: null,
+      }),
+    ).toBe(false);
+  });
+
   it('returns explicit booking snapshots before falling back to latest provider location', () => {
     const explicitSnapshot = { id: 'snapshot-1' };
     const latestPartnerSnapshot = { id: 'snapshot-2' };

@@ -1,15 +1,18 @@
+import type { AdminBookingMatchingEvidence } from './admin-api';
+
 export type PreferredAwaitingDecisionInput = {
-  hasPreferredPartner: boolean;
-  preferredParticipantStatus?: string | null;
+  readonly finalSelection?: AdminBookingMatchingEvidence['finalSelection'] | null;
+  readonly hasPreferredPartner: boolean;
+  readonly preferredParticipantStatus?: string | null;
 };
 
 export type ProviderLocationCoordinateInput = {
-  currentLat?: string | number | null;
-  currentLng?: string | number | null;
+  readonly currentLat?: string | number | null;
+  readonly currentLng?: string | number | null;
 };
 
 export type ProviderLocationTimestampInput = ProviderLocationCoordinateInput & {
-  currentLocationUpdatedAt?: string | null;
+  readonly currentLocationUpdatedAt?: string | null;
 };
 
 export type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
@@ -26,6 +29,10 @@ const defaultStaleLocationMinutes = 30;
 const defaultExpiredLocationHours = 24;
 
 export function isPreferredAwaitingDecision(input: PreferredAwaitingDecisionInput): boolean {
+  if (input.finalSelection) {
+    return input.finalSelection === 'FIRST_PICK_PENDING';
+  }
+
   if (!input.hasPreferredPartner) {
     return false;
   }

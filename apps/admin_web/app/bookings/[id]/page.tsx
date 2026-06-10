@@ -2682,6 +2682,7 @@ function bookingFinanceFlags(
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
   const participant = preferredParticipantState(booking);
   return isPreferredAwaitingDecisionFromStatus({
+    finalSelection: booking.matchingEvidence?.finalSelection,
     hasPreferredPartner: Boolean(booking.preferredProvider),
     preferredParticipantStatus: participant?.status ?? null,
   });
