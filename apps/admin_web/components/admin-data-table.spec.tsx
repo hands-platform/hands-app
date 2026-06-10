@@ -1,0 +1,37 @@
+import { AdminDataTable } from './admin-data-table';
+
+describe('AdminDataTable', () => {
+  it('renders stable table headers and provided rows', () => {
+    const table = AdminDataTable({
+      children: (
+        <tr>
+          <td>WELCOME10</td>
+          <td>Active</td>
+        </tr>
+      ),
+      emptyMessage: 'No coupons loaded.',
+      headers: ['Code', 'Status'],
+      rowCount: 1,
+    });
+
+    expect(table.type).toBe('table');
+    expect(table.props).toMatchObject({ className: 'table' });
+    expect(table.props.children[0].props.children.props.children).toHaveLength(2);
+    expect(table.props.children[1].props.children[1]).toBeNull();
+  });
+
+  it('renders a full-width empty row when there is no data', () => {
+    const table = AdminDataTable({
+      children: null,
+      emptyMessage: 'No feedback records loaded.',
+      headers: ['Feedback', 'Action', 'Status'],
+      rowCount: 0,
+    });
+
+    const emptyRow = table.props.children[1].props.children[1];
+    expect(emptyRow.props.children.props).toMatchObject({
+      children: 'No feedback records loaded.',
+      colSpan: 3,
+    });
+  });
+});

@@ -11,19 +11,41 @@ type ConfirmDialogHiddenInput = {
   readonly value: boolean | number | string;
 };
 
+type ConfirmDialogTextInput = {
+  readonly defaultValue?: string;
+  readonly label: string;
+  readonly maxLength?: number;
+  readonly minLength?: number;
+  readonly name: string;
+  readonly placeholder?: string;
+  readonly required?: boolean;
+};
+
 type ConfirmDialogProps = {
   readonly action: FormAction;
   readonly cancelHref: string;
   readonly cancelLabel?: string;
   readonly confirmLabel: string;
   readonly description: ReactNode;
+  readonly disabled?: boolean;
   readonly hiddenInputs?: readonly ConfirmDialogHiddenInput[];
   readonly id: string;
+  readonly loading?: boolean;
+  readonly loadingLabel?: string;
+  readonly textInputs?: readonly ConfirmDialogTextInput[];
   readonly title: string;
   readonly tone?: StatusBadgeTone;
 };
 
-export function confirmDialogButtonClassName(tone: StatusBadgeTone = 'danger') {
+type ConfirmDialogButtonState = {
+  readonly disabled?: boolean;
+  readonly loading?: boolean;
+};
+
+export function confirmDialogButtonClassName(tone: StatusBadgeTone = 'danger', state: ConfirmDialogButtonState = {}) {
+  if (state.disabled || state.loading) {
+    return statusBadgeClassName('neutral');
+  }
   return statusBadgeClassName(tone);
 }
 
@@ -33,16 +55,27 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmLabel,
   description,
+  disabled = false,
   hiddenInputs = [],
   id,
+  loading = false,
+  loadingLabel = 'Working...',
+  textInputs = [],
   title,
   tone = 'danger',
 }: ConfirmDialogProps) {
   const titleId = `${id}-title`;
   const descriptionId = `${id}-description`;
+  const confirmDisabled = disabled || loading;
 
   return (
-    <section aria-describedby={descriptionId} aria-labelledby={titleId} className="card" role="alertdialog">
+    <section
+      aria-busy={loading || undefined}
+      aria-describedby={descriptionId}
+      aria-labelledby={titleId}
+      className="card"
+      role="alertdialog"
+    >
       <div className="ops-section-header">
         <div>
           <h2 id={titleId}>{title}</h2>
@@ -57,8 +90,21 @@ export function ConfirmDialog({
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
           ))}
-          <button className={confirmDialogButtonClassName(tone)} type="submit">
-            {confirmLabel}
+          {textInputs.map((input) => (
+            <label key={input.name} style={{ display: 'block', marginBottom: 12 }}>
+              {input.label}
+              <input
+                defaultValue={input.defaultValue}
+                maxLength={input.maxLength}
+                minLength={input.minLength}
+                name={input.name}
+                placeholder={input.placeholder}
+                required={input.required}
+              />
+            </label>
+          ))}
+          <button className={confirmDialogButtonClassName(tone, { disabled, loading })} disabled={confirmDisabled} type="submit">
+            {loading ? loadingLabel : confirmLabel}
           </button>
         </form>
         <Link className={statusBadgeClassName('neutral')} href={cancelHref}>
