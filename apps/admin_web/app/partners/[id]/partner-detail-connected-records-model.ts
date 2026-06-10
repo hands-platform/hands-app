@@ -1,0 +1,200 @@
+import type { AdminAuditLog } from '../../../lib/admin-api';
+import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
+import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
+
+export type PartnerDetailConnectedRecordLink = {
+  readonly detail: string;
+  readonly href: string;
+  readonly label: string;
+  readonly tone: string;
+  readonly value: string;
+};
+
+type PartnerConnectedRecordProvider = {
+  readonly auditLogs?: readonly AdminAuditLog[] | null;
+  readonly currentLat?: string | number | null;
+  readonly currentLng?: string | number | null;
+  readonly currentLocationUpdatedAt?: string | null;
+  readonly earnings?: readonly { readonly status: string }[] | null;
+  readonly id: string;
+  readonly kyc?: { readonly status?: string | null } | null;
+  readonly taxProfile?: { readonly status?: string | null } | null;
+  readonly verification?: { readonly status?: string | null } | null;
+};
+
+type PartnerConnectedRecordBank = {
+  readonly accountNumberLast4?: string | null;
+  readonly accountNumberMasked?: string | null;
+  readonly bankName?: string | null;
+  readonly status?: string | null;
+};
+
+type PartnerConnectedRecordPayoutOps = {
+  readonly blockers: readonly string[];
+  readonly hold?: { readonly reason?: string | null } | null;
+  readonly status: string;
+  readonly tone: 'done' | 'pending' | 'blocked';
+};
+
+type PartnerConnectedRecordKycEvidence = {
+  readonly missingDocuments: readonly string[];
+};
+
+type PartnerConnectedRecordGateAttempt = {
+  readonly at: string;
+  readonly bookingMonitorHref?: string;
+  readonly reasonLabel: string;
+};
+
+export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBookingArchiveBooking>({
+  provider,
+  bookingArchive,
+  bookingGateAttempts,
+  kycEvidence,
+  canApproveKyc,
+  primaryBank,
+  payoutOps,
+}: {
+  readonly provider: PartnerConnectedRecordProvider;
+  readonly bookingArchive: readonly PartnerBookingArchiveRecord<TBooking>[];
+  readonly bookingGateAttempts: readonly PartnerConnectedRecordGateAttempt[];
+  readonly kycEvidence: PartnerConnectedRecordKycEvidence;
+  readonly canApproveKyc: boolean;
+  readonly primaryBank: PartnerConnectedRecordBank | null;
+  readonly payoutOps: PartnerConnectedRecordPayoutOps;
+}): PartnerDetailConnectedRecordLink[] {
+  const latestBooking = bookingArchive[0]?.booking;
+  const chatMessageCount = bookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const chatRoomCount = bookingArchive.filter((record) => record.booking.chatRoom).length;
+  const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
+
+  return [
+    {
+      label: 'Latest booking',
+      value: latestBooking ? shortRecordId(latestBooking.id) : 'None',
+      detail: latestBooking
+        ? `${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestBooking)}`
+        : 'No preferred, selected, or marketplace participation booking loaded.',
+      href: latestBooking ? `/bookings/${latestBooking.id}` : '#booking-chat-records',
+      tone: latestBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'First-pick gate attempts',
+      value: `${bookingGateAttempts.length} attempt(s)`,
+      detail: bookingGateAttempts[0]
+        ? `${bookingGateAttempts[0].reasonLabel} / latest ${formatDate(bookingGateAttempts[0].at)}`
+        : 'No booking create gate attempt is linked to this partner.',
+      href: bookingGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
+      tone: bookingGateAttempts.length ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      label: 'Chat archive',
+      value: `${chatMessageCount} message(s)`,
+      detail: `${chatRoomCount} retained room(s).`,
+      href: `/chat-archive?q=${encodeURIComponent(provider.id)}`,
+      tone: chatRoomCount ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      label: 'KYC and documents',
+      value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
+      detail: `${kycEvidence.missingDocuments.length} required document(s) missing approval.`,
+      href: '#kyc',
+      tone: canApproveKyc ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Bank account',
+      value: primaryBank?.status ?? 'Missing',
+      detail: primaryBank
+        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
+        : 'No payout bank account loaded.',
+      href: '#bank',
+      tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Tax profile',
+      value: provider.taxProfile?.status ?? (hasFirstRevenue ? 'Missing' : 'Deferred'),
+      detail: hasFirstRevenue
+        ? 'First earning exists; tax profile gates payout.'
+        : 'Tax collection stays deferred until first earning.',
+      href: '#tax',
+      tone: provider.taxProfile?.status === 'APPROVED' || !hasFirstRevenue ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Location',
+      value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
+      detail:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}`
+          : 'No latest location loaded.',
+      href: '#location',
+      tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
+    },
+    {
+      label: 'Wallet and payout',
+      value: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
+      href: '#payout',
+      tone: pillClass(payoutOps.tone),
+    },
+    {
+      label: 'Operator notes',
+      value: `${partnerOpsNotes.length} note(s)`,
+      detail: partnerOpsNotes[0] ? auditLogNoteText(partnerOpsNotes[0]) : 'No manual partner note saved.',
+      href: '#partner-operator-notes',
+      tone: partnerOpsNotes.length ? 'pill-info' : 'pill-neutral',
+    },
+  ];
+}
+
+function readPartnerChatMessages(booking: PartnerBookingArchiveBooking) {
+  return [...(booking.chatRoom?.messages ?? [])].sort((left, right) => {
+    return dateValue(left.createdAt) - dateValue(right.createdAt);
+  });
+}
+
+function bookingServiceLabel(booking: PartnerBookingArchiveBooking) {
+  const labels = (booking.services ?? [])
+    .map((item) => {
+      const name = item.service?.name ?? 'Service';
+      const duration = item.service?.durationMin ? ` ${item.service.durationMin}m` : '';
+      return `${name}${duration}`;
+    })
+    .filter(Boolean);
+  return labels.length ? labels.join(', ') : 'No service';
+}
+
+function providerHasFirstRevenueSignal(provider: PartnerConnectedRecordProvider) {
+  return (provider.earnings ?? []).some((earning) =>
+    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
+  );
+}
+
+function pillClass(tone: PartnerConnectedRecordPayoutOps['tone']) {
+  if (tone === 'done') return 'pill-success';
+  if (tone === 'blocked') return 'pill-danger';
+  return 'pill-warn';
+}
+
+function auditLogNoteText(log: AdminAuditLog) {
+  const metadata = readMetadataObject(log.metadata);
+  const note = metadata.note ?? metadata.preset ?? metadata.reason ?? metadata.summary ?? metadata.status;
+  if (typeof note === 'string' && note.trim()) {
+    return trimText(note.trim(), 140);
+  }
+  return trimText(JSON.stringify(log.metadata ?? { action: log.action }), 140);
+}
+
+function readMetadataObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function trimText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}

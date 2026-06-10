@@ -1,7 +1,7 @@
 import {
   PartnerDetailConnectedRecordsSection,
-  type PartnerDetailConnectedRecordLink,
 } from './partner-detail-connected-records-section';
+import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
 describe('PartnerDetailConnectedRecordsSection', () => {
   it('renders connected record links with counts, detail, and tones', () => {

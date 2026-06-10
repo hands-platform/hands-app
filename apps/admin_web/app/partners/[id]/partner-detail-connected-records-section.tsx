@@ -1,12 +1,5 @@
 import Link from 'next/link';
-
-export type PartnerDetailConnectedRecordLink = {
-  readonly detail: string;
-  readonly href: string;
-  readonly label: string;
-  readonly tone: string;
-  readonly value: string;
-};
+import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
 type PartnerDetailConnectedRecordsSectionProps = {
   readonly description: string;

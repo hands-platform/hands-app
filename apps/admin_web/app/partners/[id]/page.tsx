@@ -119,6 +119,7 @@ import {
   PartnerDetailChatRetentionLedgerSection,
 } from './partner-detail-chat-retention-ledger-section';
 import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
+import { buildPartnerConnectedRecordLinks } from './partner-detail-connected-records-model';
 import {
   PartnerDetailOperationsDigestSection,
 } from './partner-detail-operations-digest-section';
@@ -457,90 +458,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   });
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
   const partnerFirstReadNextAction = nextProviderAction(provider, dispatchPolicy);
-  const latestPartnerBooking = partnerBookingArchive[0]?.booking;
-  const connectedPartnerRecordLinks = [
-    {
-      label: 'Latest booking',
-      value: latestPartnerBooking ? shortRecordId(latestPartnerBooking.id) : 'None',
-      detail: latestPartnerBooking
-        ? `${latestPartnerBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestPartnerBooking)}`
-        : 'No preferred, selected, or marketplace participation booking loaded.',
-      href: latestPartnerBooking ? `/bookings/${latestPartnerBooking.id}` : '#booking-chat-records',
-      tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'First-pick gate attempts',
-      value: `${partnerBookingGateAttempts.length} attempt(s)`,
-      detail: partnerBookingGateAttempts[0]
-        ? `${partnerBookingGateAttempts[0].reasonLabel} / latest ${formatDate(partnerBookingGateAttempts[0].at)}`
-        : 'No booking create gate attempt is linked to this partner.',
-      href: partnerBookingGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
-      tone: partnerBookingGateAttempts.length ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      label: 'Chat archive',
-      value: `${partnerBookingArchive.reduce(
-        (sum, record) => sum + readPartnerChatMessages(record.booking).length,
-        0,
-      )} message(s)`,
-      detail: `${partnerBookingArchive.filter((record) => record.booking.chatRoom).length} retained room(s).`,
-      href: `/chat-archive?q=${encodeURIComponent(provider.id)}`,
-      tone: partnerBookingArchive.some((record) => record.booking.chatRoom) ? 'pill-success' : 'pill-neutral',
-    },
-    {
-      label: 'KYC and documents',
-      value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
-      detail: `${kycEvidence.missingDocuments.length} required document(s) missing approval.`,
-      href: '#kyc',
-      tone: canApproveKyc ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Bank account',
-      value: primaryBank?.status ?? 'Missing',
-      detail: primaryBank
-        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
-        : 'No payout bank account loaded.',
-      href: '#bank',
-      tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Tax profile',
-      value:
-        provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'Missing' : 'Deferred'),
-      detail: providerHasFirstRevenueSignal(provider)
-        ? 'First earning exists; tax profile gates payout.'
-        : 'Tax collection stays deferred until first earning.',
-      href: '#tax',
-      tone:
-        provider.taxProfile?.status === 'APPROVED' || !providerHasFirstRevenueSignal(provider)
-          ? 'pill-success'
-          : 'pill-warn',
-    },
-    {
-      label: 'Location',
-      value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
-      detail:
-        provider.currentLat && provider.currentLng
-          ? `${provider.currentLat}, ${provider.currentLng}`
-          : 'No latest location loaded.',
-      href: '#location',
-      tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
-    },
-    {
-      label: 'Wallet and payout',
-      value: payoutOps.status,
-      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
-      href: '#payout',
-      tone: pillClass(payoutOps.tone),
-    },
-    {
-      label: 'Operator notes',
-      value: `${partnerOpsNotes.length} note(s)`,
-      detail: partnerOpsNotes[0] ? auditLogNoteText(partnerOpsNotes[0]) : 'No manual partner note saved.',
-      href: '#partner-operator-notes',
-      tone: partnerOpsNotes.length ? 'pill-info' : 'pill-neutral',
-    },
-  ];
+  const connectedPartnerRecordLinks = buildPartnerConnectedRecordLinks({
+    provider,
+    bookingArchive: partnerBookingArchive,
+    bookingGateAttempts: partnerBookingGateAttempts,
+    kycEvidence,
+    canApproveKyc,
+    primaryBank,
+    payoutOps,
+  });
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredPartnerActivityRecords.map((record) => ({
       type: record.type,
