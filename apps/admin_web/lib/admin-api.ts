@@ -4,6 +4,41 @@ const ADMIN_TOKEN_REFRESH_SKEW_MS = 60_000;
 let cachedAdminToken: { token: string; expiresAt: number } | null = null;
 let pendingAdminToken: Promise<string> | null = null;
 
+export type AdminBookingStatus =
+  | 'CREATED'
+  | 'OPEN_MATCHING'
+  | 'MATCHED'
+  | 'PROVIDER_ON_THE_WAY'
+  | 'ARRIVED'
+  | 'IN_SERVICE'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'NO_SHOW'
+  | 'EXPIRED'
+  | 'REFUNDED';
+
+export type AdminBookingMatchSource = 'FIRST_PICK_ACCEPTED_FIRST' | 'CUSTOMER_SELECTED_PARTNER';
+export type AdminParticipantStatus = 'JOINED' | 'ACCEPTED' | 'REJECTED' | 'SELECTED' | 'EXPIRED';
+export type AdminProviderStatus =
+  | 'OFFLINE'
+  | 'ONLINE_AVAILABLE'
+  | 'ONLINE_BUSY'
+  | 'ONLINE_AVAILABLE_SOON';
+export type AdminPaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED' | 'RELEASED';
+export type AdminPaymentMethod = 'MOMO' | 'VNPAY' | 'CASH';
+export type AdminReviewStatus = 'PUBLISHED' | 'HIDDEN' | 'REPORTED';
+export type AdminEarningStatus = 'PENDING' | 'AVAILABLE' | 'PAID' | 'CANCELLED';
+export type AdminPayoutBatchStatus = 'DRAFT' | 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED';
+export type AdminProviderReportStatus = 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'DISMISSED';
+export type AdminProviderSanctionType = 'WARNING' | 'ACCOUNT_BLOCK' | 'PAYOUT_HOLD' | 'TRUST_BADGE_REMOVAL';
+export type AdminProviderSanctionStatus = 'ACTIVE' | 'LIFTED' | 'EXPIRED';
+export type AdminProviderWalletLedgerType =
+  | 'BOOKING_EARNING'
+  | 'CASH_FEE_DEBT_SETTLED'
+  | 'PAYOUT_PAID'
+  | 'REFUND_REVERSAL'
+  | 'ADMIN_ADJUSTMENT';
+
 export type AdminUser = {
   id: string;
   phone: string;
@@ -411,7 +446,7 @@ export type AdminBooking = {
   scheduledEndAt?: string;
   expiresAt?: string | null;
   matchedAt?: string | null;
-  matchSource?: string | null;
+  matchSource?: AdminBookingMatchSource | null;
   matchingEvidence?: AdminBookingMatchingEvidence;
   closedAt?: string | null;
   closedByRole?: string | null;
@@ -510,7 +545,7 @@ export type AdminBookingMatchingEvidence = {
   readonly marketplaceParticipantCount: number;
   readonly selectableParticipantCount: number;
   readonly matchedAt: string | null;
-  readonly matchSource: string | null;
+  readonly matchSource: AdminBookingMatchSource | null;
   readonly chatReady: boolean;
 };
 

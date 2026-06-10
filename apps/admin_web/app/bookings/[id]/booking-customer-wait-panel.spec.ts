@@ -65,7 +65,7 @@ describe('booking customer wait panel', () => {
           marketplaceParticipantCount: 1,
           selectableParticipantCount: 0,
           matchedAt: '2026-06-10T09:00:00.000Z',
-          matchSource: 'FIRST_PICK_ACCEPTED',
+          matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
           chatReady: true,
         },
         chatRoom: null,
