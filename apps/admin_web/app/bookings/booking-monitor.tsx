@@ -29,6 +29,11 @@ import {
   bookingRequestOpenedAt,
 } from '../../lib/admin-booking-time';
 import {
+  bookingListStageFromFacts,
+  type BookingListStage,
+  type BookingListStageKey,
+} from '../../lib/booking-list-stage';
+import {
   buildBookingCommandSummaryCards,
   buildBookingOperatorRouteCards,
 } from '../../lib/booking-command-route-cards';
@@ -172,24 +177,6 @@ type BookingDispatchPartnerShortcut = {
   detail: string;
   href: string;
   tone: BookingCommandLane['tone'];
-};
-
-type BookingListStageKey =
-  | 'intake'
-  | 'first-pick'
-  | 'marketplace'
-  | 'customer-choice'
-  | 'handoff'
-  | 'handoff-repair'
-  | 'closeout';
-
-type BookingListStage = {
-  key: BookingListStageKey;
-  label: string;
-  detail: string;
-  action: string;
-  tone: BookingCommandLane['tone'];
-  href: string;
 };
 
 type BookingListActionChip = {
@@ -2421,96 +2408,21 @@ function humanizeClosureReason(reason: string) {
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
-  const marketplaceCount = marketplaceParticipants(booking).length;
-  const selectableCount = customerSelectableParticipants(booking).length;
-
-  if (terminalBookingStatuses.has(booking.status)) {
-    return {
-      key: 'closeout',
-      label: 'Closeout',
-      detail: `Closed as ${booking.status}.`,
-      action: 'Confirm payment, refund, review, no-show, and audit trail before archiving.',
-      tone: booking.status === 'COMPLETED' ? 'ok' : 'warn',
-      href: `/bookings/${booking.id}`,
-    };
-  }
-
-  if (
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
-    !booking.chatRoom
-  ) {
-    return {
-      key: 'handoff-repair',
-      label: 'Stage 4 repair',
-      detail: 'Final partner exists, but chat is not ready.',
-      action: 'Repair chat before the partner moves further through the service flow.',
-      tone: 'danger',
-      href: `/bookings/${booking.id}#chat`,
-    };
-  }
-
-  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
-    return {
-      key: 'handoff',
-      label: 'Stage 4 handoff',
-      detail: bookingLocationNeedsOps(booking, nowMs)
-        ? 'Chat is ready, but partner location needs review.'
-        : 'Chat and service handoff are available.',
-      action: 'Track location, arrival, service start, completion, and closeout.',
-      tone: bookingLocationNeedsOps(booking, nowMs) ? 'warn' : 'ok',
-      href: `/bookings/${booking.id}#chat`,
-    };
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && selectableCount > 0 && !booking.selectedProvider) {
-    return {
-      key: 'customer-choice',
-      label: 'Stage 3 choice',
-      detail: `${selectableCount} customer-selectable partner(s) are waiting for customer selection.`,
-      action: 'Prompt customer support to help the customer choose the final partner.',
-      tone: 'warn',
-      href: `/bookings/${booking.id}#participants`,
-    };
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && marketplaceCount > 0) {
-    return {
-      key: 'marketplace',
-      label: 'Stage 2 marketplace',
-      detail: `${marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
-      action:
-        bookingBackupAlertTraceSummary(booking).totalNotified > 0
-          ? 'Monitor marketplace alert delivery and customer choice list quality.'
-          : 'Nudge eligible partners or check marketplace alert creation.',
-      tone: 'info',
-      href: `/bookings/${booking.id}#participants`,
-    };
-  }
-
-  if (booking.status === 'OPEN_MATCHING') {
-    const expired = bookingMatchingWindowExpired(booking, nowMs);
-    return {
-      key: 'first-pick',
-      label: 'Stage 1 first-pick',
-      detail: expired
-        ? 'The first response window is overdue and no usable marketplace partner is visible.'
-        : 'Preferred partner is inside the first response window.',
-      action: expired
-        ? 'Escalate marketplace supply or close/extend the request intentionally.'
-        : 'Monitor partner response, wallet gate, push delivery, and KYC status.',
-      tone: expired ? 'danger' : 'warn',
-      href: `/bookings/${booking.id}#participants`,
-    };
-  }
-
-  return {
-    key: 'intake',
-    label: 'Stage 0 intake',
-    detail: `Booking is ${booking.status.toLowerCase().replaceAll('_', ' ')}.`,
-    action: 'Confirm service, customer location, payment state, and first partner before opening matching.',
-    tone: 'info',
-    href: `/bookings/${booking.id}`,
-  };
+  return bookingListStageFromFacts({
+    bookingId: booking.id,
+    hasChatRoom: Boolean(booking.chatRoom),
+    isHandoffStatus: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
+      booking.status,
+    ),
+    isTerminalStatus: terminalBookingStatuses.has(booking.status),
+    locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
+    marketplaceAlertNotifiedCount: bookingBackupAlertTraceSummary(booking).totalNotified,
+    marketplaceCount: marketplaceParticipants(booking).length,
+    responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+    selectableCount: customerSelectableParticipants(booking).length,
+    selectedPartnerPresent: Boolean(booking.selectedProvider),
+    status: booking.status,
+  });
 }
 
 function stagePillClass(tone: BookingCommandLane['tone']) {
