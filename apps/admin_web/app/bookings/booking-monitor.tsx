@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import {
+  buildBookingMatchingFlowTimeline,
+  type BookingMatchingFlowStep,
+} from '../../lib/booking-matching-flow-timeline';
+import {
   bookingEventTimestamp,
   bookingListSortTimestamp,
   bookingRequestOpenedAt,
@@ -159,17 +163,7 @@ type BookingMatchingEscalationRow = {
   tags: string[];
 };
 
-type BookingMatchingFlowStep = {
-  stage: string;
-  title: string;
-  status: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-  detail: string;
-  operatorAction: string;
-  href: string;
-  metrics: Array<{ label: string; value: string }>;
-  bookings: AdminBooking[];
-};
+type AdminBookingMatchingFlowStep = BookingMatchingFlowStep<AdminBooking>;
 
 type BookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
@@ -2469,7 +2463,7 @@ function buildBookingDispatchPartnerShortcuts(
   ];
 }
 
-function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): BookingMatchingFlowStep[] {
+function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const firstPickWaiting = open.filter(
     (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
@@ -2486,84 +2480,18 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
   );
   const locationChecks = liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
-  return [
-    {
-      stage: 'Stage 1',
-      title: 'Direct first-pick request',
-      status: firstPickExpired.length ? 'Timer expired' : firstPickWaiting.length ? 'Waiting' : 'Clear',
-      tone: firstPickExpired.length ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
-      detail:
-        firstPickWaiting.length > 0
-          ? 'Customer selected a preferred partner and the first response window is running.'
-          : 'No direct first-pick request is currently waiting.',
-      operatorAction:
-        'Monitor the 10-minute response window, partner push delivery, and wallet/KYC gates before manually intervening.',
-      href: firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=matching',
-      metrics: [metric('waiting', firstPickWaiting.length), metric('expired', firstPickExpired.length)],
-      bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
-    },
-    {
-      stage: 'Stage 2',
-      title: 'Marketplace participation',
-      status: noSupply.length ? 'Supply gap' : marketplaceVisible.length ? 'Marketplace visible' : 'Clear',
-      tone: noSupply.length ? 'warn' : marketplaceVisible.length ? 'info' : 'ok',
-      detail:
-        noSupply.length > 0
-          ? 'Some open bookings have no marketplace partner for the customer to choose.'
-          : 'Marketplace partners are visible or no participation lane is currently needed.',
-      operatorAction:
-        'Use marketplace-ready partners, location freshness, alert delivery, and operating policy before widening rules.',
-      href: noSupply.length ? '/partners?review=marketplace-ready' : '/bookings?view=matching',
-      metrics: [
-        metric('no marketplace', noSupply.length),
-        metric('visible', marketplaceVisible.length),
-        metric('alerted', backupAlerted.length),
-      ],
-      bookings: noSupply.length ? noSupply : marketplaceVisible,
-    },
-    {
-      stage: 'Stage 3',
-      title: 'Customer fallback partner choice',
-      status: customerChoice.length ? 'Needs customer' : 'Clear',
-      tone: customerChoice.length ? 'warn' : 'ok',
-      detail:
-        customerChoice.length > 0
-          ? 'One or more Partners are ready after first-pick did not validly win, but the customer has not locked the fallback choice.'
-          : 'No open booking is waiting on customer fallback selection.',
-      operatorAction:
-        'Prompt support to guide the customer while partner availability and wait anxiety are still fresh.',
-      href: '/bookings?view=matching',
-      metrics: [metric('choice needed', customerChoice.length), metric('matched', matched.length)],
-      bookings: customerChoice,
-    },
-    {
-      stage: 'Stage 4',
-      title: 'Chat and location handoff',
-      status: matchedWithoutChat.length ? 'Repair chat' : locationChecks.length ? 'Location check' : 'Ready',
-      tone: matchedWithoutChat.length
-        ? 'danger'
-        : locationChecks.length
-          ? 'warn'
-          : liveHandoff.length
-            ? 'info'
-            : 'ok',
-      detail:
-        matchedWithoutChat.length > 0
-          ? 'A final partner is selected, but the chat room is missing.'
-          : locationChecks.length > 0
-            ? 'A live booking has stale or missing partner location.'
-            : 'Matched and live bookings have no visible chat/location handoff blocker.',
-      operatorAction:
-        'Repair chat first, then confirm partner location before arrival, service start, and payment closeout.',
-      href: matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings?view=location',
-      metrics: [
-        metric('chat repair', matchedWithoutChat.length),
-        metric('location checks', locationChecks.length),
-        metric('live handoff', liveHandoff.length),
-      ],
-      bookings: matchedWithoutChat.length ? matchedWithoutChat : locationChecks,
-    },
-  ];
+  return buildBookingMatchingFlowTimeline({
+    backupAlerted,
+    customerChoice,
+    firstPickExpired,
+    firstPickWaiting,
+    liveHandoff,
+    locationChecks,
+    marketplaceVisible,
+    matched,
+    matchedWithoutChat,
+    noSupply,
+  });
 }
 
 function bookingStageCounts(bookings: AdminBooking[], nowMs: number) {
