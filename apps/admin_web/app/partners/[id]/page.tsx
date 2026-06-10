@@ -128,6 +128,7 @@ import { buildPartnerOperatingLedger } from './partner-detail-operating-ledger-m
 import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
 import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
+import { buildPartnerOperationsQuickRail } from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
 import {
   amountValue,
@@ -479,58 +480,22 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'record_id', 'partner_id', 'partner_phone'],
   );
-  const partnerOperationsQuickRail = [
-    {
-      href: '#partner-operations-digest',
-      label: 'Digest',
-      value: `${partnerOperationsDigest.length} lanes`,
-      detail: 'Identity, wallet, booking, location, payout, tax, and app reachability.',
-    },
-    {
-      href: '#partner-connected-operations-records',
-      label: 'Linked records',
-      value: `${connectedPartnerRecordLinks.length} links`,
-      detail: 'Booking, chat, KYC, bank, tax, location, wallet, payout, and notes.',
-    },
-    {
-      href: '#partner-booking-journey',
-      label: 'Booking journey',
-      value: `${partnerBookingJourneyRows.length}`,
-      detail: `${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
-        dispatchPolicy.backupRadiusMeters / 1000,
-      )}km marketplace policy.`,
-    },
-    {
-      href: '#partner-chat-retention-ledger',
-      label: 'Chat archive',
-      value: `${partnerChatRetentionRows.length}`,
-      detail: 'Customer-final-selected chats retained for admin evidence.',
-    },
-    {
-      href: '#cash-debt-origin',
-      label: 'Cash debt',
-      value: formatCurrency(cashFeeDebtAmount(provider)),
-      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace alerts and participation are blocked until settled.`,
-    },
-    {
-      href: '#payout',
-      label: 'Payout',
-      value: payoutOps.status,
-      detail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail ?? 'No unpaid net.',
-    },
-    {
-      href: '#documents',
-      label: 'Documents',
-      value: `${missingApprovedRequiredKycDocuments(provider).length} missing`,
-      detail: 'CCCD front/back, selfie, public profile, and typed onboarding files.',
-    },
-    {
-      href: '#app-activity',
-      label: 'Activity',
-      value: `${filteredPartnerActivityRecords.length}`,
-      detail: `${dateFilters.label}, ${detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}.`,
-    },
-  ];
+  const partnerOperationsQuickRail = buildPartnerOperationsQuickRail({
+    activityRecordCount: filteredPartnerActivityRecords.length,
+    activityTypeLabel: detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
+    backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
+    bookingJourneyRowCount: partnerBookingJourneyRows.length,
+    cashDebtLabel: formatCurrency(cashFeeDebtAmount(provider)),
+    chatRetentionRowCount: partnerChatRetentionRows.length,
+    connectedRecordLinkCount: connectedPartnerRecordLinks.length,
+    dateFilterLabel: dateFilters.label,
+    missingKycDocumentCount: missingApprovedRequiredKycDocuments(provider).length,
+    openCashDebtEarningCount: openCashDebtEarnings.length,
+    operationsDigestCount: partnerOperationsDigest.length,
+    payoutStatus: payoutOps.status,
+    responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
+    unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail,
+  });
   const partnerChatMessageCount = partnerBookingArchive.reduce(
     (sum, record) => sum + readPartnerChatMessages(record.booking).length,
     0,

@@ -1,7 +1,7 @@
 import {
   PartnerDetailSummaryRailSection,
-  type PartnerDetailSummaryRailItem,
 } from './partner-detail-summary-rail-section';
+import type { PartnerDetailSummaryRailItem } from './partner-detail-summary-rail-model';
 
 describe('PartnerDetailSummaryRailSection', () => {
   it('renders summary rail items with links and status label', () => {

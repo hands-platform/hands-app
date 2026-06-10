@@ -1,11 +1,5 @@
 import Link from 'next/link';
-
-export type PartnerDetailSummaryRailItem = {
-  readonly detail: string;
-  readonly href: string;
-  readonly label: string;
-  readonly value: string;
-};
+import type { PartnerDetailSummaryRailItem } from './partner-detail-summary-rail-model';
 
 type PartnerDetailSummaryRailSectionProps = {
   readonly description: string;
