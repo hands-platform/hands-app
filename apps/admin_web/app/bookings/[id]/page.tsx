@@ -99,6 +99,7 @@ import {
 } from './booking-marketplace-supply';
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
 import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snapshot';
+import { bookingPaymentEvidence } from './booking-payment-evidence';
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
@@ -186,8 +187,6 @@ import {
 } from '../../../lib/booking-provider-location-copy';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 import {
-  bookingRefundLedgerEvidence,
-  bookingRefundRows,
   type BookingRefundLedgerRow,
 } from '../../../lib/booking-refund-ledger';
 
@@ -256,7 +255,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
-  const refundLedgerRows = bookingRefundRows(booking);
+  const paymentEvidence = bookingPaymentEvidence(booking);
+  const refundLedgerRows = paymentEvidence.refundRows;
   const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = [
@@ -416,8 +416,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#payment',
       label: 'Payment and wallet',
-      value: booking.payment?.status ?? 'NONE',
-      helper: money(booking.payment?.amount, booking.payment?.currency),
+      value: paymentEvidence.paymentStatus,
+      helper: paymentEvidence.paymentAmountLabel,
     },
     {
       href: '#finance',
@@ -513,17 +513,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       area: 'Payment',
-      status: booking.payment?.status ?? 'NONE',
-      evidence: `${booking.payment?.method ?? 'No method'} / ${money(
-        booking.payment?.amount,
-        booking.payment?.currency,
-      )}`,
+      status: paymentEvidence.paymentStatus,
+      evidence: paymentEvidence.readablePaymentMethodAmountLabel,
       href: '#payment',
     },
     {
       area: 'Refund',
-      status: refundLedgerRows.length ? `${refundLedgerRows.length} refund record(s)` : 'No refund record',
-      evidence: bookingRefundLedgerEvidence(booking),
+      status: paymentEvidence.refundRecordStatus,
+      evidence: paymentEvidence.refundEvidence,
       href: '#payment',
     },
     {
@@ -678,7 +675,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     paymentStatus: booking.payment?.status ?? 'NONE',
     paymentMethod: booking.payment?.method ?? 'NONE',
     refundRowCount: refundLedgerRows.length,
-    refundEvidence: bookingRefundLedgerEvidence(booking),
+    refundEvidence: paymentEvidence.refundEvidence,
     cashFeeDebtNeedsSettlement,
     cashDebtEvidenceLabel: cashFeeDebtNeedsSettlement
       ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
@@ -766,17 +763,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       label: 'Payment queue',
-      value: booking.payment?.status ?? 'No payment',
-      detail: `${booking.payment?.method ?? 'NONE'} / ${money(booking.payment?.amount, booking.payment?.currency)}`,
-      href: booking.payment?.status === 'AUTHORIZED' ? '/payments?review=authorized' : '/payments',
-      tone: booking.payment ? 'pill-info' : 'pill-neutral',
+      value: paymentEvidence.paymentQueueValue,
+      detail: paymentEvidence.paymentMethodAmountLabel,
+      href: paymentEvidence.paymentQueueHref,
+      tone: paymentEvidence.paymentTone,
     },
     {
       label: 'Refund queue',
-      value: `${refundLedgerRows.length} refund row(s)`,
-      detail: bookingRefundLedgerEvidence(booking),
-      href: refundLedgerRows.length ? '/refunds?review=open' : '#payment',
-      tone: refundLedgerRows.length ? 'pill-warn' : 'pill-neutral',
+      value: paymentEvidence.refundCountLabel,
+      detail: paymentEvidence.refundEvidence,
+      href: paymentEvidence.refundHref,
+      tone: paymentEvidence.refundTone,
     },
     {
       label: 'Cash settlement',
@@ -865,7 +862,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     walletLedgerLabel: financeTrace.walletLedger,
     terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
     refundLedgerCount: refundLedgerRows.length,
-    refundEvidence: bookingRefundLedgerEvidence(booking),
+    refundEvidence: paymentEvidence.refundEvidence,
     alertCount: notificationTrace.rows.length,
     failedAlertCount,
     closeoutStatus: closeoutReadiness.status,
@@ -984,11 +981,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#payment',
       label: 'Payment',
-      value: booking.payment?.status ?? 'NONE',
-      detail: `${booking.payment?.method ?? 'No method'} / ${money(
-        booking.payment?.amount,
-        booking.payment?.currency,
-      )}`,
+      value: paymentEvidence.paymentStatus,
+      detail: paymentEvidence.readablePaymentMethodAmountLabel,
     },
     {
       href: '#finance',
@@ -1059,14 +1053,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: bookingCashDebtNeedsSettlement(booking) ? '/cash-settlements' : '#payment',
       label: 'Money path',
-      value: booking.payment?.status ?? 'No payment',
+      value: paymentEvidence.paymentQueueValue,
       detail:
         booking.payment?.method === 'CASH'
           ? `${financeTrace.walletLedger} / ${financeTrace.platformFee} HANDS fee.`
-          : `${booking.payment?.method ?? 'NONE'} / ${money(
-              booking.payment?.amount,
-              booking.payment?.currency,
-            )}.`,
+          : `${paymentEvidence.paymentMethodAmountLabel}.`,
     },
   ];
   const bookingMetricCards = [
@@ -1146,11 +1137,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
   ];
   const bookingRecordPaymentRows = [
     { label: 'Payment id', value: booking.payment?.id ?? 'No payment' },
-    { label: 'Method', value: booking.payment?.method ?? 'NONE' },
-    { label: 'Amount', value: money(booking.payment?.amount, booking.payment?.currency) },
+    { label: 'Method', value: paymentEvidence.paymentMethod },
+    { label: 'Amount', value: paymentEvidence.paymentAmountLabel },
     {
       label: 'Refund count',
-      value: `${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`,
+      value: `${paymentEvidence.refundCount}`,
     },
     {
       label: 'Earning',
@@ -1406,6 +1397,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
   const paymentStatus = booking.payment?.status ?? 'NONE';
   const paymentIsTerminal = isTerminalPayment(paymentStatus);
   const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const paymentEvidence = bookingPaymentEvidence(booking);
   return buildBookingOperatorActionMatrix({
     bookingStatus: booking.status,
     paymentStatus,
@@ -1421,7 +1413,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
     expireAvailable: canExpireBooking(booking.status),
     expiresAtLabel: formatDate(booking.expiresAt),
     noShowAvailable: canMarkNoShow(booking.status),
-    refundRowCount: bookingRefundRows(booking).length,
+    refundRowCount: paymentEvidence.refundCount,
     noteLineCount: bookingOperatorNoteLines(booking.notes).length,
   });
 }
@@ -1504,6 +1496,7 @@ function bookingEvidencePacket({
   bookingActivityRecords: BookingActivityRecord[];
 }) {
   const trail = locationTrail(booking);
+  const paymentEvidence = bookingPaymentEvidence(booking);
   return buildBookingEvidencePacket({
     chatReady: bookingChatReady(booking),
     messageCount: messages.length,
@@ -1532,7 +1525,7 @@ function bookingEvidencePacket({
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     customerPriceLabel: financeTrace.customerPrice,
     walletLedgerLabel: financeTrace.walletLedger,
-    refundEvidence: bookingRefundLedgerEvidence(booking),
+    refundEvidence: paymentEvidence.refundEvidence,
     activityRecordCount: bookingActivityRecords.length,
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
