@@ -64,6 +64,7 @@ import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
+import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3536,46 +3537,31 @@ function nextAction(booking: AdminBooking) {
 }
 
 function bookingServiceOptionLabel(booking: AdminBooking) {
-  const bookedService = booking.services?.[0];
-  const service = bookedService?.service;
-  if (!service?.name) {
-    return 'Service pending';
-  }
-
-  const duration = service.durationMin ? `${service.durationMin} min` : 'duration pending';
-  return `${displayMarketplaceText(service.name)} / ${duration}`;
+  return bookingServiceListLabels(booking).optionLabel;
 }
 
 function bookingServicePriceLabel(booking: AdminBooking) {
-  const bookedService = booking.services?.[0];
-  const currency = booking.payment?.currency ?? 'VND';
-  const price = bookedService?.price ?? booking.payment?.amount;
-  if (price === undefined || price === null) {
-    return 'Price pending';
-  }
-
-  const minimum = bookedService?.service?.basePrice;
-  return minimum === undefined || minimum === null
-    ? `Customer ${money(Number(price), currency)}`
-    : `Customer ${money(Number(price), currency)} / min ${money(Number(minimum), currency)}`;
+  return bookingServiceListLabels(booking).priceLabel;
 }
 
 function bookingServicePayoutRuleLabel(booking: AdminBooking) {
+  return bookingServiceListLabels(booking).payoutRuleLabel;
+}
+
+function bookingServiceListLabels(booking: AdminBooking) {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
   const currency = booking.payment?.currency ?? 'VND';
   const customerPrice = bookedService?.price ?? booking.payment?.amount;
-  const payoutRule = service?.payoutRules?.find(
-    (rule) => rule.active && Number(rule.customerPrice) === Number(customerPrice),
-  );
-
-  if (!payoutRule) {
-    return customerPrice === undefined || customerPrice === null ? null : 'Payout rule missing';
-  }
-
-  const providerPayout = Number(payoutRule.providerPayoutAmount);
-  const platformFee = Number(payoutRule.customerPrice) - providerPayout;
-  return `Payout ${money(providerPayout, payoutRule.currency ?? currency)} / fee ${money(platformFee, payoutRule.currency ?? currency)}`;
+  return bookingServiceListLabelsFromFacts({
+    currency,
+    customerPrice,
+    durationMin: service?.durationMin,
+    formatMoney: money,
+    minimumPrice: service?.basePrice,
+    payoutRules: service?.payoutRules ?? [],
+    serviceName: service?.name ? displayMarketplaceText(service.name) : null,
+  });
 }
 
 function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
