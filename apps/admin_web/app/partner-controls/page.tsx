@@ -20,6 +20,17 @@ import {
 } from './actions';
 import { readSearchParam } from '../../lib/date-range';
 import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
+import { ActionMenu } from '../../components/action-menu';
+import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
+import {
+  buildPartnerControlDeskActionConfirmation,
+  partnerControlDeskActionConfirmHref,
+  readPartnerControlDeskConfirmationAction,
+  type PartnerControlDeskConfirmationAction,
+} from './partner-control-desk-action-confirmation';
+import { buildPartnerControlPageMetrics } from './partner-control-page-metrics';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type PartnerControlPolicy = {
@@ -59,7 +70,8 @@ export default async function PartnerControlsPage({
 }: {
   searchParams?: PartnerControlsSearchParams;
 }) {
-  const filters = buildFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildFilters(params);
   const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>('/admin/partners?view=list', []),
     adminGet<AdminProviderReport[]>('/admin/partner-reports', []),
@@ -75,6 +87,7 @@ export default async function PartnerControlsPage({
     label: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
   }));
   const summary = buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
+  const pageMetrics = buildPartnerControlPageMetrics(summary);
   const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
   const commandCenter = buildPartnerControlCommandCenter({
     reports,
@@ -85,23 +98,33 @@ export default async function PartnerControlsPage({
   const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, controlPolicy);
   const acceptanceUnblockPlaybook = buildAcceptanceUnblockPlaybook(acceptanceUnblockBoard);
   const partnerControlBoard = buildPartnerControlBoard(providers, providerWatchlist);
+  const controlConfirmation = buildPartnerControlDeskActionConfirmation(
+    sanctions,
+    readPartnerControlDeskConfirmationAction(readSearchParam(params.controlAction)),
+    readSearchParam(params.sanctionId),
+    filters,
+  );
 
   return (
     <>
-      <h1>Partner Controls</h1>
-      <p className="muted">
-        Track partner reports, account controls, booking blocks, payout holds, and operations follow-up in one
-        operator view.
-      </p>
-
-      <div className="grid" style={{ marginBottom: 16 }}>
-        {summary.map(([label, value]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{value}</h2>
-          </div>
-        ))}
-      </div>
+      {controlConfirmation ? (
+        <ConfirmDialog
+          action={partnerControlDeskServerAction(controlConfirmation.action)}
+          cancelHref={controlConfirmation.cancelHref}
+          confirmLabel={controlConfirmation.confirmLabel}
+          description={controlConfirmation.description}
+          disabled={controlConfirmation.disabled}
+          hiddenInputs={controlConfirmation.hiddenInputs}
+          id={`partner-control-desk-action-${controlConfirmation.action}-${controlConfirmation.sanctionId}`}
+          title={controlConfirmation.title}
+          tone={controlConfirmation.tone}
+        />
+      ) : null}
+      <AdminPageTemplate
+        description="Track partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
+        metrics={pageMetrics}
+        title="Partner Controls"
+      >
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -478,16 +501,11 @@ export default async function PartnerControlsPage({
           </div>
           <span className="pill pill-info">{providerWatchlist.length} partner(s)</span>
         </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Control signals</th>
-              <th>Money / access</th>
-              <th>Operator next step</th>
-            </tr>
-          </thead>
-          <tbody>
+        <AdminDataTable
+          emptyMessage="No partner control follow-ups are active."
+          headers={['Partner', 'Control signals', 'Money / access', 'Operator next step']}
+          rowCount={providerWatchlist.length}
+        >
             {providerWatchlist.map((item) => (
               <tr key={item.provider.id}>
                 <td>
@@ -540,13 +558,7 @@ export default async function PartnerControlsPage({
                 </td>
               </tr>
             ))}
-            {!providerWatchlist.length ? (
-              <tr>
-                <td colSpan={4}>No partner control follow-ups are active.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        </AdminDataTable>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -623,17 +635,11 @@ export default async function PartnerControlsPage({
           </div>
           <span className="pill pill-info">{visibleReports.length} shown</span>
         </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Report</th>
-              <th>Partner</th>
-              <th>Status</th>
-              <th>Account control</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <AdminDataTable
+          emptyMessage={emptyPartnerControlMessage('report', activeFilters)}
+          headers={['Report', 'Partner', 'Status', 'Account control', 'Action']}
+          rowCount={visibleReports.length}
+        >
             {visibleReports.map((report) => (
               <tr key={report.id}>
                 <td>
@@ -712,13 +718,7 @@ export default async function PartnerControlsPage({
                 </td>
               </tr>
             ))}
-            {!visibleReports.length ? (
-              <tr>
-                <td colSpan={5}>{emptyPartnerControlMessage('report', activeFilters)}</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        </AdminDataTable>
       </section>
 
       <section className="card">
@@ -731,17 +731,11 @@ export default async function PartnerControlsPage({
           </div>
           <span className="pill pill-info">{visibleSanctions.length} shown</span>
         </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Control</th>
-              <th>Partner</th>
-              <th>Linked report</th>
-              <th>Timeline</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
+        <AdminDataTable
+          emptyMessage={emptyPartnerControlMessage('sanction', activeFilters)}
+          headers={['Control', 'Partner', 'Linked report', 'Timeline', 'Action']}
+          rowCount={visibleSanctions.length}
+        >
             {visibleSanctions.map((sanction) => (
               <tr key={sanction.id}>
                 <td>
@@ -783,27 +777,42 @@ export default async function PartnerControlsPage({
                 </td>
                 <td>
                   {sanction.status === 'ACTIVE' ? (
-                    <form action={liftProviderSanction}>
-                      <input type="hidden" name="providerProfileId" value={sanction.providerProfileId} />
-                      <input type="hidden" name="sanctionId" value={sanction.id} />
-                      <button type="submit">Lift control</button>
-                    </form>
+                    <ActionMenu
+                      actions={[
+                        {
+                          description: 'Review before lifting this Partner account control.',
+                          href: partnerControlDeskActionConfirmHref({
+                            q: filters.q,
+                            sanction: filters.sanction,
+                            sanctionId: sanction.id,
+                            severity: filters.severity,
+                            status: filters.status,
+                          }),
+                          kind: 'link',
+                          label: 'Lift control',
+                          tone: 'warning',
+                        },
+                      ]}
+                      label={`Account control actions for ${shortDisplayId(sanction.id)}`}
+                    />
                   ) : (
                     <span className="muted">Closed</span>
                   )}
                 </td>
               </tr>
             ))}
-            {!visibleSanctions.length ? (
-              <tr>
-                <td colSpan={5}>{emptyPartnerControlMessage('sanction', activeFilters)}</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        </AdminDataTable>
       </section>
+      </AdminPageTemplate>
     </>
   );
+}
+
+function partnerControlDeskServerAction(action: PartnerControlDeskConfirmationAction) {
+  switch (action) {
+    case 'lift-control':
+      return liftProviderSanction;
+  }
 }
 
 type PartnerControlCommandCenterInput = {
