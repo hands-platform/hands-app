@@ -12,28 +12,28 @@ This repository is a medium monorepo:
 - Existing local, smoke, policy, and mobile verification scripts.
 - GitHub Actions exists for Node, Prisma, API, and Admin checks.
 
-## Selected Parallel Mode
+## Selected Operating Mode
 
-Selected: Parallel Mode 2, Limited Write Parallelism.
+Selected: Single-agent scoped workflow.
 
 Reason:
 
 - The repo has clearly separated apps and packages.
-- Admin UI, mobile UI, docs, and isolated API modules can be worked independently.
-- Shared contracts, Prisma schema, payments, wallet, matching, auth, realtime events, and environment configuration can break multiple apps and must stay sequential.
+- Admin UI, mobile UI, docs, and isolated API modules can still be scoped independently.
+- The main agent owns inspection, edits, verification, commit preparation, and reporting.
+- Shared contracts, Prisma schema, payments, wallet, matching, auth, realtime events, and environment configuration can break multiple apps and must stay sequentially reviewed.
 
-Rejected modes:
+Inactive modes:
 
-- Mode 0 is too slow because the repo has independent app folders.
-- Mode 1 is useful for audits, but write work is also safe when scoped.
-- Mode 3 adds worktree overhead that is not needed for the current pace.
-- Mode 4 adds too much coordination unless a large feature batch is planned.
+- Parallel worker lanes are not active for this repository.
+- Subagents, worker agents, and handoff agents should not be used for HANDS work.
+- Read-only context gathering can still use normal commands such as `rg`, `git diff`, and focused test commands.
 
 ## Selected Workflow Model
 
-Selected: Model B, Split Workflow.
+Selected: Sequential integration review.
 
-Allowed parallel work:
+Allowed scoped work:
 
 - Admin page-only UI changes.
 - Customer app page/widget changes.
@@ -41,7 +41,7 @@ Allowed parallel work:
 - API module work that does not touch protected contracts.
 - Docs and local scripts.
 
-Forbidden parallel work:
+Extra-care areas:
 
 - Prisma schema or migrations.
 - Auth, payment, wallet, settlement, matching, booking state machines.
@@ -55,16 +55,16 @@ Sequential work:
 - Any policy change that affects booking, wallet, settlement, or taxes.
 - Any database migration.
 
-## Task Partition
+## Scope Partition
 
-| Task                   | Type      | Allowed scope                       | Forbidden scope                                          | Checks                            | Risk   | Merge order                   |
-| ---------------------- | --------- | ----------------------------------- | -------------------------------------------------------- | --------------------------------- | ------ | ----------------------------- |
-| Admin Worker           | Write     | `apps/admin_web/**`                 | API contracts, Prisma, env                               | `verify:scope -- -Scope admin`    | Medium | Before full verify            |
-| API Worker             | Write     | isolated `apps/api/src/<module>/**` | Prisma, auth, wallet, payments, matching unless approved | `verify:scope -- -Scope api`      | High   | Before admin/mobile consumers |
-| Customer Mobile Worker | Write     | `apps/customer_app/**`              | shared API contracts, provider app                       | `verify:scope -- -Scope customer` | Medium | After API contract stability  |
-| Partner Mobile Worker  | Write     | `apps/provider_app/**`              | shared API contracts, customer app                       | `verify:scope -- -Scope provider` | Medium | After API contract stability  |
-| Docs/Harness Worker    | Write     | `docs/**`, `infra/scripts/**`       | business logic, schema                                   | `verify:scope -- -Scope harness`  | Low    | Any time                      |
-| Read-Only Review       | Read-only | whole repo                          | no edits                                                 | report only                       | Low    | Before large work             |
+| Scope | Allowed files | Forbidden scope | Checks | Risk | Merge order |
+| --- | --- | --- | --- | --- | --- |
+| Admin | `apps/admin_web/**` | API contracts, Prisma, env | `verify:scope -- -Scope admin` | Medium | Before full verify |
+| API | isolated `apps/api/src/<module>/**` | Prisma, auth, wallet, payments, matching unless approved | `verify:scope -- -Scope api` | High | Before admin/mobile consumers |
+| Customer mobile | `apps/customer_app/**` | shared API contracts, provider app | `verify:scope -- -Scope customer` | Medium | After API contract stability |
+| Partner mobile | `apps/provider_app/**` | shared API contracts, customer app | `verify:scope -- -Scope provider` | Medium | After API contract stability |
+| Docs/harness | `docs/**`, `infra/scripts/**` | business logic, schema | `verify:scope -- -Scope harness` | Low | Any time |
+| Read-only review | whole repo | no edits | report only | Low | Before large work |
 
 ## Protected Areas
 
@@ -107,7 +107,7 @@ Locked areas require explicit plan, integration review, and Tier 2 plus Tier 3 c
 | --------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------- | -------------- | --------------------------------- |
 | Tier 0 Preflight      | `npm.cmd run verify:preflight`                                                           | Check repo, branch, tools, and protected changes | before work or after environment changes | fast           | none                              |
 | Tier 1 Fast Local     | `npm.cmd run verify:api:fast`, `verify:admin:fast`, `verify:customer:fast`, `verify:provider:fast` | Verify one area                                  | during scoped work                       | fast to medium | skip unrelated scopes             |
-| Tier 1A Worker        | same as Tier 1 by owned scope                                                             | Parallel worker handoff                          | before worker reports done               | fast to medium | skip if read-only                 |
+| Tier 1A Scoped review | same as Tier 1 by touched scope                                                           | Recheck focused scope after edits                | before reporting done                    | fast to medium | skip if read-only                 |
 | Tier 2 Full Local     | `npm.cmd run verify:full` or `npm.cmd run verify:local`                                   | Full repo verification without service smoke     | before protected merge or release chunk  | medium to slow | never skip before protected merge |
 | Tier 3 Integration    | `powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices` | Docker, migration, seed, API/realtime smoke      | DB/API/shared contract changes           | slow           | skip for docs-only or isolated UI |
 | Tier 4 Heavy Optional | `npm audit --audit-level=moderate`, manual emulator/browser checks                        | Security and UX confidence                       | release prep or suspicious changes       | slow           | optional during normal coding     |

@@ -186,7 +186,7 @@ These should stay configurable instead of being hardcoded:
 Before changing this flow, run:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run typecheck --workspace @massage-vn/api
 npm.cmd run typecheck --workspace @massage-vn/admin-web
 npm.cmd run build --workspace @massage-vn/admin-web
@@ -197,9 +197,9 @@ node .\infra\scripts\admin-web-smoke.mjs
 For mobile guard changes:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo\apps\provider_app
+cd C:\dev\massage-on-demand-vn\apps\provider_app
 flutter test
 
-cd C:\dev\massage-vn-workspace\repo\apps\customer_app
+cd C:\dev\massage-on-demand-vn\apps\customer_app
 flutter test
 ```

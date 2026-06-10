@@ -3,7 +3,7 @@
 Use this checklist only for external console readiness. Keep real secrets outside Git under:
 
 ```text
-C:\dev\massage-vn-workspace\secrets
+C:\dev\hands-secrets
 ```
 
 Canonical operator order:
@@ -83,7 +83,7 @@ VNPAY_HASH_SECRET=
 ## Verification Commands
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:check
 npm.cmd run external:check:maps

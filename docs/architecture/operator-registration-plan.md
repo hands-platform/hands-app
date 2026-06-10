@@ -70,12 +70,12 @@ npm.cmd run external:check:maps
 
 9. Android release signing
    - Helper: `npm.cmd run android:signing:create`.
-   - Keystores must stay under `C:\dev\massage-vn-workspace\secrets`.
+   - Keystores must stay under `C:\dev\hands-secrets`.
 
 ## Generated Handoff Pack
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:pack:write
 ```

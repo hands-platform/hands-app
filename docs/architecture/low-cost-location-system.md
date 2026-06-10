@@ -49,12 +49,12 @@ Flutter local run:
 ```powershell
 $env:MAPTILER_API_KEY="your-maptiler-key"
 $env:GEOAPIFY_API_KEY="your-geoapify-key"
-powershell -ExecutionPolicy Bypass -File C:\dev\massage-vn-workspace\repo\infra\scripts\run-hands-emulator.ps1 -App customer
+powershell -ExecutionPolicy Bypass -File C:\dev\massage-on-demand-vn\infra\scripts\run-hands-emulator.ps1 -App customer
 ```
 
 ## Supabase SQL
 
-Use [location-schema.sql](/C:/dev/massage-vn-workspace/repo/infra/supabase/location-schema.sql) if HANDS later stores map/location data directly in Supabase.
+Use [location-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/location-schema.sql) if HANDS later stores map/location data directly in Supabase.
 
 The current MVP implementation uses the existing NestJS API and PostgreSQL/PostGIS-compatible schema so mobile apps do not need direct Supabase access yet.
 

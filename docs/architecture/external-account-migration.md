@@ -6,7 +6,7 @@ Use this file when moving external services to clean HANDS-owned accounts under 
 
 - Prefer new HANDS-owned accounts instead of migrating old personal credentials.
 - Enable 2FA where available.
-- Store recovery codes and secrets outside Git under `C:\dev\massage-vn-workspace\secrets`.
+- Store recovery codes and secrets outside Git under `C:\dev\hands-secrets`.
 - Do not commit API keys, passwords, merchant secrets, service-role keys, private keys, or recovery codes.
 - Revoke old personal/dev keys only after the new HANDS-owned values pass E2E.
 
@@ -28,7 +28,7 @@ Use this file when moving external services to clean HANDS-owned accounts under 
 ## Verification
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:check
 npm.cmd run security:secrets

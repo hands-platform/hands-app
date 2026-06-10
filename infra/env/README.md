@@ -7,7 +7,7 @@ Use these templates as operator-friendly checklists for local and staging setup.
 Start from:
 
 ```text
-C:\dev\massage-vn-workspace\repo\infra\env\hands-staging.env.example
+C:\dev\massage-on-demand-vn\infra\env\hands-staging.env.example
 ```
 
 Copy values into your local `.env` when you receive real credentials from Supabase, MapTiler, Geoapify, MoMo, VNPay, storage/CDN, or a push provider.
@@ -26,7 +26,7 @@ Do not commit real `.env` files or secrets.
 ## Verification
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 node infra\scripts\check-env.mjs infra\env\hands-staging.env.example --template
 npm.cmd run external:check

@@ -19,7 +19,7 @@ The customer Flutter app now includes:
 Run with custom endpoints:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo\apps\customer_app
+cd C:\dev\massage-on-demand-vn\apps\customer_app
 flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3000
 ```
 
@@ -58,7 +58,7 @@ The partner Flutter app now includes:
 - `flutter pub get`, `flutter analyze`, and widget smoke tests pass for both customer and partner apps in the local Windows environment.
 - Android platform folders are generated for both Flutter apps.
 - Customer and Partner apps have been build-installed-launched on `emulator-5554` from an ASCII-only path.
-- Windows Android builds should run from an ASCII-only path such as `C:\dev\massage-vn-workspace\repo`; the original workspace path contains Korean characters and can trigger Android/Flutter toolchain failures.
+- Windows Android builds should run from an ASCII-only path such as `C:\dev\massage-on-demand-vn`; the original workspace path contains Korean characters and can trigger Android/Flutter toolchain failures.
 
 ## Mobile Firebase Removal Check
 

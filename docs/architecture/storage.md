@@ -89,7 +89,7 @@ Private files are read through `GET /api/files/:id/read-url`, which checks that 
 Run a real storage upload/read smoke after setting S3-compatible credentials:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run storage:smoke
 ```
 

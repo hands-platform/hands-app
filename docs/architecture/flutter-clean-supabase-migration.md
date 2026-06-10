@@ -55,7 +55,7 @@ Firebase has been removed from the Flutter apps after isolating notification beh
 Use the architecture guard whenever auth, notification, map, or chat code is moved:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run mobile:architecture:check
 ```
 

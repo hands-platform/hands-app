@@ -46,7 +46,7 @@ Read `docs/README.md` first. It explains which documents are authoritative, whic
 Primary local workspace:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 ```
 
 ```powershell
@@ -124,18 +124,12 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 
 If the standard HANDS local API is already running on `http://localhost:3100/api`, the verification script now reuses that runtime for smoke checks instead of starting a second temporary API.
 
-Dedicated HANDS local workspace organizer:
+Current HANDS local workspace layout:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\scripts\organize-c-drive-workspace.ps1
-```
-
-This creates:
-
-- `C:\dev\massage-vn-workspace\repo`
-- `C:\dev\massage-vn-workspace\secrets`
-- `C:\dev\massage-vn-workspace\references\apk`
-- `C:\dev\massage-vn-workspace\references\analysis`
+- `C:\dev\massage-on-demand-vn`
+- `C:\dev\hands-secrets` for credentials and recovery codes outside Git
+- `C:\dev\hands-references\apk` for reference APK files
+- `C:\dev\hands-references\analysis` for reference analysis output
 
 HANDS local API/Admin startup on non-conflicting ports:
 

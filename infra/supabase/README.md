@@ -7,7 +7,7 @@ Use the generated bundle for staging setup instead of pasting individual SQL fil
 ## Recommended Staging Flow
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run supabase:sql:pack
 ```
@@ -15,7 +15,7 @@ npm.cmd run supabase:sql:pack
 Then open this generated file and paste it into the Supabase SQL Editor:
 
 ```text
-C:\dev\massage-vn-workspace\repo\infra\supabase\.generated\hands-staging-setup.sql
+C:\dev\massage-on-demand-vn\infra\supabase\.generated\hands-staging-setup.sql
 ```
 
 The generated bundle applies files in this order:
@@ -28,7 +28,7 @@ The generated bundle applies files in this order:
 If the generated SQL was applied before PostgREST role grants were added and REST requests return `42501 permission denied for table`, apply this one-time patch in the Supabase SQL Editor:
 
 ```text
-C:\dev\massage-vn-workspace\repo\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
 ```
 
 ## After Applying SQL

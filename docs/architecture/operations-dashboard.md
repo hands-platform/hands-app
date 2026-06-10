@@ -103,7 +103,7 @@ These values should be changed through Admin `/operations-policy` or environment
 Run these checks after dashboard or policy changes:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run typecheck --workspace @massage-vn/admin-web
 npm.cmd run admin:web-smoke
 node .\infra\scripts\check-secret-leaks.mjs

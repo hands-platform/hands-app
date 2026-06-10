@@ -14,28 +14,28 @@ Do not commit keystores, passwords, `key.properties`, Play Console credentials, 
 Run from the repository root:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run android:signing:create
 ```
 
 The helper creates two upload keystores under the local secrets folder:
 
 ```text
-C:\dev\massage-vn-workspace\secrets\android-signing\hands-customer-upload.jks
-C:\dev\massage-vn-workspace\secrets\android-signing\hands-provider-upload.jks
+C:\dev\hands-secrets\android-signing\hands-customer-upload.jks
+C:\dev\hands-secrets\android-signing\hands-provider-upload.jks
 ```
 
 It also writes ignored app-local Gradle signing files:
 
 ```text
-C:\dev\massage-vn-workspace\repo\apps\customer_app\android\key.properties
-C:\dev\massage-vn-workspace\repo\apps\provider_app\android\key.properties
+C:\dev\massage-on-demand-vn\apps\customer_app\android\key.properties
+C:\dev\massage-on-demand-vn\apps\provider_app\android\key.properties
 ```
 
 The Play Console and Android API restriction handoff file is:
 
 ```text
-C:\dev\massage-vn-workspace\secrets\android-signing\android-signing-summary.txt
+C:\dev\hands-secrets\android-signing\android-signing-summary.txt
 ```
 
 This file includes the SHA-1 and SHA-256 fingerprints for both apps.
@@ -43,10 +43,10 @@ This file includes the SHA-1 and SHA-256 fingerprints for both apps.
 ## Build Verification
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo\apps\customer_app
+cd C:\dev\massage-on-demand-vn\apps\customer_app
 flutter build apk --release
 
-cd C:\dev\massage-vn-workspace\repo\apps\provider_app
+cd C:\dev\massage-on-demand-vn\apps\provider_app
 flutter build apk --release
 ```
 
@@ -57,14 +57,14 @@ The Gradle files automatically use `android/key.properties` when it exists. If i
 For production-like readiness checks, fill these in your local `.env` or deployment environment:
 
 ```dotenv
-ANDROID_CUSTOMER_UPLOAD_KEYSTORE=C:\dev\massage-vn-workspace\secrets\android-signing\hands-customer-upload.jks
-ANDROID_PROVIDER_UPLOAD_KEYSTORE=C:\dev\massage-vn-workspace\secrets\android-signing\hands-provider-upload.jks
+ANDROID_CUSTOMER_UPLOAD_KEYSTORE=C:\dev\hands-secrets\android-signing\hands-customer-upload.jks
+ANDROID_PROVIDER_UPLOAD_KEYSTORE=C:\dev\hands-secrets\android-signing\hands-provider-upload.jks
 ```
 
 Then verify:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run external:check:production
 ```
 

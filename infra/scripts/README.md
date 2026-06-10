@@ -23,5 +23,5 @@ The deploy scripts validate env, start `docker-compose.prod.yml`, run Prisma mig
 External registration order is documented here:
 
 ```text
-C:\dev\massage-vn-workspace\repo\docs\architecture\operator-registration-plan.md
+C:\dev\massage-on-demand-vn\docs\architecture\operator-registration-plan.md
 ```

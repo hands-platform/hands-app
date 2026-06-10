@@ -102,12 +102,12 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 
 ## SQL
 
-Run [hands-core-schema.sql](/C:/dev/massage-vn-workspace/repo/infra/supabase/hands-core-schema.sql) in the Supabase SQL editor after creating the project.
+Run [hands-core-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/hands-core-schema.sql) in the Supabase SQL editor after creating the project.
 
 For a staging project, generate a single ordered SQL bundle first:
 
 ```powershell
-cd C:\dev\massage-vn-workspace\repo
+cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run supabase:sql:pack
 ```
@@ -115,7 +115,7 @@ npm.cmd run supabase:sql:pack
 The generated file is written to:
 
 ```text
-C:\dev\massage-vn-workspace\repo\infra\supabase\.generated\hands-staging-setup.sql
+C:\dev\massage-on-demand-vn\infra\supabase\.generated\hands-staging-setup.sql
 ```
 
 Paste that bundle into the Supabase SQL Editor for the HANDS staging project. The bundle includes `hands-core-schema.sql` first and `storage-schema.sql` second. It intentionally excludes `location-schema.sql` because that file is a standalone early draft; the current core schema already includes `provider_locations`, `customer_selected_locations`, and `nearby_providers`.
@@ -123,7 +123,7 @@ Paste that bundle into the Supabase SQL Editor for the HANDS staging project. Th
 If the SQL bundle was applied before PostgREST role grants were added and REST requests return `42501 permission denied for table`, apply this patch once:
 
 ```text
-C:\dev\massage-vn-workspace\repo\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
+C:\dev\massage-on-demand-vn\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
 ```
 
 The schema includes:
