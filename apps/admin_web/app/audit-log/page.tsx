@@ -1,4 +1,6 @@
-import { AdminAuditLog, adminGet } from '../../lib/admin-api';
+import type { AdminAuditLog } from '../../lib/admin-api';
+import { adminGet } from '../../lib/admin-api';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
 import {
   formatDateTime,
@@ -7,7 +9,12 @@ import {
   formatRelativeTime,
 } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
-import Link from 'next/link';
+import {
+  AuditLogCommandBoardSection,
+  type AuditCommandBoardItem,
+  type AuditCommandLogPreview,
+} from './audit-log-command-board-section';
+import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-section';
 
 type AuditLogFilters = {
   q: string;
@@ -24,88 +31,24 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
   const logs = filterAuditLogs(dateFilteredLogs, filters);
   const summary = buildSummary(logs);
   const commandBoard = buildAuditCommandBoard(dateFilteredLogs, filters.range);
+  const auditLogRows = buildAuditLogTableRows(logs);
 
   return (
-    <>
-      <h1>Audit Log</h1>
-      <section className="grid" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <p>Total events</p>
-          <h2>{summary.total}</h2>
-        </div>
-        <div className="card">
-          <p>Dispatch actions</p>
-          <h2>{summary.dispatch}</h2>
-        </div>
-        <div className="card">
-          <p>Payment actions</p>
-          <h2>{summary.payments}</h2>
-        </div>
-        <div className="card">
-          <p>Finance closeout</p>
-          <h2>{summary.financeCloseout}</h2>
-        </div>
-        <div className="card">
-          <p>Service pricing</p>
-          <h2>{summary.servicePricing}</h2>
-        </div>
-        <div className="card">
-          <p>Notification actions</p>
-          <h2>{summary.notifications}</h2>
-        </div>
-        <div className="card">
-          <p>Needs review</p>
-          <h2>{summary.needsReview}</h2>
-        </div>
-        <div className="card">
-          <p>Recent hour</p>
-          <h2>{summary.recentHour}</h2>
-        </div>
-      </section>
-
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Audit command board</h2>
-            <p className="muted">
-              High-impact admin changes grouped by policy, money movement, dispatch state, and recent operator
-              actions.
-            </p>
-          </div>
-          <span
-            className={`pill ${
-              commandBoard.some((item) => item.logs.length > 0 && item.tone === 'warn')
-                ? 'pill-warn'
-                : 'pill-success'
-            }`}
-          >
-            {commandBoard.reduce((sum, item) => sum + item.logs.length, 0)} audit record(s)
-          </span>
-        </div>
-        <div className="ops-task-grid">
-          {commandBoard.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.title}>
-              <span className={`signal ${auditToneClass(item.tone)}`}>{auditToneLabel(item.tone)}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{item.status}</span>
-                <span className="pill">{item.logs.length} event(s)</span>
-              </div>
-              {item.logs.length > 0 ? (
-                <div className="stack">
-                  {item.logs.slice(0, 3).map((log) => (
-                    <span className="muted" key={`${item.title}-${log.id}`}>
-                      {humanizeAction(log.action)} / {shortTarget(log.target)} / {auditRelativeTime(log.createdAt)}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <small>{item.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+    <AdminPageTemplate
+      description="Operational history for bookings, payments, refunds, partner review, alerts, and policy changes."
+      metrics={[
+        { label: 'Total events', value: summary.total, helper: 'Events after the active filters.' },
+        { label: 'Dispatch actions', value: summary.dispatch, helper: 'Booking, matching, and Partner events.' },
+        { label: 'Payment actions', value: summary.payments, helper: 'Payment and refund audit records.' },
+        { label: 'Finance closeout', value: summary.financeCloseout, helper: 'Money movement and closeout records.' },
+        { label: 'Service pricing', value: summary.servicePricing, helper: 'Service, payout, tax, and pricing edits.' },
+        { label: 'Notification actions', value: summary.notifications, helper: 'Notification send and retry events.' },
+        { label: 'Needs review', value: summary.needsReview, helper: 'High-priority events for operators.' },
+        { label: 'Recent hour', value: summary.recentHour, helper: 'Events created within the last hour.' },
+      ]}
+      title="Audit Log"
+    >
+      <AuditLogCommandBoardSection items={commandBoard} />
 
       <section className="card" style={{ marginBottom: 16 }}>
         <form className="form-grid" action="/audit-log">
@@ -173,82 +116,31 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           </div>
         </div>
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Action</th>
-              <th>Actor</th>
-              <th>Target</th>
-              <th>Related board</th>
-              <th>Ops record</th>
-              <th>Metadata</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td>
-                  <div>{formatDateTime(log.createdAt)}</div>
-                  <div className="muted">{auditRelativeTime(log.createdAt)}</div>
-                </td>
-                <td>
-                  <div style={{ marginBottom: 6 }}>{humanizeAction(log.action)}</div>
-                  <span className={signalClass(log.action)}>{actionBucketLabel(log.action)}</span>
-                </td>
-                <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
-                <td>
-                  <div>{shortTarget(log.target)}</div>
-                  <div className="muted">{operationalDisplayText(log.target)}</div>
-                </td>
-                <td>
-                  <a className="pill pill-info" href={relatedBoardHref(log)}>
-                    {relatedBoardLabel(log)}
-                  </a>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {reviewPriorityLabel(log.action)}
-                  </div>
-                </td>
-                <td>
-                  <div>{opsHint(log.action, log.target)}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {opsDetail(log.action)}
-                  </div>
-                </td>
-                <td>
-                  {metadataHighlights(log).length > 0 && (
-                    <div className="participant-list" style={{ marginBottom: 8 }}>
-                      {metadataHighlights(log).map((item, index) => (
-                        <span className={item.className} key={`${item.label}-${index}`}>
-                          {item.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <pre
-                    style={{
-                      margin: 0,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      fontSize: 12,
-                      color: '#475569',
-                    }}
-                  >
-                    {metadataPreview(log.metadata)}
-                  </pre>
-                </td>
-              </tr>
-            ))}
-            {logs.length === 0 && (
-              <tr>
-                <td colSpan={7}>No audit logs loaded.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
       </div>
-    </>
+    </AdminPageTemplate>
   );
+}
+
+function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLogTableRow[] {
+  return logs.map((log) => ({
+    actionLabel: humanizeAction(log.action),
+    actorLabel: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+    bucketClassName: signalClass(log.action),
+    bucketLabel: actionBucketLabel(log.action),
+    createdAtLabel: formatDateTime(log.createdAt),
+    id: log.id,
+    metadataHighlights: metadataHighlights(log),
+    metadataPreview: metadataPreview(log.metadata),
+    opsDetail: opsDetail(log.action),
+    opsHint: opsHint(log.action, log.target),
+    priorityLabel: reviewPriorityLabel(log.action),
+    relatedBoardHref: relatedBoardHref(log),
+    relatedBoardLabel: relatedBoardLabel(log),
+    relativeTimeLabel: auditRelativeTime(log.createdAt),
+    shortTargetLabel: shortTarget(log.target),
+    targetLabel: operationalDisplayText(log.target),
+  }));
 }
 
 function sortLogs(logs: AdminAuditLog[]) {
@@ -277,19 +169,7 @@ function buildSummary(logs: AdminAuditLog[]) {
   };
 }
 
-type AuditCommandTone = 'warn' | 'info' | 'ok';
-
-type AuditCommandItem = {
-  title: string;
-  detail: string;
-  status: string;
-  operatorAction: string;
-  href: string;
-  tone: AuditCommandTone;
-  logs: AdminAuditLog[];
-};
-
-function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandItem[] {
+function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandBoardItem[] {
   const now = Date.now();
   const servicePolicyLogs = logs.filter(
     (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
@@ -312,7 +192,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       operatorAction: 'Review before/after metadata and confirm the change was intentional.',
       href: withAuditRange('/audit-log?bucket=Service%2FPricing', range),
       tone: servicePolicyLogs.length > 0 ? 'warn' : 'ok',
-      logs: servicePolicyLogs,
+      logs: buildAuditCommandLogPreviews(servicePolicyLogs),
     },
     {
       title: 'Money movement trail',
@@ -321,7 +201,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       operatorAction: 'Check ledger impact before closing payment or payout tasks.',
       href: withAuditRange('/audit-log?bucket=Payment', range),
       tone: moneyLogs.length > 0 ? 'warn' : 'ok',
-      logs: moneyLogs,
+      logs: buildAuditCommandLogPreviews(moneyLogs),
     },
     {
       title: 'Finance closeout trail',
@@ -331,7 +211,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       operatorAction: 'Open Finance Closeout, then confirm every listed event has a matching ledger row.',
       href: withAuditRange('/audit-log?bucket=Finance%2FCloseout', range),
       tone: financeCloseoutLogs.length > 0 ? 'warn' : 'ok',
-      logs: financeCloseoutLogs,
+      logs: buildAuditCommandLogPreviews(financeCloseoutLogs),
     },
     {
       title: 'Dispatch and partner actions',
@@ -340,7 +220,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       operatorAction: 'Trace handoff problems from booking detail back to the acting operator.',
       href: withAuditRange('/audit-log?bucket=Dispatch', range),
       tone: dispatchLogs.length > 0 ? 'info' : 'ok',
-      logs: dispatchLogs,
+      logs: buildAuditCommandLogPreviews(dispatchLogs),
     },
     {
       title: 'Recent high-priority changes',
@@ -349,9 +229,18 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       operatorAction: 'Use this lane for end-of-shift review and incident handoff.',
       href: withAuditRange('/audit-log?priority=4', range),
       tone: recentHighPriority.length > 0 ? 'warn' : 'ok',
-      logs: recentHighPriority,
+      logs: buildAuditCommandLogPreviews(recentHighPriority),
     },
   ];
+}
+
+function buildAuditCommandLogPreviews(logs: readonly AdminAuditLog[]): AuditCommandLogPreview[] {
+  return logs.map((log) => ({
+    actionLabel: humanizeAction(log.action),
+    id: log.id,
+    relativeTimeLabel: auditRelativeTime(log.createdAt),
+    shortTargetLabel: shortTarget(log.target),
+  }));
 }
 
 function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
@@ -990,22 +879,3 @@ function opsDetail(action: string) {
   return 'Use this row to confirm who acted, when they acted, and what object changed.';
 }
 
-function auditToneClass(tone: AuditCommandTone) {
-  if (tone === 'warn') {
-    return 'signal-warn';
-  }
-  if (tone === 'ok') {
-    return 'signal-ok';
-  }
-  return 'signal-info';
-}
-
-function auditToneLabel(tone: AuditCommandTone) {
-  if (tone === 'warn') {
-    return 'Review';
-  }
-  if (tone === 'ok') {
-    return 'Clear';
-  }
-  return 'Monitor';
-}
