@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import {
+  buildBookingMatchingEscalationBoard,
+  type BookingMatchingEscalationLane,
+} from '../../lib/booking-matching-escalation-board';
+import {
   buildBookingMatchingFlowTimeline,
   type BookingMatchingFlowStep,
 } from '../../lib/booking-matching-flow-timeline';
@@ -143,16 +147,7 @@ type BookingProtectionLane = {
   bookings: AdminBooking[];
 };
 
-type BookingMatchingEscalationLane = {
-  title: string;
-  status: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-  detail: string;
-  operatorAction: string;
-  href: string;
-  bookings: AdminBooking[];
-  metrics: Array<{ label: string; value: string }>;
-};
+type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBooking>;
 
 type BookingMatchingEscalationRow = {
   booking: AdminBooking;
@@ -2319,7 +2314,7 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
 function buildMatchingEscalationBoard(
   bookings: AdminBooking[],
   nowMs: number,
-): BookingMatchingEscalationLane[] {
+): readonly AdminBookingMatchingEscalationLane[] {
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const expiredWindow = open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
   const firstPickWaiting = open.filter(
@@ -2331,70 +2326,15 @@ function buildMatchingEscalationBoard(
   const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
   const chatReady = bookings.filter((booking) => Boolean(booking.chatRoom));
 
-  return [
-    {
-      title: 'First-pick response window',
-      status: expiredWindow.length > 0 ? 'Expired window' : firstPickWaiting.length ? 'Waiting' : 'Clear',
-      tone: expiredWindow.length > 0 ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
-      detail:
-        firstPickWaiting.length > 0
-          ? 'Preferred partners have the first chance before the customer reviews marketplace supply.'
-          : 'No preferred partner is currently blocking a direct request.',
-      operatorAction:
-        'If the timer is near expiry, prepare marketplace participant reminders and keep the customer waiting screen honest.',
-      href: expiredWindow.length > 0 ? '/bookings?view=attention' : '/bookings?view=matching',
-      bookings: firstPickWaiting,
-      metrics: [metric('waiting', firstPickWaiting.length), metric('expired', expiredWindow.length)],
-    },
-    {
-      title: 'Marketplace participant supply',
-      status: noMarketplaceSupply.length > 0 ? 'Needs supply' : marketplaceReady.length ? 'Ready' : 'Clear',
-      tone: noMarketplaceSupply.length > 0 ? 'warn' : marketplaceReady.length ? 'info' : 'ok',
-      detail:
-        noMarketplaceSupply.length > 0
-          ? 'Some open requests have no marketplace participant visible to the customer yet.'
-          : 'Marketplace participants are already visible for open requests that need options.',
-      operatorAction:
-        'Check partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
-      href: noMarketplaceSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
-      bookings: noMarketplaceSupply.length > 0 ? noMarketplaceSupply : marketplaceReady,
-      metrics: [
-        metric('no marketplace', noMarketplaceSupply.length),
-        metric('marketplace ready', marketplaceReady.length),
-      ],
-    },
-    {
-      title: 'Customer final selection',
-      status: customerFinalSelection.length > 0 ? 'Customer decision' : 'Clear',
-      tone: customerFinalSelection.length > 0 ? 'warn' : 'ok',
-      detail:
-        customerFinalSelection.length > 0
-        ? 'At least one partner is participating or accepted; the customer still needs to lock the final partner.'
-          : 'No open request is waiting on customer final selection.',
-      operatorAction:
-      'Guide support to nudge the customer when participating/accepted partners are waiting and the booking is still open.',
-      href: '/bookings?view=matching',
-      bookings: customerFinalSelection,
-      metrics: [
-        metric('accepted options', customerFinalSelection.length),
-        metric('marketplace options', marketplaceReady.length),
-      ],
-    },
-    {
-      title: 'Chat handoff after match',
-      status: matchedWithoutChat.length > 0 ? 'Repair chat' : chatReady.length ? 'Chat live' : 'Clear',
-      tone: matchedWithoutChat.length > 0 ? 'danger' : chatReady.length ? 'info' : 'ok',
-      detail:
-        matchedWithoutChat.length > 0
-          ? 'A final partner is selected, but chat is missing and service coordination can stall.'
-          : 'Matched bookings have chat or no active handoff blocker is visible.',
-      operatorAction:
-        'Repair chat room creation before the partner moves to service start, arrival, or payment closeout.',
-      href: matchedWithoutChat.length > 0 ? '/bookings?view=attention' : '/bookings?view=chat',
-      bookings: matchedWithoutChat,
-      metrics: [metric('missing chat', matchedWithoutChat.length), metric('chat ready', chatReady.length)],
-    },
-  ];
+  return buildBookingMatchingEscalationBoard({
+    chatReady,
+    customerFinalSelection,
+    expiredWindow,
+    firstPickWaiting,
+    marketplaceReady,
+    matchedWithoutChat,
+    noMarketplaceSupply,
+  });
 }
 
 function buildBookingDispatchPartnerShortcuts(
