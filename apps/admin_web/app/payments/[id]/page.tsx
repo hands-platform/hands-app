@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ConfirmDialog } from '../../../components/confirm-dialog';
 import { MetricCard } from '../../../components/metric-card';
 import {
   compactValue,
@@ -15,22 +16,31 @@ import {
   AdminPaymentDetail,
   adminGet,
 } from '../../../lib/admin-api';
+import { readSearchParam } from '../../../lib/date-range';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from '../actions';
+import {
+  type PaymentConfirmationAction,
+  buildPaymentActionConfirmation,
+  paymentActionConfirmHref,
+  readPaymentConfirmationAction,
+} from '../payment-action-confirmation';
+import {
+  PaymentDetailActionMapSection,
+  type PaymentDetailActionMapRow,
+} from './payment-detail-action-map-section';
+import {
+  PaymentDetailCallbackTimelineSection,
+  type PaymentDetailCallbackTimelineRow,
+} from './payment-detail-callback-timeline-section';
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-type PaymentActionExecutionRow = {
-  action: string;
-  status: string;
-  reason: string;
-  operatorRule: string;
-  pillClass: string;
-};
-
-export default async function PaymentDetailPage({ params }: PageProps) {
+export default async function PaymentDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const query = searchParams ? await searchParams : {};
   const payment = await adminGet<AdminPaymentDetail | null>(`/admin/payments/${id}`, null);
 
   if (!payment) {
@@ -44,12 +54,19 @@ export default async function PaymentDetailPage({ params }: PageProps) {
     (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
   );
   const actionMap = paymentActionExecutionMap(payment);
+  const callbackTimelineRows = buildPaymentDetailCallbackTimelineRows(callbacks, payment.currency);
   const callbackReviewCount = callbacks.filter(paymentCallbackAttemptNeedsReview).length;
   const acceptedCallbackCount = callbacks.filter(paymentCallbackAttemptVerified).length;
   const cashDebt = paymentCashDebtNeedsSettlement(payment);
   const serviceLabel = bookingServiceLabel(payment);
   const bookingAddress = bookingAddressLabel(payment);
   const auditRows = payment.auditLogs ?? [];
+  const confirmation = buildPaymentActionConfirmation(
+    [payment],
+    readPaymentConfirmationAction(readSearchParam(query.confirm)),
+    payment.id,
+    { cancelHref: `/payments/${payment.id}` },
+  );
 
   return (
     <>
@@ -100,114 +117,30 @@ export default async function PaymentDetailPage({ params }: PageProps) {
         <MetricCard label="Audit trail" value={`${auditRows.length} event(s)`} helper="Payment and linked booking operation logs." />
       </section>
 
-      <section className="card" id="payment-action-map" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payment action execution map</h2>
-            <p className="muted">
-              Operator action checks for sync, capture, release, refund, and cash fee settlement.
-            </p>
-          </div>
-          <span className={`pill ${cashDebt || callbackReviewCount ? 'pill-warn' : 'pill-success'}`}>
-            {cashDebt || callbackReviewCount ? 'Review needed' : 'No urgent block'}
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {actionMap.map((row) => (
-            <div className="setup-stage-item" key={row.action}>
-              <span className={`pill ${row.pillClass}`}>{row.status}</span>
-              <div>
-                <strong>{row.action}</strong>
-                <p className="muted">{row.reason}</p>
-                <small>{row.operatorRule}</small>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="actions" style={{ marginTop: 16 }}>
-          <PaymentAction action={syncPayment} paymentId={payment.id} label="Sync gateway" disabled={!payment.providerRef} />
-          <PaymentAction
-            action={capturePayment}
-            paymentId={payment.id}
-            label="Capture"
-            disabled={['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status)}
-          />
-          <PaymentAction
-            action={releasePayment}
-            paymentId={payment.id}
-            label="Release"
-            disabled={['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status)}
-          />
-          <PaymentAction
-            action={refundPayment}
-            paymentId={payment.id}
-            label="Refund"
-            disabled={payment.status === 'REFUNDED' || payment.status === 'RELEASED'}
-          />
-        </div>
-        {cashDebt && earning?.id ? <CashDebtSettlementForm payment={payment} /> : null}
-      </section>
+      <PaymentDetailActionMapSection
+        actionLabel={`Payment detail actions for ${shortId(payment.id)}`}
+        actions={paymentDetailActionMenuItems(payment)}
+        cashDebtSettlementForm={cashDebt && earning?.id ? <CashDebtSettlementForm payment={payment} /> : null}
+        confirmation={
+          confirmation ? (
+            <ConfirmDialog
+              action={paymentConfirmationAction(confirmation.action)}
+              cancelHref={confirmation.cancelHref}
+              confirmLabel={confirmation.confirmLabel}
+              description={confirmation.description}
+              disabled={confirmation.disabled}
+              hiddenInputs={[{ name: 'paymentId', value: confirmation.paymentId }]}
+              id={`payment-detail-${confirmation.action}-${confirmation.paymentId}`}
+              title={confirmation.title}
+              tone={confirmation.tone}
+            />
+          ) : null
+        }
+        hasBlockingReview={cashDebt || callbackReviewCount > 0}
+        rows={actionMap}
+      />
 
-      <section className="card" id="callback-timeline" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Gateway callback attempt timeline</h2>
-            <p className="muted">
-              Accepted, replayed, rejected, and conflicting callbacks connected to this payment or gateway reference.
-            </p>
-          </div>
-          <span className={`pill ${callbackReviewCount ? 'pill-warn' : 'pill-info'}`}>
-            {callbackReviewCount ? `${callbackReviewCount} review` : 'Trace ready'}
-          </span>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Received</th>
-              <th>Outcome</th>
-              <th>Gateway evidence</th>
-              <th>Error</th>
-              <th>Payload</th>
-            </tr>
-          </thead>
-          <tbody>
-            {callbacks.map((attempt) => (
-              <tr id={`callback-attempt-${attempt.id}`} key={attempt.id}>
-                <td>{formatDate(attempt.createdAt)}</td>
-                <td>
-                  <span className={`pill ${paymentCallbackAttemptPill(attempt)}`}>{attempt.outcome}</span>
-                  <div className="muted">
-                    Signature: {attempt.signatureVerified === true ? 'verified' : 'not verified'}
-                  </div>
-                </td>
-                <td>
-                  <strong>{attempt.providerRef ?? 'No gateway ref'}</strong>
-                  <div className="muted">Mode: {attempt.verificationMode ?? 'unknown'}</div>
-                  <div className="muted">Gateway status: {attempt.providerStatus ?? 'none'}</div>
-                  <div className="muted">
-                    Amount:{' '}
-                    {attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
-                      ? money(attempt.callbackAmount, payment.currency)
-                      : 'unknown'}
-                  </div>
-                </td>
-                <td>
-                  {attempt.errorCode ?? 'No error'}
-                  <div className="muted">{attempt.errorMessage ?? 'Callback did not record a processing error.'}</div>
-                </td>
-                <td>
-                  <PayloadDetails value={attempt.rawPayload} />
-                </td>
-              </tr>
-            ))}
-            {callbacks.length === 0 ? (
-              <tr>
-                <td colSpan={5}>No gateway callback attempts have been captured for this payment yet.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
 
       <section className="grid" style={{ marginBottom: 16 }}>
         <section className="card" id="booking-evidence">
@@ -228,7 +161,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
             <EvidenceRow label="Gross" value={money(earning?.grossAmount ?? payment.amount, payment.currency)} helper="Customer payment amount or earning gross amount." />
             <EvidenceRow label="HANDS fee" value={money(earning?.platformFee, earning?.currency ?? payment.currency)} helper="Configured service fee snapshot." />
             <EvidenceRow label="Withholding" value={money(earning?.withholdingAmount, earning?.currency ?? payment.currency)} helper="Tax withholding saved by current policy." />
-            <EvidenceRow label="Partner net" value={money(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before marketplace alerts and participation.' : 'Net amount is not blocking marketplace alerts and participation.'} />
+            <EvidenceRow label="Partner net" value={money(earning?.netAmount, earning?.currency ?? payment.currency)} helper={cashDebt ? 'Negative wallet debt must be cleared before final acceptance, service start, or payout release.' : 'Net amount is not blocking final acceptance, service start, or payout release.'} />
             <EvidenceRow label="Earning state" value={earning?.status ?? 'No earning'} helper={earning?.settlementRef ?? 'No settlement reference'} />
             <EvidenceRow label="Refund rows" value={`${payment.refunds?.length ?? 0}`} helper={refundSummary(payment)} />
           </div>
@@ -310,25 +243,67 @@ function EvidenceRow({ label, value, helper }: { label: string; value: string; h
   );
 }
 
-function PaymentAction({
-  action,
-  paymentId,
-  label,
-  disabled,
-}: {
-  action: (...args: [FormData]) => Promise<void>;
-  paymentId: string;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <form action={action}>
-      <input type="hidden" name="paymentId" value={paymentId} />
-      <button type="submit" disabled={disabled}>
-        {label}
-      </button>
-    </form>
-  );
+function paymentDetailActionMenuItems(payment: AdminPaymentDetail) {
+  const terminalPayment = paymentStatusIsTerminal(payment.status);
+  return [
+    {
+      kind: 'link' as const,
+      href: paymentDetailActionConfirmHref(payment.id, 'sync'),
+      label: 'Sync gateway',
+      disabled: !payment.providerRef,
+      description: payment.providerRef ? 'Confirm gateway sync before running it.' : 'Gateway reference is missing.',
+      tone: 'info' as const,
+    },
+    {
+      kind: 'link' as const,
+      href: paymentDetailActionConfirmHref(payment.id, 'capture'),
+      label: 'Capture',
+      disabled: terminalPayment,
+      description: terminalPayment ? 'Terminal payments cannot be captured again.' : 'Review before capturing funds.',
+      tone: 'warning' as const,
+    },
+    {
+      kind: 'link' as const,
+      href: paymentDetailActionConfirmHref(payment.id, 'release'),
+      label: 'Release',
+      disabled: terminalPayment,
+      description: terminalPayment ? 'Terminal payments cannot be released again.' : 'Review before releasing the hold.',
+      tone: 'warning' as const,
+    },
+    {
+      kind: 'link' as const,
+      href: paymentDetailActionConfirmHref(payment.id, 'refund'),
+      label: 'Refund',
+      disabled: payment.status === 'REFUNDED' || payment.status === 'RELEASED',
+      description:
+        payment.status === 'REFUNDED' || payment.status === 'RELEASED'
+          ? 'This payment cannot enter a new refund action.'
+          : 'Review evidence before starting a refund.',
+      tone: 'danger' as const,
+    },
+  ];
+}
+
+function paymentDetailActionConfirmHref(paymentId: string, action: PaymentConfirmationAction) {
+  const query = paymentActionConfirmHref(paymentId, action).split('?')[1] ?? '';
+  return `/payments/${encodeURIComponent(paymentId)}?${query}`;
+}
+
+function paymentConfirmationAction(action: PaymentConfirmationAction) {
+  switch (action) {
+    case 'capture':
+      return capturePayment;
+    case 'refund':
+      return refundPayment;
+    case 'release':
+      return releasePayment;
+    case 'sync':
+      return syncPayment;
+  }
+}
+
+function paymentStatusIsTerminal(status: string) {
+  return status === 'CAPTURED' || status === 'REFUNDED' || status === 'RELEASED';
 }
 
 function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
@@ -421,10 +396,10 @@ function cashDebtHint(payment: AdminPaymentDetail) {
     return 'No negative partner wallet gate from this payment.';
   }
   const amount = Math.abs(payment.booking?.earning?.netAmount ?? 0);
-  return `Partner owes ${money(amount, payment.currency)} before marketplace alerts and participation.`;
+  return `Partner owes ${money(amount, payment.currency)} before final acceptance, service start, or payout release.`;
 }
 
-function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentActionExecutionRow[] {
+function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentDetailActionMapRow[] {
   const bookingStatus = payment.booking?.status ?? 'UNKNOWN';
   const hasGatewayReference = Boolean(payment.providerRef);
   const terminalPayment = ['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status);
@@ -513,10 +488,33 @@ function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentActionEx
         : payment.method === 'CASH'
           ? 'This cash payment has no open partner wallet debt on the linked earning.'
           : 'This payment is not a cash collection case.',
-      operatorRule: 'Settle with deposit reference or approved admin offset before marketplace alerts and participation.',
+      operatorRule: 'Settle with deposit reference or approved admin offset before final acceptance, service start, or payout release.',
       pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
     },
   ];
+}
+
+function buildPaymentDetailCallbackTimelineRows(
+  callbacks: readonly AdminPaymentCallbackAttempt[],
+  currency: string,
+): PaymentDetailCallbackTimelineRow[] {
+  return callbacks.map((attempt) => ({
+    amountLabel:
+      attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
+        ? money(attempt.callbackAmount, currency)
+        : 'unknown',
+    createdAtLabel: formatDate(attempt.createdAt),
+    errorCodeLabel: attempt.errorCode ?? 'No error',
+    errorMessage: attempt.errorMessage ?? 'Callback did not record a processing error.',
+    id: attempt.id,
+    outcome: attempt.outcome,
+    payloadDetails: <PayloadDetails value={attempt.rawPayload} />,
+    pillClass: paymentCallbackAttemptPill(attempt),
+    providerRef: attempt.providerRef ?? 'No gateway ref',
+    providerStatus: attempt.providerStatus ?? 'none',
+    signatureLabel: attempt.signatureVerified === true ? 'verified' : 'not verified',
+    verificationMode: attempt.verificationMode ?? 'unknown',
+  }));
 }
 
 function PayloadDetails({ value }: { value: unknown }) {
