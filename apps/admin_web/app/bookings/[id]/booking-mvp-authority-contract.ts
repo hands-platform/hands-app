@@ -66,11 +66,15 @@ export function bookingMvpAuthorityContract({
     ) ??
     10000;
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
+  const matchingEvidence = booking.matchingEvidence;
   const selectedPartner =
-    booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
+    booking.selectedProvider ??
+    (matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' ? booking.preferredProvider : null);
+  const selectablePartnerCount =
+    matchingEvidence?.selectableParticipantCount ?? customerChoiceCandidates.length;
   const pinReady = Number.isFinite(marketplaceSupply.policyPin.lat) && Number.isFinite(marketplaceSupply.policyPin.lng);
   const addressSnapshotReady = Boolean(booking.addressSnapshot);
-  const chatReady = Boolean(booking.chatRoom);
+  const chatReady = matchingEvidence?.chatReady ?? Boolean(booking.chatRoom);
 
   return [
     {
@@ -102,7 +106,8 @@ export function bookingMvpAuthorityContract({
             booking.expiresAt ? formatDate(booking.expiresAt) : 'not saved'
           }`
         : 'The booking has no first-pick partner record.',
-      operatorUse: 'Preferred partner gets the first response window; customer still chooses final partner.',
+      operatorUse:
+        'Preferred Partner can become final if validly accepted first; otherwise customer reviews selectable participants.',
       href: '#customer-wait-panel',
     },
     {
@@ -116,18 +121,19 @@ export function bookingMvpAuthorityContract({
       href: '#marketplace-supply',
     },
     {
-      contract: 'Customer final choice',
-      scope: 'No automatic assignment',
+      contract: 'Final Partner connection',
+      scope: 'First-pick priority or customer choice',
       status: selectedPartner
         ? 'Final partner selected'
-        : customerChoiceCandidates.length
+        : selectablePartnerCount
           ? 'Customer choice pending'
           : 'Waiting for selectable partner',
-      tone: selectedPartner ? 'pill-success' : customerChoiceCandidates.length ? 'pill-warn' : 'pill-info',
+      tone: selectedPartner ? 'pill-success' : selectablePartnerCount ? 'pill-warn' : 'pill-info',
       evidence: selectedPartner
         ? providerName(selectedPartner)
-        : `${customerChoiceCandidates.length} customer-selectable partner(s), ${booking.participants?.length ?? 0} participant(s).`,
-      operatorUse: 'Do not auto-assign; keep the customer selection step visible before matched chat opens.',
+        : `${selectablePartnerCount} customer-selectable partner(s), ${booking.participants?.length ?? 0} participant(s).`,
+      operatorUse:
+        'Do not auto-assign; customer choice is required unless first-pick validly accepts first through the API.',
       href: '#participants',
     },
     {

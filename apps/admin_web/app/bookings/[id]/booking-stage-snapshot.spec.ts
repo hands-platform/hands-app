@@ -38,4 +38,46 @@ describe('booking stage snapshot', () => {
       tone: 'pill-danger',
     });
   });
+
+  it('prefers server matching evidence for customer choice and chat readiness', () => {
+    const snapshot = bookingStageSnapshot(
+      booking({
+        status: 'OPEN_MATCHING',
+        participants: [],
+        matchingEvidence: {
+          stage: 'OPEN_MARKETPLACE_ACTIVE',
+          finalSelection: 'CUSTOMER_SELECTION_AVAILABLE',
+          firstPickStatus: 'JOINED',
+          marketplaceParticipantCount: 1,
+          selectableParticipantCount: 2,
+          matchedAt: null,
+          matchSource: null,
+          chatReady: true,
+        },
+      }),
+      {
+        detail: 'Customer can pick from the API shortlist.',
+      },
+      {
+        eligibleCount: 0,
+      },
+    );
+
+    expect(snapshot).toMatchObject({
+      stage: 'Stage 3 - Customer choice',
+      actionLabel: 'Review shortlist',
+    });
+    expect(snapshot.metrics).toContainEqual(
+      expect.objectContaining({
+        label: 'Shortlist',
+        value: '2 selectable',
+      }),
+    );
+    expect(snapshot.badges).toContainEqual(
+      expect.objectContaining({
+        label: 'Chat ready',
+        tone: 'pill-success',
+      }),
+    );
+  });
 });

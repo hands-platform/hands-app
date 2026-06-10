@@ -47,7 +47,11 @@ export function bookingStageSnapshot(
   const locationFreshness = latestProviderLocationFreshness(booking);
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
   const terminal = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status);
-  const chatReady = Boolean(booking.chatRoom);
+  const matchingEvidence = booking.matchingEvidence;
+  const chatReady = matchingEvidence?.chatReady ?? Boolean(booking.chatRoom);
+  const selectablePartnerCount = matchingEvidence?.selectableParticipantCount ?? customerChoiceCandidates.length;
+  const customerSelectionAvailable =
+    matchingEvidence?.finalSelection === 'CUSTOMER_SELECTION_AVAILABLE' || customerChoiceCandidates.length > 0;
 
   let stage = 'Stage 0 - Intake';
   let pillClass = 'pill-info';
@@ -93,7 +97,7 @@ export function bookingStageSnapshot(
     detail = 'Repair the chat room before the customer and partner lose coordination after match.';
     actionHref = `/bookings/${booking.id}#chat`;
     actionLabel = 'Repair chat';
-  } else if (status === 'OPEN_MATCHING' && customerChoiceCandidates.length > 0) {
+  } else if (status === 'OPEN_MATCHING' && customerSelectionAvailable) {
     stage = 'Stage 3 - Customer choice';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
@@ -148,7 +152,7 @@ export function bookingStageSnapshot(
       },
       {
         label: 'Shortlist',
-        value: `${customerChoiceCandidates.length} selectable`,
+        value: `${selectablePartnerCount} selectable`,
         helper: `${rejectedParticipants.length} rejected, ${marketplaceSupply.eligibleCount} marketplace eligible.`,
       },
       {
