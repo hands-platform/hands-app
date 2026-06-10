@@ -1,34 +1,10 @@
 import Link from 'next/link';
+import type {
+  PartnerChatRetentionRow,
+  PartnerChatRetentionSummaryItem,
+} from './partner-detail-chat-retention-model';
 
-export type PartnerChatRetentionRow = {
-  readonly adminRetention: string;
-  readonly adminRetentionDetail: string;
-  readonly bookingHref: string;
-  readonly bookingLabel: string;
-  readonly chatHref?: string;
-  readonly hasRoom: boolean;
-  readonly id: string;
-  readonly latestMessage: string;
-  readonly latestMessageAt?: string;
-  readonly latestSender: string;
-  readonly messageCount: number;
-  readonly mobileHidden: boolean;
-  readonly mobileVisibility: string;
-  readonly mobileVisibilityDetail: string;
-  readonly relation: string;
-  readonly requiresRoom: boolean;
-  readonly roleDetail: string;
-  readonly roomDetail: string;
-  readonly roomStatus: string;
-  readonly serviceLabel: string;
-  readonly status: string;
-};
-
-export type PartnerChatRetentionSummaryItem = {
-  readonly helper: string;
-  readonly label: string;
-  readonly value: string;
-};
+export type { PartnerChatRetentionRow, PartnerChatRetentionSummaryItem };
 
 type PartnerDetailChatRetentionLedgerSectionProps = {
   readonly description: string;
