@@ -274,6 +274,7 @@ function checkPayoutBatchContract() {
   const earningsPolicy = read('apps/api/src/earnings/earnings.policy.ts');
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
+  const adminEarningsLedger = read('apps/admin_web/app/earnings/earnings-ledger-section.tsx');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
   const actionGatePolicyChecklist = read('apps/admin_web/app/operations-policy/action-gate-policy-checklist.ts');
   const policyImpactDetails = read('apps/admin_web/app/operations-policy/policy-impact-details.ts');
@@ -286,8 +287,10 @@ function checkPayoutBatchContract() {
     'Payout remains batch-based and admin-controlled',
   ]);
   requireMarkers('apps/admin_web/app/earnings/page.tsx', adminEarnings, [
-    'payout batching, and cash',
     'return isCashDebt(earning);',
+  ]);
+  requireMarkers('apps/admin_web/app/earnings/earnings-ledger-section.tsx', adminEarningsLedger, [
+    'payout batching, and cash',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
     'id={operationalPolicyAnchor(setting.key)}',
@@ -452,6 +455,7 @@ function checkAdminPeopleManagementIsFactual() {
   const customerList = read('apps/admin_web/app/customers/page.tsx');
   const customerDetail = read('apps/admin_web/app/customers/[id]/page.tsx');
   const partnerList = read('apps/admin_web/app/partners/page.tsx');
+  const partnerOperationsList = read('apps/admin_web/app/partners/partner-operations-list-section.tsx');
   const partnerDetail = read('apps/admin_web/app/partners/[id]/page.tsx');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
@@ -467,6 +471,9 @@ function checkAdminPeopleManagementIsFactual() {
     'Mobile apps can hide the room after completion',
   ]);
   requireMarkers('apps/admin_web/app/partners/page.tsx', partnerList, [
+    'completed work',
+  ]);
+  requireMarkers('apps/admin_web/app/partners/partner-operations-list-section.tsx', partnerOperationsList, [
     'List-first partner control view',
     'completed work',
     'last work',
@@ -532,7 +539,7 @@ function checkBookingDetailIsSourceOfTruth() {
     'MVP authority contract',
     'NestJS business authority',
     'BookingAddressSnapshot',
-    'customer final partner choice',
+    'customer fallback partner choice',
     'wallet gate',
     'Connected operations records',
     'Operator action availability',
@@ -579,8 +586,11 @@ function checkOperationsPolicyControlPlane() {
     'Policy enforcement trace',
     'operationalPolicyAnchor(setting.key)',
     'id={operationalPolicyAnchor(setting.key)}',
-    'Keep customer final confirmation as the operating rule.',
-    'The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner.',
+    'OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes',
+    'OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters',
+    'OPERATIONAL_POLICY_KEYS.walletNegativeGate',
+    'Keep first-pick priority with customer fallback.',
+    'The preferred Partner can match first under API rules, marketplace Partners can still enter the shortlist, and the customer chooses only when first-pick does not win.',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/policy-enforcement-trace.ts', policyEnforcementTrace, [
     "api: 'POST /customer/bookings'",
@@ -615,9 +625,6 @@ function checkOperationsPolicyControlPlane() {
     'Current partner acceptance impact',
     'Matching stage impact preview',
     'Policy enforcement trace',
-    'id="policy-matching-provider-response-window-minutes"',
-    'id="policy-matching-marketplace-partner-radius-meters"',
-    'id="policy-wallet-negative-balance-gate"',
   ]);
 }
 
