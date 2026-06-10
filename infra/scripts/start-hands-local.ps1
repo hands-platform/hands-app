@@ -95,6 +95,31 @@ function Import-DotEnvIfPresent {
   }
 }
 
+function Set-DefaultEnvIfMissing {
+  param(
+    [string]$Key,
+    [string]$Value
+  )
+
+  if (-not [Environment]::GetEnvironmentVariable($Key, "Process")) {
+    [Environment]::SetEnvironmentVariable($Key, $Value, "Process")
+  }
+}
+
+function Set-LocalServiceDefaults {
+  Set-DefaultEnvIfMissing -Key "DATABASE_URL" -Value "postgresql://massage:massage@localhost:5432/massage_vn?schema=public"
+  Set-DefaultEnvIfMissing -Key "REDIS_URL" -Value "redis://localhost:6379"
+  Set-DefaultEnvIfMissing -Key "SUPABASE_JWT_SECRET" -Value "dev-supabase-jwt-secret-for-local-smoke"
+  Set-DefaultEnvIfMissing -Key "SUPABASE_JWT_AUDIENCE" -Value "authenticated"
+  Set-DefaultEnvIfMissing -Key "STORAGE_PROVIDER" -Value "s3-compatible"
+  Set-DefaultEnvIfMissing -Key "S3_ENDPOINT" -Value "http://localhost:9000"
+  Set-DefaultEnvIfMissing -Key "S3_REGION" -Value "auto"
+  Set-DefaultEnvIfMissing -Key "S3_BUCKET" -Value "massage-vn"
+  Set-DefaultEnvIfMissing -Key "S3_ACCESS_KEY" -Value "minioadmin"
+  Set-DefaultEnvIfMissing -Key "S3_SECRET_KEY" -Value "minioadmin"
+  Set-DefaultEnvIfMissing -Key "S3_PUBLIC_BASE_URL" -Value "http://localhost:9000/massage-vn"
+}
+
 function Clear-ApiDist {
   param([string]$Root)
 
@@ -114,6 +139,7 @@ if (-not $SkipAdmin) {
   Assert-PortFree -Port $AdminPort
 }
 Import-DotEnvIfPresent -Root $RepoRoot
+Set-LocalServiceDefaults
 Ensure-WorkspaceReady -Root $RepoRoot
 Clear-ApiDist -Root $RepoRoot
 

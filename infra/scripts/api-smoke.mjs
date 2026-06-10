@@ -192,7 +192,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
         const upload = await postJson('/files/presign', providerAuth.accessToken, {
           contentType: 'image/jpeg',
           visibility: 'PRIVATE',
-          purpose: `${label}-kyc-${type.toLowerCase()}`,
+          purpose: 'provider-verification',
         });
         await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, {
           sizeBytes: 1024,
@@ -1048,7 +1048,7 @@ await expectRequestFailure(
 const duplicateKycFileUpload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
   contentType: 'image/jpeg',
   visibility: 'PRIVATE',
-  purpose: 'provider-kyc-duplicate-file-negative',
+  purpose: 'provider-verification',
 });
 await postJson(`/files/${duplicateKycFileUpload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
   sizeBytes: 1024,
@@ -1071,7 +1071,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
     contentType: 'image/jpeg',
     visibility: 'PRIVATE',
-    purpose: `provider-kyc-pending-${type.toLowerCase()}`,
+    purpose: 'provider-verification',
   });
   await postJson(`/files/${upload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
     sizeBytes: 1024,
@@ -1150,7 +1150,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', providerAuth.accessToken, {
     contentType: 'image/jpeg',
     visibility: 'PRIVATE',
-    purpose: `provider-kyc-${type.toLowerCase()}`,
+    purpose: 'provider-verification',
   });
   await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, { sizeBytes: 1024 });
   kycDocumentUploads.push({ fileId: upload.file.id, type });
@@ -1720,6 +1720,7 @@ if (!hybridInitialBackupTrace || hybridInitialBackupTrace.notifiedCount < 1) {
 
 let preferredAcceptPolicyBooking;
 let preferredAcceptPolicyMatched;
+let firstPickMatchAuditSourceObserved = false;
 const preferredAcceptModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
   'matching.preferred_accept_mode',
@@ -1772,9 +1773,12 @@ try {
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
     providerAuth.accessToken,
   );
+  const preferredAcceptPolicyMatchedBooking =
+    preferredAcceptPolicyMatched.booking ?? preferredAcceptPolicyMatched;
   if (
     preferredAcceptPolicyMatched.status !== 'MATCHED' ||
-    preferredAcceptPolicyMatched.selectedProviderId !== providerAuth.user.providerProfile.id
+    preferredAcceptPolicyMatched.matchSource !== 'FIRST_PICK_ACCEPTED_FIRST' ||
+    preferredAcceptPolicyMatchedBooking.selectedProviderId !== providerAuth.user.providerProfile.id
   ) {
     throw new Error(
       `First-pick valid acceptance should match the preferred partner first: ${JSON.stringify(
@@ -1782,13 +1786,32 @@ try {
       )}`,
     );
   }
-  const preferredAcceptedParticipant = preferredAcceptPolicyMatched.participants?.find(
+  const preferredAcceptedParticipant = preferredAcceptPolicyMatchedBooking.participants?.find(
     (participant) => participant.providerProfileId === providerAuth.user.providerProfile.id,
   );
   if (preferredAcceptedParticipant?.status !== 'SELECTED') {
     throw new Error(
       `First-pick valid acceptance should mark participant selected: ${JSON.stringify(
         preferredAcceptPolicyMatched,
+      )}`,
+    );
+  }
+  const preferredAcceptAdminBooking = await getJson(
+    `/admin/bookings/${preferredAcceptPolicyBooking.id}`,
+    adminAuth.accessToken,
+  );
+  firstPickMatchAuditSourceObserved = Boolean(
+    preferredAcceptAdminBooking.auditLogs?.some(
+      (log) =>
+        log.action === 'booking.matched.first_pick_accepted' &&
+        log.metadata?.matchSource === 'FIRST_PICK_ACCEPTED_FIRST' &&
+        log.metadata?.providerProfileId === providerAuth.user.providerProfile.id,
+    ),
+  );
+  if (!firstPickMatchAuditSourceObserved) {
+    throw new Error(
+      `First-pick accepted smoke should persist matchSource audit evidence: ${JSON.stringify(
+        preferredAcceptAdminBooking.auditLogs?.slice(0, 5),
       )}`,
     );
   }
@@ -2615,7 +2638,9 @@ if (
     )}`,
   );
 }
-await postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken);
+if (directAcceptedWithDebt.status === 'OPEN_MATCHING') {
+  await postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken);
+}
 
 const matched = await postJson(`/customer/bookings/${booking.id}/select-provider`, customerAuth.accessToken, {
   providerId: providerAuth.user.providerProfile.id,
@@ -3384,6 +3409,7 @@ console.log({
   backupDeclineNotificationObserved,
   preferredAcceptPolicyBookingId: preferredAcceptPolicyBooking?.id ?? null,
   preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'MATCHED',
+  firstPickMatchAuditSourceObserved,
   savedSelectedLocationId: savedSelectedLocation.id,
   nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
   nearbyProviderRecent: nearbyProvider.isRecentLocation,

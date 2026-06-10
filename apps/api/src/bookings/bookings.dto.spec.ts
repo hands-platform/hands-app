@@ -40,4 +40,24 @@ describe('booking request DTO validation', () => {
     expect(transformed).toHaveProperty('serviceId', 'service-1');
     expect(transformed).not.toHaveProperty('scheduledStartAt');
   });
+
+  it('allows saved customer location booking payloads without duplicate address coordinates', async () => {
+    const metatype = createCustomerBookingBodyMetatype();
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        serviceId: 'service-1',
+        selectedLocationId: 'saved-location-1',
+        paymentMethod: PaymentMethod.CASH,
+      },
+      { type: 'body', metatype: metatype as never, data: '' },
+    );
+
+    expect(transformed).toMatchObject({
+      paymentMethod: PaymentMethod.CASH,
+      selectedLocationId: 'saved-location-1',
+      serviceId: 'service-1',
+    });
+  });
 });

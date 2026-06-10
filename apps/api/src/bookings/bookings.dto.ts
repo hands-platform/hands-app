@@ -1,4 +1,14 @@
-import { Allow, IsDefined, IsEnum, IsISO8601, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  Allow,
+  IsDefined,
+  IsEnum,
+  IsISO8601,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 import { PaymentMethod, Prisma } from '@prisma/client';
 
 export class CreateCustomerBookingDto {
@@ -13,15 +23,18 @@ export class CreateCustomerBookingDto {
   @IsString()
   couponCode?: string;
 
+  @ValidateIf((body: CreateCustomerBookingDto) => !body.selectedLocationId || body.address !== undefined)
   @IsDefined()
   @Allow()
-  address!: Prisma.InputJsonValue;
+  address?: Prisma.InputJsonValue;
 
+  @ValidateIf((body: CreateCustomerBookingDto) => !body.selectedLocationId || body.lat !== undefined)
   @IsNumber()
-  lat!: number;
+  lat?: number;
 
+  @ValidateIf((body: CreateCustomerBookingDto) => !body.selectedLocationId || body.lng !== undefined)
   @IsNumber()
-  lng!: number;
+  lng?: number;
 
   @IsOptional()
   @IsString()
