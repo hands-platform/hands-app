@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import {
   bookingEventTimestamp,
   bookingListSortTimestamp,
@@ -21,11 +22,7 @@ import {
   readPlainRecord,
   shortId,
 } from '../../lib/admin-format';
-import {
-  type AdminLiveOperationsPolicy,
-  formatPolicyDistance,
-  humanizePolicyValue,
-} from '../../lib/operations-policy';
+import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
   bookingLocationNeedsOpsFromFacts,
   hasProviderCoordinate,
@@ -508,7 +505,7 @@ export function BookingMonitor({
     [currentTimeMs, orderedBookings],
   );
   const livePolicyCards = useMemo(
-    () => buildLiveMatchingPolicyCards(liveOperationsPolicy),
+    () => buildBookingLiveMatchingPolicyCards(liveOperationsPolicy),
     [liveOperationsPolicy],
   );
   const matchingEscalationRows = useMemo(
@@ -4766,41 +4763,6 @@ function buildMarketplaceOperatingQueue(
     matchedWithoutChat,
     noJoinedSupply,
   });
-}
-
-function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
-  return [
-    {
-      label: 'First-pick window',
-      value: `${policy.providerResponseWindowMinutes}m`,
-      helper: 'First-pick partner response timer before operators watch marketplace alternatives.',
-    },
-    {
-      label: 'Travel buffer',
-      value: `${policy.travelBufferMinutes}m`,
-      helper: 'Partner availability uses this buffer after a completed service before normal matching.',
-    },
-    {
-      label: 'Marketplace radius',
-      value: formatPolicyDistance(policy.marketplaceRadiusMeters),
-      helper: 'Partners inside the booking-address radius can participate when other gates pass.',
-    },
-    {
-      label: 'Location freshness',
-      value: `${policy.marketplaceLocationFreshnessMinutes}m`,
-      helper: 'Partner last location must be fresh enough for marketplace participation.',
-    },
-    {
-      label: 'Invitation cap',
-      value: `${policy.marketplaceInvitationLimit}`,
-      helper: 'Maximum nearby partners exposed to a marketplace request.',
-    },
-    {
-      label: 'Wallet gate',
-      value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative Partner wallet blocks final acceptance, service start, and payout release; customers never carry this debt.',
-    },
-  ];
 }
 
 function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
