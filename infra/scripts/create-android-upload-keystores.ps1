@@ -1,6 +1,6 @@
 param(
-  [string]$RepoRoot = "C:\dev\massage-vn-workspace\repo",
-  [string]$SecretRoot = "C:\dev\massage-vn-workspace\secrets\android-signing",
+  [string]$RepoRoot = "C:\dev\massage-on-demand-vn",
+  [string]$SecretRoot = "C:\dev\hands-secrets\android-signing",
   [switch]$Force,
   [switch]$SkipKeyProperties
 )

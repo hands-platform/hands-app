@@ -38,7 +38,7 @@ addCheck(
   'workspace',
   'project root',
   existsSync(resolve('package.json')),
-  'Run this script from C:\\dev\\massage-vn-workspace\\repo.',
+  'Run this script from C:\\dev\\massage-on-demand-vn.',
 );
 addRecommended(
   'push',

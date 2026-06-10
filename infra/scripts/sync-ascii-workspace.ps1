@@ -1,5 +1,5 @@
 param(
-  [string]$Target = "C:\dev\massage-vn-workspace\repo"
+  [string]$Target = "C:\dev\massage-on-demand-vn"
 )
 
 $ErrorActionPreference = "Stop"

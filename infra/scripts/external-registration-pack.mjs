@@ -311,7 +311,7 @@ const registrationItems = [
     setup: [
       'Create separate upload keys for the HANDS customer and partner apps.',
       'Optional helper: run npm.cmd run android:signing:create to generate local upload keys and key.properties files.',
-      'Store keystores outside Git, preferably under C:\\dev\\massage-vn-workspace\\secrets.',
+      'Store keystores outside Git, preferably under C:\\dev\\hands-secrets.',
       'Copy apps/customer_app/android/key.properties.example to apps/customer_app/android/key.properties and fill local secret values.',
       'Copy apps/provider_app/android/key.properties.example to apps/provider_app/android/key.properties and fill local secret values.',
       'Release builds automatically use android/key.properties when it exists and fall back to debug signing for local MVP builds.',
@@ -337,7 +337,7 @@ const output = {
     githubRepository: 'https://github.com/hands-platform/hands-app',
     serviceArea: 'Vietnam nationwide',
     workspace: normalizePath(repoRoot),
-    secretFolder: 'C:\\dev\\massage-vn-workspace\\secrets',
+    secretFolder: 'C:\\dev\\hands-secrets',
     androidApplicationIds: {
       customer: 'com.massagevn.customer.customer_app',
       provider: 'com.massagevn.provider.provider_app',

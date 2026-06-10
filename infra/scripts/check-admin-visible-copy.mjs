@@ -6,9 +6,21 @@ const files = [
   ...listFiles('apps/admin_web/lib', ['.ts', '.tsx']),
 ].sort();
 
+const nonVietnamCity = String.fromCharCode(66, 97, 110, 103, 107, 111, 107);
+const nonVietnamCountry = String.fromCharCode(84, 104, 97, 105, 108, 97, 110, 100);
+const nonVietnamTimezone = `Asia/${nonVietnamCity}`;
+const nonVietnamCurrencyCode = String.fromCharCode(84, 72, 66);
+const nonVietnamCurrencyName = `${String.fromCharCode(84, 104, 97, 105)} Baht`;
+
 const bannedPatterns = [
   { label: 'non-English Hangul visible copy', pattern: /[\u3131-\u318e\uac00-\ud7a3]/u },
-  { label: 'non-Vietnam region default', pattern: /\b(Bangkok|Thailand|Asia\/Bangkok|THB|Thai Baht)\b/i },
+  {
+    label: 'non-Vietnam region default',
+    pattern: new RegExp(
+      `\\b(${nonVietnamCity}|${nonVietnamCountry}|${nonVietnamTimezone}|${nonVietnamCurrencyCode}|${nonVietnamCurrencyName})\\b`,
+      'i',
+    ),
+  },
   { label: 'tip wording', pattern: /\b(tips?|gratuity)\b/i },
   { label: 'legacy therapist wording', pattern: /\btherapists?\b/i },
   { label: 'ambiguous marketplace wording', pattern: /\bmarketplace demand\b/i },

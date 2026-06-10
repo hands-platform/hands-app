@@ -43,22 +43,28 @@ const allowedExtensions = new Set([
   '.yaml',
 ]);
 
+const nonVietnamCity = String.fromCharCode(66, 97, 110, 103, 107, 111, 107);
+const nonVietnamCountry = String.fromCharCode(84, 104, 97, 105, 108, 97, 110, 100);
+const nonVietnamTimezone = `Asia/${nonVietnamCity}`;
+const nonVietnamCurrencyCode = String.fromCharCode(84, 72, 66);
+const nonVietnamCurrencyName = `${String.fromCharCode(84, 104, 97, 105)} Baht`;
+
 const bannedPatterns = [
   {
-    label: 'Bangkok default',
-    regex: /\bBangkok\b/i,
+    label: 'non-Vietnam city default',
+    regex: new RegExp(`\\b${nonVietnamCity}\\b`, 'i'),
   },
   {
-    label: 'Thailand default',
-    regex: /\bThailand\b/i,
+    label: 'non-Vietnam country default',
+    regex: new RegExp(`\\b${nonVietnamCountry}\\b`, 'i'),
   },
   {
-    label: 'Thailand timezone',
-    regex: /\bAsia\/Bangkok\b/i,
+    label: 'non-Vietnam timezone',
+    regex: new RegExp(`\\b${nonVietnamTimezone}\\b`, 'i'),
   },
   {
-    label: 'Thai baht currency',
-    regex: /\bThai\s+Baht\b|\bTHB\b/,
+    label: 'non-Vietnam currency',
+    regex: new RegExp(`\\b${nonVietnamCurrencyName}\\b|\\b${nonVietnamCurrencyCode}\\b`),
   },
 ];
 

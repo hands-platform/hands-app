@@ -1,20 +1,19 @@
 param(
-  [string]$Root = "C:\dev\massage-vn-workspace"
+  [string]$Root = "C:\dev"
 )
 
 $ErrorActionPreference = "Stop"
 
 $repoSource = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $workspaceBase = Split-Path $repoSource.Path -Parent
-$repoTarget = Join-Path $Root "repo"
-$secretsTarget = Join-Path $Root "secrets"
-$apkTarget = Join-Path $Root "references\apk"
-$analysisTarget = Join-Path $Root "references\analysis"
+$repoTarget = Join-Path $Root "massage-on-demand-vn"
+$secretsTarget = Join-Path $Root "hands-secrets"
+$apkTarget = Join-Path $Root "hands-references\apk"
+$analysisTarget = Join-Path $Root "hands-references\analysis"
 
 $xapkSource = "C:\Users\laboy\Downloads\Glow+-+Massage+&+Spa+24_7_3.11.4_apkcombo.com.xapk"
 $blackboxSource = Join-Path $workspaceBase "apk_blackbox_results_glow"
 
-New-Item -ItemType Directory -Force -Path $repoTarget | Out-Null
 New-Item -ItemType Directory -Force -Path $secretsTarget | Out-Null
 New-Item -ItemType Directory -Force -Path $apkTarget | Out-Null
 New-Item -ItemType Directory -Force -Path $analysisTarget | Out-Null
@@ -29,20 +28,27 @@ $excludeDirs = @(
   "node_modules"
 )
 
-$repoArguments = @(
-  $repoSource.Path,
-  $repoTarget,
-  "/E",
-  "/R:2",
-  "/W:1",
-  "/XD"
-) + $excludeDirs
+$repoSourceFull = [System.IO.Path]::GetFullPath($repoSource.Path).TrimEnd('\')
+$repoTargetFull = [System.IO.Path]::GetFullPath($repoTarget).TrimEnd('\')
+if ($repoSourceFull -ieq $repoTargetFull) {
+  Write-Host "Repo already uses the standard path: $repoTarget"
+} else {
+  New-Item -ItemType Directory -Force -Path $repoTarget | Out-Null
+  $repoArguments = @(
+    $repoSource.Path,
+    $repoTarget,
+    "/E",
+    "/R:2",
+    "/W:1",
+    "/XD"
+  ) + $excludeDirs
 
-Write-Host "Syncing repo to $repoTarget"
-robocopy @repoArguments | Out-Host
-$repoCode = $LASTEXITCODE
-if ($repoCode -ge 8) {
-  throw "robocopy repo sync failed with exit code $repoCode"
+  Write-Host "Syncing repo to $repoTarget"
+  robocopy @repoArguments | Out-Host
+  $repoCode = $LASTEXITCODE
+  if ($repoCode -ge 8) {
+    throw "robocopy repo sync failed with exit code $repoCode"
+  }
 }
 
 if (Test-Path $xapkSource) {

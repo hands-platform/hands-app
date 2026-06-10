@@ -2,7 +2,7 @@ param(
   [ValidateSet("customer", "provider")]
   [string]$App,
   [string]$DeviceId,
-  [string]$RepoRoot = "C:\dev\massage-vn-workspace\repo",
+  [string]$RepoRoot = "C:\dev\massage-on-demand-vn",
   [int]$ApiPort = 3000
 )
 
