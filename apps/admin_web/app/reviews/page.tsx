@@ -1,60 +1,80 @@
-import { AdminReview, adminGet } from '../../lib/admin-api';
+import type { AdminReview } from '../../lib/admin-api';
+import { adminGet } from '../../lib/admin-api';
+import type { ActionMenuItem } from '../../components/action-menu';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import Link from 'next/link';
 import { shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
+import {
+  buildReviewModerationConfirmation,
+  readReviewModerationStatus,
+  reviewModerationConfirmHref,
+} from './review-action-confirmation';
+import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
 
 type ReviewsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function ReviewsPage({ searchParams }: { searchParams?: ReviewsPageSearchParams }) {
-  const filters = buildReviewFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildReviewFilters(params);
   const allReviews = sortReviews(await adminGet<AdminReview[]>('/admin/reviews', []));
   const reviews = filterReviews(allReviews, filters);
   const summary = buildSummary(allReviews);
   const commandBoard = buildReviewCommandBoard(allReviews);
+  const reviewRows = buildReviewTableRows(reviews);
   const activeFilter = reviewFilterLinks().find((item) => item.review === filters.review);
+  const confirmation =
+    readSearchParam(params.confirm) === 'moderate'
+      ? buildReviewModerationConfirmation(
+          allReviews,
+          readSearchParam(params.reviewId),
+          readReviewModerationStatus(readSearchParam(params.status)),
+          readSearchParam(params.reportReason),
+        )
+      : null;
 
   return (
-    <>
-      <h1>Feedback And Reports</h1>
-      <section className="grid" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <p>Total feedback records</p>
-          <h2>{summary.total}</h2>
-        </div>
-        <div className="card">
-          <p>Reported / hidden</p>
-          <h2>{summary.flagged}</h2>
-        </div>
-        <div className="card">
-          <p>Published</p>
-          <h2>{summary.published}</h2>
-        </div>
-        <div className="card">
-          <p>Follow-up records</p>
-          <h2>{summary.followUp}</h2>
-        </div>
-      </section>
+    <AdminPageTemplate
+      description="Moderation board for customer comments, Partner coaching notes, and public visibility decisions."
+      metrics={[
+        { label: 'Total feedback records', value: summary.total, helper: 'Feedback records loaded.' },
+        { label: 'Reported / hidden', value: summary.flagged, helper: 'Rows needing moderation context.' },
+        { label: 'Published', value: summary.published, helper: 'Visible to customers.' },
+        { label: 'Follow-up records', value: summary.followUp, helper: 'Records with report reasons.' },
+      ]}
+      title="Feedback And Reports"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={moderateReview}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={confirmation.hiddenInputs}
+          id={`review-moderation-${confirmation.reviewId}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Feedback command board</h2>
-            <p className="muted">
-              Customer comments, partner coaching notes, and public visibility decisions are handled here as
-              factual service records.
-            </p>
-          </div>
-          <span
-            className={`pill ${
-              commandBoard.some((item) => item.reviews.length > 0 && item.tone === 'warn')
-                ? 'pill-warn'
-                : 'pill-success'
-            }`}
-          >
-            {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback record(s)
-          </span>
-        </div>
+        <AdminSectionHeader
+          description="Customer comments, Partner coaching notes, and public visibility decisions are handled here as factual service records."
+          status={
+            <span
+              className={`pill ${
+                commandBoard.some((item) => item.reviews.length > 0 && item.tone === 'warn')
+                  ? 'pill-warn'
+                  : 'pill-success'
+              }`}
+            >
+              {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback record(s)
+            </span>
+          }
+          title="Feedback command board"
+        />
         <div className="ops-task-grid">
           {commandBoard.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.title}>
@@ -115,88 +135,33 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           </div>
         </div>
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Feedback</th>
-              <th>Partner</th>
-              <th>Customer</th>
-              <th>Status</th>
-              <th>Ops record</th>
-              <th>Comment</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reviews.map((review) => (
-              <tr key={review.id}>
-                <td>
-                  <div>Feedback record</div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {shortId(review.id)}
-                  </div>
-                </td>
-                <td>
-                  <div>{review.providerProfile?.displayName ?? 'Unknown'}</div>
-                  <div className="muted">{providerReviewHint(review)}</div>
-                </td>
-                <td>
-                  <div>
-                    {review.customerProfile?.user?.fullName ??
-                      review.customerProfile?.user?.phone ??
-                      'Unknown'}
-                  </div>
-                  <div className="muted">{review.customerProfile?.user?.phone ?? 'No phone on file'}</div>
-                </td>
-                <td>
-                  <div>{humanizeStatus(review.status)}</div>
-                  <div className="muted">{statusMeaning(review.status)}</div>
-                </td>
-                <td>
-                  <span className={signalClass(review)}>{opsSignal(review)}</span>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {opsHint(review)}
-                  </div>
-                </td>
-                <td>
-                  <div>{review.comment?.trim() || 'No written review'}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {review.reportReason?.trim() ? `Report: ${review.reportReason}` : 'No report reason'}
-                  </div>
-                </td>
-                <td>
-                  <div className="actions">
-                    <form action={moderateReview}>
-                      <input type="hidden" name="reviewId" value={review.id} />
-                      <input type="hidden" name="status" value="PUBLISHED" />
-                      <button type="submit">Publish</button>
-                    </form>
-                    <form action={moderateReview}>
-                      <input type="hidden" name="reviewId" value={review.id} />
-                      <input type="hidden" name="status" value="HIDDEN" />
-                      <input type="hidden" name="reportReason" value="Hidden by admin" />
-                      <button type="submit">Hide</button>
-                    </form>
-                    <form action={moderateReview}>
-                      <input type="hidden" name="reviewId" value={review.id} />
-                      <input type="hidden" name="status" value="REPORTED" />
-                      <input type="hidden" name="reportReason" value="Marked for follow-up" />
-                      <button type="submit">Report</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {reviews.length === 0 && (
-              <tr>
-                <td colSpan={7}>{emptyReviewMessage(filters.review)}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <ReviewsTableSection
+          emptyMessage={emptyReviewMessage(filters.review)}
+          rows={reviewRows}
+        />
       </div>
-    </>
+    </AdminPageTemplate>
   );
+}
+
+function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTableRow[] {
+  return reviews.map((review) => ({
+    actionLabel: `Feedback actions for ${shortId(review.id)}`,
+    actions: reviewModerationActionMenuItems(review),
+    commentLabel: review.comment?.trim() || 'No written review',
+    customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown',
+    customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
+    id: review.id,
+    opsHint: opsHint(review),
+    opsSignal: opsSignal(review),
+    providerHint: providerReviewHint(review),
+    providerLabel: review.providerProfile?.displayName ?? 'Unknown',
+    reportReasonLabel: review.reportReason?.trim() ? `Report: ${review.reportReason}` : 'No report reason',
+    shortIdLabel: shortId(review.id),
+    signalClassName: signalClass(review),
+    statusLabel: humanizeStatus(review.status),
+    statusMeaning: statusMeaning(review.status),
+  }));
 }
 
 function sortReviews(reviews: AdminReview[]) {
@@ -329,6 +294,44 @@ function reviewFilterDescription(review: string) {
     return 'feedback currently visible to customers.';
   }
   return 'all feedback records.';
+}
+
+function reviewModerationActionMenuItems(review: AdminReview): readonly ActionMenuItem[] {
+  return [
+    {
+      description:
+        review.status === 'PUBLISHED'
+          ? 'Feedback is already published.'
+          : 'Review before making this feedback visible.',
+      disabled: review.status === 'PUBLISHED',
+      href: reviewModerationConfirmHref(review.id, 'PUBLISHED'),
+      kind: 'link',
+      label: 'Publish',
+      tone: 'info',
+    },
+    {
+      description:
+        review.status === 'HIDDEN'
+          ? 'Feedback is already hidden.'
+          : 'Review before removing this feedback from public visibility.',
+      disabled: review.status === 'HIDDEN',
+      href: reviewModerationConfirmHref(review.id, 'HIDDEN', 'Hidden by admin'),
+      kind: 'link',
+      label: 'Hide',
+      tone: 'danger',
+    },
+    {
+      description:
+        review.status === 'REPORTED'
+          ? 'Feedback is already marked for follow-up.'
+          : 'Review before adding moderation follow-up.',
+      disabled: review.status === 'REPORTED',
+      href: reviewModerationConfirmHref(review.id, 'REPORTED', 'Marked for follow-up'),
+      kind: 'link',
+      label: 'Report',
+      tone: 'warning',
+    },
+  ];
 }
 
 function emptyReviewMessage(review: string) {
