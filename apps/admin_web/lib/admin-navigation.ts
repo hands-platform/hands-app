@@ -235,6 +235,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'In-app notification records and delivery status.',
       },
       {
+        href: '/files',
+        label: 'Files',
+        description: 'Partner verification files and public media moderation.',
+      },
+      {
         href: '/reviews',
         label: 'Feedback',
         description: 'Customer feedback records for service evidence and follow-up.',

@@ -182,6 +182,7 @@ function readOptionalProviderId(formData: FormData) {
 function revalidateProviderPaths(providerId?: string | null) {
   revalidatePath('/partners');
   revalidatePath('/partner-controls');
+  revalidatePath('/files');
   if (providerId) {
     revalidatePath(`/partners/${providerId}`);
   }
