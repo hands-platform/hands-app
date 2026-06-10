@@ -105,7 +105,6 @@ import {
 import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
 import {
   bookingCustomerSelectableParticipantsForBooking as buildBookingCustomerSelectableParticipants,
-  bookingHasCustomerSelectablePartnerForBooking as hasBookingCustomerSelectablePartner,
   bookingMarketplaceParticipantsForBooking as buildBookingMarketplaceParticipants,
   bookingParticipantPartnerId,
   bookingPreferredPartnerIdForChoice,
@@ -337,12 +336,10 @@ export function BookingMonitor({
     const matched = orderedBookings.filter((booking) => booking.status === 'MATCHED');
     const active = orderedBookings.filter((booking) => activeStatuses.has(booking.status));
     const noParticipants = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
-    const waitingSelection = open.filter((booking) => marketplaceParticipants(booking).length > 0);
-    const preferredPending = open.filter(
-      (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
-    );
+    const waitingSelection = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
+    const preferredPending = open.filter((booking) => bookingFirstPickPending(booking));
     const backupChosen = orderedBookings.filter((booking) => isBackupSelected(booking));
-    const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
+    const chatLive = orderedBookings.filter((booking) => bookingMatchingChatReady(booking));
     const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     const expired = orderedBookings.filter((booking) => booking.status === 'EXPIRED');
     const policySnapshots = orderedBookings.filter((booking) => bookingMatchingPolicySnapshot(booking));
@@ -1949,9 +1946,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
   const active = bookings.filter((booking) => activeStatuses.has(booking.status));
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const noSupply = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
-  const preferredPending = open.filter(
-    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
-  );
+  const preferredPending = open.filter((booking) => bookingFirstPickPending(booking));
   const expiredMatching = open.filter(
     (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
   );
@@ -2103,7 +2098,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       metrics: [
         metric('location', locationChecks.length),
         metric('marketplace chosen', backupSelected.length),
-        metric('chat live', bookings.filter((booking) => Boolean(booking.chatRoom)).length),
+        metric('chat live', bookings.filter((booking) => bookingMatchingChatReady(booking)).length),
         metric('quiet chat', quietChat.length),
       ],
     },
@@ -2257,14 +2252,14 @@ function buildMatchingEscalationBoard(
 ): readonly AdminBookingMatchingEscalationLane[] {
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const expiredWindow = open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
-  const firstPickWaiting = open.filter(
-    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
+  const noMarketplaceSupply = open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
+  const marketplaceReady = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
+  const customerFinalSelection = open.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
+  const matchedWithoutChat = bookings.filter(
+    (booking) => booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
   );
-  const noMarketplaceSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
-  const marketplaceReady = open.filter((booking) => marketplaceParticipants(booking).length > 0);
-  const customerFinalSelection = open.filter((booking) => bookingHasCustomerSelectablePartner(booking));
-  const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
-  const chatReady = bookings.filter((booking) => Boolean(booking.chatRoom));
+  const chatReady = bookings.filter((booking) => bookingMatchingChatReady(booking));
 
   return buildBookingMatchingEscalationBoard({
     chatReady,
@@ -2282,11 +2277,9 @@ function buildBookingDispatchPartnerShortcuts(
   nowMs: number,
 ): BookingDispatchPartnerShortcut[] {
   const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const noPartnerSupply = openMatching.filter((booking) => (booking.participants?.length ?? 0) === 0);
-  const firstPickWaiting = openMatching.filter(
-    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
-  );
-  const customerSelection = openMatching.filter((booking) => bookingHasCustomerSelectablePartner(booking));
+  const noPartnerSupply = openMatching.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
+  const firstPickWaiting = openMatching.filter((booking) => bookingFirstPickPending(booking));
+  const customerSelection = openMatching.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
   const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
@@ -2345,16 +2338,14 @@ function buildBookingDispatchPartnerShortcuts(
 
 function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const firstPickWaiting = open.filter(
-    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
-  );
+  const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
   const firstPickExpired = firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
-  const noSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
-  const marketplaceVisible = open.filter((booking) => marketplaceParticipants(booking).length > 0);
+  const noSupply = open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
+  const marketplaceVisible = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
   const backupAlerted = open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0);
-  const customerChoice = open.filter((booking) => bookingHasCustomerSelectablePartner(booking));
+  const customerChoice = open.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
   const matched = bookings.filter((booking) => booking.status === 'MATCHED');
-  const matchedWithoutChat = matched.filter((booking) => !booking.chatRoom);
+  const matchedWithoutChat = matched.filter((booking) => !bookingMatchingChatReady(booking));
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   );
@@ -2417,17 +2408,17 @@ function humanizeClosureReason(reason: string) {
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
   return bookingListStageFromFacts({
     bookingId: booking.id,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingMatchingChatReady(booking),
     isHandoffStatus: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
       booking.status,
     ),
     isTerminalStatus: terminalBookingStatuses.has(booking.status),
     locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
     marketplaceAlertNotifiedCount: bookingBackupAlertTraceSummary(booking).totalNotified,
-    marketplaceCount: marketplaceParticipants(booking).length,
+    marketplaceCount: bookingMarketplaceParticipantCount(booking),
     responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-    selectableCount: customerSelectableParticipants(booking).length,
-    selectedPartnerPresent: Boolean(booking.selectedProvider),
+    selectableCount: bookingCustomerSelectableCount(booking),
+    selectedPartnerPresent: bookingHasFinalPartner(booking),
     status: booking.status,
   });
 }
@@ -2452,13 +2443,13 @@ function buildMatchingEscalationRows(
   return buildBookingMatchingEscalationRowsFromFacts(
     bookings.map((booking) => ({
       booking,
-      hasChatRoom: Boolean(booking.chatRoom),
+      hasChatRoom: bookingMatchingChatReady(booking),
       hasPreferredPartner: Boolean(booking.preferredProvider),
-      marketplaceCount: marketplaceParticipants(booking).length,
+      marketplaceCount: bookingMarketplaceParticipantCount(booking),
       needsOps: bookingMatchingEscalationNeedsOps(booking, nowMs),
-      preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+      preferredAwaitingDecision: bookingFirstPickPending(booking),
       responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-      selectableCount: customerSelectableParticipants(booking).length,
+      selectableCount: bookingCustomerSelectableCount(booking),
       selectionLabel: selectionLabel(booking),
       selectionPathLabel: selectionPathLabel(booking),
       sortTimestamp: bookingTimestamp(booking),
@@ -2516,7 +2507,7 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
     return bookingLocationNeedsOps(booking, nowMs);
   }
   if (view === 'chat') {
-    return Boolean(booking.chatRoom);
+    return bookingMatchingChatReady(booking);
   }
   if (view === 'chat-repair') {
     return bookingChatRepairNeedsOps(booking);
@@ -2572,11 +2563,11 @@ function bookingMatchesEvidenceFilter(
   }
   if (evidenceFilter === 'partner') {
     return (
-      booking.status === 'OPEN_MATCHING' || (activeStatuses.has(booking.status) && !booking.selectedProvider)
+      booking.status === 'OPEN_MATCHING' || (activeStatuses.has(booking.status) && !bookingHasFinalPartner(booking))
     );
   }
   if (evidenceFilter === 'chat') {
-    return bookingChatRepairNeedsOps(booking) || Boolean(booking.chatRoom);
+    return bookingChatRepairNeedsOps(booking) || bookingMatchingChatReady(booking);
   }
   if (evidenceFilter === 'money') {
     return (
@@ -2781,15 +2772,14 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
+    bookingFirstPickPending(booking)
   ) {
     return 'Monitor the first-pick partner response window and prepare marketplace partner options.';
   }
   if (booking.status === 'OPEN_MATCHING') {
     return 'Check nearby partner supply and notification delivery until the customer has options.';
   }
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     return 'Create or repair chat handoff before the service moves forward.';
   }
   if (bookingLocationNeedsOps(booking, nowMs)) {
@@ -3164,7 +3154,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function opsSignal(booking: AdminBooking) {
-  const participantCount = marketplaceParticipants(booking).length;
+  const participantCount = bookingMarketplaceParticipantCount(booking);
   if (booking.status === 'NO_SHOW') {
     return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status) ? (
       <span className="signal signal-warn">No-show, check payment</span>
@@ -3194,8 +3184,7 @@ function opsSignal(booking: AdminBooking) {
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
+    bookingFirstPickPending(booking)
   ) {
     return <span className="signal signal-warn">First-pick partner pending</span>;
   }
@@ -3208,7 +3197,7 @@ function opsSignal(booking: AdminBooking) {
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
     return <span className="signal signal-info">Marketplace partner selected</span>;
   }
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     return <span className="signal signal-warn">Chat missing</span>;
   }
   return <span className="signal signal-ok">Normal</span>;
@@ -3222,7 +3211,7 @@ type BookingCheckFlag = {
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
   const flags: BookingCheckFlag[] = [];
   const paymentStatus = booking.payment?.status;
-  const participantCount = booking.participants?.length ?? 0;
+  const participantCount = bookingMarketplaceParticipantCount(booking);
   const expired = nowMs > 0 && booking.expiresAt ? new Date(booking.expiresAt).getTime() < nowMs : false;
 
   if (
@@ -3264,13 +3253,13 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   if (booking.status === 'OPEN_MATCHING' && expired) {
     flags.push({ severity: 'high', title: 'Matching window expired' });
   }
-  if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
+  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
     flags.push({ severity: 'medium', title: 'First-pick partner pending' });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     flags.push({ severity: 'medium', title: 'No partner supply' });
   }
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
   if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
@@ -3311,19 +3300,20 @@ function bookingManualDecisionNeedsOps(booking: AdminBooking) {
 }
 
 function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
+  const chatReady = bookingMatchingChatReady(booking);
   return (
     bookingChatRepairNeedsOps(booking) ||
     bookingChatQuietNeedsOps(booking) ||
     bookingDecisionEvidenceMissing(booking, nowMs) ||
-    (bookingManualDecisionNeedsOps(booking) && Boolean(booking.chatRoom)) ||
-    (bookingRefundReviewNeedsOps(booking) && Boolean(booking.chatRoom))
+    (bookingManualDecisionNeedsOps(booking) && chatReady) ||
+    (bookingRefundReviewNeedsOps(booking) && chatReady)
   );
 }
 
 function bookingChatQuietNeedsOps(booking: AdminBooking) {
   return buildBookingChatQuietNeedsOps({
     status: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingMatchingChatReady(booking),
     messageCount: booking.chatRoom?.messages?.length ?? 0,
   });
 }
@@ -3383,17 +3373,17 @@ function bookingCashDebtNeedsOps(booking: AdminBooking) {
 
 function bookingListCommandDecisionStrip(booking: AdminBooking) {
   const addressState = bookingAddressSnapshotState(booking);
-  const marketplaceCount = marketplaceParticipants(booking).length;
+  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
 
   return bookingCommandDecisionStrip({
     bookingStatus: booking.status,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
     addressLabel: addressState.detail,
     participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: customerSelectableParticipants(booking).length,
+    customerChoiceCandidateCount: bookingCustomerSelectableCount(booking),
     marketplaceEligibleCount: marketplaceCount,
-    hasFinalPartner: Boolean(booking.selectedProvider),
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasFinalPartner: bookingHasFinalPartner(booking),
+    hasChatRoom: bookingMatchingChatReady(booking),
     messageCount: booking.chatRoom?.messages?.length ?? 0,
     paymentMethod: booking.payment?.method ?? 'NONE',
     paymentStatus: booking.payment?.status ?? 'NONE',
@@ -3409,7 +3399,7 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 function bookingChatRepairNeedsOps(booking: AdminBooking) {
   return buildBookingChatRepairNeedsOps({
     status: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingMatchingChatReady(booking),
   });
 }
 
@@ -3436,7 +3426,7 @@ function bookingAddressSnapshotState(booking: AdminBooking) {
 function bookingChatListState(booking: AdminBooking) {
   return bookingChatListStateFromFacts({
     status: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingMatchingChatReady(booking),
     messageCount: booking.chatRoom?.messages?.length ?? 0,
   });
 }
@@ -3478,11 +3468,11 @@ function bookingFinalGateReason(booking: AdminBooking) {
     hasAddressSnapshot: !bookingAddressNeedsOps(booking),
     bookingStatus: booking.status,
     hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
-    customerChoiceCandidates: customerSelectableParticipants(booking).length,
-    marketplaceParticipants: marketplaceParticipants(booking).length,
-    selected: Boolean(booking.selectedProvider),
-    hasChatRoom: Boolean(booking.chatRoom),
+    preferredAwaitingDecision: bookingFirstPickPending(booking),
+    customerChoiceCandidates: bookingCustomerSelectableCount(booking),
+    marketplaceParticipants: bookingMarketplaceParticipantCount(booking),
+    selected: bookingHasFinalPartner(booking),
+    hasChatRoom: bookingMatchingChatReady(booking),
   });
   return bookingFinalGateReasonPresentation({
     bookingId: booking.id,
@@ -3506,8 +3496,8 @@ function nextAction(booking: AdminBooking) {
     paymentStatus: booking.payment?.status ?? null,
     cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
     hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
-    marketplaceParticipantCount: marketplaceParticipants(booking).length,
+    preferredAwaitingDecision: bookingFirstPickPending(booking),
+    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
     backupSelected: isBackupSelected(booking),
     completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
   });
@@ -3543,12 +3533,12 @@ function bookingServiceListLabels(booking: AdminBooking) {
 
 function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
   const policy = bookingMatchingPolicySnapshot(booking);
-  const marketplaceCount = marketplaceParticipants(booking).length;
-  const selectableCount = customerSelectableParticipants(booking).length;
+  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
+  const selectableCount = bookingCustomerSelectableCount(booking);
   const alertSummary = bookingBackupAlertTraceSummary(booking, nowMs);
 
   return buildBookingMatchingRuleSnapshot({
-    hasChatRoom: Boolean(booking.chatRoom),
+    hasChatRoom: bookingMatchingChatReady(booking),
     isTerminalStatus: terminalBookingStatuses.has(booking.status),
     marketplaceCount,
     openMatchingWindowLabel: bookingMatchingWindowLabel(booking, nowMs),
@@ -3592,17 +3582,15 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
 }
 
 function customerVisibleStateLabel(booking: AdminBooking) {
-  const selectableCount = customerSelectableParticipants(booking).length;
-  const marketplaceCount = marketplaceParticipants(booking).length;
+  const selectableCount = bookingCustomerSelectableCount(booking);
+  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
   return customerVisibleStateLabelFromFacts({
     status: booking.status,
-    selectedPartnerLabel: booking.selectedProvider
-      ? partnerDisplayName(booking.selectedProvider, 'selected')
-      : null,
-    hasChatRoom: Boolean(booking.chatRoom),
+    selectedPartnerLabel: bookingFinalPartnerLabel(booking),
+    hasChatRoom: bookingMatchingChatReady(booking),
     customerSelectablePartnerCount: selectableCount,
     hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplacePartnerCount: marketplaceCount,
   });
 }
@@ -3802,8 +3790,6 @@ function buildMarketplaceBookingCoverageRows(
   return buildMarketplaceBookingCoverageRowsFromFacts(
     bookings.map((booking) => {
       const participants = booking.participants ?? [];
-      const marketplace = marketplaceParticipants(booking);
-      const selectable = customerSelectableParticipants(booking);
       const trace = bookingBackupAlertTraceSummary(booking, nowMs);
       const firstPick = firstPickCoverageState(booking, nowMs);
       const wallet = bookingMarketplaceWalletSignal(booking);
@@ -3814,12 +3800,12 @@ function buildMarketplaceBookingCoverageRows(
         chatRepairNeeded: bookingChatRepairNeedsOps(booking),
         firstPickLabel: firstPick.label,
         firstPickTone: firstPick.tone,
-        marketplaceParticipantCount: marketplace.length,
+        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
         nextActionLabel: next.label,
         nextActionTone: next.tone,
         participantCount: participants.length,
-        selectableCount: selectable.length,
-        selectedPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
+        selectableCount: bookingCustomerSelectableCount(booking),
+        selectedPartnerLabel: bookingFinalPartnerLabel(booking),
         sortTimestamp: bookingCreatedTimestamp(booking),
         status: booking.status,
         traceBatchCount: trace.batchCount,
@@ -3849,7 +3835,7 @@ function firstPickCoverageState(booking: AdminBooking, nowMs: number): Marketpla
   if (bookingMatchingWindowExpired(booking, nowMs)) {
     return { label: 'First-pick overdue', tone: 'pill-danger' };
   }
-  if (isPreferredAwaitingDecision(booking)) {
+  if (bookingFirstPickPending(booking)) {
     return { label: 'First-pick pending', tone: 'pill-warn' };
   }
   return { label: 'First-pick recorded', tone: 'pill-info' };
@@ -3865,16 +3851,16 @@ function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number): Mar
   if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
     return { label: 'Review expired timer', tone: 'pill-danger' };
   }
-  if (booking.status === 'OPEN_MATCHING' && bookingHasCustomerSelectablePartner(booking)) {
+  if (booking.status === 'OPEN_MATCHING' && bookingCustomerSelectableCount(booking) > 0) {
     return { label: 'Customer final choice', tone: 'pill-warn' };
   }
-  if (booking.status === 'OPEN_MATCHING' && marketplaceParticipants(booking).length === 0) {
+  if (booking.status === 'OPEN_MATCHING' && bookingMarketplaceParticipantCount(booking) === 0) {
     return { label: 'Nudge marketplace supply', tone: 'pill-warn' };
   }
-  if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
+  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
     return { label: 'Wait for first-pick', tone: 'pill-warn' };
   }
-  if (booking.selectedProvider) {
+  if (bookingHasFinalPartner(booking)) {
     return { label: 'Monitor handoff', tone: 'pill-success' };
   }
   return { label: 'Monitor', tone: 'pill-info' };
@@ -3910,7 +3896,7 @@ function buildMarketplaceParticipantLedgerRows(
           bookingStatus: booking.status,
           customerSelectable: isCustomerSelectableBookingParticipant(participant, preferredPartnerId),
           distanceMeters,
-          hasChatRoom: Boolean(booking.chatRoom),
+          hasChatRoom: bookingMatchingChatReady(booking),
           joinedLabel: participant.joinedAt
             ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
             : 'Participation time not saved',
@@ -3942,10 +3928,10 @@ function buildMarketplaceOperationsCards(
     buildMarketplaceOperationsCardCounts({
       bookings: bookings.map((booking) => ({
         alertTraceBatchCount: bookingBackupAlertTraceSummary(booking, nowMs).batchCount,
-        hasCustomerSelectablePartner: bookingHasCustomerSelectablePartner(booking),
+        hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
         hasWalletDebt: bookingHasPartnerWalletDebtSignal(booking),
-        marketplaceParticipantCount: marketplaceParticipants(booking).length,
-        selectedPartnerPresent: Boolean(booking.selectedProvider),
+        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+        selectedPartnerPresent: bookingHasFinalPartner(booking),
         status: booking.status,
       })),
       ledgerRows,
@@ -3963,10 +3949,10 @@ function buildMarketplaceOperatingQueue(
         booking,
         cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
         chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
-        hasCustomerSelectablePartner: bookingHasCustomerSelectablePartner(booking),
+        hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
         hasPreferredPartner: Boolean(booking.preferredProvider),
-        marketplaceParticipantCount: marketplaceParticipants(booking).length,
-        preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+        preferredAwaitingDecision: bookingFirstPickPending(booking),
         responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
         status: booking.status,
       })),
@@ -4018,15 +4004,50 @@ function customerSelectableParticipants(booking: AdminBooking) {
   return buildBookingCustomerSelectableParticipants(booking);
 }
 
-function bookingHasCustomerSelectablePartner(booking: AdminBooking) {
-  return hasBookingCustomerSelectablePartner(booking);
+function bookingMatchingChatReady(booking: AdminBooking) {
+  return booking.matchingEvidence?.chatReady ?? Boolean(booking.chatRoom);
+}
+
+function bookingMarketplaceParticipantCount(booking: AdminBooking) {
+  return booking.matchingEvidence?.marketplaceParticipantCount ?? marketplaceParticipants(booking).length;
+}
+
+function bookingCustomerSelectableCount(booking: AdminBooking) {
+  return booking.matchingEvidence?.selectableParticipantCount ?? customerSelectableParticipants(booking).length;
+}
+
+function bookingFirstPickPending(booking: AdminBooking) {
+  if (booking.matchingEvidence) {
+    return booking.matchingEvidence.finalSelection === 'FIRST_PICK_PENDING';
+  }
+  return Boolean(booking.preferredProvider && isPreferredAwaitingDecision(booking));
+}
+
+function bookingHasFinalPartner(booking: AdminBooking) {
+  if (booking.selectedProvider) {
+    return true;
+  }
+  return (
+    booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' ||
+    booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER'
+  );
+}
+
+function bookingFinalPartnerLabel(booking: AdminBooking) {
+  if (booking.selectedProvider) {
+    return partnerDisplayName(booking.selectedProvider, 'selected');
+  }
+  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' && booking.preferredProvider) {
+    return partnerDisplayName(booking.preferredProvider, 'selected');
+  }
+  return null;
 }
 
 function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {
   if (booking.status === 'OPEN_MATCHING') {
     return true;
   }
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     return true;
   }
   return bookingMatchingWindowExpired(booking, nowMs);
@@ -4060,6 +4081,18 @@ function bookingMatchingWindowLabel(booking: AdminBooking, nowMs: number) {
 }
 
 function selectionLabel(booking: AdminBooking) {
+  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED') {
+    return 'First-pick Partner accepted first';
+  }
+
+  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER') {
+    return 'Customer selected final Partner';
+  }
+
+  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTION_AVAILABLE') {
+    return 'Customer final choice pending';
+  }
+
   if (!booking.preferredProvider) {
     return 'No first-pick partner';
   }
@@ -4068,7 +4101,7 @@ function selectionLabel(booking: AdminBooking) {
     return 'Marketplace partner selected';
   }
 
-  if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
+  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
     return 'First-pick partner pending';
   }
 
@@ -4088,13 +4121,21 @@ function selectionLabel(booking: AdminBooking) {
 }
 
 function selectionPathLabel(booking: AdminBooking) {
-  const marketplaceCount = marketplaceParticipants(booking).length;
+  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
 
   if (!booking.preferredProvider) {
     return marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
   }
 
-  if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
+  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED') {
+    return 'First-pick Partner validly accepted first through the API';
+  }
+
+  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER') {
+    return 'Customer reviewed participants and selected the final Partner';
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
     return marketplaceCount > 0
       ? 'Direct request first, with marketplace partners already waiting'
       : 'Direct request first, waiting on the first-pick partner';
@@ -4116,11 +4157,22 @@ function selectionPathLabel(booking: AdminBooking) {
 }
 
 function selectionToneClass(booking: AdminBooking) {
+  if (
+    booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' ||
+    booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER'
+  ) {
+    return 'pill-success';
+  }
+
+  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTION_AVAILABLE') {
+    return 'pill-warn';
+  }
+
   if (!booking.preferredProvider) {
     return 'pill-neutral';
   }
 
-  if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
+  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
     return 'pill-warn';
   }
 
@@ -4163,6 +4215,19 @@ function isPreferredAwaitingDecision(booking: AdminBooking) {
 function preferredProviderStateLabel(booking: AdminBooking) {
   if (isBackupSelected(booking)) {
     return 'not final';
+  }
+
+  if (booking.matchingEvidence?.firstPickStatus) {
+    if (booking.matchingEvidence.firstPickStatus === 'REJECTED') {
+      return 'declined';
+    }
+    if (
+      booking.matchingEvidence.firstPickStatus === 'ACCEPTED' ||
+      booking.matchingEvidence.firstPickStatus === 'SELECTED'
+    ) {
+      return 'confirmed';
+    }
+    return 'pending';
   }
 
   const participant = preferredParticipantState(booking);
