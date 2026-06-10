@@ -65,6 +65,7 @@ import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
+import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3359,40 +3360,14 @@ function bookingPricingPolicySignal(booking: AdminBooking): {
 } {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
-  if (!bookedService || !service) {
-    return { status: 'blocked', label: 'Service missing', tone: 'pill-danger' };
-  }
-
-  const customerPrice = readAmount(bookedService.price ?? booking.payment?.amount);
-  if (customerPrice === null) {
-    return { status: 'blocked', label: 'Price missing', tone: 'pill-danger' };
-  }
-
-  const minimum = readAmount(service.basePrice);
-  const priceStep = readAmount(service.priceStep) ?? 100000;
-  if (minimum !== null && customerPrice < minimum) {
-    return { status: 'blocked', label: 'Below admin minimum', tone: 'pill-danger' };
-  }
-  if (priceStep <= 0 || customerPrice % priceStep !== 0) {
-    return { status: 'blocked', label: 'Invalid price step', tone: 'pill-danger' };
-  }
-
-  const payoutRule = service.payoutRules?.find(
-    (rule) => rule.active && Number(rule.customerPrice) === customerPrice,
-  );
-  if (!payoutRule) {
-    return { status: 'blocked', label: 'Active payout rule missing', tone: 'pill-danger' };
-  }
-  if (Number(payoutRule.providerPayoutAmount) > customerPrice) {
-    return { status: 'blocked', label: 'Partner payout exceeds price', tone: 'pill-danger' };
-  }
-
-  const platformFee = customerPrice - Number(payoutRule.providerPayoutAmount);
-  if (platformFee <= 0) {
-    return { status: 'warning', label: 'Zero company gross fee', tone: 'pill-warn' };
-  }
-
-  return { status: 'ready', label: 'Pricing ready', tone: 'pill-success' };
+  return bookingPricingPolicySignalFromFacts({
+    hasBookedService: Boolean(bookedService),
+    hasService: Boolean(service),
+    customerPrice: bookedService?.price ?? booking.payment?.amount,
+    minimumPrice: service?.basePrice,
+    priceStep: service?.priceStep,
+    payoutRules: service?.payoutRules ?? [],
+  });
 }
 
 function bookingCashDebtNeedsOps(booking: AdminBooking) {
@@ -3751,17 +3726,6 @@ function readAddressText(value: unknown) {
       .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0)
       ?.trim() ?? null
   );
-}
-
-function readAmount(value: unknown) {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 }
 
 function readOptionalNumber(value: unknown) {
