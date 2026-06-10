@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { partnerDisplayText } from '../../lib/admin-copy';
 
 type PartnerPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 type PartnerVerificationFile = NonNullable<NonNullable<AdminProvider['verification']>['files']>[number];
@@ -87,6 +88,7 @@ export function fileReviewPurposeLabel(value?: string | null) {
     return 'Unlabeled file';
   }
   return value
+    .replace(/provider/gi, 'partner')
     .toLowerCase()
     .split(/[_\-.]/g)
     .filter(Boolean)
@@ -115,7 +117,7 @@ function privateFileRow(provider: AdminProvider, file: PartnerVerificationFile):
     needsReview: reviewStatus !== 'APPROVED',
     partnerHref: `/partners/${provider.id}#documents`,
     partnerId: provider.id,
-    partnerName: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    partnerName: filePartnerName(provider),
     purposeLabel: fileReviewPurposeLabel(file.purpose),
     reviewReason: file.reviewReason ?? null,
     reviewStatus,
@@ -141,7 +143,7 @@ function publicMediaRow(provider: AdminProvider, file: PartnerPublicMedia): File
     needsReview: reviewStatus !== 'APPROVED',
     partnerHref: `/partners/${provider.id}#media`,
     partnerId: provider.id,
-    partnerName: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    partnerName: filePartnerName(provider),
     purposeLabel: fileReviewPurposeLabel(file.purpose),
     reviewReason: file.reviewReason ?? null,
     reviewStatus,
@@ -165,6 +167,10 @@ function reviewTone(reviewStatus: string, uploadStatus: string): FileReviewStatu
     return 'danger';
   }
   return 'warning';
+}
+
+function filePartnerName(provider: AdminProvider) {
+  return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
 }
 
 function matchesReview(row: FileReviewRow, review: string) {

@@ -10,7 +10,7 @@ describe('file review board', () => {
   it('builds sorted private verification and public media rows', () => {
     const rows = buildFileReviewRows([
       partner({
-        displayName: 'Linh Wellness',
+        displayName: 'Provider Linh',
         user: {
           fileAssets: [
             {
@@ -47,8 +47,8 @@ describe('file review board', () => {
     ]);
 
     expect(rows.map((row) => [row.id, row.kind, row.partnerName, row.statusTone])).toEqual([
-      ['private-pending', 'private-verification', 'Linh Wellness', 'warning'],
-      ['public-approved', 'public-media', 'Linh Wellness', 'success'],
+      ['private-pending', 'private-verification', 'Partner Linh', 'warning'],
+      ['public-approved', 'public-media', 'Partner Linh', 'success'],
     ]);
     expect(rows[0]?.fileHref).toBe('/files/private-pending/open');
     expect(rows[1]?.fileHref).toBe('https://cdn.example.test/gallery.png');
@@ -120,6 +120,7 @@ describe('file review board', () => {
 
   it('humanizes file purpose labels', () => {
     expect(fileReviewPurposeLabel('PROFILE_PHOTO')).toBe('Profile Photo');
+    expect(fileReviewPurposeLabel('PROVIDER_VERIFICATION')).toBe('Partner Verification');
     expect(fileReviewPurposeLabel(null)).toBe('Unlabeled file');
   });
 });

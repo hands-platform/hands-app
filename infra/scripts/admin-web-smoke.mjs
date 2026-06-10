@@ -5,6 +5,7 @@ const criticalSmokePaths = [
   '/bookings?view=marketplace',
   '/customers',
   '/partners',
+  '/files',
   '/cash-settlements',
   '/operations-policy',
   '/setup',
@@ -452,6 +453,20 @@ const pages = [
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue'],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
+  {
+    path: '/files',
+    markers: [
+      'Files',
+      'Central review board for Partner verification files and public profile media.',
+      'Total files',
+      'Needs review',
+      'Public media',
+      'Private files',
+      'Review queue',
+      'Search files',
+      'Open Partner',
+    ],
+  },
   {
     path: '/payouts',
     markers: [
