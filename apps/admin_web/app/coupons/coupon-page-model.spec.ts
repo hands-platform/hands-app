@@ -1,0 +1,126 @@
+import type { AdminCoupon } from '../../lib/admin-api';
+import {
+  buildCampaignCommandBoard,
+  buildCouponPageModel,
+  buildCouponTableRows,
+  campaignToneClass,
+  campaignToneLabel,
+  couponNeedsReview,
+  couponStatusLabel,
+  couponWindowState,
+  sortCoupons,
+} from './coupon-page-model';
+import { formatDiscount } from './coupon-page-presenters';
+
+const NOW = Date.parse('2026-06-10T09:00:00.000Z');
+
+describe('coupon page model', () => {
+  beforeEach(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('classifies coupon date windows and review state', () => {
+    expect(couponWindowState(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe('scheduled');
+    expect(couponWindowState(coupon({ active: true, endsAt: '2026-06-09T09:00:00.000Z' }))).toBe('expired');
+    expect(couponWindowState(coupon({ active: false }))).toBe('draft');
+    expect(couponWindowState(coupon({ active: true }))).toBe('live');
+    expect(couponNeedsReview(coupon({ active: false }))).toBe(true);
+    expect(couponNeedsReview(coupon({ active: true, endsAt: '2026-06-09T09:00:00.000Z' }))).toBe(true);
+  });
+
+  it('sorts coupons by operations priority', () => {
+    const rows = sortCoupons([
+      coupon({ active: true, code: 'LIVE', id: 'live' }),
+      coupon({ active: true, code: 'SCHEDULED', id: 'scheduled', startsAt: '2026-06-11T09:00:00.000Z' }),
+      coupon({ active: false, code: 'PAUSED', id: 'paused' }),
+    ]);
+
+    expect(rows.map((row) => row.id)).toEqual(['paused', 'live', 'scheduled']);
+  });
+
+  it('builds page model counts and command lanes', () => {
+    const model = buildCouponPageModel([
+      coupon({ active: true, code: 'LIVE', id: 'live' }),
+      coupon({ active: true, code: 'SOON', id: 'soon', startsAt: '2026-06-11T09:00:00.000Z' }),
+      coupon({ active: true, code: 'OLD', endsAt: '2026-06-09T09:00:00.000Z', id: 'old' }),
+      coupon({ active: false, code: 'PAUSED', id: 'paused' }),
+    ]);
+
+    expect(model.liveCoupons).toHaveLength(1);
+    expect(model.activeCoupons).toHaveLength(2);
+    expect(model.scheduledCoupons).toHaveLength(1);
+    expect(model.expiredCoupons).toHaveLength(1);
+    expect(model.needsReview).toHaveLength(2);
+    expect(model.campaignBoard.map((item) => [item.title, item.coupons.length, item.tone])).toEqual([
+      ['Live checkout codes', 1, 'info'],
+      ['Upcoming campaigns', 1, 'info'],
+      ['Expired active codes', 1, 'warn'],
+      ['Paused or review queue', 2, 'warn'],
+    ]);
+  });
+
+  it('builds coupon table rows and toggle actions', () => {
+    const rows = buildCouponTableRows([
+      coupon({
+        active: true,
+        code: 'WELCOME10',
+        description: 'Welcome campaign',
+        discount: { type: 'percent', value: 10 },
+        id: 'coupon-row-1',
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      checkoutHint: 'Checkout preview and booking payment authorization should apply this discount.',
+      code: 'WELCOME10',
+      description: 'Welcome campaign',
+      discountLabel: '10% off',
+      lowerCode: 'welcome10',
+      statusLabel: 'ACTIVE',
+    });
+    expect(rows[0]?.actions[0]).toEqual(
+      expect.objectContaining({
+        href: '/coupons?confirm=toggle&couponId=coupon-row-1',
+        label: 'Pause',
+        tone: 'danger',
+      }),
+    );
+  });
+
+  it('keeps status, discount, and tone labels stable', () => {
+    expect(couponStatusLabel(coupon({ active: false }))).toBe('PAUSED');
+    expect(couponStatusLabel(coupon({ active: true, startsAt: '2026-06-11T09:00:00.000Z' }))).toBe('SCHEDULED');
+    expect(formatDiscount({ type: 'percent', value: '15' })).toBe('15% off');
+    expect(formatDiscount(null)).toBe('Unknown');
+    expect(campaignToneClass('warn')).toBe('signal-warn');
+    expect(campaignToneLabel('ok')).toBe('Clear');
+  });
+
+  it('builds command board from prepared buckets', () => {
+    const live = [coupon({ active: true, id: 'live' })];
+    const board = buildCampaignCommandBoard({
+      expiredCoupons: [],
+      liveCoupons: live,
+      needsReview: [],
+      pausedCoupons: [],
+      scheduledCoupons: [],
+    });
+
+    expect(board[0]).toMatchObject({ coupons: live, status: 'Live', tone: 'info' });
+    expect(board[3]).toMatchObject({ coupons: [], status: 'Needs decision', tone: 'ok' });
+  });
+});
+
+function coupon(input: Partial<AdminCoupon> = {}): AdminCoupon {
+  return {
+    active: true,
+    code: 'CODE',
+    discount: { type: 'percent', value: 10 },
+    id: 'coupon-1',
+    ...input,
+  };
+}
