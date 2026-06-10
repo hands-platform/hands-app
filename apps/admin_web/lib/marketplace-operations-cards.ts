@@ -17,6 +17,43 @@ type MarketplaceOperationsCardCounts = {
   readonly walletDebtBookingsCount: number;
 };
 
+export type MarketplaceOperationsBookingFact = {
+  readonly alertTraceBatchCount: number;
+  readonly hasCustomerSelectablePartner: boolean;
+  readonly hasWalletDebt: boolean;
+  readonly marketplaceParticipantCount: number;
+  readonly selectedPartnerPresent: boolean;
+  readonly status: string;
+};
+
+export type MarketplaceOperationsLedgerFact = {
+  readonly choiceLabel: string;
+};
+
+type MarketplaceOperationsCardCountInput = {
+  readonly bookings: readonly MarketplaceOperationsBookingFact[];
+  readonly ledgerRows: readonly MarketplaceOperationsLedgerFact[];
+};
+
+export function buildMarketplaceOperationsCardCounts({
+  bookings,
+  ledgerRows,
+}: MarketplaceOperationsCardCountInput): MarketplaceOperationsCardCounts {
+  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+
+  return {
+    alertTraceMissingCount: openBookings.filter((booking) => booking.alertTraceBatchCount === 0).length,
+    customerChoiceWaitingCount: openBookings.filter((booking) => booking.hasCustomerSelectablePartner)
+      .length,
+    noMarketplaceSupplyCount: openBookings.filter(
+      (booking) => booking.marketplaceParticipantCount === 0 && !booking.selectedPartnerPresent,
+    ).length,
+    openBookingsCount: openBookings.length,
+    selectedRowsCount: ledgerRows.filter((row) => row.choiceLabel === 'Selected by customer').length,
+    walletDebtBookingsCount: bookings.filter((booking) => booking.hasWalletDebt).length,
+  };
+}
+
 export function buildMarketplaceOperationsCards({
   alertTraceMissingCount,
   customerChoiceWaitingCount,

@@ -63,6 +63,7 @@ import {
   type MarketplaceBookingCoverageTone,
 } from '../../lib/marketplace-booking-coverage';
 import {
+  buildMarketplaceOperationsCardCounts,
   buildMarketplaceOperationsCards as buildMarketplaceOperationsCardItems,
   type MarketplaceOperationsCard,
 } from '../../lib/marketplace-operations-cards';
@@ -4284,28 +4285,19 @@ function buildMarketplaceOperationsCards(
   ledgerRows: readonly AdminMarketplaceParticipantLedgerRow[],
   nowMs: number,
 ): MarketplaceOperationsCard[] {
-  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const customerChoiceWaiting = bookings.filter(
-    (booking) => booking.status === 'OPEN_MATCHING' && bookingHasCustomerSelectablePartner(booking),
+  return buildMarketplaceOperationsCardItems(
+    buildMarketplaceOperationsCardCounts({
+      bookings: bookings.map((booking) => ({
+        alertTraceBatchCount: bookingBackupAlertTraceSummary(booking, nowMs).batchCount,
+        hasCustomerSelectablePartner: bookingHasCustomerSelectablePartner(booking),
+        hasWalletDebt: bookingHasPartnerWalletDebtSignal(booking),
+        marketplaceParticipantCount: marketplaceParticipants(booking).length,
+        selectedPartnerPresent: Boolean(booking.selectedProvider),
+        status: booking.status,
+      })),
+      ledgerRows,
+    }),
   );
-  const noMarketplaceSupply = openBookings.filter(
-    (booking) => marketplaceParticipants(booking).length === 0 && !booking.selectedProvider,
-  );
-  const alertTraceMissing = openBookings.filter((booking) => {
-    const trace = bookingBackupAlertTraceSummary(booking, nowMs);
-    return trace.batchCount === 0;
-  });
-  const walletDebtBookings = bookings.filter(bookingHasPartnerWalletDebtSignal);
-  const selectedRows = ledgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
-
-  return buildMarketplaceOperationsCardItems({
-    alertTraceMissingCount: alertTraceMissing.length,
-    customerChoiceWaitingCount: customerChoiceWaiting.length,
-    noMarketplaceSupplyCount: noMarketplaceSupply.length,
-    openBookingsCount: openBookings.length,
-    selectedRowsCount: selectedRows.length,
-    walletDebtBookingsCount: walletDebtBookings.length,
-  });
 }
 
 function buildMarketplaceOperatingQueue(

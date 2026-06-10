@@ -1,4 +1,7 @@
-import { buildMarketplaceOperationsCards } from './marketplace-operations-cards';
+import {
+  buildMarketplaceOperationsCardCounts,
+  buildMarketplaceOperationsCards,
+} from './marketplace-operations-cards';
 
 describe('marketplace operations cards', () => {
   it('builds marketplace operations cards from visible booking counts', () => {
@@ -39,5 +42,49 @@ describe('marketplace operations cards', () => {
       ['Selected partners', 'pill-neutral'],
       ['Cash fee debt', 'pill-neutral'],
     ]);
+  });
+
+  it('counts marketplace operation signals from booking and ledger facts', () => {
+    const counts = buildMarketplaceOperationsCardCounts({
+      bookings: [
+        {
+          alertTraceBatchCount: 0,
+          hasCustomerSelectablePartner: true,
+          hasWalletDebt: false,
+          marketplaceParticipantCount: 2,
+          selectedPartnerPresent: false,
+          status: 'OPEN_MATCHING',
+        },
+        {
+          alertTraceBatchCount: 1,
+          hasCustomerSelectablePartner: false,
+          hasWalletDebt: true,
+          marketplaceParticipantCount: 0,
+          selectedPartnerPresent: false,
+          status: 'OPEN_MATCHING',
+        },
+        {
+          alertTraceBatchCount: 0,
+          hasCustomerSelectablePartner: false,
+          hasWalletDebt: false,
+          marketplaceParticipantCount: 0,
+          selectedPartnerPresent: true,
+          status: 'MATCHED',
+        },
+      ],
+      ledgerRows: [
+        { choiceLabel: 'Selected by customer' },
+        { choiceLabel: 'Customer-selectable' },
+      ],
+    });
+
+    expect(counts).toEqual({
+      alertTraceMissingCount: 1,
+      customerChoiceWaitingCount: 1,
+      noMarketplaceSupplyCount: 1,
+      openBookingsCount: 2,
+      selectedRowsCount: 1,
+      walletDebtBookingsCount: 1,
+    });
   });
 });
