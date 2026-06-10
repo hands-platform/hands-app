@@ -29,6 +29,10 @@ import {
   bookingRequestOpenedAt,
 } from '../../lib/admin-booking-time';
 import {
+  bookingListActionChipsFromFacts,
+  type BookingListActionChip,
+} from '../../lib/booking-list-action-chips';
+import {
   bookingListStageFromFacts,
   type BookingListStage,
   type BookingListStageKey,
@@ -177,13 +181,6 @@ type BookingDispatchPartnerShortcut = {
   detail: string;
   href: string;
   tone: BookingCommandLane['tone'];
-};
-
-type BookingListActionChip = {
-  label: string;
-  detail: string;
-  tone: string;
-  href: string;
 };
 
 type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
@@ -3535,7 +3532,7 @@ function bookingChatListState(booking: AdminBooking) {
   };
 }
 
-function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingListActionChip[] {
+function bookingListActionChips(booking: AdminBooking, nowMs: number): readonly BookingListActionChip[] {
   const paymentNeedsOps = bookingPaymentNeedsOps(booking);
   const locationNeedsOps = bookingLocationNeedsOps(booking, nowMs);
   const chatNeedsRepair = bookingChatRepairNeedsOps(booking);
@@ -3548,50 +3545,21 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     ? money(Number(booking.payment.amount ?? 0), booking.payment.currency)
     : 'No payment record';
 
-  return [
-    {
-      label: chatNeedsRepair ? 'Chat repair' : chatState.label,
-      detail: chatState.detail,
-      tone: chatNeedsRepair ? 'pill-danger' : chatState.tone,
-      href: chatNeedsRepair ? '/bookings?view=chat-repair' : '/bookings?view=chat',
-    },
-    {
-      label: locationNeedsOps ? 'Location check' : 'Location clear',
-      detail: bookingLocationSignalLabel(booking, nowMs),
-      tone: locationNeedsOps ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=location',
-    },
-    {
-      label: paymentNeedsOps ? 'Payment check' : 'Payment clear',
-      detail: booking.payment
-        ? `${booking.payment.method} / ${booking.payment.status} / ${paymentAmount}`
-        : 'No payment record is attached to this booking.',
-      tone: paymentNeedsOps ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=payment',
-    },
-    {
-      label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
-      detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before final acceptance, service start, or payout release resumes.'
-        : 'No partner cash fee debt is visible for this booking.',
-      tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
-      href: '/bookings?view=cash-debt',
-    },
-    {
-      label: closeoutNeedsOps ? 'Closeout check' : 'Closeout clear',
-      detail: closeoutNeedsOps
-        ? 'Completed booking needs payment, earning, tax, fee, or wallet ledger closeout.'
-        : 'No completed closeout blocker is visible.',
-      tone: closeoutNeedsOps ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=closeout',
-    },
-    {
-      label: pricingNeedsOps ? 'Pricing check' : 'Pricing clear',
-      detail: pricingPolicy.label,
-      tone: pricingNeedsOps ? pricingPolicy.tone : 'pill-success',
-      href: '/bookings?view=pricing',
-    },
-  ];
+  return bookingListActionChipsFromFacts({
+    cashDebtNeedsOps,
+    chatNeedsRepair,
+    chatState,
+    closeoutNeedsOps,
+    locationDetail: bookingLocationSignalLabel(booking, nowMs),
+    locationNeedsOps,
+    paymentDetail: booking.payment
+      ? `${booking.payment.method} / ${booking.payment.status} / ${paymentAmount}`
+      : 'No payment record is attached to this booking.',
+    paymentNeedsOps,
+    pricingDetail: pricingPolicy.label,
+    pricingNeedsOps,
+    pricingTone: pricingPolicy.tone,
+  });
 }
 
 function bookingFinalGateReason(booking: AdminBooking) {
