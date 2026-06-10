@@ -1,14 +1,7 @@
 import Link from 'next/link';
+import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 
-export type PartnerOperationsDigestRow = {
-  readonly detail: string;
-  readonly evidence: readonly string[];
-  readonly href: string;
-  readonly lane: string;
-  readonly latestAt?: string;
-  readonly status: string;
-  readonly tone: string;
-};
+export type { PartnerOperationsDigestRow };
 
 type PartnerDetailOperationsDigestSectionProps = {
   readonly description: string;
