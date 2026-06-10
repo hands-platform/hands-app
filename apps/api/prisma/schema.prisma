@@ -27,6 +27,11 @@ enum BookingStatus {
   REFUNDED
 }
 
+enum BookingMatchSource {
+  FIRST_PICK_ACCEPTED_FIRST
+  CUSTOMER_SELECTED_PARTNER
+}
+
 enum ProviderStatus {
   OFFLINE
   ONLINE_AVAILABLE
@@ -627,6 +632,8 @@ model Booking {
   earlyAcceptMin      Int                         @default(20)
   openedAt            DateTime?
   expiresAt           DateTime?
+  matchedAt           DateTime?
+  matchSource         BookingMatchSource?
   closedAt            DateTime?
   closedByRole        Role?
   closedReason        String?

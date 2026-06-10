@@ -1,4 +1,5 @@
 import {
+  BookingMatchSource,
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
@@ -604,6 +605,8 @@ describe('BookingsService final partner selection', () => {
         data: expect.objectContaining({
           status: BookingStatus.MATCHED,
           selectedProviderId: 'marketplace-partner',
+          matchedAt: expect.any(Date),
+          matchSource: BookingMatchSource.CUSTOMER_SELECTED_PARTNER,
           chatRoom: { upsert: { create: {}, update: {} } },
           participants: {
             update: {
@@ -1284,6 +1287,8 @@ describe('BookingsService partner response wallet gates', () => {
         data: expect.objectContaining({
           status: BookingStatus.MATCHED,
           selectedProviderId: 'partner-1',
+          matchedAt: expect.any(Date),
+          matchSource: BookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
           chatRoom: { upsert: { create: {}, update: {} } },
           participants: {
             update: {

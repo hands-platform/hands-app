@@ -20,6 +20,76 @@ function createAdminService(prisma: unknown) {
 }
 
 describe('AdminService query orchestration', () => {
+  it('includes persisted matching decision fields in booking list queries', async () => {
+    const prisma = {
+      booking: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listBookings();
+
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          matchedAt: true,
+          matchSource: true,
+        }),
+      }),
+    );
+  });
+
+  it('includes persisted matching decision fields in booking detail queries', async () => {
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getBookingDetail('booking-1')).rejects.toThrow('Booking not found');
+
+    expect(prisma.booking.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          matchedAt: true,
+          matchSource: true,
+        }),
+      }),
+    );
+  });
+
+  it('includes persisted matching decision fields in partner overview booking queries', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'provider-1' }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.getProviderOverview('provider-1');
+
+    expect(prisma.providerProfile.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          preferredBookings: expect.objectContaining({
+            select: expect.objectContaining({
+              matchedAt: true,
+              matchSource: true,
+            }),
+          }),
+          selectedBookings: expect.objectContaining({
+            select: expect.objectContaining({
+              matchedAt: true,
+              matchSource: true,
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
   it('starts partner audit log lookup while shared device lookup is still pending', async () => {
     const sharedDevices = deferred<unknown[]>();
     const providerProfile = {

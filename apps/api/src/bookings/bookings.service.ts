@@ -1,5 +1,6 @@
 ﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BookingMatchSource as PrismaBookingMatchSource,
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
@@ -806,6 +807,8 @@ export class BookingsService {
           data: {
             status: BookingStatus.MATCHED,
             selectedProviderId: providerId,
+            matchedAt: new Date(),
+            matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
             participants: {
               update: {
                 where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
@@ -905,6 +908,8 @@ export class BookingsService {
               data: {
                 status: BookingStatus.MATCHED,
                 selectedProviderId: provider.id,
+                matchedAt: new Date(),
+                matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
                 participants: {
                   update: {
                     where: participantKey,
