@@ -56,7 +56,7 @@ export function bookingChatRepairActionState(
       canSubmit: false,
       status: 'Not required',
       tone: 'pill-neutral',
-      helper: 'Chat opens after customer final partner selection.',
+      helper: 'Chat opens after first-pick match or customer final selection.',
     };
   }
 
@@ -65,7 +65,7 @@ export function bookingChatRepairActionState(
       canSubmit: false,
       status: 'Final partner missing',
       tone: 'pill-warn',
-      helper: 'Repair is locked until the customer final partner selection is recorded.',
+      helper: 'Repair is locked until first-pick match or customer final selection is recorded.',
     };
   }
 

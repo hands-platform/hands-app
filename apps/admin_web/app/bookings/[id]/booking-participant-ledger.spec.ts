@@ -174,6 +174,26 @@ describe('booking participant ledger', () => {
     });
   });
 
+  it('describes chat opening after either first-pick match or customer final selection', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        preferredProviderId: 'partner-first',
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Partner',
+        },
+        participants: [],
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+      value: 'Not opened',
+      helper: 'Chat opens after first-pick match or customer final selection and service handoff.',
+    });
+  });
+
   it('keeps a legacy accepted first-pick partner customer-selectable as fallback evidence', () => {
     const ledger = bookingParticipantLedger(
       booking({

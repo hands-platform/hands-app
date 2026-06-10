@@ -123,7 +123,7 @@ export function bookingParticipantLedger(
           ? 'Admin retains the booking chat even after mobile hides completed-service chat.'
           : chatRequired
             ? 'Matched bookings should create a retained chat archive for operations evidence.'
-            : 'Chat opens only after customer final partner selection and service handoff.',
+            : 'Chat opens after first-pick match or customer final selection and service handoff.',
         href: '#chat',
       },
     ],

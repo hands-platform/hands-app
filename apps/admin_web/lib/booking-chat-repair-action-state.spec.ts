@@ -68,6 +68,23 @@ describe('booking chat repair action state', () => {
       canSubmit: false,
       status: 'Final partner missing',
       tone: 'pill-warn',
+      helper: 'Repair is locked until first-pick match or customer final selection is recorded.',
+    });
+  });
+
+  it('describes chat as unavailable before first-pick match or customer final selection', () => {
+    expect(
+      bookingChatRepairActionState({
+        status: 'OPEN_MATCHING',
+        hasChatRoom: false,
+        chatRoomShortId: null,
+        hasSelectedPartner: false,
+      }),
+    ).toMatchObject({
+      canSubmit: false,
+      status: 'Not required',
+      tone: 'pill-neutral',
+      helper: 'Chat opens after first-pick match or customer final selection.',
     });
   });
 
