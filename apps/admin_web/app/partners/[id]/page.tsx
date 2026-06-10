@@ -79,6 +79,9 @@ import {
 import {
   type PartnerBookingArchiveRecord as PartnerBookingArchiveModelRecord,
   buildPartnerBookingArchive,
+  buildPartnerChatRetentionRows,
+  buildPartnerChatRetentionSummary,
+  chatSenderLabel,
 } from './partner-detail-booking-model';
 import {
   buildPartnerAccountActionConfirmation,
@@ -114,7 +117,6 @@ import {
 } from './partner-detail-booking-journey-section';
 import {
   PartnerDetailChatRetentionLedgerSection,
-  type PartnerChatRetentionRow,
 } from './partner-detail-chat-retention-ledger-section';
 import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
 import {
@@ -236,9 +238,6 @@ type PartnerDetailBooking = {
   payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
   review?: { rating?: number; comment?: string | null; createdAt?: string } | null;
 };
-type PartnerDetailChatMessage = NonNullable<
-  NonNullable<PartnerDetailBooking['chatRoom']>['messages']
->[number];
 type PartnerBookingArchiveRecord = PartnerBookingArchiveModelRecord<PartnerDetailBooking>;
 type PartnerDetailDevice = NonNullable<AdminProvider['devices']>[number];
 
@@ -5092,65 +5091,6 @@ function readPartnerChatMessages(booking: PartnerDetailBooking) {
   });
 }
 
-function buildPartnerChatRetentionRows(records: PartnerBookingArchiveRecord[]): PartnerChatRetentionRow[] {
-  return records.slice(0, 40).map((record) => {
-    const booking = record.booking;
-    const messages = readPartnerChatMessages(booking);
-    const latestMessage = messages[messages.length - 1];
-    const requiresRoom = partnerBookingRequiresRetainedChat(booking);
-    const mobileHidden = partnerBookingChatHiddenInMobile(booking);
-    const latestSender = latestMessage ? chatSenderLabel(latestMessage) : 'No message';
-
-    return {
-      id: booking.id,
-      relation: record.relation,
-      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
-      serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
-      status: booking.status ?? 'UNKNOWN',
-      roleDetail: partnerRoleRetentionDetail(record),
-      roomStatus: booking.chatRoom
-        ? `${messages.length} retained message(s)`
-        : requiresRoom
-          ? 'Matched booking without room'
-          : 'No room required yet',
-      roomDetail: booking.chatRoom
-        ? `Room ${shortRecordId(booking.chatRoom.id)} / ${partnerBookingChatEvidenceLabel(booking)}`
-        : requiresRoom
-          ? 'Matched or service-stage booking should have a retained chat room.'
-          : 'Pre-match bookings do not open customer-partner chat yet.',
-      latestSender,
-      latestMessage: latestMessage ? trimText(latestMessage.body, 120) : 'No retained message loaded',
-      latestMessageAt: latestMessage?.createdAt,
-      mobileVisibility: mobileHidden
-        ? 'Hidden in mobile after closeout'
-        : booking.chatRoom
-          ? 'Visible while service is active'
-          : 'Not visible yet',
-      mobileVisibilityDetail: mobileHidden
-        ? 'Customer and partner apps may hide completed or closed chats, but admin keeps the archive.'
-        : booking.chatRoom
-          ? 'Room should remain visible until the service is completed or closed.'
-          : 'Chat opens after customer final partner selection.',
-      adminRetention: booking.chatRoom
-        ? 'Admin archive retained'
-        : requiresRoom
-          ? 'Admin repair needed'
-          : 'Waiting for match',
-      adminRetentionDetail: booking.chatRoom
-        ? 'Use the archive link for full message evidence.'
-        : requiresRoom
-          ? 'Open the booking detail to repair or investigate the missing room.'
-          : 'No customer-partner chat evidence is expected before matching.',
-      bookingHref: `/bookings/${booking.id}`,
-      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
-      hasRoom: Boolean(booking.chatRoom),
-      requiresRoom,
-      messageCount: messages.length,
-      mobileHidden,
-    };
-  });
-}
-
 function buildPartnerBookingOpsLedgerRows(
   records: PartnerBookingArchiveRecord[],
 ): PartnerBookingOpsLedgerRow[] {
@@ -5204,67 +5144,6 @@ function latestBookingManualNote(notes?: string | null) {
     .filter(Boolean);
   const latest = lines[lines.length - 1];
   return latest ? trimText(latest, 180) : null;
-}
-
-function buildPartnerChatRetentionSummary(rows: PartnerChatRetentionRow[]) {
-  const retainedRooms = rows.filter((row) => row.hasRoom).length;
-  const retainedMessages = rows.reduce((sum, row) => sum + row.messageCount, 0);
-  const matchedWithoutRoom = rows.filter((row) => row.requiresRoom && !row.hasRoom).length;
-  const mobileHidden = rows.filter((row) => row.mobileHidden && row.hasRoom).length;
-
-  return [
-    {
-      label: 'Retained rooms',
-      value: retainedRooms.toString(),
-      helper: 'Partner chat rooms saved for admin evidence.',
-    },
-    {
-      label: 'Retained messages',
-      value: retainedMessages.toString(),
-      helper: 'Loaded messages across this partner date filter.',
-    },
-    {
-      label: 'Matched without room',
-      value: matchedWithoutRoom.toString(),
-      helper: 'Matched/service-stage bookings that need chat-room repair.',
-    },
-    {
-      label: 'Hidden in mobile',
-      value: mobileHidden.toString(),
-      helper: 'Completed or closed chats still retained by admin.',
-    },
-  ];
-}
-
-function partnerRoleRetentionDetail(record: PartnerBookingArchiveRecord) {
-  if (record.relation === 'Selected') {
-    return 'Customer selected this partner for final service handoff.';
-  }
-  if (record.relation === 'Preferred') {
-    return 'Customer first picked this partner before marketplace participation.';
-  }
-  return 'Partner participated in the marketplace shortlist for customer final choice.';
-}
-
-function partnerBookingRequiresRetainedChat(booking: PartnerDetailBooking) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-    booking.status ?? '',
-  );
-}
-
-function partnerBookingChatHiddenInMobile(booking: PartnerDetailBooking) {
-  return ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status ?? '');
-}
-
-function chatSenderLabel(message: PartnerDetailChatMessage) {
-  const role = message.sender?.roles?.includes('CUSTOMER')
-    ? 'Customer'
-    : message.sender?.roles?.includes('PROVIDER')
-      ? 'Partner'
-      : message.sender?.roles?.includes('ADMIN')
-        ? 'Admin'
-        : 'Sender';
-  return `${role}: ${message.sender?.fullName ?? message.sender?.phone ?? 'Unknown'}`;
 }
 
 function bookingServiceLabel(booking: PartnerDetailBooking) {

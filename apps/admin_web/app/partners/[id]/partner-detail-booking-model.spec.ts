@@ -1,4 +1,8 @@
-import { buildPartnerBookingArchive } from './partner-detail-booking-model';
+import {
+  buildPartnerBookingArchive,
+  buildPartnerChatRetentionRows,
+  buildPartnerChatRetentionSummary,
+} from './partner-detail-booking-model';
 
 describe('partner detail booking model', () => {
   it('builds newest-first booking archive rows across partner roles', () => {
@@ -48,19 +52,98 @@ describe('partner detail booking model', () => {
       'booking-repeat:Joined',
     ]);
   });
+
+  it('builds chat retention rows and summary for admin archive evidence', () => {
+    const rows = buildPartnerChatRetentionRows([
+      {
+        booking: booking({
+          chatRoom: {
+            id: 'chat-active',
+            messages: [
+              {
+                body: 'Customer says hello',
+                createdAt: '2026-06-10T08:00:00.000Z',
+                id: 'message-1',
+                sender: { fullName: 'Mai Customer', roles: ['CUSTOMER'] },
+              },
+            ],
+          },
+          createdAt: '2026-06-10T07:00:00.000Z',
+          customerProfile: { user: { fullName: 'Mai Customer' } },
+          id: 'booking-active',
+          services: [{ id: 'service-1', price: 100000, quantity: 1, service: { name: 'Thai Massage' } }],
+          status: 'COMPLETED',
+        }),
+        lastMessage: 'Customer says hello',
+        relation: 'Selected',
+      },
+      {
+        booking: booking({
+          createdAt: '2026-06-09T07:00:00.000Z',
+          customerProfile: { user: { phone: '+84900000000' } },
+          id: 'booking-missing-room',
+          status: 'MATCHED',
+        }),
+        lastMessage: null,
+        relation: 'Preferred',
+      },
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      adminRetention: 'Admin archive retained',
+      latestMessage: 'Customer says hello',
+      latestSender: 'Customer: Mai Customer',
+      mobileHidden: true,
+      relation: 'Selected',
+      roomStatus: '1 retained message(s)',
+    });
+    expect(rows[1]).toMatchObject({
+      adminRetention: 'Admin repair needed',
+      latestMessage: 'No retained message loaded',
+      requiresRoom: true,
+      roomStatus: 'Matched booking without room',
+      serviceLabel: 'No service / customer +84900000000',
+    });
+    expect(buildPartnerChatRetentionSummary(rows).map((item) => [item.label, item.value])).toEqual([
+      ['Retained rooms', '1'],
+      ['Retained messages', '1'],
+      ['Matched without room', '1'],
+      ['Hidden in mobile', '1'],
+    ]);
+  });
 });
 
 function booking(input: {
   readonly chatRoom?: {
     readonly id: string;
-    readonly messages?: readonly { readonly body: string; readonly id: string }[];
+    readonly messages?: readonly {
+      readonly body: string;
+      readonly createdAt?: string;
+      readonly id: string;
+      readonly sender?: {
+        readonly fullName?: string | null;
+        readonly phone?: string | null;
+        readonly roles?: readonly string[] | null;
+      } | null;
+    }[];
   } | null;
   readonly createdAt: string;
+  readonly customerProfile?: { readonly user?: { readonly fullName?: string | null; readonly phone?: string | null } | null } | null;
   readonly id: string;
+  readonly services?: readonly {
+    readonly id: string;
+    readonly price?: number;
+    readonly quantity?: number;
+    readonly service?: { readonly durationMin?: number | null; readonly name?: string } | null;
+  }[];
+  readonly status?: string;
 }) {
   return {
-    id: input.id,
     chatRoom: input.chatRoom,
     createdAt: input.createdAt,
+    customerProfile: input.customerProfile,
+    id: input.id,
+    services: input.services,
+    status: input.status,
   };
 }
