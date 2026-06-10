@@ -1,0 +1,169 @@
+import type { AdminEarning } from '../../lib/admin-api';
+import {
+  buildCashDebtQueue,
+  buildCashDebtQueueItems,
+  buildEarningBatchStateCards,
+  buildEarningFilters,
+  buildEarningsLedgerRows,
+  buildEarningsMoneyFlowCards,
+  buildEarningsMoneyFlowChecks,
+  buildProviderPayoutQueue,
+  buildServiceEarningBridge,
+  filterEarningsByBatchState,
+  sortEarnings,
+  summarizeEarnings,
+} from './earnings-page-model';
+
+describe('earnings page model', () => {
+  it('summarizes, prioritizes, and filters earning rows without changing statuses', () => {
+    const rows = [
+      earning({ id: 'paid-row', netAmount: 70000, status: 'PAID' }),
+      earning({ id: 'cash-debt', netAmount: -30000, platformFee: 30000 }),
+      earning({ id: 'ready-row', netAmount: 90000, status: 'AVAILABLE' }),
+      earning({ id: 'batched-row', netAmount: 50000, payoutBatchId: 'batch-1', status: 'AVAILABLE' }),
+    ];
+
+    const summary = summarizeEarnings(rows, 'VND');
+    const cashDebtState = buildEarningFilters({ batchState: 'cash-debt' }).batchState;
+    const batchStateCards = buildEarningBatchStateCards(rows, 'all');
+
+    expect(summary).toMatchObject({
+      availableNetAmount: 140000,
+      count: 4,
+      netAmount: 180000,
+      paidNetAmount: 70000,
+      pendingNetAmount: -30000,
+    });
+    expect(sortEarnings(rows).map((row) => row.id)).toEqual([
+      'cash-debt',
+      'ready-row',
+      'batched-row',
+      'paid-row',
+    ]);
+    expect(filterEarningsByBatchState(rows, cashDebtState).map((row) => row.id)).toEqual(['cash-debt']);
+    expect(batchStateCards.find((card) => card.state === 'ready')).toMatchObject({
+      amount: 90000,
+      count: 1,
+      href: '/earnings?batchState=ready',
+    });
+  });
+
+  it('builds cash debt and payout queues from API facts only', () => {
+    const rows = [
+      earning({ id: 'cash-debt', netAmount: -30000, platformFee: 25000, withholdingAmount: 5000 }),
+      earning({ id: 'ready-row', netAmount: 90000, status: 'AVAILABLE' }),
+      earning({ id: 'paid-row', netAmount: 70000, status: 'PAID' }),
+    ];
+
+    const cashDebtQueue = buildCashDebtQueue(rows);
+    const cashDebtItems = buildCashDebtQueueItems(cashDebtQueue);
+    const payoutQueue = buildProviderPayoutQueue(rows, []);
+
+    expect(cashDebtItems[0]).toMatchObject({
+      debtAmount: 30000,
+      paymentMethod: 'CASH',
+      platformFee: 25000,
+      settlementReference: 'HANDS-WALLET-PROFILE1',
+      taxAmount: 5000,
+    });
+    expect(cashDebtItems[0]?.settlementChecklist[0]).toContain('Confirm partner deposit');
+    expect(payoutQueue).toHaveLength(1);
+    expect(payoutQueue[0]).toMatchObject({
+      canBatch: false,
+      cashDebtAmount: 30000,
+      status: 'HOLD',
+      unbatchedCount: 1,
+      unbatchedNet: 90000,
+    });
+  });
+
+  it('builds ledger, service bridge, and money flow rows for the admin view', () => {
+    const rows = [
+      earning({
+        grossAmount: 120000,
+        id: 'service-row',
+        netAmount: 90000,
+        platformFee: 25000,
+        status: 'AVAILABLE',
+        withholdingAmount: 5000,
+      }),
+      earning({ id: 'cash-debt', netAmount: -30000, platformFee: 30000 }),
+    ];
+    const summary = summarizeEarnings(rows, 'VND');
+    const cashDebtQueue = buildCashDebtQueue(rows);
+    const cashDebtTotals = {
+      bookingAmount: 120000,
+      debtAmount: 30000,
+      platformFee: 30000,
+      taxAmount: 0,
+    };
+    const serviceBridge = buildServiceEarningBridge(rows);
+    const ledgerRows = buildEarningsLedgerRows(rows);
+
+    expect(ledgerRows[0]).toMatchObject({
+      bookingShortId: 'booking-1',
+      providerName: 'Partner Mai',
+      statusLabel: 'AVAILABLE',
+    });
+    expect(serviceBridge[0]).toMatchObject({
+      bookingCount: 2,
+      label: 'Massage 60 / 60 min',
+    });
+    expect(buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals).map((card) => card.label)).toEqual([
+      'Customer charge',
+      'Partner payout',
+      'HANDS fee',
+      'Tax withheld',
+      'Company net',
+      'Cash debt',
+    ]);
+    const cashJobLockCheck = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue).find(
+      (check) => check.title === 'Cash job lock',
+    );
+
+    expect(cashJobLockCheck).toMatchObject({
+      pillClass: 'pill-danger',
+      title: 'Cash job lock',
+    });
+  });
+});
+
+function earning(input: Partial<AdminEarning> = {}): AdminEarning {
+  const booking = {
+    payment: { amount: 120000, currency: 'VND', method: 'CASH', status: 'PENDING' },
+    services: [
+      {
+        id: 'booking-service-1',
+        price: 120000,
+        quantity: 1,
+        service: {
+          basePrice: 120000,
+          durationMin: 60,
+          id: 'service-1',
+          name: 'Massage 60',
+          serviceGroupKey: 'massage',
+        },
+        serviceId: 'service-1',
+      },
+    ],
+    status: 'COMPLETED',
+    ...input.booking,
+  };
+
+  return {
+    bookingId: 'booking-1',
+    createdAt: '2026-06-10T08:00:00.000Z',
+    currency: 'VND',
+    grossAmount: 120000,
+    id: 'earning-1',
+    netAmount: -30000,
+    platformFee: 30000,
+    providerProfile: { displayName: 'Partner Mai', user: { phone: '+8490' } },
+    providerProfileId: 'partner-profile1',
+    settlementRef: null,
+    status: 'PENDING',
+    withholdingAmount: 0,
+    ...input,
+    booking,
+  };
+}
