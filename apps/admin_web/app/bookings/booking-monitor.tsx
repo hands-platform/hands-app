@@ -64,6 +64,7 @@ import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
+import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
 import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
@@ -4079,16 +4080,9 @@ function bookingMatchingWindowLabel(booking: AdminBooking, nowMs: number) {
 }
 
 function selectionLabel(booking: AdminBooking) {
-  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED') {
-    return 'First-pick Partner accepted first';
-  }
-
-  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER') {
-    return 'Customer selected final Partner';
-  }
-
-  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTION_AVAILABLE') {
-    return 'Customer final choice pending';
+  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
+  if (finalSelectionCopy) {
+    return finalSelectionCopy.label;
   }
 
   if (!booking.preferredProvider) {
@@ -4120,17 +4114,14 @@ function selectionLabel(booking: AdminBooking) {
 
 function selectionPathLabel(booking: AdminBooking) {
   const marketplaceCount = bookingMarketplaceParticipantCount(booking);
+  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
 
   if (!booking.preferredProvider) {
     return marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
   }
 
-  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED') {
-    return 'First-pick Partner validly accepted first through the API';
-  }
-
-  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER') {
-    return 'Customer reviewed participants and selected the final Partner';
+  if (finalSelectionCopy?.pathLabel) {
+    return finalSelectionCopy.pathLabel;
   }
 
   if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
@@ -4155,15 +4146,9 @@ function selectionPathLabel(booking: AdminBooking) {
 }
 
 function selectionToneClass(booking: AdminBooking) {
-  if (
-    booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' ||
-    booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER'
-  ) {
-    return 'pill-success';
-  }
-
-  if (booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTION_AVAILABLE') {
-    return 'pill-warn';
+  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
+  if (finalSelectionCopy) {
+    return finalSelectionCopy.toneClass;
   }
 
   if (!booking.preferredProvider) {
