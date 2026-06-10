@@ -1,3 +1,4 @@
+import { BookingMatchSource, BookingStatus, ParticipantStatus } from '@prisma/client';
 import { AdminService } from './admin.service';
 
 function deferred<T>() {
@@ -20,6 +21,139 @@ function createAdminService(prisma: unknown) {
 }
 
 describe('AdminService query orchestration', () => {
+  it('adds server-computed matching evidence to booking list rows', async () => {
+    const prisma = {
+      booking: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'booking-1',
+            status: BookingStatus.OPEN_MATCHING,
+            preferredProviderId: 'first-pick-partner',
+            selectedProviderId: null,
+            matchedAt: null,
+            matchSource: null,
+            chatRoom: null,
+            participants: [
+              {
+                providerProfileId: 'first-pick-partner',
+                status: ParticipantStatus.JOINED,
+              },
+              {
+                providerProfileId: 'marketplace-partner',
+                status: ParticipantStatus.JOINED,
+              },
+              {
+                providerProfileId: 'declined-partner',
+                status: ParticipantStatus.REJECTED,
+              },
+            ],
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listBookings()).resolves.toEqual([
+      expect.objectContaining({
+        matchingEvidence: {
+          chatReady: false,
+          finalSelection: 'CUSTOMER_SELECTION_AVAILABLE',
+          firstPickStatus: 'JOINED',
+          marketplaceParticipantCount: 1,
+          matchedAt: null,
+          matchSource: null,
+          selectableParticipantCount: 1,
+          stage: 'OPEN_MARKETPLACE_ACTIVE',
+        },
+      }),
+    ]);
+  });
+
+  it('adds server-computed matching evidence to booking detail rows', async () => {
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.MATCHED,
+          preferredProviderId: 'first-pick-partner',
+          selectedProviderId: 'first-pick-partner',
+          matchedAt: new Date('2026-06-10T10:00:00.000Z'),
+          matchSource: BookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
+          chatRoom: { id: 'chat-1' },
+          participants: [
+            {
+              providerProfileId: 'first-pick-partner',
+              status: ParticipantStatus.SELECTED,
+            },
+          ],
+          createdAt: new Date('2026-06-10T09:00:00.000Z'),
+        }),
+      },
+      adminAuditLog: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getBookingDetail('booking-1')).resolves.toEqual(
+      expect.objectContaining({
+        auditLogs: [],
+        matchingEvidence: expect.objectContaining({
+          chatReady: true,
+          finalSelection: 'FIRST_PICK_ACCEPTED',
+          firstPickStatus: 'SELECTED',
+          marketplaceParticipantCount: 0,
+          matchedAt: new Date('2026-06-10T10:00:00.000Z'),
+          matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
+          selectableParticipantCount: 0,
+          stage: 'MATCHED',
+        }),
+      }),
+    );
+  });
+
+  it('maps every booking status to an Admin matching evidence stage', async () => {
+    const rows = [
+      [BookingStatus.CREATED, 'CREATED'],
+      [BookingStatus.OPEN_MATCHING, 'OPEN_MARKETPLACE_ACTIVE'],
+      [BookingStatus.MATCHED, 'MATCHED'],
+      [BookingStatus.PROVIDER_ON_THE_WAY, 'SERVICE_ACTIVE'],
+      [BookingStatus.ARRIVED, 'SERVICE_ACTIVE'],
+      [BookingStatus.IN_SERVICE, 'SERVICE_ACTIVE'],
+      [BookingStatus.COMPLETED, 'CLOSED'],
+      [BookingStatus.CANCELLED, 'CLOSED'],
+      [BookingStatus.NO_SHOW, 'CLOSED'],
+      [BookingStatus.EXPIRED, 'CLOSED'],
+      [BookingStatus.REFUNDED, 'CLOSED'],
+    ] as const;
+    const prisma = {
+      booking: {
+        findMany: jest.fn().mockResolvedValue(
+          rows.map(([status]) => ({
+            id: `booking-${status}`,
+            status,
+            preferredProviderId: null,
+            selectedProviderId: null,
+            matchedAt: null,
+            matchSource: null,
+            chatRoom: null,
+            participants: [],
+          })),
+        ),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listBookings()).resolves.toEqual(
+      rows.map(([status, stage]) =>
+        expect.objectContaining({
+          id: `booking-${status}`,
+          matchingEvidence: expect.objectContaining({ stage }),
+        }),
+      ),
+    );
+  });
+
   it('includes persisted matching decision fields in booking list queries', async () => {
     const prisma = {
       booking: {

@@ -410,6 +410,9 @@ export type AdminBooking = {
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   expiresAt?: string | null;
+  matchedAt?: string | null;
+  matchSource?: string | null;
+  matchingEvidence?: AdminBookingMatchingEvidence;
   closedAt?: string | null;
   closedByRole?: string | null;
   closedReason?: string | null;
@@ -492,6 +495,23 @@ export type AdminBooking = {
     locationSnapshots?: AdminLocationSnapshot[];
   };
   chatRoom?: { id: string; messages?: AdminChatMessage[] } | null;
+};
+
+export type AdminBookingMatchingEvidence = {
+  readonly stage: 'OPEN_MARKETPLACE_ACTIVE' | 'MATCHED' | 'SERVICE_ACTIVE' | 'CLOSED' | 'CREATED';
+  readonly finalSelection:
+    | 'FIRST_PICK_ACCEPTED'
+    | 'CUSTOMER_SELECTED_PARTNER'
+    | 'CUSTOMER_SELECTION_AVAILABLE'
+    | 'FIRST_PICK_PENDING'
+    | 'WAITING_FOR_PARTNERS'
+    | 'NOT_READY';
+  readonly firstPickStatus: string | null;
+  readonly marketplaceParticipantCount: number;
+  readonly selectableParticipantCount: number;
+  readonly matchedAt: string | null;
+  readonly matchSource: string | null;
+  readonly chatReady: boolean;
 };
 
 export type AdminBookingDetail = AdminBooking & {
