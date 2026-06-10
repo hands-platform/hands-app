@@ -1,9 +1,38 @@
-import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import type { AdminNotification, AdminOperationalPolicySetting } from '../../lib/admin-api';
+import { adminGet } from '../../lib/admin-api';
+import type { ActionMenuItem } from '../../components/action-menu';
+import { AdminPageTemplate } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime, formatRelativeTime, shortId } from '../../lib/admin-format';
-import Link from 'next/link';
 import { readSearchParam } from '../../lib/date-range';
 import { enablePushDevice, retryNotification } from './actions';
+import { NotificationCommandHeaderSection } from './notification-command-header-section';
+import { NotificationChannelPolicySection } from './notification-channel-policy-section';
+import { NotificationDeliveryOpsQueueSection } from './notification-delivery-ops-queue-section';
+import {
+  NotificationFilterBoardSection,
+  type NotificationFilterLink,
+} from './notification-filter-board-section';
+import {
+  buildNotificationChannelSummary,
+  buildNotificationDeliveryOpsQueue,
+  buildNotificationSummary,
+  emptyNotificationMessage,
+  filterNotifications,
+  notificationFilterDescription,
+} from './notification-page-model';
+import {
+  buildNotificationActionConfirmation,
+  enablePushDeviceConfirmHref,
+  readNotificationConfirmationAction,
+  retryNotificationConfirmHref,
+} from './notification-action-confirmation';
+import {
+  NotificationsTableSection,
+  type NotificationDeliveryRow,
+  type NotificationTableRow,
+} from './notifications-table-section';
 
 type NotificationsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -12,322 +41,143 @@ export default async function NotificationsPage({
 }: {
   searchParams?: NotificationsPageSearchParams;
 }) {
-  const filters = buildNotificationFilters((await searchParams) ?? {});
+  const params = (await searchParams) ?? {};
+  const filters = buildNotificationFilters(params);
   const [rawNotifications, operationalPolicies] = await Promise.all([
     adminGet<AdminNotification[]>('/admin/notifications', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const allNotifications = sortNotifications(rawNotifications);
   const notifications = filterNotifications(allNotifications, filters);
-  const summary = buildSummary(allNotifications);
-  const channelSummary = buildChannelSummary(allNotifications, operationalPolicies);
-  const opsQueue = buildDeliveryOpsQueue(allNotifications);
+  const summary = buildNotificationSummary(allNotifications);
+  const channelSummary = buildNotificationChannelSummary(allNotifications, operationalPolicies);
+  const opsQueue = buildNotificationDeliveryOpsQueue(allNotifications);
+  const notificationRows = buildNotificationTableRows(notifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
   const activeBookingId = filters.booking;
+  const confirmation = buildNotificationActionConfirmation(
+    allNotifications,
+    readNotificationConfirmationAction(readSearchParam(params.confirm)),
+    {
+      notificationId: readSearchParam(params.notificationId),
+      pushDeviceId: readSearchParam(params.pushDeviceId),
+    },
+  );
 
   return (
-    <>
-      <h1>Notifications</h1>
-      <section className="grid" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <p>Total</p>
-          <h2>{allNotifications.length}</h2>
-        </div>
-        <div className="card">
-          <p>Needs retry</p>
-          <h2>{summary.needsRetry}</h2>
-        </div>
-        <div className="card">
-          <p>Sent</p>
-          <h2>{summary.sent}</h2>
-        </div>
-        <div className="card">
-          <p>Skipped</p>
-          <h2>{summary.skipped}</h2>
-        </div>
-        <div className="card">
-          <p>Failed</p>
-          <h2>{summary.failed}</h2>
-        </div>
-        <div className="card">
-          <p>Disabled devices</p>
-          <h2>{summary.disabledDevices}</h2>
-        </div>
-        <div className="card">
-          <p>Payout setup</p>
-          <h2>{summary.payoutSetup}</h2>
-        </div>
-        <div className="card">
-          <p>Partner alerts</p>
-          <h2>{channelSummary.partnerAlertCount}</h2>
-        </div>
-        <div className="card">
-          <p>No-show alerts</p>
-          <h2>{summary.noShow}</h2>
-        </div>
-        <div className="card">
-          <p>OneSignal route</p>
-          <h2>{channelSummary.oneSignalDeliveries}</h2>
-        </div>
-      </section>
+    <AdminPageTemplate
+      description="Delivery board for push retries, disabled devices, and last-mile alert confidence."
+      metrics={[
+        { label: 'Total', value: allNotifications.length, helper: 'Notification rows loaded.' },
+        { label: 'Needs retry', value: summary.needsRetry, helper: 'Failed or disabled delivery paths.' },
+        { label: 'Sent', value: summary.sent, helper: 'Successful push delivery attempts.' },
+        { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
+        { label: 'Failed', value: summary.failed, helper: 'Provider failures needing review.' },
+        { label: 'Disabled devices', value: summary.disabledDevices, helper: 'Push devices disabled.' },
+        { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
+        { label: 'Partner alerts', value: channelSummary.partnerAlertCount, helper: 'Partner-facing alerts.' },
+        { label: 'No-show alerts', value: summary.noShow, helper: 'No-show support review alerts.' },
+        { label: 'OneSignal route', value: channelSummary.oneSignalDeliveries, helper: 'OS push attempts.' },
+      ]}
+      title="Notifications"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={confirmation.action === 'retry' ? retryNotification : enablePushDevice}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={confirmation.hiddenInputs}
+          id={`notification-action-${confirmation.action}-${confirmation.id}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
+
       <div className="card">
-        <div className="toolbar">
-          <div>
-            <p className="muted">
-              Delivery board for push retries, disabled devices, and last-mile alert confidence.
-            </p>
-          </div>
-          <div className="participant-list">
-            <span className="pill pill-success">Latest failures first</span>
-            <span className="pill pill-info">Delivery signal</span>
-            <span className="pill pill-warn">Retry readiness</span>
-          </div>
-        </div>
+        <NotificationCommandHeaderSection />
 
-        <div className="card soft-card" style={{ marginBottom: 16 }}>
-          <div className="toolbar">
-            <div>
-              <h3>Partner alert routing policy</h3>
-              <p className="muted">
-                Current decision: <strong>{channelSummary.policyLabel}</strong>. Use this to confirm whether
-                partner booking requests are intentionally in-app only or routed to OneSignal.
-              </p>
-            </div>
-            <Link className="text-link" href="/operations-policy">
-              Change alert policy
-            </Link>
-          </div>
-          <div className="grid">
-            <div className="card">
-              <span className="pill pill-info">Partner booking alerts</span>
-              <h3 style={{ marginTop: 10 }}>{channelSummary.partnerAlertCount}</h3>
-              <p className="muted">Direct requests, marketplace participation alerts, matching, and payout setup.</p>
-            </div>
-            <div className="card">
-              <span className="pill pill-success">In-app route</span>
-              <h3 style={{ marginTop: 10 }}>{channelSummary.inAppDeliveries}</h3>
-              <p className="muted">Delivery attempts intentionally kept inside the app inbox.</p>
-            </div>
-            <div className="card">
-              <span className={channelSummary.oneSignalDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>
-                OneSignal route
-              </span>
-              <h3 style={{ marginTop: 10 }}>{channelSummary.oneSignalDeliveries}</h3>
-              <p className="muted">OS push delivery attempts created by the active policy.</p>
-            </div>
-          </div>
-        </div>
+        <NotificationChannelPolicySection
+          inAppDeliveries={channelSummary.inAppDeliveries}
+          oneSignalDeliveries={channelSummary.oneSignalDeliveries}
+          partnerAlertCount={channelSummary.partnerAlertCount}
+          policyLabel={channelSummary.policyLabel}
+        />
 
-        <div className="card soft-card" style={{ marginBottom: 16 }}>
-          <div className="toolbar">
-            <div>
-              <h3>Delivery operations queue</h3>
-              <p className="muted">
-                Fix disabled tokens and push delivery setup before retrying, so failed alerts do not loop.
-              </p>
-            </div>
-            <span className={`pill ${opsQueue.length ? 'pill-warn' : 'pill-success'}`}>
-              {opsQueue.length ? `${opsQueue.length} issue(s)` : 'No delivery blockers'}
-            </span>
-          </div>
-          <div className="grid">
-            {opsQueue.length ? (
-              opsQueue.map((item) => (
-                <div className="card" key={item.key}>
-                  <span className={`pill ${item.tone}`}>{item.label}</span>
-                  <h3 style={{ marginTop: 10 }}>{item.count}</h3>
-                  <p className="muted">{item.detail}</p>
-                  <Link className="pill pill-neutral" href={item.href}>
-                    Open queue
-                  </Link>
-                </div>
-              ))
-            ) : (
-              <div className="card">
-                <span className="pill pill-success">Ready</span>
-                <h3 style={{ marginTop: 10 }}>Delivery path is clean</h3>
-                <p className="muted">
-                  Keep monitoring failed sends after OneSignal and production SMS credentials are enabled.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <NotificationDeliveryOpsQueueSection items={opsQueue} />
 
-        <div className="card soft-card" style={{ marginBottom: 16 }}>
-          <div className="toolbar">
-            <div>
-              <h3>Notification operation filters</h3>
-              <p className="muted">
-                Open each queue directly from the command dashboard without hunting through rows.
-              </p>
-              {activeFilter?.review ? (
-                <p className="muted">
-                  Active queue: <strong>{activeFilter.label}</strong> -{' '}
-                  {notificationFilterDescription(activeFilter.review)}
-                </p>
-              ) : null}
-              {activeBookingId ? (
-                <p className="muted">
-                  Active booking trace: <strong>{shortId(activeBookingId)}</strong>. Showing only
-                  notifications tied to this booking id.
-                </p>
-              ) : null}
-            </div>
-            <span className={`pill ${filters.review || activeBookingId ? 'pill-warn' : 'pill-success'}`}>
-              Showing {notifications.length} of {allNotifications.length}
-            </span>
-          </div>
-          <div className="participant-list">
-            {filters.review || activeBookingId ? (
-              <Link className="pill pill-success" href="/notifications">
-                Clear filter
-              </Link>
-            ) : null}
-            {activeBookingId ? (
-              <span className="pill pill-info">Booking {shortId(activeBookingId)}</span>
-            ) : null}
-            {notificationFilterLinks.map((link) => (
-              <Link
-                key={link.href}
-                className={`pill ${filters.review === link.review ? 'pill-warn' : 'pill-neutral'}`}
-                href={link.href}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </div>
+        <NotificationFilterBoardSection
+          activeBookingLabel={activeBookingId ? shortId(activeBookingId) : null}
+          activeFilterDescription={
+            activeFilter?.review ? notificationFilterDescription(activeFilter.review) : null
+          }
+          activeFilterLabel={activeFilter?.review ? activeFilter.label : null}
+          activeReview={filters.review}
+          filteredCount={notifications.length}
+          links={notificationFilterLinks}
+          totalCount={allNotifications.length}
+        />
 
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>User</th>
-              <th>Type</th>
-              <th>Title</th>
-              <th>Ops record</th>
-              <th>Delivery</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {notifications.map((notification) => (
-              <tr key={notification.id}>
-                <td>
-                  <div>{formatDateTime(notification.createdAt)}</div>
-                  <div className="muted">
-                    {formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' })}
-                  </div>
-                </td>
-                <td>
-                  <div>{notificationUserLabel(notification)}</div>
-                  <div className="muted">{notification.user?.phone ?? 'No phone on file'}</div>
-                  {notification.user?.providerProfile ? (
-                    <div className="muted">
-                      <Link className="text-link" href={`/partners/${notification.user.providerProfile.id}`}>
-                        Partner{' '}
-                        {notification.user.providerProfile.displayName
-                          ? marketplaceDisplayText(notification.user.providerProfile.displayName)
-                          : shortId(notification.user.providerProfile.id)}
-                      </Link>{' '}
-                      / {notification.user.providerProfile.status ?? 'status unknown'}
-                    </div>
-                  ) : null}
-                </td>
-                <td>
-                  <div>{marketplaceDisplayText(humanizeType(notification.type))}</div>
-                  <div className="muted">{typeMeaning(notification.type)}</div>
-                </td>
-                <td>
-                  <div>{marketplaceDisplayText(notification.title)}</div>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {marketplaceDisplayText(notification.body)}
-                  </div>
-                  {notificationDataHint(notification) ? (
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {notificationDataHint(notification)}
-                    </div>
-                  ) : null}
-                </td>
-                <td>
-                  <span className={signalClass(notification)}>{opsSignal(notification)}</span>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {opsHint(notification)}
-                  </div>
-                </td>
-                <td>
-                  {notification.deliveries && notification.deliveries.length > 0
-                    ? notification.deliveries.map((delivery) => (
-                        <div
-                          key={delivery.id ?? `${notification.id}-${delivery.attemptedAt}`}
-                          style={{ marginBottom: 10 }}
-                        >
-                          <div>
-                            <strong>{delivery.provider}</strong> - {delivery.status} -{' '}
-                            {delivery.pushDevice?.platform ?? 'device'}
-                          </div>
-                          <div className="muted" style={{ marginTop: 4 }}>
-                            {delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled'} -
-                            Attempted {formatDateTime(delivery.attemptedAt)}
-                          </div>
-                          <div className="muted" style={{ marginTop: 4 }}>
-                            Failure {readFailureCode(delivery) ?? '-'} / HTTP{' '}
-                            {delivery.response?.statusCode ?? '-'}
-                          </div>
-                          <div className="muted" style={{ marginTop: 4 }}>
-                            Reason {readFailureReason(delivery) ?? '-'}
-                          </div>
-                          <div className="muted" style={{ marginTop: 4 }}>
-                            Token hidden
-                          </div>
-                          {delivery.pushDevice?.enabled === false && delivery.pushDevice.id ? (
-                            <form action={enablePushDevice} style={{ marginTop: 6 }}>
-                              <input type="hidden" name="pushDeviceId" value={delivery.pushDevice.id} />
-                              <button type="submit">Re-enable device</button>
-                            </form>
-                          ) : null}
-                        </div>
-                      ))
-                    : 'No devices / not attempted'}
-                </td>
-                <td>
-                  {notificationBookingId(notification) ? (
-                    <Link
-                      className="pill pill-neutral"
-                      href={`/bookings/${notificationBookingId(notification)}`}
-                    >
-                      Open booking
-                    </Link>
-                  ) : null}
-                  {notification.user?.providerProfile?.id ? (
-                    <Link
-                      className="pill pill-neutral"
-                      href={`/partners/${notification.user.providerProfile.id}`}
-                      style={{ marginTop: 6 }}
-                    >
-                      Open partner
-                    </Link>
-                  ) : null}
-                  <form action={retryNotification}>
-                    <input type="hidden" name="notificationId" value={notification.id} />
-                    <button type="submit" style={{ marginTop: 6 }}>
-                      Retry
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-            {notifications.length === 0 && (
-              <tr>
-                <td colSpan={7}>{emptyNotificationMessage(filters.review, filters.booking)}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <NotificationsTableSection
+          emptyMessage={emptyNotificationMessage(filters.review, filters.booking, shortId)}
+          rows={notificationRows}
+        />
       </div>
-    </>
+    </AdminPageTemplate>
   );
+}
+
+function buildNotificationTableRows(notifications: readonly AdminNotification[]): NotificationTableRow[] {
+  return notifications.map((notification) => {
+    const partnerProfile = notification.user?.providerProfile;
+    const partnerLabel = partnerProfile
+      ? `Partner ${
+          partnerProfile.displayName
+            ? marketplaceDisplayText(partnerProfile.displayName)
+            : shortId(partnerProfile.id)
+        }`
+      : null;
+
+    return {
+      actionLabel: `Notification actions for ${shortId(notification.id)}`,
+      actions: notificationActionMenuItems(notification),
+      body: marketplaceDisplayText(notification.body),
+      bookingDataHint: notificationDataHint(notification),
+      createdAtLabel: formatDateTime(notification.createdAt),
+      deliveryRows: buildNotificationDeliveryRows(notification),
+      id: notification.id,
+      opsHint: opsHint(notification),
+      opsSignal: opsSignal(notification),
+      partnerHref: partnerProfile ? `/partners/${partnerProfile.id}` : null,
+      partnerLabel,
+      partnerStatus: partnerProfile?.status ?? null,
+      relativeCreatedAtLabel: formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' }),
+      signalClassName: signalClass(notification),
+      title: marketplaceDisplayText(notification.title),
+      typeLabel: marketplaceDisplayText(humanizeType(notification.type)),
+      typeMeaning: typeMeaning(notification.type),
+      userLabel: notificationUserLabel(notification),
+      userPhone: notification.user?.phone ?? 'No phone on file',
+    };
+  });
+}
+
+function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
+  return (notification.deliveries ?? []).map((delivery) => ({
+    attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+    deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
+    enableDeviceHref:
+      delivery.pushDevice?.enabled === false && delivery.pushDevice.id
+        ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
+        : null,
+    failureCodeLabel: readFailureCode(delivery) ?? '-',
+    failureReasonLabel: readFailureReason(delivery) ?? '-',
+    httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
+    id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
+    platformLabel: delivery.pushDevice?.platform ?? 'device',
+    provider: delivery.provider,
+    status: delivery.status,
+  }));
 }
 
 function sortNotifications(notifications: AdminNotification[]) {
@@ -356,21 +206,7 @@ function notificationPriority(notification: AdminNotification) {
   return 0;
 }
 
-function buildSummary(notifications: AdminNotification[]) {
-  return {
-    needsRetry: notifications.filter((notification) => needsRetry(notification)).length,
-    sent: countDeliveries(notifications, 'SENT'),
-    skipped: countDeliveries(notifications, 'SKIPPED'),
-    failed: countDeliveries(notifications, 'FAILED'),
-    disabledDevices: countDisabledDevices(notifications),
-    noShow: notifications.filter((notification) => notification.type === 'booking.no_show').length,
-    payoutSetup: notifications.filter(
-      (notification) => notification.type === 'provider.payout_setup_required',
-    ).length,
-  };
-}
-
-const notificationFilterLinks = [
+const notificationFilterLinks: NotificationFilterLink[] = [
   { label: 'All notifications', href: '/notifications', review: '' },
   { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
   {
@@ -408,109 +244,40 @@ function readParam(value: string | string[] | undefined) {
   return readSearchParam(value);
 }
 
-function filterNotifications(notifications: AdminNotification[], filters: { review: string; booking: string }) {
-  return notifications.filter((notification) => {
-    if (filters.booking && notificationBookingId(notification) !== filters.booking) {
-      return false;
-    }
-    return notificationMatchesReview(notification, filters.review);
+function notificationActionMenuItems(notification: AdminNotification): readonly ActionMenuItem[] {
+  const bookingId = notificationBookingId(notification);
+  const partnerId = notification.user?.providerProfile?.id ?? '';
+  const actions: ActionMenuItem[] = [];
+
+  if (bookingId) {
+    actions.push({
+      href: `/bookings/${bookingId}`,
+      kind: 'link',
+      label: 'Open booking',
+      tone: 'neutral',
+    });
+  }
+
+  if (partnerId) {
+    actions.push({
+      href: `/partners/${partnerId}`,
+      kind: 'link',
+      label: 'Open Partner',
+      tone: 'neutral',
+    });
+  }
+
+  actions.push({
+    description: needsRetry(notification)
+      ? 'Review the delivery issue before retrying this notification.'
+      : 'Retry only if operations needs to resend this alert.',
+    href: retryNotificationConfirmHref(notification.id),
+    kind: 'link',
+    label: 'Retry',
+    tone: needsRetry(notification) ? 'warning' : 'info',
   });
-}
 
-function notificationMatchesReview(notification: AdminNotification, review: string) {
-  const deliveries = notification.deliveries ?? [];
-  if (!review) {
-    return true;
-  }
-  if (review === 'failed') {
-    return deliveries.some((delivery) => delivery.status === 'FAILED');
-  }
-  if (review === 'disabled-device') {
-    return deliveries.some((delivery) => delivery.pushDevice?.enabled === false);
-  }
-  if (review === 'needs-retry') {
-    return needsRetry(notification);
-  }
-  if (review === 'skipped') {
-    return deliveries.some((delivery) => delivery.status === 'SKIPPED');
-  }
-  if (review === 'sent') {
-    return deliveries.some((delivery) => delivery.status === 'SENT');
-  }
-  if (review === 'pending') {
-    return deliveries.length === 0;
-  }
-  if (review === 'payout-setup') {
-    return notification.type === 'provider.payout_setup_required';
-  }
-  if (review === 'partner-alerts') {
-    return isPartnerAlert(notification.type);
-  }
-  if (review === 'no-show') {
-    return notification.type === 'booking.no_show';
-  }
-  if (review === 'onesignal') {
-    return deliveries.some((delivery) => delivery.provider === 'ONESIGNAL');
-  }
-  if (review === 'in-app-route') {
-    return deliveries.some((delivery) => delivery.provider === 'IN_APP_ONLY');
-  }
-  return true;
-}
-
-function notificationFilterDescription(review: string) {
-  if (review === 'failed') {
-    return 'delivery attempts that returned a push provider failure.';
-  }
-  if (review === 'disabled-device') {
-    return 'users or partners with disabled push devices.';
-  }
-  if (review === 'needs-retry') {
-    return 'notifications whose delivery path should be reviewed before retry.';
-  }
-  if (review === 'skipped') {
-    return 'alerts that were intentionally skipped or had no available send path.';
-  }
-  if (review === 'sent') {
-    return 'successfully delivered push notifications.';
-  }
-  if (review === 'pending') {
-    return 'notifications without a captured delivery attempt yet.';
-  }
-  if (review === 'payout-setup') {
-    return 'partners who earned revenue and now need tax/address/agreement setup before payout.';
-  }
-  if (review === 'partner-alerts') {
-    return 'booking and payout alerts sent to partners.';
-  }
-  if (review === 'no-show') {
-    return 'customer and partner alerts created when operations marks a booking as no-show.';
-  }
-  if (review === 'onesignal') {
-    return 'notifications that attempted OS push delivery through OneSignal.';
-  }
-  if (review === 'in-app-route') {
-    return 'notifications intentionally kept in the app inbox route.';
-  }
-  return 'all notification records.';
-}
-
-function emptyNotificationMessage(review: string, booking?: string) {
-  if (booking) {
-    return `No notifications currently match booking ${shortId(booking)}. Confirm the booking created an alert row before retrying delivery.`;
-  }
-  if (!review) {
-    return 'No notifications loaded.';
-  }
-  return `No notifications currently match this queue. ${notificationFilterDescription(review)}`;
-}
-
-function countDeliveries(notifications: AdminNotification[], status: string) {
-  return notifications.reduce(
-    (total, notification) =>
-      total + (notification.deliveries ?? []).filter((delivery) => delivery.status === status).length,
-    0,
-  );
+  return actions;
 }
 
 function readFailureCode(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
@@ -678,99 +445,6 @@ function opsHint(notification: AdminNotification) {
     return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
   }
   return 'Notification exists, but no delivery attempt was captured yet.';
-}
-
-function countDisabledDevices(notifications: AdminNotification[]) {
-  const ids = new Set<string>();
-  for (const notification of notifications) {
-    for (const delivery of notification.deliveries ?? []) {
-      if (delivery.pushDevice?.enabled === false) {
-        ids.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
-      }
-    }
-  }
-  return ids.size;
-}
-
-function buildDeliveryOpsQueue(notifications: AdminNotification[]) {
-  const failed = notifications.filter((notification) =>
-    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
-  ).length;
-  const disabledDevices = countDisabledDevices(notifications);
-  const skipped = notifications.filter((notification) =>
-    (notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED'),
-  ).length;
-  const pending = notifications.filter((notification) => (notification.deliveries ?? []).length === 0).length;
-
-  return [
-    failed
-      ? {
-          key: 'failed',
-          label: 'Failed sends',
-          count: failed,
-          detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
-          href: '/notifications?review=failed',
-          tone: 'pill-warn',
-        }
-      : null,
-    disabledDevices
-      ? {
-          key: 'disabled-devices',
-          label: 'Disabled devices',
-          count: disabledDevices,
-          detail:
-            'Re-enable only when the app has registered a fresh token or the operator confirms the device.',
-          href: '/notifications?review=disabled-device',
-          tone: 'pill-warn',
-        }
-      : null,
-    skipped
-      ? {
-          key: 'skipped',
-          label: 'Skipped',
-          count: skipped,
-          detail:
-            'Usually means push is intentionally inactive, no enabled device exists, or credentials are pending.',
-          href: '/notifications?review=skipped',
-          tone: 'pill-info',
-        }
-      : null,
-    pending
-      ? {
-          key: 'pending',
-          label: 'Pending',
-          count: pending,
-          detail: 'Notification rows exist without delivery attempts. Confirm workers and queue processing.',
-          href: '/notifications?review=pending',
-          tone: 'pill-neutral',
-        }
-      : null,
-  ].filter((item): item is NonNullable<typeof item> => Boolean(item));
-}
-
-function buildChannelSummary(
-  notifications: AdminNotification[],
-  operationalPolicies: AdminOperationalPolicySetting[],
-) {
-  const partnerAlertPolicy = operationalPolicies.find(
-    (setting) => setting.key === 'notification.partner_alert_channel',
-  );
-  const partnerAlerts = notifications.filter((notification) => isPartnerAlert(notification.type));
-  const deliveries = notifications.flatMap((notification) => notification.deliveries ?? []);
-  return {
-    policyLabel: policyOptionLabel(partnerAlertPolicy),
-    partnerAlertCount: partnerAlerts.length,
-    inAppDeliveries: deliveries.filter((delivery) => delivery.provider === 'IN_APP_ONLY').length,
-    oneSignalDeliveries: deliveries.filter((delivery) => delivery.provider === 'ONESIGNAL').length,
-  };
-}
-
-function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
-  if (!setting) {
-    return 'Not configured';
-  }
-  const value = String(setting.value);
-  return setting.options?.find((option) => option.value === value)?.label ?? value;
 }
 
 function isPartnerAlert(type: string) {
