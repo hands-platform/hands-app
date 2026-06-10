@@ -58,6 +58,7 @@ import {
   providerLocationFreshnessFromTimestamp,
 } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
+import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
@@ -3443,35 +3444,14 @@ function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
 
 function bookingAddressSnapshotState(booking: AdminBooking) {
   const snapshot = booking.addressSnapshot;
-  if (snapshot) {
-    const pin = coordinatePairLabel(snapshot.latitude, snapshot.longitude);
-    return {
-      label: snapshot.addressText ? 'Address locked' : 'Pin locked',
-      detail: snapshot.addressText
-        ? displayMarketplaceText(snapshot.addressText)
-        : 'Customer confirmed this map pin without a text address.',
-      pin: pin ? `Pin ${pin}` : 'Pin saved without readable coordinates',
-      tone: 'pill-success',
-    };
-  }
-
   const legacyAddress = readAddressText(booking.address);
-  if (legacyAddress) {
-    const pin = coordinatePairLabel(booking.lat, booking.lng);
-    return {
-      label: 'Stored address fallback',
-      detail: displayMarketplaceText(legacyAddress),
-      pin: pin ? `Pin ${pin}` : 'No locked pin snapshot',
-      tone: 'pill-warn',
-    };
-  }
-
-  return {
-    label: 'Address missing',
-    detail: 'No immutable booking address snapshot is attached.',
-    pin: 'Ask customer support to confirm the service address before dispatch.',
-    tone: 'pill-danger',
-  };
+  return bookingAddressSnapshotStateFromFacts({
+    hasAddressSnapshot: Boolean(snapshot),
+    snapshotAddressText: snapshot?.addressText ? displayMarketplaceText(snapshot.addressText) : null,
+    snapshotPinLabel: snapshot ? coordinatePairLabel(snapshot.latitude, snapshot.longitude) : null,
+    legacyAddressText: legacyAddress ? displayMarketplaceText(legacyAddress) : null,
+    legacyPinLabel: coordinatePairLabel(booking.lat, booking.lng),
+  });
 }
 
 function bookingChatListState(booking: AdminBooking) {
