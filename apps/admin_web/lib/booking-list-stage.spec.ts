@@ -1,4 +1,19 @@
-import { bookingListStageFromFacts } from './booking-list-stage';
+import {
+  bookingListStageFromFacts,
+  type BookingListMatchingEvidence,
+} from './booking-list-stage';
+
+function matchingEvidence(
+  overrides: Partial<BookingListMatchingEvidence> = {},
+): BookingListMatchingEvidence {
+  return {
+    chatReady: false,
+    finalSelection: 'FIRST_PICK_PENDING',
+    marketplaceParticipantCount: 0,
+    selectableParticipantCount: 0,
+    ...overrides,
+  };
+}
 
 function stageInput(
   overrides: Partial<Parameters<typeof bookingListStageFromFacts>[0]> = {},
@@ -58,6 +73,52 @@ describe('bookingListStageFromFacts', () => {
       key: 'handoff',
       detail: 'Chat is ready, but partner location needs review.',
       tone: 'warn',
+    });
+  });
+
+  it('uses API matching evidence before local chat and participant fallbacks', () => {
+    expect(
+      bookingListStageFromFacts(
+        stageInput({
+          hasChatRoom: false,
+          isHandoffStatus: true,
+          matchingEvidence: matchingEvidence({ chatReady: true }),
+          status: 'MATCHED',
+        }),
+      ),
+    ).toMatchObject({
+      key: 'handoff',
+      label: 'Stage 4 handoff',
+      tone: 'ok',
+    });
+
+    expect(
+      bookingListStageFromFacts(
+        stageInput({
+          matchingEvidence: matchingEvidence({
+            finalSelection: 'CUSTOMER_SELECTION_AVAILABLE',
+            selectableParticipantCount: 2,
+          }),
+          selectableCount: 0,
+        }),
+      ),
+    ).toMatchObject({
+      key: 'customer-choice',
+      detail: '2 customer-selectable partner(s) are waiting for customer selection.',
+      label: 'Stage 3 choice',
+    });
+
+    expect(
+      bookingListStageFromFacts(
+        stageInput({
+          matchingEvidence: matchingEvidence({ marketplaceParticipantCount: 3 }),
+          marketplaceCount: 0,
+        }),
+      ),
+    ).toMatchObject({
+      key: 'marketplace',
+      detail: '3 marketplace partner(s) are visible while matching stays open.',
+      label: 'Stage 2 marketplace',
     });
   });
 

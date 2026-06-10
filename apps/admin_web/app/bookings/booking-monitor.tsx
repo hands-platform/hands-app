@@ -2414,6 +2414,7 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
     ),
     isTerminalStatus: terminalBookingStatuses.has(booking.status),
     locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
+    matchingEvidence: booking.matchingEvidence,
     marketplaceAlertNotifiedCount: bookingBackupAlertTraceSummary(booking).totalNotified,
     marketplaceCount: bookingMarketplaceParticipantCount(booking),
     responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),

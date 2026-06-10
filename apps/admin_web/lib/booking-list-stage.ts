@@ -1,3 +1,5 @@
+import type { AdminBookingMatchingEvidence } from './admin-api';
+
 export type BookingListStageKey =
   | 'intake'
   | 'first-pick'
@@ -18,12 +20,18 @@ export type BookingListStage = {
   readonly tone: BookingListStageTone;
 };
 
+export type BookingListMatchingEvidence = Pick<
+  AdminBookingMatchingEvidence,
+  'chatReady' | 'finalSelection' | 'marketplaceParticipantCount' | 'selectableParticipantCount'
+>;
+
 export type BookingListStageInput = {
   readonly bookingId: string;
   readonly hasChatRoom: boolean;
   readonly isHandoffStatus: boolean;
   readonly isTerminalStatus: boolean;
   readonly locationNeedsOps: boolean;
+  readonly matchingEvidence?: BookingListMatchingEvidence | undefined;
   readonly marketplaceAlertNotifiedCount: number;
   readonly marketplaceCount: number;
   readonly responseWindowExpired: boolean;
@@ -33,6 +41,17 @@ export type BookingListStageInput = {
 };
 
 export function bookingListStageFromFacts(input: BookingListStageInput): BookingListStage {
+  const finalSelection = input.matchingEvidence?.finalSelection;
+  const chatReady = input.matchingEvidence?.chatReady ?? input.hasChatRoom;
+  const marketplaceCount =
+    input.matchingEvidence?.marketplaceParticipantCount ?? input.marketplaceCount;
+  const selectableCount =
+    input.matchingEvidence?.selectableParticipantCount ?? input.selectableCount;
+  const selectedPartnerPresent =
+    input.selectedPartnerPresent ||
+    finalSelection === 'FIRST_PICK_ACCEPTED' ||
+    finalSelection === 'CUSTOMER_SELECTED_PARTNER';
+
   if (input.isTerminalStatus) {
     return {
       action: 'Confirm payment, refund, review, no-show, and audit trail before archiving.',
@@ -44,7 +63,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     };
   }
 
-  if (input.isHandoffStatus && !input.hasChatRoom) {
+  if (input.isHandoffStatus && !chatReady) {
     return {
       action: 'Repair chat before the partner moves further through the service flow.',
       detail: 'Final partner exists, but chat is not ready.',
@@ -68,10 +87,10 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     };
   }
 
-  if (input.status === 'OPEN_MATCHING' && input.selectableCount > 0 && !input.selectedPartnerPresent) {
+  if (input.status === 'OPEN_MATCHING' && selectableCount > 0 && !selectedPartnerPresent) {
     return {
       action: 'Prompt customer support to help the customer choose the final partner.',
-      detail: `${input.selectableCount} customer-selectable partner(s) are waiting for customer selection.`,
+      detail: `${selectableCount} customer-selectable partner(s) are waiting for customer selection.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'customer-choice',
       label: 'Stage 3 choice',
@@ -79,13 +98,13 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     };
   }
 
-  if (input.status === 'OPEN_MATCHING' && input.marketplaceCount > 0) {
+  if (input.status === 'OPEN_MATCHING' && marketplaceCount > 0) {
     return {
       action:
         input.marketplaceAlertNotifiedCount > 0
           ? 'Monitor marketplace alert delivery and customer choice list quality.'
           : 'Nudge eligible partners or check marketplace alert creation.',
-      detail: `${input.marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
+      detail: `${marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'marketplace',
       label: 'Stage 2 marketplace',
