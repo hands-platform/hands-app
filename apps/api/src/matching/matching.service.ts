@@ -4,9 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import type { BookingMatchSource } from './matching.policy';
 import {
   MATCHING_BACKUP_OPEN_MODE_KEY,
   MATCHING_PREFERRED_ACCEPT_MODE_KEY,
+  MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   resolveMatchingPolicy,
   resolveMatchingPolicyFromPayload,
 } from './matching.policy';
@@ -109,7 +111,7 @@ export class MatchingService {
   selectFinalProvider(
     bookingId: string,
     booking: unknown,
-    matchSource: 'CUSTOMER_SELECTED_PARTNER' | 'FIRST_PICK_ACCEPTED_FIRST' = 'CUSTOMER_SELECTED_PARTNER',
+    matchSource: BookingMatchSource = MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   ) {
     return {
       bookingId,
@@ -117,7 +119,10 @@ export class MatchingService {
       event: 'booking.matched',
       status: 'MATCHED',
       matchSource,
-      finalSelection: matchSource === 'CUSTOMER_SELECTED_PARTNER' ? 'CUSTOMER_SELECTED' : 'FIRST_PICK_ACCEPTED',
+      finalSelection:
+        matchSource === MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER
+          ? 'CUSTOMER_SELECTED'
+          : 'FIRST_PICK_ACCEPTED',
     };
   }
 

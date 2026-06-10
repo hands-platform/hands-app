@@ -13,6 +13,8 @@ import {
   MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
   MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
   MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
+  MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+  MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
   OPERATIONAL_POLICY_DEFINITIONS,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
@@ -39,6 +41,11 @@ describe('matching policy', () => {
     expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
     expect(policy.bookingDistanceGateEnabled).toBe(true);
     expect(policy.bookingServiceAreaRequired).toBe(true);
+  });
+
+  it('freezes booking match source contract values for API and Admin audit consumers', () => {
+    expect(MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST).toBe('FIRST_PICK_ACCEPTED_FIRST');
+    expect(MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER).toBe('CUSTOMER_SELECTED_PARTNER');
   });
 
   it('defines negative wallet policy as marketplace participation blocking', () => {

@@ -34,6 +34,8 @@ const {
   MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
   MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
   MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
+  MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+  MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   resolveMatchingPolicy,
 } = require(matchingPolicyDistPath);
@@ -162,6 +164,16 @@ assert.equal(
   defaultMatchingPolicy.backupOpenMode,
   BACKUP_OPEN_IMMEDIATE,
   'marketplace participation should be visible immediately by default during the first-pick window',
+);
+assert.equal(
+  MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+  'FIRST_PICK_ACCEPTED_FIRST',
+  'first-pick match source should remain stable for audit, websocket, and Admin consumers',
+);
+assert.equal(
+  MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+  'CUSTOMER_SELECTED_PARTNER',
+  'customer-selected match source should remain stable for audit, websocket, and Admin consumers',
 );
 
 const overriddenMatchingPolicy = resolveMatchingPolicy(emptyConfig, {

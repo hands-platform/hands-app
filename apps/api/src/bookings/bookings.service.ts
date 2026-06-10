@@ -22,6 +22,8 @@ import {
   BACKUP_OPEN_IMMEDIATE,
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   MatchingPolicy,
+  MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+  MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -828,7 +830,7 @@ export class BookingsService {
             metadata: {
               bookingId,
               providerProfileId: providerId,
-              matchSource: 'CUSTOMER_SELECTED_PARTNER',
+              matchSource: MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
             },
           },
         });
@@ -928,7 +930,7 @@ export class BookingsService {
                 metadata: {
                   bookingId,
                   providerProfileId: provider.id,
-                  matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
+                  matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
                 },
               },
             });
@@ -945,7 +947,7 @@ export class BookingsService {
         const result = this.matching.selectFinalProvider(
           bookingId,
           clientBookingResponse(updated),
-          'FIRST_PICK_ACCEPTED_FIRST',
+          MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
         );
         if (updated.selectedProvider?.userId) {
           await this.notifications.create({
