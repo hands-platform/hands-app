@@ -12,7 +12,23 @@ HANDS is a monorepo for a Vietnam on-demand service marketplace:
 - `infra`: Docker, Supabase SQL, setup, smoke, and verification scripts.
 - `docs`: architecture, policy, setup, and workflow documentation.
 
-Always work from `C:\dev\massage-vn-workspace\repo`.
+Always work from `C:\dev\massage-on-demand-vn`.
+
+Ignore `C:\dev\massage-vn-workspace` and do not use it for HANDS work.
+
+## Agent Operating Model
+
+Treat the primary Codex thread as the main orchestrator agent.
+
+- If the task is single-scope and low risk, the main agent may inspect, edit, verify, commit, and report directly.
+- If the task is complex, cross-cutting, or benefits from parallel context gathering, the main agent should design the subagent roles without waiting for the user to name them.
+- Subagents are investigation-only by default: they may inspect files, map dependencies, identify risks, compare patterns, and report findings.
+- The main agent is the only agent that should make final edits, stage files, commit, push, or decide how findings are integrated.
+- Use subagents to speed up discovery, not to create competing edits in the same files.
+- Keep protected or authority-sensitive areas sequential and integration-reviewed.
+- If a subagent finds that a change would require protected API, schema, environment, realtime, payment, wallet, settlement, matching, or mobile behavior changes, the main agent must pause that lane, report the impact, and proceed only with an explicit safe plan.
+- Prefer parallel read-only investigation for large Admin, API, docs, and infra surfaces; avoid parallel write work unless the ownership boundaries are clearly separate and low risk.
+- The main agent must keep the final report consolidated: changed files, verification, protected areas, risks, commits, and next recommended task.
 
 ## Workflow Model
 
