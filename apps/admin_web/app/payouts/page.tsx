@@ -6,6 +6,8 @@ import {
   AdminPayoutBatch,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import {
   formatDateTime,
   formatMoney,
@@ -22,13 +24,44 @@ import {
   operationalPolicyHref,
 } from '../../lib/operations-policy';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
+import {
+  type PayoutConfirmationAction,
+  buildPayoutActionConfirmation,
+  payoutActionConfirmHref,
+  readPayoutConfirmationAction,
+} from './payout-action-confirmation';
+import { PayoutBatchListSection } from './payout-batch-list-section';
+import type { PayoutBatchTableRow } from './payout-batch-table';
+import { PayoutCommandQueueSection, type PayoutCommandSignal } from './payout-command-queue-section';
+import {
+  PayoutMoneyFlowSection,
+  type PayoutMoneyFlowCard,
+  type PayoutMoneyFlowCheck,
+} from './payout-money-flow-section';
+import {
+  PayoutInclusionAuditSection,
+  type PayoutInclusionAuditRow,
+} from './payout-inclusion-audit-section';
+import {
+  PayoutReleaseBlockerQueueSection,
+  type PayoutReleaseBlockerQueueItem,
+} from './payout-release-blocker-queue-section';
+import {
+  PayoutServiceEvidenceSection,
+  type PayoutServiceEvidenceItem,
+} from './payout-service-evidence-section';
+import {
+  PayoutStatusLanesSection,
+  type PayoutStatusLane,
+} from './payout-status-lanes-section';
 
 type PayoutsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
-  const filters = buildPayoutFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildPayoutFilters(params);
   const [allBatches, allEarnings, policySettings] = await Promise.all([
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
     adminGet<AdminEarning[]>('/admin/earnings', []),
@@ -37,8 +70,10 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
   const earnings = allEarnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const summary = buildSummary(batches);
+  const payoutBatchRows = buildPayoutBatchTableRows(batches);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
+  const payoutStatusLanes = buildPayoutStatusLanes(payoutLanes);
   const serviceEvidence = buildPayoutServiceEvidence(batches);
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
@@ -48,24 +83,65 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const releaseCycleBoard = buildPayoutReleaseCycleBoard(batches, earnings);
   const marketplaceUnblockBridge = buildPayoutMarketplaceUnblockBridge(batches, earnings, summary);
   const releaseQueue = buildPayoutReleaseQueue(batches);
+  const releaseBlockerRows = buildPayoutReleaseBlockerRows(releaseQueue);
   const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
+  const confirmationAction = readPayoutConfirmationAction(readSearchParam(params.confirm));
+  const confirmationBatchId = readSearchParam(params.payoutBatchId);
+  const confirmationBatch = allBatches.find((batch) => batch.id === confirmationBatchId);
+  const confirmation = buildPayoutActionConfirmation(
+    allBatches,
+    confirmationAction,
+    confirmationBatchId,
+    confirmationBatch ? payoutActionAvailability(confirmationBatch, confirmationAction) : {},
+  );
 
   return (
-    <>
-      <h1>Partner Payouts</h1>
+    <AdminPageTemplate
+      description="Partner payout batches for transfer readiness, tax evidence, cash-fee debt holds, and finance release checks."
+      metrics={[
+        { label: 'Total batches', value: summary.total, helper: 'Payout batches in the selected range.' },
+        { label: 'Needs review', value: summary.needsReview, helper: 'Draft or failed payout batches.' },
+        { label: 'In progress', value: summary.inProgress, helper: 'Processing transfer batches.' },
+        { label: 'Payout holds', value: summary.payoutHolds, helper: 'Batches blocked by Partner account checks.' },
+        { label: 'Missing refs', value: summary.missingTransferRefs, helper: 'Transfer references required before paid.' },
+        { label: 'Settled', value: summary.settled, helper: 'Paid payout batches.' },
+        { label: 'Total net', value: formatMoney(summary.totalNetAmount, summary.currency), helper: 'Partner net in visible batches.' },
+        { label: 'Withheld tax', value: formatMoney(summary.withholdingAmount, summary.currency), helper: 'Tax logs attached to payout batches.' },
+      ]}
+      title="Partner Payouts"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={payoutConfirmationAction(confirmation.action)}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          disabled={confirmation.disabled}
+          hiddenInputs={[
+            { name: 'payoutBatchId', value: confirmation.payoutBatchId },
+            { name: 'transferRef', value: confirmation.transferRef },
+          ]}
+          id={`payout-${confirmation.action}-${confirmation.payoutBatchId}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
+
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout date range</h2>
-            <p className="muted">
+        <AdminSectionHeader
+          actions={
+            <a className="text-link" href="/finance-closeout">
+              Open finance closeout
+            </a>
+          }
+          description={
+            <>
               Range: {dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service
               evidence use payout batch record dates.
-            </p>
-          </div>
-          <a className="text-link" href="/finance-closeout">
-            Open finance closeout
-          </a>
-        </div>
+            </>
+          }
+          title="Payout date range"
+        />
         <div className="filter-row" style={{ marginTop: 12 }}>
           {[
             ['All dates', '/payouts'],
@@ -79,41 +155,6 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           ))}
         </div>
       </section>
-      <section className="grid" style={{ marginBottom: 16 }}>
-        <div className="card">
-          <p>Total batches</p>
-          <h2>{summary.total}</h2>
-        </div>
-        <div className="card">
-          <p>Needs review</p>
-          <h2>{summary.needsReview}</h2>
-        </div>
-        <div className="card">
-          <p>In progress</p>
-          <h2>{summary.inProgress}</h2>
-        </div>
-        <div className="card">
-          <p>Payout holds</p>
-          <h2>{summary.payoutHolds}</h2>
-        </div>
-        <div className="card">
-          <p>Missing refs</p>
-          <h2>{summary.missingTransferRefs}</h2>
-        </div>
-        <div className="card">
-          <p>Settled</p>
-          <h2>{summary.settled}</h2>
-        </div>
-        <div className="card">
-          <p>Total net</p>
-          <h2>{formatMoney(summary.totalNetAmount, summary.currency)}</h2>
-        </div>
-        <div className="card">
-          <p>Withheld tax</p>
-          <h2>{formatMoney(summary.withholdingAmount, summary.currency)}</h2>
-        </div>
-      </section>
-
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
@@ -132,7 +173,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             <h3>Applied operations policy</h3>
             <p className="muted">
               Live Admin policy values used by finance before payout release, cash-fee clearance, and
-              marketplace alerts and participation reopening.
+              final acceptance, service start, and payout release reopening.
             </p>
           </div>
           <span className="pill pill-info">Live policy default</span>
@@ -202,9 +243,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           <div>
             <h3>Marketplace and payout unblock bridge</h3>
             <p className="muted">
-              Connects partner cash-fee debt to the two gates operators care about: marketplace participation and
-              payout release. Partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings while the wallet
-              is negative.
+              Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start,
+              and payout release. Partners can see marketplace requests while the wallet is negative.
             </p>
           </div>
           <Link className="text-link" href="/bookings?view=marketplace">
@@ -225,560 +265,24 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         </div>
       </section>
 
-      <div className="card" id="release-blocker-queue" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout money flow</h2>
-            <p className="muted">
-              Reconciles payout batches against service pricing evidence before transfer: gross represented,
-              partner payout, HANDS fee, withholding, and cash debt.
-            </p>
-          </div>
-          <Link className="text-link" href="/bookings">
-            Trace bookings
-          </Link>
-        </div>
-        <div className="service-trace-summary">
-          {moneyFlowCards.map((card) => (
-            <div key={card.label}>
-              <span>{card.label}</span>
-              <strong>{formatMoney(card.amount, summary.currency)}</strong>
-              <small>{card.detail}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-grid" style={{ marginTop: 16 }}>
-          {moneyFlowChecks.map((check) => (
-            <div className={`ops-task-card ${check.className}`} key={check.title}>
-              <div>
-                <span className={`pill ${check.pillClass}`}>{check.status}</span>
-                <h3>{check.title}</h3>
-                <p className="muted">{check.detail}</p>
-              </div>
-              <small>{check.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PayoutMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout command queue</h2>
-            <p className="muted">
-              Finance-first view for review money, active transfers, payout holds, and reconciliation
-              warnings.
-            </p>
-          </div>
-          <a className="text-link" href="/earnings">
-            Review earnings queue
-          </a>
-        </div>
-        <div className="ops-task-grid">
-          {commandSignals.map((signal) => (
-            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-              <div>
-                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
-                <h3>{signal.title}</h3>
-                <p className="muted">{signal.detail}</p>
-              </div>
-              <small>{signal.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PayoutCommandQueueSection signals={commandSignals} />
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout inclusion audit</h2>
-            <p className="muted">
-              Unbatched earning review before finance creates the next weekly, monthly, or admin-selected
-              partner settlement batch.
-            </p>
-          </div>
-          <span className={`pill ${inclusionAudit.blockedCount ? 'pill-warn' : 'pill-success'}`}>
-            {inclusionAudit.readyCount} ready / {inclusionAudit.blockedCount} held
-          </span>
-        </div>
-        <div className="service-trace-summary">
-          {inclusionAudit.cards.map((card) => (
-            <div key={card.label}>
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <small>{card.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 14 }}>
-          {inclusionAudit.rows.map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span>{row.status}</span>
-              <div>
-                <strong>{row.title}</strong>
-                <p className="muted">{row.detail}</p>
-                <p className="muted">{row.operatorRule}</p>
-              </div>
-              <a className="text-link" href={row.href}>
-                Open
-              </a>
-            </div>
-          ))}
-          {inclusionAudit.rows.length === 0 ? (
-            <div className="setup-stage-item">
-              <span>OK</span>
-              <div>
-                <strong>No unbatched earning in this range</strong>
-                <p className="muted">All visible earning rows are already batched, paid, cancelled, or absent.</p>
-              </div>
-              <small>Clear</small>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      <PayoutInclusionAuditSection audit={inclusionAudit} />
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Release blocker queue</h2>
-            <p className="muted">
-              Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and
-              bank references are clean.
-            </p>
-          </div>
-          <span className={`pill ${releaseQueue.length ? 'pill-danger' : 'pill-success'}`}>
-            {releaseQueue.length ? `${releaseQueue.length} blocker(s)` : 'Clear'}
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {releaseQueue.map((item) => (
-            <div className="setup-stage-item" key={`${item.batch.id}-${item.reason.label}`}>
-              <span>{item.severity}</span>
-              <div>
-                <strong>
-                  {item.providerLabel} / {formatMoney(item.batch.totalNetAmount, item.batch.currency)}
-                </strong>
-                <p className="muted">
-                  {item.reason.label}: {item.reason.detail}
-                </p>
-                <p className="muted">{item.reason.action}</p>
-                <div className="participant-list" style={{ marginTop: 8 }}>
-                  {payoutBlockingReasons(item.batch).map((reason) => (
-                    <span className={`pill ${reason.pillClass}`} key={reason.label}>
-                      {reason.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <a className="text-link" href={`#${item.batch.id}`}>
-                Row
-              </a>
-            </div>
-          ))}
-          {releaseQueue.length === 0 ? (
-            <div className="setup-stage-item">
-              <span>OK</span>
-              <div>
-                <strong>No payout release blocker</strong>
-                <p className="muted">
-                  Transfer refs, withholding logs, payout holds, and earning attachments are clean for the
-                  current queue.
-                </p>
-              </div>
-              <small>Clear</small>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      <PayoutReleaseBlockerQueueSection items={releaseBlockerRows} />
 
-      <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout service evidence</h2>
-            <p className="muted">
-              Shows which service duration options are inside payout batches, so finance can reconcile partner
-              net, HANDS fee, tax withholding, and cash wallet debt before bank transfer.
-            </p>
-          </div>
-          <a className="text-link" href="/services">
-            Review service pricing
-          </a>
-        </div>
-        <div className="service-trace-summary">
-          <div>
-            <span>Service options</span>
-            <strong>{serviceEvidence.length}</strong>
-          </div>
-          <div>
-            <span>Batches</span>
-            <strong>{batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}</strong>
-          </div>
-          <div>
-            <span>Gross</span>
-            <strong>
-              {formatMoney(
-                serviceEvidence.reduce((sum, item) => sum + item.grossAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Partner net</span>
-            <strong>
-              {formatMoney(
-                serviceEvidence.reduce((sum, item) => sum + item.netAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Platform fee</span>
-            <strong>
-              {formatMoney(
-                serviceEvidence.reduce((sum, item) => sum + item.platformFee, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Tax withheld</span>
-            <strong>
-              {formatMoney(
-                serviceEvidence.reduce((sum, item) => sum + item.withholdingAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-        </div>
-        {serviceEvidence.length ? (
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Service option</th>
-                <th>Batches</th>
-                <th>Earnings</th>
-                <th>Gross</th>
-                <th>Partner net</th>
-                <th>Platform fee</th>
-                <th>Tax</th>
-                <th>Cash debt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {serviceEvidence.map((item) => (
-                <tr key={item.key}>
-                  <td>
-                    <strong>{item.label}</strong>
-                    <p className="muted">{item.groupKey}</p>
-                  </td>
-                  <td>{item.batchCount}</td>
-                  <td>{item.earningCount}</td>
-                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
-                  <td>{formatMoney(item.netAmount, item.currency)}</td>
-                  <td>{formatMoney(item.platformFee, item.currency)}</td>
-                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
-                  <td>
-                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
-                      {formatMoney(item.cashDebtAmount, item.currency)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="muted">No payout batch has linked service evidence yet.</p>
-        )}
-      </div>
+      <PayoutServiceEvidenceSection
+        batchCount={batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}
+        currency={summary.currency}
+        items={serviceEvidence}
+      />
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout status lanes</h2>
-            <p className="muted">
-              Work from blocked and failed lanes first, then draft review, processing confirmation, and paid
-              reconciliation.
-            </p>
-          </div>
-          <span className="pill pill-info">{batches.length} batch(es)</span>
-        </div>
-        <div className="detail-grid" style={{ marginTop: 16 }}>
-          {payoutLanes.map((lane) => (
-            <div key={lane.title}>
-              <div className="ops-section-header">
-                <h3>{lane.title}</h3>
-                <span className={`pill ${lane.pillClass}`}>{lane.batches.length}</span>
-              </div>
-              {lane.batches.length ? (
-                <div className="setup-stage-list">
-                  {lane.batches.slice(0, 4).map((batch) => (
-                    <div className="setup-stage-item" key={`${lane.title}-${batch.id}`}>
-                      <span>{shortRecordId(batch.id)}</span>
-                      <div>
-                        <strong>
-                          {batch.providerProfile?.displayName ??
-                            batch.providerProfile?.user?.phone ??
-                            'Unknown partner'}
-                        </strong>
-                        <p className="muted">
-                          {formatMoney(batch.totalNetAmount, batch.currency)} / {batch.earnings?.length ?? 0}{' '}
-                          earning(s)
-                        </p>
-                        <p className="muted">{opsHint(batch)}</p>
-                      </div>
-                      <a className="text-link" href={`#${batch.id}`}>
-                        Row
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted">{lane.emptyText}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <PayoutStatusLanesSection batchCount={batches.length} lanes={payoutStatusLanes} />
 
-      <div className="card">
-        <div className="toolbar">
-          <div>
-            <p className="muted">
-              Partner settlement batches ordered so unresolved money movement stays at the top.
-            </p>
-          </div>
-          <div className="participant-list">
-            <span className="pill pill-success">Newest active first</span>
-            <span className="pill pill-info">Payout record</span>
-            <span className="pill pill-warn">Reconciliation</span>
-            <a className="pill" href="/earnings">
-              Review earnings
-            </a>
-          </div>
-        </div>
-
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Batch</th>
-              <th>Partner</th>
-              <th>Status</th>
-              <th>Ops record</th>
-              <th>Blocking reasons</th>
-              <th>Transfer ref</th>
-              <th>Earnings</th>
-              <th>Checklist</th>
-              <th>Total</th>
-              <th>Tax withheld</th>
-              <th>Paid at</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches.map((batch) => {
-              const checklist = payoutChecklist(batch);
-              const payoutHold = activePayoutHold(batch);
-              const blockingReasons = payoutBlockingReasons(batch);
-              const paidBlockedByReleaseCheck =
-                batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length > 0;
-              return (
-                <tr id={batch.id} key={batch.id}>
-                  <td>
-                    <div>{shortRecordId(batch.id)}</div>
-                    <div className="muted">
-                      {formatRelativeTime(batch.createdAt, { justNow: 'Updated just now' })}
-                    </div>
-                  </td>
-                  <td>
-                    <div>
-                      {batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown'}
-                    </div>
-                    <div className="muted">{batch.providerProfile?.user?.phone ?? 'No phone on file'}</div>
-                    {payoutHold && (
-                      <div style={{ marginTop: 6 }}>
-                        <span className="pill pill-danger">Payout hold</span>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div>{humanizeStatus(batch.status)}</div>
-                    <div className="muted">{payoutPhase(batch.status)}</div>
-                  </td>
-                  <td>
-                    <span className={payoutHold ? 'signal signal-warn' : signalClass(batch.status)}>
-                      {opsSignal(batch)}
-                    </span>
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {opsHint(batch)}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="participant-list">
-                      {blockingReasons.length ? (
-                        blockingReasons.map((reason) => (
-                          <span
-                            className={`pill ${reason.pillClass}`}
-                            key={reason.label}
-                            title={reason.detail}
-                          >
-                            {reason.label}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="pill pill-success">Clear</span>
-                      )}
-                    </div>
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {blockingReasons.length
-                        ? blockingReasons.map((reason) => reason.action).join(' ')
-                        : 'No blocking reason is preventing the next finance action.'}
-                    </div>
-                  </td>
-                  <td>
-                    <div>{batch.transferRef ?? '-'}</div>
-                    <div className="muted">{batch.notes?.trim() ? batch.notes : 'No transfer notes'}</div>
-                  </td>
-                  <td>
-                    <div>{batch.earnings?.length ?? 0} item(s)</div>
-                    <div className="muted">{earningsStatusHint(batch)}</div>
-                    <div className="participant-list" style={{ marginTop: 8 }}>
-                      {batchServiceEvidence(batch)
-                        .slice(0, 3)
-                        .map((item) => (
-                          <span className="pill pill-info" key={`${batch.id}-${item.key}`}>
-                            {item.label}: {formatMoney(item.netAmount, item.currency)}
-                          </span>
-                        ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="participant-list">
-                      {checklist.map((item) => (
-                        <span
-                          className={item.ok ? 'pill pill-success' : 'pill pill-warn'}
-                          key={item.label}
-                          title={item.detail}
-                        >
-                          {item.label}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="muted" style={{ marginTop: 6 }}>
-                      {payoutReadinessSummary(batch)}
-                    </div>
-                  </td>
-                  <td>{formatMoney(batch.totalNetAmount, batch.currency)}</td>
-                  <td>
-                    <div>{formatMoney(batchWithholdingAmount(batch), batch.currency)}</div>
-                    <div className="muted">{batch.withholdingLogs?.length ?? 0} tax log(s)</div>
-                  </td>
-                  <td>
-                    <div>{formatDateTime(batch.paidAt, '-')}</div>
-                    <div className="muted">
-                      {batch.paidAt
-                        ? formatRelativeTime(batch.paidAt, { justNow: 'Updated just now' })
-                        : 'Awaiting settlement'}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="ops-task-note" style={{ marginBottom: 10 }}>
-                      <strong>Payout action execution map</strong>
-                      <div className="setup-stage-list" style={{ marginTop: 8 }}>
-                        {payoutActionExecutionMap(batch).map((item) => (
-                          <div className="setup-stage-item" key={`${batch.id}-${item.action}`}>
-                            <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                            <div>
-                              <strong>{item.action}</strong>
-                              <p className="muted">{item.reason}</p>
-                              <small>{item.operatorRule}</small>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <form className="actions" action={updatePayoutTransferRef}>
-                      <input type="hidden" name="payoutBatchId" value={batch.id} />
-                      <input
-                        aria-label="Transfer reference"
-                        name="transferRef"
-                        placeholder="Bank ref"
-                        defaultValue={batch.transferRef ?? ''}
-                      />
-                      <input
-                        aria-label="Transfer notes"
-                        name="notes"
-                        placeholder="Notes"
-                        defaultValue={batch.notes ?? ''}
-                      />
-                      <button type="submit">Save</button>
-                    </form>
-                    <div className="actions" style={{ marginTop: 8 }}>
-                      {batch.status === 'DRAFT' && (
-                        <PayoutStatusForm
-                          action={markPayoutProcessing}
-                          batch={batch}
-                          disabled={Boolean(payoutHold)}
-                          label="Processing"
-                        />
-                      )}
-                      {batch.status !== 'PAID' && batch.status !== 'CANCELLED' && (
-                        <PayoutStatusForm
-                          action={markPayoutPaid}
-                          batch={batch}
-                          disabled={paidBlockedByReleaseCheck}
-                          label="Paid"
-                        />
-                      )}
-                      {batch.status === 'PROCESSING' && (
-                        <PayoutStatusForm action={markPayoutFailed} batch={batch} label="Failed" />
-                      )}
-                      {payoutHold && (
-                        <a className="pill pill-danger" href={`/partners/${batch.providerProfileId}`}>
-                          Open partner checks
-                        </a>
-                      )}
-                      {paidBlockedByReleaseCheck && (
-                        <span className="pill pill-warn">Resolve blockers before paid</span>
-                      )}
-                      {(batch.status === 'PAID' || batch.status === 'CANCELLED') && (
-                        <span className="muted">No status action</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {batches.length === 0 && (
-              <tr>
-                <td colSpan={12}>No payout batches loaded.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
-  );
-}
-
-function PayoutStatusForm({
-  action,
-  batch,
-  disabled,
-  label,
-}: {
-  action: (formData: FormData) => Promise<void>;
-  batch: AdminPayoutBatch;
-  disabled?: boolean;
-  label: string;
-}) {
-  return (
-    <form action={action}>
-      <input type="hidden" name="payoutBatchId" value={batch.id} />
-      <input type="hidden" name="transferRef" value={batch.transferRef ?? ''} />
-      <button disabled={disabled} type="submit">
-        {label}
-      </button>
-    </form>
+      <PayoutBatchListSection rows={payoutBatchRows} updateTransferRefAction={updatePayoutTransferRef} />
+    </AdminPageTemplate>
   );
 }
 
@@ -790,6 +294,157 @@ function sortBatches(batches: AdminPayoutBatch[]) {
     }
     return Date.parse(right.createdAt) - Date.parse(left.createdAt);
   });
+}
+
+function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): PayoutBatchTableRow[] {
+  return batches.map((batch) => {
+    const blockingReasons = payoutBlockingReasons(batch);
+    const payoutHold = activePayoutHold(batch);
+
+    return {
+      id: batch.id,
+      shortId: shortRecordId(batch.id),
+      updatedLabel: formatRelativeTime(batch.createdAt, { justNow: 'Updated just now' }),
+      partnerLabel: batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown',
+      partnerPhone: batch.providerProfile?.user?.phone ?? 'No phone on file',
+      partnerChecksHref: `/partners/${batch.providerProfileId}`,
+      statusLabel: humanizeStatus(batch.status),
+      phase: payoutPhase(batch.status),
+      opsSignalClassName: payoutHold ? 'signal signal-warn' : signalClass(batch.status),
+      opsSignal: opsSignal(batch),
+      opsHint: opsHint(batch),
+      blockingReasons: blockingReasons.map((reason) => ({
+        detail: reason.detail,
+        label: reason.label,
+        pillClass: reason.pillClass,
+      })),
+      blockingActionSummary: blockingReasons.length
+        ? blockingReasons.map((reason) => reason.action).join(' ')
+        : 'No blocking reason is preventing the next finance action.',
+      transferRef: batch.transferRef ?? '',
+      notes: batch.notes ?? '',
+      earningCount: batch.earnings?.length ?? 0,
+      earningsHint: earningsStatusHint(batch),
+      serviceEvidencePills: batchServiceEvidence(batch)
+        .slice(0, 3)
+        .map((item) => ({
+          key: item.key,
+          label: item.label,
+          value: formatMoney(item.netAmount, item.currency),
+        })),
+      checklist: payoutChecklist(batch).map((item) => ({
+        detail: item.detail,
+        label: item.label,
+        ok: item.ok,
+      })),
+      readinessSummary: payoutReadinessSummary(batch),
+      totalAmountLabel: formatMoney(batch.totalNetAmount, batch.currency),
+      withholdingAmountLabel: formatMoney(batchWithholdingAmount(batch), batch.currency),
+      taxLogCount: batch.withholdingLogs?.length ?? 0,
+      paidAtLabel: formatDateTime(batch.paidAt, '-'),
+      paidAtRelativeLabel: batch.paidAt
+        ? formatRelativeTime(batch.paidAt, { justNow: 'Updated just now' })
+        : 'Awaiting settlement',
+      actionExecutionItems: payoutActionExecutionMap(batch),
+      actionMenuItems: payoutActionMenuItems(batch),
+      payoutHold: Boolean(payoutHold),
+      paidBlockedByReleaseCheck:
+        batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length > 0,
+    };
+  });
+}
+
+function payoutActionMenuItems(batch: AdminPayoutBatch) {
+  return [
+    ...(batch.status === 'DRAFT'
+      ? [
+          {
+            kind: 'link' as const,
+            href: payoutActionConfirmHref(batch.id, 'processing'),
+            label: 'Processing',
+            disabled: Boolean(payoutActionDisabledReason(batch, 'processing')),
+            description: payoutActionDisabledReason(batch, 'processing') ?? 'Review before starting transfer processing.',
+            tone: 'info' as const,
+          },
+        ]
+      : []),
+    ...(batch.status !== 'PAID' && batch.status !== 'CANCELLED'
+      ? [
+          {
+            kind: 'link' as const,
+            href: payoutActionConfirmHref(batch.id, 'paid'),
+            label: 'Paid',
+            disabled: Boolean(payoutActionDisabledReason(batch, 'paid')),
+            description: payoutActionDisabledReason(batch, 'paid') ?? 'Review before marking this payout paid.',
+            tone: 'warning' as const,
+          },
+        ]
+      : []),
+    ...(batch.status === 'PROCESSING'
+      ? [
+          {
+            kind: 'link' as const,
+            href: payoutActionConfirmHref(batch.id, 'failed'),
+            label: 'Failed',
+            disabled: Boolean(payoutActionDisabledReason(batch, 'failed')),
+            description: payoutActionDisabledReason(batch, 'failed') ?? 'Review before preserving a failed transfer state.',
+            tone: 'danger' as const,
+          },
+        ]
+      : []),
+  ];
+}
+
+function payoutActionAvailability(batch: AdminPayoutBatch, action: PayoutConfirmationAction | null) {
+  if (!action) {
+    return { transferRef: batch.transferRef ?? '' };
+  }
+
+  const disabledReason = payoutActionDisabledReason(batch, action);
+  if (disabledReason) {
+    return {
+      disabled: true,
+      disabledReason,
+      transferRef: batch.transferRef ?? '',
+    };
+  }
+
+  return { transferRef: batch.transferRef ?? '' };
+}
+
+function payoutActionDisabledReason(batch: AdminPayoutBatch, action: PayoutConfirmationAction) {
+  const payoutHold = activePayoutHold(batch);
+  const blockingReasons = payoutBlockingReasons(batch);
+
+  switch (action) {
+    case 'processing':
+      if (batch.status !== 'DRAFT') {
+        return `Batch status is ${batch.status}; processing action is not available.`;
+      }
+      return payoutHold ? `Partner payout hold is active: ${payoutHold.reason}.` : null;
+    case 'paid':
+      if (batch.status === 'PAID' || batch.status === 'CANCELLED') {
+        return `Batch status is ${batch.status}; paid action is not available.`;
+      }
+      return blockingReasons.length
+        ? `Resolve ${blockingReasons.map((reason) => reason.label).join(', ')} before marking paid.`
+        : null;
+    case 'failed':
+      return batch.status === 'PROCESSING'
+        ? null
+        : `Batch status is ${batch.status}; failed action is available only while processing.`;
+  }
+}
+
+function payoutConfirmationAction(action: PayoutConfirmationAction) {
+  switch (action) {
+    case 'failed':
+      return markPayoutFailed;
+    case 'paid':
+      return markPayoutPaid;
+    case 'processing':
+      return markPayoutProcessing;
+  }
 }
 
 function payoutPriority(status: string) {
@@ -829,21 +484,6 @@ function buildSummary(batches: AdminPayoutBatch[]) {
     currency,
   };
 }
-
-type PayoutCommandSignal = {
-  title: string;
-  status: string;
-  detail: string;
-  action: string;
-  className: string;
-  pillClass: string;
-};
-
-type MoneyFlowCard = {
-  label: string;
-  amount: number;
-  detail: string;
-};
 
 type PayoutLane = {
   title: string;
@@ -900,32 +540,20 @@ type AppliedPayoutPolicyCard = {
   helper: string;
 };
 
-type PayoutInclusionAuditRow = {
-  id: string;
-  status: 'Ready' | 'Hold' | 'Batched';
-  title: string;
-  detail: string;
-  operatorRule: string;
-  href: string;
-};
-
-type PayoutServiceEvidenceItem = {
+type InternalPayoutServiceEvidenceItem = {
+  batchCount: number;
+  batchIds: Set<string>;
+  cashDebtAmount: number;
+  currency: string;
+  earningCount: number;
+  earningIds: Set<string>;
+  grossAmount: number;
+  groupKey: string;
   key: string;
   label: string;
-  groupKey: string;
-  currency: string;
-  batchCount: number;
-  earningCount: number;
-  grossAmount: number;
   netAmount: number;
   platformFee: number;
   withholdingAmount: number;
-  cashDebtAmount: number;
-};
-
-type InternalPayoutServiceEvidenceItem = PayoutServiceEvidenceItem & {
-  batchIds: Set<string>;
-  earningIds: Set<string>;
 };
 
 function buildPayoutServiceEvidence(batches: AdminPayoutBatch[]): PayoutServiceEvidenceItem[] {
@@ -950,7 +578,7 @@ function buildPayoutServiceEvidence(batches: AdminPayoutBatch[]): PayoutServiceE
 function buildPayoutMoneyFlowCards(
   summary: ReturnType<typeof buildSummary>,
   serviceEvidence: PayoutServiceEvidenceItem[],
-): MoneyFlowCard[] {
+): PayoutMoneyFlowCard[] {
   const grossRepresented = sumPayoutServiceEvidence(serviceEvidence, 'grossAmount');
   const providerNetRepresented = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
   const platformFeeRepresented = sumPayoutServiceEvidence(serviceEvidence, 'platformFee');
@@ -994,7 +622,7 @@ function buildPayoutMoneyFlowCards(
 function buildPayoutMoneyFlowChecks(
   batches: AdminPayoutBatch[],
   serviceEvidence: PayoutServiceEvidenceItem[],
-): PayoutCommandSignal[] {
+): PayoutMoneyFlowCheck[] {
   const currency = batches[0]?.currency ?? 'VND';
   const serviceNet = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
   const batchNet = batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0);
@@ -1154,7 +782,7 @@ function buildAppliedPayoutPolicyCards(policy: AdminLiveOperationsPolicy): Appli
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace alerts, participation, and payout release until settled.',
+      helper: 'Negative Partner wallet blocks final acceptance, service start, and payout release until settled.',
     },
     {
       label: 'Marketplace radius',
@@ -1217,7 +845,7 @@ function buildPayoutReleaseCycleBoard(
       timing: 'Before release',
       status: `${cashDebt.length} held`,
       queue: 'Partner cash-fee wallet debt from cash bookings.',
-      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace alerts, participation, and payout release resume.',
+      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before final acceptance, service start, and payout release resume.',
       nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
       pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
     },
@@ -1249,14 +877,14 @@ function buildPayoutMarketplaceUnblockBridge(
 
   return [
     {
-      title: 'Marketplace participation gate',
+      title: 'Final acceptance gate',
       status: unbatchedCashDebt.length ? `${cashDebtPartnerCount} partner wallet(s)` : 'Clear',
       detail: unbatchedCashDebt.length
-        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks marketplace alerts and participation.`
-        : 'No negative partner wallet is blocking marketplace alerts and participation from the current earning range.',
+        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks final acceptance and service start.`
+        : 'No negative Partner wallet is blocking final acceptance or service start from the current earning range.',
       action: unbatchedCashDebt.length
-        ? 'Partner can see marketplace requests, but marketplace alerts and participation are blocked until fee deposit or approved offset is posted.'
-        : 'Marketplace participation follows booking-address radius, KYC, service, and app-presence rules.',
+        ? 'Partner can see marketplace requests, but final acceptance, service start, and payout release are blocked until fee deposit or approved offset is posted.'
+        : 'Partner marketplace eligibility follows booking-address radius, KYC, service, and app-presence rules.',
       href: unbatchedCashDebt.length ? '/cash-settlements' : '/bookings?view=marketplace',
       className: unbatchedCashDebt.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: unbatchedCashDebt.length ? 'pill-danger' : 'pill-success',
@@ -1419,6 +1047,25 @@ function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueu
       return Date.parse(right.batch.createdAt) - Date.parse(left.batch.createdAt);
     })
     .slice(0, 6);
+}
+
+function buildPayoutReleaseBlockerRows(
+  releaseQueue: readonly PayoutReleaseQueueItem[],
+): PayoutReleaseBlockerQueueItem[] {
+  return releaseQueue.map((item) => ({
+    action: item.reason.action,
+    amount: item.batch.totalNetAmount,
+    blockingReasons: payoutBlockingReasons(item.batch).map((reason) => ({
+      label: reason.label,
+      pillClass: reason.pillClass,
+    })),
+    currency: item.batch.currency,
+    detail: item.reason.detail,
+    id: item.batch.id,
+    label: item.reason.label,
+    providerLabel: item.providerLabel,
+    severity: item.severity,
+  }));
 }
 
 function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutionItem[] {
@@ -1775,6 +1422,22 @@ function buildPayoutLanes(batches: AdminPayoutBatch[]): PayoutLane[] {
       emptyText: 'No cancelled payout batch is in the current list.',
     },
   ];
+}
+
+function buildPayoutStatusLanes(lanes: readonly PayoutLane[]): PayoutStatusLane[] {
+  return lanes.map((lane) => ({
+    title: lane.title,
+    batches: lane.batches.map((batch) => ({
+      id: batch.id,
+      amount: batch.totalNetAmount,
+      currency: batch.currency,
+      earningCount: batch.earnings?.length ?? 0,
+      opsHint: opsHint(batch),
+      partnerLabel: batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
+    })),
+    pillClass: lane.pillClass,
+    emptyText: lane.emptyText,
+  }));
 }
 
 function batchWithholdingAmount(batch: AdminPayoutBatch) {
