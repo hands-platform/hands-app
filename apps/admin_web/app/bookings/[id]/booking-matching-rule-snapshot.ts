@@ -64,7 +64,7 @@ export function bookingDetailMatchingRuleSnapshot({
       : finalPartner
         ? 'Use chat, location, payment, and closeout evidence for the next operation.'
         : customerChoiceCandidates.length
-          ? 'Customer must select the final partner; operators should not assign one for them.'
+          ? 'Customer fallback selection is required because first-pick did not validly win; operators should not assign one for them.'
           : booking.status === 'OPEN_MATCHING'
             ? 'Monitor first-pick, marketplace participants, and partner alert evidence.'
             : 'Continue from the current booking status and retained evidence.';
@@ -97,8 +97,8 @@ export function bookingDetailMatchingRuleSnapshot({
         label: 'Customer choice',
         value: finalPartner ? providerName(finalPartner) : `${customerChoiceCandidates.length} selectable`,
         helper: finalPartner
-          ? 'Customer final partner choice is recorded.'
-          : 'Final partner remains customer-selected; no automatic assignment is used.',
+          ? 'Final Partner choice is recorded.'
+          : 'Fallback Partner choice remains customer-selected; no automatic assignment is used.',
       },
       {
         label: 'Partner alerts',
@@ -116,7 +116,7 @@ export function bookingDetailMatchingRuleSnapshot({
         label: 'Wallet gate',
         value: walletBlocked ? 'Settlement needed' : 'Clear',
         helper: walletBlocked
-          ? 'Negative cash-fee debt can block marketplace alerts, participation, and payout release until settled or offset.'
+          ? 'Negative cash-fee debt can block final acceptance, service start, and payout release until settled or offset.'
           : 'No cash-fee debt block is visible for this booking.',
       },
     ],

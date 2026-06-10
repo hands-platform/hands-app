@@ -77,8 +77,8 @@ export function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Historical exception mode is visible for audit only; current operations still require debt settlement before marketplace alerts and participation.'
-            : 'Negative wallet partners can see marketplace requests, but marketplace alerts, participation, and payout release are blocked.',
+            ? 'Historical exception mode is visible for audit only; current operations still require debt settlement before final acceptance, service start, and payout release.'
+            : 'Negative wallet Partners can see marketplace requests, but final acceptance, service start, and payout release are blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({

@@ -282,7 +282,7 @@ export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityCo
           <h2>MVP authority contract</h2>
           <p className="muted">
             One-screen check against the HANDS MVP policy: NestJS business authority, address snapshot,
-            first-pick, 10km marketplace, customer final partner choice, chat retention, and wallet gate.
+            first-pick priority, 10km marketplace, customer fallback partner choice, chat retention, and wallet gate.
           </p>
         </div>
         <Link className="text-link" href="/operations-policy">

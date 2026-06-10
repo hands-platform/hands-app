@@ -1,0 +1,72 @@
+export type MarketplaceOperationsCardTone = 'pill-info' | 'pill-neutral' | 'pill-success' | 'pill-warn';
+
+export type MarketplaceOperationsCard = {
+  readonly detail: string;
+  readonly href: string;
+  readonly title: string;
+  readonly tone: MarketplaceOperationsCardTone;
+  readonly value: string;
+};
+
+type MarketplaceOperationsCardCounts = {
+  readonly alertTraceMissingCount: number;
+  readonly customerChoiceWaitingCount: number;
+  readonly noMarketplaceSupplyCount: number;
+  readonly openBookingsCount: number;
+  readonly selectedRowsCount: number;
+  readonly walletDebtBookingsCount: number;
+};
+
+export function buildMarketplaceOperationsCards({
+  alertTraceMissingCount,
+  customerChoiceWaitingCount,
+  noMarketplaceSupplyCount,
+  openBookingsCount,
+  selectedRowsCount,
+  walletDebtBookingsCount,
+}: MarketplaceOperationsCardCounts): MarketplaceOperationsCard[] {
+  return [
+    {
+      title: 'Open marketplace',
+      value: `${openBookingsCount}`,
+      detail: 'Bookings still visible for partner participation or customer choice.',
+      tone: openBookingsCount > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Customer choice',
+      value: `${customerChoiceWaitingCount}`,
+      detail: 'Participating or accepted partners are visible and the customer has not selected a final partner yet.',
+      tone: customerChoiceWaitingCount > 0 ? 'pill-info' : 'pill-neutral',
+      href: '/bookings?view=customer-choice',
+    },
+    {
+      title: 'No participant supply',
+      value: `${noMarketplaceSupplyCount}`,
+      detail: 'Open requests with no marketplace participant in the ledger.',
+      tone: noMarketplaceSupplyCount > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Alert trace missing',
+      value: `${alertTraceMissingCount}`,
+      detail: 'Open requests without recorded 10 km marketplace notification batches.',
+      tone: alertTraceMissingCount > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Selected partners',
+      value: `${selectedRowsCount}`,
+      detail: 'Marketplace or first-pick partners already chosen by customers.',
+      tone: selectedRowsCount > 0 ? 'pill-success' : 'pill-neutral',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Cash fee debt',
+      value: `${walletDebtBookingsCount}`,
+      detail: 'Bookings with partner wallet debt signals after cash fee closeout.',
+      tone: walletDebtBookingsCount > 0 ? 'pill-warn' : 'pill-neutral',
+      href: '/bookings?view=cash-debt',
+    },
+  ];
+}

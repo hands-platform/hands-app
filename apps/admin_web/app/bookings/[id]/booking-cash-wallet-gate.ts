@@ -108,7 +108,7 @@ export function bookingCashFeeSettlementPath(
         tone: cashDebt ? 'pill-danger' : walletEntries.length ? 'pill-success' : 'pill-warn',
         evidence: `${financeTrace.walletLedger} / ${walletEntries.length} wallet row(s)`,
         nextStep: cashDebt
-          ? 'Block marketplace alerts, participation, and payout release until deposit or approved offset is recorded.'
+          ? 'Block final acceptance, service start, and payout release until deposit or approved offset is recorded.'
           : walletEntries.length
             ? 'Keep the wallet row as settlement evidence.'
             : 'Create or inspect wallet ledger generation during completed closeout.',

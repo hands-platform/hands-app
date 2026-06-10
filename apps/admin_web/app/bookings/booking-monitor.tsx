@@ -39,7 +39,22 @@ import {
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../lib/booking-chat-repair-action-state';
 import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
-import { buildMarketplaceBookingCoverageSummary } from '../../lib/marketplace-booking-coverage';
+import {
+  buildMarketplaceBookingCoveragePills,
+  buildMarketplaceBookingCoverageSummary,
+} from '../../lib/marketplace-booking-coverage';
+import {
+  buildMarketplaceOperationsCards as buildMarketplaceOperationsCardItems,
+  type MarketplaceOperationsCard,
+} from '../../lib/marketplace-operations-cards';
+import {
+  buildMarketplaceParticipantLedgerPills,
+  buildMarketplaceParticipantLedgerSummary,
+} from '../../lib/marketplace-participant-ledger';
+import {
+  buildMarketplaceOperatingQueueItems,
+  type MarketplaceOperatingQueueItem,
+} from '../../lib/marketplace-operating-queue';
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
@@ -237,26 +252,6 @@ type MarketplaceParticipantLedgerRow = {
   alertTone: string;
   walletLabel: string;
   walletTone: string;
-};
-
-type MarketplaceOperationsCard = {
-  title: string;
-  value: string;
-  detail: string;
-  tone: string;
-  href: string;
-};
-
-type MarketplaceOperatingQueueItem = {
-  step: string;
-  title: string;
-  value: string;
-  status: string;
-  tone: BookingCommandLane['tone'];
-  detail: string;
-  operatorAction: string;
-  href: string;
-  bookings: AdminBooking[];
 };
 
 type MarketplaceBookingCoverageRow = {
@@ -558,21 +553,18 @@ export function BookingMonitor({
     () => buildMarketplaceBookingCoverageSummary(marketplaceBookingCoverageRows),
     [marketplaceBookingCoverageRows],
   );
-  const marketplaceLedgerSummary = useMemo(() => {
-    const selected = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
-    const marketplace = marketplaceLedgerRows.filter((row) => row.roleLabel === 'Marketplace participant');
-    const firstPick = marketplaceLedgerRows.filter((row) => row.roleLabel === 'First-pick partner');
-    const waitingChoice = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Customer-selectable');
-    const declined = marketplaceLedgerRows.filter((row) => row.statusLabel === 'Declined');
-    return {
-      total: marketplaceLedgerRows.length,
-      marketplace: marketplace.length,
-      firstPick: firstPick.length,
-      selected: selected.length,
-      waitingChoice: waitingChoice.length,
-      declined: declined.length,
-    };
-  }, [marketplaceLedgerRows]);
+  const marketplaceBookingCoveragePills = useMemo(
+    () => buildMarketplaceBookingCoveragePills(marketplaceBookingCoverageSummary),
+    [marketplaceBookingCoverageSummary],
+  );
+  const marketplaceLedgerSummary = useMemo(
+    () => buildMarketplaceParticipantLedgerSummary(marketplaceLedgerRows),
+    [marketplaceLedgerRows],
+  );
+  const marketplaceLedgerPills = useMemo(
+    () => buildMarketplaceParticipantLedgerPills(marketplaceLedgerSummary),
+    [marketplaceLedgerSummary],
+  );
   const marketplaceOperationsCards = useMemo(
     () => buildMarketplaceOperationsCards(visibleBookings, marketplaceLedgerRows, currentTimeMs),
     [currentTimeMs, marketplaceLedgerRows, visibleBookings],
@@ -1469,32 +1461,11 @@ export function BookingMonitor({
               </p>
             </div>
             <div className="actions">
-              <span className="pill pill-info">
-                Bookings with participant history {marketplaceBookingCoverageSummary.withParticipants}
-              </span>
-              <span
-                className={`pill ${
-                  marketplaceBookingCoverageSummary.withoutParticipants > 0
-                    ? 'pill-warn'
-                    : 'pill-success'
-                }`}
-              >
-                Bookings without participants {marketplaceBookingCoverageSummary.withoutParticipants}
-              </span>
-              <span
-                className={`pill ${
-                  marketplaceBookingCoverageSummary.waitingChoice > 0 ? 'pill-warn' : 'pill-neutral'
-                }`}
-              >
-                Waiting customer choice {marketplaceBookingCoverageSummary.waitingChoice}
-              </span>
-              <span
-                className={`pill ${
-                  marketplaceBookingCoverageSummary.chatRepair > 0 ? 'pill-danger' : 'pill-success'
-                }`}
-              >
-                Chat handoff repair {marketplaceBookingCoverageSummary.chatRepair}
-              </span>
+              {marketplaceBookingCoveragePills.map((pill) => (
+                <span className={`pill ${pill.tone}`} key={pill.label}>
+                  {pill.label}
+                </span>
+              ))}
             </div>
           </div>
           <div className="participant-list" style={{ marginTop: 12 }}>
@@ -1576,15 +1547,11 @@ export function BookingMonitor({
           <span className="pill">Partners may view marketplace requests before join gate</span>
           <span className="pill">Customer-selected final partner only</span>
           <span className="pill">No automatic final assignment</span>
-          <span className="pill">First-pick partners {marketplaceLedgerSummary.firstPick}</span>
-          <span className="pill">Marketplace participants {marketplaceLedgerSummary.marketplace}</span>
-          <span className="pill pill-success">
-            Selected marketplace partner {marketplaceLedgerSummary.selected}
-          </span>
-          <span className="pill pill-warn">
-            Waiting customer choice {marketplaceLedgerSummary.waitingChoice}
-          </span>
-          <span className="pill pill-info">Declined responses {marketplaceLedgerSummary.declined}</span>
+          {marketplaceLedgerPills.map((pill) => (
+            <span className={`pill ${pill.tone}`} key={pill.label}>
+              {pill.label}
+            </span>
+          ))}
           <span className="pill">Customer final choice</span>
           <span className="pill">Participant evidence</span>
           <span className="pill">Marketplace participation gate</span>
@@ -2438,9 +2405,9 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
       tone: cashDebt.length ? 'danger' : 'ok',
       detail:
         cashDebt.length > 0
-          ? 'Cash bookings created negative wallet balances that require settlement before marketplace alerts, participation, or payout release.'
+          ? 'Cash bookings created negative wallet balances that require settlement before final acceptance, service start, or payout release.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
-      operatorAction: 'Collect partner fee deposit or settle from available earnings before new marketplace participation.',
+      operatorAction: 'Collect Partner fee deposit or settle from available earnings before final acceptance, service start, or payout release.',
       href: '/bookings?view=cash-debt',
       bookings: cashDebt,
     },
@@ -3246,7 +3213,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): Boo
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Confirm partner wallet debt and request company fee settlement before marketplace alerts, participation, or payout release resumes.';
+    return 'Confirm Partner wallet debt and request company fee settlement before final acceptance, service start, or payout release resumes.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
@@ -4060,7 +4027,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     {
       label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before marketplace alerts, participation, or payout release resumes.'
+        ? 'Partner cash fee debt must be settled before final acceptance, service start, or payout release resumes.'
         : 'No partner cash fee debt is visible for this booking.',
       tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
       href: '/bookings?view=cash-debt',
@@ -4848,56 +4815,20 @@ function buildMarketplaceOperationsCards(
   const walletDebtBookings = bookings.filter(bookingHasPartnerWalletDebtSignal);
   const selectedRows = ledgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
 
-  return [
-    {
-      title: 'Open marketplace',
-      value: `${openBookings.length}`,
-      detail: 'Bookings still visible for partner participation or customer choice.',
-      tone: openBookings.length > 0 ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=marketplace',
-    },
-    {
-      title: 'Customer choice',
-      value: `${customerChoiceWaiting.length}`,
-      detail: 'Participating or accepted partners are visible and the customer has not selected a final partner yet.',
-      tone: customerChoiceWaiting.length > 0 ? 'pill-info' : 'pill-neutral',
-      href: '/bookings?view=customer-choice',
-    },
-    {
-      title: 'No participant supply',
-      value: `${noMarketplaceSupply.length}`,
-      detail: 'Open requests with no marketplace participant in the ledger.',
-      tone: noMarketplaceSupply.length > 0 ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=marketplace',
-    },
-    {
-      title: 'Alert trace missing',
-      value: `${alertTraceMissing.length}`,
-      detail: 'Open requests without recorded 10 km marketplace notification batches.',
-      tone: alertTraceMissing.length > 0 ? 'pill-warn' : 'pill-success',
-      href: '/bookings?view=marketplace',
-    },
-    {
-      title: 'Selected partners',
-      value: `${selectedRows.length}`,
-      detail: 'Marketplace or first-pick partners already chosen by customers.',
-      tone: selectedRows.length > 0 ? 'pill-success' : 'pill-neutral',
-      href: '/bookings?view=marketplace',
-    },
-    {
-      title: 'Cash fee debt',
-      value: `${walletDebtBookings.length}`,
-      detail: 'Bookings with partner wallet debt signals after cash fee closeout.',
-      tone: walletDebtBookings.length > 0 ? 'pill-warn' : 'pill-neutral',
-      href: '/bookings?view=cash-debt',
-    },
-  ];
+  return buildMarketplaceOperationsCardItems({
+    alertTraceMissingCount: alertTraceMissing.length,
+    customerChoiceWaitingCount: customerChoiceWaiting.length,
+    noMarketplaceSupplyCount: noMarketplaceSupply.length,
+    openBookingsCount: openBookings.length,
+    selectedRowsCount: selectedRows.length,
+    walletDebtBookingsCount: walletDebtBookings.length,
+  });
 }
 
 function buildMarketplaceOperatingQueue(
   bookings: AdminBooking[],
   nowMs: number,
-): MarketplaceOperatingQueueItem[] {
+): MarketplaceOperatingQueueItem<AdminBooking>[] {
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const firstPickWaiting = openBookings.filter(
     (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
@@ -4915,73 +4846,15 @@ function buildMarketplaceOperatingQueue(
   const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
   const cashDebtBookings = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
 
-  return [
-    {
-      step: '1. First-pick timer control',
-      title: 'First-pick timer control',
-      value: `${firstPickWaiting.length} waiting`,
-      status: firstPickExpired.length ? 'Timer review' : firstPickWaiting.length ? 'Running' : 'Clear',
-      tone: firstPickExpired.length ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
-      detail:
-        'Preferred partner gets the first response window. Operators watch timer, alert delivery, wallet gate, and KYC readiness without auto assignment.',
-      operatorAction:
-        'If the first-pick timer is near expiry, prepare marketplace partner nudges and keep customer wait messaging accurate.',
-      href: firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=first-pick',
-      bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
-    },
-    {
-      step: '2. Partner participation pool',
-      title: 'Partner participation pool',
-      value: `${marketplaceJoined.length} with participant records`,
-      status: noJoinedSupply.length ? 'Supply gap' : marketplaceJoined.length ? 'Visible' : 'Clear',
-      tone: noJoinedSupply.length ? 'warn' : marketplaceJoined.length ? 'info' : 'ok',
-      detail:
-        'Partners inside the booking-address marketplace radius can participate. Participating, accepted, declined, and selected rows stay as operations evidence.',
-      operatorAction:
-        'When supply is thin, check location freshness, app presence, alert delivery, service price, and partner wallet gate before changing policy.',
-      href: noJoinedSupply.length ? '/bookings?view=no-supply' : '/bookings?view=marketplace',
-      bookings: noJoinedSupply.length ? noJoinedSupply : marketplaceJoined,
-    },
-    {
-      step: '3. Customer final selection lane',
-      title: 'Customer final selection lane',
-      value: `${customerChoiceWaiting.length} waiting`,
-      status: customerChoiceWaiting.length ? 'Customer decision' : 'Clear',
-      tone: customerChoiceWaiting.length ? 'warn' : 'ok',
-      detail:
-        'Customer selects the final partner from ready participants. HANDS does not automatically assign the final partner.',
-      operatorAction:
-        'Support should guide the customer only when partner options are ready and the booking is still open.',
-      href: '/bookings?view=customer-choice',
-      bookings: customerChoiceWaiting,
-    },
-    {
-      step: '4. Chat handoff lane',
-      title: 'Chat handoff lane',
-      value: `${matchedWithoutChat.length} repair`,
-      status: matchedWithoutChat.length ? 'Repair needed' : 'Ready',
-      tone: matchedWithoutChat.length ? 'danger' : 'ok',
-      detail:
-        'Final partner selection must create a retained chat room for customer and partner coordination.',
-      operatorAction:
-        'Repair missing chat before arrival, service start, completion, or any manual outcome decision.',
-      href: matchedWithoutChat.length ? '/bookings?view=chat-repair' : '/bookings?view=chat',
-      bookings: matchedWithoutChat,
-    },
-    {
-      step: '5. Wallet unblock lane',
-      title: 'Wallet unblock lane',
-      value: `${cashDebtBookings.length} blocked`,
-      status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
-      tone: cashDebtBookings.length ? 'danger' : 'ok',
-      detail:
-        'Negative wallet partners can see and participate in marketplace requests, but final acceptance, service start, and payout release wait for settlement. App message: Unpaid HANDS fees must be settled before final acceptance or service start.',
-      operatorAction:
-        'Confirm HANDS fee deposit or approved admin offset before final acceptance, service start, and payout release reopen.',
-      href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
-      bookings: cashDebtBookings,
-    },
-  ];
+  return buildMarketplaceOperatingQueueItems({
+    cashDebtBookings,
+    customerChoiceWaiting,
+    firstPickExpired,
+    firstPickWaiting,
+    marketplaceJoined,
+    matchedWithoutChat,
+    noJoinedSupply,
+  });
 }
 
 function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
