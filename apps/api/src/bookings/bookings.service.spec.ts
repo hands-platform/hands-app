@@ -479,6 +479,7 @@ describe('BookingsService final partner selection', () => {
         aggregate: jest.fn(),
       },
     };
+    const transaction = attachTransaction(prisma);
     const matching = {
       closeBooking: jest.fn(),
       selectFinalProvider: jest.fn().mockReturnValue({
@@ -500,6 +501,7 @@ describe('BookingsService final partner selection', () => {
 
     await service.selectProvider('booking-1', 'customer-user-1', 'partner-1');
 
+    expect(transaction).toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         include: expect.objectContaining({
@@ -561,6 +563,7 @@ describe('BookingsService final partner selection', () => {
       },
       adminAuditLog: { create: adminAuditLogCreate },
     };
+    const transaction = attachTransaction(prisma);
     const matching = {
       closeBooking: jest.fn(),
       selectFinalProvider: jest.fn().mockReturnValue({
@@ -595,6 +598,7 @@ describe('BookingsService final partner selection', () => {
       },
       _sum: { netAmount: true },
     });
+    expect(transaction).toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -675,6 +679,7 @@ describe('BookingsService final partner selection', () => {
       },
       adminAuditLog: { create: jest.fn() },
     };
+    const transaction = attachTransaction(prisma);
     const matching = {
       closeBooking: jest.fn(),
       selectFinalProvider: jest.fn(),
@@ -703,6 +708,7 @@ describe('BookingsService final partner selection', () => {
         },
       }),
     );
+    expect(transaction).toHaveBeenCalled();
     expect(matching.closeBooking).not.toHaveBeenCalled();
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
     expect(matchingGateway.emitBookingMatched).not.toHaveBeenCalled();
@@ -1238,6 +1244,7 @@ describe('BookingsService partner response wallet gates', () => {
       },
       adminAuditLog: { create: adminAuditLogCreate },
     };
+    const transaction = attachTransaction(prisma);
     const notifications = { create: jest.fn() };
     const matching = {
       closeBooking: jest.fn(),
@@ -1271,6 +1278,7 @@ describe('BookingsService partner response wallet gates', () => {
     );
 
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -1560,4 +1568,12 @@ function matchingPolicy() {
     backupOpenMode: 'IMMEDIATE',
     travelBufferMinutes: 30,
   };
+}
+
+function attachTransaction<T extends Record<string, unknown>>(client: T) {
+  const transaction = jest.fn(async (callback: (transactionClient: T) => Promise<unknown>) =>
+    callback(client),
+  );
+  Object.assign(client, { $transaction: transaction });
+  return transaction;
 }

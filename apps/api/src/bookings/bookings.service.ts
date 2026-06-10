@@ -798,26 +798,41 @@ export class BookingsService {
     }
     let booking: SelectedBookingForClientResponse;
     try {
-      booking = await this.prisma.booking.update({
-        where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-        data: {
-          status: BookingStatus.MATCHED,
-          selectedProviderId: providerId,
-          participants: {
-            update: {
-              where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
-              data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+      booking = await this.prisma.$transaction(async (transaction) => {
+        const matchedBooking = await transaction.booking.update({
+          where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+          data: {
+            status: BookingStatus.MATCHED,
+            selectedProviderId: providerId,
+            participants: {
+              update: {
+                where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
+                data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+              },
+            },
+            chatRoom: { upsert: { create: {}, update: {} } },
+          },
+          include: {
+            addressSnapshot: true,
+            chatRoom: true,
+            preferredProvider: true,
+            selectedProvider: true,
+            payment: true,
+          },
+        });
+        await transaction.adminAuditLog.create({
+          data: {
+            actorId: customerUserId,
+            action: 'booking.matched.customer_selected',
+            target: `booking:${bookingId}`,
+            metadata: {
+              bookingId,
+              providerProfileId: providerId,
+              matchSource: 'CUSTOMER_SELECTED_PARTNER',
             },
           },
-          chatRoom: { upsert: { create: {}, update: {} } },
-        },
-        include: {
-          addressSnapshot: true,
-          chatRoom: true,
-          preferredProvider: true,
-          selectedProvider: true,
-          payment: true,
-        },
+        });
+        return matchedBooking;
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -828,18 +843,6 @@ export class BookingsService {
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
-    await this.prisma.adminAuditLog.create({
-      data: {
-        actorId: customerUserId,
-        action: 'booking.matched.customer_selected',
-        target: `booking:${bookingId}`,
-        metadata: {
-          bookingId,
-          providerProfileId: providerId,
-          matchSource: 'CUSTOMER_SELECTED_PARTNER',
-        },
-      },
-    });
     if (booking.selectedProvider?.userId) {
       await this.notifications.create({
         userId: booking.selectedProvider.userId,
@@ -894,27 +897,42 @@ export class BookingsService {
       if (status === ParticipantStatus.ACCEPTED) {
         let updated: MatchedBookingForClientResponse;
         try {
-          updated = await this.prisma.booking.update({
-            where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-            data: {
-              status: BookingStatus.MATCHED,
-              selectedProviderId: provider.id,
-              participants: {
-                update: {
-                  where: participantKey,
-                  data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+          updated = await this.prisma.$transaction(async (transaction) => {
+            const matchedBooking = await transaction.booking.update({
+              where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+              data: {
+                status: BookingStatus.MATCHED,
+                selectedProviderId: provider.id,
+                participants: {
+                  update: {
+                    where: participantKey,
+                    data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+                  },
+                },
+                chatRoom: { upsert: { create: {}, update: {} } },
+              },
+              include: {
+                participants: true,
+                preferredProvider: true,
+                selectedProvider: true,
+                chatRoom: true,
+                addressSnapshot: true,
+                payment: true,
+              },
+            });
+            await transaction.adminAuditLog.create({
+              data: {
+                actorId: provider.userId,
+                action: 'booking.matched.first_pick_accepted',
+                target: `booking:${bookingId}`,
+                metadata: {
+                  bookingId,
+                  providerProfileId: provider.id,
+                  matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
                 },
               },
-              chatRoom: { upsert: { create: {}, update: {} } },
-            },
-            include: {
-              participants: true,
-              preferredProvider: true,
-              selectedProvider: true,
-              chatRoom: true,
-              addressSnapshot: true,
-              payment: true,
-            },
+            });
+            return matchedBooking;
           });
         } catch (error) {
           if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
@@ -929,18 +947,6 @@ export class BookingsService {
           clientBookingResponse(updated),
           'FIRST_PICK_ACCEPTED_FIRST',
         );
-        await this.prisma.adminAuditLog.create({
-          data: {
-            actorId: provider.userId,
-            action: 'booking.matched.first_pick_accepted',
-            target: `booking:${bookingId}`,
-            metadata: {
-              bookingId,
-              providerProfileId: provider.id,
-              matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
-            },
-          },
-        });
         if (updated.selectedProvider?.userId) {
           await this.notifications.create({
             userId: updated.selectedProvider.userId,
