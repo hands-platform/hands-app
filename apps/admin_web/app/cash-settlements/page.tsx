@@ -5,6 +5,8 @@ import {
   AdminOperationalPolicySetting,
   adminGet,
 } from '../../lib/admin-api';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import {
@@ -21,13 +23,24 @@ import {
   humanizePolicyValue,
 } from '../../lib/operations-policy';
 import { settleCashFeeDebt } from './actions';
+import { buildCashSettlementConfirmation } from './cash-settlement-action-confirmation';
+import {
+  CashSettlementOpenDebtTableSection,
+  type CashSettlementOpenDebtActionExecutionRow,
+  type CashSettlementOpenDebtTableRow,
+} from './cash-settlement-open-debt-table-section';
+import {
+  CashSettlementPriorityBoardSection,
+  type CashSettlementPriorityBoardRow,
+} from './cash-settlement-priority-board-section';
 
 type CashSettlementsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
-  const filters = buildCashSettlementFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildCashSettlementFilters(params);
   const [earnings, apiSummary, policySettings] = await Promise.all([
     adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
@@ -50,33 +63,72 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
   const executionDesk = buildCashSettlementExecutionDesk(rows, providers, summary);
   const priorityBoard = buildCashSettlementPriorityBoard(rows);
+  const priorityBoardRows = buildCashSettlementPriorityBoardRows(priorityBoard);
+  const openDebtRows = buildCashSettlementOpenDebtTableRows(rows);
   const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
   const appliedCashSettlementPolicyCards = buildAppliedCashSettlementPolicyCards(liveOperationsPolicy);
+  const confirmation =
+    readSearchParam(params.confirm) === 'settle'
+      ? buildCashSettlementConfirmation(rows, {
+          earningId: readSearchParam(params.earningId),
+          settlementMethod: readSearchParam(params.settlementMethod),
+          settlementNotes: readSearchParam(params.settlementNotes),
+          settlementRef: readSearchParam(params.settlementRef),
+        })
+      : null;
 
   return (
-    <>
-      <h1>Cash Settlements</h1>
-      <p className="muted">
-        Finance queue for cash bookings where the partner collected customer cash and still owes HANDS
-        platform fee or withholding. This page focuses on why the wallet became negative, whether the
-        company-fee deposit or approved offset has evidence, and when marketplace participation can reopen.
-        Marketplace visibility is not logged here; only debt origin, deposit evidence, offset evidence,
-        and participation rows are retained.
-      </p>
+    <AdminPageTemplate
+      description="Finance queue for cash bookings where the Partner collected customer cash and still owes HANDS platform fee or withholding."
+      metrics={[
+        { label: 'Cash debt partners', value: summary.providerCount, helper: 'Partners with open cash-fee debt rows.' },
+        { label: 'Open debt rows', value: summary.rowCount, helper: 'Visible settlement rows after filters.' },
+        { label: 'Total wallet debt', value: formatMoney(summary.debtAmount, summary.currency), helper: 'Company fee or tax still owed to HANDS.' },
+        { label: 'HANDS fee', value: formatMoney(summary.platformFee, summary.currency), helper: 'Platform fee portion of cash debt.' },
+        { label: 'Tax withholding', value: formatMoney(summary.taxAmount, summary.currency), helper: 'Tax portion of cash debt.' },
+        { label: 'Oldest open', value: summary.oldestOpenLabel, helper: 'Oldest visible settlement row.' },
+        { label: 'Over 24h', value: summary.staleDebtRowCount, helper: 'Rows older than 24 hours.' },
+        {
+          label: 'Payment evidence',
+          value: summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK',
+          helper: 'Rows needing payment evidence review.',
+        },
+      ]}
+      title="Cash Settlements"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={settleCashFeeDebt}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={[
+            { name: 'earningId', value: confirmation.earningId },
+            { name: 'settlementMethod', value: confirmation.settlementMethod },
+            { name: 'settlementRef', value: confirmation.settlementRef },
+            { name: 'settlementNotes', value: confirmation.settlementNotes },
+          ]}
+          id={`cash-settlement-${confirmation.earningId}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Cash settlement date range</h2>
-            <p className="muted">
+        <AdminSectionHeader
+          actions={
+            <Link className="text-link" href="/finance-closeout">
+              Open finance closeout
+            </Link>
+          }
+          description={
+            <>
               Range: {dateRangeLabel(filters.range)}. All date-filtered totals are calculated from visible
               cash earning records; all-date totals use the API summary.
-            </p>
-          </div>
-          <Link className="text-link" href="/finance-closeout">
-            Open finance closeout
-          </Link>
-        </div>
+            </>
+          }
+          title="Cash settlement date range"
+        />
         <div className="filter-row" style={{ marginTop: 12 }}>
           {[
             ['All dates', cashSettlementHref({ range: 'all', queue: filters.queue, q: filters.q })],
@@ -127,43 +179,6 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         </p>
       </section>
 
-      <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
-        <div className="card">
-          <p>Marketplace-held partners</p>
-          <h2>{summary.providerCount}</h2>
-        </div>
-        <div className="card">
-          <p>Open debt rows</p>
-          <h2>{summary.rowCount}</h2>
-        </div>
-        <div className="card">
-          <p>Total wallet debt</p>
-          <h2>{formatMoney(summary.debtAmount, summary.currency)}</h2>
-        </div>
-        <div className="card">
-          <p>HANDS fee</p>
-          <h2>{formatMoney(summary.platformFee, summary.currency)}</h2>
-        </div>
-        <div className="card">
-          <p>Tax withholding</p>
-          <h2>{formatMoney(summary.taxAmount, summary.currency)}</h2>
-        </div>
-        <div className="card">
-          <p>Oldest open</p>
-          <h2>{summary.oldestOpenLabel}</h2>
-        </div>
-        <div className="card">
-          <p>Over 24h</p>
-          <h2>{summary.staleDebtRowCount}</h2>
-        </div>
-        <div className="card">
-          <p>Payment evidence</p>
-          <h2>
-            {summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK'}
-          </h2>
-        </div>
-      </section>
-
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
@@ -201,62 +216,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             High debt queue
           </Link>
         </div>
-        {priorityBoard.length ? (
-          <div style={{ overflowX: 'auto', marginTop: 12 }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Priority</th>
-                  <th>Partner / booking</th>
-                  <th>Debt reason</th>
-                  <th>Required evidence</th>
-                  <th>Unlock result</th>
-                </tr>
-              </thead>
-              <tbody>
-                {priorityBoard.map((item) => (
-                  <tr key={item.row.earning.id}>
-                    <td>
-                      <span className={`pill ${item.pillClass}`}>{item.priority}</span>
-                      <div className="muted">{item.ageLabel}</div>
-                    </td>
-                    <td>
-                      <strong>{item.row.providerName}</strong>
-                      <div>
-                        <Link className="text-link" href={`/bookings/${item.row.earning.bookingId}`}>
-                          {shortRecordId(item.row.earning.bookingId)}
-                        </Link>
-                      </div>
-                      <div className="muted">{item.row.providerPhone}</div>
-                    </td>
-                    <td>
-                      <strong>{formatMoney(item.row.debtAmount, item.row.earning.currency)}</strong>
-                      <div className="muted">{item.reason}</div>
-                    </td>
-                    <td>
-                      <div className="service-matrix-cell">
-                        {item.requiredEvidence.map((line) => (
-                          <small key={line}>{line}</small>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="service-matrix-cell">
-                        {item.unlockResult.map((line) => (
-                          <small key={line}>{line}</small>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
-            No settlement priority rows are waiting for finance action.
-          </p>
-        )}
+        <CashSettlementPriorityBoardSection rows={priorityBoardRows} />
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -265,7 +225,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             <h2>Cash fee operating rules</h2>
             <p className="muted">
               Use this as the first read before finance calls a partner or clears a wallet. The rule is
-              factual: cash fee debt gates marketplace alerts and participation, not customer access or account status.
+              factual: cash fee debt gates final acceptance, service start, and payout release, not customer
+              access or account status.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy?review=wallet">
@@ -276,8 +237,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
-              Live Admin policy values used by finance before clearing partner cash-fee debt and reopening
-              marketplace participation.
+              Live Admin policy values used by finance before clearing Partner cash-fee debt and reopening
+              final acceptance, service start, and payout release.
             </p>
           </div>
           <span className="pill pill-info">Live policy default</span>
@@ -337,7 +298,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <div>
             <h2>Cash fee settlement workflow</h2>
             <p className="muted">
-              Standard operating flow for reopening marketplace participation after cash-fee debt is paid
+              Standard operating flow for reopening final acceptance, service start, and payout release after cash-fee debt is paid
               or offset. This does not track blocked marketplace attempts.
             </p>
           </div>
@@ -484,126 +445,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         )}
       </div>
 
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Open cash fee debt rows</h2>
-            <p className="muted">
-              Settle only after confirming a partner deposit or a documented admin offset. The backend rejects
-              missing references.
-            </p>
-          </div>
-          <Link className="text-link" href="/payments?review=cash-debt">
-            Payment debt view
-          </Link>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Booking</th>
-              <th>Debt</th>
-              <th>Fee / Tax</th>
-              <th>Evidence</th>
-              <th>Settlement</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.earning.id}>
-                <td>
-                  <strong>{row.providerName}</strong>
-                  <div className="muted">{row.providerPhone}</div>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
-                    <Link className="pill" href={`/partners/${row.earning.providerProfileId}`}>
-                      Partner
-                    </Link>
-                    <span className="pill pill-danger">Marketplace participation blocked</span>
-                  </div>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.earning.bookingId}`}>
-                    {shortRecordId(row.earning.bookingId)}
-                  </Link>
-                  <div className="muted">{row.createdAtLabel}</div>
-                  <div className="muted">{row.serviceLabel}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(row.debtAmount, row.earning.currency)}</strong>
-                  <div className="muted">
-                    Cash collected: {formatMoney(row.bookingAmount, row.earning.currency)}
-                  </div>
-                  <div className="muted">{row.debtOrigin}</div>
-                </td>
-                <td>
-                  <div>HANDS fee {formatMoney(row.platformFee, row.earning.currency)}</div>
-                  <div className="muted">Tax {formatMoney(row.taxAmount, row.earning.currency)}</div>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <small>{row.settlementEvidence}</small>
-                    <small>Suggested ref: {row.settlementReference}</small>
-                    <small>Payment method: {row.paymentMethod}</small>
-                    <small>Settlement method: {settlementMethodLabel(row.earning.settlementMethod)}</small>
-                    {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
-                    <small>{row.nextAction}</small>
-                  </div>
-                  <div className="ops-task-note" style={{ marginTop: 10 }}>
-                    <strong>Cash settlement action execution map</strong>
-                    <div className="setup-stage-list" style={{ marginTop: 8 }}>
-                      {cashSettlementActionExecutionMap(row).map((item) => (
-                        <div className="setup-stage-item" key={`${row.earning.id}-${item.action}`}>
-                          <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                          <div>
-                            <strong>{item.action}</strong>
-                            <p className="muted">{item.reason}</p>
-                            <small>{item.operatorRule}</small>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <form action={settleCashFeeDebt} className="inline-form">
-                    <input type="hidden" name="earningId" value={row.earning.id} />
-                    <select
-                      aria-label="Settlement method"
-                      name="settlementMethod"
-                      defaultValue={row.earning.settlementMethod ?? 'PARTNER_DEPOSIT'}
-                    >
-                      <option value="PARTNER_DEPOSIT">Partner deposit</option>
-                      <option value="ADMIN_OFFSET">Admin offset</option>
-                    </select>
-                    <input
-                      aria-label="Settlement reference"
-                      name="settlementRef"
-                      placeholder="Bank deposit ref or admin offset"
-                      defaultValue={row.settlementReference}
-                    />
-                    <input
-                      aria-label="Settlement notes"
-                      name="settlementNotes"
-                      placeholder="Evidence note"
-                      defaultValue={`Partner deposit or approved offset for ${formatMoney(
-                        row.debtAmount,
-                        row.earning.currency,
-                      )} using ${row.settlementReference}`}
-                    />
-                    <button type="submit">Confirm deposit / offset</button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={6}>No cash fee debt is waiting for settlement.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
+      <CashSettlementOpenDebtTableSection rows={openDebtRows} />
+    </AdminPageTemplate>
   );
 }
 
@@ -657,6 +500,54 @@ type CashSettlementPriorityItem = {
   unlockResult: string[];
 };
 
+function buildCashSettlementPriorityBoardRows(
+  items: readonly CashSettlementPriorityItem[],
+): CashSettlementPriorityBoardRow[] {
+  return items.map((item) => ({
+    ageLabel: item.ageLabel,
+    bookingHref: `/bookings/${item.row.earning.bookingId}`,
+    bookingLabel: shortRecordId(item.row.earning.bookingId),
+    debtAmountLabel: formatMoney(item.row.debtAmount, item.row.earning.currency),
+    pillClass: item.pillClass,
+    priority: item.priority,
+    providerName: item.row.providerName,
+    providerPhone: item.row.providerPhone,
+    reason: item.reason,
+    requiredEvidence: item.requiredEvidence,
+    unlockResult: item.unlockResult,
+  }));
+}
+
+function buildCashSettlementOpenDebtTableRows(rows: readonly CashSettlementRow[]): CashSettlementOpenDebtTableRow[] {
+  return rows.map((row) => ({
+    actionRows: cashSettlementActionExecutionMap(row),
+    bookingAmountLabel: formatMoney(row.bookingAmount, row.earning.currency),
+    bookingHref: `/bookings/${row.earning.bookingId}`,
+    bookingLabel: shortRecordId(row.earning.bookingId),
+    createdAtLabel: row.createdAtLabel,
+    debtAmountLabel: formatMoney(row.debtAmount, row.earning.currency),
+    debtOrigin: row.debtOrigin,
+    earningId: row.earning.id,
+    lastLedgerRef: row.lastLedgerRef ?? null,
+    nextAction: row.nextAction,
+    partnerHref: `/partners/${row.earning.providerProfileId}`,
+    paymentMethod: row.paymentMethod,
+    platformFeeLabel: formatMoney(row.platformFee, row.earning.currency),
+    providerName: row.providerName,
+    providerPhone: row.providerPhone,
+    serviceLabel: row.serviceLabel,
+    settlementEvidence: row.settlementEvidence,
+    settlementMethodDefault: row.earning.settlementMethod ?? 'PARTNER_DEPOSIT',
+    settlementMethodLabel: settlementMethodLabel(row.earning.settlementMethod),
+    settlementNotesDefault: `Partner deposit or approved offset for ${formatMoney(
+      row.debtAmount,
+      row.earning.currency,
+    )} using ${row.settlementReference}`,
+    settlementReference: row.settlementReference,
+    taxAmountLabel: formatMoney(row.taxAmount, row.earning.currency),
+  }));
+}
+
 type AppliedCashSettlementPolicyCard = {
   label: string;
   value: string;
@@ -674,14 +565,6 @@ type EvidenceChecklistItem = {
 };
 
 type CashSettlementHandoffItem = EvidenceChecklistItem;
-
-type CashSettlementActionExecutionItem = {
-  action: string;
-  status: string;
-  reason: string;
-  operatorRule: string;
-  pillClass: string;
-};
 
 type WalletRecoveryStep = {
   title: string;
@@ -806,7 +689,7 @@ function cashSettlementSearchText(row: CashSettlementRow) {
     .toLowerCase();
 }
 
-function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlementActionExecutionItem[] {
+function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlementOpenDebtActionExecutionRow[] {
   const hasPaymentEvidence = Boolean(row.earning.booking?.payment);
   const hasReference = Boolean(row.settlementReference);
   const hasLedgerReference = Boolean(row.lastLedgerRef);
@@ -1352,7 +1235,7 @@ function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before marketplace alerts, participation, or payout release resumes.'
+        ? 'Collect Partner deposit or approve admin offset before final acceptance, service start, or payout release resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -1370,7 +1253,7 @@ function buildCommandCards(
             .join(' / ')
         : 'No partner is above the high-debt review threshold.',
       action: highDebtProviders.length
-        ? 'Prioritize these partners before reopening marketplace alerts, participation, or payout release.'
+        ? 'Prioritize these Partners before reopening final acceptance, service start, or payout release.'
         : 'Normal settlement queue priority.',
       className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
@@ -1430,7 +1313,7 @@ function buildDebtCauseCards(rows: CashSettlementRow[], summary: CashSettlementS
         rows.reduce((sum, row) => sum + row.platformFee, 0),
         summary.currency,
       )} HANDS fee remains open across visible rows.`,
-      action: 'This is the main reason marketplace alerts and participation are blocked while the wallet is negative.',
+      action: 'This is the main reason final acceptance and service start are blocked while the wallet is negative.',
       className: rows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: rows.length ? 'pill-danger' : 'pill-success',
     },
@@ -1484,7 +1367,7 @@ function settlementPriorityReason(
   missingPaymentEvidence: boolean,
 ) {
   if (row.debtAmount >= 500_000) {
-    return `Largest debt lane: ${formatMoney(row.debtAmount, row.earning.currency)} is holding marketplace participation.`;
+    return `Largest debt lane: ${formatMoney(row.debtAmount, row.earning.currency)} is holding final acceptance.`;
   }
   if (ageHours >= 24) {
     return `Aging lane: this cash-fee debt has been open for about ${Math.round(ageHours)} hours.`;
@@ -1519,7 +1402,7 @@ function settlementRequiredEvidence(
 
 function settlementUnlockResult(row: CashSettlementRow) {
   return [
-    'Marketplace participation unlocks only after wallet balance is no longer negative.',
+    'Final acceptance, service start, and payout release unlock only after wallet balance is no longer negative.',
     'Payout release returns to batch review after settlement.',
     `Customer wallet stays unchanged; this is partner cash-fee debt for booking ${shortRecordId(row.earning.bookingId)}.`,
   ];
