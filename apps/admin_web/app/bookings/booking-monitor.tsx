@@ -9,6 +9,10 @@ import {
   bookingListSortTimestamp,
   bookingRequestOpenedAt,
 } from '../../lib/admin-booking-time';
+import {
+  buildBookingCommandSummaryCards,
+  buildBookingOperatorRouteCards,
+} from '../../lib/booking-command-route-cards';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import {
   formatDistanceMeters,
@@ -606,131 +610,38 @@ export function BookingMonitor({
     commandCenter.find((lane) => lane.title === 'Payment closeout') ?? commandCenter[2];
   const handoffCommandLane =
     commandCenter.find((lane) => lane.title === 'Handoff quality') ?? commandCenter[3];
-  const commandSummaryCards = [
-    {
-      label: 'Current lane',
-      value: activeView.label,
-      detail: `${visibleBookings.length} visible booking(s). ${activeView.operatorHint}`,
-      owner: 'Shift lead',
-      action: 'Confirm the active queue before opening records.',
-      href: `/bookings?view=${view}`,
+  const topActionCard = topNextAction
+    ? {
+        actionLabel: actionOrderLabel(topNextAction.priority),
+        href: topNextAction.href,
+        operatorAction: topNextAction.operatorAction,
+        owner: topNextAction.owner,
+        priority: topNextAction.priority,
+      }
+    : undefined;
+  const commandSummaryCards = buildBookingCommandSummaryCards({
+    activeView: {
+      label: activeView.label,
+      operatorHint: activeView.operatorHint,
+      view,
     },
-    {
-      label: 'Top operator action',
-      value: topNextAction?.priority ?? 'Clear',
-      detail: topNextAction?.operatorAction ?? 'No immediate booking action is waiting in this view.',
-      owner: topNextAction?.owner ?? 'Shift lead',
-      action: topNextAction ? actionOrderLabel(topNextAction.priority) : 'Monitor',
-      href: topNextAction?.href ?? '/bookings?view=active',
+    blockedCreateCount: orderedBookingCreateRejections.length,
+    blockedCreateDetail: bookingGateRejectionLane.detail,
+    lanes: {
+      dispatch: dispatchCommandLane,
+      handoff: handoffCommandLane,
+      payment: paymentCommandLane,
+      protection: protectionCommandLane,
     },
-    {
-      label: 'Dispatch pressure',
-      value: dispatchCommandLane?.status ?? 'Stable',
-      detail: dispatchCommandLane?.detail ?? 'Booking demand and partner supply records are loaded.',
-      owner: 'Dispatch',
-      action: 'Watch first-pick, marketplace, and customer choice flow.',
-      href: dispatchCommandLane?.href ?? '/bookings?view=matching',
-    },
-    {
-      label: 'Customer protection',
-      value: protectionCommandLane?.status ?? 'Clear',
-      detail:
-        protectionCommandLane?.detail ?? 'Customer handoff, chat, and cancellation evidence are loaded.',
-      owner: 'Support',
-      action: 'Check chat, cancellation, expired, and no-show evidence.',
-      href: protectionCommandLane?.href ?? '/bookings?view=attention',
-    },
-    {
-      label: 'Payment closeout',
-      value: paymentCommandLane?.status ?? 'Ready',
-      detail: paymentCommandLane?.detail ?? 'Payment, cash debt, and closeout checks are loaded.',
-      owner: 'Finance',
-      action: 'Close payment, refund, wallet, tax, and fee settlement gaps.',
-      href: paymentCommandLane?.href ?? '/bookings?view=payment',
-    },
-    {
-      label: 'Handoff quality',
-      value: handoffCommandLane?.status ?? 'Clear',
-      detail: handoffCommandLane?.detail ?? 'Partner location and chat handoff checks are loaded.',
-      owner: 'Support',
-      action: 'Confirm service handoff has chat and location evidence.',
-      href: handoffCommandLane?.href ?? '/bookings?view=location',
-    },
-    {
-      label: 'Blocked create attempts',
-      value: `${orderedBookingCreateRejections.length}`,
-      detail: bookingGateRejectionLane.detail,
-      owner: 'Product ops',
-      action: 'Review rejected address snapshot or booking creation attempts.',
-      href: '/bookings?view=blocked-create',
-    },
-  ];
-  const operatorRouteCards = [
-    {
-      label: 'Handle first',
-      value: topNextAction?.priority ?? 'Clear',
-      detail: topNextAction?.operatorAction ?? 'No urgent booking action is waiting right now.',
-      owner: topNextAction?.owner ?? 'Shift lead',
-      action: topNextAction ? actionOrderLabel(topNextAction.priority) : 'Monitor queue',
-      href: topNextAction?.href ?? '/bookings?view=active',
-    },
-    {
-      label: 'First-pick wait',
-      value: `${bookingViewCounts.get('first-pick') ?? 0}`,
-      detail: 'Preferred Partner has the first response window while the marketplace remains open in parallel.',
-      owner: 'Dispatch',
-      action: 'Watch the direct partner response window.',
-      href: '/bookings?view=first-pick',
-    },
-    {
-      label: 'Marketplace pool',
-      value: `${bookingViewCounts.get('marketplace') ?? 0}`,
-      detail: 'Partners within the booking-address radius can participate and remain visible to the customer.',
-      owner: 'Dispatch',
-      action: 'Confirm 10km partner participation is healthy.',
-      href: '/bookings?view=marketplace',
-    },
-    {
-      label: 'Customer choice',
-      value: `${bookingViewCounts.get('customer-choice') ?? 0}`,
-      detail: 'Customer fallback choice is required when first-pick does not validly win under API rules.',
-      owner: 'Support',
-      action: 'Help customers finish final partner selection.',
-      href: '/bookings?view=customer-choice',
-    },
-    {
-      label: 'Chat repair',
-      value: `${bookingViewCounts.get('chat-repair') ?? 0}`,
-      detail: 'Matched or started service records that need chat-room integrity checked.',
-      owner: 'Support',
-      action: 'Repair missing or disconnected booking chat rooms.',
-      href: '/bookings?view=chat-repair',
-    },
-    {
-      label: 'Cash debt gate',
-      value: `${bookingViewCounts.get('cash-debt') ?? 0}`,
-      detail: 'Cash bookings can create Partner fee debt that blocks final acceptance, service start, and payout release.',
-      owner: 'Finance',
-      action: 'Confirm partner fee collection or wallet debt state.',
-      href: '/bookings?view=cash-debt',
-    },
-    {
-      label: 'Closeout',
-      value: `${bookingViewCounts.get('closeout') ?? 0}`,
-      detail: 'Completed bookings needing earning, tax, wallet, or evidence closeout checks.',
-      owner: 'Finance',
-      action: 'Finish settlement and closeout evidence.',
-      href: '/bookings?view=closeout',
-    },
-    {
-      label: 'Create rejections',
-      value: `${orderedBookingCreateRejections.length}`,
-      detail: bookingGateRejectionLane.detail,
-      owner: 'Product ops',
-      action: 'Inspect booking.create.rejected audit records.',
-      href: '/bookings?view=blocked-create',
-    },
-  ];
+    topAction: topActionCard,
+    visibleBookingCount: visibleBookings.length,
+  });
+  const operatorRouteCards = buildBookingOperatorRouteCards({
+    blockedCreateCount: orderedBookingCreateRejections.length,
+    blockedCreateDetail: bookingGateRejectionLane.detail,
+    bookingViewCounts,
+    topAction: topActionCard,
+  });
 
   useEffect(() => {
     const mountTimer = window.setTimeout(() => {
