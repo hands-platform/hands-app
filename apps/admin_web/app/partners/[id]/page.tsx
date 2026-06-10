@@ -1,13 +1,18 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import {
+import type {
   AdminAuditLog,
   AdminOperationalPolicySetting,
   AdminProvider,
+} from '../../../lib/admin-api';
+import {
   adminGet,
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
+import { ActionMenu } from '../../../components/action-menu';
+import type { ActionMenuItem } from '../../../components/action-menu';
+import { ConfirmDialog } from '../../../components/confirm-dialog';
 import {
   bookingLatestActivityAt,
   bookingRecordCreatedAt,
@@ -25,6 +30,7 @@ import {
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { buildCsvDataHref } from '../../../lib/csv-export';
+import { readSearchParam } from '../../../lib/date-range';
 import {
   ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS,
   OPERATIONAL_POLICY_KEYS,
@@ -65,6 +71,51 @@ import {
   readDetailActivityOrder,
 } from './partner-detail-filters';
 import type { DetailActivityOrder } from './partner-detail-filters';
+import {
+  buildPartnerAccountActionConfirmation,
+  partnerAccountActionConfirmHref,
+  readPartnerAccountConfirmationAction,
+  type PartnerAccountConfirmationAction,
+} from '../partner-account-action-confirmation';
+import {
+  buildPartnerReviewActionConfirmation,
+  partnerReviewActionConfirmHref,
+  readPartnerReviewConfirmationAction,
+  type PartnerReviewConfirmationAction,
+} from '../partner-review-action-confirmation';
+import {
+  buildPartnerDeviceActionConfirmation,
+  partnerDeviceActionConfirmHref,
+  readPartnerDeviceConfirmationAction,
+  type PartnerDeviceConfirmationAction,
+} from './partner-detail-device-action-confirmation';
+import {
+  buildPartnerControlActionConfirmation,
+  partnerControlActionConfirmHref,
+  readPartnerControlConfirmationAction,
+  type PartnerControlConfirmationAction,
+} from './partner-detail-control-action-confirmation';
+import {
+  partnerOperatorCommandActionHref,
+  type PartnerOperatorCommandAction as PartnerOperatorCommandActionConfig,
+} from './partner-detail-operator-command-action';
+import {
+  PartnerDetailBookingJourneySection,
+  type PartnerBookingJourneyRow,
+} from './partner-detail-booking-journey-section';
+import {
+  PartnerDetailChatRetentionLedgerSection,
+  type PartnerChatRetentionRow,
+} from './partner-detail-chat-retention-ledger-section';
+import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
+import {
+  PartnerDetailOperationsDigestSection,
+  type PartnerOperationsDigestRow,
+} from './partner-detail-operations-digest-section';
+import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
+import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
+import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
+import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
 import {
   amountValue,
   dateValue,
@@ -179,6 +230,7 @@ type PartnerDetailBooking = {
 type PartnerDetailChatMessage = NonNullable<
   NonNullable<PartnerDetailBooking['chatRoom']>['messages']
 >[number];
+type PartnerDetailDevice = NonNullable<AdminProvider['devices']>[number];
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
@@ -323,6 +375,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     dateFilters.label,
     detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
   );
+  const partnerRecentTimelineRecords = filteredPartnerActivityRecords.map((record) => ({
+    at: record.at,
+    detail: record.detail,
+    href: partnerActivityRecordHref(record),
+    id: record.id,
+    title: record.title,
+    type: record.type,
+  }));
   const partnerDailyActivityDigest = buildPartnerDailyActivityDigest(
     filteredPartnerActivityRecords,
     activityOrder,
@@ -599,9 +659,92 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         : 'No latest partner location loaded.',
     },
   ];
+  const detailBaseHref = `/partners/${provider.id}?section=full`;
+  const accountConfirmation = buildPartnerAccountActionConfirmation(
+    [provider],
+    readPartnerAccountConfirmationAction(readSearchParam(detailSearchParams.confirm)),
+    provider.id,
+    { cancelHref: detailBaseHref },
+  );
+  const deviceConfirmation = buildPartnerDeviceActionConfirmation(
+    provider,
+    readPartnerDeviceConfirmationAction(readSearchParam(detailSearchParams.deviceAction)),
+    readSearchParam(detailSearchParams.providerDeviceId),
+  );
+  const controlConfirmation = buildPartnerControlActionConfirmation(
+    provider,
+    readPartnerControlConfirmationAction(readSearchParam(detailSearchParams.controlAction)),
+    readSearchParam(detailSearchParams.sanctionId),
+  );
+  const reviewConfirmation = buildPartnerReviewActionConfirmation(
+    [provider],
+    readPartnerReviewConfirmationAction(readSearchParam(detailSearchParams.reviewAction)),
+    {
+      bankAccountId: readSearchParam(detailSearchParams.bankAccountId),
+      documentId: readSearchParam(detailSearchParams.documentId),
+      fileId: readSearchParam(detailSearchParams.fileId),
+      providerId: provider.id,
+    },
+    { cancelHref: detailBaseHref },
+  );
 
   return (
     <>
+      {accountConfirmation ? (
+        <ConfirmDialog
+          action={partnerDetailAccountServerAction(accountConfirmation.action)}
+          cancelHref={accountConfirmation.cancelHref}
+          confirmLabel={accountConfirmation.confirmLabel}
+          description={accountConfirmation.description}
+          disabled={accountConfirmation.disabled}
+          hiddenInputs={accountConfirmation.hiddenInputs}
+          id={`partner-detail-account-action-${accountConfirmation.action}-${accountConfirmation.providerId}`}
+          textInputs={accountConfirmation.textInputs}
+          title={accountConfirmation.title}
+          tone={accountConfirmation.tone}
+        />
+      ) : null}
+      {deviceConfirmation ? (
+        <ConfirmDialog
+          action={partnerDetailDeviceServerAction(deviceConfirmation.action)}
+          cancelHref={deviceConfirmation.cancelHref}
+          confirmLabel={deviceConfirmation.confirmLabel}
+          description={deviceConfirmation.description}
+          disabled={deviceConfirmation.disabled}
+          hiddenInputs={deviceConfirmation.hiddenInputs}
+          id={`partner-detail-device-action-${deviceConfirmation.action}-${deviceConfirmation.providerDeviceId}`}
+          textInputs={deviceConfirmation.textInputs}
+          title={deviceConfirmation.title}
+          tone={deviceConfirmation.tone}
+        />
+      ) : null}
+      {controlConfirmation ? (
+        <ConfirmDialog
+          action={partnerDetailControlServerAction(controlConfirmation.action)}
+          cancelHref={controlConfirmation.cancelHref}
+          confirmLabel={controlConfirmation.confirmLabel}
+          description={controlConfirmation.description}
+          disabled={controlConfirmation.disabled}
+          hiddenInputs={controlConfirmation.hiddenInputs}
+          id={`partner-detail-control-action-${controlConfirmation.action}-${controlConfirmation.sanctionId}`}
+          title={controlConfirmation.title}
+          tone={controlConfirmation.tone}
+        />
+      ) : null}
+      {reviewConfirmation ? (
+        <ConfirmDialog
+          action={partnerDetailReviewServerAction(reviewConfirmation.action)}
+          cancelHref={reviewConfirmation.cancelHref}
+          confirmLabel={reviewConfirmation.confirmLabel}
+          description={reviewConfirmation.description}
+          disabled={reviewConfirmation.disabled}
+          hiddenInputs={reviewConfirmation.hiddenInputs}
+          id={`partner-detail-review-action-${reviewConfirmation.action}-${reviewConfirmation.providerId}`}
+          textInputs={reviewConfirmation.textInputs}
+          title={reviewConfirmation.title}
+          tone={reviewConfirmation.tone}
+        />
+      ) : null}
       <section className="toolbar">
         <div>
           <p className="muted">
@@ -620,71 +763,23 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </p>
         </div>
         <div className="actions">
-          <form action={approveProvider}>
-            <input type="hidden" name="providerId" value={provider.id} />
-            <button type="submit">Approve partner</button>
-          </form>
-          <form action={rejectProvider}>
-            <input type="hidden" name="providerId" value={provider.id} />
-            <input
-              name="reason"
-              placeholder="Partner rejection reason"
-              required
-              minLength={12}
-              maxLength={500}
-            />
-            <button type="submit">Reject partner</button>
-          </form>
-          <form action={syncSupabaseProviderRole}>
-            <input type="hidden" name="providerId" value={provider.id} />
-            <button type="submit" disabled={provider.verification?.status !== 'APPROVED'}>
-              Sync Supabase role
-            </button>
-          </form>
           <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
             All partner chats
           </Link>
-          {provider.blockedAt ? (
-            <form action={unblockProviderAccount}>
-              <input type="hidden" name="providerId" value={provider.id} />
-              <button type="submit">Unblock account</button>
-            </form>
-          ) : (
-            <form action={blockProviderAccount}>
-              <input type="hidden" name="providerId" value={provider.id} />
-              <input
-                name="reason"
-                placeholder="Account block reason"
-                required
-                minLength={12}
-                maxLength={500}
-              />
-              <button type="submit">Block account</button>
-            </form>
-          )}
+          <ActionMenu
+            actions={partnerDetailAccountActionMenuItems(provider)}
+            label={`Partner detail account actions for ${providerDisplayLabel(provider)}`}
+          />
         </div>
       </section>
 
-      <div className="card" id="partner-operator-first-read" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operator first read</h2>
-            <p className="muted">
-              The first facts an operator checks before opening the full partner record.
-            </p>
-          </div>
-          <span className="pill pill-info">Above-fold summary</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {partnerOperatorFirstRead.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailSummaryRailSection
+        description="The first facts an operator checks before opening the full partner record."
+        id="partner-operator-first-read"
+        items={partnerOperatorFirstRead}
+        statusLabel="Above-fold summary"
+        title="Partner operator first read"
+      />
 
       <div className="grid" style={{ marginBottom: 16 }}>
         <StatusCard label="Level" value={provider.level ?? 'LEVEL_1_SIGNUP'} />
@@ -695,178 +790,35 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
       </div>
 
-      <div className="card" id="partner-operations-quick-rail" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operations quick rail</h2>
-            <p className="muted">
-              Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace
-              participation, wallet debt, payout, tax, location, retained chats, and staff notes.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerOperationsQuickRail.length} shortcuts</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {partnerOperationsQuickRail.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailSummaryRailSection
+        description="Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace participation, wallet debt, payout, tax, location, retained chats, and staff notes."
+        id="partner-operations-quick-rail"
+        items={partnerOperationsQuickRail}
+        statusLabel={`${partnerOperationsQuickRail.length} shortcuts`}
+        title="Partner operations quick rail"
+      />
 
-      <div className="card" id="partner-activity-command-snapshot" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner command snapshot</h2>
-            <p className="muted">
-              Filter-aware facts for this partner: completed work, retained chat, marketplace participation,
-              finance rows, latest location, app access, and staff records.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerActivityCommandSnapshot.length} fact groups</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {partnerActivityCommandSnapshot.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </a>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
 
-      <div className="card" id="partner-recent-operations-timeline" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner recent operations timeline</h2>
-            <p className="muted">
-              Latest factual partner events in the order operators need them: onboarding, app, location,
-              booking, chat, finance, payout, document, tax, and staff records.
-            </p>
-          </div>
-          <Link className="text-link" href="#app-activity">
-            Open full timeline
-          </Link>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {filteredPartnerActivityRecords.length ? (
-            filteredPartnerActivityRecords.slice(0, 8).map((record, index) => (
-              <div
-                className="setup-stage-item"
-                key={`recent-${record.type}-${record.id}-${record.at}-${index}`}
-              >
-                <span>{record.type}</span>
-                <div>
-                  <Link className="text-link" href={partnerActivityRecordHref(record)}>
-                    <strong>{record.title}</strong>
-                  </Link>
-                  <p className="muted">{record.detail}</p>
-                </div>
-                <small>{formatDate(record.at)}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No partner event matched this filter</strong>
-                <p className="muted">Clear the date filter or choose a wider period.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
 
-      <div className="card" id="partner-operations-digest" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operations digest</h2>
-            <p className="muted">
-              One-screen factual digest for partner operations: identity, activity gate, bookings, chat,
-              location, service pricing, finance, payout, tax, app reachability, and staff records.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerOperationsDigest.length} lanes</span>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {partnerOperationsDigest.map((row) => (
-            <div className="setup-stage-item" key={row.lane}>
-              <span>{row.lane}</span>
-              <div>
-                <Link className="text-link" href={row.href}>
-                  <strong>{row.status}</strong>
-                </Link>
-                <p className="muted">{row.detail}</p>
-                <div className="participant-list" style={{ marginTop: 8 }}>
-                  {row.evidence.map((item) => (
-                    <span className={`pill ${row.tone}`} key={item}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailOperationsDigestSection
+        description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, location, service pricing, finance, payout, tax, app reachability, and staff records."
+        formatLatestAt={formatDate}
+        id="partner-operations-digest"
+        rows={partnerOperationsDigest}
+        title="Partner operations digest"
+      />
 
-      <div className="card" id="partner-booking-journey" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner booking journey</h2>
-            <p className="muted">
-              Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace
-              participation, customer final selection, retained chat, money rows, and staff records.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerBookingJourneyRows.length} journey row(s)</span>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {partnerBookingJourneyRows.length ? (
-            partnerBookingJourneyRows.map((row) => (
-              <div className="setup-stage-item" key={`partner-journey-${row.id}-${row.relation}`}>
-                <span>{row.relation}</span>
-                <div>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    <strong>{row.heading}</strong>
-                  </Link>
-                  <p className="muted">{row.detail}</p>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
-                    {row.steps.map((step) => (
-                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
-                        {step.label}: {step.value}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
-                    {row.links.map((link) => (
-                      <Link className="text-link" href={link.href} key={link.label}>
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No partner booking journey matched this filter</strong>
-                <p className="muted">Use a wider date range to show older booking rows.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailBookingJourneySection
+        description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
+        emptyDetail="Use a wider date range to show older booking rows."
+        emptyTitle="No partner booking journey matched this filter"
+        formatLatestAt={formatDate}
+        id="partner-booking-journey"
+        rows={partnerBookingJourneyRows}
+        title="Partner booking journey"
+      />
 
       <div className="card" id="partner-booking-create-gates" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -935,30 +887,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         )}
       </div>
 
-      <div className="card" id="partner-connected-operations-records" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner connected operations records</h2>
-            <p className="muted">
-              Jump from this partner to linked booking, chat, KYC, bank, tax, location, wallet, payout, and
-              operator records.
-            </p>
-          </div>
-          <span className="pill pill-info">{connectedPartnerRecordLinks.length} links</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {connectedPartnerRecordLinks.map((record) => (
-            <div key={record.label}>
-              <span>{record.label}</span>
-              <strong>{record.value}</strong>
-              <small>{record.detail}</small>
-              <Link className={`pill ${record.tone}`} href={record.href}>
-                Open
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailConnectedRecordsSection
+        description="Jump from this partner to linked booking, chat, KYC, bank, tax, location, wallet, payout, and operator records."
+        id="partner-connected-operations-records"
+        links={connectedPartnerRecordLinks}
+        title="Partner connected operations records"
+      />
 
       <div className="card" id="partner-operator-command-queue" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -1355,88 +1289,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="partner-chat-retention-ledger" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner chat retention ledger</h2>
-            <p className="muted">
-              Customer final selection creates the partner chat. Mobile apps can hide completed-service chats,
-              while admin keeps the retained transcript for cancellation, no-show, payment, and service
-              evidence review.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerChatRetentionRows.length} booking row(s)</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {partnerChatRetentionSummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Partner role</th>
-              <th>Room state</th>
-              <th>Latest message</th>
-              <th>Mobile visibility</th>
-              <th>Admin archive</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {partnerChatRetentionRows.map((row) => (
-              <tr key={`${row.id}-${row.relation}`}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.relation}</strong>
-                  <p className="muted">{row.roleDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.roomStatus}</strong>
-                  <p className="muted">{row.roomDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.latestSender}</strong>
-                  <p className="muted">{row.latestMessage}</p>
-                  <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
-                </td>
-                <td>
-                  <strong>{row.mobileVisibility}</strong>
-                  <p className="muted">{row.mobileVisibilityDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.adminRetention}</strong>
-                  <p className="muted">{row.adminRetentionDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Archive
-                    </Link>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {partnerChatRetentionRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
-            No partner chat retention row matched this date filter.
-          </p>
-        ) : null}
-      </div>
+      <PartnerDetailChatRetentionLedgerSection
+        description="Customer final selection creates the partner chat. Mobile apps can hide completed-service chats, while admin keeps the retained transcript for cancellation, no-show, payment, and service evidence review."
+        emptyMessage="No partner chat retention row matched this date filter."
+        formatLatestMessageAt={formatDate}
+        id="partner-chat-retention-ledger"
+        rows={partnerChatRetentionRows}
+        statusPillClass={partnerBookingStatusPillClass}
+        summary={partnerChatRetentionSummary}
+        title="Partner chat retention ledger"
+      />
 
       <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -1657,59 +1519,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="partner-daily-digest" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner daily activity digest</h2>
-            <p className="muted">
-              Date-grouped factual partner operations records for same-shift review before reading the full
-              event timeline.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerDailyActivityDigest.length} day(s)</span>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
-          {partnerDailyActivityDigest.length ? (
-            partnerDailyActivityDigest.map((day) => (
-              <div className="setup-stage-item" key={day.key}>
-                <span>{day.label}</span>
-                <div>
-                  <strong>{day.total} event(s)</strong>
-                  <p className="muted">
-                    {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
-                  </p>
-                  <div className="setup-stage-list" style={{ marginTop: 10 }}>
-                    {day.highlights.map((record, index) => (
-                      <div
-                        className="service-matrix-cell"
-                        key={`${record.type}-${record.id}-${record.at}-${index}`}
-                      >
-                        <strong>{record.title}</strong>
-                        <small>
-                          {record.type} / {formatDate(record.at)}
-                        </small>
-                        <p className="muted" style={{ margin: 0 }}>
-                          {record.detail}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No partner daily activity matched this filter</strong>
-                <p className="muted">Clear the date filter or choose a wider range.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailDailyActivityDigestSection
+        days={partnerDailyActivityDigest}
+        formatDate={formatDate}
+      />
 
       <PartnerDetailReadinessSnapshot
         provider={provider}
@@ -2207,28 +2020,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       ) : null}
                     </div>
                     <small>{device.blockedAt ? formatDate(device.blockedAt) : 'Active'}</small>
-                    <div className="actions">
-                      {device.blockedAt || !device.enabled ? (
-                        <form action={unblockProviderDevice}>
-                          <input type="hidden" name="providerId" value={provider.id} />
-                          <input type="hidden" name="providerDeviceId" value={device.id} />
-                          <button type="submit">Unblock</button>
-                        </form>
-                      ) : (
-                        <form action={blockProviderDevice}>
-                          <input type="hidden" name="providerId" value={provider.id} />
-                          <input type="hidden" name="providerDeviceId" value={device.id} />
-                          <input
-                            name="reason"
-                            placeholder="Device block reason"
-                            required
-                            minLength={12}
-                            maxLength={500}
-                          />
-                          <button type="submit">Block</button>
-                        </form>
-                      )}
-                    </div>
+                    <ActionMenu
+                      actions={partnerDetailDeviceActionMenuItems(provider.id, device)}
+                      label={`Device actions for ${maskDeviceId(device.deviceId)}`}
+                    />
                   </div>
                 ))}
               </div>
@@ -2488,11 +2283,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         </p>
                       ) : null}
                       {sanction.status === 'ACTIVE' ? (
-                        <form action={liftProviderSanction} style={{ marginTop: 8 }}>
-                          <input type="hidden" name="providerProfileId" value={provider.id} />
-                          <input type="hidden" name="sanctionId" value={sanction.id} />
-                          <button type="submit">Lift control</button>
-                        </form>
+                        <ActionMenu
+                          actions={[
+                            {
+                              description: 'Review before lifting this Partner account control.',
+                              href: partnerControlActionConfirmHref(provider.id, sanction.id),
+                              kind: 'link',
+                              label: 'Lift control',
+                              tone: 'warning',
+                            },
+                          ]}
+                          label={`Control actions for ${shortRecordId(sanction.id)}`}
+                        />
                       ) : null}
                     </div>
                     <small>{shortRecordId(sanction.id)}</small>
@@ -2662,25 +2464,29 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <p className="muted">Rejection reason: {provider.kyc.rejectionReason}</p>
           ) : null}
           <div className="actions" style={{ marginTop: 12 }}>
-            <form action={approveProviderKyc}>
-              <input type="hidden" name="providerId" value={provider.id} />
-              <button type="submit" disabled={provider.kyc?.status === 'APPROVED' || !canApproveKyc}>
-                Approve KYC
-              </button>
-            </form>
-            <form action={rejectProviderKyc}>
-              <input type="hidden" name="providerId" value={provider.id} />
-              <input
-                name="reason"
-                placeholder="KYC rejection reason"
-                required
-                minLength={12}
-                maxLength={500}
-              />
-              <button type="submit" disabled={!provider.kyc || provider.kyc.status === 'REJECTED'}>
-                Reject KYC
-              </button>
-            </form>
+            <ActionMenu
+              actions={[
+                {
+                  description: canApproveKyc
+                    ? 'Review before approving Partner KYC.'
+                    : 'Required identity documents must be approved before KYC approval.',
+                  disabled: provider.kyc?.status === 'APPROVED' || !canApproveKyc,
+                  href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-kyc'),
+                  kind: 'link',
+                  label: 'Approve KYC',
+                  tone: 'success',
+                },
+                {
+                  description: 'Review and enter a KYC rejection reason.',
+                  disabled: !provider.kyc || provider.kyc.status === 'REJECTED',
+                  href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-kyc'),
+                  kind: 'link',
+                  label: 'Reject KYC',
+                  tone: 'danger',
+                },
+              ]}
+              label="KYC review actions"
+            />
           </div>
           {!canApproveKyc ? (
             <p className="muted" style={{ marginTop: 10 }}>
@@ -2795,27 +2601,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   )}
                 </p>
                 <div className="actions">
-                  <form action={approveProviderDocument}>
-                    <input type="hidden" name="providerId" value={provider.id} />
-                    <input type="hidden" name="documentId" value={document.id} />
-                    <button type="submit" disabled={document.status === 'APPROVED'}>
-                      Approve doc
-                    </button>
-                  </form>
-                  <form action={rejectProviderDocument}>
-                    <input type="hidden" name="providerId" value={provider.id} />
-                    <input type="hidden" name="documentId" value={document.id} />
-                    <input
-                      name="reason"
-                      placeholder="Document rejection reason"
-                      required
-                      minLength={12}
-                      maxLength={500}
-                    />
-                    <button type="submit" disabled={document.status === 'REJECTED'}>
-                      Reject doc
-                    </button>
-                  </form>
+                  <ActionMenu
+                    actions={[
+                      {
+                        description: 'Review before approving this identity document.',
+                        disabled: document.status === 'APPROVED',
+                        href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-document', {
+                          documentId: document.id,
+                        }),
+                        kind: 'link',
+                        label: 'Approve doc',
+                        tone: 'success',
+                      },
+                      {
+                        description: 'Review and enter a document rejection reason.',
+                        disabled: document.status === 'REJECTED',
+                        href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-document', {
+                          documentId: document.id,
+                        }),
+                        kind: 'link',
+                        label: 'Reject doc',
+                        tone: 'danger',
+                      },
+                    ]}
+                    label={`Document review actions for ${shortRecordId(document.id)}`}
+                  />
                 </div>
               </div>
             ))
@@ -2855,27 +2665,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   )}
                 </p>
                 <div className="actions">
-                  <form action={approvePublicProviderMedia}>
-                    <input type="hidden" name="providerId" value={provider.id} />
-                    <input type="hidden" name="fileId" value={file.id} />
-                    <button type="submit" disabled={file.reviewStatus === 'APPROVED'}>
-                      Approve public media
-                    </button>
-                  </form>
-                  <form action={rejectPublicProviderMedia}>
-                    <input type="hidden" name="providerId" value={provider.id} />
-                    <input type="hidden" name="fileId" value={file.id} />
-                    <input
-                      name="reason"
-                      placeholder="Media rejection reason"
-                      required
-                      minLength={12}
-                      maxLength={500}
-                    />
-                    <button type="submit" disabled={file.reviewStatus === 'REJECTED'}>
-                      Reject media
-                    </button>
-                  </form>
+                  <ActionMenu
+                    actions={[
+                      {
+                        description: 'Review before approving this public profile media.',
+                        disabled: file.reviewStatus === 'APPROVED',
+                        href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-media', {
+                          fileId: file.id,
+                        }),
+                        kind: 'link',
+                        label: 'Approve public media',
+                        tone: 'success',
+                      },
+                      {
+                        description: 'Review and enter a media rejection reason.',
+                        disabled: file.reviewStatus === 'REJECTED',
+                        href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-media', {
+                          fileId: file.id,
+                        }),
+                        kind: 'link',
+                        label: 'Reject media',
+                        tone: 'danger',
+                      },
+                    ]}
+                    label={`Media review actions for ${shortRecordId(file.id)}`}
+                  />
                 </div>
               </div>
             ))
@@ -2897,27 +2711,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <InfoLine label="Status" value={primaryBank.status} />
               <InfoLine label="Rejection reason" value={primaryBank.rejectionReason} />
               <div className="actions" style={{ marginTop: 12 }}>
-                <form action={approveProviderBankAccount}>
-                  <input type="hidden" name="providerId" value={provider.id} />
-                  <input type="hidden" name="bankAccountId" value={primaryBank.id} />
-                  <button type="submit" disabled={primaryBank.status === 'APPROVED'}>
-                    Approve bank
-                  </button>
-                </form>
-                <form action={rejectProviderBankAccount}>
-                  <input type="hidden" name="providerId" value={provider.id} />
-                  <input type="hidden" name="bankAccountId" value={primaryBank.id} />
-                  <input
-                    name="reason"
-                    placeholder="Bank rejection reason"
-                    required
-                    minLength={12}
-                    maxLength={500}
-                  />
-                  <button type="submit" disabled={primaryBank.status === 'REJECTED'}>
-                    Reject bank
-                  </button>
-                </form>
+                <ActionMenu
+                  actions={[
+                    {
+                      description: 'Review before approving this payout bank account.',
+                      disabled: primaryBank.status === 'APPROVED',
+                      href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-bank', {
+                        bankAccountId: primaryBank.id,
+                      }),
+                      kind: 'link',
+                      label: 'Approve bank',
+                      tone: 'success',
+                    },
+                    {
+                      description: 'Review and enter a bank rejection reason.',
+                      disabled: primaryBank.status === 'REJECTED',
+                      href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-bank', {
+                        bankAccountId: primaryBank.id,
+                      }),
+                      kind: 'link',
+                      label: 'Reject bank',
+                      tone: 'danger',
+                    },
+                  ]}
+                  label="Bank review actions"
+                />
               </div>
             </>
           ) : (
@@ -2935,25 +2753,27 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <InfoLine label="Registered address" value={provider.taxProfile.registeredAddress} />
               <InfoLine label="Rejection reason" value={provider.taxProfile.rejectionReason} />
               <div className="actions" style={{ marginTop: 12 }}>
-                <form action={approveProviderTaxProfile}>
-                  <input type="hidden" name="providerId" value={provider.id} />
-                  <button type="submit" disabled={provider.taxProfile.status === 'APPROVED'}>
-                    Approve tax
-                  </button>
-                </form>
-                <form action={rejectProviderTaxProfile}>
-                  <input type="hidden" name="providerId" value={provider.id} />
-                  <input
-                    name="reason"
-                    placeholder="Tax rejection reason"
-                    required
-                    minLength={12}
-                    maxLength={500}
-                  />
-                  <button type="submit" disabled={provider.taxProfile.status === 'REJECTED'}>
-                    Reject tax
-                  </button>
-                </form>
+                <ActionMenu
+                  actions={[
+                    {
+                      description: 'Review before approving this tax profile.',
+                      disabled: provider.taxProfile.status === 'APPROVED',
+                      href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-tax'),
+                      kind: 'link',
+                      label: 'Approve tax',
+                      tone: 'success',
+                    },
+                    {
+                      description: 'Review and enter a tax rejection reason.',
+                      disabled: provider.taxProfile.status === 'REJECTED',
+                      href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-tax'),
+                      kind: 'link',
+                      label: 'Reject tax',
+                      tone: 'danger',
+                    },
+                  ]}
+                  label="Tax review actions"
+                />
               </div>
             </>
           ) : (
@@ -3015,6 +2835,156 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </section>
     </>
+  );
+}
+
+function partnerDetailAccountServerAction(action: PartnerAccountConfirmationAction) {
+  switch (action) {
+    case 'approve':
+      return approveProvider;
+    case 'block':
+      return blockProviderAccount;
+    case 'reject':
+      return rejectProvider;
+    case 'sync-role':
+      return syncSupabaseProviderRole;
+    case 'unblock':
+      return unblockProviderAccount;
+  }
+}
+
+function partnerDetailDeviceServerAction(action: PartnerDeviceConfirmationAction) {
+  switch (action) {
+    case 'block-device':
+      return blockProviderDevice;
+    case 'unblock-device':
+      return unblockProviderDevice;
+  }
+}
+
+function partnerDetailControlServerAction(action: PartnerControlConfirmationAction) {
+  switch (action) {
+    case 'lift-control':
+      return liftProviderSanction;
+  }
+}
+
+function partnerDetailReviewServerAction(action: PartnerReviewConfirmationAction) {
+  switch (action) {
+    case 'approve-bank':
+      return approveProviderBankAccount;
+    case 'approve-document':
+      return approveProviderDocument;
+    case 'approve-kyc':
+      return approveProviderKyc;
+    case 'approve-media':
+      return approvePublicProviderMedia;
+    case 'approve-tax':
+      return approveProviderTaxProfile;
+    case 'reject-bank':
+      return rejectProviderBankAccount;
+    case 'reject-document':
+      return rejectProviderDocument;
+    case 'reject-kyc':
+      return rejectProviderKyc;
+    case 'reject-media':
+      return rejectPublicProviderMedia;
+    case 'reject-tax':
+      return rejectProviderTaxProfile;
+  }
+}
+
+function partnerDetailReviewActionConfirmHref(
+  providerId: string,
+  action: PartnerReviewConfirmationAction,
+  target: { readonly bankAccountId?: string; readonly documentId?: string; readonly fileId?: string } = {},
+) {
+  return partnerReviewActionConfirmHref(providerId, action, target, {
+    baseHref: `/partners/${providerId}?section=full`,
+  });
+}
+
+function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly ActionMenuItem[] {
+  const detailBaseHref = `/partners/${provider.id}?section=full`;
+  const syncDisabled = provider.verification?.status !== 'APPROVED';
+  const actions: ActionMenuItem[] = [
+    {
+      description: 'Review before approving this Partner for operations.',
+      href: partnerAccountActionConfirmHref(provider.id, 'approve', { baseHref: detailBaseHref }),
+      kind: 'link',
+      label: 'Approve partner',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a rejection reason before sending this Partner back.',
+      href: partnerAccountActionConfirmHref(provider.id, 'reject', { baseHref: detailBaseHref }),
+      kind: 'link',
+      label: 'Reject partner',
+      tone: 'danger',
+    },
+    {
+      description: syncDisabled
+        ? 'Partner verification must be approved before syncing Supabase role.'
+        : 'Review before syncing the infrastructure role.',
+      disabled: syncDisabled,
+      href: partnerAccountActionConfirmHref(provider.id, 'sync-role', { baseHref: detailBaseHref }),
+      kind: 'link',
+      label: 'Sync role',
+      tone: 'info',
+    },
+  ];
+
+  if (provider.blockedAt) {
+    actions.push({
+      description: 'Review the recorded issue before unblocking this account.',
+      href: partnerAccountActionConfirmHref(provider.id, 'unblock', { baseHref: detailBaseHref }),
+      kind: 'link',
+      label: 'Unblock account',
+      tone: 'warning',
+    });
+  } else {
+    actions.push({
+      description: 'Review and enter an account block reason before blocking this Partner.',
+      href: partnerAccountActionConfirmHref(provider.id, 'block', { baseHref: detailBaseHref }),
+      kind: 'link',
+      label: 'Block account',
+      tone: 'danger',
+    });
+  }
+
+  return actions;
+}
+
+function partnerDetailDeviceActionMenuItems(
+  providerId: string,
+  device: PartnerDetailDevice,
+): readonly ActionMenuItem[] {
+  if (device.blockedAt || !device.enabled) {
+    return [
+      {
+        description: 'Review before unblocking this Partner app device.',
+        href: partnerDeviceActionConfirmHref(providerId, 'unblock-device', device.id),
+        kind: 'link',
+        label: 'Unblock',
+        tone: 'warning',
+      },
+    ];
+  }
+
+  return [
+    {
+      description: 'Review and enter a device block reason before blocking this Partner app device.',
+      href: partnerDeviceActionConfirmHref(providerId, 'block-device', device.id),
+      kind: 'link',
+      label: 'Block',
+      tone: 'danger',
+    },
+  ];
+}
+
+function providerDisplayLabel(provider: ProviderDetail) {
+  return marketplaceDisplayText(
+    provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   );
 }
 
@@ -3385,54 +3355,6 @@ type PartnerOperatingLedgerRow = {
   href: string;
 };
 
-type PartnerOperationsDigestRow = {
-  lane: string;
-  status: string;
-  detail: string;
-  href: string;
-  latestAt?: string;
-  tone: string;
-  evidence: string[];
-};
-type PartnerBookingJourneyRow = {
-  id: string;
-  relation: string;
-  heading: string;
-  detail: string;
-  latestAt?: string;
-  steps: Array<{
-    label: string;
-    value: string;
-    tone: string;
-  }>;
-  links: Array<{
-    label: string;
-    href: string;
-  }>;
-};
-type PartnerChatRetentionRow = {
-  id: string;
-  relation: string;
-  bookingLabel: string;
-  serviceLabel: string;
-  status: string;
-  roleDetail: string;
-  roomStatus: string;
-  roomDetail: string;
-  latestSender: string;
-  latestMessage: string;
-  latestMessageAt?: string;
-  mobileVisibility: string;
-  mobileVisibilityDetail: string;
-  adminRetention: string;
-  adminRetentionDetail: string;
-  bookingHref: string;
-  chatHref?: string;
-  hasRoom: boolean;
-  requiresRoom: boolean;
-  messageCount: number;
-  mobileHidden: boolean;
-};
 type PartnerBookingOpsLedgerRow = {
   id: string;
   relation: string;
@@ -3505,14 +3427,7 @@ type PartnerOperatorCommand = {
   detail: string;
   owner: string;
   tone: ProviderOpsCard['tone'];
-  action:
-    | { type: 'link'; href: string; label: string }
-    | { type: 'approve-profile'; label: string }
-    | { type: 'sync-role'; label: string }
-    | { type: 'unblock-account'; label: string }
-    | { type: 'approve-kyc'; label: string }
-    | { type: 'approve-bank'; bankAccountId: string; label: string }
-    | { type: 'approve-tax'; label: string };
+  action: PartnerOperatorCommandActionConfig;
 };
 
 function partnerActivityRecordHref(record: PartnerActivityRecord) {
@@ -3536,65 +3451,10 @@ function PartnerOperatorCommandAction({
   providerId: string;
   command: PartnerOperatorCommand;
 }) {
-  if (command.action.type === 'link') {
-    return (
-      <Link className="text-link" href={command.action.href}>
-        {command.action.label}
-      </Link>
-    );
-  }
-
-  if (command.action.type === 'approve-profile') {
-    return (
-      <form action={approveProvider}>
-        <input type="hidden" name="providerId" value={providerId} />
-        <button type="submit">{command.action.label}</button>
-      </form>
-    );
-  }
-
-  if (command.action.type === 'sync-role') {
-    return (
-      <form action={syncSupabaseProviderRole}>
-        <input type="hidden" name="providerId" value={providerId} />
-        <button type="submit">{command.action.label}</button>
-      </form>
-    );
-  }
-
-  if (command.action.type === 'unblock-account') {
-    return (
-      <form action={unblockProviderAccount}>
-        <input type="hidden" name="providerId" value={providerId} />
-        <button type="submit">{command.action.label}</button>
-      </form>
-    );
-  }
-
-  if (command.action.type === 'approve-kyc') {
-    return (
-      <form action={approveProviderKyc}>
-        <input type="hidden" name="providerId" value={providerId} />
-        <button type="submit">{command.action.label}</button>
-      </form>
-    );
-  }
-
-  if (command.action.type === 'approve-bank') {
-    return (
-      <form action={approveProviderBankAccount}>
-        <input type="hidden" name="providerId" value={providerId} />
-        <input type="hidden" name="bankAccountId" value={command.action.bankAccountId} />
-        <button type="submit">{command.action.label}</button>
-      </form>
-    );
-  }
-
   return (
-    <form action={approveProviderTaxProfile}>
-      <input type="hidden" name="providerId" value={providerId} />
-      <button type="submit">{command.action.label}</button>
-    </form>
+    <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>
+      {command.action.label}
+    </Link>
   );
 }
 

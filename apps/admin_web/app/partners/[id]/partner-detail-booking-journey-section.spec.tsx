@@ -1,0 +1,128 @@
+import {
+  PartnerDetailBookingJourneySection,
+  type PartnerBookingJourneyRow,
+} from './partner-detail-booking-journey-section';
+
+describe('PartnerDetailBookingJourneySection', () => {
+  it('renders booking journey rows with booking, step, and related links', () => {
+    const section = PartnerDetailBookingJourneySection({
+      description: 'Booking-by-booking factual journey.',
+      emptyDetail: 'Use a wider date range.',
+      emptyTitle: 'No partner booking journey matched this filter',
+      formatLatestAt: (value) => `formatted ${value}`,
+      id: 'partner-booking-journey',
+      rows: buildRows(),
+      title: 'Partner booking journey',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner booking journey');
+    expect(rendered).toContain('Booking-by-booking factual journey.');
+    expect(rendered).toContain('1 journey row(s)');
+    expect(rendered).toContain('Selected');
+    expect(rendered).toContain('BK-1001 / Deep tissue');
+    expect(rendered).toContain('First-pick : Customer selected');
+    expect(rendered).toContain('Money : earning READY');
+    expect(rendered).toContain('formatted 2026-06-09T02:00:00.000Z');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
+  });
+
+  it('renders an empty state when no journey rows match', () => {
+    const section = PartnerDetailBookingJourneySection({
+      description: 'Booking-by-booking factual journey.',
+      emptyDetail: 'Use a wider date range.',
+      emptyTitle: 'No partner booking journey matched this filter',
+      formatLatestAt: (value) => value,
+      id: 'partner-booking-journey',
+      rows: [],
+      title: 'Partner booking journey',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('0 journey row(s)');
+    expect(rendered).toContain('NONE');
+    expect(rendered).toContain('No partner booking journey matched this filter');
+    expect(rendered).toContain('Use a wider date range.');
+  });
+});
+
+function buildRows(): PartnerBookingJourneyRow[] {
+  return [
+    {
+      detail: 'Customer final selection and retained chat evidence.',
+      heading: 'BK-1001 / Deep tissue',
+      id: 'BK-1001',
+      latestAt: '2026-06-09T02:00:00.000Z',
+      links: [
+        {
+          href: '/chat-archive?q=BK-1001',
+          label: 'Chat archive',
+        },
+      ],
+      relation: 'Selected',
+      steps: [
+        {
+          label: 'First-pick',
+          tone: 'pill-success',
+          value: 'Customer selected',
+        },
+        {
+          label: 'Money',
+          tone: 'pill-info',
+          value: 'earning READY',
+        },
+      ],
+    },
+  ];
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

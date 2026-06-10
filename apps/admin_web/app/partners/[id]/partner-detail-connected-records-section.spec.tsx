@@ -1,0 +1,110 @@
+import {
+  PartnerDetailConnectedRecordsSection,
+  type PartnerDetailConnectedRecordLink,
+} from './partner-detail-connected-records-section';
+
+describe('PartnerDetailConnectedRecordsSection', () => {
+  it('renders connected record links with counts, detail, and tones', () => {
+    const section = PartnerDetailConnectedRecordsSection({
+      description: 'Jump from this partner to linked records.',
+      id: 'partner-connected-operations-records',
+      links: buildLinks(),
+      title: 'Partner connected operations records',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner connected operations records');
+    expect(rendered).toContain('Jump from this partner to linked records.');
+    expect(rendered).toContain('2 links');
+    expect(rendered).toContain('Latest booking');
+    expect(rendered).toContain('BK-1001');
+    expect(rendered).toContain('First-pick gate attempts');
+    expect(rendered).toContain('2 attempt(s)');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/bookings?view=blocked-create']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-info', 'pill pill-warn']));
+  });
+});
+
+function buildLinks(): PartnerDetailConnectedRecordLink[] {
+  return [
+    {
+      detail: 'MATCHED / Deep tissue',
+      href: '/bookings/BK-1001',
+      label: 'Latest booking',
+      tone: 'pill-info',
+      value: 'BK-1001',
+    },
+    {
+      detail: 'Wallet threshold / latest 9 Jun 2026',
+      href: '/bookings?view=blocked-create',
+      label: 'First-pick gate attempts',
+      tone: 'pill-warn',
+      value: '2 attempt(s)',
+    },
+  ];
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
