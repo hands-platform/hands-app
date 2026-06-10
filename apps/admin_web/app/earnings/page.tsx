@@ -1,8 +1,41 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { ConfirmDialog } from '../../components/confirm-dialog';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
+import {
+  type EarningConfirmationAction,
+  buildEarningActionConfirmation,
+  readEarningConfirmationAction,
+} from './earning-action-confirmation';
+import {
+  EarningsBatchStateFilterSection,
+  type EarningsBatchStateCard,
+} from './earnings-batch-state-filter-section';
+import {
+  EarningsCashDebtQueueSection,
+  type EarningsCashDebtQueueItem,
+} from './earnings-cash-debt-queue-section';
+import {
+  EarningsFinanceQueueSection,
+  type EarningsFinanceSignal,
+} from './earnings-finance-queue-section';
+import { EarningsLedgerSection, type EarningsLedgerRow } from './earnings-ledger-section';
+import {
+  EarningsMoneyFlowSection,
+  type EarningsMoneyFlowCard,
+  type EarningsMoneyFlowCheck,
+} from './earnings-money-flow-section';
+import {
+  EarningsPartnerPayoutQueueSection,
+  type EarningsPartnerPayoutQueueGroup,
+} from './earnings-partner-payout-queue-section';
+import {
+  EarningsServiceBridgeSection,
+  type EarningsServiceBridgeItem,
+} from './earnings-service-bridge-section';
 
 const emptySummary: AdminEarningSummary = {
   count: 0,
@@ -21,7 +54,8 @@ type EarningsPageProps = {
 };
 
 export default async function EarningsPage({ searchParams }: EarningsPageProps) {
-  const filters = buildEarningFilters(searchParams ? await searchParams : {});
+  const params = searchParams ? await searchParams : {};
+  const filters = buildEarningFilters(params);
   const [apiSummary, earnings, payoutBatches] = await Promise.all([
     adminGet<AdminEarningSummary>('/admin/earnings/summary', emptySummary),
     adminGet<AdminEarning[]>('/admin/earnings', []),
@@ -38,6 +72,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
+  const cashDebtItems = buildCashDebtQueueItems(cashDebtQueue);
   const financeSignals = buildFinanceSignals(
     sortedEarnings,
     filteredPayoutBatches,
@@ -47,34 +82,72 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
   const moneyFlowCards = buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals);
   const moneyFlowChecks = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue);
+  const partnerPayoutQueueGroups = buildPartnerPayoutQueueGroups(payoutQueue);
   const batchStateCards = buildEarningBatchStateCards(filteredEarnings, filters.range);
-
-  const metrics = [
-    ['Gross', summary.grossAmount],
-    ['Platform fee', summary.platformFee],
-    ['Tax withheld', summary.withholdingAmount],
-    ['Partner net', summary.netAmount],
-    ['Pending net', summary.pendingNetAmount],
-    ['Available net', summary.availableNetAmount],
-    ['Paid net', summary.paidNetAmount],
-  ];
+  const ledgerRows = buildEarningsLedgerRows(ledgerEarnings);
+  const confirmation = buildEarningActionConfirmation(
+    cashDebtQueue.map((item) => ({
+      currency: item.earning.currency,
+      debtAmount: item.debtAmount,
+      earningId: item.earning.id,
+      paymentMethod: item.paymentMethod,
+      providerName: item.providerName,
+      settlementReference: item.settlementReference,
+    })),
+    buildEarningPayoutConfirmationRows(payoutQueue, ledgerEarnings),
+    {
+      action: readEarningConfirmationAction(readSearchParam(params.confirm)),
+      earningId: readSearchParam(params.earningId),
+      providerProfileId: readSearchParam(params.providerProfileId),
+      settlementMethod: readSearchParam(params.settlementMethod),
+      settlementNotes: readSearchParam(params.settlementNotes),
+      settlementRef: readSearchParam(params.settlementRef),
+      transferRef: readSearchParam(params.transferRef),
+    },
+  );
 
   return (
-    <>
-      <h1>Partner Earnings</h1>
+    <AdminPageTemplate
+      description="Partner earning ledger for service revenue, HANDS fee, tax withholding, cash debt, and payout batching."
+      metrics={[
+        { label: 'Gross', value: formatMoney(summary.grossAmount, summary.currency), helper: 'Customer charge represented by earning rows.' },
+        { label: 'Platform fee', value: formatMoney(summary.platformFee, summary.currency), helper: 'HANDS fee before tax and closeout review.' },
+        { label: 'Tax withheld', value: formatMoney(summary.withholdingAmount, summary.currency), helper: 'Tax amount captured from policy snapshots.' },
+        { label: 'Partner net', value: formatMoney(summary.netAmount, summary.currency), helper: 'Net Partner earning after fees and tax.' },
+        { label: 'Pending net', value: formatMoney(summary.pendingNetAmount, summary.currency), helper: 'Pending positive payout or cash debt.' },
+        { label: 'Available net', value: formatMoney(summary.availableNetAmount, summary.currency), helper: 'Eligible for payout batching.' },
+        { label: 'Paid net', value: formatMoney(summary.paidNetAmount, summary.currency), helper: 'Already settled earning total.' },
+      ]}
+      title="Partner Earnings"
+    >
+      {confirmation ? (
+        <ConfirmDialog
+          action={earningConfirmationAction(confirmation.action)}
+          cancelHref={confirmation.cancelHref}
+          confirmLabel={confirmation.confirmLabel}
+          description={confirmation.description}
+          hiddenInputs={confirmation.hiddenInputs}
+          id={`earning-${confirmation.action}`}
+          title={confirmation.title}
+          tone={confirmation.tone}
+        />
+      ) : null}
+
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Earnings date range</h2>
-            <p className="muted">
+        <AdminSectionHeader
+          actions={
+            <Link className="text-link" href="/finance-closeout">
+              Open finance closeout
+            </Link>
+          }
+          description={
+            <>
               Range: {dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout
               batches on this page use record dates.
-            </p>
-          </div>
-          <Link className="text-link" href="/finance-closeout">
-            Open finance closeout
-          </Link>
-        </div>
+            </>
+          }
+          title="Earnings date range"
+        />
         <div className="filter-row" style={{ marginTop: 12 }}>
           {[
             ['All dates', '/earnings'],
@@ -88,539 +161,140 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
           ))}
         </div>
       </section>
-      <section className="grid">
-        {metrics.map(([label, value]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{formatMoney(Number(value), summary.currency)}</h2>
-          </div>
-        ))}
-      </section>
+      <EarningsMoneyFlowSection cards={moneyFlowCards} checks={moneyFlowChecks} currency={summary.currency} />
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Money flow command center</h2>
-            <p className="muted">
-              Same finance language as booking detail: customer charge, partner payout, HANDS fee, tax,
-              company net, and cash debt before payout.
-            </p>
-          </div>
-          <Link className="text-link" href="/bookings">
-            Trace bookings
-          </Link>
-        </div>
-        <div className="service-trace-summary">
-          {moneyFlowCards.map((card) => (
-            <div key={card.label}>
-              <span>{card.label}</span>
-              <strong>{formatMoney(card.amount, summary.currency)}</strong>
-              <small>{card.detail}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-grid" style={{ marginTop: 16 }}>
-          {moneyFlowChecks.map((check) => (
-            <div className={`ops-task-card ${check.className}`} key={check.title}>
-              <div>
-                <span className={`pill ${check.pillClass}`}>{check.status}</span>
-                <h3>{check.title}</h3>
-                <p className="muted">{check.detail}</p>
-              </div>
-              <small>{check.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <EarningsFinanceQueueSection signals={financeSignals} />
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Finance queue</h2>
-            <p className="muted">
-              Operator summary for partner payout readiness, batched earnings, tax logs, and stale pending
-              revenue.
-            </p>
-          </div>
-          <Link className="text-link" href="/payouts">
-            Open payout batches
-          </Link>
-        </div>
-        <div className="ops-task-grid">
-          {financeSignals.map((signal) => (
-            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
-              <div>
-                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
-                <h3>{signal.title}</h3>
-                <p className="muted">{signal.detail}</p>
-              </div>
-              <small>{signal.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <EarningsServiceBridgeSection currency={summary.currency} items={serviceBridge} />
 
-      <div className="card" style={{ marginTop: 20, overflowX: 'auto' }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Service to earnings bridge</h2>
-            <p className="muted">
-              Confirms which service duration options are creating partner net, HANDS platform fee, tax
-              withholding, cash wallet debt, and payout-batch pressure.
-            </p>
-          </div>
-          <Link className="text-link" href="/services">
-            Review service pricing
-          </Link>
-        </div>
-        <div className="service-trace-summary">
-          <div>
-            <span>Service options</span>
-            <strong>{serviceBridge.length}</strong>
-          </div>
-          <div>
-            <span>Gross</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.grossAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Partner net</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.netAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Partner payout</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.providerPayoutAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Platform fee</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.platformFee, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>VAT / cost</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.vatAmount + item.otherCostAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Tax withheld</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.withholdingAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-          <div>
-            <span>Cash debt</span>
-            <strong>
-              {formatMoney(
-                serviceBridge.reduce((sum, item) => sum + item.cashDebtAmount, 0),
-                summary.currency,
-              )}
-            </strong>
-          </div>
-        </div>
-        {serviceBridge.length ? (
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Service option</th>
-                <th>Bookings</th>
-                <th>Gross</th>
-                <th>Partner payout</th>
-                <th>Partner net</th>
-                <th>Platform fee</th>
-                <th>VAT / cost</th>
-                <th>Tax withheld</th>
-                <th>Net company fee</th>
-                <th>Cash debt</th>
-                <th>Payout state</th>
-              </tr>
-            </thead>
-            <tbody>
-              {serviceBridge.map((item) => (
-                <tr key={item.key}>
-                  <td>
-                    <strong>{item.label}</strong>
-                    <p className="muted">{item.groupKey}</p>
-                  </td>
-                  <td>
-                    <strong>{item.bookingCount}</strong>
-                    <p className="muted">{item.cashBookingCount} cash booking(s)</p>
-                  </td>
-                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
-                  <td>
-                    <div className="service-matrix-cell">
-                      <strong>{formatMoney(item.providerPayoutAmount, item.currency)}</strong>
-                      <small>{item.matrixBackedCount} matrix-backed booking(s)</small>
-                    </div>
-                  </td>
-                  <td>{formatMoney(item.netAmount, item.currency)}</td>
-                  <td>{formatMoney(item.platformFee, item.currency)}</td>
-                  <td>
-                    <div className="service-matrix-cell">
-                      <small>VAT {formatMoney(item.vatAmount, item.currency)}</small>
-                      <small>Cost {formatMoney(item.otherCostAmount, item.currency)}</small>
-                    </div>
-                  </td>
-                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
-                  <td>{formatMoney(item.netCompanyFee, item.currency)}</td>
-                  <td>
-                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
-                      {formatMoney(item.cashDebtAmount, item.currency)}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="service-matrix-cell">
-                      <small>{item.unbatchedCount} unbatched</small>
-                      <small>{item.batchedCount} batched</small>
-                      <small>{item.paidCount} paid</small>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="muted">No earning has linked service details yet.</p>
-        )}
-      </div>
+      <EarningsPartnerPayoutQueueSection groups={partnerPayoutQueueGroups} />
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner payout queue</h2>
-            <p className="muted">
-              Grouped by partner so finance can create one payout batch for all eligible unpaid earnings.
-            </p>
-          </div>
-          <span className="pill pill-info">{payoutQueue.length} partner(s)</span>
-        </div>
-        {payoutQueue.length ? (
-          <div className="setup-stage-list">
-            {payoutQueue.slice(0, 12).map((group) => (
-              <div className="setup-stage-item" key={group.providerProfileId}>
-                <span>{group.status}</span>
-                <div>
-                  <strong>{group.providerName}</strong>
-                  <p className="muted">
-                    {group.unbatchedCount} unbatched earning(s) / net{' '}
-                    {formatMoney(group.unbatchedNet, group.currency)}
-                    {' / '}withholding {formatMoney(group.withholdingAmount, group.currency)}
-                  </p>
-                  <p className="muted">
-                    Wallet balance {formatMoney(group.walletBalance, group.currency)}
-                    {group.cashDebtAmount > 0
-                      ? ` / cash debt ${formatMoney(group.cashDebtAmount, group.currency)} blocks payout batching`
-                      : ' / no cash debt'}
-                  </p>
-                  <p className="muted">
-                    {group.activeBatch
-                      ? `Existing batch ${shortRecordId(group.activeBatch.id)} is ${group.activeBatch.status}.`
-                      : group.nextAction}
-                  </p>
-                </div>
-                <div className="actions">
-                  <Link className="text-link" href={`/partners/${group.providerProfileId}`}>
-                    Partner
-                  </Link>
-                  {group.canBatch ? (
-                    <form action={createProviderPayout}>
-                      <input type="hidden" name="providerProfileId" value={group.providerProfileId} />
-                      <input
-                        type="hidden"
-                        name="transferRef"
-                        value={`HANDS-${shortRecordId(group.providerProfileId)}`}
-                      />
-                      <button type="submit">Batch payout</button>
-                    </form>
-                  ) : (
-                    <span className="muted">No batch action</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No partner has unpaid earnings in the current admin result window.</p>
-        )}
-      </div>
+      <EarningsCashDebtQueueSection currency={summary.currency} items={cashDebtItems} totals={cashDebtTotals} />
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Cash fee debt queue</h2>
-            <p className="muted">
-              Cash bookings create a negative partner wallet until the partner deposits the HANDS fee or
-              finance offsets it.
-            </p>
-          </div>
-          <span className={cashDebtQueue.length ? 'pill pill-danger' : 'pill pill-success'}>
-            {cashDebtQueue.length} blocked wallet(s)
-          </span>
-        </div>
-        {cashDebtQueue.length ? (
-          <div className="service-trace-summary">
-            <div>
-              <span>Blocked wallets</span>
-              <strong>{cashDebtQueue.length}</strong>
-            </div>
-            <div>
-              <span>Wallet debt</span>
-              <strong>{formatMoney(cashDebtTotals.debtAmount, summary.currency)}</strong>
-            </div>
-            <div>
-              <span>Booking cash</span>
-              <strong>{formatMoney(cashDebtTotals.bookingAmount, summary.currency)}</strong>
-            </div>
-            <div>
-              <span>HANDS fee</span>
-              <strong>{formatMoney(cashDebtTotals.platformFee, summary.currency)}</strong>
-            </div>
-            <div>
-              <span>Tax</span>
-              <strong>{formatMoney(cashDebtTotals.taxAmount, summary.currency)}</strong>
-            </div>
-          </div>
-        ) : null}
-        {cashDebtQueue.length ? (
-          <div className="setup-stage-list">
-            {cashDebtQueue.slice(0, 12).map((item) => (
-              <div className="setup-stage-item" key={item.earning.id}>
-                <span>DEBT</span>
-                <div>
-                  <strong>{item.providerName}</strong>
-                  <p className="muted">
-                    Owes {formatMoney(item.debtAmount, item.earning.currency)} from booking{' '}
-                    <Link className="text-link" href={`/bookings/${item.earning.bookingId}`}>
-                      {shortRecordId(item.earning.bookingId)}
-                    </Link>
-                    {' / '}payment {item.paymentMethod}
-                  </p>
-                  <p className="muted">
-                    Booking cash {formatMoney(item.bookingAmount, item.earning.currency)}
-                    {' / '}HANDS fee {formatMoney(item.platformFee, item.earning.currency)}
-                    {' / '}tax {formatMoney(item.taxAmount, item.earning.currency)}
-                  </p>
-                  <div className="service-matrix-cell">
-                    {item.settlementChecklist.map((step) => (
-                      <small key={step}>{step}</small>
-                    ))}
-                    <small>Suggested ref: {item.settlementReference}</small>
-                    {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
-                  </div>
-                  <p className="muted">
-                    Settling this row records the partner cash-fee debt as paid and can reopen marketplace
-                    participation plus payout release once the wallet is non-negative.
-                  </p>
-                </div>
-                <div className="actions">
-                  <Link className="text-link" href={`/partners/${item.earning.providerProfileId}`}>
-                    Partner
-                  </Link>
-                  <form action={markEarningPaid}>
-                    <input type="hidden" name="earningId" value={item.earning.id} />
-                    <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-                    <input
-                      aria-label="Settlement reference"
-                      name="settlementRef"
-                      placeholder="Deposit ref or offset memo"
-                      defaultValue={item.settlementReference}
-                    />
-                    <input
-                      type="hidden"
-                      name="settlementNotes"
-                      value={`Cash fee debt settled from admin earnings queue with reference ${item.settlementReference}`}
-                    />
-                    <button type="submit">Mark fee settled</button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No partner has unsettled cash fee debt in the current admin result window.</p>
-        )}
-      </div>
+      <EarningsBatchStateFilterSection
+        activeState={filters.batchState}
+        cards={batchStateCards}
+        currency={summary.currency}
+        ledgerCount={ledgerEarnings.length}
+      />
 
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Earning batch state filters</h2>
-            <p className="muted">
-              Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue
-              stay based on the selected date range.
-            </p>
-          </div>
-          <span className="pill pill-info">{ledgerEarnings.length} ledger row(s)</span>
-        </div>
-        <div className="filter-row" style={{ marginTop: 12 }}>
-          {batchStateCards.map((card) => (
-            <Link
-              className={`filter-pill ${card.state === filters.batchState ? 'pill-info' : ''}`}
-              href={card.href}
-              key={card.state}
-            >
-              {card.label} / {card.count}
-            </Link>
-          ))}
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 16 }}>
-          {batchStateCards
-            .filter((card) => card.state !== 'all')
-            .map((card) => (
-              <div key={card.state}>
-                <span>{card.label}</span>
-                <strong>{card.count}</strong>
-                <small>{formatMoney(card.amount, summary.currency)}</small>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 20 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Recent earnings ledger</h2>
-            <p className="muted">
-              Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash
-              fee settlement correction.
-            </p>
-          </div>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Booking</th>
-              <th>Status</th>
-              <th>Payout batch</th>
-              <th>Gross / Fee / Tax</th>
-              <th>Net</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ledgerEarnings.map((earning) => (
-              <tr id={`earning-${earning.id}`} key={earning.id}>
-                <td>
-                  <div>
-                    {earning.providerProfile?.displayName ??
-                      earning.providerProfile?.user?.phone ??
-                      'Unknown'}
-                  </div>
-                  <div className="muted">{earning.providerProfile?.user?.phone ?? 'No phone on file'}</div>
-                </td>
-                <td>
-                  <a className="text-link" href={`/bookings/${earning.bookingId}`}>
-                    {shortRecordId(earning.bookingId)}
-                  </a>
-                  <div className="muted">
-                    {earning.createdAt
-                      ? formatRelativeTime(earning.createdAt, { includeFuture: true })
-                      : 'No create time'}
-                  </div>
-                  <div className="muted">Payment {earning.booking?.payment?.method ?? 'UNKNOWN'}</div>
-                  {earning.settlementRef && (
-                    <div className="muted">Settlement ref {earning.settlementRef}</div>
-                  )}
-                  {earning.settlementMethod && (
-                    <div className="muted">Settlement method {settlementMethodLabel(earning.settlementMethod)}</div>
-                  )}
-                  {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
-                    <div className="muted" key={entry.id}>
-                      Wallet {entry.type}: {formatMoney(entry.amount, entry.currency)}
-                    </div>
-                  ))}
-                </td>
-                <td>
-                  <span className={earningSignalClass(earning)}>{earningStatusLabel(earning)}</span>
-                  <div className="muted" style={{ marginTop: 6 }}>
-                    {earningHint(earning)}
-                  </div>
-                </td>
-                <td>
-                  {earning.payoutBatchId ? (
-                    <a className="pill pill-info" href={`/payouts#${earning.payoutBatchId}`}>
-                      {shortRecordId(earning.payoutBatchId)}
-                    </a>
-                  ) : (
-                    <span className="pill pill-warn">Not batched</span>
-                  )}
-                </td>
-                <td>
-                  <div>{formatMoney(earning.grossAmount, earning.currency)} gross</div>
-                  <div className="muted">
-                    {formatMoney(earning.platformFee, earning.currency)} platform fee
-                  </div>
-                  <div className="muted">{platformFeePolicyHint(earning)}</div>
-                  <div className="muted">{netCompanyFeeHint(earning)}</div>
-                  <div className="muted">
-                    {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
-                  </div>
-                  <div className="muted">{taxPolicyHint(earning)}</div>
-                </td>
-                <td>
-                  <strong>{formatMoney(earning.netAmount, earning.currency)}</strong>
-                </td>
-                <td>
-                  {canDirectlyPay(earning) && (
-                    <form action={markEarningPaid}>
-                      <input type="hidden" name="earningId" value={earning.id} />
-                      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-                      <input
-                        aria-label="Settlement reference"
-                        name="settlementRef"
-                        placeholder="Deposit ref or offset memo"
-                      />
-                      <button type="submit">Mark fee settled</button>
-                    </form>
-                  )}
-                  {canCreatePayout(earning) && (
-                    <form action={createProviderPayout} style={{ marginTop: 6 }}>
-                      <input type="hidden" name="providerProfileId" value={earning.providerProfileId} />
-                      <input type="hidden" name="transferRef" value={`MVP-${earning.providerProfileId}`} />
-                      <button type="submit">Batch payout</button>
-                    </form>
-                  )}
-                  {!canDirectlyPay(earning) && !canCreatePayout(earning) && (
-                    <span className="muted">{earning.status === 'PAID' ? 'Paid' : 'No action'}</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {ledgerEarnings.length === 0 && (
-              <tr>
-                <td colSpan={7}>No earnings loaded.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </>
+      <EarningsLedgerSection rows={ledgerRows} />
+    </AdminPageTemplate>
   );
+}
+
+function earningConfirmationAction(action: EarningConfirmationAction) {
+  switch (action) {
+    case 'create-payout':
+      return createProviderPayout;
+    case 'mark-paid':
+      return markEarningPaid;
+  }
+}
+
+function buildEarningPayoutConfirmationRows(
+  payoutQueue: ProviderPayoutQueueItem[],
+  ledgerEarnings: AdminEarning[],
+) {
+  const rows = new Map<
+    string,
+    {
+      currency: string;
+      providerName: string;
+      providerProfileId: string;
+      transferRef: string;
+      unbatchedCount: number;
+      unbatchedNet: number;
+    }
+  >();
+
+  payoutQueue
+    .filter((item) => item.canBatch)
+    .forEach((item) => {
+      rows.set(item.providerProfileId, {
+        currency: item.currency,
+        providerName: item.providerName,
+        providerProfileId: item.providerProfileId,
+        transferRef: `HANDS-${shortRecordId(item.providerProfileId)}`,
+        unbatchedCount: item.unbatchedCount,
+        unbatchedNet: item.unbatchedNet,
+      });
+    });
+
+  ledgerEarnings.filter(canCreatePayout).forEach((earning) => {
+    if (rows.has(earning.providerProfileId)) {
+      return;
+    }
+
+    rows.set(earning.providerProfileId, {
+      currency: earning.currency,
+      providerName: providerDisplayName(earning),
+      providerProfileId: earning.providerProfileId,
+      transferRef: `MVP-${earning.providerProfileId}`,
+      unbatchedCount: 1,
+      unbatchedNet: earning.netAmount,
+    });
+  });
+
+  return [...rows.values()];
+}
+
+function buildPartnerPayoutQueueGroups(
+  payoutQueue: readonly ProviderPayoutQueueItem[],
+): EarningsPartnerPayoutQueueGroup[] {
+  return payoutQueue.map((group) => ({
+    activeBatchSummary: group.activeBatch
+      ? `Existing batch ${shortRecordId(group.activeBatch.id)} is ${group.activeBatch.status}.`
+      : null,
+    canBatch: group.canBatch,
+    cashDebtAmount: group.cashDebtAmount,
+    currency: group.currency,
+    nextAction: group.nextAction,
+    providerHref: `/partners/${group.providerProfileId}`,
+    providerName: group.providerName,
+    providerProfileId: group.providerProfileId,
+    status: group.status,
+    transferRef: `HANDS-${shortRecordId(group.providerProfileId)}`,
+    unbatchedCount: group.unbatchedCount,
+    unbatchedNet: group.unbatchedNet,
+    walletBalance: group.walletBalance,
+    withholdingAmount: group.withholdingAmount,
+  }));
+}
+
+function buildEarningsLedgerRows(earnings: readonly AdminEarning[]): EarningsLedgerRow[] {
+  return earnings.map((earning) => ({
+    bookingHref: `/bookings/${earning.bookingId}`,
+    bookingPaymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
+    bookingShortId: shortRecordId(earning.bookingId),
+    canCreatePayout: canCreatePayout(earning),
+    canDirectlyPay: canDirectlyPay(earning),
+    createdAtLabel: earning.createdAt
+      ? formatRelativeTime(earning.createdAt, { includeFuture: true })
+      : 'No create time',
+    feePolicyHint: platformFeePolicyHint(earning),
+    grossAmountLabel: formatMoney(earning.grossAmount, earning.currency),
+    id: earning.id,
+    netAmountLabel: formatMoney(earning.netAmount, earning.currency),
+    netCompanyFeeHint: netCompanyFeeHint(earning),
+    payoutBatchHref: earning.payoutBatchId ? `/payouts#${earning.payoutBatchId}` : null,
+    payoutBatchLabel: earning.payoutBatchId ? shortRecordId(earning.payoutBatchId) : null,
+    platformFeeLabel: `${formatMoney(earning.platformFee, earning.currency)} platform fee`,
+    providerName: providerDisplayName(earning),
+    providerPhone: earning.providerProfile?.user?.phone ?? 'No phone on file',
+    providerProfileId: earning.providerProfileId,
+    settlementMethodLabel: earning.settlementMethod ? settlementMethodLabel(earning.settlementMethod) : null,
+    settlementRef: earning.settlementRef ?? null,
+    signalClassName: earningSignalClass(earning),
+    statusHint: earningHint(earning),
+    statusLabel: earningStatusLabel(earning),
+    taxPolicyHint: taxPolicyHint(earning),
+    transferRef: `MVP-${earning.providerProfileId}`,
+    walletEntries: (earning.walletLedgerEntries ?? [])
+      .slice(0, 2)
+      .map((entry) => `Wallet ${entry.type}: ${formatMoney(entry.amount, entry.currency)}`),
+    withholdingAmountLabel: `${formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld`,
+  }));
 }
 
 function sortEarnings(earnings: AdminEarning[]) {
@@ -688,21 +362,6 @@ type ProviderPayoutQueueItem = {
   activeBatch?: AdminPayoutBatch;
 };
 
-type FinanceSignal = {
-  title: string;
-  status: string;
-  detail: string;
-  action: string;
-  className: string;
-  pillClass: string;
-};
-
-type MoneyFlowCard = {
-  label: string;
-  amount: number;
-  detail: string;
-};
-
 type CashDebtQueueItem = {
   earning: AdminEarning;
   providerName: string;
@@ -716,26 +375,8 @@ type CashDebtQueueItem = {
   settlementChecklist: string[];
 };
 
-type ServiceEarningBridgeItem = {
-  key: string;
-  label: string;
-  groupKey: string;
-  currency: string;
-  bookingCount: number;
-  cashBookingCount: number;
-  grossAmount: number;
-  netAmount: number;
-  providerPayoutAmount: number;
-  platformFee: number;
-  vatAmount: number;
-  otherCostAmount: number;
-  withholdingAmount: number;
-  netCompanyFee: number;
-  cashDebtAmount: number;
-  matrixBackedCount: number;
-  unbatchedCount: number;
-  batchedCount: number;
-  paidCount: number;
+type MutableEarningsServiceBridgeItem = {
+  -readonly [Key in keyof EarningsServiceBridgeItem]: EarningsServiceBridgeItem[Key];
 };
 
 type ServicePayoutSnapshotLine = {
@@ -748,14 +389,6 @@ type ServicePayoutSnapshotLine = {
 };
 
 type EarningBatchState = 'all' | 'ready' | 'cash-debt' | 'closeout-review' | 'batched' | 'paid';
-
-type EarningBatchStateCard = {
-  state: EarningBatchState;
-  label: string;
-  count: number;
-  amount: number;
-  href: string;
-};
 
 const earningBatchStateOptions: Array<{ state: EarningBatchState; label: string }> = [
   { state: 'all', label: 'All rows' },
@@ -782,7 +415,7 @@ function filterEarningsByBatchState(earnings: AdminEarning[], state: EarningBatc
 function buildEarningBatchStateCards(
   earnings: AdminEarning[],
   range: ReturnType<typeof buildEarningFilters>['range'],
-): EarningBatchStateCard[] {
+): EarningsBatchStateCard[] {
   return earningBatchStateOptions.map((option) => {
     const stateEarnings = filterEarningsByBatchState(earnings, option.state);
     return {
@@ -884,11 +517,31 @@ function buildCashDebtTotals(queue: CashDebtQueueItem[]) {
   );
 }
 
+function buildCashDebtQueueItems(queue: readonly CashDebtQueueItem[]): EarningsCashDebtQueueItem[] {
+  return queue.map((item) => ({
+    bookingAmount: item.bookingAmount,
+    bookingHref: `/bookings/${item.earning.bookingId}`,
+    bookingShortId: shortRecordId(item.earning.bookingId),
+    currency: item.earning.currency,
+    debtAmount: item.debtAmount,
+    earningId: item.earning.id,
+    lastLedgerRef: item.lastLedgerRef ?? null,
+    partnerHref: `/partners/${item.earning.providerProfileId}`,
+    paymentMethod: item.paymentMethod,
+    platformFee: item.platformFee,
+    providerName: item.providerName,
+    settlementChecklist: item.settlementChecklist,
+    settlementNotes: `Cash fee debt settled from admin earnings queue with reference ${item.settlementReference}`,
+    settlementReference: item.settlementReference,
+    taxAmount: item.taxAmount,
+  }));
+}
+
 function buildEarningsMoneyFlowCards(
   summary: AdminEarningSummary,
-  serviceBridge: ServiceEarningBridgeItem[],
+  serviceBridge: EarningsServiceBridgeItem[],
   cashDebtTotals: ReturnType<typeof buildCashDebtTotals>,
-): MoneyFlowCard[] {
+): EarningsMoneyFlowCard[] {
   const bridgeGross = sumServiceBridge(serviceBridge, 'grossAmount');
   const providerPayout = sumServiceBridge(serviceBridge, 'providerPayoutAmount');
   const netCompanyFee = sumServiceBridge(serviceBridge, 'netCompanyFee');
@@ -925,16 +578,16 @@ function buildEarningsMoneyFlowCards(
       label: 'Cash debt',
       amount: cashDebtTotals.debtAmount,
       detail:
-        'Negative wallet amount from cash jobs that must be settled before marketplace alerts, participation, or payout release resumes.',
+        'Negative wallet amount from cash jobs that must be settled before final acceptance, service start, or payout release resumes.',
     },
   ];
 }
 
 function buildEarningsMoneyFlowChecks(
   summary: AdminEarningSummary,
-  serviceBridge: ServiceEarningBridgeItem[],
+  serviceBridge: EarningsServiceBridgeItem[],
   cashDebtQueue: CashDebtQueueItem[],
-): FinanceSignal[] {
+): EarningsMoneyFlowCheck[] {
   const bridgeGross = sumServiceBridge(serviceBridge, 'grossAmount');
   const bridgePlatformFee = sumServiceBridge(serviceBridge, 'platformFee');
   const unlinkedOptions = serviceBridge.filter((item) => item.label === 'Unlinked service option');
@@ -985,8 +638,8 @@ function buildEarningsMoneyFlowChecks(
       title: 'Cash job lock',
       status: `${cashDebtQueue.length} PARTNER(S)`,
       detail: cashDebtQueue.length
-        ? 'Negative wallet partners must settle company fee before marketplace alerts, participation, or payout release resumes.'
-        : 'No cash fee debt currently blocks marketplace alerts, participation, or payout release.',
+        ? 'Negative wallet Partners must settle company fee before final acceptance, service start, or payout release resumes.'
+        : 'No cash fee debt currently blocks final acceptance, service start, or payout release.',
       action: cashDebtQueue.length
         ? 'Use cash debt queue to confirm deposit or approved offset.'
         : 'Marketplace and payout gates are clear for listed earnings.',
@@ -997,9 +650,9 @@ function buildEarningsMoneyFlowChecks(
 }
 
 function sumServiceBridge(
-  serviceBridge: ServiceEarningBridgeItem[],
+  serviceBridge: EarningsServiceBridgeItem[],
   field: keyof Pick<
-    ServiceEarningBridgeItem,
+    EarningsServiceBridgeItem,
     | 'grossAmount'
     | 'netAmount'
     | 'providerPayoutAmount'
@@ -1014,8 +667,8 @@ function sumServiceBridge(
   return serviceBridge.reduce((sum, item) => sum + item[field], 0);
 }
 
-function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBridgeItem[] {
-  const grouped = new Map<string, ServiceEarningBridgeItem>();
+function buildServiceEarningBridge(earnings: AdminEarning[]): EarningsServiceBridgeItem[] {
+  const grouped = new Map<string, MutableEarningsServiceBridgeItem>();
 
   earnings.forEach((earning) => {
     if (earning.status === 'CANCELLED') {
@@ -1231,7 +884,7 @@ function buildFinanceSignals(
   payoutBatches: AdminPayoutBatch[],
   payoutQueue: ProviderPayoutQueueItem[],
   cashDebtQueue: CashDebtQueueItem[],
-): FinanceSignal[] {
+): EarningsFinanceSignal[] {
   const readyProviders = payoutQueue.filter((item) => item.canBatch);
   const batchedUnpaid = earnings.filter(
     (earning) => earning.payoutBatchId && earning.status !== 'PAID' && earning.status !== 'CANCELLED',
