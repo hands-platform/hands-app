@@ -128,7 +128,10 @@ import { buildPartnerOperatingLedger } from './partner-detail-operating-ledger-m
 import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
 import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
-import { buildPartnerOperationsQuickRail } from './partner-detail-summary-rail-model';
+import {
+  buildPartnerOperationsQuickRail,
+  buildPartnerOperatorFirstRead,
+} from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
 import {
   amountValue,
@@ -500,66 +503,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     (sum, record) => sum + readPartnerChatMessages(record.booking).length,
     0,
   );
-  const partnerOperatorFirstRead = [
-    {
-      href: '#partner-master-facts',
-      label: 'Identity',
-      value: marketplaceDisplayText(
-        provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
-      ),
-      detail: `${provider.user?.phone ?? 'No phone'} / joined ${formatDate(provider.user?.createdAt)}`,
-    },
-    {
-      href: '#partner-booking-journey',
-      label: 'Booking flow',
-      value: `${partnerBookingArchive.length} records`,
-      detail: `${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
-        dispatchPolicy.backupRadiusMeters / 1000,
-      )}km marketplace radius.`,
-    },
-    {
-      href: '#cash-debt-origin',
-      label: 'Marketplace access',
-      value: hasCashFeeDebt ? 'Blocked by unpaid fee' : 'Open',
-      detail: hasCashFeeDebt
-        ? `${formatCurrency(cashFeeDebtAmount(provider))} company fee must be settled before joining.`
-        : 'No unpaid cash fee debt loaded.',
-    },
-    {
-      href: '#partner-chat-retention-ledger',
-      label: 'Retained chat',
-      value: `${partnerChatMessageCount} messages`,
-      detail: `${partnerChatRetentionRows.length} room(s) retained for admin review after completion.`,
-    },
-    {
-      href: '#payout',
-      label: 'Payout',
-      value: payoutOps.status,
-      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
-    },
-    {
-      href: '#partner-ops-command-center',
-      label: 'Next action',
-      value: partnerFirstReadNextAction.status,
-      detail: partnerFirstReadNextAction.action,
-    },
-    {
-      href: '#partner-operator-notes',
-      label: 'Latest staff note',
-      value: `${partnerOpsNotes.length} note(s)`,
-      detail: partnerOpsNotes[0]
-        ? `${formatDate(partnerOpsNotes[0].createdAt)} / ${auditLogNoteText(partnerOpsNotes[0])}`
-        : 'No manual partner note saved.',
-    },
-    {
-      href: '#location',
-      label: 'Location',
-      value: provider.currentLocationUpdatedAt ? 'Recorded' : 'No pin',
-      detail: provider.currentLocationUpdatedAt
-        ? formatDate(provider.currentLocationUpdatedAt)
-        : 'No latest partner location loaded.',
-    },
-  ];
+  const partnerOperatorFirstRead = buildPartnerOperatorFirstRead({
+    backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
+    bookingRecordCount: partnerBookingArchive.length,
+    cashDebtLabel: formatCurrency(cashFeeDebtAmount(provider)),
+    chatMessageCount: partnerChatMessageCount,
+    chatRetentionRowCount: partnerChatRetentionRows.length,
+    displayLabel: marketplaceDisplayText(
+      provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    ),
+    hasCashFeeDebt,
+    joinedAtLabel: formatDate(provider.user?.createdAt),
+    latestStaffNoteDetail: partnerOpsNotes[0]
+      ? `${formatDate(partnerOpsNotes[0].createdAt)} / ${auditLogNoteText(partnerOpsNotes[0])}`
+      : undefined,
+    locationRecordedAtLabel: provider.currentLocationUpdatedAt
+      ? formatDate(provider.currentLocationUpdatedAt)
+      : undefined,
+    nextActionDetail: partnerFirstReadNextAction.action,
+    nextActionStatus: partnerFirstReadNextAction.status,
+    noteCount: partnerOpsNotes.length,
+    payoutBlockerDetail: payoutOps.blockers[0] ?? payoutOps.hold?.reason,
+    payoutStatus: payoutOps.status,
+    responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
+    userPhone: provider.user?.phone,
+  });
   const detailBaseHref = `/partners/${provider.id}?section=full`;
   const accountConfirmation = buildPartnerAccountActionConfirmation(
     [provider],
