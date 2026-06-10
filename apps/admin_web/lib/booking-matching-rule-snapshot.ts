@@ -49,8 +49,10 @@ export function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapsh
   const backupMode =
     snapshot.backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
       ? 'marketplace immediate'
-      : snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_WINDOW_END'
-        ? 'marketplace delayed'
+      : snapshot.backupOpenMode === 'AFTER_FIRST_PICK_DELAY' ||
+          snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_PICK_EXPIRES' ||
+          snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_WINDOW_END'
+        ? 'marketplace immediate (legacy normalized)'
         : 'marketplace ?';
   const acceptMode =
     snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'

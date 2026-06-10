@@ -43,7 +43,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.walletNegativeGate).toBe('BLOCK_MARKETPLACE_PARTICIPATION');
   });
 
-  it('reads current marketplace policy keys first and keeps legacy backup settings as fallback', () => {
+  it('reads current marketplace policy keys first and normalizes legacy delayed values', () => {
     const policy = buildAdminLiveOperationsPolicy([
       setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 9000),
       setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, 12),
@@ -57,10 +57,10 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceRadiusMeters).toBe(13000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(25);
     expect(policy.marketplaceInvitationLimit).toBe(30);
-    expect(policy.marketplaceOpenMode).toBe('AFTER_FIRST_PICK_DELAY');
+    expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
   });
 
-  it('falls back to legacy backup policy keys when current marketplace keys are absent', () => {
+  it('falls back to legacy backup policy keys while normalizing delayed values', () => {
     const policy = buildAdminLiveOperationsPolicy([
       setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 9000),
       setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 20),
@@ -71,7 +71,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceRadiusMeters).toBe(9000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(20);
     expect(policy.marketplaceInvitationLimit).toBe(12);
-    expect(policy.marketplaceOpenMode).toBe('AFTER_FIRST_PICK_DELAY');
+    expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
   });
 
   it('falls back to MVP authority defaults when settings are missing or invalid', () => {

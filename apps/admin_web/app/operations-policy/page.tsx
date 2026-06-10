@@ -24,6 +24,7 @@ import {
   adminPartnerMarketplaceBlocked,
   adminPartnerWalletBalance,
   adminWalletGateBlocksMarketplaceParticipation,
+  normalizeAdminMarketplaceOpenMode,
   operationalPolicyAnchor,
 } from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
@@ -1380,11 +1381,12 @@ function buildPolicySimulation(
   const travelBufferMinutes =
     policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.travelBufferMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.travelBufferMinutes;
-  const marketplaceOpenMode =
+  const marketplaceOpenMode = normalizeAdminMarketplaceOpenMode(
     policyStringValueFromKeys(settings, [
       OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode,
+  );
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
@@ -1961,11 +1963,12 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
-  const marketplaceOpenMode =
+  const marketplaceOpenMode = normalizeAdminMarketplaceOpenMode(
     policyStringValueFromKeys(settings, [
       OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode,
+  );
   const alertChannel =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.partnerAlertChannel) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.partnerAlertChannel;
@@ -2017,13 +2020,13 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Marketplace visibility timing',
-      status: immediateBackup ? 'Visible during wait' : 'Delayed marketplace',
+      status: immediateBackup ? 'Visible during wait' : 'Legacy value review',
       detail: immediateBackup
         ? 'Nearby partners can participate while the first-pick partner is still deciding.'
-        : 'Marketplace partners wait until the timer passes, except when the first-pick partner declines.',
+        : 'Custom marketplace timing values need API review before rollout.',
       operatorAction: immediateBackup
         ? 'This best matches the customer waiting screen where available marketplace partners appear early.'
-        : 'Use delayed mode only if partner noise is worse than customer waiting anxiety.',
+        : 'Keep immediate marketplace participation unless a new approved policy is added.',
       className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
       pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       blocking: !immediateBackup,
@@ -2032,10 +2035,10 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Customer final selection',
       status: customerFinalChoice ? 'Customer controls' : 'Customer-choice conflict',
       detail: customerFinalChoice
-        ? 'Even after partner acceptance, the customer keeps the final partner selection step.'
-        : 'This setting would match a booking without the final customer choice step.',
+        ? 'Customer fallback selection applies when first-pick does not validly match first.'
+        : 'This setting would remove the customer fallback choice step.',
       operatorAction: customerFinalChoice
-        ? 'This is the safer long-term rule for a marketplace with customer partner choice.'
+        ? 'Keep first-pick priority with customer fallback before production rollout.'
         : 'Return this policy to customer-confirm mode before production use.',
       className: customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: customerFinalChoice ? 'pill-success' : 'pill-danger',
@@ -2099,7 +2102,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       {
         label: 'Final match',
         value: customerFinalChoice ? 'Customer chooses' : 'Policy conflict',
-        helper: 'Customer final selection remains the matching authority.',
+        helper: 'Customer fallback selection remains available unless first-pick validly matches first.',
       },
     ],
     cards,
@@ -2244,7 +2247,9 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
   const snapshotCoverage =
     bookings.length > 0 ? `${Math.round((withSnapshot.length / bookings.length) * 100)}%` : 'No sample';
   const immediateBackup =
-    policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) === 'IMMEDIATE_WITHIN_WINDOW';
+    normalizeAdminMarketplaceOpenMode(
+      policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
+    ) === 'IMMEDIATE_WITHIN_WINDOW';
   const customerConfirm =
     policyRawValue(settings, 'matching.preferred_accept_mode') === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
@@ -2395,10 +2400,10 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Live matching',
         title: immediateBackup
           ? 'Marketplace partners can participate during the first window'
-          : 'Marketplace partners wait until the first window closes',
+          : 'Marketplace timing needs policy review',
         detail: immediateBackup
           ? 'Eligible partners can appear while the first-pick partner is still deciding.'
-          : 'Delayed mode is a non-default operator policy; marketplace participation waits until the first-pick response window passes.',
+          : 'Only immediate marketplace participation is approved for the current MVP runtime.',
         operatorAction: customerConfirm
           ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
           : 'Historical policy value is ignored; reset the policy to first-pick priority with customer fallback.',

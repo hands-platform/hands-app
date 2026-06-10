@@ -33,11 +33,11 @@ describe('operations policy impact details', () => {
     expect(details.detail).toContain('customer selects from participating Partners');
   });
 
-  it('keeps marketplace open mode copy explicit about delayed mode being non-default', () => {
+  it('keeps marketplace open mode copy explicit about legacy delayed normalization', () => {
     const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode);
 
     expect(details.detail).toContain('Immediate mode keeps marketplace participation parallel');
-    expect(details.detail).toContain('Delayed mode is a non-default operator policy');
+    expect(details.detail).toContain('Legacy delayed values are normalized');
   });
 
   it('returns a safe operations fallback for future policy keys', () => {

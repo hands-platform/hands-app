@@ -207,17 +207,17 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Marketplace flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode keeps marketplace participation parallel with the first-pick window. Delayed mode is a non-default operator policy that waits until the timer passes, but opens immediately after first-pick decline.',
+        'Immediate mode keeps marketplace participation parallel with the first-pick window. Legacy delayed values are normalized to immediate participation by the API.',
       saveChecks: [
         {
           label: 'Open matching timeline',
           detail:
-            'Check whether delayed marketplace visibility would increase waiting anxiety on current bookings.',
+            'Confirm marketplace visibility stays parallel while old delayed policy rows are still being phased out.',
           href: '/bookings?view=matching',
         },
         {
           label: 'Policy stage preview',
-          detail: 'Compare delayed and immediate marketplace impact before saving the mode.',
+          detail: 'Confirm the stage preview treats delayed values as compatibility-only.',
           href: '/operations-policy#matching-stage-impact',
         },
       ],

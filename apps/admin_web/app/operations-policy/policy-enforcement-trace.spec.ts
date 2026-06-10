@@ -35,7 +35,7 @@ describe('policy enforcement trace', () => {
     });
     expect(trace[2].title).toBe('45 minute location freshness');
     expect(trace[3].title).toBe('Customer final selection policy conflict');
-    expect(trace[4].title).toBe('Marketplace partners wait until timer or decline');
+    expect(trace[4].title).toBe('Legacy delayed value normalized to immediate marketplace');
     expect(trace[5].title).toBe('Negative wallet gates marketplace alerts and participation');
   });
 });

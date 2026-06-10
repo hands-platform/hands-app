@@ -24,6 +24,15 @@ describe('matchingPolicySummaryLabel', () => {
   it('uses the live policy default label when no saved snapshot exists', () => {
     expect(matchingPolicySummaryLabel(null)).toBe('Matching policy: live policy default');
   });
+
+  it('labels legacy delayed marketplace snapshots as normalized immediate behavior', () => {
+    expect(
+      matchingPolicySummaryLabel({
+        ...savedPolicy,
+        backupOpenMode: 'AFTER_FIRST_PICK_DELAY',
+      }),
+    ).toContain('marketplace immediate (legacy normalized)');
+  });
 });
 
 describe('buildBookingMatchingRuleSnapshot', () => {

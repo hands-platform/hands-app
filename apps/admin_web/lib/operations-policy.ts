@@ -69,6 +69,8 @@ export const ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 
 export const ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
 export const ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
+export const ADMIN_MARKETPLACE_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
+export const ADMIN_MARKETPLACE_OPEN_LEGACY_DELAYED = 'AFTER_FIRST_PICK_DELAY';
 
 export type AdminPartnerMarketplaceReadinessProvider = {
   status?: string | null;
@@ -135,8 +137,8 @@ export function buildAdminLiveOperationsPolicy(
         LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
       ]) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
-    marketplaceOpenMode,
-    backupOpenMode: marketplaceOpenMode,
+    marketplaceOpenMode: normalizeAdminMarketplaceOpenMode(marketplaceOpenMode),
+    backupOpenMode: normalizeAdminMarketplaceOpenMode(marketplaceOpenMode),
     preferredAcceptMode:
       readPolicyString(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode,
@@ -283,6 +285,24 @@ export function adminWalletGateBlocksMarketplaceParticipation(value: string | nu
     value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE ||
     value === ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING
   );
+}
+
+export function normalizeAdminMarketplaceOpenMode(value: unknown) {
+  if (typeof value !== 'string') {
+    return ADMIN_MARKETPLACE_OPEN_IMMEDIATE;
+  }
+  const normalizedValue = value.trim();
+  if (!normalizedValue) {
+    return ADMIN_MARKETPLACE_OPEN_IMMEDIATE;
+  }
+  if (
+    normalizedValue === ADMIN_MARKETPLACE_OPEN_LEGACY_DELAYED ||
+    normalizedValue === 'DELAYED_UNTIL_FIRST_PICK_EXPIRES' ||
+    normalizedValue === 'DELAYED_UNTIL_FIRST_WINDOW_END'
+  ) {
+    return ADMIN_MARKETPLACE_OPEN_IMMEDIATE;
+  }
+  return normalizedValue;
 }
 
 export function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {

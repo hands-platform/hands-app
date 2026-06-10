@@ -4,6 +4,7 @@ import {
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
   adminWalletGateBlocksMarketplaceParticipation,
+  normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
 
 export type PolicyEnforcementTraceItem = {
@@ -27,11 +28,21 @@ export function buildPolicyEnforcementTrace(
   const backupLocationFreshnessMinutes =
     policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
-  const marketplaceOpenMode =
+  const rawMarketplaceOpenMode =
     policyStringValueFromKeys(settings, [
       OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
     ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
+  const marketplaceOpenMode = normalizeAdminMarketplaceOpenMode(rawMarketplaceOpenMode);
+  const marketplaceTimingIsNormalized = rawMarketplaceOpenMode !== marketplaceOpenMode;
+  const marketplaceTimingTitle = marketplaceTimingIsNormalized
+    ? 'Legacy delayed value normalized to immediate marketplace'
+    : marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
+      ? 'Marketplace partners can participate during the wait'
+      : 'Marketplace partners wait until timer or decline';
+  const marketplaceTimingDetail = marketplaceTimingIsNormalized
+    ? 'The API accepts legacy delayed policy rows but runs marketplace participation in parallel with the first-pick window.'
+    : 'This controls whether marketplace partners can participate during the first-pick response window.';
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
@@ -73,10 +84,10 @@ export function buildPolicyEnforcementTrace(
       scope: 'Customer choice',
       title:
         preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
-          ? 'Customer keeps final partner selection'
+          ? 'First-pick priority with customer fallback'
           : 'Customer final selection policy conflict',
       detail:
-        'HANDS MVP requires customer final partner selection. Treat any policy that removes that step as an operations conflict before rollout.',
+        'The first-pick Partner can match first under API rules; otherwise the customer selects from participating Partners. Treat policies that remove the fallback as an operations conflict.',
       api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider',
       server: 'BookingsService.updateParticipant -> BookingsService.selectProvider',
       verify:
@@ -84,12 +95,8 @@ export function buildPolicyEnforcementTrace(
     },
     {
       scope: 'Marketplace timing',
-      title:
-        marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'Marketplace partners can participate during the wait'
-          : 'Marketplace partners wait until timer or decline',
-      detail:
-        'This controls whether marketplace partners can participate during the first-pick response window.',
+      title: marketplaceTimingTitle,
+      detail: marketplaceTimingDetail,
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
       server: 'BookingsService.isBackupWindowOpen',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',

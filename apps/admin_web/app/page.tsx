@@ -43,6 +43,7 @@ import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplac
 import {
   OPERATIONAL_POLICY_KEYS,
   adminOperationalPolicySettingByKey,
+  normalizeAdminMarketplaceOpenMode,
   operationalPolicyHref,
 } from '../lib/operations-policy';
 import {
@@ -2389,8 +2390,10 @@ function buildMatchingControlRoom(
     dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ?? 30;
   const backupInvitationLimit =
     dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50;
-  const backupOpenMode =
-    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const backupOpenMode = normalizeAdminMarketplaceOpenMode(
+    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ??
+      'IMMEDIATE_WITHIN_WINDOW',
+  );
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const openMatchingWithPolicySnapshot = openMatching.filter((booking) =>
     dashboardBookingPolicySnapshot(booking),
@@ -2645,8 +2648,10 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
   const liveRadius = dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10000;
   const liveInviteCap =
     dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50;
-  const liveBackupMode =
-    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const liveBackupMode = normalizeAdminMarketplaceOpenMode(
+    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ??
+      'IMMEDIATE_WITHIN_WINDOW',
+  );
   const driftCount = measuredBookings.filter(
     (booking) => dashboardPolicySnapshotDrift(booking, settings).length > 0,
   ).length;
@@ -2725,7 +2730,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
         detail:
           liveBackupMode === 'IMMEDIATE_WITHIN_WINDOW'
             ? 'Marketplace partners can be exposed during the first-pick response window.'
-            : 'Marketplace partners wait until first-pick decline or timer close.',
+            : 'Marketplace timing needs policy review before rollout.',
         operatorAction:
           lowBackupInviteCount > 0
             ? `${lowBackupInviteCount} open matching booking(s) have no marketplace alert trace yet.`
