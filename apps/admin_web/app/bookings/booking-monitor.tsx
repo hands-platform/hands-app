@@ -67,6 +67,7 @@ import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
+import { backupAlertTraceDisplayFromSummary } from '../../lib/backup-alert-trace-display';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3607,41 +3608,26 @@ function customerVisibleStateLabel(booking: AdminBooking) {
 }
 
 function bookingBackupAlertTraceLabel(booking: AdminBooking, nowMs: number) {
-  const summary = bookingBackupAlertTraceSummary(booking, nowMs);
-  if (!summary.batchCount) {
-    return 'Marketplace alerts: no batch recorded';
-  }
-  if (summary.totalNotified > 0) {
-    return `Marketplace alerts: ${summary.totalNotified} notified / ${summary.batchCount} batch(es)${
-      summary.lastAge ? ` / last ${summary.lastAge}` : ''
-    }`;
-  }
-  return `Marketplace alerts: ${summary.batchCount} batch(es), no eligible partner notified`;
+  return bookingBackupAlertTraceDisplay(booking, nowMs).label;
 }
 
 function bookingBackupAlertTracePill(booking: AdminBooking) {
-  const summary = bookingBackupAlertTraceSummary(booking);
-  if (!summary.batchCount) {
-    return 'No marketplace trace';
-  }
-  if (summary.totalNotified > 0) {
-    return `${summary.totalNotified} marketplace alert(s)`;
-  }
-  return 'Marketplace trace empty';
+  return bookingBackupAlertTraceDisplay(booking).pill;
 }
 
 function bookingBackupAlertTraceTone(booking: AdminBooking) {
+  return bookingBackupAlertTraceDisplay(booking).tone;
+}
+
+function bookingBackupAlertTraceDisplay(booking: AdminBooking, nowMs = 0) {
   const summary = bookingBackupAlertTraceSummary(booking);
-  if (summary.totalNotified > 0) {
-    return 'pill-success';
-  }
-  if (summary.batchCount > 0) {
-    return 'pill-warn';
-  }
-  if (booking.status === 'OPEN_MATCHING') {
-    return 'pill-danger';
-  }
-  return 'pill-neutral';
+  const summaryWithAge = nowMs ? bookingBackupAlertTraceSummary(booking, nowMs) : summary;
+  return backupAlertTraceDisplayFromSummary({
+    batchCount: summary.batchCount,
+    bookingStatus: booking.status,
+    lastAge: summaryWithAge.lastAge,
+    totalNotified: summary.totalNotified,
+  });
 }
 
 function bookingBackupAlertTraceSummary(booking: AdminBooking, nowMs = 0) {
