@@ -2,10 +2,14 @@ import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationChannelSummary,
   buildNotificationDeliveryOpsQueue,
+  buildNotificationFilters,
   buildNotificationSummary,
+  buildNotificationTableRows,
   emptyNotificationMessage,
   filterNotifications,
   notificationFilterDescription,
+  notificationFilterLinks,
+  sortNotifications,
 } from './notification-page-model';
 
 describe('notification page model', () => {
@@ -125,7 +129,103 @@ describe('notification page model', () => {
     expect(filtered.map((item) => item.id)).toEqual(['notification-booking-1']);
   });
 
+  it('sorts notification rows by delivery urgency before recency', () => {
+    const sorted = sortNotifications([
+      notification({
+        createdAt: '2026-06-01T10:03:00.000Z',
+        deliveries: [],
+        id: 'pending-newest',
+        type: 'booking.requested',
+      }),
+      notification({
+        createdAt: '2026-06-01T10:02:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:02:00.000Z',
+            id: 'delivery-sent',
+            provider: 'ONESIGNAL',
+            status: 'SENT',
+          },
+        ],
+        id: 'sent',
+        type: 'booking.matched',
+      }),
+      notification({
+        createdAt: '2026-06-01T10:01:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-failed',
+            provider: 'ONESIGNAL',
+            status: 'FAILED',
+          },
+        ],
+        id: 'failed',
+        type: 'booking.requested',
+      }),
+    ]);
+
+    expect(sorted.map((item) => item.id)).toEqual(['failed', 'sent', 'pending-newest']);
+  });
+
+  it('builds table rows with action links, partner labels, and delivery evidence', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: {
+          backupOpenMode: 'parallel_marketplace',
+          backupProviderRadiusMeters: 2500,
+          bookingId: 'booking-123456',
+          distanceMeters: 400,
+          providerProfileId: 'partner-987654',
+        },
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-disabled',
+            provider: 'ONESIGNAL',
+            pushDevice: { enabled: false, id: 'device-disabled', platform: 'ios' },
+            response: { body: { error: { details: [{ errorCode: 'BAD_TOKEN' }] } }, statusCode: 400 },
+            status: 'FAILED',
+          },
+        ],
+        id: 'notification-row',
+        type: 'booking.backup_available',
+        user: {
+          fullName: 'Mai Partner',
+          phone: '+8490',
+          providerProfile: { displayName: 'Mai', id: 'partner-987654', status: 'APPROVED' },
+        },
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      actionLabel: 'Notification actions for notifica',
+      bookingDataHint:
+        'booking booking- / partner partner- / distance 400 m / marketplace radius 2.5 km / marketplace mode parallel_marketplace',
+      opsSignal: 'Retry needed',
+      partnerHref: '/partners/partner-987654',
+      partnerLabel: 'Partner Mai',
+      typeLabel: 'Booking Marketplace Available',
+    });
+    expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Open Partner', 'Retry']);
+    expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      deviceStateLabel: 'Device disabled',
+      enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
+      failureCodeLabel: 'BAD_TOKEN',
+      httpStatusLabel: '400',
+    });
+  });
+
   it('keeps review descriptions and empty table messages stable', () => {
+    expect(buildNotificationFilters({ booking: 'booking-1', review: 'failed' })).toEqual({
+      booking: 'booking-1',
+      review: 'failed',
+    });
+    expect(notificationFilterLinks.find((item) => item.review === 'partner-alerts')).toEqual({
+      href: '/notifications?review=partner-alerts',
+      label: 'Partner alerts',
+      review: 'partner-alerts',
+    });
     expect(notificationFilterDescription('failed')).toBe(
       'delivery attempts that returned a push provider failure.',
     );
@@ -191,23 +291,28 @@ function buildNotifications(): AdminNotification[] {
 }
 
 function notification({
+  createdAt,
   data,
   deliveries,
   id,
   type,
+  user,
 }: {
+  readonly createdAt?: string;
   readonly data?: unknown;
   readonly deliveries: NonNullable<AdminNotification['deliveries']>;
   readonly id: string;
   readonly type: string;
+  readonly user?: AdminNotification['user'];
 }): AdminNotification {
   return {
     body: 'Body',
-    createdAt: '2026-06-01T09:00:00.000Z',
+    createdAt: createdAt ?? '2026-06-01T09:00:00.000Z',
     data,
     deliveries,
     id,
     title: 'Title',
     type,
+    user,
   };
 }
