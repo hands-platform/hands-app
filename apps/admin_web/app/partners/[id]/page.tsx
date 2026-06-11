@@ -117,6 +117,10 @@ import {
   type PartnerBookingJourneyRow,
 } from './partner-detail-booking-journey-section';
 import {
+  PartnerDetailBookingGateEvidenceSection,
+  type PartnerBookingGateAttemptRow,
+} from './partner-detail-booking-gate-evidence-section';
+import {
   PartnerDetailChatRetentionLedgerSection,
 } from './partner-detail-chat-retention-ledger-section';
 import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
@@ -690,72 +694,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner booking journey"
       />
 
-      <div className="card admin-mb-16" id="partner-booking-create-gates">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner booking create gate evidence</h2>
-            <p className="muted">
-              Booking creation attempts where this partner was the first-pick partner. These rows show factual
-              address, distance, and GPS evidence before payment and matching.
-            </p>
-          </div>
-          <Link className="text-link" href="/bookings?view=blocked-create&gate=first-pick-distance">
-            Open gate queue
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Loaded attempts</span>
-            <strong>{partnerBookingGateAttempts.length}</strong>
-            <small>All recent partner-linked gate attempts.</small>
-          </div>
-          <div>
-            <span>Filtered attempts</span>
-            <strong>{filteredPartnerBookingGateAttempts.length}</strong>
-            <small>Matches current date filter.</small>
-          </div>
-          <div>
-            <span>Latest gate</span>
-            <strong>{partnerBookingGateAttempts[0]?.reasonLabel ?? 'None'}</strong>
-            <small>
-              {partnerBookingGateAttempts[0] ? formatDate(partnerBookingGateAttempts[0].at) : 'No gate row'}
-            </small>
-          </div>
-        </div>
-        {filteredPartnerBookingGateAttempts.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No first-pick booking create gate attempt matched this date filter.
-          </p>
-        ) : (
-          <div className="setup-stage-list admin-mt-14">
-            {filteredPartnerBookingGateAttempts.slice(0, 12).map((attempt) => (
-              <div className="setup-stage-item" key={attempt.id}>
-                <span>{attempt.gateLabel}</span>
-                <div>
-                  <Link className="text-link" href={attempt.bookingMonitorHref}>
-                    <strong>{attempt.reasonLabel}</strong>
-                  </Link>
-                  <p className="muted">{attempt.detail}</p>
-                  <div className="participant-list admin-mt-8">
-                    <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
-                    <span className="pill pill-neutral">{attempt.addressLabel}</span>
-                    <span className="pill pill-neutral">{attempt.distanceLabel}</span>
-                  </div>
-                  <div className="participant-list admin-mt-8">
-                    <Link className="text-link" href={attempt.bookingMonitorHref}>
-                      Booking gate queue
-                    </Link>
-                    <Link className="text-link" href={attempt.auditHref}>
-                      Audit evidence
-                    </Link>
-                  </div>
-                </div>
-                <small>{formatDate(attempt.at)}</small>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <PartnerDetailBookingGateEvidenceSection
+        filteredAttempts={filteredPartnerBookingGateAttempts}
+        formatDate={formatDate}
+        loadedAttempts={partnerBookingGateAttempts}
+      />
 
       <PartnerDetailConnectedRecordsSection
         description="Jump from this partner to linked booking, chat, KYC, bank, tax, location, wallet, payout, and operator records."
@@ -3234,20 +3177,6 @@ type PartnerBookingOpsLedgerRow = {
   closeoutDetail: string;
   chatHref?: string;
 };
-type PartnerBookingGateAttemptRow = {
-  id: string;
-  at: string;
-  gate: string;
-  gateLabel: string;
-  reasonLabel: string;
-  detail: string;
-  addressLabel: string;
-  distanceLabel: string;
-  bookingMonitorHref: string;
-  auditHref: string;
-  tone: string;
-};
-
 type PartnerAcceptanceRepairCommand = {
   status: string;
   tone: ProviderOpsCard['tone'];
