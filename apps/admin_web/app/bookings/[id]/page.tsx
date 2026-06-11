@@ -100,6 +100,7 @@ import {
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
 import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snapshot';
 import { bookingPaymentEvidence } from './booking-payment-evidence';
+import { bookingServicePricingSnapshotRows } from './booking-service-pricing-snapshot-rows';
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
@@ -259,46 +260,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const refundLedgerRows = paymentEvidence.refundRows;
   const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
   const closureSummary = bookingClosureSummary(booking);
-  const servicePricingSnapshotRows = [
-    {
-      label: 'Service option',
-      value: financeTrace.serviceOption,
-      helper: 'Booked service name, duration option, and quantity snapshot.',
-    },
-    {
-      label: 'Customer price',
-      value: financeTrace.customerPrice,
-      helper: `Admin minimum ${financeTrace.adminMinimum}; partner price must follow the configured step.`,
-    },
-    {
-      label: 'Payout rule',
-      value: financeTrace.payoutRuleStatus,
-      helper: financeTrace.payoutRuleLine,
-    },
-    {
-      label: 'Partner payout',
-      value: financeTrace.providerPayout,
-      helper: financeTrace.providerNet,
-    },
-    {
-      label: 'HANDS fee',
-      value: financeTrace.platformFee,
-      helper: `${financeTrace.feeCosts}; net ${financeTrace.netHandsFee}`,
-    },
-    {
-      label: 'Tax and withholding',
-      value: financeTrace.withholding,
-      helper: `Company fee after tax: ${financeTrace.companyFeeAfterTax}`,
-    },
-    {
-      label: 'Wallet impact',
-      value: financeTrace.walletLedger,
-      helper:
-        financeTrace.paymentMethod === 'CASH'
-          ? 'Cash bookings can create partner fee debt until settled.'
-          : 'Non-cash bookings should create a payout credit after completion.',
-    },
-  ];
+  const servicePricingSnapshotRows = bookingServicePricingSnapshotRows(financeTrace);
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
   const marketplaceSupply = bookingMarketplacePartnerSupply(booking, providers, operationalPolicies);
   const addressRadiusContract = bookingAddressRadiusContract(booking, marketplaceSupply);
