@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { MetricCard } from '../../../components/metric-card';
 import {
   AdminAppSession,
@@ -722,60 +723,62 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerBookingEvidenceRows.length} booking bundle(s)</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Customer location</th>
-              <th>Partner flow</th>
-              <th>Chat archive</th>
-              <th>Money records</th>
-              <th>Ops evidence</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customerBookingEvidenceRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.addressStatus}</strong>
-                  <p className="muted">{row.addressDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.partnerStatus}</strong>
-                  <p className="muted">{row.partnerDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.chatStatus}</strong>
-                  <p className="muted">{row.chatDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.moneyStatus}</strong>
-                  <p className="muted">{row.moneyDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.opsStatus}</strong>
-                  <p className="muted">{row.opsDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Customer location</th>
+                <th>Partner flow</th>
+                <th>Chat archive</th>
+                <th>Money records</th>
+                <th>Ops evidence</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {customerBookingEvidenceRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.bookingLabel}</strong>
+                    <p className="muted">{row.serviceLabel}</p>
+                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td>
+                    <strong>{row.addressStatus}</strong>
+                    <p className="muted">{row.addressDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.partnerStatus}</strong>
+                    <p className="muted">{row.partnerDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.chatStatus}</strong>
+                    <p className="muted">{row.chatDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.moneyStatus}</strong>
+                    <p className="muted">{row.moneyDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.opsStatus}</strong>
+                    <p className="muted">{row.opsDetail}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${row.id}`}>
+                      Booking
+                    </Link>
+                    {row.chatHref ? (
+                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                        Chat
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {customerBookingEvidenceRows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No booking bundle matched this date filter.
@@ -935,30 +938,32 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Evidence</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customerOperatingLedger.map((row) => (
-              <tr key={row.area}>
-                <td>{row.area}</td>
-                <td>{row.status}</td>
-                <td>{row.evidence}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Evidence</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {customerOperatingLedger.map((row) => (
+                <tr key={row.area}>
+                  <td>{row.area}</td>
+                  <td>{row.status}</td>
+                  <td>{row.evidence}</td>
+                  <td>
+                    <Link className="text-link" href={row.href}>
+                      Open
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       </section>
 
       <section className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
