@@ -348,8 +348,7 @@ function buildPayoutBatchTableRows(batches: readonly AdminPayoutBatch[]): Payout
       actionExecutionItems: payoutActionExecutionMap(batch),
       actionMenuItems: payoutActionMenuItems(batch),
       payoutHold: Boolean(payoutHold),
-      paidBlockedByReleaseCheck:
-        batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length > 0,
+      paidBlockedByReleaseCheck: !isTerminalPayoutBatch(batch) && blockingReasons.length > 0,
     };
   });
 }
@@ -367,7 +366,7 @@ function payoutActionMenuItems(batch: AdminPayoutBatch) {
           ),
         ]
       : []),
-    ...(batch.status !== 'PAID' && batch.status !== 'CANCELLED'
+    ...(!isTerminalPayoutBatch(batch)
       ? [
           payoutActionMenuItem(
             batch,
@@ -439,7 +438,7 @@ function payoutActionDisabledReason(batch: AdminPayoutBatch, action: PayoutConfi
       }
       return payoutHold ? `Partner payout hold is active: ${payoutHold.reason}.` : null;
     case 'paid':
-      if (batch.status === 'PAID' || batch.status === 'CANCELLED') {
+      if (isTerminalPayoutBatch(batch)) {
         return `Batch status is ${batch.status}; paid action is not available.`;
       }
       return blockingReasons.length
@@ -1091,7 +1090,7 @@ function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutio
   const withholdingAmount = batchWithholdingAmount(batch);
   const withholdingLogs = batch.withholdingLogs ?? [];
   const canMoveToProcessing = batch.status === 'DRAFT' && !payoutHold;
-  const canMarkPaid = batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length === 0;
+  const canMarkPaid = !isTerminalPayoutBatch(batch) && blockingReasons.length === 0;
   const canMarkFailed = batch.status === 'PROCESSING';
   const hasTransferReference = Boolean(batch.transferRef);
 
@@ -1313,7 +1312,11 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
 }
 
 function transferRefRequiredBeforePaid(batch: AdminPayoutBatch) {
-  return batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
+  return !isTerminalPayoutBatch(batch) && !batch.transferRef;
+}
+
+function isTerminalPayoutBatch(batch: AdminPayoutBatch) {
+  return batch.status === 'PAID' || batch.status === 'CANCELLED';
 }
 
 function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] {
