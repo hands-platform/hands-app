@@ -233,3 +233,46 @@ export function providerEarningCreatedNotification(userId: string, bookingId: st
     data: { bookingId },
   };
 }
+
+export function backupBookingAvailableNotification(input: {
+  userId: string;
+  bookingId: string;
+  providerProfileId: string;
+  distanceMeters: number;
+  backupProviderRadiusMeters: number;
+  alertPolicy: Record<string, unknown>;
+}): BookingNotificationPayload {
+  return {
+    userId: input.userId,
+    type: 'booking.backup_available',
+    title: 'Nearby booking available',
+    body: `A customer request within ${Math.round(
+      input.backupProviderRadiusMeters / 1000,
+    )}km is open for marketplace participation.`,
+    data: {
+      bookingId: input.bookingId,
+      providerProfileId: input.providerProfileId,
+      distanceMeters: input.distanceMeters,
+      ...input.alertPolicy,
+    },
+  };
+}
+
+export function providerPayoutSetupRequiredNotification(input: {
+  userId: string;
+  bookingId: string;
+  providerProfileId: string;
+  missing: unknown;
+}): BookingNotificationPayload {
+  return {
+    userId: input.userId,
+    type: 'provider.payout_setup_required',
+    title: 'Payout setup required',
+    body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',
+    data: {
+      bookingId: input.bookingId,
+      providerProfileId: input.providerProfileId,
+      missing: input.missing,
+    },
+  };
+}

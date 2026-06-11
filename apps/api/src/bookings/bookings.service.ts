@@ -71,6 +71,7 @@ import {
   type BackupNotificationTraceStage,
 } from './bookings.backup-notification-trace';
 import {
+  backupBookingAvailableNotification,
   bookingOpenedNotification,
   customerBookingCancelledNotification,
   customerFirstPickRejectedNotification,
@@ -83,6 +84,7 @@ import {
   preferredProviderRequestedNotification,
   providerBookingCancelledNotification,
   providerEarningCreatedNotification,
+  providerPayoutSetupRequiredNotification,
   selectedPartnerMatchedCustomerNotification,
   selectedPartnerMatchedProviderNotification,
   serviceStartedCustomerNotification,
@@ -1232,20 +1234,16 @@ export class BookingsService {
     }> = [];
 
     for (const backupProvider of input.providers) {
-      const notification = await this.notifications.create({
-        userId: backupProvider.userId,
-        type: 'booking.backup_available',
-        title: 'Nearby booking available',
-        body: `A customer request within ${Math.round(
-          input.backupProviderRadiusMeters / 1000,
-        )}km is open for marketplace participation.`,
-        data: {
+      const notification = await this.notifications.create(
+        backupBookingAvailableNotification({
+          userId: backupProvider.userId,
           bookingId: input.bookingId,
           providerProfileId: backupProvider.id,
           distanceMeters: backupProvider.distanceMeters,
-          ...alertPolicy,
-        },
-      });
+          backupProviderRadiusMeters: input.backupProviderRadiusMeters,
+          alertPolicy,
+        }),
+      );
       notifiedProviders.push({
         providerProfileId: backupProvider.id,
         userId: backupProvider.userId,
@@ -1603,17 +1601,14 @@ export class BookingsService {
       return;
     }
 
-    await this.notifications.create({
-      userId: providerUserId,
-      type: 'provider.payout_setup_required',
-      title: 'Payout setup required',
-      body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',
-      data: {
+    await this.notifications.create(
+      providerPayoutSetupRequiredNotification({
+        userId: providerUserId,
         bookingId,
         providerProfileId,
         missing,
-      },
-    });
+      }),
+    );
   }
 
   private async requireProvider(userId?: string) {

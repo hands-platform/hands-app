@@ -1,4 +1,5 @@
 import {
+  backupBookingAvailableNotification,
   bookingOpenedNotification,
   customerBookingCancelledNotification,
   customerMarketplaceProviderAcceptedNotification,
@@ -6,6 +7,7 @@ import {
   firstPickMatchedCustomerNotification,
   preferredProviderRequestedNotification,
   providerBookingCancelledNotification,
+  providerPayoutSetupRequiredNotification,
   selectedPartnerMatchedProviderNotification,
   serviceStartedCustomerNotification,
 } from './bookings.notifications';
@@ -132,6 +134,49 @@ describe('booking notification payloads', () => {
     ).toMatchObject({
       type: 'service.started',
       data: { bookingId: 'booking-1', chatRoomId: 'chat-1' },
+    });
+  });
+
+  it('builds marketplace backup and payout setup payloads', () => {
+    expect(
+      backupBookingAvailableNotification({
+        userId: 'provider-user-1',
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+        distanceMeters: 1234,
+        backupProviderRadiusMeters: 10000,
+        alertPolicy: { backupOpenMode: 'OPEN_MARKETPLACE' },
+      }),
+    ).toEqual({
+      userId: 'provider-user-1',
+      type: 'booking.backup_available',
+      title: 'Nearby booking available',
+      body: 'A customer request within 10km is open for marketplace participation.',
+      data: {
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+        distanceMeters: 1234,
+        backupOpenMode: 'OPEN_MARKETPLACE',
+      },
+    });
+
+    expect(
+      providerPayoutSetupRequiredNotification({
+        userId: 'provider-user-1',
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+        missing: { taxProfileApproved: true },
+      }),
+    ).toEqual({
+      userId: 'provider-user-1',
+      type: 'provider.payout_setup_required',
+      title: 'Payout setup required',
+      body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',
+      data: {
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+        missing: { taxProfileApproved: true },
+      },
     });
   });
 });
