@@ -120,6 +120,7 @@ import {
   PartnerDetailBookingGateEvidenceSection,
   type PartnerBookingGateAttemptRow,
 } from './partner-detail-booking-gate-evidence-section';
+import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
   PartnerDetailChatRetentionLedgerSection,
@@ -883,46 +884,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         ) : null}
       </div>
 
-      <div className="card admin-mb-16" id="partner-full-record-index">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner full record index</h2>
-            <p className="muted">
-              Factual partner record map for operators. Use these links to jump to identity, booking/chat,
-              payout, documents, app activity, agreements, and review history inside this partner detail
-              record.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerBookingArchive.length} booking record(s)</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <a href="#booking-chat-records">
-            <span>Booking and chat</span>
-            <strong>{partnerBookingArchive.length}</strong>
-            <small>Preferred, selected, and marketplace participation requests.</small>
-          </a>
-          <a href="#payout">
-            <span>Wallet and payout</span>
-            <strong>{formatCurrency(cashFeeDebtAmount(provider))}</strong>
-            <small>Cash fee debt and payout status.</small>
-          </a>
-          <a href="#documents">
-            <span>KYC documents</span>
-            <strong>{missingApprovedRequiredKycDocuments(provider).length} missing</strong>
-            <small>CCCD front/back and selfie evidence.</small>
-          </a>
-          <a href="#app-activity">
-            <span>App activity</span>
-            <strong>{(provider.sessions ?? []).length + (provider.devices ?? []).length}</strong>
-            <small>Sessions, devices, push, and location records.</small>
-          </a>
-          <a href="#partner-daily-digest">
-            <span>Daily digest</span>
-            <strong>{partnerDailyActivityDigest.length}</strong>
-            <small>Date-grouped partner operations records.</small>
-          </a>
-        </div>
-      </div>
+      <PartnerDetailFullRecordIndexSection
+        appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
+        bookingRecordCount={partnerBookingArchive.length}
+        cashDebtLabel={formatCurrency(cashFeeDebtAmount(provider))}
+        dailyDigestCount={partnerDailyActivityDigest.length}
+        missingKycDocumentCount={missingApprovedRequiredKycDocuments(provider).length}
+      />
 
       <div className="card admin-mb-16" id="partner-operating-ledger">
         <div className="ops-section-header">
