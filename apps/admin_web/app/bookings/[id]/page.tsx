@@ -44,6 +44,7 @@ import {
   BookingOperatingTimelineSection,
 } from './booking-operating-sections';
 import { BookingRecordDetailSections } from './booking-record-detail-sections';
+import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
 import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
@@ -1124,22 +1125,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       : []),
     { label: 'Service feedback', value: booking.review ? 'Submitted' : 'Not submitted' },
   ];
-  const bookingRecordFinanceRows = [
-    { label: 'Pricing source', value: financeTrace.pricingSource },
-    { label: 'Service option', value: financeTrace.serviceOption },
-    { label: 'Customer price', value: financeTrace.customerPrice },
-    { label: 'Admin minimum', value: financeTrace.adminMinimum },
-    { label: 'Payout rule', value: financeTrace.payoutRuleStatus },
-    { label: 'Rule line', value: financeTrace.payoutRuleLine },
-    { label: 'Partner payout', value: financeTrace.providerPayout },
-    { label: 'Platform fee', value: financeTrace.platformFee },
-    { label: 'VAT / other costs', value: financeTrace.feeCosts },
-    { label: 'Net HANDS fee', value: financeTrace.netHandsFee },
-    { label: 'Withholding', value: financeTrace.withholding },
-    { label: 'Company fee after tax', value: financeTrace.companyFeeAfterTax },
-    { label: 'Wallet ledger', value: financeTrace.walletLedger },
-    { label: 'Partner net', value: financeTrace.providerNet },
-  ];
+  const bookingRecordFinanceRows = buildBookingRecordFinanceRows(financeTrace);
 
   return (
     <>
