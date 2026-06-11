@@ -774,19 +774,28 @@ export class BookingsService {
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
-    const participant = await this.prisma.bookingParticipant.upsert({
-      ...bookingParticipantJoinUpsert({
-        bookingId,
-        providerProfileId: provider.id,
-        distanceMeters,
-        providerStatusAtJoin: provider.status,
-      }),
+    const participant = await this.joinProviderBookingParticipant({
+      bookingId,
+      providerProfileId: provider.id,
+      distanceMeters,
+      providerStatusAtJoin: provider.status,
     });
 
     await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
     await this.announceProviderJoined({ bookingId, provider, matchingPayload: result });
     return result;
+  }
+
+  private joinProviderBookingParticipant(input: {
+    bookingId: string;
+    providerProfileId: string;
+    providerStatusAtJoin: ProviderStatus;
+    distanceMeters: number | null;
+  }) {
+    return this.prisma.bookingParticipant.upsert({
+      ...bookingParticipantJoinUpsert(input),
+    });
   }
 
   async selectProvider(bookingId: string, customerUserId: string, providerId: string) {
