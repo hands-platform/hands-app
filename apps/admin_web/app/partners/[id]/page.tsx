@@ -53,10 +53,7 @@ import {
   unblockProviderDevice,
 } from '../actions';
 import {
-  createProviderReport,
-  createProviderSanction,
   liftProviderSanction,
-  updateProviderReport,
 } from '../../partner-controls/actions';
 import {
   PARTNER_ACTIVITY_TYPE_OPTIONS,
@@ -169,6 +166,12 @@ import {
   PartnerDetailOperatorNotesSection,
   type PartnerOperatorNoteRow,
 } from './partner-detail-operator-notes-section';
+import {
+  PartnerDetailReportsControlsSection,
+  type PartnerAccountControlRow,
+  type PartnerReportControlPayoutHold,
+  type PartnerReportRow,
+} from './partner-detail-reports-controls-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -425,6 +428,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const kycEvidence = buildPartnerKycEvidence(provider);
   const canApproveKyc = kycEvidence.allRequiredApproved;
   const payoutHold = activePayoutHold(provider);
+  const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
+  const partnerReportRows = buildPartnerReportRows(provider);
+  const partnerAccountControlRows = buildPartnerAccountControlRows(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
@@ -911,232 +917,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         sharedDeviceRows={partnerSharedDeviceRows}
       />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Reports and account controls</h2>
-            <p className="muted">
-              Keep customer complaints, staff findings, payout holds, and account blocks visible on the
-              partner profile.
-            </p>
-          </div>
-          <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
-            Open reports desk
-          </Link>
-        </div>
-        <form className="form-grid admin-mb-16" action={createProviderReport}>
-          <input type="hidden" name="providerProfileId" value={provider.id} />
-          <label>
-            Category
-            <input name="category" placeholder="safety, payout, behavior, identity" required />
-          </label>
-          <label>
-            Severity
-            <select name="severity" defaultValue="MEDIUM">
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">Major</option>
-              <option value="CRITICAL">Urgent</option>
-            </select>
-          </label>
-          <label>
-            Source
-            <select name="source" defaultValue="ADMIN">
-              <option value="ADMIN">Admin</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="PROVIDER">Partner</option>
-              <option value="SYSTEM">System</option>
-            </select>
-          </label>
-          <label className="full-span">
-            Summary
-            <input name="summary" placeholder="Short report summary" required />
-          </label>
-          <label className="full-span">
-            Details
-            <textarea name="details" placeholder="Evidence, timeline, follow-up, or staff note" />
-          </label>
-          <div className="actions full-span">
-            <button type="submit">Create report</button>
-          </div>
-        </form>
-        <div className="ops-task-card ops-task-pending admin-mb-16">
-          <div className="ops-section-header">
-            <div>
-              <h3>Manual account control</h3>
-              <p className="muted">
-                Use this for immediate operating controls when a report is not yet required.
-              </p>
-            </div>
-            <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
-              {payoutHold ? 'Payout locked' : 'No payout hold'}
-            </span>
-          </div>
-          {payoutHold ? (
-            <div className="setup-stage-item admin-mb-12">
-              <span>ACTIVE</span>
-              <div>
-                <strong>{payoutHold.type}</strong>
-                <p className="muted">{payoutHold.reason}</p>
-                <p className="muted">
-                  Started {formatDate(payoutHold.startsAt)} / expires {formatDate(payoutHold.expiresAt)}
-                </p>
-              </div>
-              <small>{shortRecordId(payoutHold.id)}</small>
-            </div>
-          ) : null}
-          <form className="form-grid" action={createProviderSanction}>
-            <input type="hidden" name="providerProfileId" value={provider.id} />
-            <label>
-              Control type
-              <select name="type" defaultValue="PAYOUT_HOLD">
-                <option value="WARNING">Warning</option>
-                <option value="PAYOUT_HOLD">Payout hold</option>
-                <option value="ACCOUNT_BLOCK">Account block</option>
-                <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
-              </select>
-            </label>
-            <label>
-              Expires at
-              <input name="expiresAt" type="datetime-local" />
-            </label>
-            <label className="full-span">
-              Reason
-              <input
-                name="reason"
-                placeholder="Clear operator reason, visible in audit and payout controls"
-                required
-                minLength={12}
-                maxLength={500}
-              />
-            </label>
-            <div className="actions full-span">
-              <button type="submit">Apply account control</button>
-              <Link className="text-link" href="/payouts">
-                Open payouts
-              </Link>
-            </div>
-          </form>
-        </div>
-        <div className="detail-grid">
-          <div>
-            <h3>Recent reports</h3>
-            {(provider.reports ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.reports?.map((report) => (
-                  <div className="setup-stage-item" key={report.id}>
-                    <span>{report.status}</span>
-                    <div>
-                      <strong>{report.summary}</strong>
-                      <p className="muted">
-                        {report.category} / {report.source} / {formatDate(report.createdAt)}
-                      </p>
-                      <div className="participant-list admin-mt-6">
-                        <span className={`pill ${reportSeverityPill(report.severity)}`}>
-                          {report.severity}
-                        </span>
-                        <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
-                        {report.bookingId ? (
-                          <Link className="text-link" href={`/bookings/${report.bookingId}`}>
-                            Booking {shortRecordId(report.bookingId)}
-                          </Link>
-                        ) : null}
-                      </div>
-                      {report.details ? <p className="muted">{report.details}</p> : null}
-                      {report.resolutionNote ? (
-                        <p className="muted">Resolution: {report.resolutionNote}</p>
-                      ) : null}
-                      <form className="actions admin-mt-8" action={updateProviderReport}>
-                        <input type="hidden" name="reportId" value={report.id} />
-                        <input type="hidden" name="providerProfileId" value={provider.id} />
-                        <select name="status" defaultValue={report.status}>
-                          <option value="OPEN">Open</option>
-                          <option value="INVESTIGATING">Investigating</option>
-                          <option value="RESOLVED">Resolved</option>
-                          <option value="DISMISSED">Dismissed</option>
-                        </select>
-                        <select name="severity" defaultValue={report.severity}>
-                          <option value="LOW">Low</option>
-                          <option value="MEDIUM">Medium</option>
-                          <option value="HIGH">Major</option>
-                          <option value="CRITICAL">Urgent</option>
-                        </select>
-                        <input name="resolutionNote" placeholder="Resolution note" />
-                        <button type="submit">Update</button>
-                      </form>
-                      <form className="actions admin-mt-8" action={createProviderSanction}>
-                        <input type="hidden" name="providerProfileId" value={provider.id} />
-                        <input type="hidden" name="reportId" value={report.id} />
-                        <select
-                          name="type"
-                          defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}
-                        >
-                          <option value="WARNING">Warning</option>
-                          <option value="PAYOUT_HOLD">Payout hold</option>
-                          <option value="ACCOUNT_BLOCK">Account block</option>
-                          <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
-                        </select>
-                        <input
-                          name="reason"
-                          placeholder="Control reason"
-                          required
-                          minLength={12}
-                          maxLength={500}
-                        />
-                        <button type="submit">Apply control</button>
-                      </form>
-                    </div>
-                    <small>{shortRecordId(report.id)}</small>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">No partner reports recorded yet.</p>
-            )}
-          </div>
-          <div>
-            <h3>Recent account controls</h3>
-            {(provider.sanctions ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.sanctions?.map((sanction) => (
-                  <div className="setup-stage-item" key={sanction.id}>
-                    <span>{sanction.status}</span>
-                    <div>
-                      <strong>{sanction.type}</strong>
-                      <p className="muted">{sanction.reason}</p>
-                      <p className="muted">
-                        Started {formatDate(sanction.startsAt)} / expires {formatDate(sanction.expiresAt)}
-                      </p>
-                      {sanction.report ? (
-                        <p className="muted">
-                          Report: {sanction.report.category} / {sanction.report.severity}
-                        </p>
-                      ) : null}
-                      {sanction.status === 'ACTIVE' ? (
-                        <ActionMenu
-                          actions={[
-                            {
-                              description: 'Review before lifting this Partner account control.',
-                              href: partnerControlActionConfirmHref(provider.id, sanction.id),
-                              kind: 'link',
-                              label: 'Lift control',
-                              tone: 'warning',
-                            },
-                          ]}
-                          label={`Control actions for ${shortRecordId(sanction.id)}`}
-                        />
-                      ) : null}
-                    </div>
-                    <small>{shortRecordId(sanction.id)}</small>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">No active or historical account control recorded yet.</p>
-            )}
-          </div>
-        </div>
-      </div>
+      <PartnerDetailReportsControlsSection
+        accountControls={partnerAccountControlRows}
+        payoutHold={reportControlPayoutHold}
+        providerId={provider.id}
+        reports={partnerReportRows}
+        reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+      />
 
       <PartnerDetailLevelPathSection plan={levelPlan} />
 
@@ -4782,18 +4569,6 @@ function providerDocumentResubmissionInstruction(type?: string | null) {
   return 'Ask the partner to upload a clearer replacement image for review.';
 }
 
-function reportSeverityPill(severity: string) {
-  if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
-  if (severity === 'MEDIUM') return 'pill-warn';
-  return 'pill-neutral';
-}
-
-function reportStatusPill(status: string) {
-  if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
-  if (status === 'INVESTIGATING') return 'pill-warn';
-  return 'pill-info';
-}
-
 function payoutBlockers(provider: ProviderDetail) {
   const blockers: string[] = [];
   const agreementsAccepted = provider.agreements?.length ?? 0;
@@ -5365,6 +5140,53 @@ function buildPartnerOperatorNoteRows(logs: AdminAuditLog[]): PartnerOperatorNot
     createdLabel: formatDate(log.createdAt),
     id: log.id,
     note: auditLogNoteText(log),
+  }));
+}
+
+function buildPartnerReportControlPayoutHold(
+  payoutHold: ReturnType<typeof activePayoutHold>,
+): PartnerReportControlPayoutHold | null {
+  if (!payoutHold) return null;
+
+  return {
+    idLabel: shortRecordId(payoutHold.id),
+    reason: payoutHold.reason,
+    timeline: `Started ${formatDate(payoutHold.startsAt)} / expires ${formatDate(payoutHold.expiresAt)}`,
+    type: payoutHold.type,
+  };
+}
+
+function buildPartnerReportRows(provider: ProviderDetail): PartnerReportRow[] {
+  return (provider.reports ?? []).map((report) => ({
+    bookingHref: report.bookingId ? `/bookings/${report.bookingId}` : undefined,
+    bookingLabel: report.bookingId ? shortRecordId(report.bookingId) : undefined,
+    category: report.category,
+    createdLabel: formatDate(report.createdAt),
+    defaultControlType: report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING',
+    details: report.details,
+    id: report.id,
+    resolutionNote: report.resolutionNote,
+    severity: report.severity,
+    smallLabel: shortRecordId(report.id),
+    source: report.source,
+    status: report.status,
+    summary: report.summary,
+  }));
+}
+
+function buildPartnerAccountControlRows(provider: ProviderDetail): PartnerAccountControlRow[] {
+  return (provider.sanctions ?? []).map((sanction) => ({
+    id: sanction.id,
+    liftControlHref:
+      sanction.status === 'ACTIVE' ? partnerControlActionConfirmHref(provider.id, sanction.id) : undefined,
+    reason: sanction.reason,
+    reportLine: sanction.report
+      ? `Report: ${sanction.report.category} / ${sanction.report.severity}`
+      : null,
+    smallLabel: shortRecordId(sanction.id),
+    status: sanction.status,
+    timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`,
+    type: sanction.type,
   }));
 }
 
