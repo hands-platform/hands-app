@@ -1,6 +1,12 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
 import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
-import { type AdminDateRange, dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  type AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../../lib/date-range';
 import type { PaymentCallbackAttemptLedgerRow } from './payment-callback-attempt-ledger-section';
 import type { PaymentFilterLink, PaymentRangeLink } from './payment-filter-board-section';
 import { paymentFilterLinks, paymentRangeLinks, withPaymentRange } from './payment-page-links';
@@ -148,42 +154,50 @@ export function filterPaymentCallbackAttempts(
   return attempts.filter(
     (attempt) =>
       isInDateRange(attempt.createdAt, filters.range) &&
-      (!filters.review ||
-        (filters.review === 'callback-review'
-          ? paymentCallbackAttemptNeedsReview(attempt)
-          : filters.review === 'callback-verified'
-            ? paymentCallbackAttemptVerified(attempt)
-            : true)),
+      callbackAttemptMatchesReview(attempt, filters.review),
   );
 }
 
 function paymentMatchesReview(payment: AdminPayment, review: string): boolean {
-  if (review === 'capture') {
-    return payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED';
+  switch (review) {
+    case 'capture':
+      return payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED';
+    case 'missing-ref':
+      return payment.status === 'AUTHORIZED' && !payment.providerRef;
+    case 'authorized':
+      return payment.status === 'AUTHORIZED';
+    case 'cash':
+      return payment.method === 'CASH' && payment.status === 'PENDING';
+    case 'cash-debt':
+      return paymentCashDebtNeedsSettlement(payment);
+    case 'needs-action':
+      return paymentOpsState(payment) !== 'settled';
+    case 'callback-review':
+      return (
+        (payment.callbackAttempts?.some(paymentCallbackAttemptNeedsReview) ?? false) ||
+        paymentCallbackNeedsReview(payment)
+      );
+    case 'callback-verified':
+      return (
+        (payment.callbackAttempts?.some(paymentCallbackAttemptVerified) ?? false) ||
+        paymentCallbackVerified(payment)
+      );
+    case 'refunded':
+      return payment.status === 'REFUNDED';
+    default:
+      return true;
   }
-  if (review === 'missing-ref') {
-    return payment.status === 'AUTHORIZED' && !payment.providerRef;
-  }
-  if (review === 'authorized') {
-    return payment.status === 'AUTHORIZED';
-  }
-  if (review === 'cash') {
-    return payment.method === 'CASH' && payment.status === 'PENDING';
-  }
-  if (review === 'cash-debt') {
-    return paymentCashDebtNeedsSettlement(payment);
-  }
-  if (review === 'needs-action') {
-    return paymentOpsState(payment) !== 'settled';
+}
+
+function callbackAttemptMatchesReview(attempt: AdminPaymentCallbackAttempt, review: string): boolean {
+  if (!review) {
+    return true;
   }
   if (review === 'callback-review') {
-    return (payment.callbackAttempts?.some(paymentCallbackAttemptNeedsReview) ?? false) || paymentCallbackNeedsReview(payment);
+    return paymentCallbackAttemptNeedsReview(attempt);
   }
   if (review === 'callback-verified') {
-    return (payment.callbackAttempts?.some(paymentCallbackAttemptVerified) ?? false) || paymentCallbackVerified(payment);
-  }
-  if (review === 'refunded') {
-    return payment.status === 'REFUNDED';
+    return paymentCallbackAttemptVerified(attempt);
   }
   return true;
 }
@@ -200,7 +214,8 @@ function buildPaymentMetrics(
     cashDebt: payments.filter(paymentCashDebtNeedsSettlement).length,
     linkedRefunds: payments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0),
     needsAction: payments.filter((payment) => paymentOpsState(payment) !== 'settled').length,
-    pendingCash: payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING').length,
+    pendingCash: payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
+      .length,
     refunded: payments.filter((payment) => payment.status === 'REFUNDED').length,
   };
 }

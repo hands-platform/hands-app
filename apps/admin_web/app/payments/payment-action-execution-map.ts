@@ -2,12 +2,15 @@ import type { AdminPayment } from '../../lib/admin-api';
 import type { PaymentActionExecutionRow } from './payment-operations-table-section';
 import { paymentCashDebtNeedsSettlement } from './payment-page-rules';
 
+const TERMINAL_PAYMENT_STATUSES = ['CAPTURED', 'REFUNDED', 'RELEASED'];
+const CLOSED_WITHOUT_CAPTURE_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'];
+
 export function paymentActionExecutionMap(payment: AdminPayment): PaymentActionExecutionRow[] {
   const bookingStatus = payment.booking?.status ?? 'UNKNOWN';
   const hasGatewayReference = Boolean(payment.providerRef);
-  const terminalPayment = ['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status);
+  const terminalPayment = TERMINAL_PAYMENT_STATUSES.includes(payment.status);
   const completedService = bookingStatus === 'COMPLETED';
-  const closedWithoutCapture = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(bookingStatus);
+  const closedWithoutCapture = CLOSED_WITHOUT_CAPTURE_BOOKING_STATUSES.includes(bookingStatus);
   const cashDebt = paymentCashDebtNeedsSettlement(payment);
 
   return [
