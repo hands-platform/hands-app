@@ -67,6 +67,8 @@ describe('ConfirmDialog', () => {
     const form = actions.props.children[0];
     const button = form.props.children[2];
 
+    expect(actions.props.className).toBe('actions confirm-dialog-actions');
+    expect(form.props.className).toBe('confirm-dialog-form');
     expect(form.props.action).toBe('/partners/partner-1/delete');
     expect(button.props).toMatchObject({
       className: 'pill pill-neutral',
@@ -101,6 +103,7 @@ describe('ConfirmDialog', () => {
     const textInputLabels = form.props.children[1];
     const input = textInputLabels[0].props.children[1];
 
+    expect(textInputLabels[0].props.className).toBe('confirm-dialog-label');
     expect(input.props).toMatchObject({
       maxLength: 500,
       minLength: 12,

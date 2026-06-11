@@ -98,13 +98,13 @@ export function ConfirmDialog({
         </div>
         <span className={statusBadgeClassName(tone)}>Review</span>
       </div>
-      <div className="actions" style={{ marginTop: 12 }}>
-        <form action={action} style={{ display: 'inline' }}>
+      <div className="actions confirm-dialog-actions">
+        <form action={action} className="confirm-dialog-form">
           {hiddenInputs.map((input) => (
             <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
           ))}
           {textInputs.map((input) => (
-            <label key={input.name} style={{ display: 'block', marginBottom: 12 }}>
+            <label className="confirm-dialog-label" key={input.name}>
               {input.label}
               <input
                 defaultValue={input.defaultValue}

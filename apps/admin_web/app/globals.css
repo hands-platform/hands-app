@@ -884,6 +884,29 @@ a.action-button-card:hover {
   display: inline;
 }
 
+.confirm-dialog-actions {
+  align-items: flex-start;
+  margin-top: 12px;
+}
+
+.confirm-dialog-form {
+  display: inline;
+}
+
+.confirm-dialog-label {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.confirm-dialog-label input {
+  display: block;
+  margin-top: 6px;
+  min-width: min(100%, 260px);
+}
+
 .pill {
   background: #f1f5f9;
   color: #334155;
