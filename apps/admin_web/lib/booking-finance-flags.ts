@@ -48,7 +48,6 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
   const flags: AttentionFlag[] = [];
   const { financeTrace } = input;
   const formatMoney = input.formatMoney ?? defaultMoney;
-  const customerPrice = financeTrace.customerPriceAmount;
 
   if (financeTrace.payoutRuleMissing) {
     flags.push({
@@ -59,11 +58,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
     });
   }
 
-  if (
-    input.paymentAmount !== null &&
-    input.servicePrice !== null &&
-    input.paymentAmount !== input.servicePrice
-  ) {
+  if (paymentDiffersFromBookedService(input)) {
     flags.push({
       severity: 'medium',
       title: 'Payment amount differs from booked service',
@@ -75,11 +70,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
     });
   }
 
-  if (
-    financeTrace.providerPayoutAmount !== null &&
-    customerPrice !== null &&
-    financeTrace.providerPayoutAmount > customerPrice
-  ) {
+  if (partnerPayoutExceedsCustomerPrice(financeTrace)) {
     flags.push({
       severity: 'high',
       title: 'Partner payout exceeds customer price',
@@ -109,12 +100,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
     });
   }
 
-  if (
-    financeTrace.paymentMethod === 'CASH' &&
-    input.hasEarning &&
-    financeTrace.walletTotalAmount >= 0 &&
-    (input.earningNetAmount ?? 0) < 0
-  ) {
+  if (cashDebtLedgerMayBeStale(input)) {
     flags.push({
       severity: 'medium',
       title: 'Cash debt ledger may be stale',
@@ -124,4 +110,29 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
   }
 
   return flags;
+}
+
+function paymentDiffersFromBookedService(input: BookingFinanceFlagsInput) {
+  return (
+    input.paymentAmount !== null &&
+    input.servicePrice !== null &&
+    input.paymentAmount !== input.servicePrice
+  );
+}
+
+function partnerPayoutExceedsCustomerPrice(financeTrace: BookingFinanceFlagTrace) {
+  return (
+    financeTrace.providerPayoutAmount !== null &&
+    financeTrace.customerPriceAmount !== null &&
+    financeTrace.providerPayoutAmount > financeTrace.customerPriceAmount
+  );
+}
+
+function cashDebtLedgerMayBeStale(input: BookingFinanceFlagsInput) {
+  return (
+    input.financeTrace.paymentMethod === 'CASH' &&
+    input.hasEarning &&
+    input.financeTrace.walletTotalAmount >= 0 &&
+    (input.earningNetAmount ?? 0) < 0
+  );
 }

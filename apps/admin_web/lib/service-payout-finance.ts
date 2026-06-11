@@ -2,6 +2,13 @@ import type { AdminServiceCatalogItem, AdminServicePayoutRule, AdminTaxPolicyVer
 
 type AdminTaxRule = NonNullable<AdminTaxPolicyVersion['rules']>[number];
 
+const BPS_DENOMINATOR = 10_000;
+const TAX_RULE_PRIORITY = {
+  amountBand: 20,
+  default: 10,
+  serviceType: 30,
+} as const;
+
 export type ServicePayoutFinance = {
   readonly fee: number;
   readonly vatAmount: number;
@@ -22,18 +29,14 @@ export function estimateWithholding(
 ): EstimatedWithholding {
   const rule = selectTaxRule(policy?.rules ?? [], {
     grossAmount,
-    serviceTypes: [service.serviceGroupKey, service.name].filter(Boolean).map(String),
+    serviceTypes: serviceTaxTypes(service),
   });
   if (!policy || !rule) {
     return { ruleLabel: null, withholdingAmount: 0 };
   }
-  const withholdingAmount = Math.max(
-    0,
-    Math.min(grossAmount, Math.round((grossAmount * rule.rateBps) / 10000) + rule.fixedAmount),
-  );
   return {
-    ruleLabel: `${rule.scope}${rule.serviceType ? `:${rule.serviceType}` : ''} ${formatBps(rule.rateBps)}`,
-    withholdingAmount,
+    ruleLabel: taxRuleLabel(rule),
+    withholdingAmount: withholdingAmountForRule(grossAmount, rule),
   };
 }
 
@@ -52,7 +55,7 @@ export function servicePayoutFinance(
 ): ServicePayoutFinance {
   const fee = rule.customerPrice - rule.providerPayoutAmount;
   const taxableFee = Math.max(0, fee);
-  const vatAmount = Math.round((taxableFee * rule.vatBps) / 10000);
+  const vatAmount = Math.round((taxableFee * rule.vatBps) / BPS_DENOMINATOR);
   const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
   return {
     actualCompanyCommission: fee - vatAmount - tax.withholdingAmount - rule.otherCostAmount,
@@ -80,17 +83,36 @@ function selectTaxRule(
 
 function taxRulePriority(rule: AdminTaxRule, serviceTypes: Set<string>, grossAmount: number) {
   if (rule.scope === 'SERVICE_TYPE') {
-    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
+    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase())
+      ? TAX_RULE_PRIORITY.serviceType
+      : 0;
   }
   if (rule.scope === 'AMOUNT_BAND') {
-    const aboveMin = rule.minGrossAmount == null || grossAmount >= rule.minGrossAmount;
-    const belowMax = rule.maxGrossAmount == null || grossAmount <= rule.maxGrossAmount;
-    return aboveMin && belowMax ? 20 : 0;
+    return amountBandMatches(rule, grossAmount) ? TAX_RULE_PRIORITY.amountBand : 0;
   }
   if (rule.scope === 'DEFAULT') {
-    return 10;
+    return TAX_RULE_PRIORITY.default;
   }
   return 0;
+}
+
+function serviceTaxTypes(service: AdminServiceCatalogItem) {
+  return [service.serviceGroupKey, service.name].filter(Boolean).map(String);
+}
+
+function withholdingAmountForRule(grossAmount: number, rule: AdminTaxRule) {
+  const rawAmount = Math.round((grossAmount * rule.rateBps) / BPS_DENOMINATOR) + rule.fixedAmount;
+  return Math.max(0, Math.min(grossAmount, rawAmount));
+}
+
+function taxRuleLabel(rule: AdminTaxRule) {
+  return `${rule.scope}${rule.serviceType ? `:${rule.serviceType}` : ''} ${formatBps(rule.rateBps)}`;
+}
+
+function amountBandMatches(rule: AdminTaxRule, grossAmount: number) {
+  const aboveMin = rule.minGrossAmount == null || grossAmount >= rule.minGrossAmount;
+  const belowMax = rule.maxGrossAmount == null || grossAmount <= rule.maxGrossAmount;
+  return aboveMin && belowMax;
 }
 
 function formatBps(value: number) {
