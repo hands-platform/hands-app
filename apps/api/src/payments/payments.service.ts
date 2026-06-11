@@ -6,6 +6,7 @@ import { Queue } from 'bullmq';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
@@ -30,6 +31,7 @@ export class PaymentsService {
     private readonly vnpay: VnpayPaymentAdapter,
     private readonly cash: CashPaymentAdapter,
     @InjectQueue('payment-status-check') private readonly paymentStatusQueue: Queue,
+    private readonly notifications?: NotificationsService,
   ) {}
 
   buildAuthorization(
@@ -137,6 +139,7 @@ export class PaymentsService {
         providerStatus: parsed.status,
         rawPayload: body,
       });
+      await this.notifyPaymentUpdated(payment.id);
       return { ok: true, replay: false, payment };
     } catch (error) {
       await this.recordCallbackAttempt({
@@ -169,6 +172,7 @@ export class PaymentsService {
       where: { id: payment.id },
       data: { status },
     });
+    await this.notifyPaymentUpdated(updated.id);
 
     return { paymentId, status: updated.status };
   }
@@ -190,6 +194,7 @@ export class PaymentsService {
       method: payment.method,
       bookingId: payment.bookingId,
     });
+    await this.notifyPaymentUpdated(payment.id);
 
     return payment;
   }
@@ -197,10 +202,12 @@ export class PaymentsService {
   async release(paymentId: string) {
     const payment = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     const status = this.adapterFor(payment.method).release(payment.providerRef);
-    return this.prisma.payment.update({
+    const updated = await this.prisma.payment.update({
       where: { id: paymentId },
       data: { status },
     });
+    await this.notifyPaymentUpdated(updated.id);
+    return updated;
   }
 
   async releaseForAdmin(actorId: string, paymentId: string) {
@@ -243,8 +250,35 @@ export class PaymentsService {
       method: payment.method,
       earningCancellation: earningCancellationAudit,
     });
+    await this.notifyPaymentUpdated(payment.id);
 
     return payment;
+  }
+
+  private async notifyPaymentUpdated(paymentId: string) {
+    if (!this.notifications) {
+      return;
+    }
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      select: {
+        id: true,
+        bookingId: true,
+        booking: { select: { customerProfile: { select: { userId: true } } } },
+      },
+    });
+    if (!payment) {
+      return;
+    }
+
+    await this.notifications.create({
+      userId: payment.booking.customerProfile.userId,
+      type: 'payment.updated',
+      title: 'Payment updated',
+      body: 'Your booking payment status was updated.',
+      data: { paymentId: payment.id, bookingId: payment.bookingId },
+    });
   }
 
   private adapterFor(method: PaymentMethod): PaymentAdapter {

@@ -42,6 +42,33 @@ describe('PaymentsService callbacks', () => {
     });
   });
 
+  it('notifies the booking customer after an accepted payment status update', async () => {
+    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const { service } = createService({
+      existingPayment: payment({ status: PaymentStatus.AUTHORIZED }),
+      notificationLookupPayment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        booking: { customerProfile: { userId: 'customer-user' } },
+      },
+      notifications,
+      updatedPayment: payment({ status: PaymentStatus.CAPTURED }),
+    });
+
+    await service.handleCallback(PaymentMethod.CASH, {
+      providerRef: 'cash-booking-1',
+      status: 'CAPTURED',
+    });
+
+    expect(notifications.create).toHaveBeenCalledWith({
+      userId: 'customer-user',
+      type: 'payment.updated',
+      title: 'Payment updated',
+      body: 'Your booking payment status was updated.',
+      data: { paymentId: 'payment-1', bookingId: 'booking-1' },
+    });
+  });
+
   it('treats duplicate terminal callbacks with the same status as replay', async () => {
     const { prisma, service } = createService({
       existingPayment: payment({ status: PaymentStatus.CAPTURED }),
@@ -111,14 +138,24 @@ describe('PaymentsService callbacks', () => {
 
 function createService({
   existingPayment,
+  notificationLookupPayment,
+  notifications,
   updatedPayment,
 }: {
   existingPayment: ReturnType<typeof payment> | null;
+  notificationLookupPayment?: unknown;
+  notifications?: { create: jest.Mock };
   updatedPayment?: ReturnType<typeof payment>;
 }) {
+  const findUnique = jest.fn();
+  if (notificationLookupPayment) {
+    findUnique.mockResolvedValueOnce(existingPayment).mockResolvedValueOnce(notificationLookupPayment);
+  } else {
+    findUnique.mockResolvedValue(existingPayment);
+  }
   const prisma = {
     payment: {
-      findUnique: jest.fn().mockResolvedValue(existingPayment),
+      findUnique,
       findUniqueOrThrow: jest.fn(),
       update: jest.fn().mockResolvedValue(updatedPayment ?? existingPayment),
     },
@@ -140,6 +177,7 @@ function createService({
       placeholderAdapter(PaymentMethod.VNPAY) as never,
       cashAdapter() as never,
       queue as never,
+      notifications as never,
     ),
   };
 }

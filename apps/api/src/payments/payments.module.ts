@@ -2,13 +2,14 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { AdminModule } from '../admin/admin.module';
 import { EarningsModule } from '../earnings/earnings.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentStatusProcessor } from './payment-status.processor';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 
 @Module({
-  imports: [AdminModule, EarningsModule, BullModule.registerQueue({ name: 'payment-status-check' })],
+  imports: [AdminModule, EarningsModule, NotificationsModule, BullModule.registerQueue({ name: 'payment-status-check' })],
   controllers: [PaymentsController],
   providers: [PaymentsService, MomoPaymentAdapter, VnpayPaymentAdapter, CashPaymentAdapter, PaymentStatusProcessor],
   exports: [PaymentsService],
