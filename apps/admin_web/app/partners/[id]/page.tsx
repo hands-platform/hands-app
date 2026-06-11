@@ -146,6 +146,10 @@ import {
   PartnerDetailBookingGateDecisionSection,
   type PartnerBookingGateDecisionView,
 } from './partner-detail-booking-gate-decision-section';
+import {
+  PartnerDetailAppActivitySection,
+  type PartnerAppActivityRow,
+} from './partner-detail-app-activity-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -422,6 +426,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     activityOrder,
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
+  const partnerAppActivityRows = buildPartnerAppActivityRows(filteredPartnerActivityRecords);
   const partnerActivityCommandSnapshot = buildPartnerActivityCommandSnapshot(
     provider,
     filteredPartnerActivityRecords,
@@ -993,53 +998,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         statusPillClass={partnerBookingStatusPillClass}
       />
 
-      <div className="card admin-mb-16" id="app-activity">
-        <div className="ops-section-header">
-          <div>
-            <h2>Recent app and operations activity</h2>
-            <p className="muted">
-              Date-ordered factual activity only: location updates, app sessions, devices, earnings, payouts,
-              booking participation, and verification changes.
-            </p>
-          </div>
-          <span className="pill pill-info">{filteredPartnerActivityRecords.length} event(s)</span>
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          {partnerActivitySummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list admin-mt-16">
-          {filteredPartnerActivityRecords.length ? (
-            filteredPartnerActivityRecords.map((record, index) => (
-              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}-${index}`}>
-                <span>{record.type}</span>
-                <div>
-                  <strong>{record.title}</strong>
-                  <p className="muted">{record.detail}</p>
-                </div>
-                <small>{formatDate(record.at)}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No activity matched this date filter</strong>
-                <p className="muted">
-                  Clear the date filter or choose a wider range to review app, location, payout, and
-                  verification records.
-                </p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailAppActivitySection rows={partnerAppActivityRows} summary={partnerActivitySummary} />
 
       <PartnerDetailDailyActivityDigestSection
         days={partnerDailyActivityDigest}
@@ -5661,6 +5620,16 @@ function buildPartnerBookingGateDecisionView(
     status: bookingAcceptance.status,
     tone: bookingAcceptance.tone,
   };
+}
+
+function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerAppActivityRow[] {
+  return records.map((record, index) => ({
+    atLabel: formatDate(record.at),
+    detail: record.detail,
+    key: `${record.type}-${record.id}-${record.at}-${index}`,
+    title: record.title,
+    type: record.type,
+  }));
 }
 
 function cashFeeDebtAmount(provider: ProviderDetail) {
