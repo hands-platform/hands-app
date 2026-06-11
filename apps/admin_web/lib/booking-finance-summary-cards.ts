@@ -27,13 +27,6 @@ export function bookingFinanceSummaryCards(
   financeTrace: BookingFinanceSummaryTrace,
   options: BookingFinanceSummaryOptions,
 ): BookingFinanceSummaryCard[] {
-  const walletHelper =
-    financeTrace.paymentMethod === 'CASH'
-      ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates marketplace alerts, participation, and payout release.'
-        : 'Cash settlement ledger is not negative.'
-      : 'Non-cash booking should create payout credit after completion.';
-
   return [
     {
       label: 'Customer charge',
@@ -65,7 +58,16 @@ export function bookingFinanceSummaryCards(
     {
       label: 'Wallet impact',
       value: options.money(financeTrace.walletTotalAmount, financeTrace.currency),
-      helper: walletHelper,
+      helper: walletImpactHelper(financeTrace),
     },
   ];
+}
+
+function walletImpactHelper(financeTrace: BookingFinanceSummaryTrace) {
+  if (financeTrace.paymentMethod !== 'CASH') {
+    return 'Non-cash booking should create payout credit after completion.';
+  }
+  return financeTrace.walletTotalAmount < 0
+    ? 'Cash fee debt gates marketplace alerts, participation, and payout release.'
+    : 'Cash settlement ledger is not negative.';
 }
