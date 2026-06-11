@@ -64,7 +64,7 @@ Mobile code must not replace Socket.IO booking/chat realtime behavior. Register 
 
 ## Notification Event Boundaries
 
-Current or planned call sites should stay at service boundaries:
+Current call sites stay at service boundaries:
 
 - first-pick request to a partner
 - open request available to eligible marketplace partners
@@ -73,6 +73,7 @@ Current or planned call sites should stay at service boundaries:
 - chat message notification
 - booking cancelled
 - booking completed
-- payment or payout notification placeholder
+- payment status notification
+- payout setup notification
 
 If a flow is not ready, add the TODO at the relevant service boundary instead of scattering push-specific logic across booking, matching, payment, or chat code.
