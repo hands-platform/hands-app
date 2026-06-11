@@ -58,6 +58,7 @@ import {
   adminRefundListSelect,
   adminRefundSummarySelect,
 } from './admin-payment-selects';
+import { adminCustomerDetailSelect } from './admin-customer-selects';
 import {
   changedFields,
   serviceAuditSnapshot,
@@ -144,77 +145,6 @@ type AdminAuditLogSummaryRow = {
   actorPhone: string;
   actorFullName: string | null;
 };
-
-const adminCustomerNotificationSelect = {
-  id: true,
-  userId: true,
-  type: true,
-  title: true,
-  body: true,
-  data: true,
-  readAt: true,
-  createdAt: true,
-  deliveries: {
-    orderBy: { attemptedAt: 'desc' },
-    take: 5,
-    select: adminNotificationDeliverySelect,
-  },
-} satisfies Prisma.NotificationSelect;
-
-const adminCustomerDetailSelect = {
-  id: true,
-  userId: true,
-  addresses: true,
-  user: {
-    select: {
-      ...adminUserSummarySelect,
-      appSessions: {
-        orderBy: { lastSeenAt: 'desc' },
-        take: 20,
-        select: adminAppSessionSummarySelect,
-      },
-      pushDevices: {
-        orderBy: { updatedAt: 'desc' },
-        select: adminPushDeviceSummarySelect,
-      },
-      notifications: {
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        select: adminCustomerNotificationSelect,
-      },
-    },
-  },
-  selectedLocations: {
-    orderBy: { createdAt: 'desc' },
-    take: 25,
-    select: {
-      id: true,
-      latitude: true,
-      longitude: true,
-      addressText: true,
-      createdAt: true,
-    },
-  },
-  bookings: {
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-    select: adminCustomerDetailBookingSelect,
-  },
-  reviews: {
-    orderBy: { createdAt: 'desc' },
-    take: 25,
-    select: {
-      id: true,
-      rating: true,
-      comment: true,
-      status: true,
-      reportReason: true,
-      createdAt: true,
-      providerProfile: { select: adminProviderSummarySelect },
-      booking: { select: { id: true, services: { select: adminBookingServiceSummarySelect } } },
-    },
-  },
-} satisfies Prisma.CustomerProfileSelect;
 
 const adminProviderDetailUserSelect = {
   ...adminUserAuthSelect,
