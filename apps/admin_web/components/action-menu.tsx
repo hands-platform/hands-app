@@ -61,14 +61,14 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
   if (item.kind === 'link') {
     if (item.disabled) {
       return (
-        <span aria-disabled="true" className={actionMenuItemClassName(item)} title={readTitle(item.description)}>
+        <span aria-disabled="true" className={actionMenuItemClassName(item)} title={readActionMenuTitle(item.description)}>
           {item.label}
         </span>
       );
     }
 
     return (
-      <Link className={actionMenuItemClassName(item)} href={item.href} title={readTitle(item.description)}>
+      <Link className={actionMenuItemClassName(item)} href={item.href} title={readActionMenuTitle(item.description)}>
         {item.label}
       </Link>
     );
@@ -79,13 +79,13 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
       {item.hiddenInputs?.map((input) => (
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}
-      <button className={actionMenuItemClassName(item)} disabled={item.disabled} title={readTitle(item.description)} type="submit">
+      <button className={actionMenuItemClassName(item)} disabled={item.disabled} title={readActionMenuTitle(item.description)} type="submit">
         {item.label}
       </button>
     </form>
   );
 }
 
-function readTitle(description: ReactNode) {
+export function readActionMenuTitle(description: ReactNode) {
   return typeof description === 'string' ? description : undefined;
 }

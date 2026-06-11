@@ -1,10 +1,16 @@
-import { ActionMenu, actionMenuItemClassName } from './action-menu';
+import { ActionMenu, actionMenuItemClassName, readActionMenuTitle } from './action-menu';
 
 describe('ActionMenu', () => {
   it('maps disabled and danger actions to stable pill classes', () => {
     expect(actionMenuItemClassName({ disabled: true, tone: 'danger' })).toBe('pill pill-neutral');
     expect(actionMenuItemClassName({ tone: 'danger' })).toBe('pill pill-danger');
     expect(actionMenuItemClassName({})).toBe('pill pill-info');
+  });
+
+  it('uses string descriptions as native titles only', () => {
+    expect(readActionMenuTitle('Review booking')).toBe('Review booking');
+    expect(readActionMenuTitle(<span>Review booking</span>)).toBeUndefined();
+    expect(readActionMenuTitle(undefined)).toBeUndefined();
   });
 
   it('renders link and submit actions without deciding business behavior', () => {
