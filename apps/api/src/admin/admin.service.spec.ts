@@ -312,4 +312,48 @@ describe('AdminService query orchestration', () => {
       },
     });
   });
+
+  it('lists notification delivery evidence without exposing raw push tokens', async () => {
+    const prisma = {
+      notification: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listNotifications();
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: expect.objectContaining({
+          deliveries: expect.objectContaining({
+            orderBy: { attemptedAt: 'desc' },
+            select: expect.objectContaining({
+              provider: true,
+              pushDevice: {
+                select: expect.objectContaining({
+                  enabled: true,
+                  id: true,
+                  lastSeenAt: true,
+                  platform: true,
+                  role: true,
+                }),
+              },
+              response: true,
+              status: true,
+            }),
+          }),
+          user: {
+            select: expect.objectContaining({
+              providerProfile: { select: { id: true, displayName: true, status: true } },
+            }),
+          },
+        }),
+      }),
+    );
+    const select = prisma.notification.findMany.mock.calls[0]?.[0]?.select;
+    expect(JSON.stringify(select)).not.toContain('token');
+  });
 });
