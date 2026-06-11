@@ -1263,6 +1263,11 @@ textarea:focus-visible {
   padding: 12px;
 }
 
+.admin-grid-gap-8 {
+  display: grid;
+  gap: 8px;
+}
+
 .service-matrix th,
 .service-matrix td,
 .service-ledger th,

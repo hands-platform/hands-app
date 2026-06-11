@@ -1220,17 +1220,17 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     {record.lastMessage ? ` / last: ${record.lastMessage}` : ''}
                   </p>
                   {record.booking.chatRoom ? (
-                    <div className="ops-task-note" style={{ marginTop: 10 }}>
+                    <div className="ops-task-note admin-mt-10">
                       <strong>Admin chat archive</strong>
                       <p className="muted">
                         Mobile chat hides after service completion. Admin keeps this booking transcript.
                       </p>
-                      <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+                      <div className="admin-grid-gap-8 admin-mt-10">
                         {readPartnerChatMessages(record.booking).map((message) => (
                           <div className="service-matrix-cell" key={message.id}>
                             <strong>{chatSenderLabel(message)}</strong>
                             <small>{formatDate(message.createdAt)}</small>
-                            <p style={{ margin: 0 }}>{message.body}</p>
+                            <p className="admin-m-0">{message.body}</p>
                           </div>
                         ))}
                         {!readPartnerChatMessages(record.booking).length ? (
@@ -1239,7 +1239,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       </div>
                     </div>
                   ) : (
-                    <div className="ops-task-note" style={{ marginTop: 10 }}>
+                    <div className="ops-task-note admin-mt-10">
                       <strong>Chat room missing</strong>
                       <p className="muted">
                         A matched booking should create a chat room. Open the booking detail if this booking
@@ -1281,7 +1281,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="partner-booking-ops-ledger" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-booking-ops-ledger">
         <div className="ops-section-header">
           <div>
             <h2>Booking operations note ledger</h2>
@@ -1330,7 +1330,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       Booking
                     </Link>
                     {row.chatHref ? (
-                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.chatHref}>
                         Chat
                       </Link>
                     ) : null}
@@ -1341,13 +1341,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {partnerBookingOpsLedgerRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking-level operation notes or staff tasks matched this partner date filter.
           </p>
         ) : null}
       </div>
 
-      <div className="card" id="app-activity" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="app-activity">
         <div className="ops-section-header">
           <div>
             <h2>Recent app and operations activity</h2>
@@ -1358,7 +1358,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredPartnerActivityRecords.length} event(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           {partnerActivitySummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -1367,7 +1367,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {filteredPartnerActivityRecords.length ? (
             filteredPartnerActivityRecords.map((record, index) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}-${index}`}>
@@ -1407,7 +1407,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         dispatchPolicy={dispatchPolicy}
       />
 
-      <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
+      <div className={`card ${cardClass(bookingAcceptance.tone)} admin-mb-16`}>
         <div className="ops-section-header">
           <div>
             <h2>Marketplace booking gate decision</h2>
@@ -1418,7 +1418,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Decision</span>
             <strong>{bookingAcceptance.canJoinMarketplace ? 'Join clear' : 'Join held'}</strong>
@@ -1445,7 +1445,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <small>Bookable price options</small>
           </div>
         </div>
-        <div className="participant-list" style={{ marginTop: 12 }}>
+        <div className="participant-list admin-mt-12">
           <span className="pill pill-info">
             First response window: {dispatchPolicy.responseWindowMinutes}m
           </span>
@@ -1459,7 +1459,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Edit matching policy
           </Link>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {bookingAcceptance.gates.map((gate) => (
             <div className="setup-stage-item" key={gate.label}>
               <span>{gate.ok ? 'OK' : 'BLOCK'}</span>
@@ -1480,11 +1480,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         dispatchPolicy={dispatchPolicy}
       />
 
-      <div
-        className={`card ${hasCashFeeDebt ? 'card-danger' : ''}`}
-        id="cash-debt-origin"
-        style={{ marginBottom: 16 }}
-      >
+      <div className={`card ${hasCashFeeDebt ? 'card-danger' : ''} admin-mb-16`} id="cash-debt-origin">
         <div className="ops-section-header">
           <div>
             <h2>Cash debt origin and settlement</h2>
@@ -1498,7 +1494,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             {hasCashFeeDebt ? `${openCashDebtEarnings.length} open row(s)` : 'No open cash debt'}
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Total open debt</span>
             <strong>{formatCurrency(cashFeeDebtAmount(provider))}</strong>
@@ -1535,7 +1531,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
         </div>
         {openCashDebtEarnings.length ? (
-          <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          <div className="setup-stage-list admin-mt-16">
             {openCashDebtEarnings.slice(0, 5).map((earning) => (
               <div className="setup-stage-item" key={earning.id}>
                 <span>CASH DEBT</span>
@@ -1571,13 +1567,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No open cash-service fee debt is visible for this partner.
           </p>
         )}
       </div>
 
-      <div className="card" id="payout" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="payout">
         <div className="ops-section-header">
           <div>
             <h2>Partner marketplace/payout unblock playbook</h2>
@@ -1595,7 +1591,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             {acceptanceUnblockPlaybook.filter((step) => step.bookingBlocked).length} marketplace blocker(s)
           </span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {acceptanceUnblockPlaybook.map((step) => (
             <div className="setup-stage-item" key={step.id}>
               <span>{step.step}</span>
@@ -1621,7 +1617,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner ops command center</h2>
