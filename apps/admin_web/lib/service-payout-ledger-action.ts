@@ -15,24 +15,47 @@ export function servicePayoutLedgerAction({
   hasBaseRule,
   hiddenProviders,
 }: ServicePayoutLedgerActionInput): ServicePayoutLedgerAction {
-  const commissionTone = !hasBaseRule
-    ? 'pill-danger'
-    : actualCompanyCommission <= 0
-      ? 'pill-warn'
-      : 'pill-success';
-  const action = !hasBaseRule
-    ? 'Add payout rule'
-    : actualCompanyCommission <= 0
-      ? 'Review margin'
-      : hiddenProviders
-        ? 'Fix hidden prices'
-        : 'Ready';
-  const actionTone =
-    action === 'Ready' ? 'pill-success' : action === 'Review margin' ? 'pill-warn' : 'pill-danger';
+  const commissionTone = servicePayoutCommissionTone({ actualCompanyCommission, hasBaseRule });
+  const action = servicePayoutNextAction({ actualCompanyCommission, hasBaseRule, hiddenProviders });
+  const actionTone = servicePayoutActionTone(action);
 
   return {
     action,
     actionTone,
     commissionTone,
   };
+}
+
+function servicePayoutCommissionTone({
+  actualCompanyCommission,
+  hasBaseRule,
+}: Pick<ServicePayoutLedgerActionInput, 'actualCompanyCommission' | 'hasBaseRule'>) {
+  if (!hasBaseRule) {
+    return 'pill-danger';
+  }
+  return actualCompanyCommission <= 0 ? 'pill-warn' : 'pill-success';
+}
+
+function servicePayoutNextAction({
+  actualCompanyCommission,
+  hasBaseRule,
+  hiddenProviders,
+}: ServicePayoutLedgerActionInput): ServicePayoutLedgerAction['action'] {
+  if (!hasBaseRule) {
+    return 'Add payout rule';
+  }
+  if (actualCompanyCommission <= 0) {
+    return 'Review margin';
+  }
+  return hiddenProviders ? 'Fix hidden prices' : 'Ready';
+}
+
+function servicePayoutActionTone(action: ServicePayoutLedgerAction['action']) {
+  if (action === 'Ready') {
+    return 'pill-success';
+  }
+  if (action === 'Review margin') {
+    return 'pill-warn';
+  }
+  return 'pill-danger';
 }
