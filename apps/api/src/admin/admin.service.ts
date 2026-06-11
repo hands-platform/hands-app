@@ -36,6 +36,7 @@ import {
   withAdminBookingMatchingEvidence,
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
+import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
   adminBookingListSelect,
   adminCustomerBookingListSelect,
@@ -1013,8 +1014,7 @@ export class AdminService {
       where: { id: bookingId },
       select: { id: true, notes: true, status: true },
     });
-    const entry = `[${new Date().toISOString()}] ${content}`;
-    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    const notes = appendDatedAdminNote(booking.notes, content);
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: { notes },
@@ -1092,10 +1092,9 @@ export class AdminService {
       noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
         ? 'Policy: evidence-assisted admin review is active; verify evidence trail before payment closeout.'
         : 'Policy: admin review required before any payment or closeout decision.';
-    const entry = `[${new Date().toISOString()}] No-show marked by operations${
+    const notes = appendDatedAdminNote(booking.notes, `No-show marked by operations${
       reason ? `: ${reason}. ` : '. '
-    }${policyNote}`;
-    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    }${policyNote}`);
     const paymentReviewNote =
       reason ??
       (noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
@@ -1191,10 +1190,9 @@ export class AdminService {
       throw new BadRequestException(`Booking status ${booking.status} cannot be expired`);
     }
 
-    const entry = `[${new Date().toISOString()}] Matching expired by operations${
+    const notes = appendDatedAdminNote(booking.notes, `Matching expired by operations${
       reason ? `: ${reason}` : '.'
-    }`;
-    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    }`);
     const terminalPaymentStatuses: PaymentStatus[] = [
       PaymentStatus.CAPTURED,
       PaymentStatus.REFUNDED,
@@ -1281,10 +1279,9 @@ export class AdminService {
         : booking.payment;
 
     const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId);
-    const entry = `[${new Date().toISOString()}] Completed booking closeout reconciled by operations${
+    const notes = appendDatedAdminNote(booking.notes, `Completed booking closeout reconciled by operations${
       note ? `: ${note}` : '.'
-    }`;
-    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    }`);
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
