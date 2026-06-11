@@ -30,6 +30,7 @@ import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
   paymentStatusCheckJob,
 } from './payment-status.queue';
+import { paymentUpdatedNotification } from './payments.notifications';
 
 @Injectable()
 export class PaymentsService {
@@ -276,10 +277,7 @@ export class PaymentsService {
 
     await this.notifications.create({
       userId: payment.booking.customerProfile.userId,
-      type: 'payment.updated',
-      title: 'Payment updated',
-      body: 'Your booking payment status was updated.',
-      data: { paymentId: payment.id, bookingId: payment.bookingId },
+      ...paymentUpdatedNotification({ paymentId: payment.id, bookingId: payment.bookingId }),
     });
   }
 
