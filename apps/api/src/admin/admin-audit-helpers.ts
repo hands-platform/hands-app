@@ -123,3 +123,64 @@ export function changedFields(before: Record<string, unknown>, after: Record<str
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   return [...keys].filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
 }
+
+type ServiceAuditInput = Parameters<typeof serviceAuditSnapshot>[0];
+type ServicePayoutRuleAuditInput = Parameters<typeof servicePayoutRuleAuditSnapshot>[0];
+
+export function serviceUpdateAuditMetadata(
+  beforeService: ServiceAuditInput,
+  afterService: ServiceAuditInput,
+  adjustedProviderPrices: number,
+) {
+  const before = serviceAuditSnapshot(beforeService);
+  const after = serviceAuditSnapshot(afterService);
+  return {
+    before,
+    after,
+    changedFields: changedFields(before, after),
+    adjustedProviderPrices,
+  };
+}
+
+export function servicePayoutRuleAuditMetadata(
+  service: ServiceAuditInput,
+  beforeRule: ServicePayoutRuleAuditInput | null,
+  afterRule: ServicePayoutRuleAuditInput,
+) {
+  const before = beforeRule ? servicePayoutRuleAuditSnapshot(beforeRule) : null;
+  const after = servicePayoutRuleAuditSnapshot(afterRule);
+  return {
+    service: serviceAuditSnapshot(service),
+    before,
+    after,
+    changedFields: changedFields(before ?? {}, after),
+  };
+}
+
+export function bulkServicePayoutRuleAuditMetadata(
+  service: ServiceAuditInput,
+  savedRules: ServicePayoutRuleAuditInput[],
+  existingRules: ServicePayoutRuleAuditInput[],
+) {
+  const existingByPrice = new Map(existingRules.map((rule) => [rule.customerPrice, rule]));
+  return {
+    service: serviceAuditSnapshot(service),
+    ruleCount: savedRules.length,
+    customerPrices: savedRules.map((rule) => rule.customerPrice).sort((left, right) => left - right),
+    before: savedRules.map((rule) => {
+      const existingRule = existingByPrice.get(rule.customerPrice);
+      return existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : null;
+    }),
+    after: savedRules.map(servicePayoutRuleAuditSnapshot),
+    changedFieldsByPrice: savedRules.map((rule) => {
+      const existingRule = existingByPrice.get(rule.customerPrice);
+      return {
+        customerPrice: rule.customerPrice,
+        changedFields: changedFields(
+          existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : {},
+          servicePayoutRuleAuditSnapshot(rule),
+        ),
+      };
+    }),
+  };
+}

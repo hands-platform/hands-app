@@ -1,12 +1,15 @@
 import {
   adminAuditTarget,
   bookingAuditLogWhere,
+  bulkServicePayoutRuleAuditMetadata,
   changedFields,
   customerAuditLogWhere,
   paymentAuditLogWhere,
   providerAuditLogWhere,
   serviceAuditSnapshot,
   servicePayoutRuleAuditSnapshot,
+  servicePayoutRuleAuditMetadata,
+  serviceUpdateAuditMetadata,
   toJson,
 } from './admin-audit-helpers';
 
@@ -118,5 +121,96 @@ describe('admin audit helpers', () => {
         { active: true, basePrice: 400000, nested: { value: 2 }, newField: 'added' },
       ),
     ).toEqual(['basePrice', 'nested', 'newField']);
+  });
+
+  it('builds service update audit metadata', () => {
+    const before = {
+      active: true,
+      basePrice: 300000,
+      displayOrder: 1,
+      durationMin: 60,
+      id: 'service-1',
+      name: 'Massage 60',
+      priceStep: 100000,
+      serviceGroupKey: 'massage',
+    };
+    const after = { ...before, basePrice: 400000 };
+
+    expect(serviceUpdateAuditMetadata(before, after, 2)).toMatchObject({
+      before,
+      after,
+      changedFields: ['basePrice'],
+      adjustedProviderPrices: 2,
+    });
+  });
+
+  it('builds single payout rule audit metadata', () => {
+    const service = {
+      active: true,
+      basePrice: 300000,
+      displayOrder: 1,
+      durationMin: 60,
+      id: 'service-1',
+      name: 'Massage 60',
+      priceStep: 100000,
+      serviceGroupKey: 'massage',
+    };
+    const beforeRule = {
+      active: true,
+      currency: 'VND',
+      customerPrice: 400000,
+      id: 'rule-1',
+      notes: 'before',
+      otherCostAmount: 20000,
+      providerPayoutAmount: 280000,
+      serviceId: 'service-1',
+      vatBps: 800,
+    };
+    const afterRule = { ...beforeRule, notes: 'after', providerPayoutAmount: 300000 };
+
+    expect(servicePayoutRuleAuditMetadata(service, beforeRule, afterRule)).toMatchObject({
+      service: serviceAuditSnapshot(service),
+      before: servicePayoutRuleAuditSnapshot(beforeRule),
+      after: servicePayoutRuleAuditSnapshot(afterRule),
+      changedFields: ['providerPayoutAmount', 'notes'],
+    });
+  });
+
+  it('builds bulk payout rule audit metadata grouped by customer price', () => {
+    const service = {
+      active: true,
+      basePrice: 300000,
+      displayOrder: 1,
+      durationMin: 60,
+      id: 'service-1',
+      name: 'Massage 60',
+      priceStep: 100000,
+      serviceGroupKey: 'massage',
+    };
+    const existingRule = {
+      active: true,
+      currency: 'VND',
+      customerPrice: 400000,
+      id: 'rule-1',
+      notes: 'before',
+      otherCostAmount: 20000,
+      providerPayoutAmount: 280000,
+      serviceId: 'service-1',
+      vatBps: 800,
+    };
+    const savedRules = [
+      { ...existingRule, providerPayoutAmount: 300000 },
+      { ...existingRule, customerPrice: 500000, id: 'rule-2' },
+    ];
+
+    expect(bulkServicePayoutRuleAuditMetadata(service, savedRules, [existingRule])).toMatchObject({
+      ruleCount: 2,
+      customerPrices: [400000, 500000],
+      before: [servicePayoutRuleAuditSnapshot(existingRule), null],
+      changedFieldsByPrice: [
+        { customerPrice: 400000, changedFields: ['providerPayoutAmount'] },
+        { customerPrice: 500000, changedFields: expect.arrayContaining(['id', 'customerPrice']) },
+      ],
+    });
   });
 });

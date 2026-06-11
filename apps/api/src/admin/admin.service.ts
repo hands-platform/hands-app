@@ -60,12 +60,12 @@ import {
 import { adminCustomerDetailSelect } from './admin-customer-selects';
 import {
   bookingAuditLogWhere,
-  changedFields,
+  bulkServicePayoutRuleAuditMetadata,
   customerAuditLogWhere,
   paymentAuditLogWhere,
   providerAuditLogWhere,
-  serviceAuditSnapshot,
-  servicePayoutRuleAuditSnapshot,
+  servicePayoutRuleAuditMetadata,
+  serviceUpdateAuditMetadata,
   toJson,
 } from './admin-audit-helpers';
 import {
@@ -1655,12 +1655,7 @@ export class AdminService {
           actorId,
           action: 'service.update',
           target: `service:${serviceId}`,
-          metadata: toJson({
-            before: serviceAuditSnapshot(existing),
-            after: serviceAuditSnapshot(service),
-            changedFields: changedFields(serviceAuditSnapshot(existing), serviceAuditSnapshot(service)),
-            adjustedProviderPrices,
-          }),
+          metadata: toJson(serviceUpdateAuditMetadata(existing, service, adjustedProviderPrices)),
         },
       });
       return service;
@@ -1711,15 +1706,7 @@ export class AdminService {
       actorId,
       'service_payout_rule.upsert',
       `service:${serviceId}`,
-      toJson({
-        service: serviceAuditSnapshot(service),
-        before: existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : null,
-        after: servicePayoutRuleAuditSnapshot(rule),
-        changedFields: changedFields(
-          existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : {},
-          servicePayoutRuleAuditSnapshot(rule),
-        ),
-      }),
+      toJson(servicePayoutRuleAuditMetadata(service, existingRule, rule)),
     );
     return rule;
   }
@@ -1763,7 +1750,6 @@ export class AdminService {
         where: { serviceId, customerPrice: { in: data.map((row) => row.customerPrice) } },
         select: adminServicePayoutRuleMutationSelect,
       });
-      const existingByPrice = new Map(existingRules.map((rule) => [rule.customerPrice, rule]));
       const saved = [];
       for (const row of data) {
         const rule = await tx.servicePayoutRule.upsert({
@@ -1787,25 +1773,7 @@ export class AdminService {
           actorId,
           action: 'service_payout_rule.bulk_upsert',
           target: `service:${serviceId}`,
-          metadata: toJson({
-            service: serviceAuditSnapshot(service),
-            ruleCount: saved.length,
-            customerPrices: saved.map((rule) => rule.customerPrice).sort((left, right) => left - right),
-            before: saved.map((rule) => {
-              const existingRule = existingByPrice.get(rule.customerPrice);
-              return existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : null;
-            }),
-            after: saved.map(servicePayoutRuleAuditSnapshot),
-            changedFieldsByPrice: saved.map((rule) => ({
-              customerPrice: rule.customerPrice,
-              changedFields: changedFields(
-                existingByPrice.get(rule.customerPrice)
-                  ? servicePayoutRuleAuditSnapshot(existingByPrice.get(rule.customerPrice)!)
-                  : {},
-                servicePayoutRuleAuditSnapshot(rule),
-              ),
-            })),
-          }),
+          metadata: toJson(bulkServicePayoutRuleAuditMetadata(service, saved, existingRules)),
         },
       });
       return saved.sort((left, right) => left.customerPrice - right.customerPrice);
@@ -1838,15 +1806,7 @@ export class AdminService {
       actorId,
       'service_payout_rule.update',
       `service_payout_rule:${ruleId}`,
-      toJson({
-        service: serviceAuditSnapshot(existing.service),
-        before: servicePayoutRuleAuditSnapshot(existing),
-        after: servicePayoutRuleAuditSnapshot(rule),
-        changedFields: changedFields(
-          servicePayoutRuleAuditSnapshot(existing),
-          servicePayoutRuleAuditSnapshot(rule),
-        ),
-      }),
+      toJson(servicePayoutRuleAuditMetadata(existing.service, existing, rule)),
     );
     return rule;
   }
