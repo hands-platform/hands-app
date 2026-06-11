@@ -70,6 +70,7 @@ import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-lis
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import { backupAlertTraceDisplayFromSummary } from '../../lib/backup-alert-trace-display';
+import { readOptionalNumber, readOptionalString } from './booking-readers';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3680,15 +3681,6 @@ function readAddressText(value: unknown) {
       .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0)
       ?.trim() ?? null
   );
-}
-
-function readOptionalNumber(value: unknown) {
-  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function readOptionalString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function formatDate(value?: string | null) {
