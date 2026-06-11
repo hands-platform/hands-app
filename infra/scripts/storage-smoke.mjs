@@ -1,12 +1,11 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { loadMergedEnv } from './lib/env-file.mjs';
 
-loadEnv('.env');
+const { env } = loadMergedEnv('.env');
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
-const providerPhone = process.env.PROVIDER_DEMO_PHONE ?? '+84900000002';
-const adminPhone = process.env.ADMIN_DEMO_PHONE ?? '+84900000099';
-const otp = process.env.DEV_OTP ?? process.env.ADMIN_DEMO_OTP ?? '123456';
+const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
+const providerPhone = env.PROVIDER_DEMO_PHONE ?? '+84900000002';
+const adminPhone = env.ADMIN_DEMO_PHONE ?? '+84900000099';
+const otp = env.DEV_OTP ?? env.ADMIN_DEMO_OTP ?? '123456';
 const samplePng = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
   'base64',
@@ -139,31 +138,6 @@ function getJson(path, accessToken) {
   return request(path, {
     headers: { authorization: `Bearer ${accessToken}` },
   });
-}
-
-function loadEnv(file) {
-  const envPath = resolve(file);
-  if (!existsSync(envPath)) {
-    return;
-  }
-  for (const rawLine of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-    const index = line.indexOf('=');
-    if (index === -1) {
-      continue;
-    }
-    const key = line.slice(0, index).trim();
-    if (process.env[key]) {
-      continue;
-    }
-    process.env[key] = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, '');
-  }
 }
 
 function sleep(ms) {
