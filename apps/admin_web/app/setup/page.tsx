@@ -2,6 +2,15 @@ import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 import { MetricCard } from '../../components/metric-card';
 
+const fcmEnvKeys = [
+  'PUSH_PROVIDER',
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_PRIVATE_KEY',
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+];
+
 const setupOrder = [
   {
     id: 'mobile',
@@ -175,14 +184,7 @@ const setupOrder = [
     exitCriteria: 'FCM project, Firebase Admin credentials, and mobile device delivery are confirmed.',
     purpose:
       'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
-    env: [
-      'PUSH_PROVIDER',
-      'FIREBASE_PROJECT_ID',
-      'FIREBASE_CLIENT_EMAIL',
-      'FIREBASE_PRIVATE_KEY',
-      'FIREBASE_SERVICE_ACCOUNT_JSON',
-      'GOOGLE_APPLICATION_CREDENTIALS',
-    ],
+    env: fcmEnvKeys,
     notes: [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
       'FCM is for push only; Firebase DB/Auth/Firestore are not part of HANDS MVP.',
@@ -304,14 +306,7 @@ const externalRegistrationPlan = [
     statusClass: 'pill-neutral',
     detail:
       'Use in-app notifications locally until FCM app config and server-side Firebase Admin credentials are ready.',
-    env: [
-      'PUSH_PROVIDER',
-      'FIREBASE_PROJECT_ID',
-      'FIREBASE_CLIENT_EMAIL',
-      'FIREBASE_PRIVATE_KEY',
-      'FIREBASE_SERVICE_ACCOUNT_JSON',
-      'GOOGLE_APPLICATION_CREDENTIALS',
-    ],
+    env: fcmEnvKeys,
   },
   {
     id: 'payments-vn',
