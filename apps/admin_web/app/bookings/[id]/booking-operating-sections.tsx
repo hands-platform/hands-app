@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { formatDate } from './booking-formatters';
 
 type SummaryCard = {
@@ -150,31 +151,33 @@ export function BookingMarketplaceWalletEvidenceSection({
           </div>
         ))}
       </div>
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Evidence lane</th>
-            <th>Status</th>
-            <th>Record</th>
-            <th>Operator use</th>
-          </tr>
-        </thead>
-        <tbody>
-          {marketplaceWalletEvidence.rows.map((row) => (
-            <tr key={row.lane}>
-              <td>
-                <strong>{row.lane}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-              </td>
-              <td>{row.record}</td>
-              <td>{row.operatorUse}</td>
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Evidence lane</th>
+              <th>Status</th>
+              <th>Record</th>
+              <th>Operator use</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {marketplaceWalletEvidence.rows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.record}</td>
+                <td>{row.operatorUse}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </section>
   );
 }
@@ -196,30 +199,32 @@ export function BookingOperatingLedgerSection({
         </div>
         <span className="pill pill-info">{operatingLedger.length} record areas</span>
       </div>
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Area</th>
-            <th>Status</th>
-            <th>Evidence</th>
-            <th>Open</th>
-          </tr>
-        </thead>
-        <tbody>
-          {operatingLedger.map((row) => (
-            <tr key={row.area}>
-              <td>{row.area}</td>
-              <td>{row.status}</td>
-              <td>{row.evidence}</td>
-              <td>
-                <a className="text-link" href={row.href}>
-                  Open
-                </a>
-              </td>
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Evidence</th>
+              <th>Open</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {operatingLedger.map((row) => (
+              <tr key={row.area}>
+                <td>{row.area}</td>
+                <td>{row.status}</td>
+                <td>{row.evidence}</td>
+                <td>
+                  <a className="text-link" href={row.href}>
+                    Open
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </section>
   );
 }
