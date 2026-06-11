@@ -76,7 +76,7 @@ export function BookingOperatorQueueSections({
 }) {
   return (
     <>
-      <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="operator-command-queue">
         <div className="ops-section-header">
           <div>
             <h2>Operator command queue</h2>
@@ -86,7 +86,7 @@ export function BookingOperatorQueueSections({
           </div>
           <span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {operatorCommandQueue.labels.map((label) => (
             <div key={label.label}>
               <span>{label.label}</span>
@@ -95,7 +95,7 @@ export function BookingOperatorQueueSections({
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {operatorCommandQueue.commands.map((command) => (
             <div className="setup-stage-item" key={command.id}>
               <span>{command.label}</span>
@@ -110,7 +110,7 @@ export function BookingOperatorQueueSections({
         </div>
       </section>
 
-      <section className="card" id="operator-action-availability" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="operator-action-availability">
         <div className="ops-section-header">
           <div>
             <h2>Operator action availability</h2>
@@ -175,11 +175,11 @@ export function BookingOpsCommandCenter({
   cashDebtNeedsSettlement: boolean;
 }) {
   return (
-    <section className="card ops-command-center" id="booking-ops" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16" id="booking-ops">
       <div>
         <h2>Operations command center</h2>
         <p className="muted">{instruction}</p>
-        <div className="participant-list" style={{ marginTop: 10 }}>
+        <div className="participant-list admin-mt-10">
           {badges.map((badge) => (
             <span className={`pill ${badge.tone}`} key={badge.label}>
               {badge.label}
@@ -187,7 +187,7 @@ export function BookingOpsCommandCenter({
           ))}
         </div>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className={`ops-task-card ${finalGateReason.className}`} id="booking-gate-reason">
           <div>
             <span className={`pill ${finalGateReason.pillClass}`}>Booking gate reason</span>
@@ -197,7 +197,7 @@ export function BookingOpsCommandCenter({
           <small>{finalGateReason.operatorRule}</small>
         </div>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-section-header">
           <div>
             <strong>Action evidence gate</strong>
@@ -208,7 +208,7 @@ export function BookingOpsCommandCenter({
           </div>
           <span className={`pill ${actionEvidenceGate.tone}`}>{actionEvidenceGate.status}</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {actionEvidenceGate.rows.map((row) => (
             <a className={`ops-task-card ${row.className}`} href={row.href} key={row.action}>
               <div>
@@ -220,13 +220,13 @@ export function BookingOpsCommandCenter({
             </a>
           ))}
         </div>
-        <div className="ops-task-note" id="action-button-execution-map" style={{ marginTop: 12 }}>
+        <div className="ops-task-note admin-mt-12" id="action-button-execution-map">
           <strong>Action button execution map</strong>
           <p className="muted">
             Button-by-button operating readout. Use this before pressing payment, settlement, expiry,
             no-show, or completed closeout actions.
           </p>
-          <table className="table" style={{ marginTop: 12 }}>
+          <table className="table admin-mt-12">
             <thead>
               <tr>
                 <th>Action button</th>
