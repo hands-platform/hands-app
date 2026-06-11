@@ -695,7 +695,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Core operating counters</h2>
@@ -708,7 +708,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open booking monitor
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {coreOperatingCounters.map((counter) => (
             <div key={counter.label}>
               <span>{counter.label}</span>
@@ -717,7 +717,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           ))}
         </div>
-        <div className="actions" style={{ marginTop: 12 }}>
+        <div className="actions admin-mt-12">
           <Link className="text-link" href="/bookings?view=matching">
             Matching wait
           </Link>
@@ -733,7 +733,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Operations command board</h2>
@@ -746,7 +746,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open first action
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {operationsCommandBoard.map((item) => (
             <Link
               className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
@@ -758,7 +758,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
-              <div className="participant-list" style={{ marginTop: 10 }}>
+              <div className="participant-list admin-mt-10">
                 {item.checks.map((check) => (
                   <span className="pill pill-neutral" key={check}>
                     {check}
@@ -770,7 +770,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Marketplace participant snapshot</h2>
@@ -783,7 +783,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open participant ledger
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Open marketplace bookings</span>
             <strong>{marketplaceParticipantSnapshot.openMarketplaceBookings}</strong>
@@ -839,7 +839,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <small>{marketplaceParticipantSnapshot.declinedRows} declined response row(s) retained.</small>
           </div>
         </div>
-        <div className="actions" style={{ marginTop: 12 }}>
+        <div className="actions admin-mt-12">
           <Link className="text-link" href="/bookings?view=marketplace">
             Marketplace bookings
           </Link>
@@ -852,7 +852,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Evidence drilldown</h2>
@@ -865,7 +865,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open evidence queue
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Booking create gates</span>
             <strong>{bookingCreateRejections.length}</strong>
@@ -933,7 +933,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Booking evidence command queue</h2>
@@ -947,7 +947,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open first evidence queue
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
             <Link
               className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
@@ -961,12 +961,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <p>{item.detail}</p>
               <span className="ops-task-card-action">{item.operatorAction}</span>
               {item.sample ? (
-                <div className="ops-task-note" style={{ marginTop: 10 }}>
+                <div className="ops-task-note admin-mt-10">
                   <strong>{item.sample.label}</strong>
                   <p className="muted">{item.sample.detail}</p>
                 </div>
               ) : null}
-              <div className="participant-list" style={{ marginTop: 10 }}>
+              <div className="participant-list admin-mt-10">
                 {item.checks.map((check) => (
                   <span className="pill pill-neutral" key={check}>
                     {check}
@@ -978,7 +978,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Dashboard date range</h2>
@@ -990,7 +990,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <span className="pill pill-info">{selectedRangeLabel}</span>
         </div>
-        <div className="actions" style={{ marginTop: 12 }}>
+        <div className="actions admin-mt-12">
           {dashboardRangeLinks.map((link) => (
             <Link
               className={filters.range === link.range ? 'pill pill-info' : 'text-link'}
@@ -1001,7 +1001,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           ))}
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Range bookings</span>
             <strong>{rangeBookings.length}</strong>
@@ -1020,7 +1020,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Live operations radar</h2>
@@ -1033,7 +1033,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open first lane
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {liveOperationsRadar.map((item) => (
             <Link
               className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
@@ -1046,7 +1046,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
-              <div className="participant-list" style={{ marginTop: 10 }}>
+              <div className="participant-list admin-mt-10">
                 <span className="pill pill-neutral">{item.value}</span>
                 {item.checks.slice(0, 3).map((check) => (
                   <span className="pill pill-info" key={check}>
@@ -1059,7 +1059,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Admin menu map</h2>
@@ -1072,7 +1072,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Audit trail
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {adminMenuMap.map((group) => (
             <div key={group.label}>
               <span>{group.label}</span>
@@ -1082,7 +1082,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 </Link>
               </strong>
               <small>{group.helper}</small>
-              <div className="actions" style={{ marginTop: 10 }}>
+              <div className="actions admin-mt-10">
                 {group.links.map(([label, href]) => (
                   <Link className="text-link" href={href} key={`${group.label}-${label}-${href}`}>
                     {label}
@@ -1094,7 +1094,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Today operator order</h2>
@@ -1107,7 +1107,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Start first item
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {todayCommandOrder.map((item) => (
             <Link
               className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
@@ -1124,7 +1124,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Shift operating route</h2>
@@ -1137,7 +1137,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open route start
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {shiftOperatingRoute.map((item, index) => (
             <Link
               className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
@@ -1156,7 +1156,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Daily operations snapshot</h2>
@@ -1169,7 +1169,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Open booking board
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {dailySnapshot.map((item) => (
             <Link
               className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
@@ -1184,7 +1184,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Policy outcome pulse</h2>
@@ -1197,7 +1197,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Review policy cohorts
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {policyOutcome.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -1206,7 +1206,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policyOutcome.cards.map((card) => (
             <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
               <span className={`pill ${card.pillClass}`}>{card.scope}</span>
@@ -1218,7 +1218,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Shift command briefing</h2>
@@ -1229,7 +1229,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
           <span className={`signal ${shiftBriefing.signalClass}`}>{shiftBriefing.label}</span>
         </div>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
+        <div className="ops-task-note admin-mt-14">
           <div className="ops-row">
             <div>
               <span className="pill pill-warn">Next best move</span>
@@ -1241,7 +1241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           </div>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           {shiftBriefing.stats.map((stat) => (
             <Link
               className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
@@ -1254,7 +1254,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {shiftBriefing.nextActions.map((item, index) => (
             <Link
               className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
@@ -1281,7 +1281,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Opening shift checklist</h2>
@@ -1300,7 +1300,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             {operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success').length} action(s)
           </span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {operatorStartChecklist.map((item, index) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <small>Step {index + 1}</small>
@@ -1323,7 +1323,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         ))}
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Matching control room</h2>
@@ -1341,7 +1341,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           </div>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {matchingControl.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -1350,7 +1350,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           ))}
         </div>
-        <div className="detail-grid" style={{ marginTop: 14 }}>
+        <div className="detail-grid admin-mt-14">
           <div className="ops-task-note">
             <div className="ops-section-header">
               <div>
@@ -1364,7 +1364,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 {matchingControl.openRows.length} shown
               </span>
             </div>
-            <div className="stack" style={{ marginTop: 10 }}>
+            <div className="stack admin-mt-10">
               {matchingControl.openRows.map((row) => (
                 <div className="ops-row" key={row.id}>
                   <div>
@@ -1372,12 +1372,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       {row.title}
                     </Link>
                     <p className="muted">{row.detail}</p>
-                    <div className="participant-list" style={{ marginTop: 8 }}>
+                    <div className="participant-list admin-mt-8">
                       <span className={`pill ${row.customerPillClass}`}>{row.customerState}</span>
                       <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
                       <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
                     </div>
-                    <p className="muted" style={{ marginTop: 6 }}>
+                    <p className="muted admin-mt-6">
                       Next: {row.nextAction}
                     </p>
                   </div>
@@ -1399,7 +1399,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
               <span className={`pill ${matchingControl.healthPillClass}`}>{matchingControl.healthLabel}</span>
             </div>
-            <div className="ops-task-grid" style={{ marginTop: 12, gridTemplateColumns: '1fr' }}>
+            <div className="ops-task-grid admin-mt-12" style={{ gridTemplateColumns: '1fr' }}>
               {matchingControl.checks.map((check) => (
                 <div className={`ops-task-card ${check.className}`} key={check.title}>
                   <span className={`pill ${check.pillClass}`}>{check.status}</span>
@@ -1413,7 +1413,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Operations policy snapshot</h2>
@@ -1426,7 +1426,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Change policy
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Active overrides</span>
             <strong>{policySummary.activeOverrideCount}</strong>
@@ -1454,7 +1454,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </div>
         {policySummary.activeOverrides.length || policySummary.recentChanges.length ? (
-          <div className="detail-grid" style={{ marginTop: 14 }}>
+          <div className="detail-grid admin-mt-14">
             <div className="ops-task-note">
               <div className="ops-row">
                 <div>
@@ -1467,7 +1467,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   {policySummary.activeOverrideCount} override(s)
                 </span>
               </div>
-              <div className="stack" style={{ marginTop: 10 }}>
+              <div className="stack admin-mt-10">
                 {policySummary.activeOverrides.slice(0, 4).map((override) => (
                   <div className="ops-row" key={override.key}>
                     <div>
@@ -1501,7 +1501,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   Policy audit
                 </Link>
               </div>
-              <div className="stack" style={{ marginTop: 10 }}>
+              <div className="stack admin-mt-10">
                 {policySummary.recentChanges.slice(0, 4).map((change) => (
                   <div className="ops-row" key={change.key}>
                     <div>
@@ -1525,7 +1525,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </div>
         ) : null}
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policySummary.decisions.map((decision) => (
             <div className={`ops-task-card ${decision.className}`} key={decision.key}>
               <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
@@ -1540,7 +1540,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -1554,7 +1554,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               Attention bookings
             </Link>
           </div>
-          <div className="participant-list" style={{ marginTop: 8 }}>
+          <div className="participant-list admin-mt-8">
             <Link className="text-link" href="/bookings?view=matching">
               Matching ops
             </Link>
@@ -1670,7 +1670,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -1795,7 +1795,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -1848,7 +1848,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -1955,7 +1955,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Partner dispatch control</h2>
@@ -1968,7 +1968,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Partner queue
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {partnerOpsQueue.items.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
               <small>{item.status}</small>
@@ -1998,7 +1998,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           )}
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           <div>
             <span>Blocked now</span>
             <strong>{partnerOpsQueue.blockedNow}</strong>
@@ -2022,7 +2022,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Marketplace unblock quick order</h2>
@@ -2035,7 +2035,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             Full unblock playbook
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {acceptanceUnblockQuickOrder.map((step) => (
             <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
               <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
@@ -2057,7 +2057,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 20 }}>
+      <section className="card admin-mt-20">
         <div className="ops-section-header">
           <div>
             <h2>Today command lanes</h2>
@@ -2073,7 +2073,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </span>
         </div>
         {topCommandSignal && (
-          <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-task-note admin-mt-14">
             <div className="ops-row">
               <div>
                 <span className={`pill ${topCommandSignal.pillClass}`}>First move</span>
@@ -2129,7 +2129,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -2166,7 +2166,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </div>
           {queueSummary.first && (
-            <div className="ops-task-note" style={{ marginTop: 14 }}>
+            <div className="ops-task-note admin-mt-14">
               <div>
                 <span
                   className={`pill ${queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
@@ -2241,7 +2241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 20 }}>
+      <section className="detail-grid admin-mt-20">
         <div className="card">
           <h2>Realtime flow health</h2>
           <table className="table">
