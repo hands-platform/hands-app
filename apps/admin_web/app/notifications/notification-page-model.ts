@@ -22,6 +22,32 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
+const notificationReviewDescriptions: Readonly<Record<string, string>> = {
+  'disabled-device': 'users or partners with disabled push devices.',
+  failed: 'delivery attempts that returned a push provider failure.',
+  fcm: 'notifications that attempted OS push delivery through FCM.',
+  'in-app-route': 'notifications intentionally kept in the app inbox route.',
+  'needs-retry': 'notifications whose delivery path should be reviewed before retry.',
+  'no-show': 'customer and partner alerts created when operations marks a booking as no-show.',
+  'partner-alerts': 'booking and payout alerts sent to partners.',
+  'payout-setup': 'partners who earned revenue and now need tax/address/agreement setup before payout.',
+  pending: 'notifications without a captured delivery attempt yet.',
+  sent: 'successfully delivered push notifications.',
+  skipped: 'alerts that were intentionally skipped or had no available send path.',
+};
+const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNotification) => boolean>> = {
+  'disabled-device': hasDisabledPushDevice,
+  failed: (notification) => hasDeliveryStatus(notification, 'FAILED'),
+  fcm: (notification) => hasDeliveryProvider(notification, 'FCM'),
+  'in-app-route': (notification) => hasDeliveryProvider(notification, 'IN_APP_ONLY'),
+  'needs-retry': hasRetrySignal,
+  'no-show': (notification) => notification.type === 'booking.no_show',
+  'partner-alerts': (notification) => isPartnerAlertType(notification.type),
+  'payout-setup': (notification) => notification.type === 'provider.payout_setup_required',
+  pending: (notification) => (notification.deliveries ?? []).length === 0,
+  sent: (notification) => hasDeliveryStatus(notification, 'SENT'),
+  skipped: (notification) => hasDeliveryStatus(notification, 'SKIPPED'),
+};
 
 export type NotificationSummary = {
   readonly disabledDevices: number;
@@ -223,40 +249,7 @@ export function filterNotifications(
 }
 
 export function notificationFilterDescription(review: string) {
-  if (review === 'failed') {
-    return 'delivery attempts that returned a push provider failure.';
-  }
-  if (review === 'disabled-device') {
-    return 'users or partners with disabled push devices.';
-  }
-  if (review === 'needs-retry') {
-    return 'notifications whose delivery path should be reviewed before retry.';
-  }
-  if (review === 'skipped') {
-    return 'alerts that were intentionally skipped or had no available send path.';
-  }
-  if (review === 'sent') {
-    return 'successfully delivered push notifications.';
-  }
-  if (review === 'pending') {
-    return 'notifications without a captured delivery attempt yet.';
-  }
-  if (review === 'payout-setup') {
-    return 'partners who earned revenue and now need tax/address/agreement setup before payout.';
-  }
-  if (review === 'partner-alerts') {
-    return 'booking and payout alerts sent to partners.';
-  }
-  if (review === 'no-show') {
-    return 'customer and partner alerts created when operations marks a booking as no-show.';
-  }
-  if (review === 'fcm') {
-    return 'notifications that attempted OS push delivery through FCM.';
-  }
-  if (review === 'in-app-route') {
-    return 'notifications intentionally kept in the app inbox route.';
-  }
-  return 'all notification records.';
+  return notificationReviewDescriptions[review] ?? 'all notification records.';
 }
 
 export function emptyNotificationMessage(
@@ -461,44 +454,10 @@ function formatMeters(value: unknown) {
 }
 
 function notificationMatchesReview(notification: AdminNotification, review: string) {
-  const deliveries = notification.deliveries ?? [];
   if (!review) {
     return true;
   }
-  if (review === 'failed') {
-    return hasDeliveryStatus(notification, 'FAILED');
-  }
-  if (review === 'disabled-device') {
-    return hasDisabledPushDevice(notification);
-  }
-  if (review === 'needs-retry') {
-    return hasRetrySignal(notification);
-  }
-  if (review === 'skipped') {
-    return hasDeliveryStatus(notification, 'SKIPPED');
-  }
-  if (review === 'sent') {
-    return hasDeliveryStatus(notification, 'SENT');
-  }
-  if (review === 'pending') {
-    return deliveries.length === 0;
-  }
-  if (review === 'payout-setup') {
-    return notification.type === 'provider.payout_setup_required';
-  }
-  if (review === 'partner-alerts') {
-    return isPartnerAlertType(notification.type);
-  }
-  if (review === 'no-show') {
-    return notification.type === 'booking.no_show';
-  }
-  if (review === 'fcm') {
-    return hasDeliveryProvider(notification, 'FCM');
-  }
-  if (review === 'in-app-route') {
-    return hasDeliveryProvider(notification, 'IN_APP_ONLY');
-  }
-  return true;
+  return notificationReviewMatchers[review]?.(notification) ?? true;
 }
 
 function notificationBookingId(notification: AdminNotification) {
