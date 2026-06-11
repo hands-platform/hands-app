@@ -51,4 +51,32 @@ describe('booking notification trace', () => {
     expect(trace.backupBatches[0]?.meta).toContain('invite cap 25');
     expect(trace.backupBatches[0]?.meta).toContain('mode IMMEDIATE_WITHIN_WINDOW');
   });
+
+  it('sorts saved invite batch traces by creation time newest first', () => {
+    const trace = bookingNotificationTrace(
+      {
+        id: 'booking-1',
+        status: 'OPEN_MATCHING',
+        metadata: {
+          backupNotificationTraces: [
+            {
+              stage: 'initial_open',
+              createdAt: '2026-06-07T01:00:00.000Z',
+              notifiedCount: 1,
+              providers: [],
+            },
+            {
+              stage: 'first_pick_declined',
+              createdAt: '2026-06-07T01:10:00.000Z',
+              notifiedCount: 3,
+              providers: [],
+            },
+          ],
+        },
+      } as AdminBookingDetail,
+      [],
+    );
+
+    expect(trace.backupBatches.map((batch) => batch.notifiedCountLabel)).toEqual(['3', '1']);
+  });
 });

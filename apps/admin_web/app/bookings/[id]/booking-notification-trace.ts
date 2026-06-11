@@ -112,6 +112,7 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
 
       return {
         id: `${createdAt ?? 'batch'}-${stage}-${index}`,
+        createdAtTime: createdAt ? Date.parse(createdAt) : 0,
         signal: notifiedCount > 0 ? 'Marketplace invited' : 'No marketplace sent',
         title: `${humanizeNotificationType(stage)} / ${notifiedCount} partner(s)`,
         notifiedCountLabel: `${notifiedCount}`,
@@ -132,10 +133,9 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
       };
     })
     .filter((value): value is NonNullable<typeof value> => Boolean(value))
-    .sort((left, right) => {
-      const leftCreatedAt = left.id.split('-').slice(0, 3).join('-');
-      const rightCreatedAt = right.id.split('-').slice(0, 3).join('-');
-      return Date.parse(rightCreatedAt) - Date.parse(leftCreatedAt);
+    .sort((left, right) => right.createdAtTime - left.createdAtTime)
+    .map(({ createdAtTime: _createdAtTime, ...batch }) => {
+      return batch;
     });
 }
 
