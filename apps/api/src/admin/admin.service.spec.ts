@@ -10,11 +10,11 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function createAdminService(prisma: unknown) {
+function createAdminService(prisma: unknown, deps: { notifications?: unknown } = {}) {
   return new AdminService(
     prisma as never,
     {} as never,
-    {} as never,
+    (deps.notifications ?? {}) as never,
     {} as never,
     {} as never,
   );
@@ -284,5 +284,32 @@ describe('AdminService query orchestration', () => {
     await detailPromise;
 
     expect(auditStartedBeforeCallbackResolved).toBe(true);
+  });
+
+  it('audits notification retry requests after enqueueing the retry job', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const notifications = {
+      retry: jest.fn().mockResolvedValue({ ok: true, notificationId: 'notification-1' }),
+    };
+    const service = createAdminService(prisma, { notifications });
+
+    await expect(service.retryNotification('admin-1', 'notification-1')).resolves.toEqual({
+      ok: true,
+      notificationId: 'notification-1',
+    });
+
+    expect(notifications.retry).toHaveBeenCalledWith('notification-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'notification.retry',
+        target: 'notification:notification-1',
+        metadata: { notificationId: 'notification-1' },
+      },
+    });
   });
 });
