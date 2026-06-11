@@ -22,4 +22,21 @@ describe('notification push data', () => {
     expect(toPushData({ reason: 'Internal operator note' })).toBeUndefined();
     expect(toPushData(null)).toBeUndefined();
   });
+
+  it('keeps payout setup detail objects out of OS push data', () => {
+    expect(
+      toPushData({
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-1',
+        missing: {
+          taxProfileApproved: true,
+          residentialAddress: true,
+          agreements: ['PAYOUT'],
+        },
+      }),
+    ).toEqual({
+      bookingId: 'booking-1',
+      providerProfileId: 'provider-1',
+    });
+  });
 });
