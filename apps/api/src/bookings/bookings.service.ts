@@ -1480,22 +1480,42 @@ export class BookingsService {
       this.assertProviderLifecycleTransition(booking.status, allowedPreviousStatuses);
     }
     if (status === BookingStatus.IN_SERVICE) {
-      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
-      const updated = await this.prisma.booking.update({
-        where: { id: bookingId },
-        data: bookingServiceStartedUpdateData(),
-        include: { chatRoom: true, preferredProvider: true, selectedProvider: true, customerProfile: true },
-      });
-      await this.notifyServiceStarted({
-        bookingId,
-        customerUserId: updated.customerProfile.userId,
-        providerUserId: updated.selectedProvider?.userId,
-        chatRoomId: updated.chatRoom?.id,
-      });
-      this.matchingGateway.emitServiceStarted(bookingId, updated);
-      return updated;
+      return this.startProviderService({ bookingId, providerProfileId: provider.id });
     }
     return this.updateStatus(bookingId, status);
+  }
+
+  private async startProviderService(input: { bookingId: string; providerProfileId: string }) {
+    await this.ensureProviderWalletCanJoinMarketplace(input.providerProfileId);
+    const updated = await this.prisma.booking.update({
+      where: { id: input.bookingId },
+      data: bookingServiceStartedUpdateData(),
+      include: { chatRoom: true, preferredProvider: true, selectedProvider: true, customerProfile: true },
+    });
+    await this.announceServiceStarted({
+      bookingId: input.bookingId,
+      customerUserId: updated.customerProfile.userId,
+      providerUserId: updated.selectedProvider?.userId,
+      chatRoomId: updated.chatRoom?.id,
+      matchingPayload: updated,
+    });
+    return updated;
+  }
+
+  private async announceServiceStarted(input: {
+    bookingId: string;
+    customerUserId: string;
+    providerUserId?: string;
+    chatRoomId?: string;
+    matchingPayload: unknown;
+  }) {
+    await this.notifyServiceStarted({
+      bookingId: input.bookingId,
+      customerUserId: input.customerUserId,
+      providerUserId: input.providerUserId,
+      chatRoomId: input.chatRoomId,
+    });
+    this.matchingGateway.emitServiceStarted(input.bookingId, input.matchingPayload);
   }
 
   async complete(bookingId: string, providerUserId: string) {

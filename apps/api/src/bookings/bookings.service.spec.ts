@@ -835,6 +835,77 @@ describe('BookingsService final partner selection', () => {
   });
 });
 
+describe('BookingsService provider service lifecycle', () => {
+  it('starts service with wallet gate, chat handoff, and service-started notifications', async () => {
+    const startedBooking = {
+      id: 'booking-1',
+      status: BookingStatus.IN_SERVICE,
+      customerProfile: { userId: 'customer-user-1' },
+      selectedProvider: { id: 'partner-1', userId: 'partner-user-1' },
+      preferredProvider: null,
+      chatRoom: { id: 'chat-room-1' },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.ARRIVED,
+        }),
+        update: jest.fn().mockResolvedValue(startedBooking),
+      },
+    };
+    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitServiceStarted: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(
+      service.updateProviderBookingStatus('booking-1', 'partner-user-1', BookingStatus.IN_SERVICE),
+    ).resolves.toBe(startedBooking);
+
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: BookingStatus.IN_SERVICE,
+          chatRoom: { upsert: { create: {}, update: {} } },
+        }),
+        include: expect.objectContaining({
+          chatRoom: true,
+          customerProfile: true,
+          selectedProvider: true,
+        }),
+      }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'service.started',
+        userId: 'customer-user-1',
+      }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'service.started',
+        userId: 'partner-user-1',
+      }),
+    );
+    expect(matchingGateway.emitServiceStarted).toHaveBeenCalledWith('booking-1', startedBooking);
+  });
+});
+
 describe('BookingsService service completion', () => {
   it('loads the immutable address snapshot before emitting the completed booking', async () => {
     const completedBooking = completedBookingWithAddressSnapshot();
