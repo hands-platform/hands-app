@@ -193,6 +193,19 @@ const clientBookingDetailInclude = {
   chatRoom: true,
 } satisfies Prisma.BookingInclude;
 
+const serviceStartedBookingInclude = {
+  chatRoom: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  customerProfile: true,
+} satisfies Prisma.BookingInclude;
+
+const completedBookingInclude = {
+  addressSnapshot: true,
+  payment: true,
+  selectedProvider: true,
+} satisfies Prisma.BookingInclude;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -1485,7 +1498,7 @@ export class BookingsService {
     const updated = await this.prisma.booking.update({
       where: { id: input.bookingId },
       data: bookingServiceStartedUpdateData(),
-      include: { chatRoom: true, preferredProvider: true, selectedProvider: true, customerProfile: true },
+      include: serviceStartedBookingInclude,
     });
     await this.announceServiceStarted({
       bookingId: input.bookingId,
@@ -1524,7 +1537,7 @@ export class BookingsService {
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: bookingCompletedUpdateData(),
-      include: { addressSnapshot: true, payment: true, selectedProvider: true },
+      include: completedBookingInclude,
     });
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
