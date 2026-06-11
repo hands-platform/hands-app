@@ -13,11 +13,12 @@ type NotificationSendJob = {
   notificationId: string;
 };
 
-const PARTNER_BOOKING_ALERT_TYPES = new Set([
+const PARTNER_ALERT_TYPES = new Set([
   'booking.requested',
   'booking.backup_available',
   'booking.matched',
   'provider.payout_setup_required',
+  'provider.payout_batch.updated',
 ]);
 const PUSH_DATA_KEYS = new Set([
   'bookingId',
@@ -105,7 +106,7 @@ export class NotificationRetryProcessor extends WorkerHost {
   }
 
   private async resolveProviderOverride(notificationType: string) {
-    if (!isPartnerBookingAlert(notificationType)) {
+    if (!isPartnerAlert(notificationType)) {
       return undefined;
     }
 
@@ -121,8 +122,8 @@ export class NotificationRetryProcessor extends WorkerHost {
   }
 }
 
-function isPartnerBookingAlert(notificationType: string) {
-  return PARTNER_BOOKING_ALERT_TYPES.has(notificationType);
+export function isPartnerAlert(notificationType: string) {
+  return PARTNER_ALERT_TYPES.has(notificationType);
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {
