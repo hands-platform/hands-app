@@ -64,6 +64,7 @@ import {
   bookingMatchingPolicySnapshot,
   restoreBookingMatchingPolicy,
 } from './bookings.matching-policy';
+import { bookingOpenMatchingPayload } from './bookings.matching-payload';
 import {
   appendBackupNotificationTrace,
   backupAlertPolicyMetadata,
@@ -429,13 +430,7 @@ export class BookingsService {
     const result = this.matching.openBooking({
       booking: clientBookingResponse(booking),
       policy: matchingPolicy,
-      payload: {
-        eligibleBackupProviderCount: eligibleBackupProviders.length,
-        marketplaceRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-        marketplaceInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-        backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-        backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-      },
+      payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length),
     });
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
@@ -946,14 +941,9 @@ export class BookingsService {
         const result = this.matching.openBooking({
           booking: updated,
           policy: matchingPolicy,
-          payload: {
-            eligibleBackupProviderCount: eligibleBackupProviders.length,
-            marketplaceRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-            marketplaceInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-            backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-            backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
+          payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
             firstPickDeclined: true,
-          },
+          }),
         });
         await this.matching.registerActiveBooking(bookingId, result);
         await this.matching.scheduleBookingTimeout(
