@@ -1695,29 +1695,31 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredNotifications.length} rows</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Notification</th>
-              <th>Type</th>
-              <th>Created</th>
-              <th>Delivery</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredNotifications.slice(0, 20).map((notification) => (
-              <tr key={notification.id}>
-                <td>
-                  <strong>{displayMarketplaceText(notification.title)}</strong>
-                  <p className="muted">{displayMarketplaceText(notification.body)}</p>
-                </td>
-                <td>{displayMarketplaceText(notification.type)}</td>
-                <td>{formatDate(notification.createdAt)}</td>
-                <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Notification</th>
+                <th>Type</th>
+                <th>Created</th>
+                <th>Delivery</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredNotifications.slice(0, 20).map((notification) => (
+                <tr key={notification.id}>
+                  <td>
+                    <strong>{displayMarketplaceText(notification.title)}</strong>
+                    <p className="muted">{displayMarketplaceText(notification.body)}</p>
+                  </td>
+                  <td>{displayMarketplaceText(notification.type)}</td>
+                  <td>{formatDate(notification.createdAt)}</td>
+                  <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       </section>
 
       <section className="card" id="audit-trail" style={{ marginTop: 16 }}>
@@ -1728,28 +1730,30 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredAuditLogs.length} logs</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Action</th>
-              <th>Actor</th>
-              <th>Created</th>
-              <th>Metadata</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAuditLogs.slice(0, 20).map((log) => (
-              <tr key={log.id}>
-                <td>{log.action}</td>
-                <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
-                <td>{formatDate(log.createdAt)}</td>
-                <td>
-                  <code>{compactJson(log.metadata)}</code>
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Created</th>
+                <th>Metadata</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredAuditLogs.slice(0, 20).map((log) => (
+                <tr key={log.id}>
+                  <td>{log.action}</td>
+                  <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
+                  <td>{formatDate(log.createdAt)}</td>
+                  <td>
+                    <code>{compactJson(log.metadata)}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       </section>
     </>
   );
