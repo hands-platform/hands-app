@@ -1513,18 +1513,32 @@ export class BookingsService {
     });
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
-    const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
-    await this.notifyCustomerServiceCompleted(customerUserId, bookingId);
-    if (booking.selectedProvider?.userId) {
-      await this.notifyProviderEarningCreated(booking.selectedProvider.userId, bookingId);
+    await this.announceServiceCompleted({
+      bookingId,
+      providerProfileId: provider.id,
+      selectedProviderUserId: booking.selectedProvider?.userId,
+      matchingPayload: result,
+    });
+    return result;
+  }
+
+  private async announceServiceCompleted(input: {
+    bookingId: string;
+    providerProfileId: string;
+    selectedProviderUserId?: string;
+    matchingPayload: unknown;
+  }) {
+    const customerUserId = await this.getCustomerUserIdForBooking(input.bookingId);
+    await this.notifyCustomerServiceCompleted(customerUserId, input.bookingId);
+    if (input.selectedProviderUserId) {
+      await this.notifyProviderEarningCreated(input.selectedProviderUserId, input.bookingId);
       await this.notifyProviderFirstRevenuePayoutSetup(
-        provider.id,
-        booking.selectedProvider.userId,
-        bookingId,
+        input.providerProfileId,
+        input.selectedProviderUserId,
+        input.bookingId,
       );
     }
-    this.matchingGateway.emitServiceCompleted(bookingId, result);
-    return result;
+    this.matchingGateway.emitServiceCompleted(input.bookingId, input.matchingPayload);
   }
 
   private async notifyProviderFirstRevenuePayoutSetup(
