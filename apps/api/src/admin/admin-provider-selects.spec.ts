@@ -1,8 +1,15 @@
 import {
+  adminProviderDetailUserSelect,
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
+  adminProviderOverviewUserSelect,
   adminProviderPublicMediaSelect,
+  adminProviderReportDetailSelect,
+  adminProviderReportListSelect,
+  adminProviderSanctionDetailSelect,
+  adminProviderSanctionListSelect,
   adminProviderSummarySelect,
+  adminProviderVerificationDetailSelect,
   adminProviderVerificationSummarySelect,
 } from './admin-provider-selects';
 
@@ -39,6 +46,38 @@ describe('admin provider selects', () => {
       enabled: true,
       blockedAt: true,
       blockReason: true,
+    });
+  });
+
+  it('keeps provider user media selections bounded by view depth', () => {
+    expect(adminProviderDetailUserSelect.fileAssets).toMatchObject({
+      take: 8,
+      select: adminProviderPublicMediaSelect,
+    });
+    expect(adminProviderOverviewUserSelect.fileAssets).toMatchObject({
+      take: 3,
+      select: adminProviderPublicMediaSelect,
+    });
+  });
+
+  it('keeps provider verification detail file-aware', () => {
+    expect(adminProviderVerificationDetailSelect.files).toMatchObject({
+      select: expect.objectContaining({ key: true, url: true, reviewStatus: true }),
+    });
+  });
+
+  it('keeps provider moderation selects connected to sanctions and actor context', () => {
+    expect(adminProviderReportDetailSelect.sanctions).toMatchObject({
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(adminProviderReportListSelect.providerProfile).toMatchObject({
+      select: expect.objectContaining({ displayName: true, user: expect.any(Object) }),
+    });
+    expect(adminProviderSanctionDetailSelect.report).toMatchObject({
+      select: expect.objectContaining({ severity: true, status: true }),
+    });
+    expect(adminProviderSanctionListSelect.providerProfile).toMatchObject({
+      select: expect.objectContaining({ displayName: true, user: expect.any(Object) }),
     });
   });
 });

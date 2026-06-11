@@ -1,5 +1,9 @@
-import { Prisma } from '@prisma/client';
-import { adminUserSummarySelect } from './admin-user-selects';
+import { FilePurpose, FileUploadStatus, FileVisibility, Prisma } from '@prisma/client';
+import {
+  adminPushDeviceSummarySelect,
+  adminUserAuthSelect,
+  adminUserSummarySelect,
+} from './admin-user-selects';
 
 export const adminProviderSummarySelect = {
   id: true,
@@ -54,6 +58,54 @@ export const adminProviderVerificationSummarySelect = {
   rejectionReason: true,
   files: {
     take: 3,
+    select: adminProviderVerificationFileSelect,
+  },
+} satisfies Prisma.ProviderVerificationSelect;
+
+export const adminProviderDetailUserSelect = {
+  ...adminUserAuthSelect,
+  pushDevices: {
+    orderBy: { createdAt: 'desc' },
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 8,
+    select: adminProviderPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+export const adminProviderOverviewUserSelect = {
+  ...adminUserAuthSelect,
+  pushDevices: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: adminProviderPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+export const adminProviderVerificationDetailSelect = {
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  files: {
     select: adminProviderVerificationFileSelect,
   },
 } satisfies Prisma.ProviderVerificationSelect;
@@ -142,6 +194,56 @@ export const adminProviderSanctionSummarySelect = {
   liftedAt: true,
   createdAt: true,
   updatedAt: true,
+} satisfies Prisma.ProviderSanctionSelect;
+
+export const adminProviderReportDetailSelect = {
+  ...adminProviderReportSummarySelect,
+  booking: { select: { id: true, status: true } },
+  reporterUser: { select: { phone: true, fullName: true } },
+  assignedAdmin: { select: { phone: true, fullName: true } },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    select: adminProviderSanctionSummarySelect,
+  },
+} satisfies Prisma.ProviderReportSelect;
+
+export const adminProviderReportListSelect = {
+  ...adminProviderReportSummarySelect,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { phone: true, fullName: true } },
+    },
+  },
+  booking: { select: { id: true, status: true, scheduledStartAt: true } },
+  reporterUser: { select: { phone: true, fullName: true } },
+  assignedAdmin: { select: { phone: true, fullName: true } },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    select: adminProviderSanctionSummarySelect,
+  },
+} satisfies Prisma.ProviderReportSelect;
+
+export const adminProviderSanctionDetailSelect = {
+  ...adminProviderSanctionSummarySelect,
+  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+  issuedBy: { select: { phone: true, fullName: true } },
+  liftedBy: { select: { phone: true, fullName: true } },
+} satisfies Prisma.ProviderSanctionSelect;
+
+export const adminProviderSanctionListSelect = {
+  ...adminProviderSanctionSummarySelect,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { phone: true, fullName: true } },
+    },
+  },
+  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+  issuedBy: { select: { phone: true, fullName: true } },
+  liftedBy: { select: { phone: true, fullName: true } },
 } satisfies Prisma.ProviderSanctionSelect;
 
 export const adminProviderSessionSummarySelect = {

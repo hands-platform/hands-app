@@ -82,15 +82,22 @@ import { normalizeAuditReason, normalizeNullable, slugify } from './admin-text-h
 import {
   adminProviderAgreementSummarySelect,
   adminProviderBankAccountSummarySelect,
+  adminProviderDetailUserSelect,
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
   adminProviderKycSummarySelect,
+  adminProviderOverviewUserSelect,
   adminProviderPublicMediaSelect,
+  adminProviderReportDetailSelect,
+  adminProviderReportListSelect,
   adminProviderReportSummarySelect,
+  adminProviderSanctionDetailSelect,
+  adminProviderSanctionListSelect,
   adminProviderSanctionSummarySelect,
   adminProviderSessionSummarySelect,
   adminProviderSummarySelect,
   adminProviderTaxProfileSummarySelect,
+  adminProviderVerificationDetailSelect,
   adminProviderVerificationFileSelect,
   adminProviderVerificationSummarySelect,
 } from './admin-provider-selects';
@@ -145,104 +152,6 @@ type AdminAuditLogSummaryRow = {
   actorPhone: string;
   actorFullName: string | null;
 };
-
-const adminProviderDetailUserSelect = {
-  ...adminUserAuthSelect,
-  pushDevices: {
-    orderBy: { createdAt: 'desc' },
-    select: adminPushDeviceSummarySelect,
-  },
-  fileAssets: {
-    where: {
-      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
-      visibility: FileVisibility.PUBLIC,
-      uploadStatus: FileUploadStatus.UPLOADED,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 8,
-    select: adminProviderPublicMediaSelect,
-  },
-} satisfies Prisma.UserSelect;
-
-const adminProviderOverviewUserSelect = {
-  ...adminUserAuthSelect,
-  pushDevices: {
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminPushDeviceSummarySelect,
-  },
-  fileAssets: {
-    where: {
-      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
-      visibility: FileVisibility.PUBLIC,
-      uploadStatus: FileUploadStatus.UPLOADED,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminProviderPublicMediaSelect,
-  },
-} satisfies Prisma.UserSelect;
-
-const adminProviderVerificationDetailSelect = {
-  id: true,
-  status: true,
-  submittedAt: true,
-  reviewedAt: true,
-  rejectionReason: true,
-  files: {
-    select: adminProviderVerificationFileSelect,
-  },
-} satisfies Prisma.ProviderVerificationSelect;
-
-const adminProviderReportDetailSelect = {
-  ...adminProviderReportSummarySelect,
-  booking: { select: { id: true, status: true } },
-  reporterUser: { select: { phone: true, fullName: true } },
-  assignedAdmin: { select: { phone: true, fullName: true } },
-  sanctions: {
-    orderBy: { createdAt: 'desc' },
-    select: adminProviderSanctionSummarySelect,
-  },
-} satisfies Prisma.ProviderReportSelect;
-
-const adminProviderReportListSelect = {
-  ...adminProviderReportSummarySelect,
-  providerProfile: {
-    select: {
-      id: true,
-      displayName: true,
-      user: { select: { phone: true, fullName: true } },
-    },
-  },
-  booking: { select: { id: true, status: true, scheduledStartAt: true } },
-  reporterUser: { select: { phone: true, fullName: true } },
-  assignedAdmin: { select: { phone: true, fullName: true } },
-  sanctions: {
-    orderBy: { createdAt: 'desc' },
-    select: adminProviderSanctionSummarySelect,
-  },
-} satisfies Prisma.ProviderReportSelect;
-
-const adminProviderSanctionDetailSelect = {
-  ...adminProviderSanctionSummarySelect,
-  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
-  issuedBy: { select: { phone: true, fullName: true } },
-  liftedBy: { select: { phone: true, fullName: true } },
-} satisfies Prisma.ProviderSanctionSelect;
-
-const adminProviderSanctionListSelect = {
-  ...adminProviderSanctionSummarySelect,
-  providerProfile: {
-    select: {
-      id: true,
-      displayName: true,
-      user: { select: { phone: true, fullName: true } },
-    },
-  },
-  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
-  issuedBy: { select: { phone: true, fullName: true } },
-  liftedBy: { select: { phone: true, fullName: true } },
-} satisfies Prisma.ProviderSanctionSelect;
 
 const adminProviderDetailBookingSelect = {
   ...adminCustomerDetailBookingSelect,
