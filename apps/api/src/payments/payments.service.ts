@@ -10,6 +10,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
 
+const PAYMENT_STATUS_CHECK_DELAY_MS = 30_000;
+const PAYMENT_STATUS_CHECK_ATTEMPTS = 5;
+const PAYMENT_STATUS_CHECK_BACKOFF_MS = 10_000;
+
 @Injectable()
 export class PaymentsService {
   constructor(
@@ -46,9 +50,9 @@ export class PaymentsService {
       'payment-status-check',
       { paymentId },
       {
-        delay: 30_000,
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 10_000 },
+        delay: PAYMENT_STATUS_CHECK_DELAY_MS,
+        attempts: PAYMENT_STATUS_CHECK_ATTEMPTS,
+        backoff: { type: 'exponential', delay: PAYMENT_STATUS_CHECK_BACKOFF_MS },
         removeOnComplete: true,
         removeOnFail: false,
       },
@@ -115,12 +119,7 @@ export class PaymentsService {
         where: { id: existing.id },
         data: {
           status: parsed.status,
-          rawMeta: toJsonOrUndefined({
-            ...parsed.rawMeta,
-            callbackReceivedAt: new Date().toISOString(),
-            callbackSignatureVerified: verification.verified,
-            callbackVerificationMode: verification.mode,
-          }),
+          rawMeta: toJsonOrUndefined(callbackRawMeta(parsed.rawMeta, verification)),
         },
       });
       await this.recordCallbackAttempt({
@@ -139,7 +138,7 @@ export class PaymentsService {
         ...initialEvidence,
         paymentId: existing?.id ?? null,
         providerRef: parsed?.providerRef || initialEvidence.providerRef,
-        outcome: error instanceof ConflictException ? 'CONFLICT' : 'REJECTED',
+        outcome: callbackFailureOutcome(error),
         signatureVerified: verification?.verified ?? null,
         verificationMode: verification?.mode ?? null,
         providerStatus: parsed?.status ?? initialEvidence.providerStatus,
@@ -290,7 +289,9 @@ export class PaymentsService {
     }
 
     const candidates = momoSignatureCandidates(body, this.config.get<string>('MOMO_ACCESS_KEY'));
-    const verified = candidates.some((candidate) => secureEqualHex(hmacHex('sha256', secret, candidate), signature));
+    const verified = candidates.some((candidate) =>
+      secureEqualHex(hmacHex('sha256', secret, candidate), signature),
+    );
     if (!verified) {
       throw new BadRequestException('Invalid MoMo callback signature');
     }
@@ -309,7 +310,9 @@ export class PaymentsService {
     }
 
     const candidates = vnpaySignatureCandidates(body);
-    const verified = candidates.some((candidate) => secureEqualHex(hmacHex('sha512', secret, candidate), signature));
+    const verified = candidates.some((candidate) =>
+      secureEqualHex(hmacHex('sha512', secret, candidate), signature),
+    );
     if (!verified) {
       throw new BadRequestException('Invalid VNPay callback secure hash');
     }
@@ -389,7 +392,11 @@ export class PaymentsService {
 }
 
 function isTerminalPaymentStatus(status: PaymentStatus) {
-  return status === PaymentStatus.CAPTURED || status === PaymentStatus.REFUNDED || status === PaymentStatus.RELEASED;
+  return (
+    status === PaymentStatus.CAPTURED ||
+    status === PaymentStatus.REFUNDED ||
+    status === PaymentStatus.RELEASED
+  );
 }
 
 function toJsonOrUndefined(value: unknown): Prisma.InputJsonValue | undefined {
@@ -404,6 +411,18 @@ function asJsonObject(value: unknown): Record<string, unknown> {
     return {};
   }
   return value as Record<string, unknown>;
+}
+
+function callbackRawMeta(
+  rawMeta: Record<string, unknown>,
+  verification: { verified: boolean; mode: string },
+) {
+  return {
+    ...rawMeta,
+    callbackReceivedAt: new Date().toISOString(),
+    callbackSignatureVerified: verification.verified,
+    callbackVerificationMode: verification.mode,
+  };
 }
 
 function momoSignatureCandidates(body: Record<string, unknown>, accessKey?: string) {
@@ -486,7 +505,11 @@ function callbackAttemptEvidence(method: PaymentMethod, body: Record<string, unk
 }
 
 function callbackProviderRef(body: Record<string, unknown>) {
-  return stringValueOrNull(body.providerRef) ?? stringValueOrNull(body.orderId) ?? stringValueOrNull(body.vnp_TxnRef);
+  return (
+    stringValueOrNull(body.providerRef) ??
+    stringValueOrNull(body.orderId) ??
+    stringValueOrNull(body.vnp_TxnRef)
+  );
 }
 
 function stringValueOrNull(value: unknown) {
@@ -502,6 +525,10 @@ function errorCode(error: unknown) {
     return 'CONFLICT';
   }
   return 'CALLBACK_ERROR';
+}
+
+function callbackFailureOutcome(error: unknown) {
+  return error instanceof ConflictException ? 'CONFLICT' : 'REJECTED';
 }
 
 function errorMessage(error: unknown) {
