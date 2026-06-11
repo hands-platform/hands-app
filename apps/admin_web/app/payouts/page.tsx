@@ -127,7 +127,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         />
       ) : null}
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <AdminSectionHeader
           actions={
             <a className="text-link" href="/finance-closeout">
@@ -142,7 +142,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           }
           title="Payout date range"
         />
-        <div className="filter-row" style={{ marginTop: 12 }}>
+        <div className="filter-row admin-mt-12">
           {[
             ['All dates', '/payouts'],
             ['Today', '/payouts?range=today'],
@@ -155,7 +155,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           ))}
         </div>
       </section>
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Payout batch release policy desk</h2>
@@ -168,7 +168,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Batch policy
           </Link>
         </div>
-        <div className="ops-section-header" style={{ marginTop: 14 }}>
+        <div className="ops-section-header admin-mt-14">
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
@@ -178,7 +178,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           </div>
           <span className="pill pill-info">Live policy default</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {appliedPayoutPolicyCards.map((card) => (
             <div key={card.label}>
               <span>{card.label}</span>
@@ -199,7 +199,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </div>
           ))}
         </div>
-        <div className="ops-section-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header admin-mt-16">
           <div>
             <h3>Payout release cycle board</h3>
             <p className="muted">
@@ -211,7 +211,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Cash settlements
           </Link>
         </div>
-        <div className="admin-scroll-x" style={{ marginTop: 12 }}>
+        <div className="admin-scroll-x admin-mt-12">
           <table className="table">
             <thead>
               <tr>
@@ -239,7 +239,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </tbody>
           </table>
         </div>
-        <div className="ops-section-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header admin-mt-16">
           <div>
             <h3>Marketplace and payout unblock bridge</h3>
             <p className="muted">
@@ -251,7 +251,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Marketplace monitor
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {marketplaceUnblockBridge.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <div>

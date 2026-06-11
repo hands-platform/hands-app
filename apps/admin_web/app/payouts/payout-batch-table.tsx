@@ -98,7 +98,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div>{row.partnerLabel}</div>
             <div className="muted">{row.partnerPhone}</div>
             {row.payoutHold ? (
-              <div style={{ marginTop: 6 }}>
+              <div className="admin-mt-6">
                 <span className="pill pill-danger">Payout hold</span>
               </div>
             ) : null}
@@ -109,7 +109,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
           </td>
           <td>
             <span className={row.opsSignalClassName}>{row.opsSignal}</span>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.opsHint}
             </div>
           </td>
@@ -125,7 +125,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                 <span className="pill pill-success">Clear</span>
               )}
             </div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.blockingActionSummary}
             </div>
           </td>
@@ -136,7 +136,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
           <td>
             <div>{row.earningCount} item(s)</div>
             <div className="muted">{row.earningsHint}</div>
-            <div className="participant-list" style={{ marginTop: 8 }}>
+            <div className="participant-list admin-mt-8">
               {row.serviceEvidencePills.map((item) => (
                 <span className="pill pill-info" key={`${row.id}-${item.key}`}>
                   {item.label}: {item.value}
@@ -152,7 +152,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
                 </span>
               ))}
             </div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.readinessSummary}
             </div>
           </td>
@@ -166,9 +166,9 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
             <div className="muted">{row.paidAtRelativeLabel}</div>
           </td>
           <td>
-            <div className="ops-task-note" style={{ marginBottom: 10 }}>
+            <div className="ops-task-note admin-mb-10">
               <strong>Payout action execution map</strong>
-              <div className="setup-stage-list" style={{ marginTop: 8 }}>
+              <div className="setup-stage-list admin-mt-8">
                 {row.actionExecutionItems.map((item) => (
                   <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
                     <span className={`pill ${item.pillClass}`}>{item.status}</span>
@@ -192,7 +192,7 @@ export function PayoutBatchTable({ rows, updateTransferRefAction }: PayoutBatchT
               <input aria-label="Transfer notes" defaultValue={row.notes} name="notes" placeholder="Notes" />
               <button type="submit">Save</button>
             </form>
-            <div className="actions" style={{ marginTop: 8 }}>
+            <div className="actions admin-mt-8">
               <ActionMenu actions={row.actionMenuItems} label={`Payout actions for ${row.shortId}`} />
               {row.payoutHold ? (
                 <a className="pill pill-danger" href={row.partnerChecksHref}>

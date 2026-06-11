@@ -25,7 +25,7 @@ type PayoutMoneyFlowSectionProps = {
 
 export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyFlowSectionProps) {
   return (
-    <div className="card" id="release-blocker-queue" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id="release-blocker-queue">
       <div className="ops-section-header">
         <div>
           <h2>Payout money flow</h2>
@@ -48,7 +48,7 @@ export function PayoutMoneyFlowSection({ cards, checks, currency }: PayoutMoneyF
         ))}
       </div>
       {checks.length ? (
-        <div className="ops-task-grid" style={{ marginTop: 16 }}>
+        <div className="ops-task-grid admin-mt-16">
           {checks.map((check) => (
             <div className={`ops-task-card ${check.className}`} key={check.title}>
               <div>

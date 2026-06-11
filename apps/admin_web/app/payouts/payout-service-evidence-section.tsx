@@ -22,7 +22,7 @@ type PayoutServiceEvidenceSectionProps = {
 
 export function PayoutServiceEvidenceSection({ batchCount, currency, items }: PayoutServiceEvidenceSectionProps) {
   return (
-    <div className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+    <div className="card admin-card-scroll admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Payout service evidence</h2>

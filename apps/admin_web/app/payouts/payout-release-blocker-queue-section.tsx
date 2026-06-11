@@ -23,7 +23,7 @@ type PayoutReleaseBlockerQueueSectionProps = {
 
 export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlockerQueueSectionProps) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Release blocker queue</h2>
@@ -48,7 +48,7 @@ export function PayoutReleaseBlockerQueueSection({ items }: PayoutReleaseBlocker
                 {item.label}: {item.detail}
               </p>
               <p className="muted">{item.action}</p>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 {item.blockingReasons.map((reason) => (
                   <span className={`pill ${reason.pillClass}`} key={reason.label}>
                     {reason.label}

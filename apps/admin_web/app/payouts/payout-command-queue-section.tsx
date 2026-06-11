@@ -13,7 +13,7 @@ type PayoutCommandQueueSectionProps = {
 
 export function PayoutCommandQueueSection({ signals }: PayoutCommandQueueSectionProps) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Payout command queue</h2>

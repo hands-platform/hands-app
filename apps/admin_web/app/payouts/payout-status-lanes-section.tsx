@@ -23,7 +23,7 @@ type PayoutStatusLanesSectionProps = {
 
 export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLanesSectionProps) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Payout status lanes</h2>
@@ -34,7 +34,7 @@ export function PayoutStatusLanesSection({ batchCount, lanes }: PayoutStatusLane
         </div>
         <span className="pill pill-info">{batchCount} batch(es)</span>
       </div>
-      <div className="detail-grid" style={{ marginTop: 16 }}>
+      <div className="detail-grid admin-mt-16">
         {lanes.map((lane) => (
           <div key={lane.title}>
             <div className="ops-section-header">

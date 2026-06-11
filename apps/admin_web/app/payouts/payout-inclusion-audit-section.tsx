@@ -26,7 +26,7 @@ type PayoutInclusionAuditSectionProps = {
 
 export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSectionProps) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Payout inclusion audit</h2>
@@ -48,7 +48,7 @@ export function PayoutInclusionAuditSection({ audit }: PayoutInclusionAuditSecti
           </div>
         ))}
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 14 }}>
+      <div className="setup-stage-list admin-mt-14">
         {audit.rows.map((row) => (
           <div className="setup-stage-item" key={row.id}>
             <span>{row.status}</span>
