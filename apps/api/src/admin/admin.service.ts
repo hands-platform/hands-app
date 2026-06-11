@@ -2116,7 +2116,7 @@ export class AdminService {
       userId: provider.userId,
       type: 'provider.account.blocked',
       title: 'Partner account blocked',
-      body: blockReason,
+      body: 'Your HANDS partner account is under admin review. Open the app for details.',
       data: { providerProfileId, reason: blockReason },
     });
 
@@ -2410,7 +2410,7 @@ export class AdminService {
         body:
           status === VerificationStatus.APPROVED
             ? 'You can now receive matching jobs.'
-            : (reason ?? 'Please update your documents.'),
+            : 'Please review the latest verification update in the app.',
         data: { providerProfileId, status, reason },
       });
 
@@ -2518,7 +2518,7 @@ export class AdminService {
         body:
           status === FileReviewStatus.APPROVED
             ? 'Your public profile media is now visible to customers.'
-            : (normalizedReason ?? 'Please upload a clearer public profile photo.'),
+            : 'Please review the latest profile media update in the app.',
         data: { fileId, purpose: file.purpose, status, reason: normalizedReason },
       });
     }
