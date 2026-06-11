@@ -17,8 +17,9 @@ export function buildCashSettlementFilters(
 }
 
 export function normalizeCashSettlementQueue(value: string): CashSettlementQueueFilter {
-  if (value === 'stale' || value === 'high-debt' || value === 'missing-ref' || value === 'payment-check') {
-    return value;
+  const option = cashSettlementQueueOptions.find((item) => item.value === value);
+  if (option) {
+    return option.value;
   }
   return 'all';
 }
@@ -27,7 +28,11 @@ export function cashSettlementQueueLabel(queue: CashSettlementQueueFilter) {
   return cashSettlementQueueOptions.find((option) => option.value === queue)?.label ?? 'All open debt';
 }
 
-export function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettlementQueueFilter; q?: string }) {
+export function cashSettlementHref(input: {
+  range: AdminDateRange;
+  queue?: CashSettlementQueueFilter;
+  q?: string;
+}) {
   const params = new URLSearchParams();
   if (input.range && input.range !== 'all') {
     params.set('range', input.range);

@@ -3,6 +3,10 @@ import { partnerDisplayText } from '../../lib/admin-copy';
 import { shortRecordId } from '../../lib/admin-format';
 import type { CashSettlementRow } from './cash-settlement-page-types';
 
+export const CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD = 500_000;
+export const CASH_SETTLEMENT_STALE_HOURS = 24;
+export const CASH_SETTLEMENT_STALE_MS = CASH_SETTLEMENT_STALE_HOURS * 60 * 60 * 1000;
+
 export function isOpenCashDebt(earning: AdminEarning) {
   if (earning.status === 'PAID' || earning.status === 'CANCELLED') {
     return false;

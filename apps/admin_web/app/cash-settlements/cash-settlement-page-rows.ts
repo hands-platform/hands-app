@@ -6,6 +6,8 @@ import type {
 } from './cash-settlement-open-debt-table-section';
 import {
   bookingServiceLabel,
+  CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD,
+  CASH_SETTLEMENT_STALE_HOURS,
   cashDebtEvidenceLabel,
   cashDebtOriginLabel,
   cashSettlementReference,
@@ -14,7 +16,11 @@ import {
   providerDisplayName,
   settlementMethodLabel,
 } from './cash-settlement-page-helpers';
-import type { CashSettlementFilters, CashSettlementQueueFilter, CashSettlementRow } from './cash-settlement-page-types';
+import type {
+  CashSettlementFilters,
+  CashSettlementQueueFilter,
+  CashSettlementRow,
+} from './cash-settlement-page-types';
 
 export function buildCashSettlementRows(earnings: readonly AdminEarning[]): CashSettlementRow[] {
   return earnings
@@ -67,9 +73,9 @@ export function applyCashSettlementRowFilters(
 export function cashSettlementRowMatchesQueue(row: CashSettlementRow, queue: CashSettlementQueueFilter) {
   switch (queue) {
     case 'stale':
-      return cashSettlementRowAgeHours(row) >= 24;
+      return cashSettlementRowAgeHours(row) >= CASH_SETTLEMENT_STALE_HOURS;
     case 'high-debt':
-      return row.debtAmount >= 500_000;
+      return row.debtAmount >= CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD;
     case 'missing-ref':
       return !row.earning.settlementRef && !row.lastLedgerRef;
     case 'payment-check':
@@ -112,11 +118,13 @@ export function buildCashSettlementOpenDebtTableRows(
   }));
 }
 
-export function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlementOpenDebtActionExecutionRow[] {
+export function cashSettlementActionExecutionMap(
+  row: CashSettlementRow,
+): CashSettlementOpenDebtActionExecutionRow[] {
   const hasPaymentEvidence = Boolean(row.earning.booking?.payment);
   const hasReference = Boolean(row.settlementReference);
   const hasLedgerReference = Boolean(row.lastLedgerRef);
-  const isOldDebt = cashSettlementRowAgeHours(row) >= 24;
+  const isOldDebt = cashSettlementRowAgeHours(row) >= CASH_SETTLEMENT_STALE_HOURS;
 
   return [
     {
