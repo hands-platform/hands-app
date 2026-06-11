@@ -98,38 +98,48 @@ export class MatchingGateway implements OnGatewayConnection {
     }
 
     if (roles.includes(Role.CUSTOMER)) {
-      const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
-      if (customer) {
-        const booking = await this.prisma.booking.findFirst({
-          where: { id: bookingId, customerProfileId: customer.id },
-          select: { id: true },
-        });
-        if (booking) {
-          return true;
-        }
+      if (await this.canCustomerAccessBookingRoom(bookingId, userId)) {
+        return true;
       }
     }
 
     if (roles.includes(Role.PROVIDER)) {
-      const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
-      if (!provider) {
-        return false;
-      }
-
-      const booking = await this.prisma.booking.findFirst({
-        where: {
-          id: bookingId,
-          OR: [
-            { preferredProviderId: provider.id },
-            { selectedProviderId: provider.id },
-            { participants: { some: { providerProfileId: provider.id } } },
-          ],
-        },
-        select: { id: true },
-      });
-      return Boolean(booking);
+      return this.canProviderAccessBookingRoom(bookingId, userId);
     }
 
     return false;
+  }
+
+  private async canCustomerAccessBookingRoom(bookingId: string, userId: string) {
+    const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+    if (!customer) {
+      return false;
+    }
+
+    const booking = await this.prisma.booking.findFirst({
+      where: { id: bookingId, customerProfileId: customer.id },
+      select: { id: true },
+    });
+    return Boolean(booking);
+  }
+
+  private async canProviderAccessBookingRoom(bookingId: string, userId: string) {
+    const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
+    if (!provider) {
+      return false;
+    }
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        OR: [
+          { preferredProviderId: provider.id },
+          { selectedProviderId: provider.id },
+          { participants: { some: { providerProfileId: provider.id } } },
+        ],
+      },
+      select: { id: true },
+    });
+    return Boolean(booking);
   }
 }
