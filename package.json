@@ -35,6 +35,7 @@
     "authority:check": "node infra/scripts/check-final-authority.mjs",
     "api:smoke": "node infra/scripts/api-smoke.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
+    "realtime:contract": "node infra/scripts/check-realtime-event-contract.mjs",
     "api:test": "npm run test --workspace @massage-vn/api",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "policy:coverage": "node infra/scripts/check-api-policy-coverage.mjs && node infra/scripts/check-operations-policy-consistency.mjs",
