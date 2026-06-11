@@ -53,9 +53,7 @@ export function buildPartnerOperatorFirstRead({
       href: '#partner-booking-journey',
       label: 'Booking flow',
       value: `${bookingRecordCount} records`,
-      detail: `${responseWindowMinutes}m first-pick / ${Math.round(
-        backupRadiusMeters / 1000,
-      )}km marketplace radius.`,
+      detail: `${partnerMarketplacePolicyDetail(responseWindowMinutes, backupRadiusMeters)} radius.`,
     },
     {
       href: '#cash-debt-origin',
@@ -146,9 +144,7 @@ export function buildPartnerOperationsQuickRail({
       href: '#partner-booking-journey',
       label: 'Booking journey',
       value: `${bookingJourneyRowCount}`,
-      detail: `${responseWindowMinutes}m first-pick / ${Math.round(
-        backupRadiusMeters / 1000,
-      )}km marketplace policy.`,
+      detail: `${partnerMarketplacePolicyDetail(responseWindowMinutes, backupRadiusMeters)} policy.`,
     },
     {
       href: '#partner-chat-retention-ledger',
@@ -181,4 +177,8 @@ export function buildPartnerOperationsQuickRail({
       detail: `${dateFilterLabel}, ${activityTypeLabel}.`,
     },
   ];
+}
+
+function partnerMarketplacePolicyDetail(responseWindowMinutes: number, backupRadiusMeters: number) {
+  return `${responseWindowMinutes}m first-pick / ${Math.round(backupRadiusMeters / 1000)}km marketplace`;
 }
