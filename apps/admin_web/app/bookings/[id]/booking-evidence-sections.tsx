@@ -101,7 +101,7 @@ export function BookingEvidenceSections({
 }: BookingEvidenceSectionsProps) {
   return (
     <>
-      <section className="card" id="booking-decision-evidence-guardrails" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="booking-decision-evidence-guardrails">
         <div className="ops-section-header">
           <div>
             <h2>Decision evidence guardrails</h2>
@@ -147,7 +147,7 @@ export function BookingEvidenceSections({
         </AdminTableScroll>
       </section>
 
-      <section className="card" id="booking-evidence-packet" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="booking-evidence-packet">
         <div className="ops-section-header">
           <div>
             <h2>Evidence packet for admin decision</h2>
@@ -159,10 +159,10 @@ export function BookingEvidenceSections({
           </div>
           <span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>
+        <p className="muted admin-mt-8">
           {evidencePacket.summary}
         </p>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {evidencePacket.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -171,7 +171,7 @@ export function BookingEvidenceSections({
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {evidencePacket.records.map((record) => (
             <div className="setup-stage-item" id={record.id} key={record.id}>
               <span>{record.label}</span>
@@ -188,7 +188,7 @@ export function BookingEvidenceSections({
         </div>
       </section>
 
-      <section className="card" id="booking-chat-evidence-decision-board" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="booking-chat-evidence-decision-board">
         <div className="ops-section-header">
           <div>
             <h2>Chat evidence decision board</h2>
@@ -200,10 +200,10 @@ export function BookingEvidenceSections({
           </div>
           <span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>
+        <p className="muted admin-mt-8">
           {chatEvidenceDecisionBoard.summary}
         </p>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {chatEvidenceDecisionBoard.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -247,7 +247,7 @@ export function BookingEvidenceSections({
         </AdminTableScroll>
       </section>
 
-      <section className="card" id="manual-decision-readiness" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="manual-decision-readiness">
         <div className="ops-section-header">
           <div>
             <h2>Manual outcome decision readiness</h2>
@@ -296,7 +296,7 @@ export function BookingEvidenceSections({
             </tbody>
           </table>
         </AdminTableScroll>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
+        <div className="ops-task-note admin-mt-14">
           <div className="ops-section-header">
             <div>
               <strong>Decision note presets</strong>
@@ -307,7 +307,7 @@ export function BookingEvidenceSections({
             </div>
             <span className="pill pill-info">{decisionNotePresets.length} preset(s)</span>
           </div>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {decisionNotePresets.map((preset) => (
               <div className="setup-stage-item" key={preset.id}>
                 <span>{preset.label}</span>
@@ -326,7 +326,7 @@ export function BookingEvidenceSections({
         </div>
       </section>
 
-      <section className="card" id="booking-full-evidence-bundle" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="booking-full-evidence-bundle">
         <div className="ops-section-header">
           <div>
             <h2>Booking full evidence bundle</h2>
