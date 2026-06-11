@@ -859,18 +859,12 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
 
-    const participantKey = bookingParticipantCompoundKey(bookingId, provider.id);
-    const existingParticipant = await this.prisma.bookingParticipant.findUnique({
-      where: participantKey,
-      select: { id: true },
+    const { participantKey, responseRoute } = await this.requireParticipantResponseTarget({
+      bookingId,
+      providerId: provider.id,
+      preferredProviderId: booking.preferredProviderId,
+      status,
     });
-    if (!existingParticipant) {
-      throw new BadRequestException(
-        bookingParticipantResponseUnavailableMessage(booking.preferredProviderId, provider.id),
-      );
-    }
-
-    const responseRoute = bookingParticipantResponseRoute(booking.preferredProviderId, provider.id, status);
     if (responseRoute === 'first-pick-accepted') {
       const updated = await this.matchFirstPickAcceptedProvider({
         bookingId,
@@ -929,6 +923,33 @@ export class BookingsService {
     });
 
     return updatedParticipant;
+  }
+
+  private async requireParticipantResponseTarget(input: {
+    bookingId: string;
+    providerId: string;
+    preferredProviderId?: string | null;
+    status: ParticipantStatus;
+  }) {
+    const participantKey = bookingParticipantCompoundKey(input.bookingId, input.providerId);
+    const existingParticipant = await this.prisma.bookingParticipant.findUnique({
+      where: participantKey,
+      select: { id: true },
+    });
+    if (!existingParticipant) {
+      throw new BadRequestException(
+        bookingParticipantResponseUnavailableMessage(input.preferredProviderId, input.providerId),
+      );
+    }
+
+    return {
+      participantKey,
+      responseRoute: bookingParticipantResponseRoute(
+        input.preferredProviderId,
+        input.providerId,
+        input.status,
+      ),
+    };
   }
 
   private async notifyCustomerBookingOpened(input: {
