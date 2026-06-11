@@ -1207,6 +1207,18 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.admin-mt-12 {
+  margin-top: 12px;
+}
+
+.admin-mb-16 {
+  margin-bottom: 16px;
+}
+
+.admin-ml-10 {
+  margin-left: 10px;
+}
+
 .service-matrix th,
 .service-matrix td,
 .service-ledger th,

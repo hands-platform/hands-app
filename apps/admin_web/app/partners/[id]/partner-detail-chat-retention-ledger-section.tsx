@@ -29,7 +29,7 @@ export function PartnerDetailChatRetentionLedgerSection({
   title,
 }: PartnerDetailChatRetentionLedgerSectionProps) {
   return (
-    <div className="card" id={id} style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -37,7 +37,7 @@ export function PartnerDetailChatRetentionLedgerSection({
         </div>
         <span className="pill pill-info">{rows.length} booking row(s)</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {summary.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -95,7 +95,7 @@ export function PartnerDetailChatRetentionLedgerSection({
                     Booking
                   </Link>
                   {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                    <Link className="text-link admin-ml-10" href={row.chatHref}>
                       Archive
                     </Link>
                   ) : null}
@@ -106,7 +106,7 @@ export function PartnerDetailChatRetentionLedgerSection({
         </table>
       </AdminTableScroll>
       {rows.length === 0 ? (
-        <p className="muted" style={{ marginTop: 12 }}>
+        <p className="muted admin-mt-12">
           {emptyMessage}
         </p>
       ) : null}

@@ -28,7 +28,15 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(rendered).toContain('Customer');
     expect(rendered).toContain('formatted 2026-06-09T03:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'pill pill-success']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'card admin-mb-16',
+        'service-trace-summary admin-mt-12',
+        'text-link admin-ml-10',
+        'pill pill-success',
+      ]),
+    );
   });
 
   it('renders an empty message when no chat retention rows match', () => {
@@ -47,6 +55,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
 
     expect(rendered).toContain('0 booking row(s)');
     expect(rendered).toContain('No partner chat retention row matched this date filter.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['muted admin-mt-12']));
   });
 });
 
