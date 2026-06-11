@@ -4,13 +4,10 @@ import { Job } from 'bullmq';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { BOOKING_TIMEOUT_QUEUE_NAME, type BookingTimeoutJob } from './booking-timeout.queue';
 import { MatchingGateway } from './matching.gateway';
 
-type BookingTimeoutJob = {
-  bookingId: string;
-};
-
-@Processor('booking-timeouts')
+@Processor(BOOKING_TIMEOUT_QUEUE_NAME)
 export class BookingTimeoutProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,

@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { BOOKING_TIMEOUT_QUEUE_NAME, bookingTimeoutJob } from './booking-timeout.queue';
 import type { BookingMatchSource, MatchingPolicy } from './matching.policy';
 import {
   MATCHING_BACKUP_OPEN_MODE_KEY,
@@ -19,7 +20,7 @@ export class MatchingService {
     private readonly redisState: RedisStateService,
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
-    @InjectQueue('booking-timeouts') private readonly bookingTimeoutQueue: Queue,
+    @InjectQueue(BOOKING_TIMEOUT_QUEUE_NAME) private readonly bookingTimeoutQueue: Queue,
   ) {}
 
   async getPolicy() {
@@ -53,17 +54,8 @@ export class MatchingService {
   }
 
   async scheduleBookingTimeout(bookingId: string, expiresAt: Date) {
-    const delay = Math.max(expiresAt.getTime() - Date.now(), 0);
-    await this.bookingTimeoutQueue.add(
-      'booking-timeout',
-      { bookingId },
-      {
-        delay,
-        jobId: `booking-timeout-${bookingId}`,
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    const job = bookingTimeoutJob(bookingId, expiresAt);
+    await this.bookingTimeoutQueue.add(job.name, job.data, job.options);
   }
 
   async registerActiveBooking(bookingId: string, payload: unknown) {
