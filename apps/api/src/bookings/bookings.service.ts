@@ -56,9 +56,15 @@ import {
 } from './bookings.response';
 import {
   bookingMatchingPolicySnapshot,
-  readPlainRecord,
   restoreBookingMatchingPolicy,
 } from './bookings.matching-policy';
+import {
+  appendBackupNotificationTrace,
+  backupAlertPolicyMetadata,
+  backupNotificationTrace,
+  type BackupNotificationTrace,
+  type BackupNotificationTraceStage,
+} from './bookings.backup-notification-trace';
 
 const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -1247,7 +1253,7 @@ export class BookingsService {
   }
 
   private async notifyBackupProviders(input: {
-    stage: 'initial_open' | 'first_pick_declined';
+    stage: BackupNotificationTraceStage;
     bookingId: string;
     providers: Array<{ id: string; userId: string; distanceMeters: number }>;
     backupProviderRadiusMeters: number;
@@ -1290,52 +1296,23 @@ export class BookingsService {
       input.bookingId,
       input.matchingPayload,
     );
-    return {
+    return backupNotificationTrace({
       stage: input.stage,
-      createdAt: new Date().toISOString(),
-      notifiedCount: notifiedProviders.length,
-      ...alertPolicy,
+      alertPolicy,
+      notifiedProviders,
       websocketTargetCount: input.providers.length,
-      providers: notifiedProviders,
-    };
+    });
   }
 
-  private async recordBackupNotificationTrace(
-    bookingId: string,
-    trace: {
-      stage: string;
-      createdAt: string;
-      notifiedCount: number;
-      marketplaceRadiusMeters?: number;
-      marketplaceOpenMode?: string;
-      marketplaceInvitationLimit?: number;
-      backupProviderRadiusMeters: number;
-      backupOpenMode: string;
-      backupProviderInvitationLimit: number;
-      websocketTargetCount: number;
-      providers: Array<{
-        providerProfileId: string;
-        userId: string;
-        distanceMeters: number;
-        notificationId: string;
-      }>;
-    },
-  ) {
+  private async recordBackupNotificationTrace(bookingId: string, trace: BackupNotificationTrace) {
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       select: { metadata: true },
     });
-    const metadata = readPlainRecord(booking?.metadata) ?? {};
-    const existingTraces = Array.isArray(metadata.backupNotificationTraces)
-      ? metadata.backupNotificationTraces
-      : [];
     await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
-        metadata: toJson({
-          ...metadata,
-          backupNotificationTraces: [...existingTraces, trace].slice(-12),
-        }),
+        metadata: toJson(appendBackupNotificationTrace(booking?.metadata, trace)),
       },
     });
   }
@@ -1897,21 +1874,6 @@ function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, add
     return { addressText: address.trim() } as Prisma.InputJsonValue;
   }
   return { addressText } as Prisma.InputJsonValue;
-}
-
-function backupAlertPolicyMetadata(input: {
-  backupProviderRadiusMeters: number;
-  backupOpenMode: string;
-  backupProviderInvitationLimit: number;
-}) {
-  return {
-    marketplaceRadiusMeters: input.backupProviderRadiusMeters,
-    marketplaceOpenMode: input.backupOpenMode,
-    marketplaceInvitationLimit: input.backupProviderInvitationLimit,
-    backupProviderRadiusMeters: input.backupProviderRadiusMeters,
-    backupOpenMode: input.backupOpenMode,
-    backupProviderInvitationLimit: input.backupProviderInvitationLimit,
-  };
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {
