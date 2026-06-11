@@ -160,6 +160,12 @@ import {
   type PartnerSessionRow,
   type PartnerSharedDeviceRow,
 } from './partner-detail-device-session-activity-section';
+import {
+  PartnerDetailLevelPathSection,
+  PartnerDetailResubmissionGuidanceSection,
+  PartnerDetailReviewHistorySection,
+  type PartnerReviewHistoryRow,
+} from './partner-detail-review-progress-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -403,6 +409,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerSharedDeviceRows = buildPartnerSharedDeviceRows(provider);
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
+  const reviewHistoryRows = buildPartnerReviewHistoryRows(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
@@ -1208,108 +1215,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner level path</h2>
-            <p className="muted">
-              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and optional profile review
-              gates.
-            </p>
-          </div>
-          <span className="pill pill-info">{levelPlan.currentLevel}</span>
-        </div>
-        <div className="setup-stage-list">
-          {levelPlan.items.map((item) => (
-            <div className="setup-stage-item" key={item.level}>
-              <span>{item.status}</span>
-              <div>
-                <strong>{item.level}</strong>
-                <p className="muted">{item.detail}</p>
-                <p className="muted">{item.operatorAction}</p>
-              </div>
-              <small>{item.ready ? 'Clear' : item.blocked ? 'Blocked' : 'Next'}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailLevelPathSection plan={levelPlan} />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Resubmission guidance</h2>
-            <p className="muted">
-              Use this when a partner asks what to fix after rejection. Keep the message specific and
-              auditable.
-            </p>
-          </div>
-          <span className={`pill ${resubmissionPlan.items.length ? 'pill-danger' : 'pill-success'}`}>
-            {resubmissionPlan.items.length} item(s)
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {resubmissionPlan.items.length ? (
-            resubmissionPlan.items.map((item) => (
-              <div className="setup-stage-item" key={item.target}>
-                <span>{item.status}</span>
-                <div>
-                  <strong>{item.target}</strong>
-                  <p className="muted">{item.reason}</p>
-                  <p className="muted">{item.providerInstruction}</p>
-                </div>
-                <small>{item.operatorAction}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>CLEAR</span>
-              <div>
-                <strong>No resubmission request needed</strong>
-                <p className="muted">
-                  There are no rejected partner documents, bank accounts, KYC, or tax profiles.
-                </p>
-              </div>
-              <small>OK</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailResubmissionGuidanceSection plan={resubmissionPlan} />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Review history</h2>
-            <p className="muted">
-              Partner, KYC, document, bank, and tax review decisions are shown here for handoff and audit.
-            </p>
-          </div>
-          <span className="pill pill-info">{provider.verificationLogs?.length ?? 0} recent event(s)</span>
-        </div>
-        {(provider.verificationLogs ?? []).length ? (
-          <div className="setup-stage-list">
-            {provider.verificationLogs?.slice(0, 8).map((log) => {
-              const preview = metadataPreview(log.metadata);
-              return (
-                <div className="setup-stage-item" key={log.id}>
-                  <span>{humanizeProviderLogAction(log.action)}</span>
-                  <div>
-                    <strong>{statusTransition(log)}</strong>
-                    <p className="muted">
-                      {formatDate(log.createdAt)} / {log.actor?.fullName ?? log.actor?.phone ?? 'System'}
-                    </p>
-                    {preview ? <p className="muted">{preview}</p> : null}
-                  </div>
-                  <small>{log.action}</small>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="muted">
-            No partner review logs yet. New approval, rejection, and resubmission actions will appear here.
-          </p>
-        )}
-      </div>
+      <PartnerDetailReviewHistorySection
+        rows={reviewHistoryRows}
+        totalCount={provider.verificationLogs?.length ?? 0}
+      />
 
       <section className="detail-grid">
         <div className="card">
@@ -5532,6 +5445,18 @@ function buildPartnerSharedDeviceRows(provider: ProviderDetail): PartnerSharedDe
     id: match.id,
     smallLabel: match.enabled ? 'Enabled' : 'Disabled',
     title: maskDeviceId(match.deviceId),
+  }));
+}
+
+function buildPartnerReviewHistoryRows(provider: ProviderDetail): PartnerReviewHistoryRow[] {
+  return (provider.verificationLogs ?? []).slice(0, 8).map((log) => ({
+    action: log.action,
+    actorLabel: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+    atLabel: formatDate(log.createdAt),
+    id: log.id,
+    preview: metadataPreview(log.metadata),
+    statusLabel: statusTransition(log),
+    title: humanizeProviderLogAction(log.action),
   }));
 }
 
