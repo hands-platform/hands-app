@@ -62,7 +62,7 @@ export function CouponsTableSection({
             <td>{row.discountLabel}</td>
             <td>
               <span className={row.statusClassName}>{row.statusLabel}</span>
-              <div style={{ color: '#6b7280', fontSize: 12 }}>{row.windowSignal}</div>
+              <div className="admin-text-subtle-12">{row.windowSignal}</div>
             </td>
             <td>{row.windowLabel}</td>
             <td>

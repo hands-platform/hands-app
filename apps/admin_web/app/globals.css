@@ -227,12 +227,22 @@ a.action-button-card:hover {
   line-height: 1.5;
 }
 
+.admin-text-subtle-12 {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .actions,
 .form-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.admin-justify-start {
+  justify-content: flex-start;
 }
 
 .inline-form {

@@ -33,7 +33,7 @@ export function AppSessionsScopeSection({
         description={`${activeFilterLabel}. Showing ${loadedCount} of ${totalCount} heartbeat record(s).`}
         title="Session scope"
       />
-      <div className="actions admin-mt-12" style={{ justifyContent: 'flex-start' }}>
+      <div className="actions admin-mt-12 admin-justify-start">
         {quickFilters.map((item) => (
           <Link
             className={`pill ${item.href === activeFilterHref ? 'pill-success' : 'pill-info'}`}
