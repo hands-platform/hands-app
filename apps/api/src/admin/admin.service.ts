@@ -43,6 +43,7 @@ import {
   servicePayoutRuleAuditSnapshot,
   toJson,
 } from './admin-audit-helpers';
+import { normalizeAuditReason, normalizeNullable, slugify } from './admin-text-helpers';
 
 const PRICE_STEP_UNIT_VND = 100000;
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
@@ -3958,11 +3959,6 @@ export class AdminService {
   }
 }
 
-function normalizeNullable(value?: string | null) {
-  const normalized = value?.trim();
-  return normalized ? normalized : null;
-}
-
 function normalizeServiceInput(
   input: {
     serviceGroupKey?: string | null;
@@ -4025,7 +4021,6 @@ function normalizeServiceInput(
     active: input.active,
   };
 }
-
 async function ensureServiceDurationIsUnique(
   tx: Prisma.TransactionClient,
   input: { serviceGroupKey: string; durationMin: number; excludeServiceId?: string },
@@ -4113,21 +4108,4 @@ function normalizeServicePayoutRuleInput(
     active: input.active ?? existing?.active ?? true,
     notes: input.notes === undefined ? existing?.notes : normalizeNullable(input.notes),
   };
-}
-
-function slugify(value: string) {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/\u0111/g, 'd')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return slug || 'service';
-}
-
-function normalizeAuditReason(reason?: string) {
-  const normalized = reason?.replace(/\s+/g, ' ').trim();
-  return normalized ? normalized.slice(0, 500) : 'No reason provided by API caller';
 }
