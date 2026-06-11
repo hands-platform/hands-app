@@ -58,20 +58,19 @@ export type ReconciliationInput = {
   readonly refunds: readonly AdminRefund[];
 };
 
+const OPEN_PAYMENT_REFERENCE_STATUSES = ['AUTHORIZED', 'PENDING'];
+const CLOSED_PAYOUT_STATUSES = ['PAID', 'CANCELLED'];
+const PAYOUT_REFERENCE_REQUIRED_STATUSES = ['PROCESSING', 'PAID'];
+
 export function buildReconciliation(input: ReconciliationInput) {
   const authorizedPayments = input.payments.filter((payment) => payment.status === 'AUTHORIZED');
   const cashPending = input.payments.filter(
     (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
   );
-  const missingPaymentRefs = input.payments.filter(
-    (payment) =>
-      ['AUTHORIZED', 'PENDING'].includes(payment.status) && !payment.providerRef && payment.method !== 'CASH',
-  );
-  const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
-  const openPayouts = input.payouts.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
-  const payoutMissingRefs = input.payouts.filter(
-    (batch) => ['PROCESSING', 'PAID'].includes(batch.status) && !batch.transferRef,
-  );
+  const missingPaymentRefs = input.payments.filter(paymentNeedsReference);
+  const openRefunds = input.refunds.filter(refundNeedsCloseout);
+  const openPayouts = input.payouts.filter(payoutNeedsCloseout);
+  const payoutMissingRefs = input.payouts.filter(payoutNeedsReference);
   const earningsWithoutTaxLogs = input.earnings.filter((earning) => (earning.taxLogs?.length ?? 0) === 0);
   const rangedCashDebtAmount = input.earnings
     .filter((earning) => earning.netAmount < 0 && earning.status !== 'PAID')
@@ -104,8 +103,11 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
     {
       title: 'Payment hold review',
       status: `${reconciliation.authorizedPayments.length} HOLD(S)`,
-      detail: 'Authorized payments should remain held until service completion, then capture, release, or refund.',
-      action: reconciliation.authorizedPayments.length ? 'Open payment holds before handoff.' : 'No open holds.',
+      detail:
+        'Authorized payments should remain held until service completion, then capture, release, or refund.',
+      action: reconciliation.authorizedPayments.length
+        ? 'Open payment holds before handoff.'
+        : 'No open holds.',
       href: '/payments?review=authorized',
       className: reconciliation.authorizedPayments.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.authorizedPayments.length ? 'pill-warn' : 'pill-success',
@@ -115,7 +117,9 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
       status: `${reconciliation.cashPending.length} CASH`,
       detail:
         'Cash bookings need confirmation that the partner collected customer cash and the wallet debt is recorded.',
-      action: reconciliation.cashPending.length ? 'Confirm cash rows and wallet ledger.' : 'No pending cash collection.',
+      action: reconciliation.cashPending.length
+        ? 'Confirm cash rows and wallet ledger.'
+        : 'No pending cash collection.',
       href: '/payments?review=cash',
       className: reconciliation.cashPending.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.cashPending.length ? 'pill-warn' : 'pill-success',
@@ -143,7 +147,8 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
     {
       title: 'Payout release review',
       status: `${reconciliation.openPayouts.length} BATCH(ES)`,
-      detail: 'Open payout batches should be checked against earnings, tax logs, transfer refs, and active holds.',
+      detail:
+        'Open payout batches should be checked against earnings, tax logs, transfer refs, and active holds.',
       action: reconciliation.openPayouts.length
         ? 'Review payout blockers before bank transfer.'
         : 'No open payout batch.',
@@ -154,7 +159,8 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
     {
       title: 'Tax log coverage',
       status: `${reconciliation.earningsWithoutTaxLogs.length} ROW(S)`,
-      detail: 'Completed earnings should carry a tax snapshot so later policy changes do not rewrite history.',
+      detail:
+        'Completed earnings should carry a tax snapshot so later policy changes do not rewrite history.',
       action: reconciliation.earningsWithoutTaxLogs.length
         ? 'Check earnings without tax logs.'
         : 'Tax snapshots are present.',
@@ -223,7 +229,12 @@ export function buildShiftCloseActionMap(
   const missingRefs = reconciliation.missingReferenceCount;
   const taxRows = reconciliation.earningsWithoutTaxLogs.length;
   const allClear =
-    openPayments === 0 && openRefunds === 0 && cashDebt <= 0 && openPayouts === 0 && missingRefs === 0 && taxRows === 0;
+    openPayments === 0 &&
+    openRefunds === 0 &&
+    cashDebt <= 0 &&
+    openPayouts === 0 &&
+    missingRefs === 0 &&
+    taxRows === 0;
 
   return [
     {
@@ -242,14 +253,16 @@ export function buildShiftCloseActionMap(
       reason: openRefunds
         ? 'Refund rows still need payment, booking, and customer message alignment.'
         : 'No open refund row is visible.',
-      operatorRule: 'Refund closeout requires booking, payment, customer message, and admin evidence alignment.',
+      operatorRule:
+        'Refund closeout requires booking, payment, customer message, and admin evidence alignment.',
       href: '/refunds?review=open',
       pillClass: openRefunds ? 'pill-danger' : 'pill-success',
     },
     {
       action: 'Cash debt close',
       status: cashDebt > 0 ? formatMoney(cashDebt, reconciliation.currency) : 'Clear',
-      reason: cashDebt > 0 ? 'Partner cash collection debt remains open.' : 'No open cash wallet debt is visible.',
+      reason:
+        cashDebt > 0 ? 'Partner cash collection debt remains open.' : 'No open cash wallet debt is visible.',
       operatorRule: 'Keep cash debt rows visible until deposit reference or approved offset is recorded.',
       href: '/cash-settlements',
       pillClass: cashDebt > 0 ? 'pill-warn' : 'pill-success',
@@ -278,7 +291,9 @@ export function buildShiftCloseActionMap(
     {
       action: 'Handoff note',
       status: allClear ? 'Ready' : 'Needs note',
-      reason: allClear ? 'Finance queues are ready for clean handoff.' : 'Leave a handoff note for open finance queues.',
+      reason: allClear
+        ? 'Finance queues are ready for clean handoff.'
+        : 'Leave a handoff note for open finance queues.',
       operatorRule: 'The handoff should be factual: queue, amount, record link, and next operator action.',
       href: '/operations-handoff',
       pillClass: allClear ? 'pill-success' : 'pill-info',
@@ -368,4 +383,24 @@ export function summarizeEarnings(earnings: readonly AdminEarning[], currency: s
       currency,
     },
   );
+}
+
+function paymentNeedsReference(payment: AdminPayment) {
+  return (
+    OPEN_PAYMENT_REFERENCE_STATUSES.includes(payment.status) &&
+    !payment.providerRef &&
+    payment.method !== 'CASH'
+  );
+}
+
+function refundNeedsCloseout(refund: AdminRefund) {
+  return refund.status !== 'COMPLETED';
+}
+
+function payoutNeedsCloseout(batch: AdminPayoutBatch) {
+  return !CLOSED_PAYOUT_STATUSES.includes(batch.status);
+}
+
+function payoutNeedsReference(batch: AdminPayoutBatch) {
+  return PAYOUT_REFERENCE_REQUIRED_STATUSES.includes(batch.status) && !batch.transferRef;
 }
