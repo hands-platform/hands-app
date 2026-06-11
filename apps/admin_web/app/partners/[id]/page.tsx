@@ -193,6 +193,12 @@ import {
   type PartnerTypedDocumentRow,
 } from './partner-detail-document-media-section';
 import {
+  PartnerDetailBankPayoutGateCard,
+  PartnerDetailTaxProfileCard,
+  type PartnerBankPayoutGateView,
+  type PartnerTaxProfileView,
+} from './partner-detail-finance-gate-section';
+import {
   PartnerDetailFastOverviewSection,
   type PartnerDetailFastOverviewCard,
   type PartnerDetailFastOverviewInfoLine,
@@ -398,6 +404,8 @@ type ProviderDetail = AdminProvider & {
 };
 type ProviderDocument = NonNullable<ProviderDetail['documents']>[number];
 type ProviderPublicFileAsset = NonNullable<NonNullable<ProviderDetail['user']>['fileAssets']>[number];
+type ProviderBankAccount = NonNullable<ProviderDetail['bankAccounts']>[number];
+type ProviderTaxProfile = NonNullable<ProviderDetail['taxProfile']>;
 
 export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -423,6 +431,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }
 
   const primaryBank = primaryBankAccount(provider);
+  const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
+  const partnerTaxProfile = buildPartnerTaxProfileView(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
   const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
@@ -985,90 +995,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
         <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
 
-        <div className="card" id="bank">
-          <h2>Bank and payout gate</h2>
-          {primaryBank ? (
-            <>
-              <InfoLine label="Bank" value={primaryBank.bankName} />
-              <InfoLine
-                label="Account"
-                value={primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4}
-              />
-              <InfoLine label="Holder" value={primaryBank.accountHolderName} />
-              <InfoLine label="Status" value={primaryBank.status} />
-              <InfoLine label="Rejection reason" value={primaryBank.rejectionReason} />
-              <div className="actions admin-mt-12">
-                <ActionMenu
-                  actions={[
-                    {
-                      description: 'Review before approving this payout bank account.',
-                      disabled: primaryBank.status === 'APPROVED',
-                      href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-bank', {
-                        bankAccountId: primaryBank.id,
-                      }),
-                      kind: 'link',
-                      label: 'Approve bank',
-                      tone: 'success',
-                    },
-                    {
-                      description: 'Review and enter a bank rejection reason.',
-                      disabled: primaryBank.status === 'REJECTED',
-                      href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-bank', {
-                        bankAccountId: primaryBank.id,
-                      }),
-                      kind: 'link',
-                      label: 'Reject bank',
-                      tone: 'danger',
-                    },
-                  ]}
-                  label="Bank review actions"
-                />
-              </div>
-            </>
-          ) : (
-            <p className="muted">No bank account submitted.</p>
-          )}
-        </div>
+        <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
 
-        <div className="card" id="tax">
-          <h2>Tax profile</h2>
-          {provider.taxProfile ? (
-            <>
-              <InfoLine label="Status" value={provider.taxProfile.status} />
-              <InfoLine label="Legal name" value={provider.taxProfile.legalName} />
-              <InfoLine label="Tax code" value={`****${provider.taxProfile.taxCodeLast4 ?? '----'}`} />
-              <InfoLine label="Registered address" value={provider.taxProfile.registeredAddress} />
-              <InfoLine label="Rejection reason" value={provider.taxProfile.rejectionReason} />
-              <div className="actions admin-mt-12">
-                <ActionMenu
-                  actions={[
-                    {
-                      description: 'Review before approving this tax profile.',
-                      disabled: provider.taxProfile.status === 'APPROVED',
-                      href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-tax'),
-                      kind: 'link',
-                      label: 'Approve tax',
-                      tone: 'success',
-                    },
-                    {
-                      description: 'Review and enter a tax rejection reason.',
-                      disabled: provider.taxProfile.status === 'REJECTED',
-                      href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-tax'),
-                      kind: 'link',
-                      label: 'Reject tax',
-                      tone: 'danger',
-                    },
-                  ]}
-                  label="Tax review actions"
-                />
-              </div>
-            </>
-          ) : (
-            <p className="muted">
-              Tax profile is not required until payout eligibility review, and has not been submitted.
-            </p>
-          )}
-        </div>
+        <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
 
         <PartnerDetailLocationActivityCard
           coordinatesLabel={
@@ -4638,6 +4567,91 @@ function partnerPublicMediaReviewStatusTone(status?: string | null) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function buildPartnerBankPayoutGateView(
+  providerId: string,
+  bank: ProviderBankAccount | null,
+): PartnerBankPayoutGateView | null {
+  if (!bank) {
+    return null;
+  }
+
+  return {
+    accountLabel: bank.accountNumberMasked ?? bank.accountNumberLast4,
+    bankName: bank.bankName,
+    holderName: bank.accountHolderName,
+    rejectionReason: bank.rejectionReason,
+    reviewActions: buildPartnerBankReviewActions(providerId, bank),
+    status: bank.status,
+  };
+}
+
+function buildPartnerBankReviewActions(
+  providerId: string,
+  bank: ProviderBankAccount,
+): ActionMenuItem[] {
+  return [
+    {
+      description: 'Review before approving this payout bank account.',
+      disabled: bank.status === 'APPROVED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'approve-bank', {
+        bankAccountId: bank.id,
+      }),
+      kind: 'link',
+      label: 'Approve bank',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a bank rejection reason.',
+      disabled: bank.status === 'REJECTED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'reject-bank', {
+        bankAccountId: bank.id,
+      }),
+      kind: 'link',
+      label: 'Reject bank',
+      tone: 'danger',
+    },
+  ];
+}
+
+function buildPartnerTaxProfileView(provider: ProviderDetail): PartnerTaxProfileView | null {
+  if (!provider.taxProfile) {
+    return null;
+  }
+
+  return {
+    legalName: provider.taxProfile.legalName,
+    registeredAddress: provider.taxProfile.registeredAddress,
+    rejectionReason: provider.taxProfile.rejectionReason,
+    reviewActions: buildPartnerTaxReviewActions(provider.id, provider.taxProfile),
+    status: provider.taxProfile.status,
+    taxCodeLabel: `****${provider.taxProfile.taxCodeLast4 ?? '----'}`,
+  };
+}
+
+function buildPartnerTaxReviewActions(
+  providerId: string,
+  taxProfile: ProviderTaxProfile,
+): ActionMenuItem[] {
+  return [
+    {
+      description: 'Review before approving this tax profile.',
+      disabled: taxProfile.status === 'APPROVED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'approve-tax'),
+      kind: 'link',
+      label: 'Approve tax',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a tax rejection reason.',
+      disabled: taxProfile.status === 'REJECTED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'reject-tax'),
+      kind: 'link',
+      label: 'Reject tax',
+      tone: 'danger',
+    },
+  ];
 }
 
 function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
