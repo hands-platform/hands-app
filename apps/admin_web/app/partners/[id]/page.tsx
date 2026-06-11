@@ -150,6 +150,10 @@ import {
   PartnerDetailAppActivitySection,
   type PartnerAppActivityRow,
 } from './partner-detail-app-activity-section';
+import {
+  PartnerDetailBookingChatRecordsSection,
+  type PartnerBookingChatRecordRow,
+} from './partner-detail-booking-chat-records-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -417,6 +421,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     activityOrder,
   );
   const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(provider, filteredPartnerBookingArchive);
+  const partnerBookingChatRecordRows = buildPartnerBookingChatRecordRows(filteredPartnerBookingArchive);
   const filteredPartnerActivityRecords = orderPartnerActivityRecords(
     partnerActivityRecords.filter(
       (record) =>
@@ -886,112 +891,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner chat retention ledger"
       />
 
-      <div className="card admin-mb-16" id="booking-chat-records">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking and chat records</h2>
-            <p className="muted">
-              Every matched booking should have a chat room. Completed service chats disappear from mobile
-              apps, but the admin archive remains visible here.
-            </p>
-          </div>
-          <Link className="text-link" href={`/bookings?q=${encodeURIComponent(provider.id)}`}>
-            Open bookings
-          </Link>
-        </div>
-        <div className="setup-stage-list admin-mt-16">
-          {filteredPartnerBookingArchive.length ? (
-            filteredPartnerBookingArchive.slice(0, 10).map((record) => (
-              <div className="setup-stage-item" key={`${record.booking.id}-${record.relation}`}>
-                <span>{record.relation}</span>
-                <div>
-                  <strong>
-                    {bookingServiceLabel(record.booking)} / {record.booking.status ?? 'UNKNOWN'}
-                  </strong>
-                  <p className="muted">
-                    Customer {partnerBookingCustomer(record.booking)} / requested{' '}
-                    {formatDate(bookingRequestOpenedAt(record.booking))}
-                  </p>
-                  <p className="muted">
-                    Payment {record.booking.payment?.method ?? 'UNKNOWN'} /{' '}
-                    {formatCurrency(
-                      record.booking.payment?.amount ?? 0,
-                      record.booking.payment?.currency ?? 'VND',
-                    )}
-                    {' / '}
-                    participants {record.booking.participants?.length ?? 0}
-                  </p>
-                  {isClosedPartnerBooking(record.booking) ? (
-                    <p className="muted">
-                      Closed {formatDate(record.booking.closedAt)} / {bookingClosureLabel(record.booking)}
-                    </p>
-                  ) : null}
-                  <p className="muted">
-                    Chat {record.booking.chatRoom?.id ?? 'not created'} / messages{' '}
-                    {record.booking.chatRoom?.messages?.length ?? 0}
-                    {record.lastMessage ? ` / last: ${record.lastMessage}` : ''}
-                  </p>
-                  {record.booking.chatRoom ? (
-                    <div className="ops-task-note admin-mt-10">
-                      <strong>Admin chat archive</strong>
-                      <p className="muted">
-                        Mobile chat hides after service completion. Admin keeps this booking transcript.
-                      </p>
-                      <div className="admin-grid-gap-8 admin-mt-10">
-                        {readPartnerChatMessages(record.booking).map((message) => (
-                          <div className="service-matrix-cell" key={message.id}>
-                            <strong>{chatSenderLabel(message)}</strong>
-                            <small>{formatDate(message.createdAt)}</small>
-                            <p className="admin-m-0">{message.body}</p>
-                          </div>
-                        ))}
-                        {!readPartnerChatMessages(record.booking).length ? (
-                          <p className="muted">Chat room exists, but no message is stored yet.</p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="ops-task-note admin-mt-10">
-                      <strong>Chat room missing</strong>
-                      <p className="muted">
-                        A matched booking should create a chat room. Open the booking detail if this booking
-                        is already matched or in service.
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="participant-list">
-                  <Link className="text-link" href={`/bookings/${record.booking.id}`}>
-                    Open booking
-                  </Link>
-                  {record.booking.customerProfileId ? (
-                    <Link className="text-link" href={`/customers/${record.booking.customerProfileId}`}>
-                      Open customer
-                    </Link>
-                  ) : null}
-                  {record.booking.chatRoom?.id ? (
-                    <Link
-                      className="text-link"
-                      href={`/chat-archive?q=${encodeURIComponent(record.booking.id)}`}
-                    >
-                      Open chat archive
-                    </Link>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No booking records matched this date filter</strong>
-                <p className="muted">Clear the date filter or choose a wider range to review the archive.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </div>
+      <PartnerDetailBookingChatRecordsSection
+        openBookingsHref={`/bookings?q=${encodeURIComponent(provider.id)}`}
+        rows={partnerBookingChatRecordRows}
+      />
 
       <PartnerDetailBookingOpsLedgerSection
         rows={partnerBookingOpsLedgerRows}
@@ -2803,6 +2706,48 @@ function buildPartnerOperatorCommandQueue({
     ],
     commands: commands.slice(0, 10),
   };
+}
+
+function buildPartnerBookingChatRecordRows(
+  records: PartnerBookingArchiveRecord[],
+): PartnerBookingChatRecordRow[] {
+  return records.slice(0, 10).map((record) => {
+    const booking = record.booking;
+    const messages = readPartnerChatMessages(booking);
+    const paymentAmount = formatCurrency(
+      booking.payment?.amount ?? 0,
+      booking.payment?.currency ?? 'VND',
+    );
+    const lastMessage = record.lastMessage ? ` / last: ${record.lastMessage}` : '';
+
+    return {
+      bookingHref: `/bookings/${booking.id}`,
+      chatHref: booking.chatRoom?.id ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      chatLine: `Chat ${booking.chatRoom?.id ?? 'not created'} / messages ${
+        booking.chatRoom?.messages?.length ?? 0
+      }${lastMessage}`,
+      chatMessages: messages.map((message) => ({
+        body: message.body,
+        createdLabel: formatDate(message.createdAt),
+        id: message.id,
+        senderLabel: chatSenderLabel(message),
+      })),
+      closureLine: isClosedPartnerBooking(booking)
+        ? `Closed ${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
+        : undefined,
+      customerHref: booking.customerProfileId ? `/customers/${booking.customerProfileId}` : undefined,
+      customerLine: `Customer ${partnerBookingCustomer(booking)} / requested ${formatDate(
+        bookingRequestOpenedAt(booking),
+      )}`,
+      hasChatRoom: Boolean(booking.chatRoom),
+      heading: `${bookingServiceLabel(booking)} / ${booking.status ?? 'UNKNOWN'}`,
+      key: `${booking.id}-${record.relation}`,
+      paymentLine: `Payment ${booking.payment?.method ?? 'UNKNOWN'} / ${paymentAmount} / participants ${
+        booking.participants?.length ?? 0
+      }`,
+      relation: record.relation,
+    };
+  });
 }
 
 function buildPartnerBookingEvidenceRows(
