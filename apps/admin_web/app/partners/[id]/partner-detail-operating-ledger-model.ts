@@ -107,6 +107,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
   const verificationFileCount = provider.verification?.files?.length ?? 0;
   const documentCount = provider.documents?.length ?? 0;
   const cashDebt = cashFeeDebtAmount(provider);
+  const firstRevenue = providerHasFirstRevenueSignal(provider);
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const sessionCount = provider.sessions?.length ?? 0;
   const deviceCount = provider.devices?.length ?? 0;
@@ -158,11 +159,10 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
     },
     {
       area: 'Tax',
-      status:
-        provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'REQUIRED' : 'DEFERRED'),
+      status: provider.taxProfile?.status ?? (firstRevenue ? 'REQUIRED' : 'DEFERRED'),
       evidence: provider.taxProfile
         ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
-        : providerHasFirstRevenueSignal(provider)
+        : firstRevenue
           ? 'First earning exists; tax profile is required before payout.'
           : 'Tax profile intentionally deferred until first earning.',
       href: `/partners/${provider.id}?section=full#tax`,
