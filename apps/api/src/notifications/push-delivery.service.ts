@@ -112,7 +112,7 @@ export class PushDeliveryService {
         disableDevice: isPermanentTokenFailure(failureCode),
         failureCode,
         response: {
-          reason: safeErrorMessage(error),
+          reason: safeErrorMessage(error, message.token),
         },
       };
     }
@@ -211,10 +211,17 @@ function isPermanentTokenFailure(failureCode: string) {
   );
 }
 
-function safeErrorMessage(error: unknown) {
+function safeErrorMessage(error: unknown, token?: string) {
   if (error instanceof Error) {
-    return error.message.replace(/registration token [^ .]+/gi, 'registration token [masked]');
+    return maskSensitivePushToken(
+      error.message.replace(/registration token(?:\s*[:=]?\s*)[^ .,\]]+/gi, 'registration token [masked]'),
+      token,
+    );
   }
 
   return 'Unknown FCM delivery error.';
+}
+
+function maskSensitivePushToken(message: string, token?: string) {
+  return token ? message.split(token).join('[masked]') : message;
 }

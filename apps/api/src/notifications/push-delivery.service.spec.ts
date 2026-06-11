@@ -1,6 +1,19 @@
 import { ConfigService } from '@nestjs/config';
 import { PushDeliveryService } from './push-delivery.service';
 
+const mockMessagingSend = jest.fn();
+
+jest.mock('firebase-admin/app', () => ({
+  applicationDefault: jest.fn(() => ({ type: 'applicationDefault' })),
+  cert: jest.fn((credential) => ({ credential })),
+  getApps: jest.fn(() => []),
+  initializeApp: jest.fn(() => ({ name: 'hands-fcm' })),
+}));
+
+jest.mock('firebase-admin/messaging', () => ({
+  getMessaging: jest.fn(() => ({ send: mockMessagingSend })),
+}));
+
 function pushService(env: Record<string, string | undefined>) {
   return new PushDeliveryService(new ConfigService(env));
 }
@@ -28,5 +41,35 @@ describe('PushDeliveryService', () => {
       disableDevice: false,
       failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
     });
+  });
+
+  it('masks raw FCM tokens from provider error messages', async () => {
+    mockMessagingSend.mockRejectedValueOnce(
+      Object.assign(
+        new Error(
+          'Requested entity was not found: registration token: fcm-demo-token. Raw token fcm-demo-token rejected.',
+        ),
+        { code: 'messaging/registration-token-not-registered' },
+      ),
+    );
+
+    const result = await pushService({
+      PUSH_PROVIDER: 'fcm',
+      FIREBASE_PROJECT_ID: 'hands-demo',
+      FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+      FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\ndemo\\n-----END PRIVATE KEY-----\\n',
+    }).send(message);
+
+    expect(result).toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: true,
+      failureCode: 'messaging/registration-token-not-registered',
+      response: {
+        reason:
+          'Requested entity was not found: registration token [masked]. Raw token [masked] rejected.',
+      },
+    });
+    expect(JSON.stringify(result.response)).not.toContain('fcm-demo-token');
   });
 });
