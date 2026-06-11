@@ -49,6 +49,16 @@ import {
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
 import { normalizeAuditReason, normalizeNullable, slugify } from './admin-text-helpers';
+import {
+  adminAppSessionListSelect,
+  adminAppSessionSummarySelect,
+  adminNotificationDeliverySelect,
+  adminNotificationListSelect,
+  adminPushDeviceSummarySelect,
+  adminUserAuthSelect,
+  adminUserListSelect,
+  adminUserSummarySelect,
+} from './admin-user-selects';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
@@ -68,178 +78,6 @@ const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
 const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
 const ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT = 5;
 const ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT = 8;
-
-const adminUserSummarySelect = {
-  id: true,
-  phone: true,
-  email: true,
-  fullName: true,
-  roles: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.UserSelect;
-
-const adminUserAuthSelect = {
-  ...adminUserSummarySelect,
-  supabaseUserId: true,
-} satisfies Prisma.UserSelect;
-
-const adminAppSessionSummarySelect = {
-  id: true,
-  userId: true,
-  role: true,
-  deviceId: true,
-  platform: true,
-  appVersion: true,
-  ipAddress: true,
-  active: true,
-  lastSeenAt: true,
-  expiresAt: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.AppSessionSelect;
-
-const adminPushDeviceSummarySelect = {
-  id: true,
-  role: true,
-  platform: true,
-  enabled: true,
-  lastSeenAt: true,
-  createdAt: true,
-  updatedAt: true,
-  deliveries: {
-    orderBy: { attemptedAt: 'desc' },
-    take: 1,
-    select: {
-      id: true,
-      status: true,
-      attemptedAt: true,
-      provider: true,
-      response: true,
-    },
-  },
-} satisfies Prisma.PushDeviceSelect;
-
-const adminNotificationPushDeviceSelect = {
-  id: true,
-  role: true,
-  platform: true,
-  enabled: true,
-  lastSeenAt: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.PushDeviceSelect;
-
-const adminNotificationDeliverySelect = {
-  id: true,
-  notificationId: true,
-  pushDeviceId: true,
-  provider: true,
-  status: true,
-  response: true,
-  attemptedAt: true,
-  pushDevice: { select: adminNotificationPushDeviceSelect },
-} satisfies Prisma.NotificationDeliverySelect;
-
-const adminUserListPushDeviceSelect = {
-  id: true,
-  role: true,
-  platform: true,
-  enabled: true,
-  lastSeenAt: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.PushDeviceSelect;
-
-const adminAppSessionListSelect = {
-  id: true,
-  userId: true,
-  role: true,
-  deviceId: true,
-  platform: true,
-  appVersion: true,
-  ipAddress: true,
-  active: true,
-  lastSeenAt: true,
-  expiresAt: true,
-  createdAt: true,
-  updatedAt: true,
-  user: {
-    select: {
-      ...adminUserSummarySelect,
-      customerProfile: { select: { id: true, userId: true, addresses: true } },
-      providerProfile: {
-        select: {
-          id: true,
-          displayName: true,
-          status: true,
-          currentLocationUpdatedAt: true,
-          blockedAt: true,
-        },
-      },
-      pushDevices: {
-        orderBy: { updatedAt: 'desc' },
-        take: 3,
-        select: adminUserListPushDeviceSelect,
-      },
-    },
-  },
-} satisfies Prisma.AppSessionSelect;
-
-const adminNotificationUserSelect = {
-  id: true,
-  phone: true,
-  fullName: true,
-  roles: true,
-  customerProfile: { select: { id: true } },
-  providerProfile: { select: { id: true, displayName: true, status: true } },
-} satisfies Prisma.UserSelect;
-
-const adminNotificationListSelect = {
-  id: true,
-  userId: true,
-  type: true,
-  title: true,
-  body: true,
-  data: true,
-  readAt: true,
-  createdAt: true,
-  user: { select: adminNotificationUserSelect },
-  deliveries: {
-    orderBy: { attemptedAt: 'desc' },
-    select: adminNotificationDeliverySelect,
-  },
-} satisfies Prisma.NotificationSelect;
-
-const adminUserListSessionSelect = {
-  id: true,
-  userId: true,
-  role: true,
-  deviceId: true,
-  platform: true,
-  appVersion: true,
-  active: true,
-  lastSeenAt: true,
-  expiresAt: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.AppSessionSelect;
-
-const adminUserListSelect = {
-  ...adminUserSummarySelect,
-  customerProfile: { select: { id: true, userId: true, addresses: true } },
-  providerProfile: { select: { id: true, displayName: true, status: true } },
-  appSessions: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 1,
-    select: adminUserListSessionSelect,
-  },
-  pushDevices: {
-    orderBy: { updatedAt: 'desc' },
-    take: 3,
-    select: adminUserListPushDeviceSelect,
-  },
-} satisfies Prisma.UserSelect;
 
 const adminProviderSummarySelect = {
   id: true,
