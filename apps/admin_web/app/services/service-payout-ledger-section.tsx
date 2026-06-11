@@ -16,7 +16,7 @@ export function ServicePayoutLedgerSection({
   visibleRows,
 }: ServicePayoutLedgerSectionProps) {
   return (
-    <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+    <section className="card admin-card-scroll admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Service payout ledger</h2>

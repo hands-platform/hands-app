@@ -136,7 +136,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       title="Service catalog"
     >
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <form className="form-grid compact-form" action="/services">
           <label className="full-span">
             Find service type, duration, group key, or price
@@ -153,7 +153,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             </a>
           ) : null}
         </form>
-        <p className="muted" style={{ marginTop: 10 }}>
+        <p className="muted admin-mt-10">
           {catalogScopeLabel}: showing {filteredGroupedServices.length} service type(s) and{' '}
           {filteredActiveServices.length} active duration option(s). Dashboard readiness cards still check the
           full catalog.
@@ -162,9 +162,8 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
       {actionNotice ? (
         <section
-          className="card"
+          className="card admin-mb-16"
           style={{
-            marginBottom: 16,
             borderColor: actionNotice.tone === 'success' ? '#b8ddb0' : '#f0c7c2',
             background: actionNotice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
           }}
@@ -181,7 +180,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </section>
       ) : null}
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Customer booking exposure guard</h2>
@@ -217,7 +216,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             <strong>{pricePolicyPreviewSummary.policyCheckCount}</strong>
           </div>
         </div>
-        <div className="actions" style={{ marginTop: 12 }}>
+        <div className="actions admin-mt-12">
           <Link className="text-link" href="/bookings?view=pricing">
             Open pricing-check bookings
           </Link>
@@ -236,7 +235,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
       <ServicePricingAuditTrailSection rows={pricingAuditRows} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Pricing health</h2>
@@ -263,7 +262,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking readiness queue</h2>
@@ -302,7 +301,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         )}
       </section>
 
-      <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+      <section className="card admin-card-scroll admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Duration pricing matrix</h2>
@@ -436,7 +435,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
       <ServiceBookingFinanceTraceSection rows={bookingTraceRows} summary={bookingTraceSummary} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <h2>Create service with duration options</h2>
         <p className="muted">
           This creates one service type with 60, 90, and 120 minute options. Leave a duration blank if that
@@ -500,7 +499,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <h2>Add one duration option</h2>
         <p className="muted">
           Use this when an existing service type needs another duration. The group key connects the option to
@@ -564,7 +563,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         ) : null}
         {visibleGroupedServices.map((group) => (
           <article className="card" key={group.key}>
-            <div className="toolbar" style={{ marginBottom: 12 }}>
+            <div className="toolbar admin-mb-12">
               <div>
                 <h2>{group.label}</h2>
                 <p className="muted">
@@ -655,7 +654,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                       Partners may set prices at these increments. Booking stays blocked for any exact
                       customer price without an active payout rule.
                     </p>
-                    <div className="participant-list" style={{ marginBottom: 12 }}>
+                    <div className="participant-list admin-mb-12">
                       {priceLadderCoverage(service).map((item) => (
                         <span
                           className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}
@@ -670,7 +669,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                     </div>
 
                     <h3>Payout matrix</h3>
-                    <div className="setup-stage-list" style={{ marginBottom: 12 }}>
+                    <div className="setup-stage-list admin-mb-12">
                       {(service.payoutRules ?? []).map((rule) => {
                         const finance = servicePayoutFinance(service, rule, activeTaxPolicy);
                         return (

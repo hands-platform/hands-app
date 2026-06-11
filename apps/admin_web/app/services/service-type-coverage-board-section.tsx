@@ -26,7 +26,7 @@ export function ServiceTypeCoverageBoardSection({
   visibleRows,
 }: ServiceTypeCoverageBoardSectionProps) {
   return (
-    <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+    <section className="card admin-card-scroll admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Service type coverage board</h2>
@@ -45,7 +45,7 @@ export function ServiceTypeCoverageBoardSection({
           <span className="pill pill-info">{summary.readyCount} ready</span>
         </div>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Service types checked</span>
           <strong>{rows.length}</strong>
@@ -68,7 +68,7 @@ export function ServiceTypeCoverageBoardSection({
         </div>
       </div>
       {visibleRows.length ? (
-        <table className="table service-trace" style={{ marginTop: 12 }}>
+        <table className="table service-trace admin-mt-12">
           <thead>
             <tr>
               <th>Service type</th>

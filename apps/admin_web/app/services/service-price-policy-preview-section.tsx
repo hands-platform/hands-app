@@ -28,7 +28,7 @@ export function ServicePricePolicyPreviewSection({
   visibleRows,
 }: ServicePricePolicyPreviewSectionProps) {
   return (
-    <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+    <section className="card admin-card-scroll admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Price policy change preview</h2>
