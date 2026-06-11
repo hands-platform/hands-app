@@ -74,6 +74,7 @@ import {
   assertProviderCanReceiveBooking,
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
+import { normalizeBookingAddress, toJson } from './bookings.payload';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: {
@@ -1703,18 +1704,4 @@ export class BookingsService {
     });
     return booking.customerProfile.userId;
   }
-}
-
-function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, addressText: string) {
-  if (address && typeof address === 'object' && !Array.isArray(address)) {
-    return { ...(address as Record<string, unknown>), addressText } as Prisma.InputJsonValue;
-  }
-  if (typeof address === 'string' && address.trim()) {
-    return { addressText: address.trim() } as Prisma.InputJsonValue;
-  }
-  return { addressText } as Prisma.InputJsonValue;
-}
-
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
