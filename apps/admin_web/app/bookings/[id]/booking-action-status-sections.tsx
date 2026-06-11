@@ -76,7 +76,7 @@ function BookingChatRepairSection({
   chatRepair: { canSubmit: boolean; status: string; tone: string; helper: string };
 }) {
   return (
-    <section className="card ops-command-center" id="chat-repair" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16" id="chat-repair">
       <div>
         <h2>Chat room repair</h2>
         <p className="muted">
@@ -102,7 +102,7 @@ function BookingDispatchChecklistSection({ dispatchSteps }: { dispatchSteps: Dis
   const sameShiftCount = dispatchSteps.filter((step) => step.priority === 'Now').length;
 
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Dispatch checklist</h2>
@@ -141,7 +141,7 @@ function BookingStructuredOpsStatusSection({
   const doneCount = opsTaskCards.filter((task) => task.status === 'DONE').length;
 
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Structured ops status</h2>
@@ -185,7 +185,7 @@ function BookingOperatorNotesSection({
   const recentNotes = notes?.trim() ? notes.trim().split('\n').slice(-6) : [];
 
   return (
-    <section className="card ops-note-panel" id="operator-notes" style={{ marginBottom: 16 }}>
+    <section className="card ops-note-panel admin-mb-16" id="operator-notes">
       <div>
         <h2>Operator notes</h2>
         <p className="muted">
@@ -232,7 +232,7 @@ function BookingCompletedCloseoutSection({
   closeout: { canSubmit: boolean; label: string; tone: string };
 }) {
   return (
-    <section className="card ops-command-center" id="completed-closeout" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16" id="completed-closeout">
       <div>
         <h2>Completed closeout</h2>
         <p className="muted">
@@ -265,7 +265,7 @@ function BookingMatchingExpirySection({
   matchingExpiry: { canSubmit: boolean; status: string };
 }) {
   return (
-    <section className="card ops-command-center" id="matching-expiry" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16" id="matching-expiry">
       <div>
         <h2>Matching expiry handling</h2>
         <p className="muted">
@@ -300,7 +300,7 @@ function BookingNoShowHandlingSection({
   noShow: { canSubmit: boolean; status: string };
 }) {
   return (
-    <section className="card ops-command-center" id="no-show-handling" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16" id="no-show-handling">
       <div>
         <h2>No-show handling</h2>
         <p className="muted">
@@ -329,7 +329,7 @@ function BookingNoShowHandlingSection({
 
 function BookingLiveServiceBoardSection({ liveSignals }: { liveSignals: LiveSignal[] }) {
   return (
-    <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+    <section className="card ops-command-center admin-mb-16">
       <div>
         <h2>Live service board</h2>
         <p className="muted">
@@ -337,7 +337,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: { liveSignals: LiveSign
           in the MVP.
         </p>
       </div>
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         {liveSignals.map((signal) => (
           <div className="ops-signal-card" key={signal.label}>
             <span className={`pill ${signal.tone}`}>{signal.label}</span>
