@@ -38,6 +38,12 @@ import {
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
 import {
+  adminAddressSnapshotSelect,
+  adminBookingOpsTaskSummarySelect,
+  adminChatMessageSummarySelect,
+  adminChatRoomPresenceSelect,
+} from './admin-booking-selects';
+import {
   adminEarningDetailSelect,
   adminEarningSummarySelect,
   adminPaymentCallbackAttemptListSelect,
@@ -136,33 +142,6 @@ type AdminAuditLogSummaryRow = {
   actorFullName: string | null;
 };
 
-const adminAddressSnapshotSelect = {
-  id: true,
-  bookingId: true,
-  customerProfileId: true,
-  selectedLocationId: true,
-  address: true,
-  addressText: true,
-  latitude: true,
-  longitude: true,
-  source: true,
-  createdAt: true,
-} satisfies Prisma.BookingAddressSnapshotSelect;
-
-const adminChatRoomPresenceSelect = {
-  id: true,
-  messages: {
-    orderBy: { createdAt: 'desc' },
-    take: 1,
-    select: {
-      id: true,
-      createdAt: true,
-      body: true,
-      sender: { select: { id: true, phone: true, fullName: true, roles: true } },
-    },
-  },
-} satisfies Prisma.ChatRoomSelect;
-
 const adminBookingListSelect = {
   id: true,
   customerProfileId: true,
@@ -251,28 +230,6 @@ const adminCustomerBookingListSelect = {
   },
   chatRoom: { select: { id: true } },
 } satisfies Prisma.BookingSelect;
-
-const adminBookingOpsTaskSummarySelect = {
-  id: true,
-  bookingId: true,
-  type: true,
-  status: true,
-  note: true,
-  actorId: true,
-  createdAt: true,
-  updatedAt: true,
-  actor: { select: { id: true, phone: true, fullName: true } },
-} satisfies Prisma.BookingOpsTaskSelect;
-
-const adminChatMessageSummarySelect = {
-  id: true,
-  chatRoomId: true,
-  senderId: true,
-  body: true,
-  attachments: true,
-  createdAt: true,
-  sender: { select: { id: true, phone: true, fullName: true, roles: true } },
-} satisfies Prisma.ChatMessageSelect;
 
 const adminCustomerNotificationSelect = {
   id: true,
