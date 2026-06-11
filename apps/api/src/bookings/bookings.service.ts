@@ -100,6 +100,7 @@ import {
   normalizeBookingAddress,
   toJson,
 } from './bookings.payload';
+import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: {
@@ -240,7 +241,7 @@ export class BookingsService {
         throw new BadRequestException('Partner does not offer this service');
       }
     }
-    const customerPrice = this.resolveCustomerPrice(service, providerService?.price);
+    const customerPrice = resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     // HANDS MVP is on-demand only. Keep the existing DB field as the immutable request timestamp.
@@ -289,7 +290,7 @@ export class BookingsService {
     }
     const addressPayload = normalizeBookingAddress(input.address, addressText);
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
-    const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
+    const discountAmount = coupon ? calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
     const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
     const customerToBookingDistanceMeters = customerCurrentLocation
@@ -481,45 +482,6 @@ export class BookingsService {
       throw new BadRequestException('Coupon has expired');
     }
     return coupon;
-  }
-
-  private calculateCouponDiscount(discount: Prisma.JsonValue, subtotal: number) {
-    if (!discount || typeof discount !== 'object' || Array.isArray(discount)) {
-      return 0;
-    }
-
-    const input = discount as { type?: unknown; value?: unknown };
-    const type = typeof input.type === 'string' ? input.type : null;
-    const value =
-      typeof input.value === 'number'
-        ? input.value
-        : typeof input.value === 'string'
-          ? Number(input.value)
-          : NaN;
-
-    if (type !== 'percent' || !Number.isFinite(value) || value <= 0) {
-      return 0;
-    }
-
-    return Math.min(subtotal, Math.round((subtotal * value) / 100));
-  }
-
-  private resolveCustomerPrice(
-    service: { basePrice: number; priceStep?: number | null },
-    providerPrice?: number | null,
-  ) {
-    const customerPrice = providerPrice ?? service.basePrice;
-    const priceStep = service.priceStep ?? 100000;
-    if (!Number.isInteger(customerPrice) || customerPrice <= 0) {
-      throw new BadRequestException('Partner service price is invalid');
-    }
-    if (customerPrice < service.basePrice) {
-      throw new BadRequestException('Partner service price cannot be lower than the admin minimum');
-    }
-    if (customerPrice % priceStep !== 0) {
-      throw new BadRequestException(`Partner service price must use ${priceStep} VND increments`);
-    }
-    return customerPrice;
   }
 
   private async ensureServicePayoutRuleConfigured(serviceId: string, customerPrice: number) {
