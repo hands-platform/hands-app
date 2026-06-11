@@ -128,6 +128,10 @@ import {
   type PartnerAcceptanceUnblockStep,
 } from './partner-detail-acceptance-unblock-playbook-section';
 import { PartnerDetailOpsCommandCenterSection } from './partner-detail-ops-command-center-section';
+import {
+  PartnerDetailApprovalChecklistSection,
+  PartnerDetailRegistrationDossierSection,
+} from './partner-detail-review-readiness-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -1356,60 +1360,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Approval checklist</h2>
-            <p className="muted">
-              Review these gates before approving the partner or relying on this partner for dispatch.
-            </p>
-          </div>
-          <span className={`pill ${reviewChecklist.ready ? 'pill-success' : 'pill-warn'}`}>
-            {reviewChecklist.ready ? 'Ready for approval' : `${reviewChecklist.blockers} blocker(s)`}
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {reviewChecklist.items.map((item) => (
-            <div className="setup-stage-item" key={item.label}>
-              <span>{item.status}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.ok ? 'OK' : 'Check'}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner registration dossier</h2>
-            <p className="muted">
-              Structured view of the signup profile, public working profile, identity evidence, payout gate,
-              legal consent, and account activity. Use this as the first review map before approving or
-              rejecting a partner.
-            </p>
-          </div>
-          <span className={`pill ${registrationDossier.ready ? 'pill-success' : 'pill-warn'}`}>
-            {registrationDossier.ready ? 'Dossier complete' : `${registrationDossier.blockers} gap(s)`}
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {registrationDossier.items.map((item) => (
-            <div className="setup-stage-item" key={item.label}>
-              <span>{item.status}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p className="muted">{item.detail}</p>
-                <p className="muted">{item.operatorAction}</p>
-              </div>
-              <small>{item.ok ? 'OK' : 'Fix'}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
 
       <div className="card admin-mb-16">
         <div className="ops-section-header">
