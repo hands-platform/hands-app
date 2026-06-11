@@ -56,7 +56,7 @@ import {
   partnerOpenBookingResponses,
 } from './bookings.response';
 import {
-  bookingMatchingPolicySnapshot,
+  bookingCreateMetadata,
   restoreBookingMatchingPolicy,
 } from './bookings.matching-policy';
 import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
@@ -356,10 +356,10 @@ export class BookingsService {
         preferredProviderId: preferredProvider?.id,
         openedAt: timing.openedAt,
         expiresAt: timing.expiresAt,
-        metadata: {
-          matchingPolicy: bookingMatchingPolicySnapshot(matchingPolicy),
-          bookingGate: bookingGateSnapshot,
-        },
+        metadata: bookingCreateMetadata({
+          policy: matchingPolicy,
+          bookingGate: bookingGateSnapshot as Prisma.InputJsonValue,
+        }),
         services: {
           create: {
             serviceId: service.id,

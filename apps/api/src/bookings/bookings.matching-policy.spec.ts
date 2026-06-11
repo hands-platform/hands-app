@@ -4,7 +4,11 @@ import {
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   type MatchingPolicy,
 } from '../matching/matching.policy';
-import { bookingMatchingPolicySnapshot, restoreBookingMatchingPolicy } from './bookings.matching-policy';
+import {
+  bookingCreateMetadata,
+  bookingMatchingPolicySnapshot,
+  restoreBookingMatchingPolicy,
+} from './bookings.matching-policy';
 
 describe('booking matching policy snapshot', () => {
   it('stores current marketplace fields with legacy backup aliases', () => {
@@ -19,6 +23,19 @@ describe('booking matching policy snapshot', () => {
       backupProviderLocationMaxAgeMinutes: 15,
       backupProviderInvitationLimit: 25,
       backupOpenMode: BACKUP_OPEN_IMMEDIATE,
+    });
+  });
+
+  it('builds booking create metadata with matching policy and gate snapshots', () => {
+    const bookingGate = { gatePassed: true, serviceArea: 'VIETNAM' };
+
+    expect(bookingCreateMetadata({ policy: policy(), bookingGate })).toEqual({
+      matchingPolicy: expect.objectContaining({
+        providerResponseWindowMinutes: 10,
+        marketplaceRadiusMeters: 12000,
+        backupProviderRadiusMeters: 12000,
+      }),
+      bookingGate,
     });
   });
 

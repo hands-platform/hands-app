@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   BACKUP_OPEN_IMMEDIATE,
@@ -23,6 +24,16 @@ export function bookingMatchingPolicySnapshot(policy: MatchingPolicy) {
     preferredAcceptMode: policy.preferredAcceptMode,
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
+  };
+}
+
+export function bookingCreateMetadata(input: {
+  policy: MatchingPolicy;
+  bookingGate: Prisma.InputJsonValue;
+}): Prisma.InputJsonObject {
+  return {
+    matchingPolicy: bookingMatchingPolicySnapshot(input.policy),
+    bookingGate: input.bookingGate,
   };
 }
 
