@@ -79,6 +79,10 @@ import {
   type BackupNotificationTraceStage,
 } from './bookings.backup-notification-trace';
 import {
+  backupProvidersWithinRadius,
+  nearestBackupProviders,
+} from './bookings.backup-providers';
+import {
   backupBookingAvailableNotification,
   bookingOpenedNotification,
   customerBookingCancelledNotification,
@@ -1234,26 +1238,14 @@ export class BookingsService {
       },
     });
 
-    const providersWithinRadius = providers
-      .map((provider) => ({
-        ...provider,
-        distanceMeters: calculateDistanceMeters(
-          input.lat,
-          input.lng,
-          provider.currentLat,
-          provider.currentLng,
-        ),
-      }))
-      .filter(
-        (provider) =>
-          provider.distanceMeters !== null && provider.distanceMeters <= policy.backupProviderRadiusMeters,
-      )
-      .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }));
+    const providersWithinRadius = backupProvidersWithinRadius(providers, {
+      lat: input.lat,
+      lng: input.lng,
+      radiusMeters: policy.backupProviderRadiusMeters,
+    });
     const providersWithClearWallets = await this.excludeNegativeWalletProviders(providersWithinRadius);
 
-    return providersWithClearWallets
-      .sort((left, right) => left.distanceMeters - right.distanceMeters)
-      .slice(0, policy.backupProviderInvitationLimit);
+    return nearestBackupProviders(providersWithClearWallets, policy.backupProviderInvitationLimit);
   }
 
   private async excludeNegativeWalletProviders<T extends { id: string }>(providers: T[]) {
