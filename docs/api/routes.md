@@ -95,6 +95,8 @@ For `provider-verification` uploads, partners may omit `providerVerificationId`;
 
 The retry queue stores DB notifications first. Delivery attempts are recorded in `NotificationDelivery`. Local development may use `IN_APP_ONLY`; staging/production OS push uses FCM through the backend Firebase Admin SDK. Permanent FCM token failures disable the affected `PushDevice` until the app registers a fresh token again.
 
+Device token registration accepts `platform: "android"` or `platform: "ios"` only. FCM data payloads are filtered to routing identifiers; full notification details stay in the authenticated in-app notification record.
+
 ## Admin
 
 - `GET /admin/users`

@@ -25,6 +25,8 @@ Content-Type: application/json
 
 `POST /api/notifications/device-token/register` is kept as an equivalent compatibility route. `DELETE /api/notifications/device-token` disables a token for the authenticated user. A user can only register or disable their own token because the API always takes `userId` and role from the access token.
 
+`platform` accepts `android` or `ios` only. Web push is not part of the HANDS MVP push surface.
+
 `PushDevice` stores the user, actor role, platform, token, enabled state, last seen time, and created/updated timestamps. Admin views must never expose raw token values.
 
 ## Delivery Adapter
@@ -52,7 +54,7 @@ GOOGLE_APPLICATION_CREDENTIALS=
 
 Firebase Admin credentials are server-side only. Never send service account JSON, private keys, APNs keys, or Admin SDK credentials to Flutter, Admin Web, browser JavaScript, or Git.
 
-When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. Payloads stay minimal and should use identifiers such as `bookingId`; do not place sensitive customer address details in push bodies.
+When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. OS push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
 
 ## Mobile Setup Notes
 
