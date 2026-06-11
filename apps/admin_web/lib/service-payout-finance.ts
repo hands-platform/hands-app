@@ -55,7 +55,7 @@ export function servicePayoutFinance(
 ): ServicePayoutFinance {
   const fee = rule.customerPrice - rule.providerPayoutAmount;
   const taxableFee = Math.max(0, fee);
-  const vatAmount = Math.round((taxableFee * rule.vatBps) / BPS_DENOMINATOR);
+  const vatAmount = bpsAmount(taxableFee, rule.vatBps);
   const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
   return {
     actualCompanyCommission: fee - vatAmount - tax.withholdingAmount - rule.otherCostAmount,
@@ -101,8 +101,7 @@ function serviceTaxTypes(service: AdminServiceCatalogItem) {
 }
 
 function withholdingAmountForRule(grossAmount: number, rule: AdminTaxRule) {
-  const rawAmount = Math.round((grossAmount * rule.rateBps) / BPS_DENOMINATOR) + rule.fixedAmount;
-  return Math.max(0, Math.min(grossAmount, rawAmount));
+  return cappedBpsAmount(grossAmount, rule.rateBps, rule.fixedAmount);
 }
 
 function taxRuleLabel(rule: AdminTaxRule) {
@@ -117,4 +116,12 @@ function amountBandMatches(rule: AdminTaxRule, grossAmount: number) {
 
 function formatBps(value: number) {
   return `${(value / 100).toFixed(2)}%`;
+}
+
+function bpsAmount(baseAmount: number, rateBps: number) {
+  return Math.round((baseAmount * rateBps) / BPS_DENOMINATOR);
+}
+
+function cappedBpsAmount(baseAmount: number, rateBps: number, fixedAmount: number) {
+  return Math.max(0, Math.min(baseAmount, bpsAmount(baseAmount, rateBps) + fixedAmount));
 }
