@@ -98,6 +98,7 @@ import {
   bookingServicePayoutRuleLabel,
   bookingServicePriceLabel,
 } from './booking-service-labels';
+import { bookingMatchesSearch, uniqueSortedOptions } from './booking-search';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -2468,15 +2469,6 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
   return activeStatuses.has(booking.status);
 }
 
-function bookingMatchesSearch(booking: AdminBooking, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) {
-    return true;
-  }
-
-  return bookingSearchHaystack(booking).includes(normalized);
-}
-
 function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string) {
   return statusFilter === 'all' || booking.status === statusFilter;
 }
@@ -2535,40 +2527,6 @@ function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
   return (
     booking.status === 'OPEN_MATCHING' &&
     ((booking.participants?.length ?? 0) === 0 || bookingListStage(booking, nowMs).key === 'marketplace')
-  );
-}
-
-function bookingSearchHaystack(booking: AdminBooking) {
-  return [
-    booking.id,
-    booking.status,
-    bookingServiceOptionLabel(booking),
-    booking.customerProfile?.user?.fullName,
-    booking.customerProfile?.user?.phone,
-    booking.preferredProvider?.displayName,
-    booking.preferredProvider?.user?.fullName,
-    booking.preferredProvider?.user?.phone,
-    booking.selectedProvider?.displayName,
-    booking.selectedProvider?.user?.fullName,
-    booking.selectedProvider?.user?.phone,
-    booking.payment?.method,
-    booking.payment?.status,
-    booking.payment?.providerRef,
-    ...(booking.participants ?? []).flatMap((participant) => [
-      participant.providerProfile?.displayName,
-      participant.providerProfile?.user?.fullName,
-      participant.providerProfile?.user?.phone,
-      participant.status,
-    ]),
-  ]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .join(' ')
-    .toLowerCase();
-}
-
-function uniqueSortedOptions(values: Array<string | null | undefined>) {
-  return [...new Set(values.filter((value): value is string => Boolean(value)))].sort((left, right) =>
-    left.localeCompare(right),
   );
 }
 
