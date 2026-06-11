@@ -51,7 +51,11 @@ import {
 } from './admin-payment-selects';
 import { adminCustomerDetailSelect } from './admin-customer-selects';
 import {
+  bookingAuditLogWhere,
   changedFields,
+  customerAuditLogWhere,
+  paymentAuditLogWhere,
+  providerAuditLogWhere,
   serviceAuditSnapshot,
   servicePayoutRuleAuditSnapshot,
   toJson,
@@ -209,15 +213,7 @@ export class AdminService {
     }
 
     const auditLogs = await this.prisma.adminAuditLog.findMany({
-      where: {
-        OR: [
-          { target: `customer:${customerProfileId}` },
-          { target: `user:${customer.userId}` },
-          { metadata: { path: ['customerProfileId'], equals: customerProfileId } },
-          { metadata: { path: ['customerUserId'], equals: customer.userId } },
-          { metadata: { path: ['userId'], equals: customer.userId } },
-        ],
-      },
+      where: customerAuditLogWhere(customerProfileId, customer.userId),
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: adminAuditLogSelect,
@@ -350,15 +346,7 @@ export class AdminService {
       : Promise.resolve([]);
 
     const auditLogsPromise = this.prisma.adminAuditLog.findMany({
-      where: {
-        OR: [
-          { target: `provider:${providerProfileId}` },
-          { metadata: { path: ['providerProfileId'], equals: providerProfileId } },
-          { metadata: { path: ['partnerProfileId'], equals: providerProfileId } },
-          { metadata: { path: ['providerId'], equals: providerProfileId } },
-          { metadata: { path: ['preferredProviderId'], equals: providerProfileId } },
-        ],
-      },
+      where: providerAuditLogWhere(providerProfileId),
       orderBy: { createdAt: 'desc' },
       take: 75,
       select: adminAuditLogSelect,
@@ -1004,16 +992,7 @@ export class AdminService {
     }
 
     const auditLogs = await this.prisma.adminAuditLog.findMany({
-      where: {
-        OR: [
-          { target: `booking:${id}` },
-          { metadata: { path: ['bookingId'], equals: id } },
-          {
-            action: 'operational_policy.update',
-            createdAt: { gte: booking.createdAt },
-          },
-        ],
-      },
+      where: bookingAuditLogWhere(id, booking.createdAt),
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: adminAuditLogSelect,
@@ -1437,14 +1416,7 @@ export class AdminService {
     });
 
     const auditLogsPromise = this.prisma.adminAuditLog.findMany({
-      where: {
-        OR: [
-          { target: `payment:${payment.id}` },
-          { target: `booking:${payment.bookingId}` },
-          { metadata: { path: ['paymentId'], equals: payment.id } },
-          { metadata: { path: ['bookingId'], equals: payment.bookingId } },
-        ],
-      },
+      where: paymentAuditLogWhere(payment.id, payment.bookingId),
       orderBy: { createdAt: 'desc' },
       take: 75,
       select: adminAuditLogSelect,
