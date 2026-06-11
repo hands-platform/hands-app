@@ -102,7 +102,11 @@ import {
   bookingServicePayoutRuleLabel,
   bookingServicePriceLabel,
 } from './booking-service-labels';
-import { bookingMatchesSearch, uniqueSortedOptions } from './booking-search';
+import {
+  bookingPaymentFilterOptions,
+  bookingStatusFilterOptions,
+} from './booking-monitor-filter-options';
+import { bookingMatchesSearch } from './booking-search';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -406,11 +410,11 @@ export function BookingMonitor({
   );
 
   const statusFilterOptions = useMemo(
-    () => uniqueSortedOptions(orderedBookings.map((booking) => booking.status)),
+    () => bookingStatusFilterOptions(orderedBookings),
     [orderedBookings],
   );
   const paymentFilterOptions = useMemo(
-    () => uniqueSortedOptions(orderedBookings.map((booking) => booking.payment?.method ?? 'NO_PAYMENT')),
+    () => bookingPaymentFilterOptions(orderedBookings),
     [orderedBookings],
   );
 
