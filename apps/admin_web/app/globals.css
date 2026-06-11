@@ -1207,8 +1207,24 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.admin-m-0 {
+  margin: 0;
+}
+
+.admin-mt-8 {
+  margin-top: 8px;
+}
+
+.admin-mt-10 {
+  margin-top: 10px;
+}
+
 .admin-mt-12 {
   margin-top: 12px;
+}
+
+.admin-mt-16 {
+  margin-top: 16px;
 }
 
 .admin-mb-16 {

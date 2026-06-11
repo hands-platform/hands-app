@@ -19,7 +19,7 @@ export function PartnerDetailOperationsDigestSection({
   title,
 }: PartnerDetailOperationsDigestSectionProps) {
   return (
-    <div className="card" id={id} style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -27,7 +27,7 @@ export function PartnerDetailOperationsDigestSection({
         </div>
         <span className="pill pill-info">{rows.length} lanes</span>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {rows.map((row) => (
           <div className="setup-stage-item" key={row.lane}>
             <span>{row.lane}</span>
@@ -36,7 +36,7 @@ export function PartnerDetailOperationsDigestSection({
                 <strong>{row.status}</strong>
               </Link>
               <p className="muted">{row.detail}</p>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 {row.evidence.map((item) => (
                   <span className={`pill ${row.tone}`} key={item}>
                     {item}

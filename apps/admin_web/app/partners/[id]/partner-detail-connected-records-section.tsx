@@ -15,7 +15,7 @@ export function PartnerDetailConnectedRecordsSection({
   title,
 }: PartnerDetailConnectedRecordsSectionProps) {
   return (
-    <div className="card" id={id} style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -23,7 +23,7 @@ export function PartnerDetailConnectedRecordsSection({
         </div>
         <span className="pill pill-info">{links.length} links</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {links.map((record) => (
           <div key={record.label}>
             <span>{record.label}</span>

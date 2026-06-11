@@ -19,7 +19,7 @@ export function PartnerDetailRecentTimelineSection({
   records,
 }: PartnerDetailRecentTimelineSectionProps) {
   return (
-    <div className="card" id="partner-recent-operations-timeline" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id="partner-recent-operations-timeline">
       <div className="ops-section-header">
         <div>
           <h2>Partner recent operations timeline</h2>
@@ -32,7 +32,7 @@ export function PartnerDetailRecentTimelineSection({
           Open full timeline
         </Link>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {records.length ? (
           records.slice(0, 8).map((record, index) => (
             <div

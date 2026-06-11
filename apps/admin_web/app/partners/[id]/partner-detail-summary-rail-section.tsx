@@ -17,7 +17,7 @@ export function PartnerDetailSummaryRailSection({
   title,
 }: PartnerDetailSummaryRailSectionProps) {
   return (
-    <div className="card" id={id} style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -25,7 +25,7 @@ export function PartnerDetailSummaryRailSection({
         </div>
         <span className="pill pill-info">{statusLabel}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {items.map((item) => (
           <Link href={item.href} key={item.label}>
             <span>{item.label}</span>

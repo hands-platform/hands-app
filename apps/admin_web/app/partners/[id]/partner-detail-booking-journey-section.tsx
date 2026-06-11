@@ -37,7 +37,7 @@ export function PartnerDetailBookingJourneySection({
   title,
 }: PartnerDetailBookingJourneySectionProps) {
   return (
-    <div className="card" id={id} style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id={id}>
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -45,7 +45,7 @@ export function PartnerDetailBookingJourneySection({
         </div>
         <span className="pill pill-info">{rows.length} journey row(s)</span>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {rows.length ? (
           rows.map((row) => (
             <div className="setup-stage-item" key={`partner-journey-${row.id}-${row.relation}`}>
@@ -55,14 +55,14 @@ export function PartnerDetailBookingJourneySection({
                   <strong>{row.heading}</strong>
                 </Link>
                 <p className="muted">{row.detail}</p>
-                <div className="participant-list" style={{ marginTop: 8 }}>
+                <div className="participant-list admin-mt-8">
                   {row.steps.map((step) => (
                     <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
                       {step.label}: {step.value}
                     </span>
                   ))}
                 </div>
-                <div className="participant-list" style={{ marginTop: 8 }}>
+                <div className="participant-list admin-mt-8">
                   {row.links.map((link) => (
                     <Link className="text-link" href={link.href} key={link.label}>
                       {link.label}

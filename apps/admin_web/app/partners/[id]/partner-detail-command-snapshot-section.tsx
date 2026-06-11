@@ -13,7 +13,7 @@ export function PartnerDetailCommandSnapshotSection({
   items,
 }: PartnerDetailCommandSnapshotSectionProps) {
   return (
-    <div className="card" id="partner-activity-command-snapshot" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id="partner-activity-command-snapshot">
       <div className="ops-section-header">
         <div>
           <h2>Partner command snapshot</h2>
@@ -24,7 +24,7 @@ export function PartnerDetailCommandSnapshotSection({
         </div>
         <span className="pill pill-info">{items.length} fact groups</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {items.map((item) => (
           <a href={item.href} key={item.label}>
             <span>{item.label}</span>

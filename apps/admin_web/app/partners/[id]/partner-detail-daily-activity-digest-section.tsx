@@ -25,7 +25,7 @@ export function PartnerDetailDailyActivityDigestSection({
   formatDate,
 }: PartnerDetailDailyActivityDigestSectionProps) {
   return (
-    <div className="card" id="partner-daily-digest" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16" id="partner-daily-digest">
       <div className="ops-section-header">
         <div>
           <h2>Partner daily activity digest</h2>
@@ -36,7 +36,7 @@ export function PartnerDetailDailyActivityDigestSection({
         </div>
         <span className="pill pill-info">{days.length} day(s)</span>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 16 }}>
+      <div className="setup-stage-list admin-mt-16">
         {days.length ? (
           days.map((day) => (
             <div className="setup-stage-item" key={day.key}>
@@ -44,7 +44,7 @@ export function PartnerDetailDailyActivityDigestSection({
               <div>
                 <strong>{day.total} event(s)</strong>
                 <p className="muted">{day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}</p>
-                <div className="setup-stage-list" style={{ marginTop: 10 }}>
+                <div className="setup-stage-list admin-mt-10">
                   {day.highlights.map((record, index) => (
                     <div
                       className="service-matrix-cell"
@@ -54,7 +54,7 @@ export function PartnerDetailDailyActivityDigestSection({
                       <small>
                         {record.type} / {formatDate(record.at)}
                       </small>
-                      <p className="muted" style={{ margin: 0 }}>
+                      <p className="muted admin-m-0">
                         {record.detail}
                       </p>
                     </div>
