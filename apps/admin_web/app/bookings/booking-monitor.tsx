@@ -74,6 +74,17 @@ import {
 } from './booking-alert-trace';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import {
+  actionOrderLabel,
+  bookingDashboardTone,
+  commandToneClass,
+  commandToneLabel,
+  commandToneWeight,
+  stagePillClass,
+  type BookingActionPriority,
+  type BookingCommandTone,
+} from './booking-command-display';
+import { emptyBookingMessage } from './booking-empty-message';
+import {
   bookingGateCount,
   bookingGateFilterOptions,
   bookingGateMatchesFilter,
@@ -81,7 +92,6 @@ import {
   type BookingGateFilter,
 } from './booking-gate-filters';
 import { bookingGateReasonCode, bookingGateRejectionInfo } from './booking-gate-rejections';
-import { emptyBookingMessage } from './booking-empty-message';
 import { bookingMatchingPolicySnapshot } from './booking-matching-policy-snapshot';
 import {
   bookingServiceOptionLabel,
@@ -147,7 +157,7 @@ type BookingView = BookingPageView;
 type BookingCommandLane = {
   title: string;
   status: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
+  tone: BookingCommandTone;
   detail: string;
   href: string;
   metrics: Array<{ label: string; value: string }>;
@@ -159,8 +169,8 @@ type BookingNextAction = {
   detail: string;
   operatorAction: string;
   owner: 'Dispatch' | 'Finance' | 'Support' | 'Safety';
-  priority: 'P0' | 'P1' | 'P2' | 'P3';
-  tone: 'ok' | 'info' | 'warn' | 'danger';
+  priority: BookingActionPriority;
+  tone: BookingCommandTone;
   href: string;
   tags: string[];
 };
@@ -2361,19 +2371,6 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
   });
 }
 
-function stagePillClass(tone: BookingCommandLane['tone']) {
-  if (tone === 'danger') {
-    return 'pill-danger';
-  }
-  if (tone === 'warn') {
-    return 'pill-warn';
-  }
-  if (tone === 'ok') {
-    return 'pill-success';
-  }
-  return 'pill-info';
-}
-
 function buildMatchingEscalationRows(
   bookings: AdminBooking[],
   nowMs: number,
@@ -2573,59 +2570,6 @@ function uniqueSortedOptions(values: Array<string | null | undefined>) {
   return [...new Set(values.filter((value): value is string => Boolean(value)))].sort((left, right) =>
     left.localeCompare(right),
   );
-}
-
-function commandToneClass(tone: BookingCommandLane['tone']) {
-  if (tone === 'danger') {
-    return 'signal-warn';
-  }
-  if (tone === 'warn') {
-    return 'signal-warn';
-  }
-  if (tone === 'info') {
-    return 'signal-info';
-  }
-  return 'signal-ok';
-}
-
-function bookingDashboardTone(tone: BookingCommandLane['tone']) {
-  if (tone === 'danger') return 'danger';
-  if (tone === 'warn') return 'warn';
-  if (tone === 'info') return 'info';
-  return 'ok';
-}
-
-function actionOrderLabel(priority: BookingNextAction['priority']) {
-  if (priority === 'P0') return 'Same-shift';
-  if (priority === 'P1') return 'Active watch';
-  if (priority === 'P2') return 'Follow-up';
-  return 'Routine';
-}
-
-function commandToneLabel(tone: BookingCommandLane['tone']) {
-  if (tone === 'danger') {
-    return 'Immediate check';
-  }
-  if (tone === 'warn') {
-    return 'Monitor';
-  }
-  if (tone === 'info') {
-    return 'Info';
-  }
-  return 'Clear';
-}
-
-function commandToneWeight(tone: BookingCommandLane['tone']) {
-  if (tone === 'danger') {
-    return 4;
-  }
-  if (tone === 'warn') {
-    return 3;
-  }
-  if (tone === 'info') {
-    return 2;
-  }
-  return 1;
 }
 
 function checkFlagWeight(flag: BookingCheckFlag) {
