@@ -1271,6 +1271,10 @@ textarea:focus-visible {
   margin-left: 10px;
 }
 
+.admin-ml-6 {
+  margin-left: 6px;
+}
+
 .admin-p-12 {
   padding: 12px;
 }

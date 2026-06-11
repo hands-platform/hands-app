@@ -126,7 +126,7 @@ export default async function PartnerControlsPage({
         title="Partner Controls"
       >
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner control command center</h2>
@@ -143,7 +143,7 @@ export default async function PartnerControlsPage({
             {controlPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {commandCenter.lanes.map((lane) => (
             <Link className={`ops-task-card ${lane.className}`} href={lane.href} key={lane.title}>
               <small>{lane.status}</small>
@@ -163,7 +163,7 @@ export default async function PartnerControlsPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Next operator actions</h2>
@@ -174,7 +174,7 @@ export default async function PartnerControlsPage({
           <span className="pill pill-info">{commandCenter.nextActions.length} action(s)</span>
         </div>
         {commandCenter.nextActions.length ? (
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {commandCenter.nextActions.map((action) => (
               <div className="setup-stage-item" key={action.id}>
                 <span>{action.status}</span>
@@ -197,13 +197,13 @@ export default async function PartnerControlsPage({
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No partner control action currently needs operator review.
           </p>
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner control board</h2>
@@ -214,7 +214,7 @@ export default async function PartnerControlsPage({
           </div>
           <span className="pill pill-info">{partnerControlBoard.items.length} partner(s)</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {partnerControlBoard.metrics.map((controlMetric) => (
             <div className="ops-task-card" key={controlMetric.label}>
               <small>{controlMetric.label}</small>
@@ -229,7 +229,7 @@ export default async function PartnerControlsPage({
           ))}
         </div>
         {partnerControlBoard.items.length ? (
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {partnerControlBoard.items.map((item) => (
               <div className="setup-stage-item" key={item.provider.id}>
                 <span>{item.status}</span>
@@ -262,14 +262,14 @@ export default async function PartnerControlsPage({
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No partner currently has an active account, wallet, document, payout, location, or device
             follow-up.
           </p>
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Marketplace and payout unblock board</h2>
@@ -286,7 +286,7 @@ export default async function PartnerControlsPage({
             {acceptanceUnblockBoard.reduce((sum, item) => sum + item.blockingCount, 0)} blocking partner(s)
           </span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {acceptanceUnblockBoard.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
               <small>{item.status}</small>
@@ -307,7 +307,7 @@ export default async function PartnerControlsPage({
                 ))}
               </div>
               {item.partnerSamples.length ? (
-                <div className="participant-list" style={{ marginTop: 10 }}>
+                <div className="participant-list admin-mt-10">
                   {item.partnerSamples.map((partner) => (
                     <span className="pill pill-info" key={`${item.id}-${partner}`}>
                       {partner}
@@ -321,7 +321,7 @@ export default async function PartnerControlsPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Marketplace and payout unblock playbook</h2>
@@ -338,7 +338,7 @@ export default async function PartnerControlsPage({
             {acceptanceUnblockPlaybook.reduce((sum, step) => sum + step.blockingCount, 0)} active blocker(s)
           </span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {acceptanceUnblockPlaybook.map((step) => (
             <div className="setup-stage-item" key={step.id}>
               <span>{step.step}</span>
@@ -372,7 +372,7 @@ export default async function PartnerControlsPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner operating block matrix</h2>
@@ -386,7 +386,7 @@ export default async function PartnerControlsPage({
           </span>
         </div>
         {operatingBlocks.length ? (
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {operatingBlocks.map((block) => (
               <div className="setup-stage-item" key={block.id}>
                 <span>{block.impact}</span>
@@ -411,14 +411,14 @@ export default async function PartnerControlsPage({
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No partner currently has a control record that should block operations.
           </p>
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header" style={{ marginBottom: 12 }}>
+      <section className="card admin-mb-16">
+        <div className="ops-section-header admin-mb-12">
           <div>
             <h2>Control filters</h2>
             <p className="muted">
@@ -490,7 +490,7 @@ export default async function PartnerControlsPage({
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>System control checklist</h2>
@@ -561,7 +561,7 @@ export default async function PartnerControlsPage({
         </AdminDataTable>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Create partner report</h2>
@@ -625,7 +625,7 @@ export default async function PartnerControlsPage({
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Reports</h2>
@@ -666,7 +666,7 @@ export default async function PartnerControlsPage({
                 </td>
                 <td>
                   <span className={`pill ${severityPill(report.severity)}`}>{report.severity}</span>
-                  <span className={`pill ${statusPill(report.status)}`} style={{ marginLeft: 6 }}>
+                  <span className={`pill ${statusPill(report.status)} admin-ml-6`}>
                     {report.status}
                   </span>
                   {report.resolutionNote ? (
