@@ -28,7 +28,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(rendered).toContain('Customer');
     expect(rendered).toContain('formatted 2026-06-09T03:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'pill pill-success']));
   });
 
   it('renders an empty message when no chat retention rows match', () => {
