@@ -49,6 +49,7 @@ import {
 } from './bookings.policy';
 import {
   assertWorldBookingCoordinate,
+  bookingDistanceGateLimits,
   bookingDistanceGateSnapshot,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
@@ -256,6 +257,7 @@ export class BookingsService {
       throw new BadRequestException('Selected customer location was not found');
     }
     const matchingPolicy = await this.matching.getPolicy();
+    const distanceGateLimits = bookingDistanceGateLimits(matchingPolicy);
     const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
     const bookingLng = normalizeBookingCoordinate(input.lng ?? selectedLocation?.longitude, 'lng');
     const addressTextForAudit =
@@ -275,8 +277,8 @@ export class BookingsService {
           addressText: addressTextForAudit,
           customerDistanceMeters: null,
           preferredProviderDistanceMeters: null,
-          customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
-          preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+          customerDistanceLimitMeters: distanceGateLimits.customerDistanceLimitMeters,
+          preferredProviderDistanceLimitMeters: distanceGateLimits.preferredProviderDistanceLimitMeters,
           currentLocationRecordedAt: null,
         });
         throw new BadRequestException(serviceAreaError.message);
@@ -327,7 +329,7 @@ export class BookingsService {
         addressText,
         customerDistanceMeters: customerToBookingDistanceMeters,
         preferredProviderDistanceMeters,
-        customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+        customerDistanceLimitMeters: distanceGateLimits.customerDistanceLimitMeters,
         preferredProviderDistanceLimitMeters: preferredProviderDistanceGateError.limitMeters,
         currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
       });
