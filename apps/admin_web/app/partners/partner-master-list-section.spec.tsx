@@ -22,7 +22,9 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('12 feedback record(s)');
     expect(rendered).toContain('Open');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'text-link']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'text-link']),
+    );
   });
 
   it('renders an empty state when no partner rows are visible', () => {

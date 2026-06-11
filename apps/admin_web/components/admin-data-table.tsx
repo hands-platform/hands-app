@@ -7,6 +7,14 @@ type AdminDataTableProps = {
   readonly rowCount: number;
 };
 
+type AdminTableScrollProps = {
+  readonly children: ReactNode;
+};
+
+export function AdminTableScroll({ children }: AdminTableScrollProps) {
+  return <div className="admin-table-scroll">{children}</div>;
+}
+
 export function AdminDataTable({ children, emptyMessage, headers, rowCount }: AdminDataTableProps) {
   return (
     <table className="table">

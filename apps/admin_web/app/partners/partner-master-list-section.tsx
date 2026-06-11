@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -19,7 +20,7 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
         status={<span className="pill pill-info">{rows.length} visible row(s)</span>}
         title="Partner master list"
       />
-      <div style={{ marginTop: 14, overflowX: 'auto' }}>
+      <AdminTableScroll>
         <table className="table service-trace">
           <thead>
             <tr>
@@ -133,7 +134,7 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
             ) : null}
           </tbody>
         </table>
-      </div>
+      </AdminTableScroll>
     </section>
   );
 }

@@ -24,7 +24,9 @@ describe('PartnerChecklistWorkQueueSection', () => {
     expect(rendered).toContain('Same shift');
     expect(rendered).toContain('Submitted 2h ago.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1#kyc']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-danger', 'text-link']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'pill pill-danger', 'text-link']),
+    );
   });
 
   it('renders an empty queue state when no partner work items are visible', () => {

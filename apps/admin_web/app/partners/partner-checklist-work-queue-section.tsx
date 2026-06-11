@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { PartnerDailyActionQueue } from './partner-daily-action-queue';
@@ -33,7 +34,7 @@ export function PartnerChecklistWorkQueueSection({
         }
         title="Partner checklist work queue"
       />
-      <div style={{ marginTop: 14, overflowX: 'auto' }}>
+      <AdminTableScroll>
         <table className="table service-trace">
           <thead>
             <tr>
@@ -85,7 +86,7 @@ export function PartnerChecklistWorkQueueSection({
             ) : null}
           </tbody>
         </table>
-      </div>
+      </AdminTableScroll>
     </section>
   );
 }

@@ -29,7 +29,9 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).toContain('Open all records');
     expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'text-link']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'text-link']),
+    );
   });
 
   it('renders an empty state when no partner operation rows are visible', () => {

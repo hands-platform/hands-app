@@ -182,6 +182,11 @@ a {
   margin-bottom: 20px;
 }
 
+.admin-table-scroll {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
 .card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);

@@ -1,4 +1,4 @@
-import { AdminDataTable } from './admin-data-table';
+import { AdminDataTable, AdminTableScroll } from './admin-data-table';
 
 describe('AdminDataTable', () => {
   it('renders stable table headers and provided rows', () => {
@@ -33,5 +33,14 @@ describe('AdminDataTable', () => {
       children: 'No feedback records loaded.',
       colSpan: 3,
     });
+  });
+
+  it('renders a reusable scroll wrapper for wide admin tables', () => {
+    const wrapper = AdminTableScroll({
+      children: <table className="table" />,
+    });
+
+    expect(wrapper.type).toBe('div');
+    expect(wrapper.props).toMatchObject({ className: 'admin-table-scroll' });
   });
 });

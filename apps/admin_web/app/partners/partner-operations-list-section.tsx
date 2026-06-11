@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
@@ -39,7 +40,7 @@ export function PartnerOperationsListSection({
         }
         title="Partner operations list"
       />
-      <div style={{ marginTop: 14, overflowX: 'auto' }}>
+      <AdminTableScroll>
         <table className="table service-trace">
           <thead>
             <tr>
@@ -169,7 +170,7 @@ export function PartnerOperationsListSection({
             ) : null}
           </tbody>
         </table>
-      </div>
+      </AdminTableScroll>
     </section>
   );
 }
