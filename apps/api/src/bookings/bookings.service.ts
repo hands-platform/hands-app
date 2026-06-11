@@ -790,28 +790,12 @@ export class BookingsService {
   }
 
   async selectProvider(bookingId: string, customerUserId: string, providerId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
-      where: { userId: customerUserId },
+    const ownedBooking = await this.requireCustomerOpenMatchingBooking(bookingId, customerUserId);
+    await this.assertCustomerCanSelectProvider({
+      bookingId,
+      providerId,
+      preferredProviderId: ownedBooking.preferredProviderId,
     });
-    const ownedBooking = await this.prisma.booking.findFirst({
-      where: { id: bookingId, customerProfileId: customer.id, status: BookingStatus.OPEN_MATCHING },
-    });
-    if (!ownedBooking) {
-      throw new BadRequestException('Booking is not open or does not belong to this customer');
-    }
-
-    const participant = await this.prisma.bookingParticipant.findUnique({
-      where: bookingParticipantCompoundKey(bookingId, providerId),
-    });
-    if (
-      !participant ||
-      !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)
-    ) {
-      throw new BadRequestException('Partner must participate or accept before customer selection');
-    }
-    if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId)) {
-      await this.ensureProviderWalletCanJoinMarketplace(providerId);
-    }
     const booking = await this.matchCustomerSelectedProvider({ bookingId, customerUserId, providerId });
 
     await this.matching.closeBooking(bookingId);
@@ -824,6 +808,38 @@ export class BookingsService {
       matchingPayload: result,
     });
     return result;
+  }
+
+  private async requireCustomerOpenMatchingBooking(bookingId: string, customerUserId: string) {
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
+    const booking = await this.prisma.booking.findFirst({
+      where: { id: bookingId, customerProfileId: customer.id, status: BookingStatus.OPEN_MATCHING },
+    });
+    if (!booking) {
+      throw new BadRequestException('Booking is not open or does not belong to this customer');
+    }
+    return booking;
+  }
+
+  private async assertCustomerCanSelectProvider(input: {
+    bookingId: string;
+    providerId: string;
+    preferredProviderId?: string | null;
+  }) {
+    const participant = await this.prisma.bookingParticipant.findUnique({
+      where: bookingParticipantCompoundKey(input.bookingId, input.providerId),
+    });
+    if (
+      !participant ||
+      !isCustomerSelectableParticipantForFinalChoice(participant, input.preferredProviderId)
+    ) {
+      throw new BadRequestException('Partner must participate or accept before customer selection');
+    }
+    if (isMarketplacePartnerAction(input.providerId, input.preferredProviderId)) {
+      await this.ensureProviderWalletCanJoinMarketplace(input.providerId);
+    }
   }
 
   async updateParticipant(bookingId: string, providerUserId: string | undefined, status: ParticipantStatus) {
