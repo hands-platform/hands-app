@@ -211,7 +211,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Cash settlements
           </Link>
         </div>
-        <div style={{ overflowX: 'auto', marginTop: 12 }}>
+        <div className="admin-scroll-x" style={{ marginTop: 12 }}>
           <table className="table">
             <thead>
               <tr>

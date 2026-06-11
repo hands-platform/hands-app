@@ -26,7 +26,7 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
   }
 
   return (
-    <div style={{ overflowX: 'auto', marginTop: 12 }}>
+    <div className="admin-scroll-x" style={{ marginTop: 12 }}>
       <table className="table">
         <thead>
           <tr>

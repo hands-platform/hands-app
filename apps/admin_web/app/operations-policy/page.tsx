@@ -458,7 +458,7 @@ export default async function OperationsPolicyPage({
           ))}
         </div>
         <div className="detail-grid" style={{ marginTop: 14 }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-scroll-x">
             <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
               Reference point: {supplySensitivity.referenceLabel}. Marketplace blockers include account,
@@ -490,7 +490,7 @@ export default async function OperationsPolicyPage({
               </tbody>
             </table>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-scroll-x">
             <h3>Location freshness sensitivity</h3>
             <p className="muted">
               Shows how strict or loose freshness rules affect marketplace matching without real-time

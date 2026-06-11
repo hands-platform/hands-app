@@ -200,6 +200,10 @@ a {
   overflow-x: auto;
 }
 
+.admin-scroll-x {
+  overflow-x: auto;
+}
+
 a.card,
 a.ops-task-card,
 a.action-button-card {
