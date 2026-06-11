@@ -1,9 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  pushDeviceDisableInput,
+  pushDeviceRegistrationInput,
+} from './notification-device-token';
 import {
   NOTIFICATION_SEND_QUEUE_NAME,
   notificationSendJob,
@@ -62,33 +65,11 @@ export class NotificationsService {
   }
 
   registerDeviceToken(user: AuthenticatedUser, input: { token: string; platform: string }) {
-    const role = resolvePushDeviceRole(user.roles);
-    const lastSeenAt = new Date();
-
-    return this.prisma.pushDevice.upsert({
-      where: { token: input.token },
-      update: {
-        userId: user.id,
-        role,
-        platform: input.platform,
-        enabled: true,
-        lastSeenAt,
-      },
-      create: {
-        userId: user.id,
-        role,
-        token: input.token,
-        platform: input.platform,
-        lastSeenAt,
-      },
-    });
+    return this.prisma.pushDevice.upsert(pushDeviceRegistrationInput(user, input));
   }
 
   async disableDeviceToken(user: AuthenticatedUser, input: { token: string }) {
-    const result = await this.prisma.pushDevice.updateMany({
-      where: { userId: user.id, token: input.token },
-      data: { enabled: false, lastSeenAt: new Date() },
-    });
+    const result = await this.prisma.pushDevice.updateMany(pushDeviceDisableInput(user.id, input.token));
 
     return { ok: result.count > 0, disabled: result.count };
   }
@@ -97,16 +78,4 @@ export class NotificationsService {
     const job = notificationSendJob(notificationId);
     await this.notificationQueue.add(job.name, job.data, job.options);
   }
-}
-
-function resolvePushDeviceRole(roles: readonly Role[]) {
-  if (roles.includes(Role.CUSTOMER)) {
-    return Role.CUSTOMER;
-  }
-
-  if (roles.includes(Role.PROVIDER)) {
-    return Role.PROVIDER;
-  }
-
-  return Role.ADMIN;
 }
