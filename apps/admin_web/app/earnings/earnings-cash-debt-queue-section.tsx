@@ -35,7 +35,7 @@ type EarningsCashDebtQueueSectionProps = {
 
 export function EarningsCashDebtQueueSection({ currency, items, totals }: EarningsCashDebtQueueSectionProps) {
   return (
-    <div className="card" style={{ marginTop: 20 }}>
+    <div className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Cash fee debt queue</h2>

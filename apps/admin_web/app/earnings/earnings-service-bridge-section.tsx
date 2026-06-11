@@ -31,7 +31,7 @@ type EarningsServiceBridgeSectionProps = {
 
 export function EarningsServiceBridgeSection({ currency, items }: EarningsServiceBridgeSectionProps) {
   return (
-    <div className="card admin-card-scroll" style={{ marginTop: 20 }}>
+    <div className="card admin-card-scroll admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Service to earnings bridge</h2>

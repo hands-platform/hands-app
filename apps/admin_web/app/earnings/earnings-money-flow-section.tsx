@@ -25,7 +25,7 @@ type EarningsMoneyFlowSectionProps = {
 
 export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMoneyFlowSectionProps) {
   return (
-    <div className="card" style={{ marginTop: 20 }}>
+    <div className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Money flow command center</h2>
@@ -47,7 +47,7 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
           </div>
         ))}
       </div>
-      <div className="ops-task-grid" style={{ marginTop: 16 }}>
+      <div className="ops-task-grid admin-mt-16">
         {checks.map((check) => (
           <div className={`ops-task-card ${check.className}`} key={check.title}>
             <div>

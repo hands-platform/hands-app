@@ -24,7 +24,7 @@ export function EarningsBatchStateFilterSection({
   ledgerCount,
 }: EarningsBatchStateFilterSectionProps) {
   return (
-    <div className="card" style={{ marginTop: 20 }}>
+    <div className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Earning batch state filters</h2>
@@ -35,7 +35,7 @@ export function EarningsBatchStateFilterSection({
         </div>
         <span className="pill pill-info">{ledgerCount} ledger row(s)</span>
       </div>
-      <div className="filter-row" style={{ marginTop: 12 }}>
+      <div className="filter-row admin-mt-12">
         {cards.map((card) => (
           <Link
             className={`filter-pill ${card.state === activeState ? 'pill-info' : ''}`}
@@ -46,7 +46,7 @@ export function EarningsBatchStateFilterSection({
           </Link>
         ))}
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 16 }}>
+      <div className="service-trace-summary admin-mt-16">
         {cards
           .filter((card) => card.state !== 'all')
           .map((card) => (

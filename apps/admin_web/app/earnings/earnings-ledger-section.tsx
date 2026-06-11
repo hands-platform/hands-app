@@ -45,7 +45,7 @@ const ledgerHeaders = [
 
 export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
   return (
-    <div className="card" style={{ marginTop: 20 }}>
+    <div className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Recent earnings ledger</h2>
@@ -80,7 +80,7 @@ export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
             </td>
             <td>
               <span className={row.signalClassName}>{row.statusLabel}</span>
-              <div className="muted" style={{ marginTop: 6 }}>
+              <div className="muted admin-mt-6">
                 {row.statusHint}
               </div>
             </td>
@@ -119,7 +119,7 @@ export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
                 </form>
               ) : null}
               {row.canCreatePayout ? (
-                <form action="/earnings" style={{ marginTop: 6 }}>
+                <form action="/earnings" className="admin-mt-6">
                   <input type="hidden" name="confirm" value="create-payout" />
                   <input type="hidden" name="providerProfileId" value={row.providerProfileId} />
                   <input type="hidden" name="transferRef" value={row.transferRef} />

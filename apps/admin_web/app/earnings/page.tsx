@@ -153,7 +153,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
         />
       ) : null}
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <AdminSectionHeader
           actions={
             <Link className="text-link" href="/finance-closeout">
@@ -168,7 +168,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
           }
           title="Earnings date range"
         />
-        <div className="filter-row" style={{ marginTop: 12 }}>
+        <div className="filter-row admin-mt-12">
           {[
             ['All dates', '/earnings'],
             ['Today', '/earnings?range=today'],

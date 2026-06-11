@@ -25,7 +25,7 @@ type EarningsPartnerPayoutQueueSectionProps = {
 
 export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPayoutQueueSectionProps) {
   return (
-    <div className="card" style={{ marginTop: 20 }}>
+    <div className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Partner payout queue</h2>

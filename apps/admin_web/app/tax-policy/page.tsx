@@ -33,7 +33,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy checklist</h2>
@@ -60,7 +60,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Withholding preview</h2>
@@ -90,7 +90,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </label>
           <button type="submit">Preview withholding</button>
         </form>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           <div className="setup-stage-item">
             <span>{preview.policy ? 'POLICY' : 'MISSING'}</span>
             <div>
@@ -129,7 +129,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <h2>Create policy version</h2>
         <p className="muted">Use basis points for percentage rates. Example: 500 bps = 5%.</p>
         <form action={createTaxPolicyVersion} className="form-grid">
@@ -166,7 +166,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <section className="grid">
         {policies.map((policy) => (
           <article className="card" key={policy.id}>
-            <div className="toolbar" style={{ marginBottom: 12 }}>
+            <div className="toolbar admin-mb-12">
               <div>
                 <h2>{policy.name}</h2>
                 <p className="muted">
@@ -216,7 +216,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             </form>
 
             <h3>Rules</h3>
-            <div className="setup-stage-list" style={{ marginBottom: 12 }}>
+            <div className="setup-stage-list admin-mb-12">
               {(policy.rules ?? []).map((rule) => (
                 <div className="setup-stage-item" key={rule.id}>
                   <span>{rule.active ? 'ON' : 'OFF'}</span>
