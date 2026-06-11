@@ -45,7 +45,7 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             <div className="muted">{row.relativeTimeLabel}</div>
           </td>
           <td>
-            <div style={{ marginBottom: 6 }}>{row.actionLabel}</div>
+            <div className="admin-mb-6">{row.actionLabel}</div>
             <span className={row.bucketClassName}>{row.bucketLabel}</span>
           </td>
           <td>{row.actorLabel}</td>
@@ -57,19 +57,19 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             <Link className="pill pill-info" href={row.relatedBoardHref}>
               {row.relatedBoardLabel}
             </Link>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.priorityLabel}
             </div>
           </td>
           <td>
             <div>{row.opsHint}</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.opsDetail}
             </div>
           </td>
           <td>
             {row.metadataHighlights.length > 0 ? (
-              <div className="participant-list" style={{ marginBottom: 8 }}>
+              <div className="participant-list admin-mb-8">
                 {row.metadataHighlights.map((item, index) => (
                   <span className={item.className} key={`${item.label}-${index}`}>
                     {item.label}

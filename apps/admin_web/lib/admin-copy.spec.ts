@@ -6,6 +6,9 @@ describe('admin visible copy helpers', () => {
       'Partner accepted the partner request',
     );
     expect(partnerDisplayText('3 PROVIDER(S) joined')).toBe('3 PARTNER(S) joined');
+    expect(partnerDisplayText('preferredProviderId providerProfileId')).toBe(
+      'preferredPartnerId partnerProfileId',
+    );
   });
 
   it('rewrites legacy backup wording into marketplace wording for operators', () => {

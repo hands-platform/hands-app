@@ -30,7 +30,7 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
   const hasWarningLogs = items.some((item) => item.logs.length > 0 && item.tone === 'warn');
 
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="High-impact admin changes grouped by policy, money movement, dispatch state, and recent operator actions."
         status={

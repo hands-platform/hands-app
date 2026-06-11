@@ -51,7 +51,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
     >
       <AuditLogCommandBoardSection items={commandBoard} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <form className="form-grid" action="/audit-log">
           <label>
             Search
@@ -76,7 +76,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <option value="Finance/Closeout">Finance/Closeout</option>
               <option value="Service/Pricing">Service/Pricing</option>
               <option value="Notification">Notification</option>
-              <option value="Provider">Partner</option>
+              <option value="Partner">Partner</option>
               <option value="Tax">Tax</option>
               <option value="System">System</option>
             </select>
@@ -126,7 +126,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
 export function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLogTableRow[] {
   return logs.map((log) => ({
     actionLabel: humanizeAction(log.action),
-    actorLabel: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+    actorLabel: operationalDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
     bucketClassName: signalClass(log.action),
     bucketLabel: actionBucketLabel(log.action),
     createdAtLabel: formatDateTime(log.createdAt),

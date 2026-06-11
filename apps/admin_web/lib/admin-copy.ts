@@ -1,8 +1,8 @@
 export function partnerDisplayText(value?: string | null) {
   return (value ?? '')
     .replace(/\bPROVIDER\(S\)(?=\W|$)/g, 'PARTNER(S)')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
+    .replaceAll('Provider', 'Partner')
+    .replaceAll('provider', 'partner');
 }
 
 export function marketplaceDisplayText(value?: string | null) {
