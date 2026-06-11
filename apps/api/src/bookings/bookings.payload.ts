@@ -39,6 +39,10 @@ export function bookingServiceLineCreate(input: { serviceId: string; price: numb
   };
 }
 
+export function bookingPaymentCreate(input: Prisma.PaymentCreateWithoutBookingInput) {
+  return { create: input };
+}
+
 export function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }

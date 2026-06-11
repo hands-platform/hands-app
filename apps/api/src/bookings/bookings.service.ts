@@ -114,6 +114,7 @@ import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
+  bookingPaymentCreate,
   bookingServiceLineCreate,
   customerCancellationCloseData,
   normalizeBookingAddress,
@@ -362,14 +363,14 @@ export class BookingsService {
           bookingGate: bookingGateSnapshot as Prisma.InputJsonValue,
         }),
         services: bookingServiceLineCreate({ serviceId: service.id, price: customerPrice }),
-        payment: {
-          create: this.payments.buildAuthorization(
+        payment: bookingPaymentCreate(
+          this.payments.buildAuthorization(
             input.paymentMethod,
             priceSummary.finalAmount,
             'pending-booking',
             priceSummary.paymentMetadata,
           ),
-        },
+        ),
         participants: preferredProvider
           ? preferredProviderInitialParticipantCreate({
               providerProfileId: preferredProvider.id,

@@ -1,8 +1,9 @@
-import { BookingStatus, Role } from '@prisma/client';
+import { BookingStatus, PaymentMethod, PaymentStatus, Role } from '@prisma/client';
 import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
+  bookingPaymentCreate,
   bookingServiceLineCreate,
   customerCancellationCloseData,
   normalizeBookingAddress,
@@ -68,6 +69,18 @@ describe('booking payload helpers', () => {
         price: 500000,
       },
     });
+  });
+
+  it('builds booking payment create data', () => {
+    const authorization = {
+      method: PaymentMethod.CASH,
+      amount: 500000,
+      status: PaymentStatus.AUTHORIZED,
+      providerRef: null,
+      rawMeta: { originalAmount: 500000 },
+    };
+
+    expect(bookingPaymentCreate(authorization)).toEqual({ create: authorization });
   });
 
   it('converts serializable values to Prisma JSON input', () => {
