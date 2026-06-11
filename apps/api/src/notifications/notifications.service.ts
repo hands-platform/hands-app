@@ -11,6 +11,7 @@ import {
   NOTIFICATION_SEND_QUEUE_NAME,
   notificationSendJob,
 } from './notification-send.queue';
+import { toJson } from './notification-push-payload';
 
 type CreateNotificationInput = {
   userId: string;
@@ -34,7 +35,7 @@ export class NotificationsService {
         type: input.type,
         title: input.title,
         body: input.body,
-        data: input.data === undefined ? undefined : JSON.parse(JSON.stringify(input.data)),
+        data: input.data === undefined ? undefined : toJson(input.data),
       },
     });
 

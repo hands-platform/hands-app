@@ -84,7 +84,7 @@ describe('NotificationsService retry queue', () => {
         type: 'booking.requested',
         title: 'Booking request',
         body: 'A booking request is available.',
-        data: { bookingId: 'booking-1' },
+        data: { bookingId: 'booking-1', createdAt: new Date('2026-06-11T00:00:00.000Z') },
       }),
     ).resolves.toEqual(notification);
 
@@ -94,7 +94,7 @@ describe('NotificationsService retry queue', () => {
         type: 'booking.requested',
         title: 'Booking request',
         body: 'A booking request is available.',
-        data: { bookingId: 'booking-1' },
+        data: { bookingId: 'booking-1', createdAt: '2026-06-11T00:00:00.000Z' },
       },
     });
     expect(queue.add).toHaveBeenCalledWith(
