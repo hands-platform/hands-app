@@ -966,7 +966,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </section>
 
-      <section className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="record-date-filter">
         <div className="ops-section-header">
           <div>
             <h2>Record date filter</h2>
@@ -983,7 +983,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
           </div>
         </div>
-        <form className="form-grid" action={`/customers/${customer.id}`} style={{ marginTop: 14 }}>
+        <form className="form-grid admin-mt-14" action={`/customers/${customer.id}`}>
           <label>
             Preset
             <select name="range" defaultValue={dateFilters.range}>
@@ -1036,7 +1036,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </Link>
           </div>
         </form>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Filtered bookings</span>
             <strong>{filteredBookings.length}</strong>
@@ -1062,7 +1062,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Customer activity action panel</h2>
@@ -1082,12 +1082,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </Link>
           ))}
         </div>
-        <div className="ops-task-note ops-task-pending" style={{ marginTop: 14 }}>
+        <div className="ops-task-note ops-task-pending admin-mt-14">
           <div className="ops-row">
             <div>
               <strong>{activityPlan.headline}</strong>
               <p className="muted">{activityPlan.detail}</p>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 {activityPlan.badges.map((badge) => (
                   <span className={`pill ${customerSupportPillClass(badge.tone)}`} key={badge.label}>
                     {badge.label}
@@ -1100,7 +1100,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </Link>
           </div>
         </div>
-        <form action={addCustomerOpsNote} className="compact-form form-grid" style={{ marginTop: 14 }}>
+        <form action={addCustomerOpsNote} className="compact-form form-grid admin-mt-14">
           <input type="hidden" name="customerId" value={customer.id} />
           <label>
             Quick note preset
@@ -1135,7 +1135,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </form>
       </section>
 
-      <section className="card" id="customer-info" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-info">
         <div className="ops-section-header">
           <div>
             <h2>Customer information</h2>
@@ -1181,7 +1181,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-account-facts" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-account-facts">
         <div className="ops-section-header">
           <div>
             <h2>Customer account facts</h2>
@@ -1192,7 +1192,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{accountFacts.length} field(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {accountFacts.map((fact) => (
             <div key={fact.label}>
               <span>{fact.label}</span>
@@ -1203,13 +1203,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <section className="card" id="wallet">
           <h2>Customer payment ledger</h2>
           <p className="muted">
             Factual payment readout. Partner cash-fee debt is never carried on the customer account.
           </p>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             <div className="ops-row">
               <strong>Captured payments</strong>
               <span>{formatMoney(wallet.capturedSpend)}</span>
@@ -1231,7 +1231,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <span>{formatMoney(wallet.customerBalance)}</span>
             </div>
           </div>
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             {wallet.operatorNote}
           </p>
         </section>
@@ -1239,7 +1239,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         <section className="card" id="addresses">
           <h2>Saved addresses</h2>
           <p className="muted">Profile addresses and map pins selected in the customer app.</p>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {addresses.length > 0 ? (
               addresses.slice(0, 6).map((address) => (
                 <div className="ops-row" key={address.key}>
@@ -1254,7 +1254,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </section>
       </section>
 
-      <section className="card" id="booking-history" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="booking-history">
         <div className="ops-section-header">
           <div>
             <h2>Booking and cancellation history</h2>
@@ -1316,9 +1316,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     </Link>
                     {booking.chatRoom ? (
                       <Link
-                        className="text-link"
+                        className="text-link admin-ml-10"
                         href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-                        style={{ marginLeft: 10 }}
                       >
                         Chat archive
                       </Link>
@@ -1330,13 +1329,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {filteredBookings.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking record matched this date filter.
           </p>
         ) : null}
       </section>
 
-      <section className="card" id="customer-chat-retention-ledger" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-chat-retention-ledger">
         <div className="ops-section-header">
           <div>
             <h2>Customer chat retention ledger</h2>
@@ -1347,7 +1346,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerChatRetentionRows.length} booking row(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {customerChatRetentionSummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -1398,7 +1397,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                       Booking
                     </Link>
                     {row.chatHref ? (
-                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.chatHref}>
                         Archive
                       </Link>
                     ) : null}
@@ -1409,13 +1408,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {customerChatRetentionRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking row matched this date filter.
           </p>
         ) : null}
       </section>
 
-      <section className="card" id="customer-booking-ops-ledger" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-booking-ops-ledger">
         <div className="ops-section-header">
           <div>
             <h2>Booking operations note ledger</h2>
@@ -1464,7 +1463,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                       Booking
                     </Link>
                     {row.chatHref ? (
-                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.chatHref}>
                         Chat
                       </Link>
                     ) : null}
@@ -1475,13 +1474,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {customerBookingOpsLedgerRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking-level operation notes or staff tasks matched this customer date filter.
           </p>
         ) : null}
       </section>
 
-      <section className="card" id="chat-history" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="chat-history">
         <div className="ops-section-header">
           <div>
             <h2>Chat history</h2>
@@ -1492,7 +1491,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredChatBookings.length} rooms</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {filteredChatBookings.length > 0 ? (
             filteredChatBookings.map((booking) => (
               <div className="card" key={booking.id}>
@@ -1514,7 +1513,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     </Link>
                   ) : null}
                 </div>
-                <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+                <div className="admin-grid-gap-8 admin-mt-10">
                   {readChatMessages(booking)
                     .filter((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
                     .map((message) => (
