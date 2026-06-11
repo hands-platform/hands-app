@@ -1,0 +1,58 @@
+import {
+  bookingRecordPaymentRows,
+  bookingRecordServiceRows,
+} from './booking-record-info-rows';
+
+describe('booking record info rows', () => {
+  it('builds service rows in the booking record order', () => {
+    expect(
+      bookingRecordServiceRows({
+        optionLabel: 'Massage / 60 min',
+        serviceName: 'Massage',
+        durationLabel: '60 min',
+        bookingPriceLabel: '500.000 VND',
+        adminMinimumLabel: '400.000 VND',
+        payoutRuleLabel: '350.000 VND payout / 150.000 VND fee',
+        notesLabel: 'No notes',
+        createdLabel: '2026-06-11',
+        updatedLabel: '2026-06-12',
+      }).map((row) => row.label),
+    ).toEqual([
+      'Option',
+      'Name',
+      'Duration',
+      'Booking price',
+      'Admin minimum',
+      'Partner payout rule',
+      'Notes',
+      'Created',
+      'Updated',
+    ]);
+  });
+
+  it('adds cash fee debt only when the booking needs settlement', () => {
+    expect(
+      bookingRecordPaymentRows({
+        paymentIdLabel: 'payment-1',
+        paymentMethodLabel: 'CASH',
+        paymentAmountLabel: '500.000 VND',
+        refundCount: 0,
+        earningLabel: '-150.000 VND / PENDING',
+        cashFeeDebtLabel: '150.000 VND / partner blocked',
+        serviceFeedbackLabel: 'Not submitted',
+      }),
+    ).toContainEqual({ label: 'Cash fee debt', value: '150.000 VND / partner blocked' });
+
+    expect(
+      bookingRecordPaymentRows({
+        paymentIdLabel: 'payment-1',
+        paymentMethodLabel: 'MOMO',
+        paymentAmountLabel: '500.000 VND',
+        refundCount: 1,
+        earningLabel: '350.000 VND / AVAILABLE',
+        cashFeeDebtLabel: null,
+        serviceFeedbackLabel: 'Submitted',
+      }).map((row) => row.label),
+    ).not.toContain('Cash fee debt');
+  });
+});

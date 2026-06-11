@@ -46,6 +46,10 @@ import {
 import { BookingRecordDetailSections } from './booking-record-detail-sections';
 import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
 import {
+  bookingRecordPaymentRows as buildBookingRecordPaymentRows,
+  bookingRecordServiceRows as buildBookingRecordServiceRows,
+} from './booking-record-info-rows';
+import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
   BookingCustomerWaitPanelSection,
@@ -1067,23 +1071,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
     { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
     { label: 'Expires', value: formatDate(booking.expiresAt) },
   ];
-  const bookingRecordServiceRows = [
-    { label: 'Option', value: bookingServiceOptionLabel(booking) },
-    { label: 'Name', value: service?.service?.name ?? 'Service pending' },
-    { label: 'Duration', value: `${service?.service?.durationMin ?? '-'} min` },
-    {
-      label: 'Booking price',
-      value: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
-    },
-    {
-      label: 'Admin minimum',
-      value: money(service?.service?.basePrice, booking.payment?.currency),
-    },
-    { label: 'Partner payout rule', value: bookingServicePayoutRuleLabel(booking) },
-    { label: 'Notes', value: booking.notes ?? 'No notes' },
-    { label: 'Created', value: formatDate(booking.createdAt) },
-    { label: 'Updated', value: formatDate(booking.updatedAt) },
-  ];
+  const bookingRecordServiceRows = buildBookingRecordServiceRows({
+    optionLabel: bookingServiceOptionLabel(booking),
+    serviceName: service?.service?.name ?? 'Service pending',
+    durationLabel: `${service?.service?.durationMin ?? '-'} min`,
+    bookingPriceLabel: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
+    adminMinimumLabel: money(service?.service?.basePrice, booking.payment?.currency),
+    payoutRuleLabel: bookingServicePayoutRuleLabel(booking),
+    notesLabel: booking.notes ?? 'No notes',
+    createdLabel: formatDate(booking.createdAt),
+    updatedLabel: formatDate(booking.updatedAt),
+  });
   const bookingRecordHandoffRows = [
     { label: 'Preferred', value: providerName(booking.preferredProvider) },
     { label: 'Final', value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not selected' },
@@ -1098,33 +1096,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     { label: 'Location freshness', value: providerLocationMetricHelper(booking) },
   ];
-  const bookingRecordPaymentRows = [
-    { label: 'Payment id', value: booking.payment?.id ?? 'No payment' },
-    { label: 'Method', value: paymentEvidence.paymentMethod },
-    { label: 'Amount', value: paymentEvidence.paymentAmountLabel },
-    {
-      label: 'Refund count',
-      value: `${paymentEvidence.refundCount}`,
-    },
-    {
-      label: 'Earning',
-      value: booking.earning
-        ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
-        : 'Not created',
-    },
-    ...(bookingCashDebtNeedsSettlement(booking)
-      ? [
-          {
-            label: 'Cash fee debt',
-            value: `${money(
-              Math.abs(booking.earning?.netAmount ?? 0),
-              booking.earning?.currency,
-            )} / partner blocked`,
-          },
-        ]
-      : []),
-    { label: 'Service feedback', value: booking.review ? 'Submitted' : 'Not submitted' },
-  ];
+  const bookingRecordPaymentRows = buildBookingRecordPaymentRows({
+    paymentIdLabel: booking.payment?.id ?? 'No payment',
+    paymentMethodLabel: paymentEvidence.paymentMethod,
+    paymentAmountLabel: paymentEvidence.paymentAmountLabel,
+    refundCount: paymentEvidence.refundCount,
+    earningLabel: booking.earning
+      ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
+      : 'Not created',
+    cashFeeDebtLabel: bookingCashDebtNeedsSettlement(booking)
+      ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`
+      : null,
+    serviceFeedbackLabel: booking.review ? 'Submitted' : 'Not submitted',
+  });
   const bookingRecordFinanceRows = buildBookingRecordFinanceRows(financeTrace);
 
   return (
