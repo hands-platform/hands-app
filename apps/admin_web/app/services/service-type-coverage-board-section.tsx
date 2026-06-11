@@ -26,7 +26,7 @@ export function ServiceTypeCoverageBoardSection({
   visibleRows,
 }: ServiceTypeCoverageBoardSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+    <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
       <div className="ops-section-header">
         <div>
           <h2>Service type coverage board</h2>
