@@ -1554,13 +1554,7 @@ export class BookingsService {
   }
 
   async complete(bookingId: string, providerUserId: string) {
-    const provider = await this.requireProvider(providerUserId);
-    const bookingBeforeComplete = await this.requireSelectedProvider(bookingId, provider.id);
-    this.assertProviderLifecycleTransition(
-      bookingBeforeComplete.status,
-      providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE],
-    );
-
+    const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: bookingCompletedUpdateData(),
@@ -1575,6 +1569,16 @@ export class BookingsService {
       matchingPayload: result,
     });
     return result;
+  }
+
+  private async requireProviderCanCompleteBooking(bookingId: string, providerUserId: string) {
+    const provider = await this.requireProvider(providerUserId);
+    const bookingBeforeComplete = await this.requireSelectedProvider(bookingId, provider.id);
+    this.assertProviderLifecycleTransition(
+      bookingBeforeComplete.status,
+      providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE],
+    );
+    return provider;
   }
 
   private async announceServiceCompleted(input: {
