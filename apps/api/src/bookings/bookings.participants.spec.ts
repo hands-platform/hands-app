@@ -1,7 +1,9 @@
-import { ParticipantStatus } from '@prisma/client';
+import { ParticipantStatus, ProviderStatus } from '@prisma/client';
 import {
+  bookingFirstPickRejectedUpdateData,
   bookingMatchedUpdateData,
   bookingParticipantCompoundKey,
+  bookingParticipantJoinUpsert,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
   bookingSelectedParticipantUpdate,
@@ -33,6 +35,40 @@ describe('booking participant helpers', () => {
           respondedAt,
         },
       },
+    });
+  });
+
+  it('builds participant join upsert data with provider status evidence', () => {
+    const respondedAt = new Date('2026-06-11T00:30:00.000Z');
+
+    expect(
+      bookingParticipantJoinUpsert({
+        bookingId: 'booking-1',
+        providerProfileId: 'partner-1',
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+        distanceMeters: 1200,
+        respondedAt,
+      }),
+    ).toEqual({
+      where: {
+        bookingId_providerProfileId: {
+          bookingId: 'booking-1',
+          providerProfileId: 'partner-1',
+        },
+      },
+      update: {
+        status: ParticipantStatus.JOINED,
+        respondedAt,
+        distanceMeters: 1200,
+      },
+      create: {
+        bookingId: 'booking-1',
+        providerProfileId: 'partner-1',
+        status: ParticipantStatus.JOINED,
+        distanceMeters: 1200,
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+      },
+      include: { providerProfile: true },
     });
   });
 
@@ -68,6 +104,35 @@ describe('booking participant helpers', () => {
         },
       },
       chatRoom: { upsert: { create: {}, update: {} } },
+    });
+  });
+
+  it('builds first-pick rejection update data that reopens matching', () => {
+    const respondedAt = new Date('2026-06-11T02:00:00.000Z');
+
+    expect(
+      bookingFirstPickRejectedUpdateData({
+        bookingId: 'booking-1',
+        providerProfileId: 'partner-1',
+        respondedAt,
+      }),
+    ).toEqual({
+      status: 'OPEN_MATCHING',
+      selectedProviderId: null,
+      participants: {
+        update: {
+          where: {
+            bookingId_providerProfileId: {
+              bookingId: 'booking-1',
+              providerProfileId: 'partner-1',
+            },
+          },
+          data: {
+            status: ParticipantStatus.REJECTED,
+            respondedAt,
+          },
+        },
+      },
     });
   });
 

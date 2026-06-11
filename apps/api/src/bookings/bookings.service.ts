@@ -110,8 +110,10 @@ import {
   toJson,
 } from './bookings.payload';
 import {
+  bookingFirstPickRejectedUpdateData,
   bookingMatchedUpdateData,
   bookingParticipantCompoundKey,
+  bookingParticipantJoinUpsert,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
 } from './bookings.participants';
@@ -711,16 +713,12 @@ export class BookingsService {
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
     const participant = await this.prisma.bookingParticipant.upsert({
-      where: bookingParticipantCompoundKey(bookingId, provider.id),
-      update: { status: ParticipantStatus.JOINED, respondedAt: new Date(), distanceMeters },
-      create: {
+      ...bookingParticipantJoinUpsert({
         bookingId,
         providerProfileId: provider.id,
-        status: ParticipantStatus.JOINED,
         distanceMeters,
         providerStatusAtJoin: provider.status,
-      },
-      include: { providerProfile: true },
+      }),
     });
 
     await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
@@ -893,16 +891,10 @@ export class BookingsService {
     if (responseRoute === 'first-pick-rejected') {
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
-        data: {
-          status: BookingStatus.OPEN_MATCHING,
-          selectedProviderId: null,
-          participants: {
-            update: {
-              where: participantKey,
-              data: { status, respondedAt: new Date() },
-            },
-          },
-        },
+        data: bookingFirstPickRejectedUpdateData({
+          bookingId,
+          providerProfileId: provider.id,
+        }),
         include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
       });
       await this.matching.closeBooking(bookingId);
