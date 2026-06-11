@@ -175,9 +175,11 @@ import {
 import {
   PartnerDetailAgreementsCard,
   PartnerDetailBasicProfileCard,
+  PartnerDetailLocationActivityCard,
   PartnerDetailRecentPayoutRecordsCard,
   type PartnerAgreementBadge,
   type PartnerDetailInfoLine,
+  type PartnerLocationSnapshotBadge,
   type PartnerRecentPayoutRecordLine,
 } from './partner-detail-profile-finance-summary-section';
 import {
@@ -447,6 +449,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerBasicProfileRows = buildPartnerBasicProfileRows(provider);
   const partnerAgreementBadges = buildPartnerAgreementBadges(provider);
   const partnerRecentPayoutRecordLines = buildPartnerRecentPayoutRecordLines(provider);
+  const partnerLocationSnapshotBadges = buildPartnerLocationSnapshotBadges(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
@@ -1258,28 +1261,17 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           )}
         </div>
 
-        <div className="card" id="location">
-          <h2>Location and activity</h2>
-          <InfoLine
-            label="Last location"
-            value={provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null}
-          />
-          <InfoLine
-            label="Coordinates"
-            value={
-              provider.currentLat && provider.currentLng
-                ? `${Number(provider.currentLat).toFixed(5)}, ${Number(provider.currentLng).toFixed(5)}`
-                : null
-            }
-          />
-          <div className="participant-list">
-            {(provider.locationSnapshots ?? []).slice(0, 5).map((snapshot) => (
-              <span className="pill pill-neutral" key={snapshot.id}>
-                {formatDate(snapshot.recordedAt)}
-              </span>
-            ))}
-          </div>
-        </div>
+        <PartnerDetailLocationActivityCard
+          coordinatesLabel={
+            provider.currentLat && provider.currentLng
+              ? `${Number(provider.currentLat).toFixed(5)}, ${Number(provider.currentLng).toFixed(5)}`
+              : null
+          }
+          lastLocationLabel={
+            provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
+          }
+          snapshots={partnerLocationSnapshotBadges}
+        />
 
         <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
 
@@ -5167,6 +5159,13 @@ function buildPartnerRecentPayoutRecordLines(provider: ProviderDetail): PartnerR
     )} / net ${formatCurrency(earning.netAmount)}${
       earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''
     }`,
+  }));
+}
+
+function buildPartnerLocationSnapshotBadges(provider: ProviderDetail): PartnerLocationSnapshotBadge[] {
+  return (provider.locationSnapshots ?? []).slice(0, 5).map((snapshot) => ({
+    id: snapshot.id,
+    label: formatDate(snapshot.recordedAt),
   }));
 }
 

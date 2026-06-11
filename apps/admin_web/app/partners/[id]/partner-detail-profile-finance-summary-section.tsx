@@ -15,6 +15,11 @@ export type PartnerRecentPayoutRecordLine = {
   readonly label: string;
 };
 
+export type PartnerLocationSnapshotBadge = {
+  readonly id: string;
+  readonly label: string;
+};
+
 type PartnerDetailBasicProfileCardProps = {
   readonly note: string;
   readonly rows: readonly PartnerDetailInfoLine[];
@@ -28,6 +33,12 @@ type PartnerDetailRecentPayoutRecordsCardProps = {
   readonly earningCount: number;
   readonly earnings: readonly PartnerRecentPayoutRecordLine[];
   readonly payoutBatchCount: number;
+};
+
+type PartnerDetailLocationActivityCardProps = {
+  readonly coordinatesLabel?: string | null;
+  readonly lastLocationLabel?: string | null;
+  readonly snapshots: readonly PartnerLocationSnapshotBadge[];
 };
 
 export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasicProfileCardProps) {
@@ -76,6 +87,27 @@ export function PartnerDetailRecentPayoutRecordsCard({
           {earning.label}
         </p>
       ))}
+    </div>
+  );
+}
+
+export function PartnerDetailLocationActivityCard({
+  coordinatesLabel,
+  lastLocationLabel,
+  snapshots,
+}: PartnerDetailLocationActivityCardProps) {
+  return (
+    <div className="card" id="location">
+      <h2>Location and activity</h2>
+      <InfoLine label="Last location" value={lastLocationLabel} />
+      <InfoLine label="Coordinates" value={coordinatesLabel} />
+      <div className="participant-list">
+        {snapshots.map((snapshot) => (
+          <span className="pill pill-neutral" key={snapshot.id}>
+            {snapshot.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
