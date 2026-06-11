@@ -522,7 +522,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" id="matching-stage-impact" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="matching-stage-impact">
         <div className="ops-section-header">
           <div>
             <h2>Matching stage impact preview</h2>
@@ -534,7 +534,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{matchingStageImpactPreview.currentPolicyLabel}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {matchingStageImpactPreview.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -577,7 +577,7 @@ export default async function OperationsPolicyPage({
             </tbody>
           </table>
         </AdminTableScroll>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
+        <div className="ops-task-note admin-mt-14">
           <strong>How to use this preview</strong>
           <p className="muted">
             If a tested value increases Stage 2 marketplace count without increasing stale/no-supply checks,
@@ -587,7 +587,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy outcome effect</h2>
@@ -600,7 +600,7 @@ export default async function OperationsPolicyPage({
             {policyEffectAnalysis.sampleCount} booking(s) with saved policy
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {policyEffectAnalysis.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -639,7 +639,7 @@ export default async function OperationsPolicyPage({
                   </td>
                   <td>
                     <span className={`pill ${row.outcomePill}`}>{row.outcomeLabel}</span>
-                    <p className="muted" style={{ marginTop: 6 }}>
+                    <p className="muted admin-mt-6">
                       {row.outcomeDetail}
                     </p>
                   </td>
@@ -659,7 +659,7 @@ export default async function OperationsPolicyPage({
             </tbody>
           </table>
         </AdminTableScroll>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policyEffectAnalysis.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.title}>
               <span className={`pill ${card.pillClass}`}>{card.scope}</span>
@@ -671,7 +671,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy enforcement trace</h2>
@@ -682,7 +682,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{policyEnforcementTrace.length} enforced lane(s)</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policyEnforcementTrace.map((item) => (
             <div className="ops-task-card ops-task-done" key={item.title}>
               <span className="pill pill-success">{item.scope}</span>
@@ -696,7 +696,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Live matching policy</h2>
@@ -727,7 +727,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Live policy simulator</h2>
@@ -740,7 +740,7 @@ export default async function OperationsPolicyPage({
             {policySimulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {policySimulation.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -749,10 +749,10 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="detail-grid" style={{ marginTop: 14 }}>
+        <div className="detail-grid admin-mt-14">
           <div className="ops-task-note">
             <h3>Simulated booking path</h3>
-            <div className="timeline" style={{ marginTop: 12 }}>
+            <div className="timeline admin-mt-12">
               {policySimulation.timeline.map((step) => (
                 <div className={`timeline-step ${step.className}`} key={step.title}>
                   <span>{step.step}</span>
@@ -780,7 +780,7 @@ export default async function OperationsPolicyPage({
               </div>
               <span className="pill pill-info">{policySimulation.partnerRows.length} shown</span>
             </div>
-            <div className="stack" style={{ marginTop: 10 }}>
+            <div className="stack admin-mt-10">
               {policySimulation.partnerRows.map((partner) => (
                 <div className="ops-row" key={partner.id}>
                   <div>
@@ -803,7 +803,7 @@ export default async function OperationsPolicyPage({
             </div>
           </div>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policySimulation.checks.map((check) => (
             <div className={`ops-task-card ${check.className}`} key={check.title}>
               <span className={`pill ${check.pillClass}`}>{check.status}</span>
@@ -815,7 +815,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy change impact</h2>
@@ -826,12 +826,12 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{bookings.length} booking(s) sampled</span>
         </div>
-        <div className="grid" style={{ marginTop: 12 }}>
+        <div className="grid admin-mt-12">
           {impactDashboard.metrics.map((metric) => (
             <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {impactDashboard.snapshotSummary.map((item) => (
             <div className="ops-task-card ops-task-done" key={item.label} style={{ minHeight: 0 }}>
               <span className="pill pill-info">{item.scope}</span>
@@ -868,7 +868,7 @@ export default async function OperationsPolicyPage({
             </tbody>
           </table>
         </AdminTableScroll>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {impactDashboard.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.title}>
               <span className={`pill ${card.pillClass}`}>{card.scope}</span>
@@ -880,7 +880,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy impact drill-down</h2>
@@ -891,14 +891,14 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{policyDrilldown.totalCount} item(s) to review</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {policyDrilldown.lists.map((list) => (
             <PolicyDrilldownList key={list.key} list={list} />
           ))}
         </div>
       </section>
 
-      <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
+      <section className="card admin-card-scroll admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Recent policy audit trail</h2>
@@ -947,7 +947,7 @@ export default async function OperationsPolicyPage({
                     <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>
                       {row.enforced ? 'Live behavior' : 'Decision log'}
                     </span>
-                    <p className="muted" style={{ marginTop: 6 }}>
+                    <p className="muted admin-mt-6">
                       {row.effect}
                     </p>
                   </td>
@@ -960,7 +960,7 @@ export default async function OperationsPolicyPage({
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking matching playbook</h2>
@@ -971,7 +971,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">Policy driven</span>
         </div>
-        <div className="timeline" style={{ marginTop: 12 }}>
+        <div className="timeline admin-mt-12">
           {matchingPlaybook.map((step) => (
             <div className={`timeline-step ${step.className}`} key={step.title}>
               <span>{step.step}</span>
@@ -989,7 +989,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Operator decisions</h2>
@@ -1049,7 +1049,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Owner decision backlog</h2>
@@ -1060,7 +1060,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">Review weekly</span>
         </div>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
+        <div className="ops-task-note admin-mt-14">
           <div className="ops-section-header">
             <div>
               <h3>Current decision pressure</h3>
@@ -1073,7 +1073,7 @@ export default async function OperationsPolicyPage({
               {ownerDecisionPressure.alertCount} active record(s)
             </span>
           </div>
-          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div className="service-trace-summary admin-mt-12">
             {ownerDecisionPressure.summary.map((item) => (
               <div key={item.label}>
                 <span>{item.label}</span>
@@ -1082,7 +1082,7 @@ export default async function OperationsPolicyPage({
               </div>
             ))}
           </div>
-          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-grid admin-mt-14">
             {ownerDecisionPressure.cards.map((item) => (
               <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
                 <span className={`pill ${item.pillClass}`}>{item.status}</span>
@@ -1093,14 +1093,14 @@ export default async function OperationsPolicyPage({
             ))}
           </div>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {ownerDecisionBacklog.map((item) => (
             <div className={`ops-task-card ${item.className}`} key={item.title}>
               <span className={`pill ${item.pillClass}`}>{item.owner}</span>
               <h3>{item.title}</h3>
               <p>{item.question}</p>
               <small>{item.evidence}</small>
-              <div className="booking-radar" style={{ marginTop: 12 }}>
+              <div className="booking-radar admin-mt-12">
                 {item.options.map((option) => (
                   <div className="insight-card" key={option.label}>
                     <strong>{displayOperationalWording(option.label)}</strong>
@@ -1108,7 +1108,7 @@ export default async function OperationsPolicyPage({
                   </div>
                 ))}
               </div>
-              <div className="ops-task-note" style={{ marginTop: 12 }}>
+              <div className="ops-task-note admin-mt-12">
                 <strong>Recommended direction</strong>
                 <p className="muted">{item.recommendation}</p>
                 <strong>Decision trigger</strong>
@@ -1173,7 +1173,7 @@ function PolicyForm({
           <strong>{relatedBookings.recordCount}</strong>
         </div>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 12 }}>
+      <div className="ops-task-note admin-mt-12">
         <div className="ops-row">
           <div>
             <strong>{impact.title}</strong>
@@ -1184,7 +1184,7 @@ function PolicyForm({
           </span>
         </div>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 12 }}>
+      <div className="ops-task-note admin-mt-12">
         <div className="ops-row">
           <div>
             <strong>{relatedBookings.title}</strong>
@@ -1194,7 +1194,7 @@ function PolicyForm({
             Open records
           </Link>
         </div>
-        <div className="booking-radar" style={{ marginTop: 12 }}>
+        <div className="booking-radar admin-mt-12">
           {relatedBookings.rows.map((row) => (
             <Link className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
               <strong>{row.title}</strong>
@@ -1216,13 +1216,13 @@ function PolicyForm({
           ) : null}
         </div>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 12 }}>
+      <div className="ops-task-note admin-mt-12">
         <strong>Before saving this policy</strong>
         <p className="muted">
           Review these operating surfaces first, then write the reason so the shift team can trace why the
           behavior changed.
         </p>
-        <div className="booking-radar" style={{ marginTop: 12 }}>
+        <div className="booking-radar admin-mt-12">
           {impact.saveChecks.map((check) => (
             <Link className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
               <strong>{check.label}</strong>
@@ -1243,7 +1243,7 @@ function PolicyForm({
               ))}
             </select>
           </label>
-          <div className="booking-radar" style={{ marginTop: 12 }}>
+          <div className="booking-radar admin-mt-12">
             {setting.options.map((option) => (
               <div key={option.value} className="insight-card">
                 <strong>{displayOperationalWording(option.label)}</strong>
@@ -1278,16 +1278,16 @@ function PolicyForm({
           placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
         />
       </label>
-      <button type="submit" style={{ marginTop: 12 }}>
+      <button className="admin-mt-12" type="submit">
         Save policy
       </button>
       {setting.updatedAt ? (
-        <p className="muted" style={{ marginTop: 10 }}>
+        <p className="muted admin-mt-10">
           Last changed {formatDate(setting.updatedAt)} by{' '}
           {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
         </p>
       ) : (
-        <p className="muted" style={{ marginTop: 10 }}>
+        <p className="muted admin-mt-10">
           Using default until an admin override is saved.
         </p>
       )}
