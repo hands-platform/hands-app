@@ -884,6 +884,10 @@ a.action-button-card:hover {
   display: inline;
 }
 
+.filter-bar-options {
+  margin-top: 12px;
+}
+
 .confirm-dialog-actions {
   align-items: flex-start;
   margin-top: 12px;

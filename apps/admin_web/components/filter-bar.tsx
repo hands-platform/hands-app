@@ -55,7 +55,7 @@ export function FilterBar({
           </Link>
         ) : null}
       </form>
-      <div className="participant-list" style={{ marginTop: 12 }}>
+      <div className="participant-list filter-bar-options">
         {resultLabel ? <span className="pill pill-info">{resultLabel}</span> : null}
         {options.map((option) => (
           <Link className={filterBarOptionClassName(option)} href={option.href} key={option.href}>

@@ -27,5 +27,6 @@ describe('FilterBar', () => {
       className: 'card filter-bar',
     });
     expect(filterBar.props.children).toHaveLength(2);
+    expect(filterBar.props.children[1].props.className).toBe('participant-list filter-bar-options');
   });
 });
