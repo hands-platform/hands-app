@@ -39,3 +39,23 @@ export function resolveCustomerPrice(
   }
   return customerPrice;
 }
+
+export function resolveBookingPriceSummary(input: {
+  customerPrice: number;
+  adminMinimumAmount: number;
+  coupon?: { id?: string | null; code?: string | null; discount: Prisma.JsonValue } | null;
+}) {
+  const discountAmount = input.coupon ? calculateCouponDiscount(input.coupon.discount, input.customerPrice) : 0;
+
+  return {
+    finalAmount: Math.max(0, input.customerPrice - discountAmount),
+    paymentMetadata: {
+      originalAmount: input.customerPrice,
+      adminMinimumAmount: input.adminMinimumAmount,
+      discountAmount,
+      couponCode: input.coupon?.code,
+      couponId: input.coupon?.id,
+    },
+    discountAmount,
+  };
+}

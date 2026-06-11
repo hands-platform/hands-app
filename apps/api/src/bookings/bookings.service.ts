@@ -119,7 +119,7 @@ import {
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
 } from './bookings.participants';
-import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
+import { resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: {
@@ -310,8 +310,11 @@ export class BookingsService {
     }
     const addressPayload = normalizeBookingAddress(input.address, addressText);
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
-    const discountAmount = coupon ? calculateCouponDiscount(coupon.discount, customerPrice) : 0;
-    const finalAmount = Math.max(0, customerPrice - discountAmount);
+    const priceSummary = resolveBookingPriceSummary({
+      customerPrice,
+      adminMinimumAmount: service.basePrice,
+      coupon,
+    });
     const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
     const customerToBookingDistanceMeters = customerCurrentLocation
       ? calculateDistanceMeters(
@@ -400,13 +403,12 @@ export class BookingsService {
           },
         },
         payment: {
-          create: this.payments.buildAuthorization(input.paymentMethod, finalAmount, 'pending-booking', {
-            originalAmount: customerPrice,
-            adminMinimumAmount: service.basePrice,
-            discountAmount,
-            couponCode: coupon?.code,
-            couponId: coupon?.id,
-          }),
+          create: this.payments.buildAuthorization(
+            input.paymentMethod,
+            priceSummary.finalAmount,
+            'pending-booking',
+            priceSummary.paymentMetadata,
+          ),
         },
         participants: preferredProvider
           ? {
@@ -459,7 +461,7 @@ export class BookingsService {
       bookingId: booking.id,
       preferredProvider,
       couponCode: coupon?.code,
-      discountAmount,
+      discountAmount: priceSummary.discountAmount,
     });
     if (preferredProvider?.userId) {
       await this.notifyPreferredProviderRequested(preferredProvider.userId, booking.id, customer.id);

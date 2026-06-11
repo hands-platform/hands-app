@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
+import { calculateCouponDiscount, resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
 
 describe('booking pricing helpers', () => {
   it('calculates percentage coupon discounts without exceeding the subtotal', () => {
@@ -30,5 +30,45 @@ describe('booking pricing helpers', () => {
     expect(() => resolveCustomerPrice({ basePrice: 300000, priceStep: 50000 }, 0)).toThrow(
       BadRequestException,
     );
+  });
+
+  it('builds booking payment totals and metadata from coupon pricing', () => {
+    expect(
+      resolveBookingPriceSummary({
+        customerPrice: 500000,
+        adminMinimumAmount: 300000,
+        coupon: { id: 'coupon-1', code: 'WELCOME10', discount: { type: 'percent', value: 10 } },
+      }),
+    ).toEqual({
+      finalAmount: 450000,
+      discountAmount: 50000,
+      paymentMetadata: {
+        originalAmount: 500000,
+        adminMinimumAmount: 300000,
+        discountAmount: 50000,
+        couponCode: 'WELCOME10',
+        couponId: 'coupon-1',
+      },
+    });
+  });
+
+  it('builds booking payment totals without coupon metadata when no coupon is used', () => {
+    expect(
+      resolveBookingPriceSummary({
+        customerPrice: 500000,
+        adminMinimumAmount: 300000,
+        coupon: null,
+      }),
+    ).toEqual({
+      finalAmount: 500000,
+      discountAmount: 0,
+      paymentMetadata: {
+        originalAmount: 500000,
+        adminMinimumAmount: 300000,
+        discountAmount: 0,
+        couponCode: undefined,
+        couponId: undefined,
+      },
+    });
   });
 });
