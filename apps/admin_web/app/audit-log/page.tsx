@@ -123,7 +123,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
   );
 }
 
-function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLogTableRow[] {
+export function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLogTableRow[] {
   return logs.map((log) => ({
     actionLabel: humanizeAction(log.action),
     actorLabel: log.actor?.fullName ?? log.actor?.phone ?? 'System',
@@ -688,7 +688,7 @@ function relatedBoardHref(log: AdminAuditLog) {
     return '/finance-closeout';
   }
   if (log.action.startsWith('notification.')) {
-    return '/notifications';
+    return targetId ? `/notifications#${targetId}` : '/notifications';
   }
   if (log.action.startsWith('operational_policy.')) {
     return '/operations-policy';
@@ -724,6 +724,9 @@ function relatedBoardLabel(log: AdminAuditLog) {
   }
   if (href.startsWith('/bookings/')) {
     return 'booking detail';
+  }
+  if (href.startsWith('/notifications')) {
+    return 'notification board';
   }
   return href.slice(1).replace('-', ' ');
 }

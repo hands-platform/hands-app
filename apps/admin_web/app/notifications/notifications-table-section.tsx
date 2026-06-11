@@ -51,7 +51,7 @@ export function NotificationsTableSection({ emptyMessage, rows }: NotificationsT
       rowCount={rows.length}
     >
       {rows.map((row) => (
-        <tr key={row.id}>
+        <tr id={row.id} key={row.id}>
           <td>
             <div>{row.createdAtLabel}</div>
             <div className="muted">{row.relativeCreatedAtLabel}</div>
