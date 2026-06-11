@@ -828,12 +828,10 @@ export class BookingsService {
         return matchedBooking;
       });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new BadRequestException(
-          'Booking is already matched or no longer open for customer final selection',
-        );
-      }
-      throw error;
+      this.throwStaleBookingMatchRequest(
+        error,
+        'Booking is already matched or no longer open for customer final selection',
+      );
     }
 
     await this.matching.closeBooking(bookingId);
@@ -909,12 +907,10 @@ export class BookingsService {
           return matchedBooking;
         });
       } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-          throw new BadRequestException(
-            'Booking is already matched or no longer open for first-pick acceptance',
-          );
-        }
-        throw error;
+        this.throwStaleBookingMatchRequest(
+          error,
+          'Booking is already matched or no longer open for first-pick acceptance',
+        );
       }
 
       await this.matching.closeBooking(bookingId);
@@ -1519,6 +1515,14 @@ export class BookingsService {
       throw new BadRequestException('Partner must be online before joining bookings');
     }
     return provider;
+  }
+
+  private throwStaleBookingMatchRequest(error: unknown, message: string): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      throw new BadRequestException(message);
+    }
+
+    throw error;
   }
 
   private async requireSelectedProvider(bookingId: string, providerId: string) {
