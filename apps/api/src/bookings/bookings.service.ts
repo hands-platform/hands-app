@@ -6,11 +6,7 @@ import {
   ParticipantStatus,
   PaymentMethod,
   Prisma,
-  ProviderBankAccountStatus,
-  ProviderDocumentStatus,
-  ProviderKycStatus,
   ProviderStatus,
-  VerificationStatus,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
@@ -79,6 +75,7 @@ import {
   type BackupNotificationTraceStage,
 } from './bookings.backup-notification-trace';
 import {
+  backupProviderCandidateWhere,
   backupProvidersWithinRadius,
   nearestBackupProviders,
 } from './bookings.backup-providers';
@@ -102,10 +99,7 @@ import {
   serviceStartedCustomerNotification,
   serviceStartedProviderNotification,
 } from './bookings.notifications';
-import {
-  assertProviderCanReceiveBooking,
-  REQUIRED_BOOKING_DOCUMENT_TYPES,
-} from './bookings.provider-readiness';
+import { assertProviderCanReceiveBooking } from './bookings.provider-readiness';
 import {
   openBookingWhereForProvider,
   providerBookingHistoryWhere,
@@ -1187,49 +1181,7 @@ export class BookingsService {
     const policy = input.policy ?? (await this.matching.getPolicy());
     const freshLocationAfter = new Date(Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000);
     const providers = await this.prisma.providerProfile.findMany({
-      where: {
-        id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
-        status: { in: [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_AVAILABLE_SOON] },
-        blockedAt: null,
-        currentLat: { not: null },
-        currentLng: { not: null },
-        currentLocationUpdatedAt: { gte: freshLocationAfter },
-        verification: { status: VerificationStatus.APPROVED },
-        kyc: { status: ProviderKycStatus.APPROVED },
-        bankAccounts: {
-          some: {
-            status: ProviderBankAccountStatus.APPROVED,
-            deletedAt: null,
-          },
-        },
-        AND: REQUIRED_BOOKING_DOCUMENT_TYPES.map((type) => ({
-          documents: {
-            some: {
-              type,
-              status: ProviderDocumentStatus.APPROVED,
-              deletedAt: null,
-            },
-          },
-        })),
-        participants: {
-          none: {
-            bookingId: input.bookingId,
-            status: ParticipantStatus.REJECTED,
-          },
-        },
-        OR: [
-          { services: { none: {} } },
-          {
-            services: {
-              some: {
-                serviceId: input.serviceId,
-                active: true,
-                service: { active: true },
-              },
-            },
-          },
-        ],
-      },
+      where: backupProviderCandidateWhere({ ...input, freshLocationAfter }),
       select: {
         id: true,
         userId: true,

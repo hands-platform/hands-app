@@ -1,10 +1,71 @@
+import {
+  ParticipantStatus,
+  Prisma,
+  ProviderBankAccountStatus,
+  ProviderDocumentStatus,
+  ProviderKycStatus,
+  ProviderStatus,
+  VerificationStatus,
+} from '@prisma/client';
 import { calculateDistanceMeters } from './bookings.policy';
+import { REQUIRED_BOOKING_DOCUMENT_TYPES } from './bookings.provider-readiness';
 
 export type BackupProviderDistanceCandidate = {
   id: string;
   currentLat: unknown;
   currentLng: unknown;
 };
+
+export function backupProviderCandidateWhere(input: {
+  bookingId: string;
+  serviceId: string;
+  preferredProviderId?: string;
+  freshLocationAfter: Date;
+}): Prisma.ProviderProfileWhereInput {
+  return {
+    ...(input.preferredProviderId ? { id: { not: input.preferredProviderId } } : {}),
+    status: { in: [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_AVAILABLE_SOON] },
+    blockedAt: null,
+    currentLat: { not: null },
+    currentLng: { not: null },
+    currentLocationUpdatedAt: { gte: input.freshLocationAfter },
+    verification: { status: VerificationStatus.APPROVED },
+    kyc: { status: ProviderKycStatus.APPROVED },
+    bankAccounts: {
+      some: {
+        status: ProviderBankAccountStatus.APPROVED,
+        deletedAt: null,
+      },
+    },
+    AND: REQUIRED_BOOKING_DOCUMENT_TYPES.map((type) => ({
+      documents: {
+        some: {
+          type,
+          status: ProviderDocumentStatus.APPROVED,
+          deletedAt: null,
+        },
+      },
+    })),
+    participants: {
+      none: {
+        bookingId: input.bookingId,
+        status: ParticipantStatus.REJECTED,
+      },
+    },
+    OR: [
+      { services: { none: {} } },
+      {
+        services: {
+          some: {
+            serviceId: input.serviceId,
+            active: true,
+            service: { active: true },
+          },
+        },
+      },
+    ],
+  };
+}
 
 export function backupProvidersWithinRadius<T extends BackupProviderDistanceCandidate>(
   providers: T[],
