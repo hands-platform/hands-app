@@ -133,6 +133,7 @@ import {
 import { buildPartnerOperationsDigest } from './partner-detail-operations-digest-model';
 import { buildPartnerOperatingLedger } from './partner-detail-operating-ledger-model';
 import { PartnerDetailOperatingLedgerSection } from './partner-detail-operating-ledger-section';
+import { PartnerDetailOperatingChecklistSection } from './partner-detail-operating-checklist-section';
 import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
 import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
@@ -895,33 +896,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
 
-      <div className="card admin-mb-16" id="partner-operating-checklist">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operating checklist</h2>
-            <p className="muted">
-              Factual work-control checklist for support and operations. It shows whether bookings, payout,
-              tax, location, and service setup need action.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerOperatingChecklist.length} check(s)</span>
-        </div>
-        <div className="setup-stage-list admin-mt-16">
-          {partnerOperatingChecklist.map((item) => (
-            <div className="setup-stage-item" key={item.area}>
-              <span>{item.area}</span>
-              <div>
-                <strong>{item.status}</strong>
-                <p className="muted">{item.detail}</p>
-                <span className={`pill ${pillClass(item.tone)}`}>{item.nextAction}</span>
-              </div>
-              <Link className="text-link" href={item.href}>
-                Open
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailOperatingChecklistSection
+        pillClassForTone={pillClass}
+        rows={partnerOperatingChecklist}
+      />
 
       <div className="card admin-mb-16" id="record-date-filter">
         <div className="ops-section-header">
