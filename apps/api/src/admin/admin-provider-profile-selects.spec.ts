@@ -1,11 +1,16 @@
 import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+  adminBookingDetailProviderSelect,
+  adminLocationSnapshotSummarySelect,
+  adminProviderDetailSelect,
   adminProviderListBookingSelect,
   adminProviderListEarningSelect,
   adminProviderListParticipantSelect,
   adminProviderListSelect,
   adminProviderListUserSelect,
+  adminProviderOverviewSelect,
+  adminProviderPayoutBatchSummarySelect,
 } from './admin-provider-profile-selects';
 
 describe('admin provider profile selects', () => {
@@ -38,6 +43,44 @@ describe('admin provider profile selects', () => {
       selectedBookings: { take: 50 },
       participants: { take: 50 },
       earnings: { take: 30 },
+    });
+  });
+
+  it('keeps provider overview collections bounded for dashboard use', () => {
+    expect(adminProviderOverviewSelect).toMatchObject({
+      documents: { take: 12 },
+      preferredBookings: { take: 5 },
+      selectedBookings: { take: 5 },
+      participants: { take: 5 },
+      earnings: { take: 5 },
+      payoutBatches: { take: 3 },
+    });
+  });
+
+  it('keeps provider detail collections deeper but still bounded', () => {
+    expect(adminProviderDetailSelect).toMatchObject({
+      documents: { take: 50 },
+      reports: { take: 20 },
+      sanctions: { take: 20 },
+      preferredBookings: { take: 10 },
+      selectedBookings: { take: 10 },
+      participants: { take: 10 },
+      locationSnapshots: { take: 10 },
+      earnings: { take: 10 },
+      payoutBatches: { take: 10 },
+      verificationLogs: { take: 20 },
+    });
+  });
+
+  it('keeps provider booking and payout summaries location/payment aware', () => {
+    expect(adminBookingDetailProviderSelect.locationSnapshots).toMatchObject({
+      take: 1,
+      select: adminLocationSnapshotSummarySelect,
+    });
+    expect(adminProviderPayoutBatchSummarySelect).toMatchObject({
+      totalNetAmount: true,
+      transferRef: true,
+      paidAt: true,
     });
   });
 });

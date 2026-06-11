@@ -41,9 +41,7 @@ import {
   adminBookingListSelect,
   adminBookingOpsTaskSummarySelect,
   adminChatMessageSummarySelect,
-  adminChatRoomPresenceSelect,
   adminCustomerBookingListSelect,
-  adminCustomerDetailBookingSelect,
 } from './admin-booking-selects';
 import {
   adminEarningDetailSelect,
@@ -71,7 +69,6 @@ import {
 } from './admin-service-input';
 import {
   adminBookingServiceSummarySelect,
-  adminProviderServiceSummarySelect,
   adminServiceCatalogSelect,
   adminServiceMutationSelect,
   adminServicePayoutRuleMutationSelect,
@@ -79,31 +76,18 @@ import {
 } from './admin-service-selects';
 import { normalizeAuditReason, normalizeNullable, slugify } from './admin-text-helpers';
 import {
-  adminProviderAgreementSummarySelect,
-  adminProviderBankAccountSummarySelect,
-  adminProviderDetailUserSelect,
-  adminProviderDeviceSummarySelect,
-  adminProviderDocumentSummarySelect,
-  adminProviderKycSummarySelect,
-  adminProviderOverviewUserSelect,
-  adminProviderPublicMediaSelect,
-  adminProviderReportDetailSelect,
   adminProviderReportListSelect,
-  adminProviderReportSummarySelect,
-  adminProviderSanctionDetailSelect,
   adminProviderSanctionListSelect,
-  adminProviderSanctionSummarySelect,
-  adminProviderSessionSummarySelect,
   adminProviderSummarySelect,
-  adminProviderTaxProfileSummarySelect,
-  adminProviderVerificationDetailSelect,
-  adminProviderVerificationFileSelect,
-  adminProviderVerificationSummarySelect,
 } from './admin-provider-selects';
 import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+  adminBookingDetailProviderSelect,
+  adminLocationSnapshotSummarySelect,
+  adminProviderDetailSelect,
   adminProviderListSelect,
+  adminProviderOverviewSelect,
 } from './admin-provider-profile-selects';
 import {
   adminAppSessionListSelect,
@@ -125,11 +109,6 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
-const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
-const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
-const ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT = 5;
-const ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT = 8;
-
 const adminAuditLogSelect = {
   id: true,
   action: true,
@@ -151,212 +130,6 @@ type AdminAuditLogSummaryRow = {
   actorPhone: string;
   actorFullName: string | null;
 };
-
-const adminProviderDetailBookingSelect = {
-  ...adminCustomerDetailBookingSelect,
-} satisfies Prisma.BookingSelect;
-
-const adminProviderOverviewBookingSelect = {
-  id: true,
-  customerProfileId: true,
-  preferredProviderId: true,
-  selectedProviderId: true,
-  status: true,
-  scheduledStartAt: true,
-  scheduledEndAt: true,
-  expiresAt: true,
-  matchedAt: true,
-  matchSource: true,
-  closedAt: true,
-  closedByRole: true,
-  closedReason: true,
-  closedNote: true,
-  createdAt: true,
-  updatedAt: true,
-  metadata: true,
-  address: true,
-  lat: true,
-  lng: true,
-  customerProfile: {
-    select: {
-      id: true,
-      user: { select: adminUserSummarySelect },
-    },
-  },
-  services: { select: adminBookingServiceSummarySelect },
-  addressSnapshot: { select: adminAddressSnapshotSelect },
-  chatRoom: {
-    select: {
-      id: true,
-      createdAt: true,
-      messages: {
-        orderBy: { createdAt: 'desc' },
-        take: ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT,
-        select: adminChatMessageSummarySelect,
-      },
-    },
-  },
-} satisfies Prisma.BookingSelect;
-
-const adminProviderDetailEarningSelect = {
-  ...adminEarningSummarySelect,
-  booking: {
-    select: {
-      id: true,
-      status: true,
-      scheduledStartAt: true,
-      payment: {
-        select: {
-          id: true,
-          method: true,
-          status: true,
-          amount: true,
-          currency: true,
-        },
-      },
-      services: { select: adminBookingServiceSummarySelect },
-    },
-  },
-} satisfies Prisma.ProviderEarningSelect;
-
-const adminProviderPayoutBatchSummarySelect = {
-  id: true,
-  providerProfileId: true,
-  totalNetAmount: true,
-  currency: true,
-  status: true,
-  transferRef: true,
-  notes: true,
-  createdAt: true,
-  paidAt: true,
-} satisfies Prisma.ProviderPayoutBatchSelect;
-
-const adminLocationSnapshotSummarySelect = {
-  id: true,
-  bookingId: true,
-  providerProfileId: true,
-  lat: true,
-  lng: true,
-  recordedAt: true,
-} satisfies Prisma.LocationSnapshotSelect;
-
-const adminProviderVerificationLogSummarySelect = {
-  id: true,
-  providerProfileId: true,
-  actorId: true,
-  action: true,
-  fromStatus: true,
-  toStatus: true,
-  metadata: true,
-  createdAt: true,
-  actor: { select: { phone: true, fullName: true } },
-} satisfies Prisma.ProviderVerificationLogSelect;
-
-const adminProviderOverviewSelect = {
-  id: true,
-  userId: true,
-  displayName: true,
-  legalName: true,
-  dateOfBirth: true,
-  gender: true,
-  facebookId: true,
-  activityNickname: true,
-  bio: true,
-  experienceYears: true,
-  specialties: true,
-  languages: true,
-  serviceStyle: true,
-  residentialAddress: true,
-  city: true,
-  serviceArea: true,
-  level: true,
-  status: true,
-  ratingAvg: true,
-  reviewCount: true,
-  currentLat: true,
-  currentLng: true,
-  currentLocationUpdatedAt: true,
-  nextAvailableAt: true,
-  blockedAt: true,
-  blockedReason: true,
-  trustedAt: true,
-  updatedAt: true,
-  user: { select: adminProviderOverviewUserSelect },
-  verification: { select: adminProviderVerificationSummarySelect },
-  kyc: { select: adminProviderKycSummarySelect },
-  documents: {
-    orderBy: { createdAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT,
-    select: adminProviderDocumentSummarySelect,
-  },
-  bankAccounts: {
-    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: adminProviderBankAccountSummarySelect,
-  },
-  taxProfile: { select: adminProviderTaxProfileSummarySelect },
-  agreements: {
-    orderBy: { acceptedAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: adminProviderAgreementSummarySelect,
-  },
-  services: {
-    select: adminProviderServiceSummarySelect,
-  },
-  preferredBookings: {
-    orderBy: { createdAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: adminProviderOverviewBookingSelect,
-  },
-  selectedBookings: {
-    orderBy: { createdAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: adminProviderOverviewBookingSelect,
-  },
-  participants: {
-    orderBy: { joinedAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: {
-      id: true,
-      providerProfileId: true,
-      status: true,
-      distanceMeters: true,
-      providerStatusAtJoin: true,
-      joinedAt: true,
-      respondedAt: true,
-      booking: { select: adminProviderOverviewBookingSelect },
-    },
-  },
-  earnings: {
-    orderBy: { createdAt: 'desc' },
-    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
-    select: adminProviderDetailEarningSelect,
-  },
-  payoutBatches: {
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminProviderPayoutBatchSummarySelect,
-  },
-  sessions: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 3,
-    select: adminProviderSessionSummarySelect,
-  },
-  devices: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 3,
-    select: adminProviderDeviceSummarySelect,
-  },
-} satisfies Prisma.ProviderProfileSelect;
-
-const adminBookingDetailProviderSelect = {
-  ...adminProviderSummarySelect,
-  locationSnapshots: {
-    orderBy: { recordedAt: 'desc' },
-    take: 1,
-    select: adminLocationSnapshotSummarySelect,
-  },
-} satisfies Prisma.ProviderProfileSelect;
 
 const adminBookingDetailSelect = {
   id: true,
@@ -449,121 +222,6 @@ const adminPaymentDetailSelect = {
     select: adminRefundSummarySelect,
   },
 } satisfies Prisma.PaymentSelect;
-
-const adminProviderDetailSelect = {
-  id: true,
-  userId: true,
-  displayName: true,
-  legalName: true,
-  dateOfBirth: true,
-  gender: true,
-  facebookId: true,
-  activityNickname: true,
-  bio: true,
-  experienceYears: true,
-  specialties: true,
-  languages: true,
-  serviceStyle: true,
-  residentialAddress: true,
-  city: true,
-  serviceArea: true,
-  level: true,
-  status: true,
-  ratingAvg: true,
-  reviewCount: true,
-  currentLat: true,
-  currentLng: true,
-  currentLocationUpdatedAt: true,
-  nextAvailableAt: true,
-  blockedAt: true,
-  blockedReason: true,
-  trustedAt: true,
-  updatedAt: true,
-  user: { select: adminProviderDetailUserSelect },
-  verification: { select: adminProviderVerificationDetailSelect },
-  kyc: { select: adminProviderKycSummarySelect },
-  documents: {
-    orderBy: { createdAt: 'desc' },
-    take: ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT,
-    select: adminProviderDocumentSummarySelect,
-  },
-  bankAccounts: {
-    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-    select: adminProviderBankAccountSummarySelect,
-  },
-  taxProfile: { select: adminProviderTaxProfileSummarySelect },
-  reports: {
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-    select: adminProviderReportDetailSelect,
-  },
-  sanctions: {
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-    select: adminProviderSanctionDetailSelect,
-  },
-  agreements: {
-    orderBy: { acceptedAt: 'desc' },
-    select: adminProviderAgreementSummarySelect,
-  },
-  services: {
-    select: adminProviderServiceSummarySelect,
-  },
-  preferredBookings: {
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: adminProviderDetailBookingSelect,
-  },
-  selectedBookings: {
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: adminProviderDetailBookingSelect,
-  },
-  participants: {
-    orderBy: { joinedAt: 'desc' },
-    take: 10,
-    select: {
-      id: true,
-      providerProfileId: true,
-      status: true,
-      distanceMeters: true,
-      providerStatusAtJoin: true,
-      joinedAt: true,
-      respondedAt: true,
-      booking: { select: adminProviderDetailBookingSelect },
-    },
-  },
-  locationSnapshots: {
-    orderBy: { recordedAt: 'desc' },
-    take: 10,
-    select: adminLocationSnapshotSummarySelect,
-  },
-  earnings: {
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: adminProviderDetailEarningSelect,
-  },
-  payoutBatches: {
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: adminProviderPayoutBatchSummarySelect,
-  },
-  sessions: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 10,
-    select: adminProviderSessionSummarySelect,
-  },
-  devices: {
-    orderBy: { lastSeenAt: 'desc' },
-    take: 10,
-    select: adminProviderDeviceSummarySelect,
-  },
-  verificationLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-    select: adminProviderVerificationLogSummarySelect,
-  },
-} satisfies Prisma.ProviderProfileSelect;
 
 @Injectable()
 export class AdminService {
