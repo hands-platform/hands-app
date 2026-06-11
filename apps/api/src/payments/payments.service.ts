@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
@@ -37,6 +37,7 @@ import {
   paymentRefundAuditMetadata,
   paymentReleaseAuditMetadata,
 } from './payment-admin-audit';
+import { paymentCaptureUpdateData, paymentRefundUpdateData } from './payment-admin-data';
 import { paymentRefundEarningCancellationAudit } from './payment-refund-audit';
 import { paymentUpdatedNotification } from './payments.notifications';
 
@@ -197,7 +198,7 @@ export class PaymentsService {
   async capture(actorId: string, paymentId: string) {
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
-      data: { status: PaymentStatus.CAPTURED },
+      data: paymentCaptureUpdateData(),
     });
 
     await this.admin.writeAudit(
@@ -237,18 +238,7 @@ export class PaymentsService {
     const existing = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     const payment = await this.prisma.payment.update({
       where: { id: paymentId },
-      data: {
-        status: PaymentStatus.REFUNDED,
-        booking: { update: { status: BookingStatus.REFUNDED } },
-        refunds: {
-          create: {
-            bookingId: existing.bookingId,
-            amount: existing.amount,
-            reason: 'Admin manual refund',
-            status: 'REQUESTED',
-          },
-        },
-      },
+      data: paymentRefundUpdateData({ bookingId: existing.bookingId, amount: existing.amount }),
       include: { refunds: true },
     });
     const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
