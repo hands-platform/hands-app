@@ -13,6 +13,11 @@ import { PaymentAdapter } from './payment-adapter';
 const PAYMENT_STATUS_CHECK_DELAY_MS = 30_000;
 const PAYMENT_STATUS_CHECK_ATTEMPTS = 5;
 const PAYMENT_STATUS_CHECK_BACKOFF_MS = 10_000;
+const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
+  PaymentStatus.CAPTURED,
+  PaymentStatus.REFUNDED,
+  PaymentStatus.RELEASED,
+]);
 
 @Injectable()
 export class PaymentsService {
@@ -392,11 +397,7 @@ export class PaymentsService {
 }
 
 function isTerminalPaymentStatus(status: PaymentStatus) {
-  return (
-    status === PaymentStatus.CAPTURED ||
-    status === PaymentStatus.REFUNDED ||
-    status === PaymentStatus.RELEASED
-  );
+  return TERMINAL_PAYMENT_STATUSES.has(status);
 }
 
 function toJsonOrUndefined(value: unknown): Prisma.InputJsonValue | undefined {
