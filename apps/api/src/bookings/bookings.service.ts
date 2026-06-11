@@ -61,6 +61,7 @@ import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
 import {
   bookingCompletedUpdateData,
   bookingServiceStartedUpdateData,
+  openBookingRequestTiming,
 } from './bookings.lifecycle';
 import {
   providerPayoutSetupMissingRequirements,
@@ -263,9 +264,6 @@ export class BookingsService {
     const customerPrice = resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
-    // HANDS MVP is on-demand only. Keep the existing DB field as the immutable request timestamp.
-    const scheduledStartAt = new Date();
-    const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
     const selectedLocation = input.selectedLocationId
       ? await this.prisma.customerSelectedLocation.findFirst({
           where: { id: input.selectedLocationId, customerProfileId: customer.id },
@@ -309,7 +307,11 @@ export class BookingsService {
       throw new BadRequestException('Booking address text is required');
     }
     const addressPayload = normalizeBookingAddress(input.address, addressText);
-    const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
+    // HANDS MVP is on-demand only. Keep the DB schedule fields as the immutable request clock.
+    const timing = openBookingRequestTiming({
+      durationMin: service.durationMin,
+      providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
+    });
     const priceSummary = resolveBookingPriceSummary({
       customerPrice,
       adminMinimumAmount: service.basePrice,
@@ -371,8 +373,8 @@ export class BookingsService {
       data: {
         customerProfileId: customer.id,
         status: BookingStatus.OPEN_MATCHING,
-        scheduledStartAt,
-        scheduledEndAt,
+        scheduledStartAt: timing.scheduledStartAt,
+        scheduledEndAt: timing.scheduledEndAt,
         address: addressPayload,
         lat: bookingLat,
         lng: bookingLng,
@@ -390,8 +392,8 @@ export class BookingsService {
         travelBufferMin: matchingPolicy.travelBufferMinutes,
         earlyAcceptMin: matchingPolicy.providerResponseWindowMinutes,
         preferredProviderId: preferredProvider?.id,
-        openedAt: new Date(),
-        expiresAt,
+        openedAt: timing.openedAt,
+        expiresAt: timing.expiresAt,
         metadata: {
           matchingPolicy: bookingMatchingPolicySnapshot(matchingPolicy),
           bookingGate: bookingGateSnapshot,
@@ -455,7 +457,7 @@ export class BookingsService {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
     await this.matching.registerActiveBooking(booking.id, result);
-    await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? expiresAt);
+    await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? timing.expiresAt);
     await this.notifyCustomerBookingOpened({
       userId,
       bookingId: booking.id,
