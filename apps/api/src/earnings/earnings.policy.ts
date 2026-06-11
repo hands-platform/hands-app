@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
 
+const BPS_DENOMINATOR = 10_000;
+
 export type WalletDeltaInput = {
   paymentMethod?: PaymentMethod | string | null;
   grossAmount: number;
@@ -35,6 +37,11 @@ export type PayoutBatchUpdateStatusInput = {
   currentStatus: PayoutBatchStatus | string;
   requestedStatus?: PayoutBatchStatus | string | null;
   nextTransferRef?: string | null;
+};
+
+type SelectedServicePayoutRule = {
+  service: PricedServiceLine;
+  rule: ServicePayoutRuleLine;
 };
 
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
@@ -98,44 +105,16 @@ export function calculateServicePayoutFeeFromRules(input: {
     return null;
   }
 
-  const ruleByServiceAndPrice = new Map(
-    input.payoutRules.map((rule) => [`${rule.serviceId}:${rule.customerPrice}`, rule]),
-  );
-  const selectedRules = input.services.map((service) => ({
-    service,
-    rule: ruleByServiceAndPrice.get(`${service.serviceId}:${service.price}`),
-  }));
-  if (selectedRules.some((item) => !item.rule)) {
+  const selectedRules = selectPayoutRulesForServices(input.services, input.payoutRules);
+  if (!selectedRules) {
     return null;
   }
 
-  const ruleLines = selectedRules.map(({ service, rule }) => {
-    if (!rule) {
-      throw new BadRequestException('Missing service payout rule');
-    }
-    const customerAmount = service.price * service.quantity;
-    const providerPayoutAmount = rule.providerPayoutAmount * service.quantity;
-    const platformFeeAmount = Math.max(0, customerAmount - providerPayoutAmount);
-    const vatAmount = Math.round((platformFeeAmount * rule.vatBps) / 10_000);
-    const otherCostAmount = rule.otherCostAmount * service.quantity;
-    return {
-      serviceId: service.serviceId,
-      serviceName: service.serviceName,
-      quantity: service.quantity,
-      customerPrice: service.price,
-      customerAmount,
-      providerPayoutAmount,
-      platformFeeAmount,
-      vatBps: rule.vatBps,
-      vatAmount,
-      otherCostAmount,
-      ruleId: rule.id,
-    };
-  });
-  const providerPayoutAmount = ruleLines.reduce((sum, line) => sum + line.providerPayoutAmount, 0);
+  const ruleLines = selectedRules.map(buildPayoutRuleLine);
+  const providerPayoutAmount = sumBy(ruleLines, (line) => line.providerPayoutAmount);
   const platformFeeAmount = Math.max(0, input.grossAmount - providerPayoutAmount);
-  const vatAmount = ruleLines.reduce((sum, line) => sum + line.vatAmount, 0);
-  const otherCostAmount = ruleLines.reduce((sum, line) => sum + line.otherCostAmount, 0);
+  const vatAmount = sumBy(ruleLines, (line) => line.vatAmount);
+  const otherCostAmount = sumBy(ruleLines, (line) => line.otherCostAmount);
 
   return {
     platformFeeAmount,
@@ -151,6 +130,56 @@ export function calculateServicePayoutFeeFromRules(input: {
       lines: ruleLines,
     },
   };
+}
+
+function selectPayoutRulesForServices(
+  services: readonly PricedServiceLine[],
+  payoutRules: readonly ServicePayoutRuleLine[],
+): SelectedServicePayoutRule[] | null {
+  const ruleByServiceAndPrice = new Map(
+    payoutRules.map((rule) => [payoutRuleLookupKey(rule.serviceId, rule.customerPrice), rule]),
+  );
+  const selectedRules: SelectedServicePayoutRule[] = [];
+
+  for (const service of services) {
+    const rule = ruleByServiceAndPrice.get(payoutRuleLookupKey(service.serviceId, service.price));
+    if (!rule) {
+      return null;
+    }
+    selectedRules.push({ service, rule });
+  }
+
+  return selectedRules;
+}
+
+function buildPayoutRuleLine({ service, rule }: SelectedServicePayoutRule) {
+  const customerAmount = service.price * service.quantity;
+  const providerPayoutAmount = rule.providerPayoutAmount * service.quantity;
+  const platformFeeAmount = Math.max(0, customerAmount - providerPayoutAmount);
+  const vatAmount = Math.round((platformFeeAmount * rule.vatBps) / BPS_DENOMINATOR);
+  const otherCostAmount = rule.otherCostAmount * service.quantity;
+
+  return {
+    serviceId: service.serviceId,
+    serviceName: service.serviceName,
+    quantity: service.quantity,
+    customerPrice: service.price,
+    customerAmount,
+    providerPayoutAmount,
+    platformFeeAmount,
+    vatBps: rule.vatBps,
+    vatAmount,
+    otherCostAmount,
+    ruleId: rule.id,
+  };
+}
+
+function payoutRuleLookupKey(serviceId: string, customerPrice: number) {
+  return `${serviceId}:${customerPrice}`;
+}
+
+function sumBy<T>(items: readonly T[], select: (item: T) => number) {
+  return items.reduce((sum, item) => sum + select(item), 0);
 }
 
 function cleanOptionalText(value: string | null | undefined): string | null {
