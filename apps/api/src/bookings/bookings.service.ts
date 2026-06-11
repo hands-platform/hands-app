@@ -102,6 +102,10 @@ import {
   normalizeBookingAddress,
   toJson,
 } from './bookings.payload';
+import {
+  bookingParticipantCompoundKey,
+  bookingParticipantResponseUnavailableMessage,
+} from './bookings.participants';
 import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
@@ -692,18 +696,13 @@ export class BookingsService {
         participants: { select: { providerProfileId: true, status: true } },
       },
     });
-    if (booking.status !== BookingStatus.OPEN_MATCHING) {
-      throw new BadRequestException('Booking is not open for matching');
-    }
-    if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Booking request is expired');
-    }
+    this.assertBookingOpenForPartnerResponse(booking);
     assertProviderCanReceiveBooking(provider);
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
     const participant = await this.prisma.bookingParticipant.upsert({
-      where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
+      where: bookingParticipantCompoundKey(bookingId, provider.id),
       update: { status: ParticipantStatus.JOINED, respondedAt: new Date(), distanceMeters },
       create: {
         bookingId,
@@ -735,7 +734,7 @@ export class BookingsService {
     }
 
     const participant = await this.prisma.bookingParticipant.findUnique({
-      where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
+      where: bookingParticipantCompoundKey(bookingId, providerId),
     });
     if (
       !participant ||
@@ -824,16 +823,14 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
 
-    const participantKey = { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } };
+    const participantKey = bookingParticipantCompoundKey(bookingId, provider.id);
     const existingParticipant = await this.prisma.bookingParticipant.findUnique({
       where: participantKey,
       select: { id: true },
     });
     if (!existingParticipant) {
       throw new BadRequestException(
-        booking.preferredProviderId === provider.id
-          ? 'Preferred partner invitation is not available for this booking'
-          : 'Partner must participate in this marketplace booking before responding',
+        bookingParticipantResponseUnavailableMessage(booking.preferredProviderId, provider.id),
       );
     }
 
