@@ -248,37 +248,10 @@ export class BookingsService {
     assertBookingPaymentMethod(input.paymentMethod);
 
     const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: input.serviceId } });
-    const preferredProvider = input.providerId
-      ? await this.prisma.providerProfile.findUniqueOrThrow({
-          where: { id: input.providerId },
-          include: {
-            user: true,
-            verification: true,
-            kyc: true,
-            documents: { where: { deletedAt: null } },
-            bankAccounts: { where: { deletedAt: null } },
-          },
-        })
-      : null;
-    const providerService = preferredProvider
-      ? await this.prisma.providerService.findUnique({
-          where: {
-            providerProfileId_serviceId: {
-              providerProfileId: preferredProvider.id,
-              serviceId: service.id,
-            },
-          },
-        })
-      : null;
-    if (preferredProvider) {
-      assertProviderCanReceiveBooking(preferredProvider);
-      const configuredServiceCount = await this.prisma.providerService.count({
-        where: {
-          providerProfileId: preferredProvider.id,
-        },
-      });
-      assertProviderOffersRequestedService({ providerService, configuredServiceCount });
-    }
+    const { preferredProvider, providerService } = await this.resolvePreferredProviderForBooking({
+      providerId: input.providerId,
+      serviceId: service.id,
+    });
     const customerPrice = resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
@@ -492,6 +465,46 @@ export class BookingsService {
       throw new NotFoundException('Customer profile not found');
     }
     return { customer, customerUserId: userId };
+  }
+
+  private async resolvePreferredProviderForBooking(input: {
+    providerId?: string;
+    serviceId: string;
+  }) {
+    const preferredProvider = input.providerId
+      ? await this.prisma.providerProfile.findUniqueOrThrow({
+          where: { id: input.providerId },
+          include: {
+            user: true,
+            verification: true,
+            kyc: true,
+            documents: { where: { deletedAt: null } },
+            bankAccounts: { where: { deletedAt: null } },
+          },
+        })
+      : null;
+    const providerService = preferredProvider
+      ? await this.prisma.providerService.findUnique({
+          where: {
+            providerProfileId_serviceId: {
+              providerProfileId: preferredProvider.id,
+              serviceId: input.serviceId,
+            },
+          },
+        })
+      : null;
+
+    if (preferredProvider) {
+      assertProviderCanReceiveBooking(preferredProvider);
+      const configuredServiceCount = await this.prisma.providerService.count({
+        where: {
+          providerProfileId: preferredProvider.id,
+        },
+      });
+      assertProviderOffersRequestedService({ providerService, configuredServiceCount });
+    }
+
+    return { preferredProvider, providerService };
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
