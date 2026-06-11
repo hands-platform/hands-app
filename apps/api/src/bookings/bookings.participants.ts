@@ -1,7 +1,26 @@
+import { ParticipantStatus } from '@prisma/client';
+
 export function bookingParticipantCompoundKey(bookingId: string, providerProfileId: string) {
   return {
     bookingId_providerProfileId: { bookingId, providerProfileId },
   };
+}
+
+export function bookingParticipantResponseRoute(
+  preferredProviderId: string | null | undefined,
+  providerProfileId: string,
+  status: ParticipantStatus,
+) {
+  if (preferredProviderId !== providerProfileId) {
+    return 'marketplace';
+  }
+  if (status === ParticipantStatus.ACCEPTED) {
+    return 'first-pick-accepted';
+  }
+  if (status === ParticipantStatus.REJECTED) {
+    return 'first-pick-rejected';
+  }
+  return 'marketplace';
 }
 
 export function bookingParticipantResponseUnavailableMessage(

@@ -1,5 +1,7 @@
+import { ParticipantStatus } from '@prisma/client';
 import {
   bookingParticipantCompoundKey,
+  bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
 } from './bookings.participants';
 
@@ -22,6 +24,21 @@ describe('booking participant helpers', () => {
     );
     expect(bookingParticipantResponseUnavailableMessage(null, 'marketplace-partner')).toBe(
       'Partner must participate in this marketplace booking before responding',
+    );
+  });
+
+  it('routes first-pick accepted and rejected responses before marketplace handling', () => {
+    expect(bookingParticipantResponseRoute('partner-1', 'partner-1', ParticipantStatus.ACCEPTED)).toBe(
+      'first-pick-accepted',
+    );
+    expect(bookingParticipantResponseRoute('partner-1', 'partner-1', ParticipantStatus.REJECTED)).toBe(
+      'first-pick-rejected',
+    );
+    expect(bookingParticipantResponseRoute('first-pick', 'marketplace-partner', ParticipantStatus.ACCEPTED)).toBe(
+      'marketplace',
+    );
+    expect(bookingParticipantResponseRoute('partner-1', 'partner-1', ParticipantStatus.JOINED)).toBe(
+      'marketplace',
     );
   });
 });

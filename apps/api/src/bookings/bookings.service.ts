@@ -104,6 +104,7 @@ import {
 } from './bookings.payload';
 import {
   bookingParticipantCompoundKey,
+  bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
 } from './bookings.participants';
 import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
@@ -834,131 +835,130 @@ export class BookingsService {
       );
     }
 
-    if (booking.preferredProviderId === provider.id) {
-      if (status === ParticipantStatus.ACCEPTED) {
-        let updated: MatchedBookingForClientResponse;
-        try {
-          updated = await this.prisma.$transaction(async (transaction) => {
-            const matchedBooking = await transaction.booking.update({
-              where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-              data: {
-                status: BookingStatus.MATCHED,
-                selectedProviderId: provider.id,
-                matchedAt: new Date(),
-                matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
-                participants: {
-                  update: {
-                    where: participantKey,
-                    data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
-                  },
-                },
-                chatRoom: { upsert: { create: {}, update: {} } },
-              },
-              include: {
-                participants: true,
-                preferredProvider: true,
-                selectedProvider: true,
-                chatRoom: true,
-                addressSnapshot: true,
-                payment: true,
-              },
-            });
-            await transaction.adminAuditLog.create({
-              data: {
-                actorId: provider.userId,
-                action: 'booking.matched.first_pick_accepted',
-                target: `booking:${bookingId}`,
-                metadata: {
-                  bookingId,
-                  providerProfileId: provider.id,
-                  matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+    const responseRoute = bookingParticipantResponseRoute(booking.preferredProviderId, provider.id, status);
+    if (responseRoute === 'first-pick-accepted') {
+      let updated: MatchedBookingForClientResponse;
+      try {
+        updated = await this.prisma.$transaction(async (transaction) => {
+          const matchedBooking = await transaction.booking.update({
+            where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+            data: {
+              status: BookingStatus.MATCHED,
+              selectedProviderId: provider.id,
+              matchedAt: new Date(),
+              matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
+              participants: {
+                update: {
+                  where: participantKey,
+                  data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
                 },
               },
-            });
-            return matchedBooking;
+              chatRoom: { upsert: { create: {}, update: {} } },
+            },
+            include: {
+              participants: true,
+              preferredProvider: true,
+              selectedProvider: true,
+              chatRoom: true,
+              addressSnapshot: true,
+              payment: true,
+            },
           });
-        } catch (error) {
-          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new BadRequestException(
-              'Booking is already matched or no longer open for first-pick acceptance',
-            );
-          }
-          throw error;
-        }
-
-        await this.matching.closeBooking(bookingId);
-        const result = this.matching.selectFinalProvider(
-          bookingId,
-          clientBookingResponse(updated),
-          MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
-        );
-        await this.notifyFirstPickAcceptedMatched({
-          bookingId,
-          customerUserId: booking.customerProfile.userId,
-          provider,
-          selectedProviderUserId: updated.selectedProvider?.userId,
-          chatRoomId: updated.chatRoom?.id,
-        });
-        this.matchingGateway.emitBookingMatched(bookingId, result);
-        return result;
-      }
-
-      if (status === ParticipantStatus.REJECTED) {
-        const updated = await this.prisma.booking.update({
-          where: { id: bookingId },
-          data: {
-            status: BookingStatus.OPEN_MATCHING,
-            selectedProviderId: null,
-            participants: {
-              update: {
-                where: participantKey,
-                data: { status, respondedAt: new Date() },
+          await transaction.adminAuditLog.create({
+            data: {
+              actorId: provider.userId,
+              action: 'booking.matched.first_pick_accepted',
+              target: `booking:${bookingId}`,
+              metadata: {
+                bookingId,
+                providerProfileId: provider.id,
+                matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
               },
             },
-          },
-          include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+          });
+          return matchedBooking;
         });
-        await this.matching.closeBooking(bookingId);
-        await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
-        const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
-        const serviceId = booking.services[0]?.serviceId;
-        const dispatchPin = bookingDispatchCoordinates(updated);
-        const eligibleBackupProviders = serviceId
-          ? await this.findEligibleBackupProviders({
-              bookingId,
-              serviceId,
-              lat: dispatchPin.lat,
-              lng: dispatchPin.lng,
-              preferredProviderId: provider.id,
-              backupOpenMode: matchingPolicy.backupOpenMode,
-              forceOpen: true,
-              policy: matchingPolicy,
-            })
-          : [];
-        const result = this.matching.openBooking({
-          booking: updated,
-          policy: matchingPolicy,
-          payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
-            firstPickDeclined: true,
-          }),
-        });
-        await this.matching.registerActiveBooking(bookingId, result);
-        await this.matching.scheduleBookingTimeout(
-          bookingId,
-          updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
-        );
-        const backupNotificationTrace = await this.notifyBackupProviders({
-          stage: 'first_pick_declined',
-          bookingId,
-          providers: eligibleBackupProviders,
-          backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-          backupOpenMode: matchingPolicy.backupOpenMode,
-          backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-          matchingPayload: result,
-        });
-        await this.recordBackupNotificationTrace(bookingId, backupNotificationTrace);
-        return updated;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+          throw new BadRequestException(
+            'Booking is already matched or no longer open for first-pick acceptance',
+          );
+        }
+        throw error;
       }
+
+      await this.matching.closeBooking(bookingId);
+      const result = this.matching.selectFinalProvider(
+        bookingId,
+        clientBookingResponse(updated),
+        MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+      );
+      await this.notifyFirstPickAcceptedMatched({
+        bookingId,
+        customerUserId: booking.customerProfile.userId,
+        provider,
+        selectedProviderUserId: updated.selectedProvider?.userId,
+        chatRoomId: updated.chatRoom?.id,
+      });
+      this.matchingGateway.emitBookingMatched(bookingId, result);
+      return result;
+    }
+
+    if (responseRoute === 'first-pick-rejected') {
+      const updated = await this.prisma.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: BookingStatus.OPEN_MATCHING,
+          selectedProviderId: null,
+          participants: {
+            update: {
+              where: participantKey,
+              data: { status, respondedAt: new Date() },
+            },
+          },
+        },
+        include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+      });
+      await this.matching.closeBooking(bookingId);
+      await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
+      const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
+      const serviceId = booking.services[0]?.serviceId;
+      const dispatchPin = bookingDispatchCoordinates(updated);
+      const eligibleBackupProviders = serviceId
+        ? await this.findEligibleBackupProviders({
+            bookingId,
+            serviceId,
+            lat: dispatchPin.lat,
+            lng: dispatchPin.lng,
+            preferredProviderId: provider.id,
+            backupOpenMode: matchingPolicy.backupOpenMode,
+            forceOpen: true,
+            policy: matchingPolicy,
+          })
+        : [];
+      const result = this.matching.openBooking({
+        booking: updated,
+        policy: matchingPolicy,
+        payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
+          firstPickDeclined: true,
+        }),
+      });
+      await this.matching.registerActiveBooking(bookingId, result);
+      await this.matching.scheduleBookingTimeout(
+        bookingId,
+        updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
+      );
+      const backupNotificationTrace = await this.notifyBackupProviders({
+        stage: 'first_pick_declined',
+        bookingId,
+        providers: eligibleBackupProviders,
+        backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+        backupOpenMode: matchingPolicy.backupOpenMode,
+        backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
+        matchingPayload: result,
+      });
+      await this.recordBackupNotificationTrace(bookingId, backupNotificationTrace);
+      return updated;
     }
 
     if (
