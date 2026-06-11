@@ -163,6 +163,16 @@ type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
   };
 }>;
 
+type BackupProviderNotificationInput = {
+  stage: BackupNotificationTraceStage;
+  bookingId: string;
+  providers: Array<{ id: string; userId: string; distanceMeters: number }>;
+  backupProviderRadiusMeters: number;
+  backupOpenMode: string;
+  backupProviderInvitationLimit: number;
+  matchingPayload: unknown;
+};
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -429,7 +439,7 @@ export class BookingsService {
       customerDiscountAmount: priceSummary.discountAmount,
       matchingPayload: result,
     });
-    const backupNotificationTrace = await this.notifyBackupProviders({
+    await this.notifyBackupProvidersAndRecordTrace({
       stage: 'initial_open',
       bookingId: booking.id,
       providers: eligibleBackupProviders,
@@ -438,7 +448,6 @@ export class BookingsService {
       backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
       matchingPayload: result,
     });
-    await this.recordBackupNotificationTrace(booking.id, backupNotificationTrace);
     return result;
   }
 
@@ -907,7 +916,7 @@ export class BookingsService {
         bookingId,
         updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
       );
-      const backupNotificationTrace = await this.notifyBackupProviders({
+      await this.notifyBackupProvidersAndRecordTrace({
         stage: 'first_pick_declined',
         bookingId,
         providers: eligibleBackupProviders,
@@ -916,7 +925,6 @@ export class BookingsService {
         backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
         matchingPayload: result,
       });
-      await this.recordBackupNotificationTrace(bookingId, backupNotificationTrace);
       return updated;
     }
 
@@ -1111,15 +1119,12 @@ export class BookingsService {
     await this.notifications.create(providerEarningCreatedNotification(providerUserId, bookingId));
   }
 
-  private async notifyBackupProviders(input: {
-    stage: BackupNotificationTraceStage;
-    bookingId: string;
-    providers: Array<{ id: string; userId: string; distanceMeters: number }>;
-    backupProviderRadiusMeters: number;
-    backupOpenMode: string;
-    backupProviderInvitationLimit: number;
-    matchingPayload: unknown;
-  }) {
+  private async notifyBackupProvidersAndRecordTrace(input: BackupProviderNotificationInput) {
+    const trace = await this.notifyBackupProviders(input);
+    await this.recordBackupNotificationTrace(input.bookingId, trace);
+  }
+
+  private async notifyBackupProviders(input: BackupProviderNotificationInput) {
     const alertPolicy = backupAlertPolicyMetadata(input);
     const notifiedProviders: Array<{
       providerProfileId: string;
