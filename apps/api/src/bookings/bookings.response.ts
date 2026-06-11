@@ -148,17 +148,16 @@ export function partnerBookingResponses<
 }
 
 function publicBookingAddress(address: unknown) {
-  if (!address || typeof address !== 'object' || Array.isArray(address)) {
+  if (!isPlainRecord(address)) {
     return address;
   }
 
-  const record = address as Record<string, unknown>;
   const publicAddress = Object.fromEntries(
-    Object.entries(record).filter(
+    Object.entries(address).filter(
       ([key]) => PUBLIC_BOOKING_ADDRESS_KEYS.has(key) && !PRIVATE_BOOKING_ADDRESS_KEYS.has(key),
     ),
   );
-  const addressPreview = coarseAddressPreview(record);
+  const addressPreview = coarseAddressPreview(address);
   if (addressPreview) {
     publicAddress.addressPreview = addressPreview;
   }
@@ -172,7 +171,7 @@ function publicPartnerOpenBookingFields(booking: Record<string, unknown>) {
 }
 
 function publicBookingAddressSnapshot(snapshot: BookingAddressSnapshotInput) {
-  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+  if (!isPlainRecord(snapshot)) {
     return snapshot ?? null;
   }
 
@@ -187,11 +186,10 @@ function publicBookingAddressSnapshot(snapshot: BookingAddressSnapshotInput) {
 }
 
 function coarseAddressPreview(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isPlainRecord(value)) {
     return null;
   }
-  const record = value as Record<string, unknown>;
-  const parts = [record.ward, record.district, record.city, record.province, record.country]
+  const parts = [value.ward, value.district, value.city, value.province, value.country]
     .filter((part): part is string => typeof part === 'string' && Boolean(part.trim()))
     .map((part) => part.trim());
   const usefulParts = parts.filter((part, index) => parts.indexOf(part) === index);
@@ -199,7 +197,7 @@ function coarseAddressPreview(value: unknown) {
     return usefulParts.slice(0, 3).join(', ');
   }
 
-  const text = record.addressText ?? record.address_text ?? record.line1 ?? record.address;
+  const text = value.addressText ?? value.address_text ?? value.line1 ?? value.address;
   if (typeof text !== 'string') {
     return null;
   }
@@ -211,6 +209,10 @@ function coarseAddressPreview(value: unknown) {
     return textParts[0] ?? null;
   }
   return textParts.slice(1, 4).join(', ');
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function copySnapshotField(
