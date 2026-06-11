@@ -31,6 +31,7 @@ export const REALTIME_EVENTS = [
   'provider.account.blocked',
   'provider.account.unblocked',
   'provider.payout_setup_required',
+  'provider.payout_batch.updated',
   'provider.location.updated',
   'chat.message.created',
   'service.started',

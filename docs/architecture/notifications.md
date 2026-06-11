@@ -75,5 +75,6 @@ Current call sites stay at service boundaries:
 - booking completed
 - payment status notification
 - payout setup notification
+- payout batch status notification
 
 If a flow is not ready, add the TODO at the relevant service boundary instead of scattering push-specific logic across booking, matching, payment, or chat code.

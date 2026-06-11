@@ -13,6 +13,7 @@ import {
   TaxPolicyStatus,
   TaxRuleScope,
 } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import {
@@ -46,7 +47,10 @@ type PricedBookingService = {
 
 @Injectable()
 export class EarningsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications?: NotificationsService,
+  ) {}
 
   async createForCompletedBooking(bookingId: string, providerProfileId: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({
@@ -491,7 +495,7 @@ export class EarningsService {
       nextTransferRef,
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       if (nextStatus === PayoutBatchStatus.PROCESSING || nextStatus === PayoutBatchStatus.PAID) {
         await this.ensureNoActivePayoutHold(tx, existing.providerProfileId);
         await this.ensureProviderWalletNonNegative(tx, existing.providerProfileId);
@@ -548,6 +552,8 @@ export class EarningsService {
         },
       });
     });
+    await this.notifyPayoutBatchUpdated(updated, nextStatus !== existing.status ? nextStatus : undefined);
+    return updated;
   }
 
   async listPayoutBatchesForProviderUser(userId: string) {
@@ -601,6 +607,32 @@ export class EarningsService {
     });
 
     return { skipped: false, earning: cancelled };
+  }
+
+  private async notifyPayoutBatchUpdated(
+    batch: {
+      id: string;
+      providerProfileId: string;
+      status: PayoutBatchStatus;
+      providerProfile?: { user?: { id?: string | null } | null } | null;
+    },
+    requestedStatus?: PayoutBatchStatus,
+  ) {
+    if (!this.notifications || !requestedStatus) {
+      return;
+    }
+    const userId = batch.providerProfile?.user?.id;
+    if (!userId) {
+      return;
+    }
+
+    await this.notifications.create({
+      userId,
+      type: 'provider.payout_batch.updated',
+      title: 'Payout batch updated',
+      body: payoutBatchNotificationBody(batch.status),
+      data: { payoutBatchId: batch.id, providerProfileId: batch.providerProfileId },
+    });
   }
 
   private async summaryWhere(where: Prisma.ProviderEarningWhereInput) {
@@ -1077,6 +1109,22 @@ function cleanOptionalText(value: string | null | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function payoutBatchNotificationBody(status: PayoutBatchStatus) {
+  if (status === PayoutBatchStatus.PAID) {
+    return 'Your payout batch was marked paid. Check the payout screen for details.';
+  }
+  if (status === PayoutBatchStatus.FAILED) {
+    return 'Your payout batch needs follow-up. Check the payout screen for details.';
+  }
+  if (status === PayoutBatchStatus.CANCELLED) {
+    return 'Your payout batch was cancelled. Check the payout screen for details.';
+  }
+  if (status === PayoutBatchStatus.PROCESSING) {
+    return 'Your payout batch is being processed.';
+  }
+  return 'Your payout batch was updated.';
 }
 
 function activePayoutHoldWhere(providerProfileId?: string): Prisma.ProviderSanctionWhereInput {
