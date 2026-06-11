@@ -451,7 +451,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-operator-first-read" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-operator-first-read">
         <div className="ops-section-header">
           <div>
             <h2>Customer operator first read</h2>
@@ -461,7 +461,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">Above-fold summary</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {customerOperatorFirstRead.map((item) => (
             <a href={item.href} key={item.label}>
               <span>{item.label}</span>
@@ -472,7 +472,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <MetricCard
           label="Bookings"
           value={bookings.length.toString()}
@@ -519,7 +519,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
       </section>
 
-      <section className="card" id="customer-operations-quick-rail" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-operations-quick-rail">
         <div className="ops-section-header">
           <div>
             <h2>Customer operations quick rail</h2>
@@ -530,7 +530,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerOperationsQuickRail.length} shortcuts</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {customerOperationsQuickRail.map((item) => (
             <a href={item.href} key={item.label}>
               <span>{item.label}</span>
@@ -541,7 +541,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-recent-operations-timeline" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-recent-operations-timeline">
         <div className="ops-section-header">
           <div>
             <h2>Customer recent operations timeline</h2>
@@ -554,7 +554,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             Open full timeline
           </Link>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {filteredCustomerActivityRecords.length > 0 ? (
             filteredCustomerActivityRecords.slice(0, 8).map((record) => (
               <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}`}>
@@ -585,7 +585,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-operations-digest" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-operations-digest">
         <div className="ops-section-header">
           <div>
             <h2>Customer operations digest</h2>
@@ -596,7 +596,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerOperationsDigest.length} lanes</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {customerOperationsDigest.map((row) => (
             <div className="setup-stage-item" key={row.lane}>
               <span>{row.lane}</span>
@@ -605,7 +605,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <strong>{row.status}</strong>
                 </Link>
                 <p className="muted">{row.detail}</p>
-                <div className="participant-list" style={{ marginTop: 8 }}>
+                <div className="participant-list admin-mt-8">
                   {row.evidence.map((item) => (
                     <span className="pill pill-neutral" key={item}>
                       {item}
@@ -619,7 +619,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-connected-operations-records" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-connected-operations-records">
         <div className="ops-section-header">
           <div>
             <h2>Customer connected operations records</h2>
@@ -630,7 +630,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{connectedCustomerRecordLinks.length} links</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {connectedCustomerRecordLinks.map((record) => (
             <div key={record.label}>
               <span>{record.label}</span>
@@ -644,7 +644,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-booking-create-gates" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-booking-create-gates">
         <div className="ops-section-header">
           <div>
             <h2>Customer blocked create attempts</h2>
@@ -657,7 +657,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             Open gate queue
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Loaded attempts</span>
             <strong>{bookingCreateGateAttempts.length}</strong>
@@ -677,11 +677,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
         </div>
         {filteredBookingCreateGateAttempts.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking create gate attempt matched this date filter.
           </p>
         ) : (
-          <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          <div className="setup-stage-list admin-mt-14">
             {filteredBookingCreateGateAttempts.slice(0, 12).map((attempt) => (
               <div className="setup-stage-item" key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
@@ -690,12 +690,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     <strong>{attempt.reasonLabel}</strong>
                   </Link>
                   <p className="muted">{attempt.detail}</p>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
                     <span className="pill pill-neutral">{attempt.addressLabel}</span>
                     <span className="pill pill-neutral">{attempt.distanceLabel}</span>
                   </div>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     <Link className="text-link" href={attempt.bookingMonitorHref}>
                       Booking gate queue
                     </Link>
@@ -711,7 +711,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         )}
       </section>
 
-      <section className="card" id="customer-booking-evidence-bundles" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-booking-evidence-bundles">
         <div className="ops-section-header">
           <div>
             <h2>Customer booking evidence bundles</h2>
@@ -769,7 +769,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                       Booking
                     </Link>
                     {row.chatHref ? (
-                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.chatHref}>
                         Chat
                       </Link>
                     ) : null}
@@ -780,13 +780,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {customerBookingEvidenceRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No booking bundle matched this date filter.
           </p>
         ) : null}
       </section>
 
-      <section className="card" id="customer-operator-command-queue" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-operator-command-queue">
         <div className="ops-section-header">
           <div>
             <h2>Customer operator command queue</h2>
@@ -799,7 +799,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             {customerOperatorCommandQueue.status}
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {customerOperatorCommandQueue.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -808,7 +808,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+        <div className="setup-stage-list admin-mt-14">
           {customerOperatorCommandQueue.commands.map((command) => (
             <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
               <div className="ops-row">
@@ -825,7 +825,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-booking-journey" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-booking-journey">
         <div className="ops-section-header">
           <div>
             <h2>Customer booking journey</h2>
@@ -836,7 +836,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerBookingJourneyRows.length} journey row(s)</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+        <div className="setup-stage-list admin-mt-14">
           {customerBookingJourneyRows.length > 0 ? (
             customerBookingJourneyRows.map((row) => (
               <div className="setup-stage-item" key={`journey-${row.id}`}>
@@ -846,14 +846,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     <strong>{row.heading}</strong>
                   </Link>
                   <p className="muted">{row.detail}</p>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     {row.steps.map((step) => (
                       <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
                         {step.label}: {step.value}
                       </span>
                     ))}
                   </div>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     {row.links.map((link) => (
                       <Link className="text-link" href={link.href} key={link.label}>
                         {link.label}
@@ -877,7 +877,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-full-record-index" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-full-record-index">
         <div className="ops-section-header">
           <div>
             <h2>Customer full record index</h2>
@@ -888,7 +888,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <a href="#customer-info">
             <span>Customer info</span>
             <strong>{customer.user?.phone ?? 'No phone'}</strong>
@@ -927,7 +927,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-operating-ledger" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-operating-ledger">
         <div className="ops-section-header">
           <div>
             <h2>Customer operating ledger</h2>
