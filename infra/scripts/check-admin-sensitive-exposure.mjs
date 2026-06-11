@@ -29,9 +29,12 @@ if (violations.length > 0) {
 
 function checkAdminServicePushDeviceSelects() {
   const file = 'apps/api/src/admin/admin.service.ts';
+  const userSelectsFile = 'apps/api/src/admin/admin-user-selects.ts';
   const source = read(file);
+  const userSelectsSource = read(userSelectsFile);
 
   reject(file, source, 'token: true', 'AdminService must not select push device tokens.');
+  reject(userSelectsFile, userSelectsSource, 'token: true', 'Admin user selects must not expose push device tokens.');
 
   for (const block of relationObjectBlocks(source, 'pushDevices')) {
     if (!block.content.includes('include:')) {
@@ -45,12 +48,12 @@ function checkAdminServicePushDeviceSelects() {
   }
 
   const safeSelect = sliceBetween(
-    source,
+    userSelectsSource,
     'const adminPushDeviceSummarySelect = {',
     '} satisfies Prisma.PushDeviceSelect;',
   );
   if (!safeSelect || !safeSelect.includes('deliveries:') || safeSelect.includes('token')) {
-    fail(file, 'adminPushDeviceSummarySelect must include delivery health but never the raw token.');
+    fail(userSelectsFile, 'adminPushDeviceSummarySelect must include delivery health but never the raw token.');
   }
 }
 

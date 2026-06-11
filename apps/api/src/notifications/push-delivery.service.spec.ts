@@ -57,7 +57,7 @@ describe('PushDeliveryService', () => {
       PUSH_PROVIDER: 'fcm',
       FIREBASE_PROJECT_ID: 'hands-demo',
       FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
-      FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\ndemo\\n-----END PRIVATE KEY-----\\n',
+      FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
     }).send(message);
 
     expect(result).toMatchObject({
