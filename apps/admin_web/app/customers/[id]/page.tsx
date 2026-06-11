@@ -1264,69 +1264,71 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredBookings.length} bookings</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Service</th>
-              <th>Status</th>
-              <th>Partner</th>
-              <th>Payment</th>
-              <th>Chat</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBookings.map((booking) => (
-              <tr key={booking.id}>
-                <td>
-                  <strong>{shortId(booking.id)}</strong>
-                  <p className="muted">{formatDate(bookingRecordCreatedAt(booking))}</p>
-                </td>
-                <td>
-                  <strong>{bookingServiceLabel(booking)}</strong>
-                  <p className="muted">{formatMoney(bookingTotal(booking))}</p>
-                </td>
-                <td>
-                  <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
-                  <p className="muted">{bookingStatusOperatorHint(booking)}</p>
-                  {isClosedCustomerBooking(booking) ? (
-                    <p className="muted">
-                      {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
-                    </p>
-                  ) : null}
-                </td>
-                <td>{bookingPartnerDisplayName(booking)}</td>
-                <td>
-                  <strong>{booking.payment?.status ?? 'No payment'}</strong>
-                  <p className="muted">
-                    {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
-                  </p>
-                </td>
-                <td>
-                  <strong>
-                    {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
-                  </strong>
-                  <p className="muted">{bookingChatArchiveLabel(booking)}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${booking.id}`}>
-                    Booking
-                  </Link>
-                  {booking.chatRoom ? (
-                    <Link
-                      className="text-link"
-                      href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-                      style={{ marginLeft: 10 }}
-                    >
-                      Chat archive
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Partner</th>
+                <th>Payment</th>
+                <th>Chat</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredBookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td>
+                    <strong>{shortId(booking.id)}</strong>
+                    <p className="muted">{formatDate(bookingRecordCreatedAt(booking))}</p>
+                  </td>
+                  <td>
+                    <strong>{bookingServiceLabel(booking)}</strong>
+                    <p className="muted">{formatMoney(bookingTotal(booking))}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
+                    <p className="muted">{bookingStatusOperatorHint(booking)}</p>
+                    {isClosedCustomerBooking(booking) ? (
+                      <p className="muted">
+                        {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td>{bookingPartnerDisplayName(booking)}</td>
+                  <td>
+                    <strong>{booking.payment?.status ?? 'No payment'}</strong>
+                    <p className="muted">
+                      {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
+                    </p>
+                  </td>
+                  <td>
+                    <strong>
+                      {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
+                    </strong>
+                    <p className="muted">{bookingChatArchiveLabel(booking)}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${booking.id}`}>
+                      Booking
+                    </Link>
+                    {booking.chatRoom ? (
+                      <Link
+                        className="text-link"
+                        href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+                        style={{ marginLeft: 10 }}
+                      >
+                        Chat archive
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {filteredBookings.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No booking record matched this date filter.
@@ -1354,56 +1356,58 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Room state</th>
-              <th>Latest message</th>
-              <th>Mobile visibility</th>
-              <th>Admin archive</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customerChatRetentionRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.roomStatus}</strong>
-                  <p className="muted">{row.roomDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.latestSender}</strong>
-                  <p className="muted">{row.latestMessage}</p>
-                  <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
-                </td>
-                <td>
-                  <strong>{row.mobileVisibility}</strong>
-                  <p className="muted">{row.mobileVisibilityDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.adminRetention}</strong>
-                  <p className="muted">{row.adminRetentionDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Archive
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Room state</th>
+                <th>Latest message</th>
+                <th>Mobile visibility</th>
+                <th>Admin archive</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {customerChatRetentionRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.bookingLabel}</strong>
+                    <p className="muted">{row.serviceLabel}</p>
+                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td>
+                    <strong>{row.roomStatus}</strong>
+                    <p className="muted">{row.roomDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.latestSender}</strong>
+                    <p className="muted">{row.latestMessage}</p>
+                    <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
+                  </td>
+                  <td>
+                    <strong>{row.mobileVisibility}</strong>
+                    <p className="muted">{row.mobileVisibilityDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.adminRetention}</strong>
+                    <p className="muted">{row.adminRetentionDetail}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={row.bookingHref}>
+                      Booking
+                    </Link>
+                    {row.chatHref ? (
+                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                        Archive
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {customerChatRetentionRows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No booking row matched this date filter.
@@ -1422,52 +1426,54 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerBookingOpsLedgerRows.length} booking note row(s)</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Partner</th>
-              <th>Manual notes</th>
-              <th>Staff tasks</th>
-              <th>Closeout context</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {customerBookingOpsLedgerRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>{row.partnerLabel}</td>
-                <td>
-                  <strong>{row.noteStatus}</strong>
-                  <p className="muted">{row.noteDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.taskStatus}</strong>
-                  <p className="muted">{row.taskDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.closeoutStatus}</strong>
-                  <p className="muted">{row.closeoutDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Partner</th>
+                <th>Manual notes</th>
+                <th>Staff tasks</th>
+                <th>Closeout context</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {customerBookingOpsLedgerRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.bookingLabel}</strong>
+                    <p className="muted">{row.serviceLabel}</p>
+                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td>{row.partnerLabel}</td>
+                  <td>
+                    <strong>{row.noteStatus}</strong>
+                    <p className="muted">{row.noteDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.taskStatus}</strong>
+                    <p className="muted">{row.taskDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.closeoutStatus}</strong>
+                    <p className="muted">{row.closeoutDetail}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={row.bookingHref}>
+                      Booking
+                    </Link>
+                    {row.chatHref ? (
+                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                        Chat
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {customerBookingOpsLedgerRows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No booking-level operation notes or staff tasks matched this customer date filter.
