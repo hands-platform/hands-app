@@ -14,7 +14,7 @@ for (const appName of apps) {
   const summary = {
     app: appName,
     dartFiles: dartFiles.length,
-    firebaseImports: 0,
+    firebaseReferences: 0,
     supabaseImports: 0,
     presentationSupabaseImports: 0,
   };
@@ -23,13 +23,13 @@ for (const appName of apps) {
     const source = readFileSync(file, 'utf8');
     const projectPath = normalize(relative(root, file));
 
-    if (hasFirebaseReference(source)) {
-      summary.firebaseImports += 1;
+    if (hasForbiddenFirebaseReference(source)) {
+      summary.firebaseReferences += 1;
       violations.push({
         app: appName,
         file: projectPath,
-        rule: 'firebase_removed',
-        message: 'Firebase references are not allowed after the Supabase migration boundary was introduced.',
+        rule: 'firebase_scope',
+        message: 'Firebase is allowed only for FCM push. Remove Firebase DB/Auth/Firestore/Storage/Functions references.',
       });
     }
 
@@ -65,7 +65,7 @@ const result = {
   ok: violations.length === 0,
   apps: appSummaries,
   rules: [
-    'Firebase imports/references are forbidden in Flutter apps.',
+    'Firebase is allowed only for FCM push through firebase_core/firebase_messaging.',
     'Supabase imports are allowed in core/data layers, not in main.dart or presentation layers.',
     'Use injected Supabase clients, not Supabase.instance.',
   ],
@@ -89,8 +89,17 @@ function listDartFiles(directory) {
   });
 }
 
-function hasFirebaseReference(source) {
-  return /\bFirebase[A-Za-z0-9_]*\b/.test(source) || /package:firebase_/i.test(source);
+function hasForbiddenFirebaseReference(source) {
+  const firebaseImports = Array.from(source.matchAll(/package:firebase_([a-z_]+)\//gi)).map(
+    (match) => match[1],
+  );
+  if (firebaseImports.some((packageName) => !['core', 'messaging'].includes(packageName))) {
+    return true;
+  }
+
+  return /\bFirebase(Auth|Firestore|Database|Storage|Functions|Analytics|Crashlytics|RemoteConfig|Performance)\b/i.test(
+    source,
+  );
 }
 
 function isPresentationOrScreenFile(projectPath) {

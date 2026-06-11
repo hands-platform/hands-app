@@ -151,7 +151,7 @@ npm.cmd run setup:doctor
 npm.cmd run external:pack:write
 ```
 
-Use this operator order when registering Supabase, MapTiler, Geoapify, MoMo, VNPay, OneSignal/SMS, storage, and Android release values:
+Use this operator order when registering Supabase, MapTiler, Geoapify, MoMo, VNPay, Firebase Cloud Messaging, SMS, storage, and Android release values:
 
 - `docs/architecture/operator-registration-plan.md`
 - `infra/setup/.generated/hands-external-registration-pack.md`
@@ -164,7 +164,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 -App provider
 ```
 
-Firebase mobile SDKs have been removed. Real OS-level push should be added later through a dedicated provider adapter such as OneSignal, not by reintroducing Firebase config by accident.
+HANDS uses Firebase Cloud Messaging for Android/iOS OS push only. Firebase Realtime Database, Firestore, Firebase Auth, and Firebase Storage are not part of the MVP.
 
 If Git, Docker, or Flutter are missing, open PowerShell as Administrator and run:
 

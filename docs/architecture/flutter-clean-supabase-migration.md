@@ -2,19 +2,19 @@
 
 ## Goal
 
-Move the HANDS customer and provider Flutter apps from the current mixed app-state structure to a DDD/Clean Architecture layout, then remove Firebase and migrate platform dependencies to Supabase-backed services without breaking the current MVP flow.
+Move the HANDS customer and provider Flutter apps from the current mixed app-state structure to a DDD/Clean Architecture layout, keep Firebase limited to FCM push, and migrate other platform dependencies to Supabase-backed services without breaking the current MVP flow.
 
 ## Current Firebase Usage
 
-The Flutter apps no longer use Firebase.
+The Flutter apps may use Firebase only for FCM push. Firebase Auth, Firestore, Realtime Database, Firebase Storage, and Cloud Functions stay outside the MVP.
 
 | App      | File                                                                                                         | Current responsibility                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | Customer | `apps/customer_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an OS push token. |
 | Provider | `apps/provider_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an OS push token. |
-| API      | `apps/api/src/notifications/push-delivery.service.ts`                                                        | Records in-app-only delivery decisions and avoids external OS push calls.                              |
+| API      | `apps/api/src/notifications/push-delivery.service.ts`                                                        | Sends through Firebase Admin when FCM is configured, otherwise records safe in-app/local delivery decisions. |
 
-No Flutter or API code currently calls Firebase Auth, Firestore, Firebase Storage, Realtime Database, Cloud Functions, Cloud Messaging, Firebase Core, or FCM HTTP APIs.
+No Flutter or API code should call Firebase Auth, Firestore, Firebase Storage, Realtime Database, or Cloud Functions. FCM is the only allowed Firebase surface.
 
 ## Target Client Structure
 
@@ -50,7 +50,7 @@ lib/
 
 ## Migration Strategy
 
-Firebase has been removed from the Flutter apps after isolating notification behavior behind feature repositories and use cases.
+Firebase remains limited to FCM after isolating notification behavior behind feature repositories and use cases.
 
 Use the architecture guard whenever auth, notification, map, or chat code is moved:
 
@@ -59,7 +59,7 @@ cd C:\dev\massage-on-demand-vn
 npm.cmd run mobile:architecture:check
 ```
 
-The guard blocks Firebase references, direct Supabase imports from screens/presentation, and `Supabase.instance` usage. Supabase access should stay behind core providers and data-layer datasources so later developers can replace providers without rewriting UI screens.
+The guard blocks Firebase services outside FCM, direct Supabase imports from screens/presentation, and `Supabase.instance` usage. Supabase access should stay behind core providers and data-layer datasources so later developers can replace providers without rewriting UI screens.
 
 1. Notification boundary
    - Keep UI calling `RegisterCurrentDevicePushToken`.
@@ -92,7 +92,7 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
 
 7. Firebase scope
    - Firebase is allowed only for FCM push. Firebase DB/Auth/Firestore and Firebase Storage stay out of MVP.
-   - API FCM service is removed and replaced by an in-app-only delivery adapter.
+   - API FCM delivery stays behind `PushDeliveryService`; local/dev may use in-app-only delivery when credentials are absent.
 
 ## Supabase Data Model Direction
 

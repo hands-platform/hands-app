@@ -9,8 +9,8 @@ HANDS will move away from Firebase and keep the Flutter apps behind Clean Archit
 - Customer and Partner apps now have feature repositories for auth, discovery, booking, chat, map, notification, coupons, partner profile, earnings, and verification.
 - `app_state.dart` is now a compatibility facade for existing screens rather than a direct API integration layer.
 - Firebase is limited to FCM push only. Firebase DB/Auth/Firestore and Firebase Storage are not part of the MVP.
-- API FCM HTTP delivery has been removed and replaced with in-app-only delivery records.
-- Mobile apps currently use in-app notifications instead of OS-level push tokens.
+- API FCM delivery is behind `PushDeliveryService`; local/dev can keep in-app-only delivery records when Firebase Admin credentials are absent.
+- Mobile apps should register FCM tokens after login when the OS push client setup is enabled.
 - `supabase_flutter` is installed but no production flow depends on direct Supabase calls yet.
 - `npm.cmd run supabase:schema:check` verifies that the Supabase core SQL draft still includes the current Prisma enum values and MVP tables.
 
@@ -201,10 +201,10 @@ Rollback during staging is simple: create a fresh staging Supabase project and r
 1. Keep NestJS OTP/JWT login as the mobile auth boundary.
 2. Add Supabase PostgreSQL as the backing database under the API.
 3. Move file metadata and verification uploads to Supabase Storage through the API.
-4. Keep mobile notifications as in-app rows first.
-5. Add FCM credentials and mobile config later for OS-level push.
+4. Keep notification rows as the audit/in-app source of truth.
+5. Add or enable FCM credentials and mobile config for OS-level push.
 6. Move chat history to Supabase tables, while keeping Socket.IO events until delivery semantics are validated.
-7. Enable FCM behind `PushDeliveryService` after launch requirements are clear.
+7. Keep FCM behind `PushDeliveryService` and do not introduce Firebase DB/Auth/Firestore.
 
 ## Risk Notes
 
