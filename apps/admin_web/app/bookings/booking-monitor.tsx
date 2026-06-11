@@ -130,6 +130,7 @@ import {
   bookingSelectedPartnerIdForChoice,
   isCustomerSelectableBookingParticipant,
 } from '../../lib/booking-participant-choice';
+import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
   bookings: AdminBooking[];
@@ -140,31 +141,7 @@ type Props = {
   liveOperationsPolicy: AdminLiveOperationsPolicy;
 };
 
-type BookingView =
-  | 'active'
-  | 'attention'
-  | 'matching'
-  | 'first-pick'
-  | 'marketplace'
-  | 'customer-choice'
-  | 'handoff-repair'
-  | 'no-supply'
-  | 'blocked-create'
-  | 'address'
-  | 'manual-decision'
-  | 'payment'
-  | 'cash-debt'
-  | 'closeout'
-  | 'pricing'
-  | 'location'
-  | 'chat'
-  | 'chat-repair'
-  | 'chat-evidence'
-  | 'evidence-missing'
-  | 'refund-review'
-  | 'expired'
-  | 'no-show'
-  | 'all';
+type BookingView = BookingPageView;
 
 type BookingCommandLane = {
   title: string;
@@ -220,16 +197,6 @@ type MarketplaceCoveragePillState = {
   readonly label: string;
   readonly tone: MarketplaceBookingCoverageTone;
 };
-
-export type BookingEvidenceFilter =
-  | 'all'
-  | 'address'
-  | 'partner'
-  | 'chat'
-  | 'money'
-  | 'location'
-  | 'alerts'
-  | 'closeout';
 
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);

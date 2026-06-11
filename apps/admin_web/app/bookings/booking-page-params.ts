@@ -1,5 +1,4 @@
 import type { BookingGateFilter } from './booking-gate-filters';
-import type { BookingEvidenceFilter } from './booking-monitor';
 
 export type BookingPageView =
   | 'active'
@@ -26,6 +25,16 @@ export type BookingPageView =
   | 'expired'
   | 'no-show'
   | 'all';
+
+export type BookingEvidenceFilter =
+  | 'all'
+  | 'address'
+  | 'partner'
+  | 'chat'
+  | 'money'
+  | 'location'
+  | 'alerts'
+  | 'closeout';
 
 const BOOKING_VIEWS = new Set<BookingPageView | 'backup'>([
   'attention',
