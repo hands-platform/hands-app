@@ -142,6 +142,10 @@ import {
   type PartnerPayoutEarningRow,
   type PartnerPayoutOperationsView,
 } from './partner-detail-payout-operations-section';
+import {
+  PartnerDetailBookingGateDecisionSection,
+  type PartnerBookingGateDecisionView,
+} from './partner-detail-booking-gate-decision-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -385,6 +389,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
+  const bookingGateDecision = buildPartnerBookingGateDecisionView(bookingAcceptance, dispatchPolicy);
   const acceptanceUnblockPlaybook = buildPartnerAcceptanceUnblockPlaybook(
     provider,
     bookingAcceptance,
@@ -1048,71 +1053,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         dispatchPolicy={dispatchPolicy}
       />
 
-      <div className={`card ${cardClass(bookingAcceptance.tone)} admin-mb-16`}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Marketplace booking gate decision</h2>
-            <p className="muted">
-              Operator-facing decision for whether this partner can join marketplace bookings or continue
-              marketplace/payout operations right now.
-            </p>
-          </div>
-          <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Decision</span>
-            <strong>{bookingAcceptance.canJoinMarketplace ? 'Join clear' : 'Join held'}</strong>
-            <small>{bookingAcceptance.primaryReason}</small>
-          </div>
-          <div>
-            <span>Direct first-pick</span>
-            <strong>{bookingAcceptance.canDirectFirstPick ? 'Not wallet-blocked' : 'Needs repair'}</strong>
-            <small>{bookingAcceptance.directFirstPickReason}</small>
-          </div>
-          <div>
-            <span>Cash debt</span>
-            <strong>{formatCurrency(bookingAcceptance.cashDebt)}</strong>
-            <small>Negative wallet blocks marketplace alerts and participation</small>
-          </div>
-          <div>
-            <span>Location</span>
-            <strong>{bookingAcceptance.locationAge}</strong>
-            <small>Must be fresh within {dispatchPolicy.locationFreshnessMinutes}m</small>
-          </div>
-          <div>
-            <span>Services</span>
-            <strong>{bookingAcceptance.bookableServices}</strong>
-            <small>Bookable price options</small>
-          </div>
-        </div>
-        <div className="participant-list admin-mt-12">
-          <span className="pill pill-info">
-            First response window: {dispatchPolicy.responseWindowMinutes}m
-          </span>
-          <span className="pill pill-info">
-            Marketplace radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}
-          </span>
-          <span className="pill pill-info">
-            Marketplace location: {dispatchPolicy.locationFreshnessMinutes}m fresh
-          </span>
-          <Link className="text-link" href="/operations-policy">
-            Edit matching policy
-          </Link>
-        </div>
-        <div className="setup-stage-list admin-mt-16">
-          {bookingAcceptance.gates.map((gate) => (
-            <div className="setup-stage-item" key={gate.label}>
-              <span>{gate.ok ? 'OK' : 'BLOCK'}</span>
-              <div>
-                <strong>{gate.label}</strong>
-                <p className="muted">{gate.detail}</p>
-              </div>
-              <small>{gate.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailBookingGateDecisionSection
+        cardClassForTone={cardClass}
+        decision={bookingGateDecision}
+        pillClassForTone={pillClass}
+      />
 
       <PartnerAcceptanceRepairCommandPanel
         provider={provider}
@@ -5695,6 +5640,27 @@ function buildPartnerPayoutBatchRows(
     status: batch.status,
     totalNetLabel: formatCurrency(batch.totalNetAmount),
   }));
+}
+
+function buildPartnerBookingGateDecisionView(
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  dispatchPolicy: PartnerDispatchPolicy,
+): PartnerBookingGateDecisionView {
+  return {
+    backupRadiusLabel: formatDistance(dispatchPolicy.backupRadiusMeters),
+    bookableServices: bookingAcceptance.bookableServices,
+    canDirectFirstPick: bookingAcceptance.canDirectFirstPick,
+    canJoinMarketplace: bookingAcceptance.canJoinMarketplace,
+    cashDebtLabel: formatCurrency(bookingAcceptance.cashDebt),
+    directFirstPickReason: bookingAcceptance.directFirstPickReason,
+    gates: bookingAcceptance.gates,
+    locationAge: bookingAcceptance.locationAge,
+    locationFreshnessLabel: `${dispatchPolicy.locationFreshnessMinutes}m`,
+    primaryReason: bookingAcceptance.primaryReason,
+    responseWindowLabel: `${dispatchPolicy.responseWindowMinutes}m`,
+    status: bookingAcceptance.status,
+    tone: bookingAcceptance.tone,
+  };
 }
 
 function cashFeeDebtAmount(provider: ProviderDetail) {
