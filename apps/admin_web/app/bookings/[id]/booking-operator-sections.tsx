@@ -1,3 +1,4 @@
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
   captureBookingPayment,
@@ -123,32 +124,34 @@ export function BookingOperatorQueueSections({
             available
           </span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Action</th>
-              <th>Availability</th>
-              <th>Evidence</th>
-              <th>Operator rule</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {operatorActionMatrix.map((row) => (
-              <tr key={row.action}>
-                <td>{row.action}</td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.operatorRule}</td>
-                <td>
-                  <ActionLink href={row.href} label={row.hrefLabel} />
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Availability</th>
+                <th>Evidence</th>
+                <th>Operator rule</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {operatorActionMatrix.map((row) => (
+                <tr key={row.action}>
+                  <td>{row.action}</td>
+                  <td>
+                    <span className={`pill ${row.tone}`}>{row.status}</span>
+                  </td>
+                  <td>{row.evidence}</td>
+                  <td>{row.operatorRule}</td>
+                  <td>
+                    <ActionLink href={row.href} label={row.hrefLabel} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       </section>
     </>
   );
