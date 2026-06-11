@@ -255,14 +255,10 @@ export class BookingsService {
     const customerPrice = resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
-    const selectedLocation = input.selectedLocationId
-      ? await this.prisma.customerSelectedLocation.findFirst({
-          where: { id: input.selectedLocationId, customerProfileId: customer.id },
-        })
-      : null;
-    if (input.selectedLocationId && !selectedLocation) {
-      throw new BadRequestException('Selected customer location was not found');
-    }
+    const selectedLocation = await this.resolveCustomerSelectedBookingLocation({
+      customerProfileId: customer.id,
+      selectedLocationId: input.selectedLocationId,
+    });
     const matchingPolicy = await this.matching.getPolicy();
     const distanceGateLimits = bookingDistanceGateLimits(matchingPolicy);
     const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
@@ -505,6 +501,23 @@ export class BookingsService {
     }
 
     return { preferredProvider, providerService };
+  }
+
+  private async resolveCustomerSelectedBookingLocation(input: {
+    customerProfileId: string;
+    selectedLocationId?: string;
+  }) {
+    if (!input.selectedLocationId) {
+      return null;
+    }
+
+    const selectedLocation = await this.prisma.customerSelectedLocation.findFirst({
+      where: { id: input.selectedLocationId, customerProfileId: input.customerProfileId },
+    });
+    if (!selectedLocation) {
+      throw new BadRequestException('Selected customer location was not found');
+    }
+    return selectedLocation;
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
