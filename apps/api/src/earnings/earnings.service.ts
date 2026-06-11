@@ -552,7 +552,7 @@ export class EarningsService {
         },
       });
     });
-    const changedStatus = nextStatus && nextStatus !== existing.status ? nextStatus : undefined;
+    const changedStatus = payoutStatusChanged(existing.status, nextStatus) ? nextStatus : undefined;
     await this.notifyPayoutBatchUpdated(updated, changedStatus);
     return updated;
   }
@@ -1110,6 +1110,13 @@ function cleanOptionalText(value: string | null | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function payoutStatusChanged(
+  currentStatus: PayoutBatchStatus,
+  nextStatus: PayoutBatchStatus | undefined,
+): nextStatus is PayoutBatchStatus {
+  return nextStatus !== undefined && currentStatus !== nextStatus;
 }
 
 function payoutBatchNotificationBody(status: PayoutBatchStatus) {
