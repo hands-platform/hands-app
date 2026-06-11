@@ -45,4 +45,42 @@ describe('EarningsService payout batches', () => {
       data: { payoutBatchId: 'payout-batch-1', providerProfileId: 'provider-1' },
     });
   });
+
+  it('does not notify the partner for metadata-only payout batch updates', async () => {
+    const existingBatch = {
+      id: 'payout-batch-1',
+      providerProfileId: 'provider-1',
+      status: PayoutBatchStatus.DRAFT,
+      transferRef: null,
+      paidAt: null,
+      earnings: [],
+    };
+    const returnedBatch = {
+      ...existingBatch,
+      notes: 'Bank reference pending',
+      providerProfile: { user: { id: 'partner-user' } },
+    };
+    const tx = {
+      providerPayoutBatch: {
+        update: jest.fn().mockResolvedValue(returnedBatch),
+        findUniqueOrThrow: jest.fn().mockResolvedValue(returnedBatch),
+      },
+    };
+    const prisma = {
+      providerPayoutBatch: {
+        findUnique: jest.fn().mockResolvedValue(existingBatch),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      ),
+    };
+    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const service = new EarningsService(prisma as never, notifications as never);
+
+    await expect(
+      service.updatePayoutBatch('payout-batch-1', { notes: 'Bank reference pending' }),
+    ).resolves.toEqual(returnedBatch);
+
+    expect(notifications.create).not.toHaveBeenCalled();
+  });
 });

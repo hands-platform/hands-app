@@ -552,7 +552,8 @@ export class EarningsService {
         },
       });
     });
-    await this.notifyPayoutBatchUpdated(updated, nextStatus !== existing.status ? nextStatus : undefined);
+    const changedStatus = nextStatus && nextStatus !== existing.status ? nextStatus : undefined;
+    await this.notifyPayoutBatchUpdated(updated, changedStatus);
     return updated;
   }
 
