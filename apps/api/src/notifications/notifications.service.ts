@@ -15,6 +15,7 @@ type CreateNotificationInput = {
 
 const NOTIFICATION_SEND_ATTEMPTS = 3;
 const NOTIFICATION_SEND_BACKOFF_MS = 5_000;
+const NOTIFICATION_SEND_JOB_NAME = 'notification-send';
 
 @Injectable()
 export class NotificationsService {
@@ -93,17 +94,22 @@ export class NotificationsService {
   }
 
   private async enqueueNotificationSend(notificationId: string) {
-    await this.notificationQueue.add(
-      'notification-send',
-      { notificationId },
-      {
-        attempts: NOTIFICATION_SEND_ATTEMPTS,
-        backoff: { type: 'exponential', delay: NOTIFICATION_SEND_BACKOFF_MS },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    const job = notificationSendJob(notificationId);
+    await this.notificationQueue.add(job.name, job.data, job.options);
   }
+}
+
+function notificationSendJob(notificationId: string) {
+  return {
+    name: NOTIFICATION_SEND_JOB_NAME,
+    data: { notificationId },
+    options: {
+      attempts: NOTIFICATION_SEND_ATTEMPTS,
+      backoff: { type: 'exponential', delay: NOTIFICATION_SEND_BACKOFF_MS },
+      removeOnComplete: true,
+      removeOnFail: false,
+    },
+  };
 }
 
 function resolvePushDeviceRole(roles: readonly Role[]) {

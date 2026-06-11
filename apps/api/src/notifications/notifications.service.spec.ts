@@ -61,6 +61,49 @@ describe('NotificationsService device tokens', () => {
 });
 
 describe('NotificationsService retry queue', () => {
+  const standardQueueOptions = {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: false,
+  };
+
+  it('enqueues created notifications with the standard retry policy', async () => {
+    const notification = { id: 'notification-1' };
+    const prisma = {
+      notification: {
+        create: jest.fn().mockResolvedValue(notification),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(
+      service.create({
+        userId: 'user-1',
+        type: 'booking.requested',
+        title: 'Booking request',
+        body: 'A booking request is available.',
+        data: { bookingId: 'booking-1' },
+      }),
+    ).resolves.toEqual(notification);
+
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: {
+        userId: 'user-1',
+        type: 'booking.requested',
+        title: 'Booking request',
+        body: 'A booking request is available.',
+        data: { bookingId: 'booking-1' },
+      },
+    });
+    expect(queue.add).toHaveBeenCalledWith(
+      'notification-send',
+      { notificationId: 'notification-1' },
+      standardQueueOptions,
+    );
+  });
+
   it('re-enqueues an existing notification with the standard retry policy', async () => {
     const prisma = {
       notification: {
@@ -81,12 +124,7 @@ describe('NotificationsService retry queue', () => {
     expect(queue.add).toHaveBeenCalledWith(
       'notification-send',
       { notificationId: 'notification-1' },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
+      standardQueueOptions,
     );
   });
 });
