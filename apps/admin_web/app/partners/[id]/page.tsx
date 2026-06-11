@@ -154,6 +154,12 @@ import {
   PartnerDetailBookingChatRecordsSection,
   type PartnerBookingChatRecordRow,
 } from './partner-detail-booking-chat-records-section';
+import {
+  PartnerDetailDeviceSessionActivitySection,
+  type PartnerDeviceRow,
+  type PartnerSessionRow,
+  type PartnerSharedDeviceRow,
+} from './partner-detail-device-session-activity-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -392,6 +398,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
   const securitySummary = buildProviderSecuritySummary(provider);
+  const partnerDeviceRows = buildPartnerDeviceRows(provider);
+  const partnerSessionRows = buildPartnerSessionRows(provider);
+  const partnerSharedDeviceRows = buildPartnerSharedDeviceRows(provider);
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
@@ -962,109 +971,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Device and session activity</h2>
-            <p className="muted">
-              Review shared devices, session checks, blocked devices, and stale partner app activity.
-            </p>
-          </div>
-          <span className={`pill ${securitySummary.followUpNeeded ? 'pill-danger' : 'pill-success'}`}>
-            {securitySummary.followUpNeeded ? 'Follow-up needed' : 'No active follow-up'}
-          </span>
-        </div>
-        <div className="ops-task-grid">
-          {securitySummary.cards.map((card) => (
-            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
-              <div>
-                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
-                <h3>{card.title}</h3>
-                <p className="muted">{card.detail}</p>
-              </div>
-              <small>{card.action}</small>
-            </div>
-          ))}
-        </div>
-        <div className="detail-grid admin-mt-16">
-          <div>
-            <h3>Partner app devices</h3>
-            {(provider.devices ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.devices?.map((device) => (
-                  <div className="setup-stage-item" key={device.id}>
-                    <span>{device.blockedAt ? 'BLOCKED' : device.enabled ? 'ENABLED' : 'DISABLED'}</span>
-                    <div>
-                      <strong>{maskDeviceId(device.deviceId)}</strong>
-                      <p className="muted">
-                        {device.platform ?? 'unknown platform'} / {device.appVersion ?? 'unknown app'} / last
-                        seen {formatDate(device.lastSeenAt)}
-                      </p>
-                      {device.blockReason ? (
-                        <p className="muted">Block reason: {device.blockReason}</p>
-                      ) : null}
-                    </div>
-                    <small>{device.blockedAt ? formatDate(device.blockedAt) : 'Active'}</small>
-                    <ActionMenu
-                      actions={partnerDetailDeviceActionMenuItems(provider.id, device)}
-                      label={`Device actions for ${maskDeviceId(device.deviceId)}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">
-                No partner app device record yet. It should appear after partner app sign-in.
-              </p>
-            )}
-          </div>
-          <div>
-            <h3>Recent sessions</h3>
-            {(provider.sessions ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.sessions?.slice(0, 6).map((session) => (
-                  <div className="setup-stage-item" key={session.id}>
-                    <span>{session.suspicious ? 'CHECK' : 'OK'}</span>
-                    <div>
-                      <strong>{maskDeviceId(session.deviceId)}</strong>
-                      <p className="muted">
-                        IP {session.ipAddress ?? 'missing'} / {session.appVersion ?? 'unknown app'} / last
-                        seen {formatDate(session.lastSeenAt)}
-                      </p>
-                      {session.suspiciousReason ? (
-                        <p className="muted">
-                          Session note: {displaySessionCheckText(session.suspiciousReason)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <small>{formatDate(session.loggedInAt)}</small>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">No partner session log yet.</p>
-            )}
-          </div>
-        </div>
-        {(provider.sharedDeviceMatches ?? []).length ? (
-          <div className="setup-stage-list admin-mt-16">
-            {provider.sharedDeviceMatches?.map((match) => (
-              <div className="setup-stage-item" key={match.id}>
-                <span>SHARED</span>
-                <div>
-                  <strong>{maskDeviceId(match.deviceId)}</strong>
-                  <p className="muted">
-                    Also used by {match.providerProfile?.displayName ?? 'another partner'} (
-                    {match.providerProfile?.user?.phone ?? 'no phone'}) / last seen{' '}
-                    {formatDate(match.lastSeenAt)}
-                  </p>
-                </div>
-                <small>{match.enabled ? 'Enabled' : 'Disabled'}</small>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <PartnerDetailDeviceSessionActivitySection
+        cardClassForTone={cardClass}
+        deviceRows={partnerDeviceRows}
+        followUpNeeded={securitySummary.followUpNeeded}
+        pillClassForTone={pillClass}
+        securityCards={securitySummary.cards}
+        sessionRows={partnerSessionRows}
+        sharedDeviceRows={partnerSharedDeviceRows}
+      />
 
       <div className="card admin-mb-16">
         <div className="ops-section-header">
@@ -5574,6 +5489,49 @@ function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerA
     key: `${record.type}-${record.id}-${record.at}-${index}`,
     title: record.title,
     type: record.type,
+  }));
+}
+
+function buildPartnerDeviceRows(provider: ProviderDetail): PartnerDeviceRow[] {
+  return (provider.devices ?? []).map((device) => {
+    const title = maskDeviceId(device.deviceId);
+
+    return {
+      actionLabel: `Device actions for ${title}`,
+      actions: partnerDetailDeviceActionMenuItems(provider.id, device),
+      blockReason: device.blockReason,
+      detail: `${device.platform ?? 'unknown platform'} / ${device.appVersion ?? 'unknown app'} / last seen ${formatDate(
+        device.lastSeenAt,
+      )}`,
+      id: device.id,
+      smallLabel: device.blockedAt ? formatDate(device.blockedAt) : 'Active',
+      statusLabel: device.blockedAt ? 'BLOCKED' : device.enabled ? 'ENABLED' : 'DISABLED',
+      title,
+    };
+  });
+}
+
+function buildPartnerSessionRows(provider: ProviderDetail): PartnerSessionRow[] {
+  return (provider.sessions ?? []).slice(0, 6).map((session) => ({
+    detail: `IP ${session.ipAddress ?? 'missing'} / ${session.appVersion ?? 'unknown app'} / last seen ${formatDate(
+      session.lastSeenAt,
+    )}`,
+    id: session.id,
+    sessionNote: session.suspiciousReason ? displaySessionCheckText(session.suspiciousReason) : null,
+    smallLabel: formatDate(session.loggedInAt),
+    statusLabel: session.suspicious ? 'CHECK' : 'OK',
+    title: maskDeviceId(session.deviceId),
+  }));
+}
+
+function buildPartnerSharedDeviceRows(provider: ProviderDetail): PartnerSharedDeviceRow[] {
+  return (provider.sharedDeviceMatches ?? []).map((match) => ({
+    detail: `Also used by ${match.providerProfile?.displayName ?? 'another partner'} (${
+      match.providerProfile?.user?.phone ?? 'no phone'
+    }) / last seen ${formatDate(match.lastSeenAt)}`,
+    id: match.id,
+    smallLabel: match.enabled ? 'Enabled' : 'Disabled',
+    title: maskDeviceId(match.deviceId),
   }));
 }
 
