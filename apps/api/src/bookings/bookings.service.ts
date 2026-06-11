@@ -972,24 +972,13 @@ export class BookingsService {
       data: { status, respondedAt: new Date() },
       include: { providerProfile: true },
     });
-
-    if (status === ParticipantStatus.ACCEPTED) {
-      await this.notifyCustomerMarketplaceProviderAccepted(
-        booking.customerProfile.userId,
-        bookingId,
-        provider,
-      );
-      this.matchingGateway.emitProviderAccepted(bookingId, updatedParticipant);
-    }
-
-    if (status === ParticipantStatus.REJECTED) {
-      await this.notifyCustomerMarketplaceProviderRejected(
-        booking.customerProfile.userId,
-        bookingId,
-        provider,
-      );
-      this.matchingGateway.emitProviderRejected(bookingId, updatedParticipant);
-    }
+    await this.announceMarketplaceParticipantResponse({
+      status,
+      bookingId,
+      customerUserId: booking.customerProfile.userId,
+      provider,
+      participant: updatedParticipant,
+    });
 
     return updatedParticipant;
   }
@@ -1127,6 +1116,32 @@ export class BookingsService {
     await this.notifications.create(
       customerMarketplaceProviderRejectedNotification({ userId: customerUserId, bookingId, provider }),
     );
+  }
+
+  private async announceMarketplaceParticipantResponse(input: {
+    status: ParticipantStatus;
+    bookingId: string;
+    customerUserId: string;
+    provider: { id: string; displayName: string };
+    participant: unknown;
+  }) {
+    if (input.status === ParticipantStatus.ACCEPTED) {
+      await this.notifyCustomerMarketplaceProviderAccepted(
+        input.customerUserId,
+        input.bookingId,
+        input.provider,
+      );
+      this.matchingGateway.emitProviderAccepted(input.bookingId, input.participant);
+    }
+
+    if (input.status === ParticipantStatus.REJECTED) {
+      await this.notifyCustomerMarketplaceProviderRejected(
+        input.customerUserId,
+        input.bookingId,
+        input.provider,
+      );
+      this.matchingGateway.emitProviderRejected(input.bookingId, input.participant);
+    }
   }
 
   private async notifyServiceStarted(input: {
