@@ -2180,7 +2180,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner level path</h2>
@@ -2206,7 +2206,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Resubmission guidance</h2>
@@ -2247,7 +2247,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Review history</h2>
@@ -2319,7 +2319,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
         <div className="card" id="kyc">
           <h2>KYC decision</h2>
-          <div className="participant-list" style={{ marginBottom: 10 }}>
+          <div className="participant-list admin-mb-10">
             <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
               KYC {provider.kyc?.status ?? 'MISSING'}
             </span>
@@ -2335,7 +2335,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           {provider.kyc?.rejectionReason ? (
             <p className="muted">Rejection reason: {provider.kyc.rejectionReason}</p>
           ) : null}
-          <div className="actions" style={{ marginTop: 12 }}>
+          <div className="actions admin-mt-12">
             <ActionMenu
               actions={[
                 {
@@ -2361,11 +2361,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             />
           </div>
           {!canApproveKyc ? (
-            <p className="muted" style={{ marginTop: 10 }}>
+            <p className="muted admin-mt-10">
               Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.
             </p>
           ) : null}
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {kycEvidence.decisionChecklist.map((item) => (
               <div className="setup-stage-item" key={item.label}>
                 <span>{item.ok ? 'OK' : 'FIX'}</span>
@@ -2377,7 +2377,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               </div>
             ))}
           </div>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {kycEvidence.rows.map((row) => (
               <div className="setup-stage-item" key={row.type}>
                 <span>{row.status === 'APPROVED' ? 'OK' : 'CHECK'}</span>
@@ -2393,7 +2393,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               </div>
             ))}
           </div>
-          <p className="muted" style={{ marginTop: 10 }}>
+          <p className="muted admin-mt-10">
             {kycEvidence.nextAction}
           </p>
         </div>
@@ -2411,7 +2411,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <div className="provider-file-list">
               {providerServicePricing.rows.map((row) => (
                 <div className="provider-file-row" key={row.id}>
-                  <div className="participant-list" style={{ marginBottom: 6 }}>
+                  <div className="participant-list admin-mb-6">
                     <span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>
                       {row.bookable ? 'CUSTOMER VISIBLE' : 'HIDDEN'}
                     </span>
@@ -2444,7 +2444,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           {(provider.documents ?? []).length ? (
             provider.documents?.map((document) => (
               <div className="provider-file-row" key={document.id}>
-                <div className="participant-list" style={{ marginBottom: 6 }}>
+                <div className="participant-list admin-mb-6">
                   <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
                   <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
                     {document.status}
@@ -2511,7 +2511,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           {(provider.user?.fileAssets ?? []).length ? (
             provider.user?.fileAssets?.map((file) => (
               <div className="provider-file-row" key={file.id}>
-                <div className="participant-list" style={{ marginBottom: 6 }}>
+                <div className="participant-list admin-mb-6">
                   <span className="pill pill-info">{providerPublicMediaLabel(file.purpose)}</span>
                   <span className="pill pill-success">{file.uploadStatus ?? 'UPLOADED'}</span>
                   <span
@@ -2582,7 +2582,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <InfoLine label="Holder" value={primaryBank.accountHolderName} />
               <InfoLine label="Status" value={primaryBank.status} />
               <InfoLine label="Rejection reason" value={primaryBank.rejectionReason} />
-              <div className="actions" style={{ marginTop: 12 }}>
+              <div className="actions admin-mt-12">
                 <ActionMenu
                   actions={[
                     {
@@ -2624,7 +2624,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <InfoLine label="Tax code" value={`****${provider.taxProfile.taxCodeLast4 ?? '----'}`} />
               <InfoLine label="Registered address" value={provider.taxProfile.registeredAddress} />
               <InfoLine label="Rejection reason" value={provider.taxProfile.rejectionReason} />
-              <div className="actions" style={{ marginTop: 12 }}>
+              <div className="actions admin-mt-12">
                 <ActionMenu
                   actions={[
                     {
