@@ -836,13 +836,13 @@ export class BookingsService {
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
-    await this.notifyCustomerSelectedPartnerMatched({
+    await this.announceCustomerSelectedPartnerMatched({
       bookingId,
       customerUserId,
       selectedProviderUserId: booking.selectedProvider?.userId,
       chatRoomId: booking.chatRoom?.id,
+      matchingPayload: result,
     });
-    this.matchingGateway.emitBookingMatched(bookingId, result);
     return result;
   }
 
@@ -1060,6 +1060,17 @@ export class BookingsService {
         chatRoomId: input.chatRoomId,
       }),
     );
+  }
+
+  private async announceCustomerSelectedPartnerMatched(input: {
+    bookingId: string;
+    customerUserId: string;
+    selectedProviderUserId?: string;
+    chatRoomId?: string;
+    matchingPayload: unknown;
+  }) {
+    await this.notifyCustomerSelectedPartnerMatched(input);
+    this.matchingGateway.emitBookingMatched(input.bookingId, input.matchingPayload);
   }
 
   private async notifyFirstPickAcceptedMatched(input: {
