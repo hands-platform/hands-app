@@ -117,6 +117,7 @@ Daily Codex cadence:
 - Docs or copy only: use the directly relevant script, or `npm.cmd run verify:preflight` when branch safety matters.
 - Admin-only UI/data shaping: use targeted Jest when a helper changes, then `npm.cmd run verify:admin:fast`.
 - API/booking/matching/payment/wallet changes: use the focused Jest spec first, then `npm.cmd run verify:api:fast`; run Tier 3 when DB/runtime behavior changes.
+- Notification partner alert contract changes: run `npm.cmd run notifications:partner-alert-contract` with the touched API/Admin spec before committing.
 - Flutter-only changes: use the touched app test/analyze, or `npm.cmd run verify:customer:fast` / `npm.cmd run verify:provider:fast`.
 - Cross-surface contract changes: use `npm.cmd run verify:node:fast`, the touched Flutter app check, then a full verify before push or release.
 
