@@ -67,7 +67,12 @@ import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
-import { backupAlertTraceDisplayFromSummary } from '../../lib/backup-alert-trace-display';
+import {
+  bookingBackupAlertTraceLabel,
+  bookingBackupAlertTracePill,
+  bookingBackupAlertTraceSummary,
+  bookingBackupAlertTraceTone,
+} from './booking-alert-trace';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import { bookingMatchingPolicySnapshot } from './booking-matching-policy-snapshot';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
@@ -119,7 +124,6 @@ import {
   bookingSelectedPartnerIdForChoice,
   isCustomerSelectableBookingParticipant,
 } from '../../lib/booking-participant-choice';
-import { bookingAlertTraceSummaryFromMetadata } from '../../lib/booking-evidence-ops';
 
 type Props = {
   bookings: AdminBooking[];
@@ -3535,39 +3539,6 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplacePartnerCount: marketplaceCount,
   });
-}
-
-function bookingBackupAlertTraceLabel(booking: AdminBooking, nowMs: number) {
-  return bookingBackupAlertTraceDisplay(booking, nowMs).label;
-}
-
-function bookingBackupAlertTracePill(booking: AdminBooking) {
-  return bookingBackupAlertTraceDisplay(booking).pill;
-}
-
-function bookingBackupAlertTraceTone(booking: AdminBooking) {
-  return bookingBackupAlertTraceDisplay(booking).tone;
-}
-
-function bookingBackupAlertTraceDisplay(booking: AdminBooking, nowMs = 0) {
-  const summary = bookingBackupAlertTraceSummary(booking);
-  const summaryWithAge = nowMs ? bookingBackupAlertTraceSummary(booking, nowMs) : summary;
-  return backupAlertTraceDisplayFromSummary({
-    batchCount: summary.batchCount,
-    bookingStatus: booking.status,
-    lastAge: summaryWithAge.lastAge,
-    totalNotified: summary.totalNotified,
-  });
-}
-
-function bookingBackupAlertTraceSummary(booking: AdminBooking, nowMs = 0) {
-  const summary = bookingAlertTraceSummaryFromMetadata(booking.metadata);
-  return {
-    ...summary,
-    lastStage: summary.lastStage ?? null,
-    lastCreatedAt: summary.lastCreatedAt ?? null,
-    lastAge: summary.lastCreatedAt ? relativeTimeLabel(summary.lastCreatedAt, nowMs) : null,
-  };
 }
 
 function relativeTimeLabel(value: string, nowMs: number) {
