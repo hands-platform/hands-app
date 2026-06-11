@@ -38,11 +38,11 @@ import {
 } from './admin-booking-matching-evidence';
 import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
-  assertProviderReportSeverity,
-  assertProviderReportSource,
-  assertProviderReportStatus,
-  assertProviderSanctionType,
-  providerReportResolvedAt,
+  normalizeProviderReportCreateInput,
+  normalizeProviderReportUpdateInput,
+  normalizeProviderSanctionCreateInput,
+  providerReportCreateAuditMetadata,
+  providerSanctionCreateAuditMetadata,
 } from './admin-provider-control-helpers';
 import {
   adminBookingListSelect,
@@ -584,35 +584,27 @@ export class AdminService {
       details?: string | null;
     },
   ) {
-    const providerProfileId = normalizeNullable(input.providerProfileId);
-    const category = normalizeNullable(input.category);
-    const summary = normalizeNullable(input.summary);
-    if (!providerProfileId) throw new BadRequestException('providerProfileId is required');
-    if (!category) throw new BadRequestException('Report category is required');
-    if (!summary) throw new BadRequestException('Report summary is required');
-    assertProviderReportSource(input.source);
-    assertProviderReportSeverity(input.severity);
+    const reportInput = normalizeProviderReportCreateInput(input);
 
     const report = await this.prisma.providerReport.create({
       data: {
-        providerProfileId,
-        bookingId: normalizeNullable(input.bookingId),
-        source: input.source ?? ProviderReportSource.ADMIN,
-        severity: input.severity ?? ProviderReportSeverity.MEDIUM,
-        category,
-        summary,
-        details: normalizeNullable(input.details),
+        ...reportInput,
         reporterUserId: actorId,
         assignedAdminId: actorId,
       },
       select: adminProviderReportListSelect,
     });
 
-    await this.writeAudit(actorId, 'provider_report.create', `provider_report:${report.id}`, {
-      providerProfileId,
-      category,
-      severity: report.severity,
-    });
+    await this.writeAudit(
+      actorId,
+      'provider_report.create',
+      `provider_report:${report.id}`,
+      providerReportCreateAuditMetadata({
+        providerProfileId: reportInput.providerProfileId,
+        category: reportInput.category,
+        severity: report.severity,
+      }),
+    );
     return report;
   }
 
@@ -625,23 +617,18 @@ export class AdminService {
       resolutionNote?: string | null;
     },
   ) {
-    assertProviderReportStatus(input.status);
-    assertProviderReportSeverity(input.severity);
+    const reportInput = normalizeProviderReportUpdateInput(input);
     const report = await this.prisma.providerReport.update({
       where: { id: reportId },
-      data: {
-        status: input.status,
-        severity: input.severity,
-        resolutionNote: normalizeNullable(input.resolutionNote),
-        resolvedAt: providerReportResolvedAt(input.status),
-      },
+      data: reportInput.data,
     });
 
-    await this.writeAudit(actorId, 'provider_report.update', `provider_report:${reportId}`, {
-      status: input.status,
-      severity: input.severity,
-      resolutionNote: normalizeNullable(input.resolutionNote),
-    });
+    await this.writeAudit(
+      actorId,
+      'provider_report.update',
+      `provider_report:${reportId}`,
+      reportInput.auditMetadata,
+    );
     return report;
   }
 
@@ -663,10 +650,8 @@ export class AdminService {
       expiresAt?: string | null;
     },
   ) {
-    const reason = normalizeNullable(input.reason);
-    if (!reason) throw new BadRequestException('Sanction reason is required');
-    assertProviderSanctionType(input.type);
-    const type = input.type ?? ProviderSanctionType.WARNING;
+    const sanctionInput = normalizeProviderSanctionCreateInput(input);
+    const { type, reason, reportId } = sanctionInput;
     if (type === ProviderSanctionType.ACCOUNT_BLOCK) {
       await this.blockProviderAccount(actorId, providerProfileId, reason);
       const accountBlock = await this.prisma.providerSanction.findFirstOrThrow({
@@ -678,36 +663,38 @@ export class AdminService {
         },
         orderBy: { createdAt: 'desc' },
       });
-      const updated = normalizeNullable(input.reportId)
+      const updated = reportId
         ? await this.prisma.providerSanction.update({
             where: { id: accountBlock.id },
-            data: { reportId: normalizeNullable(input.reportId) },
+            data: { reportId },
           })
         : accountBlock;
-      await this.writeAudit(actorId, 'provider_sanction.create', `provider_sanction:${updated.id}`, {
-        providerProfileId,
-        reportId: normalizeNullable(input.reportId),
-        type,
-      });
+      await this.writeAudit(
+        actorId,
+        'provider_sanction.create',
+        `provider_sanction:${updated.id}`,
+        providerSanctionCreateAuditMetadata({ providerProfileId, reportId, type }),
+      );
       return updated;
     }
 
     const sanction = await this.prisma.providerSanction.create({
       data: {
         providerProfileId,
-        reportId: normalizeNullable(input.reportId),
+        reportId,
         type,
         reason,
-        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        expiresAt: sanctionInput.expiresAt,
         issuedById: actorId,
       },
     });
 
-    await this.writeAudit(actorId, 'provider_sanction.create', `provider_sanction:${sanction.id}`, {
-      providerProfileId,
-      reportId: normalizeNullable(input.reportId),
-      type,
-    });
+    await this.writeAudit(
+      actorId,
+      'provider_sanction.create',
+      `provider_sanction:${sanction.id}`,
+      providerSanctionCreateAuditMetadata({ providerProfileId, reportId, type }),
+    );
     return sanction;
   }
 
