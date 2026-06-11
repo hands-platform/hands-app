@@ -478,12 +478,7 @@ function buildTaxPreview(
     serviceTypes: serviceType ? [serviceType] : [],
   });
   const withholdingAmount =
-    policy && rule
-      ? Math.max(
-          0,
-          Math.min(grossAmount, Math.round((grossAmount * rule.rateBps) / 10000) + rule.fixedAmount),
-        )
-      : 0;
+    policy && rule ? cappedBpsAmount(grossAmount, rule.rateBps, rule.fixedAmount) : 0;
 
   return {
     serviceType,
@@ -580,4 +575,8 @@ function formatBand(rule: AdminTaxRule) {
 
 function formatBps(value: number) {
   return `${(value / 100).toFixed(2)}%`;
+}
+
+function cappedBpsAmount(baseAmount: number, rateBps: number, fixedAmount: number) {
+  return Math.max(0, Math.min(baseAmount, Math.round((baseAmount * rateBps) / 10000) + fixedAmount));
 }
