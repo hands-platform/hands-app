@@ -2987,7 +2987,7 @@ function PartnerDetailFastOverview({
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         {overviewCards.map((card) => (
           <div className="card" key={card.label}>
             <span className={`pill ${card.tone}`}>{card.label}</span>
@@ -3303,7 +3303,7 @@ function PartnerDetailReadinessSnapshot({
   const badges = buildPartnerDetailOpsBadges(provider, bookingAcceptance, payoutOps, dispatchPolicy);
 
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Partner readiness snapshot</h2>
@@ -3314,14 +3314,14 @@ function PartnerDetailReadinessSnapshot({
         </div>
         <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
       </div>
-      <div className="participant-list" style={{ marginTop: 12 }}>
+      <div className="participant-list admin-mt-12">
         {badges.map((badge) => (
           <span className={`pill ${pillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
             {badge.label}
           </span>
         ))}
       </div>
-      <div className="setup-stage-item" style={{ marginTop: 16 }}>
+      <div className="setup-stage-item admin-mt-16">
         <span>{bookingAcceptance.canJoinMarketplace ? 'GO' : 'HOLD'}</span>
         <div>
           <strong>
@@ -3355,7 +3355,7 @@ function PartnerAcceptanceRepairCommandPanel({
   const command = buildPartnerAcceptanceRepairCommand(provider, bookingAcceptance, payoutOps, dispatchPolicy);
 
   return (
-    <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
+    <div className={`card ${cardClass(command.tone)} admin-mb-16`}>
       <div className="ops-section-header">
         <div>
           <h2>Marketplace repair command</h2>
@@ -3366,7 +3366,7 @@ function PartnerAcceptanceRepairCommandPanel({
         </div>
         <span className={`pill ${pillClass(command.tone)}`}>{command.status}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Partner app block message</span>
           <strong>{command.partnerAppMessage}</strong>
@@ -3388,7 +3388,7 @@ function PartnerAcceptanceRepairCommandPanel({
           <small>Where live demand should go while blocked.</small>
         </div>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 16 }}>
+      <div className="setup-stage-list admin-mt-16">
         {command.steps.map((step, index) => (
           <div className="setup-stage-item" key={`${step.owner}-${step.blocker}`}>
             <span>{index + 1}</span>
