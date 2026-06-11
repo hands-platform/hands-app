@@ -93,7 +93,7 @@ describe('NotificationRetryProcessor', () => {
         status: 'FAILED',
         disableDevice: true,
         failureCode: 'messaging/registration-token-not-registered',
-        response: { reason: 'registration token [masked]' },
+        response: { reason: 'registration token fcm-token-1 leaked from provider response' },
       }),
     };
     const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
@@ -128,11 +128,12 @@ describe('NotificationRetryProcessor', () => {
         provider: 'FCM',
         status: 'FAILED',
         response: {
-          reason: 'registration token [masked]',
+          reason: 'registration token [masked] leaked from provider response',
           failureCode: 'messaging/registration-token-not-registered',
         },
       },
     });
+    expect(JSON.stringify(tx.notificationDelivery.create.mock.calls)).not.toContain('fcm-token-1');
     expect(tx.pushDevice.update).toHaveBeenCalledWith({
       where: { id: 'device-1' },
       data: { enabled: false },

@@ -77,7 +77,7 @@ export class NotificationRetryProcessor extends WorkerHost {
             pushDeviceId: device.id,
             provider: result.provider,
             status: result.status,
-            response: toJson(notificationDeliveryResponse(result)),
+            response: toJson(notificationDeliveryResponse(result, device.token)),
           },
         });
 
@@ -130,8 +130,19 @@ function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-function notificationDeliveryResponse(result: Awaited<ReturnType<PushDeliveryService['send']>>) {
-  return result.failureCode ? { ...result.response, failureCode: result.failureCode } : result.response;
+function notificationDeliveryResponse(
+  result: Awaited<ReturnType<PushDeliveryService['send']>>,
+  pushToken: string,
+) {
+  const response = result.failureCode ? { ...result.response, failureCode: result.failureCode } : result.response;
+  return maskPushTokenInJson(response, pushToken);
+}
+
+function maskPushTokenInJson(value: unknown, pushToken: string) {
+  if (!pushToken) {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value).split(pushToken).join('[masked]'));
 }
 
 export function toPushData(value: unknown) {
