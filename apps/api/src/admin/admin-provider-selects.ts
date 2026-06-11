@@ -1,0 +1,169 @@
+import { Prisma } from '@prisma/client';
+import { adminUserSummarySelect } from './admin-user-selects';
+
+export const adminProviderSummarySelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  blockedAt: true,
+  user: { select: adminUserSummarySelect },
+} satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderPublicMediaSelect = {
+  id: true,
+  key: true,
+  url: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewedAt: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  createdAt: true,
+} satisfies Prisma.FileAssetSelect;
+
+export const adminProviderVerificationFileSelect = {
+  id: true,
+  key: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewedAt: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  url: true,
+} satisfies Prisma.FileAssetSelect;
+
+export const adminProviderVerificationSummarySelect = {
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  files: {
+    take: 3,
+    select: adminProviderVerificationFileSelect,
+  },
+} satisfies Prisma.ProviderVerificationSelect;
+
+export const adminProviderKycSummarySelect = {
+  id: true,
+  status: true,
+  cccdNumberLast4: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderKycSelect;
+
+export const adminProviderDocumentSummarySelect = {
+  id: true,
+  type: true,
+  status: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  fileAsset: {
+    select: {
+      id: true,
+      key: true,
+      contentType: true,
+      uploadStatus: true,
+      uploadedAt: true,
+      sizeBytes: true,
+    },
+  },
+} satisfies Prisma.ProviderDocumentSelect;
+
+export const adminProviderBankAccountSummarySelect = {
+  id: true,
+  bankName: true,
+  accountNumberMasked: true,
+  accountNumberLast4: true,
+  accountHolderName: true,
+  status: true,
+  isPrimary: true,
+  reviewedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderBankAccountSelect;
+
+export const adminProviderTaxProfileSummarySelect = {
+  id: true,
+  status: true,
+  taxCodeLast4: true,
+  legalName: true,
+  registeredAddress: true,
+  approvedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderTaxProfileSelect;
+
+export const adminProviderAgreementSummarySelect = {
+  id: true,
+  type: true,
+  version: true,
+  acceptedAt: true,
+} satisfies Prisma.ProviderAgreementSelect;
+
+export const adminProviderReportSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  source: true,
+  severity: true,
+  status: true,
+  category: true,
+  summary: true,
+  details: true,
+  resolvedAt: true,
+  resolutionNote: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderReportSelect;
+
+export const adminProviderSanctionSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  reportId: true,
+  type: true,
+  status: true,
+  reason: true,
+  startsAt: true,
+  expiresAt: true,
+  liftedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderSanctionSelect;
+
+export const adminProviderSessionSummarySelect = {
+  id: true,
+  deviceId: true,
+  ipAddress: true,
+  appVersion: true,
+  loggedInAt: true,
+  lastSeenAt: true,
+  suspicious: true,
+  suspiciousReason: true,
+} satisfies Prisma.ProviderSessionSelect;
+
+export const adminProviderDeviceSummarySelect = {
+  id: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  enabled: true,
+  lastSeenAt: true,
+  blockedAt: true,
+  blockReason: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderDeviceSelect;
