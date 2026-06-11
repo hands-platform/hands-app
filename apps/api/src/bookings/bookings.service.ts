@@ -854,14 +854,14 @@ export class BookingsService {
         clientBookingResponse(updated),
         MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
       );
-      await this.notifyFirstPickAcceptedMatched({
+      await this.announceFirstPickAcceptedMatched({
         bookingId,
         customerUserId: booking.customerProfile.userId,
         provider,
         selectedProviderUserId: updated.selectedProvider?.userId,
         chatRoomId: updated.chatRoom?.id,
+        matchingPayload: result,
       });
-      this.matchingGateway.emitBookingMatched(bookingId, result);
       return result;
     }
 
@@ -1111,6 +1111,18 @@ export class BookingsService {
         chatRoomId: input.chatRoomId,
       }),
     );
+  }
+
+  private async announceFirstPickAcceptedMatched(input: {
+    bookingId: string;
+    customerUserId: string;
+    provider: { id: string; displayName: string };
+    selectedProviderUserId?: string;
+    chatRoomId?: string;
+    matchingPayload: unknown;
+  }) {
+    await this.notifyFirstPickAcceptedMatched(input);
+    this.matchingGateway.emitBookingMatched(input.bookingId, input.matchingPayload);
   }
 
   private async notifyCustomerFirstPickRejected(
