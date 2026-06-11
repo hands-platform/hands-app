@@ -32,6 +32,7 @@ import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
   paymentStatusCheckJob,
 } from './payment-status.queue';
+import { paymentRefundEarningCancellationAudit } from './payment-refund-audit';
 import { paymentUpdatedNotification } from './payments.notifications';
 
 @Injectable()
@@ -245,15 +246,11 @@ export class PaymentsService {
       include: { refunds: true },
     });
     const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
-    const earningCancellationAudit =
-      earningCancellation.skipped || !('earning' in earningCancellation)
-        ? { skipped: true, reason: earningCancellation.reason }
-        : { skipped: false, earningId: earningCancellation.earning?.id ?? 'unknown' };
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
       amount: payment.amount,
       method: payment.method,
-      earningCancellation: earningCancellationAudit,
+      earningCancellation: paymentRefundEarningCancellationAudit(earningCancellation),
     });
     await this.notifyPaymentUpdated(payment.id);
 
