@@ -65,13 +65,17 @@ import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
-import { bookingServiceListLabelsFromFacts } from '../../lib/booking-service-list-labels';
 import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import { backupAlertTraceDisplayFromSummary } from '../../lib/backup-alert-trace-display';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import { bookingMatchingPolicySnapshot } from './booking-matching-policy-snapshot';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
+import {
+  bookingServiceOptionLabel,
+  bookingServicePayoutRuleLabel,
+  bookingServicePriceLabel,
+} from './booking-service-labels';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -3497,34 +3501,6 @@ function nextAction(booking: AdminBooking) {
     marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
     backupSelected: isBackupSelected(booking),
     completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-  });
-}
-
-function bookingServiceOptionLabel(booking: AdminBooking) {
-  return bookingServiceListLabels(booking).optionLabel;
-}
-
-function bookingServicePriceLabel(booking: AdminBooking) {
-  return bookingServiceListLabels(booking).priceLabel;
-}
-
-function bookingServicePayoutRuleLabel(booking: AdminBooking) {
-  return bookingServiceListLabels(booking).payoutRuleLabel;
-}
-
-function bookingServiceListLabels(booking: AdminBooking) {
-  const bookedService = booking.services?.[0];
-  const service = bookedService?.service;
-  const currency = booking.payment?.currency ?? 'VND';
-  const customerPrice = bookedService?.price ?? booking.payment?.amount;
-  return bookingServiceListLabelsFromFacts({
-    currency,
-    customerPrice,
-    durationMin: service?.durationMin,
-    formatMoney: money,
-    minimumPrice: service?.basePrice,
-    payoutRules: service?.payoutRules ?? [],
-    serviceName: service?.name ? displayMarketplaceText(service.name) : null,
   });
 }
 
