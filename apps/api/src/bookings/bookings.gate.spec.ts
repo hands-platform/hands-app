@@ -8,6 +8,7 @@ import {
   assertWorldBookingCoordinate,
   bookingDistanceGateLimits,
   bookingDistanceGateSnapshot,
+  bookingGateRejectionAuditCreateInput,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
@@ -147,6 +148,50 @@ describe('booking gate helpers', () => {
       preferredProviderDistanceMeters: 800,
       preferredProviderDistanceLimitMeters: 50000,
       gatePassed: true,
+    });
+  });
+
+  it('builds booking gate rejection audit create input', () => {
+    expect(
+      bookingGateRejectionAuditCreateInput({
+        actorId: 'customer-user-1',
+        customerProfileId: 'customer-1',
+        serviceId: 'service-1',
+        preferredProviderId: 'partner-1',
+        reasonCode: 'PREFERRED_PARTNER_TOO_FAR',
+        reason: 'Preferred partner must be within 50km of the booking address',
+        bookingLat: 10.7769,
+        bookingLng: 106.7009,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        customerDistanceMeters: null,
+        preferredProviderDistanceMeters: 60000,
+        customerDistanceLimitMeters: 20000,
+        preferredProviderDistanceLimitMeters: 50000,
+        currentLocationRecordedAt: new Date('2026-06-11T00:00:00.000Z'),
+      }),
+    ).toEqual({
+      data: {
+        actorId: 'customer-user-1',
+        action: 'booking.create.rejected',
+        target: 'customer:customer-1',
+        metadata: {
+          reasonCode: 'PREFERRED_PARTNER_TOO_FAR',
+          reason: 'Preferred partner must be within 50km of the booking address',
+          customerProfileId: 'customer-1',
+          serviceId: 'service-1',
+          preferredProviderId: 'partner-1',
+          bookingAddress: {
+            lat: 10.7769,
+            lng: 106.7009,
+            addressText: 'District 1, Ho Chi Minh City, Vietnam',
+          },
+          customerDistanceMeters: null,
+          preferredProviderDistanceMeters: 60000,
+          customerDistanceLimitMeters: 20000,
+          preferredProviderDistanceLimitMeters: 50000,
+          currentLocationRecordedAt: '2026-06-11T00:00:00.000Z',
+        },
+      },
     });
   });
 });

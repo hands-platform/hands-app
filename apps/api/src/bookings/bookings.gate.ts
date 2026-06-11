@@ -4,6 +4,23 @@ import { isVietnamBookingCoordinate } from './bookings.policy';
 
 export type BookingAttemptCurrentLocation = ReturnType<typeof normalizeBookingAttemptCurrentLocation>;
 
+export type BookingGateRejectionAuditInput = {
+  actorId: string;
+  customerProfileId: string;
+  serviceId: string;
+  preferredProviderId?: string | null;
+  reasonCode: string;
+  reason: string;
+  bookingLat: number;
+  bookingLng: number;
+  addressText: string;
+  customerDistanceMeters?: number | null;
+  preferredProviderDistanceMeters?: number | null;
+  customerDistanceLimitMeters: number;
+  preferredProviderDistanceLimitMeters: number;
+  currentLocationRecordedAt?: Date | null;
+};
+
 export function assertWorldBookingCoordinate(lat: number, lng: number) {
   if (!isWorldBookingCoordinate(lat, lng)) {
     throw new BadRequestException('Booking address coordinate is invalid');
@@ -115,6 +132,33 @@ export function bookingDistanceGateSnapshot(input: {
     preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
     preferredProviderDistanceLimitMeters: limits.preferredProviderDistanceLimitMeters,
     gatePassed: true,
+  };
+}
+
+export function bookingGateRejectionAuditCreateInput(input: BookingGateRejectionAuditInput) {
+  return {
+    data: {
+      actorId: input.actorId,
+      action: 'booking.create.rejected',
+      target: `customer:${input.customerProfileId}`,
+      metadata: {
+        reasonCode: input.reasonCode,
+        reason: input.reason,
+        customerProfileId: input.customerProfileId,
+        serviceId: input.serviceId,
+        preferredProviderId: input.preferredProviderId ?? null,
+        bookingAddress: {
+          lat: input.bookingLat,
+          lng: input.bookingLng,
+          addressText: input.addressText,
+        },
+        customerDistanceMeters: input.customerDistanceMeters ?? null,
+        preferredProviderDistanceMeters: input.preferredProviderDistanceMeters ?? null,
+        customerDistanceLimitMeters: input.customerDistanceLimitMeters,
+        preferredProviderDistanceLimitMeters: input.preferredProviderDistanceLimitMeters,
+        currentLocationRecordedAt: input.currentLocationRecordedAt?.toISOString() ?? null,
+      },
+    },
   };
 }
 

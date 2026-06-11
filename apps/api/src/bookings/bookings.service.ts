@@ -44,6 +44,8 @@ import {
   assertWorldBookingCoordinate,
   bookingDistanceGateLimits,
   bookingDistanceGateSnapshot,
+  bookingGateRejectionAuditCreateInput,
+  type BookingGateRejectionAuditInput,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
@@ -157,46 +159,8 @@ export class BookingsService {
     private readonly earnings: EarningsService,
   ) {}
 
-  private async recordBookingGateRejection(input: {
-    actorId: string;
-    customerProfileId: string;
-    serviceId: string;
-    preferredProviderId?: string | null;
-    reasonCode: string;
-    reason: string;
-    bookingLat: number;
-    bookingLng: number;
-    addressText: string;
-    customerDistanceMeters?: number | null;
-    preferredProviderDistanceMeters?: number | null;
-    customerDistanceLimitMeters: number;
-    preferredProviderDistanceLimitMeters: number;
-    currentLocationRecordedAt?: Date | null;
-  }) {
-    await this.prisma.adminAuditLog.create({
-      data: {
-        actorId: input.actorId,
-        action: 'booking.create.rejected',
-        target: `customer:${input.customerProfileId}`,
-        metadata: {
-          reasonCode: input.reasonCode,
-          reason: input.reason,
-          customerProfileId: input.customerProfileId,
-          serviceId: input.serviceId,
-          preferredProviderId: input.preferredProviderId ?? null,
-          bookingAddress: {
-            lat: input.bookingLat,
-            lng: input.bookingLng,
-            addressText: input.addressText,
-          },
-          customerDistanceMeters: input.customerDistanceMeters ?? null,
-          preferredProviderDistanceMeters: input.preferredProviderDistanceMeters ?? null,
-          customerDistanceLimitMeters: input.customerDistanceLimitMeters,
-          preferredProviderDistanceLimitMeters: input.preferredProviderDistanceLimitMeters,
-          currentLocationRecordedAt: input.currentLocationRecordedAt?.toISOString() ?? null,
-        },
-      },
-    });
+  private async recordBookingGateRejection(input: BookingGateRejectionAuditInput) {
+    await this.prisma.adminAuditLog.create(bookingGateRejectionAuditCreateInput(input));
   }
 
   async createOpenMatchingBooking(
