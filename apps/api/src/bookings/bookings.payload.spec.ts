@@ -1,5 +1,6 @@
 import { BookingStatus, Role } from '@prisma/client';
 import {
+  bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
   customerCancellationCloseData,
@@ -22,6 +23,41 @@ describe('booking payload helpers', () => {
     expect(normalizeBookingAddress(undefined, 'District 1')).toEqual({
       addressText: 'District 1',
     });
+  });
+
+  it('builds booking address snapshot create data', () => {
+    const address = { addressText: 'District 1, Ho Chi Minh City, Vietnam' };
+
+    expect(
+      bookingAddressSnapshotCreate({
+        customerProfileId: 'customer-1',
+        selectedLocationId: 'location-1',
+        address,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        latitude: 10.7769,
+        longitude: 106.7009,
+      }),
+    ).toEqual({
+      create: {
+        customerProfileId: 'customer-1',
+        selectedLocationId: 'location-1',
+        address,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        latitude: 10.7769,
+        longitude: 106.7009,
+      },
+    });
+
+    expect(
+      bookingAddressSnapshotCreate({
+        customerProfileId: 'customer-1',
+        selectedLocationId: null,
+        address,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        latitude: 10.7769,
+        longitude: 106.7009,
+      }).create.selectedLocationId,
+    ).toBeUndefined();
   });
 
   it('converts serializable values to Prisma JSON input', () => {

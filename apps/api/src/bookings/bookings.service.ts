@@ -111,6 +111,7 @@ import {
   providerBookingHistoryWhere,
 } from './bookings.provider-query';
 import {
+  bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
   customerCancellationCloseData,
@@ -340,16 +341,14 @@ export class BookingsService {
         address: addressPayload,
         lat: bookingLat,
         lng: bookingLng,
-        addressSnapshot: {
-          create: {
-            customerProfileId: customer.id,
-            selectedLocationId: selectedLocation?.id,
-            address: addressPayload,
-            addressText,
-            latitude: bookingLat,
-            longitude: bookingLng,
-          },
-        },
+        addressSnapshot: bookingAddressSnapshotCreate({
+          customerProfileId: customer.id,
+          selectedLocationId: selectedLocation?.id,
+          address: addressPayload,
+          addressText,
+          latitude: bookingLat,
+          longitude: bookingLng,
+        }),
         notes: input.notes,
         travelBufferMin: matchingPolicy.travelBufferMinutes,
         earlyAcceptMin: matchingPolicy.providerResponseWindowMinutes,

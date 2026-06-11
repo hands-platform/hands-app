@@ -10,6 +10,26 @@ export function normalizeBookingAddress(address: Prisma.InputJsonValue | undefin
   return { addressText } as Prisma.InputJsonValue;
 }
 
+export function bookingAddressSnapshotCreate(input: {
+  customerProfileId: string;
+  selectedLocationId?: string | null;
+  address: Prisma.InputJsonValue;
+  addressText: string;
+  latitude: number;
+  longitude: number;
+}) {
+  return {
+    create: {
+      customerProfileId: input.customerProfileId,
+      selectedLocationId: input.selectedLocationId ?? undefined,
+      address: input.address,
+      addressText: input.addressText,
+      latitude: input.latitude,
+      longitude: input.longitude,
+    },
+  };
+}
+
 export function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
