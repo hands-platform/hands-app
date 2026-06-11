@@ -420,19 +420,15 @@ export class BookingsService {
     await this.scheduleBookingPaymentStatusCheck(booking);
     await this.matching.registerActiveBooking(booking.id, result);
     await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? timing.expiresAt);
-    await this.notifyCustomerBookingOpened({
+    await this.announceOpenBooking({
       userId,
       bookingId: booking.id,
+      customerProfileId: customer.id,
       preferredProvider,
       couponCode: coupon?.code,
-      discountAmount: priceSummary.discountAmount,
+      customerDiscountAmount: priceSummary.discountAmount,
+      matchingPayload: result,
     });
-    if (preferredProvider?.userId) {
-      await this.notifyPreferredProviderRequested(preferredProvider.userId, booking.id, customer.id);
-      this.matchingGateway.emitDirectBookingRequested(preferredProvider.userId, booking.id, result);
-    } else {
-      this.matchingGateway.emitBookingOpened(booking.id, result);
-    }
     const backupNotificationTrace = await this.notifyBackupProviders({
       stage: 'initial_open',
       bookingId: booking.id,
@@ -459,6 +455,40 @@ export class BookingsService {
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
+  }
+
+  private async announceOpenBooking(input: {
+    userId: string;
+    bookingId: string;
+    customerProfileId: string;
+    preferredProvider?: { id: string; userId: string; displayName: string } | null;
+    couponCode?: string;
+    customerDiscountAmount: number;
+    matchingPayload: ReturnType<MatchingService['openBooking']>;
+  }) {
+    await this.notifyCustomerBookingOpened({
+      userId: input.userId,
+      bookingId: input.bookingId,
+      preferredProvider: input.preferredProvider,
+      couponCode: input.couponCode,
+      discountAmount: input.customerDiscountAmount,
+    });
+
+    if (input.preferredProvider?.userId) {
+      await this.notifyPreferredProviderRequested(
+        input.preferredProvider.userId,
+        input.bookingId,
+        input.customerProfileId,
+      );
+      this.matchingGateway.emitDirectBookingRequested(
+        input.preferredProvider.userId,
+        input.bookingId,
+        input.matchingPayload,
+      );
+      return;
+    }
+
+    this.matchingGateway.emitBookingOpened(input.bookingId, input.matchingPayload);
   }
 
   private async resolveCoupon(code: string) {
