@@ -866,20 +866,7 @@ export class BookingsService {
     }
 
     if (responseRoute === 'first-pick-rejected') {
-      const updated: FirstPickRejectedBookingResponse = await this.prisma.booking.update({
-        where: { id: bookingId },
-        data: bookingFirstPickRejectedUpdateData({
-          bookingId,
-          providerProfileId: provider.id,
-        }),
-        include: {
-          participants: true,
-          preferredProvider: true,
-          selectedProvider: true,
-          chatRoom: true,
-          addressSnapshot: true,
-        },
-      });
+      const updated = await this.rejectFirstPickProvider({ bookingId, providerId: provider.id });
       await this.matching.closeBooking(bookingId);
       await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
       await this.reopenBookingAfterFirstPickRejected({
@@ -1047,6 +1034,26 @@ export class BookingsService {
         'Booking is already matched or no longer open for customer final selection',
       );
     }
+  }
+
+  private async rejectFirstPickProvider(input: {
+    bookingId: string;
+    providerId: string;
+  }): Promise<FirstPickRejectedBookingResponse> {
+    return this.prisma.booking.update({
+      where: { id: input.bookingId },
+      data: bookingFirstPickRejectedUpdateData({
+        bookingId: input.bookingId,
+        providerProfileId: input.providerId,
+      }),
+      include: {
+        participants: true,
+        preferredProvider: true,
+        selectedProvider: true,
+        chatRoom: true,
+        addressSnapshot: true,
+      },
+    });
   }
 
   private async matchFirstPickAcceptedProvider(input: {
