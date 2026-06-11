@@ -1,8 +1,11 @@
 import {
   adminAddressSnapshotSelect,
+  adminBookingListSelect,
   adminBookingOpsTaskSummarySelect,
   adminChatMessageSummarySelect,
   adminChatRoomPresenceSelect,
+  adminCustomerBookingListSelect,
+  adminCustomerDetailBookingSelect,
 } from './admin-booking-selects';
 
 describe('admin booking selects', () => {
@@ -30,6 +33,25 @@ describe('admin booking selects', () => {
     });
     expect(adminChatMessageSummarySelect.sender).toMatchObject({
       select: expect.objectContaining({ id: true, roles: true }),
+    });
+  });
+
+  it('keeps booking list rows connected to service, payment, and chat context', () => {
+    expect(adminBookingListSelect).toMatchObject({
+      customerProfile: { select: { id: true, user: expect.any(Object) } },
+      services: expect.any(Object),
+      payment: expect.any(Object),
+      earning: expect.any(Object),
+      chatRoom: { select: adminChatRoomPresenceSelect },
+    });
+  });
+
+  it('keeps customer booking detail rows bounded for nested activity', () => {
+    expect(adminCustomerBookingListSelect.chatRoom).toMatchObject({ select: { id: true } });
+    expect(adminCustomerDetailBookingSelect.walletLedgerEntries).toMatchObject({ take: 5 });
+    expect(adminCustomerDetailBookingSelect.chatRoom.select.messages).toMatchObject({
+      take: 100,
+      select: adminChatMessageSummarySelect,
     });
   });
 });
