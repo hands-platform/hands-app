@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import { BookingChatBubble } from './booking-chat-bubble';
 
@@ -280,30 +281,32 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
           </div>
         ))}
       </div>
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Lifecycle stage</th>
-            <th>Current evidence</th>
-            <th>Operator check</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participantLedger.lifecycleRows.map((row) => (
-            <tr key={row.stage}>
-              <td>
-                <strong>{row.stage}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-                <p className="muted">{row.evidence}</p>
-              </td>
-              <td>{row.operatorUse}</td>
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Lifecycle stage</th>
+              <th>Current evidence</th>
+              <th>Operator check</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {participantLedger.lifecycleRows.map((row) => (
+              <tr key={row.stage}>
+                <td>
+                  <strong>{row.stage}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                  <p className="muted">{row.evidence}</p>
+                </td>
+                <td>{row.operatorUse}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
       <h3 style={{ marginTop: 18 }}>Customer eligibility matrix</h3>
       <p className="muted">
         Shows who participated, who is customer-selectable, the Customer-selectable reason, and Why not
@@ -351,69 +354,71 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
           )}
         </tbody>
       </table>
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Partner</th>
-            <th>Participation evidence</th>
-            <th>Role and status</th>
-            <th>Timing and distance</th>
-            <th>Operations record</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participantLedger.rows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <strong>{row.partner}</strong>
-                <p className="muted">{row.identity}</p>
-                {row.href && (
-                  <Link className="text-link" href={row.href}>
-                    Open partner record
-                  </Link>
-                )}
-              </td>
-              <td>
-                <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                <p className="muted">{row.evidenceDetail}</p>
-              </td>
-              <td>
-                <div className="filter-row">
-                  <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                  <span className={`pill ${row.statusTone}`}>{row.status}</span>
-                  <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
-                </div>
-                <p className="muted">{row.decision}</p>
-              </td>
-              <td>
-                <strong>{row.distance}</strong>
-                <div className="filter-row" style={{ marginTop: 6 }}>
-                  <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
-                </div>
-                <p className="muted">{row.distancePolicyHelper}</p>
-                <p className="muted">{row.timing}</p>
-              </td>
-              <td>
-                <div className="filter-row">
-                  {row.facts.map((fact) => (
-                    <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
-                      {fact.label}: {fact.value}
-                    </span>
-                  ))}
-                </div>
-                <p className="muted" style={{ marginTop: 8 }}>
-                  {row.operatorUse}
-                </p>
-              </td>
-            </tr>
-          ))}
-          {participantLedger.rows.length === 0 && (
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
             <tr>
-              <td colSpan={5}>No partner participation has been recorded for this booking yet.</td>
+              <th>Partner</th>
+              <th>Participation evidence</th>
+              <th>Role and status</th>
+              <th>Timing and distance</th>
+              <th>Operations record</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {participantLedger.rows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.partner}</strong>
+                  <p className="muted">{row.identity}</p>
+                  {row.href && (
+                    <Link className="text-link" href={row.href}>
+                      Open partner record
+                    </Link>
+                  )}
+                </td>
+                <td>
+                  <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+                  <p className="muted">{row.evidenceDetail}</p>
+                </td>
+                <td>
+                  <div className="filter-row">
+                    <span className={`pill ${row.roleTone}`}>{row.role}</span>
+                    <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                    <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
+                  </div>
+                  <p className="muted">{row.decision}</p>
+                </td>
+                <td>
+                  <strong>{row.distance}</strong>
+                  <div className="filter-row" style={{ marginTop: 6 }}>
+                    <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+                  </div>
+                  <p className="muted">{row.distancePolicyHelper}</p>
+                  <p className="muted">{row.timing}</p>
+                </td>
+                <td>
+                  <div className="filter-row">
+                    {row.facts.map((fact) => (
+                      <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                        {fact.label}: {fact.value}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    {row.operatorUse}
+                  </p>
+                </td>
+              </tr>
+            ))}
+            {participantLedger.rows.length === 0 && (
+              <tr>
+                <td colSpan={5}>No partner participation has been recorded for this booking yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -436,31 +441,33 @@ function CashFeeSettlementPathSection({
         <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
       </div>
       <SummaryCards cards={cashFeeSettlementPath.cards} />
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Settlement lane</th>
-            <th>Status</th>
-            <th>Evidence</th>
-            <th>Operator next step</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cashFeeSettlementPath.rows.map((row) => (
-            <tr key={row.lane}>
-              <td>
-                <strong>{row.lane}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-              </td>
-              <td>{row.evidence}</td>
-              <td>{row.nextStep}</td>
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Settlement lane</th>
+              <th>Status</th>
+              <th>Evidence</th>
+              <th>Operator next step</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {cashFeeSettlementPath.rows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.nextStep}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </div>
   );
 }
