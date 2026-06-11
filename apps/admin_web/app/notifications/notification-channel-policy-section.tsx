@@ -14,7 +14,7 @@ export function NotificationChannelPolicySection({
   policyLabel,
 }: NotificationChannelPolicySectionProps) {
   return (
-    <div className="card soft-card" style={{ marginBottom: 16 }}>
+    <div className="card soft-card admin-mb-16">
       <div className="toolbar">
         <div>
           <h3>Partner alert routing policy</h3>
@@ -30,19 +30,19 @@ export function NotificationChannelPolicySection({
       <div className="grid">
         <div className="card">
           <span className="pill pill-info">Partner booking alerts</span>
-          <h3 style={{ marginTop: 10 }}>{partnerAlertCount}</h3>
+          <h3 className="admin-mt-10">{partnerAlertCount}</h3>
           <p className="muted">Direct requests, marketplace participation alerts, matching, and payout setup.</p>
         </div>
         <div className="card">
           <span className="pill pill-success">In-app route</span>
-          <h3 style={{ marginTop: 10 }}>{inAppDeliveries}</h3>
+          <h3 className="admin-mt-10">{inAppDeliveries}</h3>
           <p className="muted">Delivery attempts intentionally kept inside the app inbox.</p>
         </div>
         <div className="card">
           <span className={fcmDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>
             FCM route
           </span>
-          <h3 style={{ marginTop: 10 }}>{fcmDeliveries}</h3>
+          <h3 className="admin-mt-10">{fcmDeliveries}</h3>
           <p className="muted">OS push delivery attempts created by the active policy.</p>
         </div>
       </div>

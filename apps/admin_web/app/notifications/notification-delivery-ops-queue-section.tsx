@@ -15,7 +15,7 @@ type NotificationDeliveryOpsQueueSectionProps = {
 
 export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliveryOpsQueueSectionProps) {
   return (
-    <div className="card soft-card" style={{ marginBottom: 16 }}>
+    <div className="card soft-card admin-mb-16">
       <div className="toolbar">
         <div>
           <h3>Delivery operations queue</h3>
@@ -32,7 +32,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
           items.map((item) => (
             <div className="card" key={item.key}>
               <span className={`pill ${item.tone}`}>{item.label}</span>
-              <h3 style={{ marginTop: 10 }}>{item.count}</h3>
+              <h3 className="admin-mt-10">{item.count}</h3>
               <p className="muted">{item.detail}</p>
               <Link className="pill pill-neutral" href={item.href}>
                 Open queue
@@ -42,7 +42,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
         ) : (
           <div className="card">
             <span className="pill pill-success">Ready</span>
-            <h3 style={{ marginTop: 10 }}>Delivery path is clean</h3>
+            <h3 className="admin-mt-10">Delivery path is clean</h3>
             <p className="muted">
               Keep monitoring failed sends after FCM and production SMS credentials are enabled.
             </p>

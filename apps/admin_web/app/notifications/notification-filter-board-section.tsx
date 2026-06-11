@@ -28,7 +28,7 @@ export function NotificationFilterBoardSection({
   const isFiltered = Boolean(activeReview || activeBookingLabel);
 
   return (
-    <div className="card soft-card" style={{ marginBottom: 16 }}>
+    <div className="card soft-card admin-mb-16">
       <div className="toolbar">
         <div>
           <h3>Notification operation filters</h3>
