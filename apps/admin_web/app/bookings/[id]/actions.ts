@@ -2,6 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { adminPost } from '../../../lib/admin-api';
+import {
+  BOOKING_CLOSEOUT_IMPACT_PATHS,
+  BOOKING_PAYMENT_IMPACT_PATHS,
+  BOOKING_SETTLEMENT_IMPACT_PATHS,
+  BOOKING_STATUS_FAILURE_IMPACT_PATHS,
+  bookingActionRevalidatePaths,
+} from './booking-action-paths';
 
 export async function syncBookingPayment(formData: FormData) {
   await runPaymentAction(formData, 'sync');
@@ -36,13 +43,7 @@ export async function settleBookingCashDebt(formData: FormData) {
     },
     null,
   );
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/payments');
-  revalidatePath('/earnings');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, BOOKING_SETTLEMENT_IMPACT_PATHS);
 }
 
 export async function addBookingOpsNote(formData: FormData) {
@@ -54,9 +55,7 @@ export async function addBookingOpsNote(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/ops-note`, { note, preset }, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId);
 }
 
 export async function repairBookingChatRoom(formData: FormData) {
@@ -66,10 +65,7 @@ export async function repairBookingChatRoom(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/repair-chat-room`, {}, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/chat-archive');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, ['/chat-archive']);
 }
 
 export async function markBookingNoShow(formData: FormData) {
@@ -80,13 +76,7 @@ export async function markBookingNoShow(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/no-show`, { reason }, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/payments');
-  revalidatePath('/refunds');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, BOOKING_STATUS_FAILURE_IMPACT_PATHS);
 }
 
 export async function expireBooking(formData: FormData) {
@@ -97,13 +87,7 @@ export async function expireBooking(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/expire`, { reason }, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/payments');
-  revalidatePath('/refunds');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, BOOKING_STATUS_FAILURE_IMPACT_PATHS);
 }
 
 export async function closeoutCompletedBooking(formData: FormData) {
@@ -114,14 +98,7 @@ export async function closeoutCompletedBooking(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/closeout`, { note }, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/payments');
-  revalidatePath('/earnings');
-  revalidatePath('/payouts');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, BOOKING_CLOSEOUT_IMPACT_PATHS);
 }
 
 export async function updateBookingOpsTask(formData: FormData) {
@@ -134,9 +111,7 @@ export async function updateBookingOpsTask(formData: FormData) {
   }
 
   await adminPost(`/admin/bookings/${bookingId}/ops-task`, { type, status, note }, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId);
 }
 
 async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' | 'release' | 'refund') {
@@ -147,12 +122,11 @@ async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' |
   }
 
   await adminPost(`/admin/payments/${paymentId}/${action}`, {}, null);
-  revalidatePath(`/bookings/${bookingId}`);
-  revalidatePath('/bookings');
-  revalidatePath('/payments');
-  revalidatePath('/refunds');
-  revalidatePath('/earnings');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateBookingAction(bookingId, BOOKING_PAYMENT_IMPACT_PATHS);
+}
+
+function revalidateBookingAction(bookingId: string, extraPaths: readonly string[] = []) {
+  for (const path of bookingActionRevalidatePaths(bookingId, extraPaths)) {
+    revalidatePath(path);
+  }
 }
