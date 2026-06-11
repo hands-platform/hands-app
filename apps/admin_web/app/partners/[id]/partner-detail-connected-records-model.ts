@@ -2,6 +2,8 @@ import type { AdminAuditLog } from '../../../lib/admin-api';
 import type { PartnerBookingArchiveBooking, PartnerBookingArchiveRecord } from './partner-detail-booking-model';
 import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
 
+const PARTNER_OPS_NOTE_ACTION = 'provider.ops_note.add';
+
 export type PartnerDetailConnectedRecordLink = {
   readonly detail: string;
   readonly href: string;
@@ -69,7 +71,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
     0,
   );
   const chatRoomCount = bookingArchive.filter((record) => record.booking.chatRoom).length;
-  const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === PARTNER_OPS_NOTE_ACTION);
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
 
   return [
