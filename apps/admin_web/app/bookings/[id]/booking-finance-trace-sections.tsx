@@ -110,7 +110,7 @@ export function BookingAlertTraceSection({
   notificationTrace: NotificationTrace;
 }) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Booking alert trace</h2>
@@ -123,7 +123,7 @@ export function BookingAlertTraceSection({
           Open notification board
         </Link>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {notificationTrace.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -162,7 +162,7 @@ export function BookingAlertTraceSection({
           ))}
         </div>
       ) : notificationTrace.backupBatches.length === 0 ? (
-        <p className="muted" style={{ marginTop: 12 }}>
+        <p className="muted admin-mt-12">
           No notification rows are tied to this booking yet. If a partner says they missed the request, check
           whether the booking created first-pick or marketplace availability alerts.
         </p>
@@ -179,7 +179,7 @@ export function BookingOperationsAuditTraceSection({
   operationsTrace: OperationsTrace;
 }) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Operations audit trace</h2>
@@ -191,7 +191,7 @@ export function BookingOperationsAuditTraceSection({
           Open audit log
         </Link>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {operationsTrace.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -200,7 +200,7 @@ export function BookingOperationsAuditTraceSection({
           </div>
         ))}
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <span className={`pill ${operationsTrace.statusTone}`}>{operationsTrace.status}</span>
@@ -226,7 +226,7 @@ export function BookingOperationsAuditTraceSection({
           ))}
         </div>
       ) : (
-        <p className="muted" style={{ marginTop: 12 }}>
+        <p className="muted admin-mt-12">
           No operator action has been recorded for this booking yet.
         </p>
       )}
@@ -242,7 +242,7 @@ export function BookingAttentionChecksSection({
   attentionSummary: { tone: string; label: string };
 }) {
   return (
-    <section className="card ops-watch" style={{ marginBottom: 16 }}>
+    <section className="card ops-watch admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Attention checks</h2>
@@ -271,7 +271,7 @@ export function BookingFinanceCommandCenterSection({
   financeSummaryCards: SummaryCard[];
 }) {
   return (
-    <section className="card ops-watch" id="finance" style={{ marginBottom: 16 }}>
+    <section className="card ops-watch admin-mb-16" id="finance">
       <div className="ops-section-header">
         <div>
           <h2>Finance command center</h2>
@@ -283,7 +283,7 @@ export function BookingFinanceCommandCenterSection({
           {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
         </span>
       </div>
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         {financeSummaryCards.map((card) => (
           <MetricCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
         ))}
@@ -295,7 +295,7 @@ export function BookingFinanceCommandCenterSection({
           ))}
         </div>
       ) : (
-        <p className="muted" style={{ marginTop: 12 }}>
+        <p className="muted admin-mt-12">
           Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
         </p>
       )}
@@ -309,7 +309,7 @@ export function BookingPayoutBatchEligibilitySection({
   payoutBatchEligibility: PayoutBatchEligibility;
 }) {
   return (
-    <section className="card" id="payout-batch-eligibility" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="payout-batch-eligibility">
       <div className="ops-section-header">
         <div>
           <h2>Payout batch eligibility</h2>
@@ -319,10 +319,10 @@ export function BookingPayoutBatchEligibilitySection({
         </div>
         <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
       </div>
-      <p className="muted" style={{ marginTop: 8 }}>
+      <p className="muted admin-mt-8">
         {payoutBatchEligibility.summary}
       </p>
-      <div className="ops-task-grid" style={{ marginTop: 12 }}>
+      <div className="ops-task-grid admin-mt-12">
         {payoutBatchEligibility.rows.map((row) => (
           <div className={`ops-task-card ${row.className}`} key={row.label}>
             <div>
@@ -347,7 +347,7 @@ export function BookingServicePricingSnapshotSection({
   servicePricingSnapshotRows: SummaryCard[];
 }) {
   return (
-    <section className="card" id="service-pricing-snapshot" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="service-pricing-snapshot">
       <div className="ops-section-header">
         <div>
           <h2>Service pricing snapshot</h2>
@@ -360,7 +360,7 @@ export function BookingServicePricingSnapshotSection({
           {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
         </span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {servicePricingSnapshotRows.map((row) => (
           <div key={row.label}>
             <span>{row.label}</span>
