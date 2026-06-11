@@ -1,4 +1,5 @@
-import type { BookingEvidenceFilter, BookingGateFilter } from './booking-monitor';
+import type { BookingGateFilter } from './booking-gate-filters';
+import type { BookingEvidenceFilter } from './booking-monitor';
 
 export type BookingPageView =
   | 'active'
