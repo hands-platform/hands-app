@@ -256,7 +256,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         />
       ) : null}
       <h1>Partners</h1>
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <form className="form-grid" action="/partners">
           <label>
             Search
@@ -408,7 +408,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   </span>
                 ))}
               </div>
-              <p className="muted" style={{ marginTop: 8 }}>
+              <p className="muted admin-mt-8">
                 {activeFilters.map((filter) => filter.description).join(' ')}
               </p>
             </div>
@@ -420,7 +420,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           )}
         </form>
       </div>
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Current filter summary</h2>
@@ -431,7 +431,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
           <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           {filterSummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -446,7 +446,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           ))}
         </div>
       </section>
-      <div className="grid" style={{ marginBottom: 16 }}>
+      <div className="grid admin-mb-16">
         {summary.map(([label, value]) => (
           <div className="card" key={label}>
             <p>{label}</p>
