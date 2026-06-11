@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
-import type { BookingMatchSource } from './matching.policy';
+import type { BookingMatchSource, MatchingPolicy } from './matching.policy';
 import {
   MATCHING_BACKUP_OPEN_MODE_KEY,
   MATCHING_PREFERRED_ACCEPT_MODE_KEY,
@@ -47,27 +47,7 @@ export class MatchingService {
     return {
       id: getRecordId(input.booking) ?? 'dev-booking-id',
       status: 'OPEN_MATCHING',
-      matchingPolicy: {
-        sort: ['distance', 'availability'],
-        travelBufferMinutes: policy.travelBufferMinutes,
-        earlyAcceptWindowMinutes: policy.providerResponseWindowMinutes,
-        preferredProviderResponseWindowMinutes: policy.providerResponseWindowMinutes,
-        marketplaceRadiusMeters: policy.backupProviderRadiusMeters,
-        marketplaceLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
-        marketplaceInvitationLimit: policy.backupProviderInvitationLimit,
-        marketplaceOpenMode: policy.backupOpenMode,
-        backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
-        backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
-        backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
-        bookingMaxCustomerCurrentToAddressKm: policy.bookingMaxCustomerCurrentToAddressKm,
-        bookingMaxPreferredProviderDistanceKm: policy.bookingMaxPreferredProviderDistanceKm,
-        bookingCurrentLocationFreshnessMinutes: policy.bookingCurrentLocationFreshnessMinutes,
-        bookingDistanceGateEnabled: policy.bookingDistanceGateEnabled,
-        bookingServiceAreaRequired: policy.bookingServiceAreaRequired,
-        preferredAcceptMode: policy.preferredAcceptMode,
-        backupOpenMode: policy.backupOpenMode,
-        finalSelection: 'CUSTOMER_SELECTS_PARTNER',
-      },
+      matchingPolicy: matchingPolicySnapshot(policy),
       input,
     };
   }
@@ -120,9 +100,7 @@ export class MatchingService {
       status: 'MATCHED',
       matchSource,
       finalSelection:
-        matchSource === MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER
-          ? 'CUSTOMER_SELECTED'
-          : 'FIRST_PICK_ACCEPTED',
+        matchSource === MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER ? 'CUSTOMER_SELECTED' : 'FIRST_PICK_ACCEPTED',
     };
   }
 
@@ -136,4 +114,28 @@ function getRecordId(value: unknown) {
     return value.id;
   }
   return undefined;
+}
+
+function matchingPolicySnapshot(policy: MatchingPolicy) {
+  return {
+    sort: ['distance', 'availability'],
+    travelBufferMinutes: policy.travelBufferMinutes,
+    earlyAcceptWindowMinutes: policy.providerResponseWindowMinutes,
+    preferredProviderResponseWindowMinutes: policy.providerResponseWindowMinutes,
+    marketplaceRadiusMeters: policy.backupProviderRadiusMeters,
+    marketplaceLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
+    marketplaceInvitationLimit: policy.backupProviderInvitationLimit,
+    marketplaceOpenMode: policy.backupOpenMode,
+    backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
+    backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
+    backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
+    bookingMaxCustomerCurrentToAddressKm: policy.bookingMaxCustomerCurrentToAddressKm,
+    bookingMaxPreferredProviderDistanceKm: policy.bookingMaxPreferredProviderDistanceKm,
+    bookingCurrentLocationFreshnessMinutes: policy.bookingCurrentLocationFreshnessMinutes,
+    bookingDistanceGateEnabled: policy.bookingDistanceGateEnabled,
+    bookingServiceAreaRequired: policy.bookingServiceAreaRequired,
+    preferredAcceptMode: policy.preferredAcceptMode,
+    backupOpenMode: policy.backupOpenMode,
+    finalSelection: 'CUSTOMER_SELECTS_PARTNER',
+  };
 }
