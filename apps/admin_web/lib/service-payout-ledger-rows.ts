@@ -63,20 +63,13 @@ export function servicePayoutLedgerRows<TPolicy>({
       const baseRule = basePayoutRule(service);
       const finance = baseRule
         ? servicePayoutFinance(service, baseRule, activeTaxPolicy)
-        : {
-            fee: 0,
-            vatAmount: 0,
-            withholdingAmount: 0,
-            taxRuleLabel: null,
-            actualCompanyCommission: 0,
-          };
+        : emptyPayoutFinance();
       const impact = providerPriceImpact(service, activeTaxPolicy);
-      const visibleProviders = impact.rows.filter((row) => row.state === 'bookable').length;
-      const hiddenProviders = impact.rows.length - visibleProviders;
+      const providerVisibility = summarizeProviderVisibility(impact);
       const ledgerAction = servicePayoutLedgerAction({
         actualCompanyCommission: finance.actualCompanyCommission,
         hasBaseRule: Boolean(baseRule),
-        hiddenProviders,
+        hiddenProviders: providerVisibility.hiddenProviders,
       });
 
       return {
@@ -84,12 +77,31 @@ export function servicePayoutLedgerRows<TPolicy>({
         baseRule,
         finance,
         currency: baseRule?.currency ?? 'VND',
-        visibleProviders,
-        hiddenProviders,
-        totalProviderRows: impact.rows.length,
+        visibleProviders: providerVisibility.visibleProviders,
+        hiddenProviders: providerVisibility.hiddenProviders,
+        totalProviderRows: providerVisibility.totalProviderRows,
         commissionTone: ledgerAction.commissionTone,
         action: ledgerAction.action,
         actionTone: ledgerAction.actionTone,
       };
     });
+}
+
+function emptyPayoutFinance(): ServicePayoutFinance {
+  return {
+    actualCompanyCommission: 0,
+    fee: 0,
+    taxRuleLabel: null,
+    vatAmount: 0,
+    withholdingAmount: 0,
+  };
+}
+
+function summarizeProviderVisibility(impact: ProviderPriceImpact) {
+  const visibleProviders = impact.rows.filter((row) => row.state === 'bookable').length;
+  return {
+    hiddenProviders: impact.rows.length - visibleProviders,
+    totalProviderRows: impact.rows.length,
+    visibleProviders,
+  };
 }
