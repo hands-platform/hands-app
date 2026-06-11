@@ -29,7 +29,7 @@ type WorkflowSectionsProps = {
 
 export function CashSettlementExecutionSection({ executionDesk, priorityBoardRows }: ExecutionSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Cash settlement execution desk</h2>
@@ -43,7 +43,7 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
         </Link>
       </div>
       <CommandCardGrid cards={executionDesk} />
-      <div className="ops-section-header" style={{ marginTop: 16 }}>
+      <div className="ops-section-header admin-mt-16">
         <div>
           <h3>Settlement priority board</h3>
           <p className="muted">
@@ -62,7 +62,7 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
 
 export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleCards }: RulesSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Cash fee operating rules</h2>
@@ -76,7 +76,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
           Wallet policy
         </Link>
       </div>
-      <div className="ops-section-header" style={{ marginTop: 14 }}>
+      <div className="ops-section-header admin-mt-14">
         <div>
           <h3>Applied operations policy</h3>
           <p className="muted">
@@ -86,7 +86,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
         </div>
         <span className="pill pill-info">Live policy default</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {appliedPolicyCards.map((card) => (
           <div key={card.label}>
             <span>{card.label}</span>
@@ -116,7 +116,7 @@ export function CashSettlementWorkflowSections({
         linkLabel="Review cash payments"
         title="Debt cause board"
       />
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Cash fee settlement workflow</h2>
@@ -129,7 +129,7 @@ export function CashSettlementWorkflowSections({
             Open partner controls
           </Link>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {recoverySteps.map((step) => (
             <div className="setup-stage-item" key={step.title}>
               <span className={`pill ${step.pillClass}`}>{step.status}</span>
@@ -181,7 +181,7 @@ function CommandCardSection({
   readonly title: string;
 }) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>
@@ -227,7 +227,7 @@ function LinkedCardSection({
   readonly title: string;
 }) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>{title}</h2>

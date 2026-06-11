@@ -64,7 +64,7 @@ export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenD
             <td>
               <strong>{row.providerName}</strong>
               <div className="muted">{row.providerPhone}</div>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 <Link className="pill" href={row.partnerHref}>
                   Partner
                 </Link>
@@ -96,9 +96,9 @@ export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenD
                 {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
                 <small>{row.nextAction}</small>
               </div>
-              <div className="ops-task-note" style={{ marginTop: 10 }}>
+              <div className="ops-task-note admin-mt-10">
                 <strong>Cash settlement action execution map</strong>
-                <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                <div className="setup-stage-list admin-mt-8">
                   {row.actionRows.map((item) => (
                     <div className="setup-stage-item" key={`${row.earningId}-${item.action}`}>
                       <span className={`pill ${item.pillClass}`}>{item.status}</span>

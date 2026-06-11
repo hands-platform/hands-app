@@ -22,7 +22,7 @@ export function CashSettlementFilterSection({
   visibleRowCount,
 }: CashSettlementFilterSectionProps) {
   return (
-    <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+    <section className="card admin-mt-16 admin-mb-16">
       <AdminSectionHeader
         actions={
           <Link className="text-link" href="/finance-closeout">
@@ -37,7 +37,7 @@ export function CashSettlementFilterSection({
         }
         title="Cash settlement date range"
       />
-      <div className="filter-row" style={{ marginTop: 12 }}>
+      <div className="filter-row admin-mt-12">
         {[
           ['All dates', cashSettlementHref({ range: 'all', queue: filters.queue, q: filters.q })],
           ['Today', cashSettlementHref({ range: 'today', queue: filters.queue, q: filters.q })],
@@ -49,7 +49,7 @@ export function CashSettlementFilterSection({
           </Link>
         ))}
       </div>
-      <form className="inline-form" style={{ marginTop: 12 }} action="/cash-settlements">
+      <form className="inline-form admin-mt-12" action="/cash-settlements">
         <input type="hidden" name="range" value={filters.range} />
         <input
           aria-label="Search cash settlement queue"
@@ -69,7 +69,7 @@ export function CashSettlementFilterSection({
           Clear
         </Link>
       </form>
-      <div className="filter-row" style={{ marginTop: 12 }}>
+      <div className="filter-row admin-mt-12">
         {cashSettlementQueueOptions.map((option) => (
           <Link
             className="filter-pill"
@@ -80,7 +80,7 @@ export function CashSettlementFilterSection({
           </Link>
         ))}
       </div>
-      <p className="muted" style={{ marginTop: 10 }}>
+      <p className="muted admin-mt-10">
         Showing {visibleRowCount} of {allRowsInRangeCount} open cash debt row(s) for this date range.
         {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
         {filters.queue !== 'all' ? `Queue: ${cashSettlementQueueLabel(filters.queue)}.` : ''}

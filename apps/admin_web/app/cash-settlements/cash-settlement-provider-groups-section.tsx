@@ -8,7 +8,7 @@ type CashSettlementProviderGroupsSectionProps = {
 
 export function CashSettlementProviderGroupsSection({ providers }: CashSettlementProviderGroupsSectionProps) {
   return (
-    <div className="card" style={{ marginBottom: 16 }}>
+    <div className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Partner wallet debt groups</h2>
@@ -22,7 +22,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
         </Link>
       </div>
       {providers.length ? (
-        <div className="detail-grid" style={{ marginTop: 16 }}>
+        <div className="detail-grid admin-mt-16">
           {providers.map((provider) => (
             <div key={provider.providerProfileId}>
               <div className="ops-section-header">
@@ -33,7 +33,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
                 {provider.rowCount} open cash debt row(s), {formatMoney(provider.platformFee, provider.currency)} HANDS
                 fee, {formatMoney(provider.taxAmount, provider.currency)} tax.
               </p>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 <Link className="pill" href={`/partners/${provider.providerProfileId}`}>
                   Partner
                 </Link>

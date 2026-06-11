@@ -19,14 +19,14 @@ type CashSettlementPriorityBoardSectionProps = {
 export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPriorityBoardSectionProps) {
   if (!rows.length) {
     return (
-      <p className="muted" style={{ marginTop: 12 }}>
+      <p className="muted admin-mt-12">
         No settlement priority rows are waiting for finance action.
       </p>
     );
   }
 
   return (
-    <div className="admin-scroll-x" style={{ marginTop: 12 }}>
+    <div className="admin-scroll-x admin-mt-12">
       <table className="table">
         <thead>
           <tr>
