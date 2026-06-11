@@ -127,6 +127,7 @@ import {
   PartnerDetailAcceptanceUnblockPlaybookSection,
   type PartnerAcceptanceUnblockStep,
 } from './partner-detail-acceptance-unblock-playbook-section';
+import { PartnerDetailOpsCommandCenterSection } from './partner-detail-ops-command-center-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -1200,34 +1201,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         steps={acceptanceUnblockPlaybook}
       />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner ops command center</h2>
-            <p className="muted">
-              One-page operating view for dispatch, payout, reports, and the next admin action.
-            </p>
-          </div>
-          <span className={`pill ${opsSummary.ready ? 'pill-success' : 'pill-warn'}`}>
-            {opsSummary.ready ? 'Operational' : 'Needs operator attention'}
-          </span>
-          <Link className="text-link" href="/operations-policy">
-            Location freshness: {dispatchPolicy.locationFreshnessMinutes}m
-          </Link>
-        </div>
-        <div className="ops-task-grid">
-          {opsSummary.cards.map((card) => (
-            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
-              <div>
-                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
-                <h3>{card.title}</h3>
-                <p className="muted">{card.detail}</p>
-              </div>
-              <small>{card.action}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailOpsCommandCenterSection
+        cardClassForTone={cardClass}
+        locationFreshnessMinutes={dispatchPolicy.locationFreshnessMinutes}
+        pillClassForTone={pillClass}
+        summary={opsSummary}
+      />
 
       <div className="card admin-mb-16">
         <div className="ops-section-header">
