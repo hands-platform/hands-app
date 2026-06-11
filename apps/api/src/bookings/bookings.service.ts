@@ -64,6 +64,7 @@ import {
   bookingMatchingPolicySnapshot,
   restoreBookingMatchingPolicy,
 } from './bookings.matching-policy';
+import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
 import { bookingOpenMatchingPayload } from './bookings.matching-payload';
 import {
   appendBackupNotificationTrace,
@@ -768,18 +769,15 @@ export class BookingsService {
             payment: true,
           },
         });
-        await transaction.adminAuditLog.create({
-          data: {
+        await transaction.adminAuditLog.create(
+          bookingMatchedAuditCreateInput({
             actorId: customerUserId,
             action: 'booking.matched.customer_selected',
-            target: `booking:${bookingId}`,
-            metadata: {
-              bookingId,
-              providerProfileId: providerId,
-              matchSource: MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
-            },
-          },
-        });
+            bookingId,
+            providerProfileId: providerId,
+            matchSource: MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+          }),
+        );
         return matchedBooking;
       });
     } catch (error) {
@@ -855,18 +853,15 @@ export class BookingsService {
               payment: true,
             },
           });
-          await transaction.adminAuditLog.create({
-            data: {
+          await transaction.adminAuditLog.create(
+            bookingMatchedAuditCreateInput({
               actorId: provider.userId,
               action: 'booking.matched.first_pick_accepted',
-              target: `booking:${bookingId}`,
-              metadata: {
-                bookingId,
-                providerProfileId: provider.id,
-                matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
-              },
-            },
-          });
+              bookingId,
+              providerProfileId: provider.id,
+              matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+            }),
+          );
           return matchedBooking;
         });
       } catch (error) {
