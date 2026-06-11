@@ -651,21 +651,7 @@ export class BookingsService {
   }
 
   async cancelCustomerBooking(bookingId: string, customerUserId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
-      where: { userId: customerUserId },
-    });
-    const booking = await this.prisma.booking.findFirstOrThrow({
-      where: { id: bookingId, customerProfileId: customer.id },
-      include: {
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        selectedProvider: true,
-        payment: true,
-      },
-    });
-
-    assertCustomerDirectCancellationAllowed(booking);
-
+    await this.requireCustomerCancellableBooking(bookingId, customerUserId);
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: customerCancellationCloseData(),
@@ -683,6 +669,24 @@ export class BookingsService {
       matchingPayload: clientResult,
     });
     return clientResult;
+  }
+
+  private async requireCustomerCancellableBooking(bookingId: string, customerUserId: string) {
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
+    const booking = await this.prisma.booking.findFirstOrThrow({
+      where: { id: bookingId, customerProfileId: customer.id },
+      include: {
+        preferredProvider: true,
+        participants: { include: { providerProfile: true } },
+        selectedProvider: true,
+        payment: true,
+      },
+    });
+
+    assertCustomerDirectCancellationAllowed(booking);
+    return booking;
   }
 
   private async bookingCancellationResultWithPaymentRelease<TBooking extends { payment?: { id: string } | null }>(
