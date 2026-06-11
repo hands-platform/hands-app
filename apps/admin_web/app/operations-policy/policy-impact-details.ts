@@ -39,11 +39,11 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Booking create gate',
       title: 'Controls whether booking addresses must be inside enabled Vietnam service areas',
       detail:
-        'Customers may browse partners from any country, but immediate booking should only open in active HANDS service areas until city launch coverage is expanded.',
+        'Customers may browse partner profiles for context, but immediate booking should only open at confirmed Vietnam service addresses while service-area enforcement is enabled.',
       saveChecks: [
         {
           label: 'Service area launch list',
-          detail: 'Confirm the target city or district is enabled before relaxing this control.',
+          detail: 'Confirm the target Vietnam province or district is enabled before relaxing this control.',
           href: '/setup',
         },
         {

@@ -40,6 +40,14 @@ describe('operations policy impact details', () => {
     expect(details.detail).toContain('Legacy delayed values are normalized');
   });
 
+  it('keeps service area impact copy scoped to Vietnam booking addresses', () => {
+    const details = policyImpactDetails('booking.service_area_required');
+
+    expect(details.title).toContain('Vietnam service areas');
+    expect(details.detail).toContain('confirmed Vietnam service addresses');
+    expect(details.saveChecks[0]?.detail).toContain('target Vietnam province or district');
+  });
+
   it('returns a safe operations fallback for future policy keys', () => {
     const details = policyImpactDetails('future.policy.key');
 
