@@ -11,6 +11,7 @@ import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './a
 import { PaymentAdapter } from './payment-adapter';
 import {
   asJsonObject,
+  callbackAttemptCreateData,
   callbackAmountVnd,
   callbackAttemptEvidence,
   callbackFailureOutcome,
@@ -24,6 +25,7 @@ import {
   sortedKeyValueString,
   stringValue,
   toJsonOrUndefined,
+  type PaymentCallbackAttemptInput,
   vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 import {
@@ -393,36 +395,10 @@ export class PaymentsService {
     }
   }
 
-  private async recordCallbackAttempt(input: {
-    paymentId?: string | null;
-    method: PaymentMethod;
-    providerRef?: string | null;
-    outcome: string;
-    signatureVerified?: boolean | null;
-    verificationMode?: string | null;
-    providerStatus?: string | null;
-    gatewayTransactionId?: string | null;
-    callbackAmount?: number | null;
-    errorCode?: string | null;
-    errorMessage?: string | null;
-    rawPayload?: Record<string, unknown>;
-  }) {
+  private async recordCallbackAttempt(input: PaymentCallbackAttemptInput) {
     try {
       await this.prisma.paymentCallbackAttempt.create({
-        data: {
-          paymentId: input.paymentId ?? undefined,
-          method: input.method,
-          providerRef: input.providerRef || undefined,
-          outcome: input.outcome,
-          signatureVerified: input.signatureVerified ?? undefined,
-          verificationMode: input.verificationMode ?? undefined,
-          providerStatus: input.providerStatus ?? undefined,
-          gatewayTransactionId: input.gatewayTransactionId ?? undefined,
-          callbackAmount: input.callbackAmount ?? undefined,
-          errorCode: input.errorCode ?? undefined,
-          errorMessage: input.errorMessage ?? undefined,
-          rawPayload: toJsonOrUndefined(input.rawPayload ?? {}),
-        },
+        data: callbackAttemptCreateData(input),
       });
     } catch {
       // Callback verification decisions must not become unavailable because audit storage failed.

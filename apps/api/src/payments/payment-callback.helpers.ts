@@ -56,6 +56,38 @@ export function callbackAttemptEvidence(method: PaymentMethod, body: Record<stri
   };
 }
 
+export type PaymentCallbackAttemptInput = {
+  paymentId?: string | null;
+  method: PaymentMethod;
+  providerRef?: string | null;
+  outcome: string;
+  signatureVerified?: boolean | null;
+  verificationMode?: string | null;
+  providerStatus?: string | null;
+  gatewayTransactionId?: string | null;
+  callbackAmount?: number | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  rawPayload?: Record<string, unknown>;
+};
+
+export function callbackAttemptCreateData(input: PaymentCallbackAttemptInput) {
+  return {
+    paymentId: input.paymentId ?? undefined,
+    method: input.method,
+    providerRef: input.providerRef || undefined,
+    outcome: input.outcome,
+    signatureVerified: input.signatureVerified ?? undefined,
+    verificationMode: input.verificationMode ?? undefined,
+    providerStatus: input.providerStatus ?? undefined,
+    gatewayTransactionId: input.gatewayTransactionId ?? undefined,
+    callbackAmount: input.callbackAmount ?? undefined,
+    errorCode: input.errorCode ?? undefined,
+    errorMessage: input.errorMessage ?? undefined,
+    rawPayload: toJsonOrUndefined(input.rawPayload ?? {}),
+  };
+}
+
 export function callbackAmountVnd(method: PaymentMethod, body: Record<string, unknown>) {
   if (method === PaymentMethod.MOMO && body.amount !== undefined) {
     return numberValue(body.amount);

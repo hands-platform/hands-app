@@ -3,6 +3,7 @@ import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import {
   asJsonObject,
   callbackAmountVnd,
+  callbackAttemptCreateData,
   callbackAttemptEvidence,
   callbackFailureOutcome,
   callbackProviderRef,
@@ -74,6 +75,33 @@ describe('payment callback helpers', () => {
       providerStatus: '00',
       gatewayTransactionId: 'gateway-1',
       callbackAmount: 300000,
+    });
+  });
+
+  it('builds callback attempt create data with Prisma-friendly optional fields', () => {
+    expect(
+      callbackAttemptCreateData({
+        method: PaymentMethod.CASH,
+        outcome: 'REJECTED',
+        paymentId: null,
+        providerRef: '',
+        providerStatus: null,
+        rawPayload: { recordedAt: new Date('2026-06-11T00:00:00.000Z') },
+        signatureVerified: null,
+      }),
+    ).toEqual({
+      method: PaymentMethod.CASH,
+      outcome: 'REJECTED',
+      paymentId: undefined,
+      providerRef: undefined,
+      providerStatus: undefined,
+      gatewayTransactionId: undefined,
+      callbackAmount: undefined,
+      errorCode: undefined,
+      errorMessage: undefined,
+      rawPayload: { recordedAt: '2026-06-11T00:00:00.000Z' },
+      signatureVerified: undefined,
+      verificationMode: undefined,
     });
   });
 
