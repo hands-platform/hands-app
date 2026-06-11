@@ -24,23 +24,23 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
 
   return (
     <div>
-      <div className="participant-list" style={{ marginBottom: 8 }}>
+      <div className="participant-list admin-mb-8">
         <span className={`pill ${partnerSecurityPillClass(status)}`}>
           {providerSecurityLabel(status)}
         </span>
       </div>
-      <p className="muted" style={{ marginBottom: 4 }}>
+      <p className="muted admin-mb-4">
         {latestDevice
           ? `Last app device: ${maskToken(latestDevice.deviceId)} / ${latestDevice.platform ?? 'unknown'}`
           : 'No partner app device recorded yet.'}
       </p>
       {provider.blockedAt ? (
-        <p className="muted" style={{ marginBottom: 4 }}>
+        <p className="muted admin-mb-4">
           Account block: {provider.blockedReason ?? 'No reason saved'} / {formatDate(provider.blockedAt)}
         </p>
       ) : null}
       {latestSession ? (
-        <p className="muted" style={{ marginBottom: 4 }}>
+        <p className="muted admin-mb-4">
           Last session: {latestSession.ipAddress ?? 'no IP'} / {formatDate(latestSession.lastSeenAt)}
         </p>
       ) : null}

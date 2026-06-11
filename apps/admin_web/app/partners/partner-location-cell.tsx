@@ -19,10 +19,10 @@ export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCell
 
   return (
     <div>
-      <div className="participant-list" style={{ marginBottom: 8 }}>
+      <div className="participant-list admin-mb-8">
         <span className={`pill ${providerLocationPillClass(status)}`}>{providerLocationLabel(status)}</span>
       </div>
-      <p className="muted" style={{ marginBottom: 4 }}>
+      <p className="muted admin-mb-4">
         {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}
       </p>
       {hasCoordinate ? (

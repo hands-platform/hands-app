@@ -23,17 +23,17 @@ export function PartnerPushDevicesCell({ provider }: PartnerPushDevicesCellProps
   return (
     <>
       {pushDevices.map((device) => (
-        <div key={device.id} style={{ marginBottom: 8 }}>
-          <p className="muted" style={{ marginBottom: 4 }}>
+        <div className="admin-mb-8" key={device.id}>
+          <p className="muted admin-mb-4">
             {device.platform} / {device.enabled ? 'enabled' : 'disabled'} / Token hidden
           </p>
           {!device.enabled ? (
-            <p className="muted" style={{ marginBottom: 4 }}>
+            <p className="muted admin-mb-4">
               Last failure: {readFailureCode(device) ?? 'Unknown'} / {readFailureStatus(device) ?? 'FAILED'}
             </p>
           ) : null}
           {readLastAttempt(device) ? (
-            <p className="muted" style={{ marginBottom: 4 }}>
+            <p className="muted admin-mb-4">
               Last attempt: {formatDateTime(readLastAttempt(device))}
             </p>
           ) : null}
