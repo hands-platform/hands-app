@@ -50,7 +50,7 @@ export function preferredProviderBookingDistanceGateError(
   if (!policy.bookingDistanceGateEnabled || !preferredProvider) {
     return null;
   }
-  const limitMeters = policy.bookingMaxPreferredProviderDistanceKm * 1000;
+  const { preferredProviderDistanceLimitMeters: limitMeters } = bookingDistanceGateLimits(policy);
   if (distanceMeters === null || distanceMeters > limitMeters) {
     return {
       limitMeters,
@@ -58,6 +58,13 @@ export function preferredProviderBookingDistanceGateError(
     };
   }
   return null;
+}
+
+export function bookingDistanceGateLimits(policy: MatchingPolicy) {
+  return {
+    customerDistanceLimitMeters: policy.bookingMaxCustomerCurrentToAddressKm * 1000,
+    preferredProviderDistanceLimitMeters: policy.bookingMaxPreferredProviderDistanceKm * 1000,
+  };
 }
 
 export function bookingDistanceGateSnapshot(input: {
@@ -75,6 +82,8 @@ export function bookingDistanceGateSnapshot(input: {
   } | null;
   preferredProviderDistanceMeters: number | null;
 }) {
+  const limits = bookingDistanceGateLimits(input.matchingPolicy);
+
   return {
     distanceGateEnabled: input.matchingPolicy.bookingDistanceGateEnabled,
     serviceAreaRequired: input.matchingPolicy.bookingServiceAreaRequired,
@@ -94,7 +103,7 @@ export function bookingDistanceGateSnapshot(input: {
         }
       : null,
     customerToBookingAddressDistanceMeters: input.customerToBookingDistanceMeters,
-    customerDistanceLimitMeters: input.matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+    customerDistanceLimitMeters: limits.customerDistanceLimitMeters,
     preferredProviderId: input.preferredProvider?.id ?? null,
     preferredProviderLocation: input.preferredProvider
       ? {
@@ -104,7 +113,7 @@ export function bookingDistanceGateSnapshot(input: {
         }
       : null,
     preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
-    preferredProviderDistanceLimitMeters: input.matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+    preferredProviderDistanceLimitMeters: limits.preferredProviderDistanceLimitMeters,
     gatePassed: true,
   };
 }

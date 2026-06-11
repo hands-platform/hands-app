@@ -6,6 +6,7 @@ import {
 } from '../matching/matching.policy';
 import {
   assertWorldBookingCoordinate,
+  bookingDistanceGateLimits,
   bookingDistanceGateSnapshot,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
@@ -88,6 +89,13 @@ describe('booking gate helpers', () => {
         policy({ bookingDistanceGateEnabled: false }),
       ),
     ).toBeNull();
+  });
+
+  it('converts booking gate policy distances to meters', () => {
+    expect(bookingDistanceGateLimits(policy())).toEqual({
+      customerDistanceLimitMeters: 20000,
+      preferredProviderDistanceLimitMeters: 50000,
+    });
   });
 
   it('builds a Vietnam service area and distance gate snapshot', () => {
