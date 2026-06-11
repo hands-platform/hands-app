@@ -114,6 +114,7 @@ import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
+  bookingServiceLineCreate,
   customerCancellationCloseData,
   normalizeBookingAddress,
   toJson,
@@ -360,12 +361,7 @@ export class BookingsService {
           policy: matchingPolicy,
           bookingGate: bookingGateSnapshot as Prisma.InputJsonValue,
         }),
-        services: {
-          create: {
-            serviceId: service.id,
-            price: customerPrice,
-          },
-        },
+        services: bookingServiceLineCreate({ serviceId: service.id, price: customerPrice }),
         payment: {
           create: this.payments.buildAuthorization(
             input.paymentMethod,

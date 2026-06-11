@@ -3,6 +3,7 @@ import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
+  bookingServiceLineCreate,
   customerCancellationCloseData,
   normalizeBookingAddress,
   toJson,
@@ -58,6 +59,15 @@ describe('booking payload helpers', () => {
         longitude: 106.7009,
       }).create.selectedLocationId,
     ).toBeUndefined();
+  });
+
+  it('builds booking service line create data', () => {
+    expect(bookingServiceLineCreate({ serviceId: 'service-1', price: 500000 })).toEqual({
+      create: {
+        serviceId: 'service-1',
+        price: 500000,
+      },
+    });
   });
 
   it('converts serializable values to Prisma JSON input', () => {

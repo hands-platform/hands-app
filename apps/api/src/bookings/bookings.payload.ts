@@ -30,6 +30,15 @@ export function bookingAddressSnapshotCreate(input: {
   };
 }
 
+export function bookingServiceLineCreate(input: { serviceId: string; price: number }) {
+  return {
+    create: {
+      serviceId: input.serviceId,
+      price: input.price,
+    },
+  };
+}
+
 export function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
