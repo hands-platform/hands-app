@@ -59,3 +59,34 @@ describe('NotificationsService device tokens', () => {
     });
   });
 });
+
+describe('NotificationsService retry queue', () => {
+  it('re-enqueues an existing notification with the standard retry policy', async () => {
+    const prisma = {
+      notification: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'notification-1' }),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.retry('notification-1')).resolves.toEqual({
+      ok: true,
+      notificationId: 'notification-1',
+    });
+
+    expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { id: 'notification-1' },
+    });
+    expect(queue.add).toHaveBeenCalledWith(
+      'notification-send',
+      { notificationId: 'notification-1' },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
+  });
+});
