@@ -1253,6 +1253,7 @@ export class BookingsService {
     backupProviderInvitationLimit: number;
     matchingPayload: unknown;
   }) {
+    const alertPolicy = backupAlertPolicyMetadata(input);
     const notifiedProviders: Array<{
       providerProfileId: string;
       userId: string;
@@ -1272,12 +1273,7 @@ export class BookingsService {
           bookingId: input.bookingId,
           providerProfileId: backupProvider.id,
           distanceMeters: backupProvider.distanceMeters,
-          marketplaceRadiusMeters: input.backupProviderRadiusMeters,
-          marketplaceOpenMode: input.backupOpenMode,
-          marketplaceInvitationLimit: input.backupProviderInvitationLimit,
-          backupProviderRadiusMeters: input.backupProviderRadiusMeters,
-          backupOpenMode: input.backupOpenMode,
-          backupProviderInvitationLimit: input.backupProviderInvitationLimit,
+          ...alertPolicy,
         },
       });
       notifiedProviders.push({
@@ -1296,12 +1292,7 @@ export class BookingsService {
       stage: input.stage,
       createdAt: new Date().toISOString(),
       notifiedCount: notifiedProviders.length,
-      marketplaceRadiusMeters: input.backupProviderRadiusMeters,
-      marketplaceOpenMode: input.backupOpenMode,
-      marketplaceInvitationLimit: input.backupProviderInvitationLimit,
-      backupProviderRadiusMeters: input.backupProviderRadiusMeters,
-      backupOpenMode: input.backupOpenMode,
-      backupProviderInvitationLimit: input.backupProviderInvitationLimit,
+      ...alertPolicy,
       websocketTargetCount: input.providers.length,
       providers: notifiedProviders,
     };
@@ -1981,6 +1972,21 @@ function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, add
     return { addressText: address.trim() } as Prisma.InputJsonValue;
   }
   return { addressText } as Prisma.InputJsonValue;
+}
+
+function backupAlertPolicyMetadata(input: {
+  backupProviderRadiusMeters: number;
+  backupOpenMode: string;
+  backupProviderInvitationLimit: number;
+}) {
+  return {
+    marketplaceRadiusMeters: input.backupProviderRadiusMeters,
+    marketplaceOpenMode: input.backupOpenMode,
+    marketplaceInvitationLimit: input.backupProviderInvitationLimit,
+    backupProviderRadiusMeters: input.backupProviderRadiusMeters,
+    backupOpenMode: input.backupOpenMode,
+    backupProviderInvitationLimit: input.backupProviderInvitationLimit,
+  };
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | undefined {
