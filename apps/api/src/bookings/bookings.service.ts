@@ -842,42 +842,11 @@ export class BookingsService {
 
     const responseRoute = bookingParticipantResponseRoute(booking.preferredProviderId, provider.id, status);
     if (responseRoute === 'first-pick-accepted') {
-      let updated: MatchedBookingForClientResponse;
-      try {
-        updated = await this.prisma.$transaction(async (transaction) => {
-          const matchedBooking = await transaction.booking.update({
-            where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-            data: bookingMatchedUpdateData({
-              bookingId,
-              providerProfileId: provider.id,
-              matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
-            }),
-            include: {
-              participants: true,
-              preferredProvider: true,
-              selectedProvider: true,
-              chatRoom: true,
-              addressSnapshot: true,
-              payment: true,
-            },
-          });
-          await transaction.adminAuditLog.create(
-            bookingMatchedAuditCreateInput({
-              actorId: provider.userId,
-              action: 'booking.matched.first_pick_accepted',
-              bookingId,
-              providerProfileId: provider.id,
-              matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
-            }),
-          );
-          return matchedBooking;
-        });
-      } catch (error) {
-        this.throwStaleBookingMatchRequest(
-          error,
-          'Booking is already matched or no longer open for first-pick acceptance',
-        );
-      }
+      const updated = await this.matchFirstPickAcceptedProvider({
+        bookingId,
+        providerId: provider.id,
+        providerUserId: provider.userId,
+      });
 
       await this.matching.closeBooking(bookingId);
       const result = this.matching.selectFinalProvider(
@@ -1076,6 +1045,48 @@ export class BookingsService {
       this.throwStaleBookingMatchRequest(
         error,
         'Booking is already matched or no longer open for customer final selection',
+      );
+    }
+  }
+
+  private async matchFirstPickAcceptedProvider(input: {
+    bookingId: string;
+    providerId: string;
+    providerUserId: string;
+  }): Promise<MatchedBookingForClientResponse> {
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const matchedBooking = await transaction.booking.update({
+          where: { id: input.bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+          data: bookingMatchedUpdateData({
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+            matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
+          }),
+          include: {
+            participants: true,
+            preferredProvider: true,
+            selectedProvider: true,
+            chatRoom: true,
+            addressSnapshot: true,
+            payment: true,
+          },
+        });
+        await transaction.adminAuditLog.create(
+          bookingMatchedAuditCreateInput({
+            actorId: input.providerUserId,
+            action: 'booking.matched.first_pick_accepted',
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+            matchSource: MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+          }),
+        );
+        return matchedBooking;
+      });
+    } catch (error) {
+      this.throwStaleBookingMatchRequest(
+        error,
+        'Booking is already matched or no longer open for first-pick acceptance',
       );
     }
   }
