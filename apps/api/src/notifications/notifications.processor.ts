@@ -1,5 +1,4 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Prisma } from '@prisma/client';
 import { Job } from 'bullmq';
 import {
   NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
@@ -7,31 +6,19 @@ import {
   PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS,
 } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  isPartnerAlert,
+  notificationDeliveryResponse,
+  toJson,
+  toPushData,
+} from './notification-push-payload';
 import { PushDeliveryService } from './push-delivery.service';
+
+export { isPartnerAlert, toPushData } from './notification-push-payload';
 
 type NotificationSendJob = {
   notificationId: string;
 };
-
-const PARTNER_ALERT_TYPES = new Set([
-  'booking.requested',
-  'booking.backup_available',
-  'booking.matched',
-  'provider.payout_setup_required',
-  'provider.payout_batch.updated',
-]);
-const PUSH_DATA_KEYS = new Set([
-  'bookingId',
-  'chatRoomId',
-  'providerProfileId',
-  'customerProfileId',
-  'notificationId',
-  'paymentId',
-  'earningId',
-  'payoutBatchId',
-  'fileId',
-  'sanctionId',
-]);
 
 @Processor('notification-retry')
 export class NotificationRetryProcessor extends WorkerHost {
@@ -120,46 +107,4 @@ export class NotificationRetryProcessor extends WorkerHost {
       ? 'fcm'
       : 'in_app_only';
   }
-}
-
-export function isPartnerAlert(notificationType: string) {
-  return PARTNER_ALERT_TYPES.has(notificationType);
-}
-
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function notificationDeliveryResponse(
-  result: Awaited<ReturnType<PushDeliveryService['send']>>,
-  pushToken: string,
-) {
-  const response = result.failureCode ? { ...result.response, failureCode: result.failureCode } : result.response;
-  return maskPushTokenInJson(response, pushToken);
-}
-
-function maskPushTokenInJson(value: unknown, pushToken: string) {
-  if (!pushToken) {
-    return value;
-  }
-  return JSON.parse(JSON.stringify(value).split(pushToken).join('[masked]'));
-}
-
-export function toPushData(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return undefined;
-  }
-
-  const entries = Object.entries(value as Record<string, unknown>).filter(
-    ([key, entry]) => PUSH_DATA_KEYS.has(key) && isPushDataScalar(entry),
-  );
-  if (entries.length === 0) {
-    return undefined;
-  }
-
-  return Object.fromEntries(entries.map(([key, entry]) => [key, String(entry)]));
-}
-
-function isPushDataScalar(value: unknown) {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
