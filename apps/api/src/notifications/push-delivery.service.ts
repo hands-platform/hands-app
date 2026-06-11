@@ -8,6 +8,11 @@ import {
   readFirebaseCredentialConfig,
   type FirebaseCredentialConfig,
 } from './firebase-admin-credentials';
+import {
+  firebaseFailureCode,
+  isPermanentTokenFailure,
+  safeErrorMessage,
+} from './push-delivery-error';
 
 export type PushMessage = {
   token: string;
@@ -176,33 +181,4 @@ function parseServiceAccount(raw: string) {
     clientEmail: parsed.client_email,
     privateKey: normalizePrivateKey(parsed.private_key),
   };
-}
-
-function firebaseFailureCode(error: unknown) {
-  if (error && typeof error === 'object' && 'code' in error) {
-    return String((error as { code?: unknown }).code);
-  }
-
-  return 'FCM_DELIVERY_FAILED';
-}
-
-function isPermanentTokenFailure(failureCode: string) {
-  return ['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'].includes(
-    failureCode,
-  );
-}
-
-function safeErrorMessage(error: unknown, token?: string) {
-  if (error instanceof Error) {
-    return maskSensitivePushToken(
-      error.message.replace(/registration token(?:\s*[:=]?\s*)[^ .,\]]+/gi, 'registration token [masked]'),
-      token,
-    );
-  }
-
-  return 'Unknown FCM delivery error.';
-}
-
-function maskSensitivePushToken(message: string, token?: string) {
-  return token ? message.split(token).join('[masked]') : message;
 }
