@@ -193,6 +193,11 @@ const clientBookingDetailInclude = {
   chatRoom: true,
 } satisfies Prisma.BookingInclude;
 
+const clientBookingListInclude = {
+  ...clientBookingDetailInclude,
+  selectedProvider: true,
+} satisfies Prisma.BookingInclude;
+
 const serviceStartedBookingInclude = {
   chatRoom: true,
   preferredProvider: true,
@@ -638,15 +643,7 @@ export class BookingsService {
     });
     const bookings = await this.prisma.booking.findMany({
       where: { customerProfileId: customer.id },
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        selectedProvider: true,
-        payment: true,
-        chatRoom: true,
-      },
+      include: clientBookingListInclude,
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
@@ -672,15 +669,7 @@ export class BookingsService {
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: customerCancellationCloseData(),
-      include: {
-        addressSnapshot: true,
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        selectedProvider: true,
-        chatRoom: true,
-        services: { include: { service: true } },
-        payment: true,
-      },
+      include: clientBookingListInclude,
     });
     const cancellation = await this.bookingCancellationResultWithPaymentRelease(updated);
 
@@ -734,15 +723,7 @@ export class BookingsService {
     const provider = providerUserId ? await this.requireProvider(providerUserId) : null;
     const bookings = await this.prisma.booking.findMany({
       where: openBookingWhereForProvider(provider?.id),
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        selectedProvider: true,
-        chatRoom: true,
-        payment: true,
-      },
+      include: clientBookingListInclude,
       orderBy: { createdAt: 'desc' },
     });
 
