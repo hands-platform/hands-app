@@ -32,6 +32,11 @@ import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
   paymentStatusCheckJob,
 } from './payment-status.queue';
+import {
+  paymentCaptureAuditMetadata,
+  paymentRefundAuditMetadata,
+  paymentReleaseAuditMetadata,
+} from './payment-admin-audit';
 import { paymentRefundEarningCancellationAudit } from './payment-refund-audit';
 import { paymentUpdatedNotification } from './payments.notifications';
 
@@ -195,11 +200,12 @@ export class PaymentsService {
       data: { status: PaymentStatus.CAPTURED },
     });
 
-    await this.admin.writeAudit(actorId, 'payment.capture', `payment:${paymentId}`, {
-      amount: payment.amount,
-      method: payment.method,
-      bookingId: payment.bookingId,
-    });
+    await this.admin.writeAudit(
+      actorId,
+      'payment.capture',
+      `payment:${paymentId}`,
+      paymentCaptureAuditMetadata(payment),
+    );
     await this.notifyPaymentUpdated(payment.id);
 
     return payment;
@@ -218,12 +224,12 @@ export class PaymentsService {
 
   async releaseForAdmin(actorId: string, paymentId: string) {
     const payment = await this.release(paymentId);
-    await this.admin.writeAudit(actorId, 'payment.release', `payment:${paymentId}`, {
-      amount: payment.amount,
-      method: payment.method,
-      bookingId: payment.bookingId,
-      status: payment.status,
-    });
+    await this.admin.writeAudit(
+      actorId,
+      'payment.release',
+      `payment:${paymentId}`,
+      paymentReleaseAuditMetadata(payment),
+    );
     return payment;
   }
 
@@ -248,9 +254,10 @@ export class PaymentsService {
     const earningCancellation = await this.earnings.cancelForRefund(existing.bookingId);
 
     await this.admin.writeAudit(actorId, 'payment.refund', `payment:${paymentId}`, {
-      amount: payment.amount,
-      method: payment.method,
-      earningCancellation: paymentRefundEarningCancellationAudit(earningCancellation),
+      ...paymentRefundAuditMetadata(
+        payment,
+        paymentRefundEarningCancellationAudit(earningCancellation),
+      ),
     });
     await this.notifyPaymentUpdated(payment.id);
 
