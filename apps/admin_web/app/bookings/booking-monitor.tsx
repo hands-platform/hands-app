@@ -20,7 +20,6 @@ import {
 import {
   buildBookingMatchingRuleSnapshot,
   matchingPolicySummaryLabel,
-  type BookingMatchingPolicySnapshot,
   type BookingMatchingRuleSnapshot,
 } from '../../lib/booking-matching-rule-snapshot';
 import {
@@ -71,6 +70,7 @@ import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-p
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import { backupAlertTraceDisplayFromSummary } from '../../lib/backup-alert-trace-display';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
+import { bookingMatchingPolicySnapshot } from './booking-matching-policy-snapshot';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
@@ -3545,37 +3545,6 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
     status: booking.status,
     totalNotified: alertSummary.totalNotified,
   });
-}
-
-function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
-  const metadata = readPlainRecord(booking.metadata);
-  const policy = readPlainRecord(metadata?.matchingPolicy);
-  if (!policy) {
-    return null;
-  }
-  const marketplaceRadiusMeters =
-    readOptionalNumber(policy.marketplaceRadiusMeters) ??
-    readOptionalNumber(policy.marketplacePartnerRadiusMeters) ??
-    readOptionalNumber(policy.backupProviderRadiusMeters);
-  const marketplaceLocationMaxAgeMinutes =
-    readOptionalNumber(policy.marketplaceLocationMaxAgeMinutes) ??
-    readOptionalNumber(policy.marketplacePartnerLocationMaxAgeMinutes) ??
-    readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes);
-  const marketplaceInvitationLimit =
-    readOptionalNumber(policy.marketplaceInvitationLimit) ??
-    readOptionalNumber(policy.marketplacePartnerInvitationLimit) ??
-    readOptionalNumber(policy.backupProviderInvitationLimit);
-  const marketplaceOpenMode =
-    readOptionalString(policy.marketplaceOpenMode) ?? readOptionalString(policy.backupOpenMode);
-  return {
-    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
-    backupProviderRadiusMeters: marketplaceRadiusMeters,
-    backupProviderLocationMaxAgeMinutes: marketplaceLocationMaxAgeMinutes,
-    backupProviderInvitationLimit: marketplaceInvitationLimit,
-    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
-    backupOpenMode: marketplaceOpenMode,
-    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
-  };
 }
 
 function customerVisibleStateLabel(booking: AdminBooking) {
