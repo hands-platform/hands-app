@@ -75,7 +75,7 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
   }
 
   return (
-    <form action={item.action} style={{ display: 'inline' }}>
+    <form action={item.action} className="action-menu-form">
       {item.hiddenInputs?.map((input) => (
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}

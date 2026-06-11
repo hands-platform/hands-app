@@ -25,6 +25,7 @@ describe('AdminPageTemplate', () => {
     });
 
     expect(grid.type).toBe('section');
+    expect(grid.props.className).toBe('admin-metric-grid');
     expect(grid.props.children).toHaveLength(2);
   });
 

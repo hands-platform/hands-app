@@ -175,6 +175,13 @@ a {
   gap: 16px;
 }
 
+.admin-metric-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 20px;
+}
+
 .card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
@@ -871,6 +878,10 @@ a.action-button-card:hover {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 6px;
+}
+
+.action-menu-form {
+  display: inline;
 }
 
 .pill {

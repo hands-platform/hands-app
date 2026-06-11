@@ -52,14 +52,7 @@ export function AdminPageTemplate({
 
 export function AdminMetricGrid({ metrics }: AdminMetricGridProps) {
   return (
-    <section
-      style={{
-        display: 'grid',
-        gap: 16,
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        marginBottom: 20,
-      }}
-    >
+    <section className="admin-metric-grid">
       {metrics.map((metric) => (
         <MetricCard
           helper={metric.helper}
