@@ -674,19 +674,44 @@ export class BookingsService {
         payment: true,
       },
     });
-    const releasedPayment = updated.payment ? await this.payments.release(updated.payment.id) : null;
-    const result = bookingCancellationResultWithReleasedPayment(updated, releasedPayment);
+    const cancellation = await this.bookingCancellationResultWithPaymentRelease(updated);
 
     await this.matching.closeBooking(bookingId);
-    await this.notifyBookingCancelled({
+    const clientResult = clientBookingResponse(cancellation.result);
+    await this.announceCustomerBookingCancelled({
       bookingId,
       customerUserId,
       providerUserIds: bookingCancellationProviderUserIds(updated),
-      releasedPayment: Boolean(releasedPayment),
+      releasedPayment: cancellation.releasedPayment,
+      matchingPayload: clientResult,
     });
-    const clientResult = clientBookingResponse(result);
-    this.matchingGateway.emitBookingExpired(bookingId, clientResult);
     return clientResult;
+  }
+
+  private async bookingCancellationResultWithPaymentRelease<TBooking extends { payment?: { id: string } | null }>(
+    booking: TBooking,
+  ) {
+    const releasedPayment = booking.payment ? await this.payments.release(booking.payment.id) : null;
+    return {
+      result: bookingCancellationResultWithReleasedPayment(booking, releasedPayment),
+      releasedPayment: Boolean(releasedPayment),
+    };
+  }
+
+  private async announceCustomerBookingCancelled(input: {
+    bookingId: string;
+    customerUserId: string;
+    providerUserIds: Iterable<string>;
+    releasedPayment: boolean;
+    matchingPayload: unknown;
+  }) {
+    await this.notifyBookingCancelled({
+      bookingId: input.bookingId,
+      customerUserId: input.customerUserId,
+      providerUserIds: input.providerUserIds,
+      releasedPayment: input.releasedPayment,
+    });
+    this.matchingGateway.emitBookingExpired(input.bookingId, input.matchingPayload);
   }
 
   private async readOperationalPolicyValue(key: string, fallback: string) {
