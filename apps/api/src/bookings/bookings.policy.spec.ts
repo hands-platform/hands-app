@@ -10,6 +10,7 @@ import {
   assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
   bookingDispatchCoordinates,
+  bookingHasPartnerCommitment,
   calculateDistanceMeters,
   formatMatchingRadius,
   isMarketplaceParticipationWindowOpen,
@@ -240,6 +241,31 @@ describe('booking policy helpers', () => {
         participants: [],
       }),
     ).toThrow('Booking cannot be cancelled in its current state');
+  });
+
+  it('detects booking partner commitment from status, final partner, or accepted participant', () => {
+    expect(
+      bookingHasPartnerCommitment({
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        participants: [{ status: ParticipantStatus.JOINED }],
+      }),
+    ).toBe(false);
+    expect(
+      bookingHasPartnerCommitment({
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        participants: [{ status: ParticipantStatus.ACCEPTED }],
+      }),
+    ).toBe(true);
+    expect(
+      bookingHasPartnerCommitment({
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: 'partner-1',
+        participants: [],
+      }),
+    ).toBe(true);
+    expect(bookingHasPartnerCommitment({ status: BookingStatus.MATCHED, participants: [] })).toBe(true);
   });
 
   it('requires service completion to start from IN_SERVICE', () => {

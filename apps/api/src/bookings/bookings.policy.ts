@@ -90,18 +90,23 @@ export function assertCustomerDirectCancellationAllowed(booking: {
     throw new BadRequestException('Booking cannot be cancelled in its current state');
   }
 
-  const hasAcceptedPartner = Boolean(
-    booking.participants?.some((participant) => participant.status === ParticipantStatus.ACCEPTED),
-  );
-  const isAfterPartnerCommitment =
-    PARTNER_COMMITMENT_BOOKING_STATUSES.has(booking.status) ||
-    Boolean(booking.selectedProviderId) ||
-    hasAcceptedPartner;
-  if (isAfterPartnerCommitment) {
+  if (bookingHasPartnerCommitment(booking)) {
     throw new BadRequestException(
       'Matched bookings cannot be cancelled directly. Use booking chat so HANDS operations can review the evidence.',
     );
   }
+}
+
+export function bookingHasPartnerCommitment(booking: {
+  status: BookingStatus;
+  selectedProviderId?: string | null;
+  participants?: Array<{ status: ParticipantStatus | string }>;
+}) {
+  return (
+    PARTNER_COMMITMENT_BOOKING_STATUSES.has(booking.status) ||
+    Boolean(booking.selectedProviderId) ||
+    Boolean(booking.participants?.some((participant) => participant.status === ParticipantStatus.ACCEPTED))
+  );
 }
 
 export function assertProviderLifecycleTransitionAllowed(current: BookingStatus, allowed: BookingStatus[]) {
