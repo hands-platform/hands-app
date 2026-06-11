@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -215,7 +216,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </div>
         </div>
         {repairRows.length ? (
-          <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <AdminTableScroll>
             <table className="table">
               <thead>
                 <tr>
@@ -273,7 +274,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                 ))}
               </tbody>
             </table>
-          </div>
+          </AdminTableScroll>
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
             No chat repair row matches this filter.
@@ -292,7 +293,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </div>
           <span className="pill pill-info">{rooms.length} row(s)</span>
         </div>
-        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <AdminTableScroll>
           <table className="table">
             <thead>
               <tr>
@@ -358,7 +359,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               ) : null}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
       </section>
 
       <section className="card">
