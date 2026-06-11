@@ -226,6 +226,14 @@ import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
 import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
 import {
+  PartnerAcceptanceRepairCommandSection,
+  PartnerDetailReadinessSnapshotSection,
+  type PartnerAcceptanceRepairCommandView,
+  type PartnerOpsTone,
+  type PartnerReadinessSnapshotBadge,
+  type PartnerReadinessSnapshotView,
+} from './partner-detail-readiness-command-section';
+import {
   buildPartnerOperationsQuickRail,
   buildPartnerOperatorFirstRead,
 } from './partner-detail-summary-rail-model';
@@ -447,6 +455,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const providerServicePricing = buildProviderServicePricing(provider);
   const partnerServicePricingDisplayRows = buildPartnerServicePricingDisplayRows(providerServicePricing.rows);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
+  const readinessSnapshot = buildPartnerReadinessSnapshotView({
+    provider,
+    bookingAcceptance,
+    payoutOps,
+    dispatchPolicy,
+  });
+  const acceptanceRepairCommand = buildPartnerAcceptanceRepairCommand(
+    provider,
+    bookingAcceptance,
+    payoutOps,
+    dispatchPolicy,
+  );
   const bookingGateDecision = buildPartnerBookingGateDecisionView(bookingAcceptance, dispatchPolicy);
   const acceptanceUnblockPlaybook = buildPartnerAcceptanceUnblockPlaybook(
     provider,
@@ -888,12 +908,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         formatDate={formatDate}
       />
 
-      <PartnerDetailReadinessSnapshot
-        provider={provider}
-        bookingAcceptance={bookingAcceptance}
-        payoutOps={payoutOps}
-        dispatchPolicy={dispatchPolicy}
-      />
+      <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
 
       <PartnerDetailBookingGateDecisionSection
         cardClassForTone={cardClass}
@@ -901,12 +916,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         pillClassForTone={pillClass}
       />
 
-      <PartnerAcceptanceRepairCommandPanel
-        provider={provider}
-        bookingAcceptance={bookingAcceptance}
-        payoutOps={payoutOps}
-        dispatchPolicy={dispatchPolicy}
-      />
+      <PartnerAcceptanceRepairCommandSection command={acceptanceRepairCommand} />
 
       <PartnerDetailCashDebtOriginSection
         hasCashFeeDebt={hasCashFeeDebt}
@@ -1408,7 +1418,7 @@ type ProviderOpsCard = {
   status: string;
   detail: string;
   action: string;
-  tone: 'done' | 'pending' | 'blocked';
+  tone: PartnerOpsTone;
 };
 
 type BookingAcceptanceGate = {
@@ -1418,11 +1428,6 @@ type BookingAcceptanceGate = {
   action: string;
 };
 
-type PartnerDetailOpsBadge = {
-  label: string;
-  detail: string;
-  tone: ProviderOpsCard['tone'];
-};
 type PartnerOperatingChecklistItem = {
   area: string;
   status: string;
@@ -1432,24 +1437,7 @@ type PartnerOperatingChecklistItem = {
   tone: ProviderOpsCard['tone'];
 };
 
-type PartnerAcceptanceRepairCommand = {
-  status: string;
-  tone: ProviderOpsCard['tone'];
-  partnerAppMessage: string;
-  customerImpact: string;
-  operatorDecision: string;
-  marketplaceRouting: string;
-  steps: Array<{
-    owner: string;
-    blocker: string;
-    reason: string;
-    operatorAction: string;
-    href: string;
-    actionLabel: string;
-    tone: ProviderOpsCard['tone'];
-  }>;
-};
-function PartnerDetailReadinessSnapshot({
+function buildPartnerReadinessSnapshotView({
   provider,
   bookingAcceptance,
   payoutOps,
@@ -1459,121 +1447,22 @@ function PartnerDetailReadinessSnapshot({
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
   payoutOps: ReturnType<typeof buildProviderPayoutOps>;
   dispatchPolicy: PartnerDispatchPolicy;
-}) {
-  const badges = buildPartnerDetailOpsBadges(provider, bookingAcceptance, payoutOps, dispatchPolicy);
+}): PartnerReadinessSnapshotView {
+  const canJoinMarketplace = bookingAcceptance.canJoinMarketplace;
 
-  return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner readiness snapshot</h2>
-          <p className="muted">
-            Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and
-            service readiness.
-          </p>
-        </div>
-        <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
-      </div>
-      <div className="participant-list admin-mt-12">
-        {badges.map((badge) => (
-          <span className={`pill ${pillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
-            {badge.label}
-          </span>
-        ))}
-      </div>
-      <div className="setup-stage-item admin-mt-16">
-        <span>{bookingAcceptance.canJoinMarketplace ? 'GO' : 'HOLD'}</span>
-        <div>
-          <strong>
-            {bookingAcceptance.canJoinMarketplace
-              ? 'Marketplace participation ready'
-              : 'Marketplace participation blocker'}
-          </strong>
-          <p className="muted">{bookingAcceptance.primaryReason}</p>
-        </div>
-        <small>
-          {bookingAcceptance.canJoinMarketplace
-            ? `Marketplace radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
-            : 'Resolve join gate'}
-        </small>
-      </div>
-    </div>
-  );
-}
-
-function PartnerAcceptanceRepairCommandPanel({
-  provider,
-  bookingAcceptance,
-  payoutOps,
-  dispatchPolicy,
-}: {
-  provider: ProviderDetail;
-  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
-  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
-  dispatchPolicy: PartnerDispatchPolicy;
-}) {
-  const command = buildPartnerAcceptanceRepairCommand(provider, bookingAcceptance, payoutOps, dispatchPolicy);
-
-  return (
-    <div className={`card ${cardClass(command.tone)} admin-mb-16`}>
-      <div className="ops-section-header">
-        <div>
-          <h2>Marketplace repair command</h2>
-          <p className="muted">
-            Exact operator diagnosis for marketplace participation, customer handoff, app message, and finance
-            repair.
-          </p>
-        </div>
-        <span className={`pill ${pillClass(command.tone)}`}>{command.status}</span>
-      </div>
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Partner app block message</span>
-          <strong>{command.partnerAppMessage}</strong>
-          <small>What support should expect the partner to see.</small>
-        </div>
-        <div>
-          <span>Customer impact</span>
-          <strong>{command.customerImpact}</strong>
-          <small>How this affects customer choice and matching.</small>
-        </div>
-        <div>
-          <span>Operator decision</span>
-          <strong>{command.operatorDecision}</strong>
-          <small>Use this before manual override or dispatch.</small>
-        </div>
-        <div>
-          <span>Marketplace routing</span>
-          <strong>{command.marketplaceRouting}</strong>
-          <small>Where live demand should go while blocked.</small>
-        </div>
-      </div>
-      <div className="setup-stage-list admin-mt-16">
-        {command.steps.map((step, index) => (
-          <div className="setup-stage-item" key={`${step.owner}-${step.blocker}`}>
-            <span>{index + 1}</span>
-            <div>
-              <strong>
-                {step.owner}: {step.blocker}
-              </strong>
-              <p className="muted">{step.reason}</p>
-              <p className="muted">{step.operatorAction}</p>
-              <span className={`pill ${pillClass(step.tone)}`}>
-                {step.tone === 'done'
-                  ? 'Clear'
-                  : step.tone === 'blocked'
-                    ? 'Blocks booking'
-                    : 'Operator check'}
-              </span>
-            </div>
-            <Link className="text-link" href={step.href}>
-              {step.actionLabel}
-            </Link>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return {
+    badges: buildPartnerDetailOpsBadges(provider, bookingAcceptance, payoutOps, dispatchPolicy),
+    gate: {
+      detail: bookingAcceptance.primaryReason,
+      helper: canJoinMarketplace
+        ? `Marketplace radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
+        : 'Resolve join gate',
+      label: canJoinMarketplace ? 'GO' : 'HOLD',
+      title: canJoinMarketplace ? 'Marketplace participation ready' : 'Marketplace participation blocker',
+    },
+    status: bookingAcceptance.status,
+    tone: bookingAcceptance.tone,
+  };
 }
 
 function buildPartnerOperatorCommandQueue({
@@ -3122,7 +3011,7 @@ function buildPartnerAcceptanceRepairCommand(
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
   payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   dispatchPolicy: PartnerDispatchPolicy,
-): PartnerAcceptanceRepairCommand {
+): PartnerAcceptanceRepairCommandView {
   const blockedGates = bookingAcceptance.gates.filter((gate) => !gate.ok);
   const status = bookingAcceptance.canJoinMarketplace
     ? 'MARKETPLACE READY'
@@ -3192,7 +3081,7 @@ function buildPartnerAcceptanceRepairCommand(
 function partnerAcceptanceRepairStep(
   provider: ProviderDetail,
   gate: BookingAcceptanceGate,
-): PartnerAcceptanceRepairCommand['steps'][number] {
+): PartnerAcceptanceRepairCommandView['steps'][number] {
   const map: Record<
     string,
     {
@@ -3438,7 +3327,7 @@ function buildPartnerDetailOpsBadges(
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
   payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   dispatchPolicy: PartnerDispatchPolicy,
-): PartnerDetailOpsBadge[] {
+): PartnerReadinessSnapshotBadge[] {
   const cashDebt = cashFeeDebtAmount(provider);
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const locationFresh =
