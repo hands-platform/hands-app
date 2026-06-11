@@ -13,6 +13,7 @@ import {
   isPermanentTokenFailure,
   safeErrorMessage,
 } from './push-delivery-error';
+import { resolvePushProvider, type PushProvider } from './push-provider';
 
 export type PushMessage = {
   token: string;
@@ -29,8 +30,6 @@ export type PushSendResult = {
   failureCode?: string;
   response: Record<string, unknown>;
 };
-
-type PushProvider = 'in_app_only' | 'fcm';
 
 @Injectable()
 export class PushDeliveryService {
@@ -57,8 +56,10 @@ export class PushDeliveryService {
   }
 
   private resolveProvider(providerOverride?: PushProvider): PushProvider {
-    const configured = this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase();
-    return providerOverride ?? (configured === 'fcm' ? 'fcm' : 'in_app_only');
+    return resolvePushProvider({
+      configured: this.config.get<string>('PUSH_PROVIDER'),
+      override: providerOverride,
+    });
   }
 
   private async sendWithFcm(message: PushMessage): Promise<PushSendResult> {
