@@ -216,6 +216,35 @@ describe('notification page model', () => {
     });
   });
 
+  it('reads current push processor failure details from delivery response metadata', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: { chatRoomId: 'chat-1' },
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-failed-token',
+            provider: 'FCM',
+            response: {
+              failureCode: 'messaging/registration-token-not-registered',
+              reason: 'registration token [masked]',
+            },
+            status: 'FAILED',
+          },
+        ],
+        id: 'notification-failed-token',
+        type: 'chat.message.created',
+      }),
+    ]);
+
+    expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      failureCodeLabel: 'messaging/registration-token-not-registered',
+      failureReasonLabel: 'registration token [masked]',
+      provider: 'FCM',
+      status: 'FAILED',
+    });
+  });
+
   it('treats payout batch updates as partner alerts without exposing payout metadata', () => {
     const notifications = [
       notification({

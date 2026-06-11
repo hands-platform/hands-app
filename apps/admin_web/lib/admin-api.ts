@@ -995,6 +995,9 @@ export type AdminNotification = {
     status: string;
     attemptedAt: string;
     response?: {
+      failureCode?: string;
+      message?: string;
+      reason?: string;
       statusCode?: number;
       body?: unknown;
     } | null;

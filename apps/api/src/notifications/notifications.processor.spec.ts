@@ -127,7 +127,10 @@ describe('NotificationRetryProcessor', () => {
         pushDeviceId: 'device-1',
         provider: 'FCM',
         status: 'FAILED',
-        response: { reason: 'registration token [masked]' },
+        response: {
+          reason: 'registration token [masked]',
+          failureCode: 'messaging/registration-token-not-registered',
+        },
       },
     });
     expect(tx.pushDevice.update).toHaveBeenCalledWith({

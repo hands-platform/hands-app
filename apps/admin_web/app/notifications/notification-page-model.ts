@@ -368,7 +368,12 @@ function readFailureCode(delivery: NonNullable<AdminNotification['deliveries']>[
   const error = asRecord(body?.error);
   const details = Array.isArray(error?.details) ? error.details : [];
   const firstDetail = asRecord(details[0]);
-  return readString(firstDetail?.errorCode) ?? readString(body?.code) ?? readString(error?.code);
+  return (
+    readString(delivery.response?.failureCode) ??
+    readString(firstDetail?.errorCode) ??
+    readString(body?.code) ??
+    readString(error?.code)
+  );
 }
 
 function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
@@ -378,6 +383,8 @@ function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']
   const firstDetail = asRecord(details[0]);
   const errors = Array.isArray(body?.errors) ? body.errors.map(String).join(', ') : undefined;
   return (
+    readString(delivery.response?.reason) ??
+    readString(delivery.response?.message) ??
     readString(body?.reason) ??
     readString(body?.message) ??
     readString(error?.message) ??
