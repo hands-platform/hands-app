@@ -651,7 +651,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner operator first read"
       />
 
-      <div className="grid" style={{ marginBottom: 16 }}>
+      <div className="grid admin-mb-16">
         <StatusCard label="Level" value={provider.level ?? 'LEVEL_1_SIGNUP'} />
         <StatusCard label="Partner status" value={provider.status} />
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
@@ -690,7 +690,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner booking journey"
       />
 
-      <div className="card" id="partner-booking-create-gates" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-booking-create-gates">
         <div className="ops-section-header">
           <div>
             <h2>Partner booking create gate evidence</h2>
@@ -703,7 +703,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Open gate queue
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Loaded attempts</span>
             <strong>{partnerBookingGateAttempts.length}</strong>
@@ -723,11 +723,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
         </div>
         {filteredPartnerBookingGateAttempts.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No first-pick booking create gate attempt matched this date filter.
           </p>
         ) : (
-          <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          <div className="setup-stage-list admin-mt-14">
             {filteredPartnerBookingGateAttempts.slice(0, 12).map((attempt) => (
               <div className="setup-stage-item" key={attempt.id}>
                 <span>{attempt.gateLabel}</span>
@@ -736,12 +736,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     <strong>{attempt.reasonLabel}</strong>
                   </Link>
                   <p className="muted">{attempt.detail}</p>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
                     <span className="pill pill-neutral">{attempt.addressLabel}</span>
                     <span className="pill pill-neutral">{attempt.distanceLabel}</span>
                   </div>
-                  <div className="participant-list" style={{ marginTop: 8 }}>
+                  <div className="participant-list admin-mt-8">
                     <Link className="text-link" href={attempt.bookingMonitorHref}>
                       Booking gate queue
                     </Link>
@@ -764,7 +764,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner connected operations records"
       />
 
-      <div className="card" id="partner-operator-command-queue" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-operator-command-queue">
         <div className="ops-section-header">
           <div>
             <h2>Partner operator command queue</h2>
@@ -777,7 +777,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             {partnerOperatorCommandQueue.status}
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {partnerOperatorCommandQueue.metrics.map((metric) => (
             <div key={metric.label}>
               <span>{metric.label}</span>
@@ -786,7 +786,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {partnerOperatorCommandQueue.commands.map((command) => (
             <div className="setup-stage-item" key={command.id}>
               <span>{command.label}</span>
@@ -801,7 +801,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card ops-note-panel" id="partner-operator-notes" style={{ marginBottom: 16 }}>
+      <div className="card ops-note-panel admin-mb-16" id="partner-operator-notes">
         <div className="ops-section-header">
           <div>
             <h2>Partner operator notes</h2>
@@ -857,7 +857,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </form>
       </div>
 
-      <div className="card" id="partner-master-facts" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-master-facts">
         <div className="ops-section-header">
           <div>
             <h2>Partner master facts</h2>
@@ -868,7 +868,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerMasterFacts.length} field(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {partnerMasterFacts.map((fact) => (
             <div key={fact.label}>
               <span>{fact.label}</span>
@@ -879,7 +879,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="partner-booking-evidence-bundles" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-booking-evidence-bundles">
         <div className="ops-section-header">
           <div>
             <h2>Partner booking evidence bundles</h2>
@@ -937,12 +937,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       Booking
                     </Link>
                     {row.customerHref ? (
-                      <Link className="text-link" href={row.customerHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.customerHref}>
                         Customer
                       </Link>
                     ) : null}
                     {row.chatHref ? (
-                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      <Link className="text-link admin-ml-10" href={row.chatHref}>
                         Chat
                       </Link>
                     ) : null}
@@ -953,13 +953,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
         {partnerBookingEvidenceRows.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No partner booking bundle matched this date filter.
           </p>
         ) : null}
       </div>
 
-      <div className="card" id="partner-full-record-index" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-full-record-index">
         <div className="ops-section-header">
           <div>
             <h2>Partner full record index</h2>
@@ -971,7 +971,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerBookingArchive.length} booking record(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <a href="#booking-chat-records">
             <span>Booking and chat</span>
             <strong>{partnerBookingArchive.length}</strong>
@@ -1000,7 +1000,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="partner-operating-ledger" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-operating-ledger">
         <div className="ops-section-header">
           <div>
             <h2>Partner operating ledger</h2>
@@ -1039,7 +1039,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </div>
 
-      <div className="card" id="partner-operating-checklist" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="partner-operating-checklist">
         <div className="ops-section-header">
           <div>
             <h2>Partner operating checklist</h2>
@@ -1050,7 +1050,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerOperatingChecklist.length} check(s)</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {partnerOperatingChecklist.map((item) => (
             <div className="setup-stage-item" key={item.area}>
               <span>{item.area}</span>
@@ -1067,7 +1067,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="record-date-filter">
         <div className="ops-section-header">
           <div>
             <h2>Record date filter</h2>
@@ -1084,7 +1084,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
           </div>
         </div>
-        <form className="form-grid" action={`/partners/${provider.id}`} style={{ marginTop: 14 }}>
+        <form className="form-grid admin-mt-14" action={`/partners/${provider.id}`}>
           <label>
             Preset
             <select name="range" defaultValue={dateFilters.range}>
@@ -1137,7 +1137,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </Link>
           </div>
         </form>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Filtered booking archive</span>
             <strong>{filteredPartnerBookingArchive.length}</strong>
@@ -1174,7 +1174,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner chat retention ledger"
       />
 
-      <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16" id="booking-chat-records">
         <div className="ops-section-header">
           <div>
             <h2>Booking and chat records</h2>
@@ -1187,7 +1187,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Open bookings
           </Link>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {filteredPartnerBookingArchive.length ? (
             filteredPartnerBookingArchive.slice(0, 10).map((record) => (
               <div className="setup-stage-item" key={`${record.booking.id}-${record.relation}`}>
