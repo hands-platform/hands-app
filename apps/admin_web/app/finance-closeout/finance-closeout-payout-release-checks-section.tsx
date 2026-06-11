@@ -11,7 +11,7 @@ export function FinanceCloseoutPayoutReleaseChecksSection({
   rows,
 }: FinanceCloseoutPayoutReleaseChecksSectionProps) {
   return (
-    <section className="card" style={{ overflowX: 'auto' }}>
+    <section className="card admin-card-scroll">
       <div className="ops-section-header">
         <div>
           <h2>Payout release checks</h2>

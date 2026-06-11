@@ -196,6 +196,10 @@ a {
   padding: 16px;
 }
 
+.admin-card-scroll {
+  overflow-x: auto;
+}
+
 a.card,
 a.ops-task-card,
 a.action-button-card {

@@ -41,7 +41,7 @@ type CashSettlementOpenDebtTableSectionProps = {
 
 export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenDebtTableSectionProps) {
   return (
-    <div className="card" style={{ overflowX: 'auto' }}>
+    <div className="card admin-card-scroll">
       <div className="ops-section-header">
         <div>
           <h2>Open cash fee debt rows</h2>
