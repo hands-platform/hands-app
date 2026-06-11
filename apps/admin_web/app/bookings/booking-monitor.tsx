@@ -31,7 +31,6 @@ import {
 import {
   bookingListStageFromFacts,
   type BookingListStage,
-  type BookingListStageKey,
 } from '../../lib/booking-list-stage';
 import { bookingCheckLevel } from '../../lib/booking-check-level';
 import {
@@ -106,6 +105,11 @@ import {
   bookingPaymentFilterOptions,
   bookingStatusFilterOptions,
 } from './booking-monitor-filter-options';
+import {
+  activeBookingStatuses as activeStatuses,
+  bookingMonitorSummaryRows,
+  type BookingMonitorSummaryFact,
+} from './booking-monitor-summary';
 import { bookingMatchesSearch } from './booking-search';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
@@ -218,9 +222,6 @@ type MarketplaceCoveragePillState = {
   readonly tone: MarketplaceBookingCoverageTone;
 };
 
-type BookingMonitorSummaryRow = readonly [string, string];
-
-const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -294,8 +295,7 @@ export function BookingMonitor({
     () =>
       bookingMonitorSummaryRows({
         blockedCreateAttemptCount: orderedBookingCreateRejections.length,
-        bookings: orderedBookings,
-        nowMs: currentTimeMs,
+        bookings: orderedBookings.map((booking) => bookingMonitorSummaryFact(booking, currentTimeMs)),
       }),
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
@@ -2273,74 +2273,27 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): rea
   });
 }
 
-function bookingStageCounts(bookings: AdminBooking[], nowMs: number) {
-  return bookings.reduce((counts, booking) => {
-    const stage = bookingListStage(booking, nowMs).key;
-    counts.set(stage, (counts.get(stage) ?? 0) + 1);
-    return counts;
-  }, new Map<BookingListStageKey, number>());
-}
-
-function bookingMonitorSummaryRows(input: {
-  bookings: AdminBooking[];
-  blockedCreateAttemptCount: number;
-  nowMs: number;
-}): BookingMonitorSummaryRow[] {
-  const open = input.bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const matched = input.bookings.filter((booking) => booking.status === 'MATCHED');
-  const active = input.bookings.filter((booking) => activeStatuses.has(booking.status));
-  const noParticipants = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
-  const waitingSelection = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
-  const preferredPending = open.filter((booking) => bookingFirstPickPending(booking));
-  const backupChosen = input.bookings.filter((booking) => isBackupSelected(booking));
-  const chatLive = input.bookings.filter((booking) => bookingMatchingChatReady(booking));
-  const noShow = input.bookings.filter((booking) => booking.status === 'NO_SHOW');
-  const expired = input.bookings.filter((booking) => booking.status === 'EXPIRED');
-  const policySnapshots = input.bookings.filter((booking) => bookingMatchingPolicySnapshot(booking));
-  const paymentChecks = input.bookings.filter((booking) => bookingPaymentNeedsOps(booking));
-  const closeoutChecks = input.bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-  const pricingChecks = input.bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
-  const addressChecks = input.bookings.filter((booking) => bookingAddressNeedsOps(booking));
-  const locationChecks = input.bookings.filter((booking) => bookingLocationNeedsOps(booking, input.nowMs));
-  const chatRepair = input.bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
-  const chatEvidence = input.bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, input.nowMs));
-  const evidenceMissing = input.bookings.filter((booking) =>
-    bookingDecisionEvidenceMissing(booking, input.nowMs),
-  );
-  const refundReview = input.bookings.filter((booking) => bookingRefundReviewNeedsOps(booking));
-  const actionChecks = input.bookings.filter((booking) =>
-    bookingCheckFlags(booking, input.nowMs).some((flag) => flag.severity === 'high'),
-  );
-  const stageCounts = bookingStageCounts(input.bookings, input.nowMs);
-
-  return [
-    ['Active bookings', active.length.toString()],
-    ['Open matching', open.length.toString()],
-    ['Matched', matched.length.toString()],
-    ['Follow-up queue', actionChecks.length.toString()],
-    ['Blocked create attempts', input.blockedCreateAttemptCount.toString()],
-    ['Stage 1 first-pick', (stageCounts.get('first-pick') ?? 0).toString()],
-    ['Stage 2 marketplace', (stageCounts.get('marketplace') ?? 0).toString()],
-    ['Stage 3 customer choice', (stageCounts.get('customer-choice') ?? 0).toString()],
-    ['Stage 4 handoff repair', (stageCounts.get('handoff-repair') ?? 0).toString()],
-    ['No partners yet', noParticipants.length.toString()],
-    ['First-pick pending', preferredPending.length.toString()],
-    ['Marketplace options', waitingSelection.length.toString()],
-    ['Marketplace selected', backupChosen.length.toString()],
-    ['Chat live', chatLive.length.toString()],
-    ['No-show', noShow.length.toString()],
-    ['Expired', expired.length.toString()],
-    ['Policy snapshots', policySnapshots.length.toString()],
-    ['Address checks', addressChecks.length.toString()],
-    ['Payment checks', paymentChecks.length.toString()],
-    ['Closeout checks', closeoutChecks.length.toString()],
-    ['Pricing checks', pricingChecks.length.toString()],
-    ['Location checks', locationChecks.length.toString()],
-    ['Chat repair', chatRepair.length.toString()],
-    ['Chat evidence review', chatEvidence.length.toString()],
-    ['Evidence missing', evidenceMissing.length.toString()],
-    ['Refund review', refundReview.length.toString()],
-  ];
+function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
+  return {
+    addressNeedsOps: bookingAddressNeedsOps(booking),
+    backupSelected: isBackupSelected(booking),
+    chatEvidenceNeedsOps: bookingChatEvidenceNeedsOps(booking, nowMs),
+    chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
+    closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+    decisionEvidenceMissing: bookingDecisionEvidenceMissing(booking, nowMs),
+    firstPickPending: bookingFirstPickPending(booking),
+    highPriorityCheck: bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
+    locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
+    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+    matchingChatReady: bookingMatchingChatReady(booking),
+    participantCount: booking.participants?.length ?? 0,
+    paymentNeedsOps: bookingPaymentNeedsOps(booking),
+    policySnapshotPresent: Boolean(bookingMatchingPolicySnapshot(booking)),
+    pricingPolicyNeedsOps: bookingPricingPolicyNeedsOps(booking),
+    refundReviewNeedsOps: bookingRefundReviewNeedsOps(booking),
+    stageKey: bookingListStage(booking, nowMs).key,
+    status: booking.status,
+  };
 }
 
 function bookingClosureListSignal(booking: AdminBooking) {
