@@ -356,4 +356,44 @@ describe('AdminService query orchestration', () => {
     const select = prisma.notification.findMany.mock.calls[0]?.[0]?.select;
     expect(JSON.stringify(select)).not.toContain('token');
   });
+
+  it('audits push device enablement without recording raw push tokens', async () => {
+    const prisma = {
+      pushDevice: {
+        update: jest.fn().mockResolvedValue({
+          id: 'push-device-1',
+          platform: 'ios',
+          token: 'raw-fcm-token',
+          userId: 'user-1',
+        }),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.enablePushDevice('admin-1', 'push-device-1')).resolves.toEqual({
+      ok: true,
+      pushDeviceId: 'push-device-1',
+    });
+
+    expect(prisma.pushDevice.update).toHaveBeenCalledWith({
+      where: { id: 'push-device-1' },
+      data: { enabled: true },
+    });
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'push_device.enable',
+        target: 'push_device:push-device-1',
+        metadata: {
+          pushDeviceId: 'push-device-1',
+          userId: 'user-1',
+          platform: 'ios',
+        },
+      },
+    });
+    expect(JSON.stringify(prisma.adminAuditLog.create.mock.calls)).not.toContain('raw-fcm-token');
+  });
 });
