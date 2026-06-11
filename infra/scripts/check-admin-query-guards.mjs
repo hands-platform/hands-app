@@ -3,11 +3,14 @@ import { join, resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
 const adminServicePath = resolve(root, 'apps/api/src/admin/admin.service.ts');
+const adminProviderProfileSelectsPath = resolve(root, 'apps/api/src/admin/admin-provider-profile-selects.ts');
 const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
+const adminProviderProfileSelectsSource = readFileSync(adminProviderProfileSelectsPath, 'utf8');
+const adminProviderGuardSource = `${adminServiceSource}\n${adminProviderProfileSelectsSource}`;
 
 function sourceBetween(startMarker, endMarker) {
   const start = adminServiceSource.indexOf(startMarker);
@@ -141,7 +144,7 @@ if (!hasAuditCountGroupBy('customerAuditCounts') && !hasAuditSummaryGroupByHelpe
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -149,7 +152,7 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -157,7 +160,7 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -165,7 +168,7 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELAT
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -173,7 +176,7 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_
   });
 }
 
-if (!adminServiceSource.includes('const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;')) {
+if (!adminProviderGuardSource.includes('const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -213,7 +216,7 @@ if (providerListSource.includes('compact ?')) {
   });
 }
 
-if (adminServiceSource.includes('take: compact ? 100 : 100')) {
+if (adminProviderGuardSource.includes('take: compact ? 100 : 100')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
