@@ -12,10 +12,12 @@ import {
 } from './notification-send.queue';
 import {
   isPartnerAlert,
-  notificationDeliveryResponse,
-  toJson,
   toPushData,
 } from './notification-push-payload';
+import {
+  notificationDeliveryCreateInput,
+  notificationDeliveryJobResult,
+} from './notification-delivery-record';
 import { PushDeliveryService } from './push-delivery.service';
 
 export { isPartnerAlert, toPushData } from './notification-push-payload';
@@ -58,15 +60,14 @@ export class NotificationRetryProcessor extends WorkerHost {
       });
 
       await this.prisma.$transaction(async (tx) => {
-        await tx.notificationDelivery.create({
-          data: {
+        await tx.notificationDelivery.create(
+          notificationDeliveryCreateInput({
             notificationId: notification.id,
             pushDeviceId: device.id,
-            provider: result.provider,
-            status: result.status,
-            response: toJson(notificationDeliveryResponse(result, device.token)),
-          },
-        });
+            pushToken: device.token,
+            result,
+          }),
+        );
 
         if (result.disableDevice) {
           await tx.pushDevice.update({
@@ -76,13 +77,7 @@ export class NotificationRetryProcessor extends WorkerHost {
         }
       });
 
-      results.push({
-        deviceId: device.id,
-        status: result.status,
-        provider: result.provider,
-        disableDevice: result.disableDevice,
-        failureCode: result.failureCode,
-      });
+      results.push(notificationDeliveryJobResult({ deviceId: device.id, result }));
     }
 
     return {
