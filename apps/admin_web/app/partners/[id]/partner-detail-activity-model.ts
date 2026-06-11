@@ -19,33 +19,32 @@ export type PartnerDailyActivityDigest = {
   readonly highlights: readonly PartnerActivityRecord[];
 };
 
+const BOOKING_ACTIVITY_TYPES = new Set(['BOOKING', 'CHAT']);
+const FINANCE_ACTIVITY_TYPES = new Set(['EARNING', 'PAYOUT']);
+const APP_DEVICE_ACTIVITY_TYPES = new Set(['ACCOUNT', 'SESSION', 'DEVICE']);
+const VERIFICATION_ACTIVITY_TYPES = new Set([
+  'VERIFY',
+  'DOCUMENT',
+  'BANK',
+  'TAX',
+  'AGREEMENT',
+  'REPORT',
+  'SANCTION',
+  'PROFILE',
+  'OPS',
+]);
+
 export function partnerActivityRecordHref(record: PartnerActivityRecord) {
-  if (['BOOKING', 'CHAT'].includes(record.type)) return '#booking-chat-records';
-  if (['EARNING', 'PAYOUT'].includes(record.type)) return '#payout';
-  if (['LOCATION', 'SESSION', 'DEVICE', 'ACCOUNT'].includes(record.type)) return '#app-activity';
-  if (
-    ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'].includes(
-      record.type,
-    )
-  ) {
+  if (BOOKING_ACTIVITY_TYPES.has(record.type)) return '#booking-chat-records';
+  if (FINANCE_ACTIVITY_TYPES.has(record.type)) return '#payout';
+  if (record.type === 'LOCATION' || APP_DEVICE_ACTIVITY_TYPES.has(record.type)) return '#app-activity';
+  if (VERIFICATION_ACTIVITY_TYPES.has(record.type)) {
     return '#documents';
   }
   return '#app-activity';
 }
 
 export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
-  const financeTypes = new Set(['EARNING', 'PAYOUT']);
-  const verificationTypes = new Set([
-    'VERIFY',
-    'DOCUMENT',
-    'BANK',
-    'TAX',
-    'AGREEMENT',
-    'REPORT',
-    'SANCTION',
-    'PROFILE',
-    'OPS',
-  ]);
   const count = (predicate: (record: PartnerActivityRecord) => boolean) => records.filter(predicate).length;
   const latestAt = orderPartnerActivityRecords(records, 'newest')[0]?.at;
   const oldestAt = orderPartnerActivityRecords(records, 'oldest')[0]?.at;
@@ -68,7 +67,7 @@ export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     },
     {
       label: 'App and device',
-      value: count((record) => ['ACCOUNT', 'SESSION', 'DEVICE'].includes(record.type)).toString(),
+      value: count((record) => APP_DEVICE_ACTIVITY_TYPES.has(record.type)).toString(),
       helper: 'Account creation, login sessions, and device records.',
     },
     {
@@ -78,12 +77,12 @@ export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     },
     {
       label: 'Finance',
-      value: count((record) => financeTypes.has(record.type)).toString(),
+      value: count((record) => FINANCE_ACTIVITY_TYPES.has(record.type)).toString(),
       helper: 'Earnings and payout batches.',
     },
     {
       label: 'Verification and operations',
-      value: count((record) => verificationTypes.has(record.type)).toString(),
+      value: count((record) => VERIFICATION_ACTIVITY_TYPES.has(record.type)).toString(),
       helper: 'KYC, documents, bank, tax, agreements, reports, account controls, media, and notes.',
     },
   ];
