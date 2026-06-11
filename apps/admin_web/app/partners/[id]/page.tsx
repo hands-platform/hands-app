@@ -132,6 +132,7 @@ import {
 } from './partner-detail-operations-digest-section';
 import { buildPartnerOperationsDigest } from './partner-detail-operations-digest-model';
 import { buildPartnerOperatingLedger } from './partner-detail-operating-ledger-model';
+import { PartnerDetailOperatingLedgerSection } from './partner-detail-operating-ledger-section';
 import { PartnerDetailDailyActivityDigestSection } from './partner-detail-daily-activity-digest-section';
 import { PartnerDetailRecentTimelineSection } from './partner-detail-recent-timeline-section';
 import { PartnerDetailSummaryRailSection } from './partner-detail-summary-rail-section';
@@ -892,44 +893,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         missingKycDocumentCount={missingApprovedRequiredKycDocuments(provider).length}
       />
 
-      <div className="card admin-mb-16" id="partner-operating-ledger">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operating ledger</h2>
-            <p className="muted">
-              Compact factual ledger for identity, booking work, chat archive, service pricing, wallet,
-              payout, tax, location, device, and audit evidence.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerOperatingLedger.length} record areas</span>
-        </div>
-        <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Area</th>
-                <th>Status</th>
-                <th>Evidence</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partnerOperatingLedger.map((row) => (
-                <tr key={row.area}>
-                  <td>{row.area}</td>
-                  <td>{row.status}</td>
-                  <td>{row.evidence}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AdminTableScroll>
-      </div>
+      <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
 
       <div className="card admin-mb-16" id="partner-operating-checklist">
         <div className="ops-section-header">
