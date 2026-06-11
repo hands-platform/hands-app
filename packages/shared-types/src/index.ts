@@ -15,25 +15,28 @@ export type BookingStatus =
 
 export type ProviderStatus = 'OFFLINE' | 'ONLINE_AVAILABLE' | 'ONLINE_BUSY' | 'ONLINE_AVAILABLE_SOON';
 
-export type RealtimeEvent =
-  | 'booking.created'
-  | 'booking.opened'
-  | 'booking.requested'
-  | 'booking.backup_available'
-  | 'provider.joined'
-  | 'provider.accepted'
-  | 'provider.rejected'
-  | 'booking.matched'
-  | 'booking.cancelled'
-  | 'booking.rejected'
-  | 'booking.expired'
-  | 'booking.no_show'
-  | 'provider.account.blocked'
-  | 'provider.account.unblocked'
-  | 'provider.payout_setup_required'
-  | 'provider.location.updated'
-  | 'chat.message.created'
-  | 'service.started'
-  | 'service.completed'
-  | 'earning.created'
-  | 'payment.updated';
+export const REALTIME_EVENTS = [
+  'booking.created',
+  'booking.opened',
+  'booking.requested',
+  'booking.backup_available',
+  'provider.joined',
+  'provider.accepted',
+  'provider.rejected',
+  'booking.matched',
+  'booking.cancelled',
+  'booking.rejected',
+  'booking.expired',
+  'booking.no_show',
+  'provider.account.blocked',
+  'provider.account.unblocked',
+  'provider.payout_setup_required',
+  'provider.location.updated',
+  'chat.message.created',
+  'service.started',
+  'service.completed',
+  'earning.created',
+  'payment.updated',
+] as const;
+
+export type RealtimeEvent = (typeof REALTIME_EVENTS)[number];
