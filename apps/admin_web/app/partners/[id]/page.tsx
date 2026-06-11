@@ -187,6 +187,12 @@ import {
   type PartnerKycDecisionEvidence,
 } from './partner-detail-kyc-decision-section';
 import {
+  PartnerDetailPublicProfileMediaCard,
+  PartnerDetailTypedDocumentsCard,
+  type PartnerPublicMediaRow,
+  type PartnerTypedDocumentRow,
+} from './partner-detail-document-media-section';
+import {
   PartnerDetailFastOverviewSection,
   type PartnerDetailFastOverviewCard,
   type PartnerDetailFastOverviewInfoLine,
@@ -390,6 +396,8 @@ type ProviderDetail = AdminProvider & {
     booking?: PartnerDetailBooking | null;
   }>;
 };
+type ProviderDocument = NonNullable<ProviderDetail['documents']>[number];
+type ProviderPublicFileAsset = NonNullable<NonNullable<ProviderDetail['user']>['fileAssets']>[number];
 
 export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -438,6 +446,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const kycEvidence = buildPartnerKycEvidence(provider);
   const canApproveKyc = kycEvidence.allRequiredApproved;
   const partnerKycReviewActions = buildPartnerKycReviewActions(provider, canApproveKyc);
+  const partnerTypedDocumentRows = buildPartnerTypedDocumentRows(provider);
+  const partnerPublicMediaRows = buildPartnerPublicMediaRows(provider);
   const payoutHold = activePayoutHold(provider);
   const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
   const partnerReportRows = buildPartnerReportRows(provider);
@@ -971,136 +981,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           rows={partnerServicePricingDisplayRows}
         />
 
-        <div className="card" id="documents">
-          <h2>Typed documents</h2>
-          {(provider.documents ?? []).length ? (
-            provider.documents?.map((document) => (
-              <div className="provider-file-row" key={document.id}>
-                <div className="participant-list admin-mb-6">
-                  <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
-                  <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
-                    {document.status}
-                  </span>
-                </div>
-                <p className="muted">{providerDocumentReviewHint(document.type)}</p>
-                <p className="muted">
-                  {document.fileAsset?.contentType ?? 'Unknown type'}
-                  {document.fileAsset?.uploadedAt ? ` / ${formatDate(document.fileAsset.uploadedAt)}` : ''}
-                </p>
-                {document.rejectionReason ? (
-                  <p className="muted">Rejection reason: {document.rejectionReason}</p>
-                ) : null}
-                <p className="muted">
-                  {document.fileAsset?.id ? (
-                    <a
-                      className="text-link"
-                      href={`/files/${document.fileAsset.id}/open`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open private file
-                    </a>
-                  ) : (
-                    marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')
-                  )}
-                </p>
-                <div className="actions">
-                  <ActionMenu
-                    actions={[
-                      {
-                        description: 'Review before approving this identity document.',
-                        disabled: document.status === 'APPROVED',
-                        href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-document', {
-                          documentId: document.id,
-                        }),
-                        kind: 'link',
-                        label: 'Approve doc',
-                        tone: 'success',
-                      },
-                      {
-                        description: 'Review and enter a document rejection reason.',
-                        disabled: document.status === 'REJECTED',
-                        href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-document', {
-                          documentId: document.id,
-                        }),
-                        kind: 'link',
-                        label: 'Reject doc',
-                        tone: 'danger',
-                      },
-                    ]}
-                    label={`Document review actions for ${shortRecordId(document.id)}`}
-                  />
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="muted">No typed onboarding documents yet.</p>
-          )}
-        </div>
+        <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
 
-        <div className="card" id="media">
-          <h2>Public profile media</h2>
-          {(provider.user?.fileAssets ?? []).length ? (
-            provider.user?.fileAssets?.map((file) => (
-              <div className="provider-file-row" key={file.id}>
-                <div className="participant-list admin-mb-6">
-                  <span className="pill pill-info">{providerPublicMediaLabel(file.purpose)}</span>
-                  <span className="pill pill-success">{file.uploadStatus ?? 'UPLOADED'}</span>
-                  <span
-                    className={`pill ${file.reviewStatus === 'APPROVED' ? 'pill-success' : file.reviewStatus === 'REJECTED' ? 'pill-danger' : 'pill-warn'}`}
-                  >
-                    {file.reviewStatus ?? 'PENDING_REVIEW'}
-                  </span>
-                </div>
-                <p className="muted">
-                  {file.contentType}
-                  {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-                  {file.uploadedAt ? ` / uploaded ${formatDate(file.uploadedAt)}` : ''}
-                </p>
-                {file.reviewedAt ? <p className="muted">Reviewed {formatDate(file.reviewedAt)}</p> : null}
-                {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
-                <p className="muted">
-                  {file.url ? (
-                    <a className="text-link" href={file.url} target="_blank" rel="noreferrer">
-                      {marketplaceDisplayText(file.key)}
-                    </a>
-                  ) : (
-                    marketplaceDisplayText(file.key)
-                  )}
-                </p>
-                <div className="actions">
-                  <ActionMenu
-                    actions={[
-                      {
-                        description: 'Review before approving this public profile media.',
-                        disabled: file.reviewStatus === 'APPROVED',
-                        href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-media', {
-                          fileId: file.id,
-                        }),
-                        kind: 'link',
-                        label: 'Approve public media',
-                        tone: 'success',
-                      },
-                      {
-                        description: 'Review and enter a media rejection reason.',
-                        disabled: file.reviewStatus === 'REJECTED',
-                        href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-media', {
-                          fileId: file.id,
-                        }),
-                        kind: 'link',
-                        label: 'Reject media',
-                        tone: 'danger',
-                      },
-                    ]}
-                    label={`Media review actions for ${shortRecordId(file.id)}`}
-                  />
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="muted">No public profile image or work photos uploaded yet.</p>
-          )}
-        </div>
+        <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
 
         <div className="card" id="bank">
           <h2>Bank and payout gate</h2>
@@ -4652,6 +4535,109 @@ function buildPartnerKycReviewActions(
       tone: 'danger',
     },
   ];
+}
+
+function buildPartnerTypedDocumentRows(provider: ProviderDetail): PartnerTypedDocumentRow[] {
+  return (provider.documents ?? []).map((document) => ({
+    assetLabel: `${document.fileAsset?.contentType ?? 'Unknown type'}${
+      document.fileAsset?.uploadedAt ? ` / ${formatDate(document.fileAsset.uploadedAt)}` : ''
+    }`,
+    fileHref: document.fileAsset?.id ? `/files/${document.fileAsset.id}/open` : undefined,
+    fileLabel: document.fileAsset?.key ?? 'No file key',
+    id: document.id,
+    rejectionReason: document.rejectionReason,
+    reviewActions: buildPartnerDocumentReviewActions(provider.id, document),
+    reviewHint: providerDocumentReviewHint(document.type),
+    reviewLabel: `Document review actions for ${shortRecordId(document.id)}`,
+    status: document.status,
+    statusTone: document.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
+    typeLabel: providerDocumentLabel(document.type),
+  }));
+}
+
+function buildPartnerDocumentReviewActions(
+  providerId: string,
+  document: ProviderDocument,
+): ActionMenuItem[] {
+  return [
+    {
+      description: 'Review before approving this identity document.',
+      disabled: document.status === 'APPROVED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'approve-document', {
+        documentId: document.id,
+      }),
+      kind: 'link',
+      label: 'Approve doc',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a document rejection reason.',
+      disabled: document.status === 'REJECTED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'reject-document', {
+        documentId: document.id,
+      }),
+      kind: 'link',
+      label: 'Reject doc',
+      tone: 'danger',
+    },
+  ];
+}
+
+function buildPartnerPublicMediaRows(provider: ProviderDetail): PartnerPublicMediaRow[] {
+  return (provider.user?.fileAssets ?? []).map((file) => ({
+    detailLabel: `${file.contentType ?? 'Unknown type'}${file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}${
+      file.uploadedAt ? ` / uploaded ${formatDate(file.uploadedAt)}` : ''
+    }`,
+    fileHref: file.url,
+    fileLabel: file.key ?? 'No file key',
+    id: file.id,
+    reviewActions: buildPartnerPublicMediaReviewActions(provider.id, file),
+    reviewLabel: `Media review actions for ${shortRecordId(file.id)}`,
+    reviewedLabel: file.reviewedAt ? formatDate(file.reviewedAt) : null,
+    reviewReason: file.reviewReason,
+    reviewStatus: file.reviewStatus ?? 'PENDING_REVIEW',
+    reviewStatusTone: partnerPublicMediaReviewStatusTone(file.reviewStatus),
+    typeLabel: providerPublicMediaLabel(file.purpose),
+    uploadStatus: file.uploadStatus ?? 'UPLOADED',
+  }));
+}
+
+function buildPartnerPublicMediaReviewActions(
+  providerId: string,
+  file: ProviderPublicFileAsset,
+): ActionMenuItem[] {
+  return [
+    {
+      description: 'Review before approving this public profile media.',
+      disabled: file.reviewStatus === 'APPROVED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'approve-media', {
+        fileId: file.id,
+      }),
+      kind: 'link',
+      label: 'Approve public media',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a media rejection reason.',
+      disabled: file.reviewStatus === 'REJECTED',
+      href: partnerDetailReviewActionConfirmHref(providerId, 'reject-media', {
+        fileId: file.id,
+      }),
+      kind: 'link',
+      label: 'Reject media',
+      tone: 'danger',
+    },
+  ];
+}
+
+function partnerPublicMediaReviewStatusTone(status?: string | null) {
+  if (status === 'APPROVED') {
+    return 'pill-success';
+  }
+  if (status === 'REJECTED') {
+    return 'pill-danger';
+  }
+  return 'pill-warn';
 }
 
 function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
