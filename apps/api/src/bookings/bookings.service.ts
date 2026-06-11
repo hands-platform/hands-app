@@ -5,7 +5,6 @@ import {
   EarningStatus,
   ParticipantStatus,
   PaymentMethod,
-  PaymentStatus,
   Prisma,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
@@ -65,6 +64,10 @@ import {
   restoreBookingMatchingPolicy,
 } from './bookings.matching-policy';
 import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
+import {
+  bookingCompletedUpdateData,
+  bookingServiceStartedUpdateData,
+} from './bookings.lifecycle';
 import { bookingOpenMatchingPayload } from './bookings.matching-payload';
 import {
   appendBackupNotificationTrace,
@@ -1427,10 +1430,7 @@ export class BookingsService {
       await this.ensureProviderWalletCanJoinMarketplace(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
-        data: {
-          status,
-          chatRoom: { upsert: { create: {}, update: {} } },
-        },
+        data: bookingServiceStartedUpdateData(),
         include: { chatRoom: true, preferredProvider: true, selectedProvider: true, customerProfile: true },
       });
       await this.notifyServiceStarted({
@@ -1455,10 +1455,7 @@ export class BookingsService {
 
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
-      data: {
-        status: BookingStatus.COMPLETED,
-        payment: { update: { status: PaymentStatus.CAPTURED } },
-      },
+      data: bookingCompletedUpdateData(),
       include: { addressSnapshot: true, payment: true, selectedProvider: true },
     });
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
