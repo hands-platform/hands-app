@@ -38,6 +38,13 @@ import {
 } from './admin-booking-matching-evidence';
 import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
+  assertProviderReportSeverity,
+  assertProviderReportSource,
+  assertProviderReportStatus,
+  assertProviderSanctionType,
+  providerReportResolvedAt,
+} from './admin-provider-control-helpers';
+import {
   adminBookingListSelect,
   adminCustomerBookingListSelect,
 } from './admin-booking-selects';
@@ -583,12 +590,8 @@ export class AdminService {
     if (!providerProfileId) throw new BadRequestException('providerProfileId is required');
     if (!category) throw new BadRequestException('Report category is required');
     if (!summary) throw new BadRequestException('Report summary is required');
-    if (input.source && !Object.values(ProviderReportSource).includes(input.source)) {
-      throw new BadRequestException('Invalid report source');
-    }
-    if (input.severity && !Object.values(ProviderReportSeverity).includes(input.severity)) {
-      throw new BadRequestException('Invalid report severity');
-    }
+    assertProviderReportSource(input.source);
+    assertProviderReportSeverity(input.severity);
 
     const report = await this.prisma.providerReport.create({
       data: {
@@ -622,25 +625,15 @@ export class AdminService {
       resolutionNote?: string | null;
     },
   ) {
-    if (input.status && !Object.values(ProviderReportStatus).includes(input.status)) {
-      throw new BadRequestException('Invalid report status');
-    }
-    if (input.severity && !Object.values(ProviderReportSeverity).includes(input.severity)) {
-      throw new BadRequestException('Invalid report severity');
-    }
+    assertProviderReportStatus(input.status);
+    assertProviderReportSeverity(input.severity);
     const report = await this.prisma.providerReport.update({
       where: { id: reportId },
       data: {
         status: input.status,
         severity: input.severity,
         resolutionNote: normalizeNullable(input.resolutionNote),
-        resolvedAt:
-          input.status === ProviderReportStatus.RESOLVED || input.status === ProviderReportStatus.DISMISSED
-            ? new Date()
-            : input.status === ProviderReportStatus.OPEN ||
-                input.status === ProviderReportStatus.INVESTIGATING
-              ? null
-              : undefined,
+        resolvedAt: providerReportResolvedAt(input.status),
       },
     });
 
@@ -672,9 +665,7 @@ export class AdminService {
   ) {
     const reason = normalizeNullable(input.reason);
     if (!reason) throw new BadRequestException('Sanction reason is required');
-    if (input.type && !Object.values(ProviderSanctionType).includes(input.type)) {
-      throw new BadRequestException('Invalid sanction type');
-    }
+    assertProviderSanctionType(input.type);
     const type = input.type ?? ProviderSanctionType.WARNING;
     if (type === ProviderSanctionType.ACCOUNT_BLOCK) {
       await this.blockProviderAccount(actorId, providerProfileId, reason);
