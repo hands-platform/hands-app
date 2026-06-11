@@ -80,11 +80,7 @@ const forbiddenSchemaFragments = [
   { label: 'feedback score column', pattern: /\brating\s+integer\b/i },
 ];
 
-for (const fragment of forbiddenSchemaFragments) {
-  if (fragment.pattern.test(supabaseSchema)) {
-    failures.push(`Supabase core schema still contains forbidden MVP field: ${fragment.label}.`);
-  }
-}
+rejectPatterns(forbiddenSchemaFragments, 'Supabase core schema still contains forbidden MVP field');
 
 for (const check of enumChecks) {
   const prismaValues = extractPrismaEnum(check.prisma);
@@ -96,20 +92,24 @@ for (const check of enumChecks) {
 }
 
 for (const table of requiredTables) {
-  if (
-    !new RegExp(`create\\s+table\\s+if\\s+not\\s+exists\\s+public\\.${table}\\b`, 'i').test(supabaseSchema)
-  ) {
+  if (!hasPublicTable(table)) {
     failures.push(`Supabase core schema is missing table public.${table}`);
+  }
+  if (!hasPublicTableRls(table)) {
+    failures.push(`Supabase core schema table public.${table} does not enable RLS.`);
   }
 }
 
-if (!/create\s+policy\s+"messages participants insert"/i.test(supabaseSchema)) {
-  failures.push('Supabase core schema is missing chat participant message insert RLS policy.');
-}
-
-if (!/create\s+or\s+replace\s+function\s+public\.nearby_providers/i.test(supabaseSchema)) {
-  failures.push('Supabase core schema is missing nearby_providers radius search function.');
-}
+requirePatterns([
+  {
+    label: 'chat participant message insert RLS policy',
+    pattern: /create\s+policy\s+"messages participants insert"/i,
+  },
+  {
+    label: 'nearby_providers radius search function',
+    pattern: /create\s+or\s+replace\s+function\s+public\.nearby_providers/i,
+  },
+]);
 
 const requiredFileSchemaFragments = [
   { label: 'files purpose enum column', pattern: /purpose\s+public\.file_purpose\s+not\s+null/i },
@@ -130,11 +130,7 @@ const requiredFileSchemaFragments = [
   { label: 'files review status purpose index', pattern: /files_review_status_purpose_idx/i },
 ];
 
-for (const fragment of requiredFileSchemaFragments) {
-  if (!fragment.pattern.test(supabaseSchema)) {
-    failures.push(`Supabase core schema is missing ${fragment.label}.`);
-  }
-}
+requirePatterns(requiredFileSchemaFragments);
 
 if (failures.length > 0) {
   console.error(JSON.stringify({ ok: false, failures }, null, 2));
@@ -147,6 +143,7 @@ console.log(
       ok: true,
       enumChecks: enumChecks.length,
       requiredTables: requiredTables.length,
+      rlsTables: requiredTables.length,
     },
     null,
     2,
@@ -165,6 +162,35 @@ function extractPrismaEnum(name) {
     .map((line) => line.split(/\s+/)[0]);
 }
 
+function requirePatterns(fragments) {
+  for (const fragment of fragments) {
+    if (!fragment.pattern.test(supabaseSchema)) {
+      failures.push(`Supabase core schema is missing ${fragment.label}.`);
+    }
+  }
+}
+
+function rejectPatterns(fragments, messagePrefix) {
+  for (const fragment of fragments) {
+    if (fragment.pattern.test(supabaseSchema)) {
+      failures.push(`${messagePrefix}: ${fragment.label}.`);
+    }
+  }
+}
+
+function hasPublicTable(table) {
+  return new RegExp(`create\\s+table\\s+if\\s+not\\s+exists\\s+public\\.${escapeRegExp(table)}\\b`, 'i').test(
+    supabaseSchema,
+  );
+}
+
+function hasPublicTableRls(table) {
+  return new RegExp(
+    `alter\\s+table\\s+public\\.${escapeRegExp(table)}\\s+enable\\s+row\\s+level\\s+security`,
+    'i',
+  ).test(supabaseSchema);
+}
+
 function extractSqlEnum(name) {
   const match = supabaseSchema.match(
     new RegExp(`create\\s+type\\s+public\\.${name}\\s+as\\s+enum\\s*\\(([\\s\\S]*?)\\)`, 'i'),
@@ -173,4 +199,8 @@ function extractSqlEnum(name) {
     throw new Error(`Unable to find Supabase SQL enum ${name}`);
   }
   return Array.from(match[1].matchAll(/'([^']+)'/g)).map((item) => item[1]);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
