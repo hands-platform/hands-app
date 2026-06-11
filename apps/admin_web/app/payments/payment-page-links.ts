@@ -29,8 +29,7 @@ export function withPaymentRange(href: string, range: AdminDateRange): string {
   if (range === 'all') {
     return href;
   }
-  const separator = href.includes('?') ? '&' : '?';
-  return `${href}${separator}range=${range}`;
+  return withPaymentQuery(href, 'range', range);
 }
 
 export function paymentFilterDescription(review: string): string {
@@ -75,6 +74,10 @@ function withPaymentReview(href: string, review: string): string {
   if (!review) {
     return href;
   }
+  return withPaymentQuery(href, 'review', review);
+}
+
+function withPaymentQuery(href: string, key: 'range' | 'review', value: string): string {
   const separator = href.includes('?') ? '&' : '?';
-  return `${href}${separator}review=${review}`;
+  return `${href}${separator}${key}=${value}`;
 }
