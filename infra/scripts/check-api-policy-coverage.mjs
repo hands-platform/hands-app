@@ -337,7 +337,19 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   ) {
     missingMarkers.push('updateParticipant must keep the preferred first-pick branch before marketplace wallet gate');
   }
-  if (!lifecycleStatus.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
+  const serviceStartBranch = lifecycleStatus.indexOf('status === BookingStatus.IN_SERVICE');
+  const serviceStartHelperCall = lifecycleStatus.indexOf(
+    'return this.startProviderService({ bookingId, providerProfileId: provider.id });',
+  );
+  const serviceStartWalletGate = lifecycleStatus.indexOf(
+    'await this.ensureProviderWalletCanJoinMarketplace(input.providerProfileId);',
+  );
+  if (
+    serviceStartBranch === -1 ||
+    serviceStartHelperCall === -1 ||
+    serviceStartWalletGate === -1 ||
+    serviceStartHelperCall < serviceStartBranch
+  ) {
     missingMarkers.push('updateProviderBookingStatus must keep the negative-wallet service start gate');
   }
 
