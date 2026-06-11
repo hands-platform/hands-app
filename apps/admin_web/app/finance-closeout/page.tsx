@@ -86,7 +86,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       title="Finance Closeout"
     >
 
-      <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+      <section className="card admin-mt-16 admin-mb-16">
         <AdminSectionHeader
           actions={
             <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
@@ -101,7 +101,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           }
           title="Finance date range"
         />
-        <div className="filter-row" style={{ marginTop: 12 }}>
+        <div className="filter-row admin-mt-12">
           {[
             ['All records', '/finance-closeout'],
             ['Today', '/finance-closeout?range=today'],

@@ -13,7 +13,7 @@ export function FinanceCloseoutPaymentEarningSection({
   summary,
 }: FinanceCloseoutPaymentEarningSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Payment-to-earning checks</h2>

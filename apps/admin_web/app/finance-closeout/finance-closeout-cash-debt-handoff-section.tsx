@@ -18,7 +18,7 @@ export function FinanceCloseoutCashDebtHandoffSection({
   rowCount,
 }: FinanceCloseoutCashDebtHandoffSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Cash debt handoff</h2>
@@ -32,7 +32,7 @@ export function FinanceCloseoutCashDebtHandoffSection({
           Open cash settlements
         </Link>
       </div>
-      <div className="detail-grid" style={{ marginTop: 16 }}>
+      <div className="detail-grid admin-mt-16">
         <div>
           <span className="muted">Wallet-gated partners</span>
           <h3>{providerCount}</h3>

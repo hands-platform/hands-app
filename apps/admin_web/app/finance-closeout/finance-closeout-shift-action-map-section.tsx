@@ -8,7 +8,7 @@ type FinanceCloseoutShiftActionMapSectionProps = {
 
 export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutShiftActionMapSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Shift close action map</h2>
@@ -22,7 +22,7 @@ export function FinanceCloseoutShiftActionMapSection({ items }: FinanceCloseoutS
         </Link>
       </div>
       {items.length ? (
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {items.map((item) => (
             <Link className="setup-stage-item" href={item.href} key={item.action}>
               <span className={`pill ${item.pillClass}`}>{item.status}</span>

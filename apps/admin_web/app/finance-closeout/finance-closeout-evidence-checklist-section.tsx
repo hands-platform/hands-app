@@ -10,7 +10,7 @@ export function FinanceCloseoutEvidenceChecklistSection({
   items,
 }: FinanceCloseoutEvidenceChecklistSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Finance closeout evidence checklist</h2>

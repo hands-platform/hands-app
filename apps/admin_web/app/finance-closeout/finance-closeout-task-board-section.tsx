@@ -8,7 +8,7 @@ type FinanceCloseoutTaskBoardSectionProps = {
 
 export function FinanceCloseoutTaskBoardSection({ tasks }: FinanceCloseoutTaskBoardSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Closeout reconciliation board</h2>
