@@ -35,7 +35,7 @@ export function ReviewsTableSection({ emptyMessage, rows }: ReviewsTableSectionP
         <tr key={row.id}>
           <td>
             <div>Feedback record</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.shortIdLabel}
             </div>
           </td>
@@ -53,13 +53,13 @@ export function ReviewsTableSection({ emptyMessage, rows }: ReviewsTableSectionP
           </td>
           <td>
             <span className={row.signalClassName}>{row.opsSignal}</span>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.opsHint}
             </div>
           </td>
           <td>
             <div>{row.commentLabel}</div>
-            <div className="muted" style={{ marginTop: 6 }}>
+            <div className="muted admin-mt-6">
               {row.reportReasonLabel}
             </div>
           </td>

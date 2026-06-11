@@ -430,7 +430,7 @@ export default async function SetupPage() {
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <MetricCard
           label="Current blockers"
           value={currentStage.blockers}
@@ -458,7 +458,7 @@ export default async function SetupPage() {
         />
       </section>
 
-      <section className="detail-grid" style={{ marginBottom: 16 }}>
+      <section className="detail-grid admin-mb-16">
         <div className="card">
           <div className="ops-section-header">
             <div>
@@ -498,7 +498,7 @@ export default async function SetupPage() {
               <code key={item}>{item}</code>
             ))}
           </div>
-          <div className="setup-command-block" style={{ marginTop: 16 }}>
+          <div className="setup-command-block admin-mt-16">
             <h3>Single source of truth</h3>
             <p className="muted">
               Update this file whenever a phase changes, a skipped item is resumed, or a new external dependency
@@ -511,7 +511,7 @@ export default async function SetupPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>External registration handoff</h2>
@@ -533,7 +533,7 @@ export default async function SetupPage() {
                 <span className={`pill ${item.statusClass}`}>{item.status}</span>
                 <span className="pill pill-neutral">{item.owner}</span>
               </div>
-              <div className="participant-list" style={{ marginTop: 8 }}>
+              <div className="participant-list admin-mt-8">
                 {item.env.map((name) => (
                   <span className="pill pill-info" key={`${item.id}-${name}`}>
                     {name}
@@ -545,7 +545,7 @@ export default async function SetupPage() {
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginBottom: 16 }}>
+      <section className="detail-grid admin-mb-16">
         <div className="card" id="live-readiness">
           <div className="ops-section-header">
             <div>
@@ -566,7 +566,7 @@ export default async function SetupPage() {
                 <strong>{item.name}</strong>
                 <p className="muted">{item.action}</p>
                 {item.commands.length > 0 && (
-                  <div className="setup-command-list" style={{ marginTop: 8 }}>
+                  <div className="setup-command-list admin-mt-8">
                     {item.commands.slice(0, 2).map((command) => (
                       <code key={`${item.groupId}-${item.name}-${command}`}>{command}</code>
                     ))}
@@ -582,7 +582,7 @@ export default async function SetupPage() {
             )}
           </div>
           {deferredActions.length > 0 && (
-            <div className="setup-command-block" style={{ marginTop: 16 }}>
+            <div className="setup-command-block admin-mt-16">
               <h3>Deferred production setup</h3>
               <p className="muted">
                 These are intentionally parked until the right E2E pass, so they should not interrupt current
@@ -617,7 +617,7 @@ export default async function SetupPage() {
               </a>
             ))}
           </div>
-          <div className="setup-command-block" style={{ marginTop: 16 }}>
+          <div className="setup-command-block admin-mt-16">
             <h3>Operator handoff files</h3>
             <p className="muted">
               Use these files when filling external console values. They stay in the repo path under
@@ -670,7 +670,7 @@ export default async function SetupPage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>What still needs external registration</h2>
@@ -697,7 +697,7 @@ export default async function SetupPage() {
         </div>
       </section>
 
-      <section className="stack" style={{ marginTop: 16 }}>
+      <section className="stack admin-mt-16">
         {setupOrder.map((group) => {
           const relatedChecks = readiness.checks.filter((check) =>
             setupGroupMatches(group.id, check.category),
@@ -716,7 +716,7 @@ export default async function SetupPage() {
                   {setupGroupStatus(relatedChecks)}
                 </span>
               </div>
-              <div className="detail-grid" style={{ marginTop: 12 }}>
+              <div className="detail-grid admin-mt-12">
                 <div>
                   <h3>Environment values</h3>
                   <div className="participant-list">
@@ -771,7 +771,7 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
       <div>
         <strong>{externalReadinessDisplayText(check.name)}</strong>
         <p className="muted">{externalReadinessDisplayText(check.detail)}</p>
-        <div className="participant-list" style={{ marginBottom: 8 }}>
+        <div className="participant-list admin-mb-8">
           <span className={`pill ${isCurrentStage ? 'pill-info' : 'pill-neutral'}`}>
             {isCurrentStage ? 'Current stage' : 'Deferred'}
           </span>
@@ -786,7 +786,7 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
         {missing.length > 0 && <p className="muted">Missing: {missing.join(', ')}</p>}
         {invalid.length > 0 && <p className="muted">Invalid: {invalid.join(', ')}</p>}
         {commands.length > 0 && (
-          <div className="setup-command-list" style={{ marginTop: 8 }}>
+          <div className="setup-command-list admin-mt-8">
             {commands.map((command) => (
               <code key={`${check.category}-${command}`}>{command}</code>
             ))}

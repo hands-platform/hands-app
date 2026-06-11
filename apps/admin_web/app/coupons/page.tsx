@@ -62,7 +62,7 @@ export default async function CouponsPage({ searchParams }: { searchParams?: Cou
         />
       ) : null}
 
-      <section className="card" style={{ marginBottom: 20 }}>
+      <section className="card admin-mb-20">
         <AdminSectionHeader
           description="Promotion control for customer acquisition, booking conversion, and codes that should not accidentally remain visible in checkout."
           status={

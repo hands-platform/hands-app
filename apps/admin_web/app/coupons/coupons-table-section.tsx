@@ -32,7 +32,7 @@ export function CouponsTableSection({
   scheduledCount,
 }: CouponsTableSectionProps) {
   return (
-    <section className="card" style={{ marginTop: 20 }}>
+    <section className="card admin-mt-20">
       <div className="ops-section-header">
         <div>
           <h2>Checkout Campaigns</h2>
@@ -67,7 +67,7 @@ export function CouponsTableSection({
             <td>{row.windowLabel}</td>
             <td>
               <div>{row.opsHint}</div>
-              <div className="muted" style={{ marginTop: 6 }}>
+              <div className="muted admin-mt-6">
                 {row.checkoutHint}
               </div>
             </td>

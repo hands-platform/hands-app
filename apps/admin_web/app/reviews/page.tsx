@@ -72,7 +72,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
         />
       ) : null}
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <AdminSectionHeader
           description="Customer comments, Partner coaching notes, and public visibility decisions are handled here as factual service records."
           status={
