@@ -22,7 +22,7 @@ export function BookingFullRecordIndex({
   cards: BookingRecordIndexCard[];
 }) {
   return (
-    <section className="card" id="payment-actions" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="payment-actions">
       <div className="ops-section-header">
         <div>
           <h2>Booking full record index</h2>
@@ -38,7 +38,7 @@ export function BookingFullRecordIndex({
           <span className="pill pill-info">{eventCount} event(s)</span>
         </div>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {cards.map((card) => (
           <a href={card.href} key={`${card.href}-${card.label}`}>
             <span>{card.label}</span>
@@ -59,7 +59,7 @@ export function BookingActivityPanel({
   summary: BookingActivitySummaryItem[];
 }) {
   return (
-    <section className="card" id="booking-activity" style={{ marginTop: 16 }}>
+    <section className="card admin-mt-16" id="booking-activity">
       <div className="ops-section-header">
         <div>
           <h2>Booking chronological activity</h2>
@@ -71,7 +71,7 @@ export function BookingActivityPanel({
         </div>
         <span className="pill pill-info">{records.length} event(s)</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {summary.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -80,7 +80,7 @@ export function BookingActivityPanel({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {records.length ? (
           records.map((record) => (
             <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
