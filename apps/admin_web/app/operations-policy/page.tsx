@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '../../components/admin-data-table';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -278,7 +279,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <AdminTableScroll>
           <table className="table service-trace">
             <thead>
               <tr>
@@ -307,7 +308,7 @@ export default async function OperationsPolicyPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
         <div className="ops-section-header" style={{ marginTop: 18 }}>
           <div>
             <h3>Recent blocked create attempts</h3>
@@ -542,7 +543,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <AdminTableScroll>
           <table className="table service-trace">
             <thead>
               <tr>
@@ -575,7 +576,7 @@ export default async function OperationsPolicyPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
@@ -608,7 +609,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <AdminTableScroll>
           <table className="table service-trace">
             <thead>
               <tr>
@@ -657,7 +658,7 @@ export default async function OperationsPolicyPage({
               ) : null}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {policyEffectAnalysis.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.title}>
@@ -840,7 +841,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+        <AdminTableScroll>
           <table className="table service-trace">
             <thead>
               <tr>
@@ -866,7 +867,7 @@ export default async function OperationsPolicyPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </AdminTableScroll>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {impactDashboard.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.title}>
