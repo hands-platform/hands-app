@@ -134,7 +134,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <form className="form-grid" action="/customers">
           <label>
             Search
@@ -287,7 +287,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Current filter summary</h2>
@@ -298,7 +298,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           </div>
           <span className="pill pill-info">{filters.sort ? customerSortLabel(filters.sort) : 'Default'}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           {filterSummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -309,7 +309,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <MetricCard label="Customers" value={summary.total.toString()} helper="Total customer profiles" />
         <MetricCard
           label="Joined recently"
@@ -353,7 +353,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         />
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Customer activity board</h2>
@@ -429,7 +429,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
             </table>
           </AdminTableScroll>
         ) : (
-          <p className="muted" style={{ marginTop: 14 }}>
+          <p className="muted admin-mt-14">
             No customer booking activity has been recorded yet.
           </p>
         )}
