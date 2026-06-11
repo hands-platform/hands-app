@@ -10,9 +10,14 @@ import {
   assertProviderReportSource,
   assertProviderReportStatus,
   assertProviderSanctionType,
+  normalizeProviderAccountBlockReason,
   normalizeProviderReportCreateInput,
   normalizeProviderReportUpdateInput,
   normalizeProviderSanctionCreateInput,
+  providerAccountBlockAuditMetadata,
+  providerAccountBlockedNotification,
+  providerAccountUnblockAuditMetadata,
+  providerAccountUnblockedNotification,
   providerReportCreateAuditMetadata,
   providerReportResolvedAt,
   providerSanctionCreateAuditMetadata,
@@ -110,6 +115,13 @@ describe('admin provider control helpers', () => {
   });
 
   it('builds provider control audit metadata', () => {
+    expect(providerAccountBlockAuditMetadata('provider-1', 'manual review')).toEqual({
+      providerProfileId: 'provider-1',
+      reason: 'manual review',
+    });
+    expect(providerAccountUnblockAuditMetadata('provider-1')).toEqual({
+      providerProfileId: 'provider-1',
+    });
     expect(
       providerReportCreateAuditMetadata({
         providerProfileId: 'provider-1',
@@ -131,6 +143,30 @@ describe('admin provider control helpers', () => {
       providerProfileId: 'provider-1',
       reportId: null,
       type: ProviderSanctionType.WARNING,
+    });
+  });
+
+  it('normalizes account block reason and rejects blank reasons', () => {
+    expect(normalizeProviderAccountBlockReason('  manual review  ')).toBe('manual review');
+    expect(() => normalizeProviderAccountBlockReason('   ')).toThrow(BadRequestException);
+  });
+
+  it('builds account control notification payloads', () => {
+    expect(providerAccountBlockedNotification('provider-1', 'manual review')).toEqual({
+      type: 'provider.account.blocked',
+      title: 'Partner account blocked',
+      body: 'Your HANDS partner account is under admin review. Open the app for details.',
+      data: { providerProfileId: 'provider-1', reason: 'manual review' },
+    });
+    expect(providerAccountUnblockedNotification('provider-1')).toEqual({
+      type: 'provider.account.unblocked',
+      title: 'Partner account unblocked',
+      body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
+      data: { providerProfileId: 'provider-1' },
+    });
+    expect(providerAccountUnblockedNotification('provider-1', 'sanction-1').data).toEqual({
+      providerProfileId: 'provider-1',
+      sanctionId: 'sanction-1',
     });
   });
 });

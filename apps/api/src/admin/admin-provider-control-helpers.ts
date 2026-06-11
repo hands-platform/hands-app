@@ -118,6 +118,14 @@ export function normalizeProviderSanctionCreateInput(input: ProviderSanctionCrea
   };
 }
 
+export function normalizeProviderAccountBlockReason(reason?: string) {
+  const blockReason = normalizeNullable(reason);
+  if (!blockReason) {
+    throw new BadRequestException('Block reason is required');
+  }
+  return blockReason;
+}
+
 export function providerReportCreateAuditMetadata(input: {
   providerProfileId: string;
   category: string;
@@ -139,5 +147,31 @@ export function providerSanctionCreateAuditMetadata(input: {
     providerProfileId: input.providerProfileId,
     reportId: input.reportId,
     type: input.type,
+  };
+}
+
+export function providerAccountBlockAuditMetadata(providerProfileId: string, reason: string) {
+  return { providerProfileId, reason };
+}
+
+export function providerAccountUnblockAuditMetadata(providerProfileId: string) {
+  return { providerProfileId };
+}
+
+export function providerAccountBlockedNotification(providerProfileId: string, reason: string) {
+  return {
+    type: 'provider.account.blocked',
+    title: 'Partner account blocked',
+    body: 'Your HANDS partner account is under admin review. Open the app for details.',
+    data: { providerProfileId, reason },
+  };
+}
+
+export function providerAccountUnblockedNotification(providerProfileId: string, sanctionId?: string) {
+  return {
+    type: 'provider.account.unblocked',
+    title: 'Partner account unblocked',
+    body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
+    data: sanctionId ? { providerProfileId, sanctionId } : { providerProfileId },
   };
 }

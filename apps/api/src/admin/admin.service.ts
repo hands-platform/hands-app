@@ -38,9 +38,14 @@ import {
 } from './admin-booking-matching-evidence';
 import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
+  normalizeProviderAccountBlockReason,
   normalizeProviderReportCreateInput,
   normalizeProviderReportUpdateInput,
   normalizeProviderSanctionCreateInput,
+  providerAccountBlockAuditMetadata,
+  providerAccountBlockedNotification,
+  providerAccountUnblockAuditMetadata,
+  providerAccountUnblockedNotification,
   providerReportCreateAuditMetadata,
   providerSanctionCreateAuditMetadata,
 } from './admin-provider-control-helpers';
@@ -483,10 +488,7 @@ export class AdminService {
   }
 
   async blockProviderAccount(actorId: string, providerProfileId: string, reason?: string) {
-    const blockReason = normalizeNullable(reason);
-    if (!blockReason) {
-      throw new BadRequestException('Block reason is required');
-    }
+    const blockReason = normalizeProviderAccountBlockReason(reason);
 
     const provider = await this.prisma.providerProfile.update({
       where: { id: providerProfileId },
@@ -499,10 +501,12 @@ export class AdminService {
     });
     await this.redisState.setProviderStatus(provider.id, ProviderStatus.OFFLINE);
 
-    await this.writeAudit(actorId, 'provider_account.block', `provider:${providerProfileId}`, {
-      providerProfileId,
-      reason: blockReason,
-    });
+    await this.writeAudit(
+      actorId,
+      'provider_account.block',
+      `provider:${providerProfileId}`,
+      providerAccountBlockAuditMetadata(providerProfileId, blockReason),
+    );
 
     await this.prisma.providerSanction.create({
       data: {
@@ -517,10 +521,7 @@ export class AdminService {
 
     await this.notifications.create({
       userId: provider.userId,
-      type: 'provider.account.blocked',
-      title: 'Partner account blocked',
-      body: 'Your HANDS partner account is under admin review. Open the app for details.',
-      data: { providerProfileId, reason: blockReason },
+      ...providerAccountBlockedNotification(providerProfileId, blockReason),
     });
 
     return { ok: true, providerProfileId: provider.id, blockedAt: provider.blockedAt };
@@ -536,9 +537,12 @@ export class AdminService {
       select: { id: true, userId: true },
     });
 
-    await this.writeAudit(actorId, 'provider_account.unblock', `provider:${providerProfileId}`, {
-      providerProfileId,
-    });
+    await this.writeAudit(
+      actorId,
+      'provider_account.unblock',
+      `provider:${providerProfileId}`,
+      providerAccountUnblockAuditMetadata(providerProfileId),
+    );
 
     await this.prisma.providerSanction.updateMany({
       where: {
@@ -555,10 +559,7 @@ export class AdminService {
 
     await this.notifications.create({
       userId: provider.userId,
-      type: 'provider.account.unblocked',
-      title: 'Partner account unblocked',
-      body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
-      data: { providerProfileId },
+      ...providerAccountUnblockedNotification(providerProfileId),
     });
 
     return { ok: true, providerProfileId: provider.id };
@@ -729,10 +730,7 @@ export class AdminService {
 
         await this.notifications.create({
           userId: provider.userId,
-          type: 'provider.account.unblocked',
-          title: 'Partner account unblocked',
-          body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
-          data: { providerProfileId: provider.id, sanctionId },
+          ...providerAccountUnblockedNotification(provider.id, sanctionId),
         });
       }
     }
