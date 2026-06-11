@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { adminGet } from '../../lib/admin-api';
 import type { AdminCustomer } from '../../lib/admin-api';
@@ -396,35 +397,37 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           </div>
         </div>
         {recentActivityRows.length > 0 ? (
-          <table className="table" style={{ marginTop: 14 }}>
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Activity</th>
-                <th>Last completed work</th>
-                <th>Last booking</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentActivityRows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.name}</strong>
-                    <p className="muted">{row.phone}</p>
-                  </td>
-                  <td>{row.activityLabel}</td>
-                  <td>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work yet'}</td>
-                  <td>{row.lastBookingAt ? formatDate(row.lastBookingAt) : 'No booking'}</td>
-                  <td>
-                    <Link className="text-link" href={`/customers/${row.id}`}>
-                      Open customer
-                    </Link>
-                  </td>
+          <AdminTableScroll>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Activity</th>
+                  <th>Last completed work</th>
+                  <th>Last booking</th>
+                  <th>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentActivityRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <strong>{row.name}</strong>
+                      <p className="muted">{row.phone}</p>
+                    </td>
+                    <td>{row.activityLabel}</td>
+                    <td>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work yet'}</td>
+                    <td>{row.lastBookingAt ? formatDate(row.lastBookingAt) : 'No booking'}</td>
+                    <td>
+                      <Link className="text-link" href={`/customers/${row.id}`}>
+                        Open customer
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </AdminTableScroll>
         ) : (
           <p className="muted" style={{ marginTop: 14 }}>
             No customer booking activity has been recorded yet.
