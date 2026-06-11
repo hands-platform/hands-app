@@ -172,6 +172,14 @@ import {
   type PartnerReportControlPayoutHold,
   type PartnerReportRow,
 } from './partner-detail-reports-controls-section';
+import {
+  PartnerDetailAgreementsCard,
+  PartnerDetailBasicProfileCard,
+  PartnerDetailRecentPayoutRecordsCard,
+  type PartnerAgreementBadge,
+  type PartnerDetailInfoLine,
+  type PartnerRecentPayoutRecordLine,
+} from './partner-detail-profile-finance-summary-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -431,6 +439,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
   const partnerReportRows = buildPartnerReportRows(provider);
   const partnerAccountControlRows = buildPartnerAccountControlRows(provider);
+  const partnerBasicProfileRows = buildPartnerBasicProfileRows(provider);
+  const partnerAgreementBadges = buildPartnerAgreementBadges(provider);
+  const partnerRecentPayoutRecordLines = buildPartnerRecentPayoutRecordLines(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
@@ -935,38 +946,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
 
       <section className="detail-grid">
-        <div className="card">
-          <h2>Basic profile</h2>
-          <InfoLine label="Display name" value={provider.displayName} />
-          <InfoLine label="Legal name" value={provider.legalName} />
-          <InfoLine label="Activity nickname" value={provider.activityNickname} />
-          <InfoLine
-            label="Experience"
-            value={
-              provider.experienceYears === null || provider.experienceYears === undefined
-                ? null
-                : `${provider.experienceYears} year(s)`
-            }
-          />
-          <InfoLine label="Specialties" value={formatJsonList(provider.specialties)} />
-          <InfoLine label="Languages" value={formatJsonList(provider.languages)} />
-          <InfoLine label="Service style" value={provider.serviceStyle} />
-          <InfoLine label="Date of birth" value={formatDateOnly(provider.dateOfBirth)} />
-          <InfoLine label="Gender" value={provider.gender} />
-          <InfoLine label="Phone" value={provider.user?.phone} />
-          <InfoLine label="Facebook" value={provider.facebookId} />
-          <InfoLine label="Address" value={provider.residentialAddress} />
-          <InfoLine label="Service city" value={provider.city} />
-          <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
-          <InfoLine label="Feedback records" value={`${provider.reviewCount ?? 0} record(s) saved`} />
-          <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
-          <InfoLine label="Profile review completed at" value={formatDate(provider.trustedAt)} />
-          <InfoLine label="User name" value={provider.user?.fullName} />
-          <InfoLine label="Supabase user" value={provider.user?.supabaseUserId} />
-          <p className="muted">
-            {provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
-          </p>
-        </div>
+        <PartnerDetailBasicProfileCard
+          note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
+          rows={partnerBasicProfileRows}
+        />
 
         <div className="card" id="kyc">
           <h2>KYC decision</h2>
@@ -1329,33 +1312,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
         </div>
 
-        <div className="card">
-          <h2>Agreements</h2>
-          {(provider.agreements ?? []).length ? (
-            <div className="participant-list">
-              {provider.agreements?.map((agreement) => (
-                <span className="pill pill-success" key={agreement.id}>
-                  {agreement.type} v{agreement.version}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">No legal agreements accepted yet.</p>
-          )}
-        </div>
+        <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
 
-        <div className="card">
-          <h2>Recent payout records</h2>
-          <InfoLine label="Recent earnings" value={(provider.earnings?.length ?? 0).toString()} />
-          <InfoLine label="Recent payout batches" value={(provider.payoutBatches?.length ?? 0).toString()} />
-          {(provider.earnings ?? []).slice(0, 3).map((earning) => (
-            <p className="muted" key={earning.id}>
-              {earning.status}: gross {formatCurrency(earning.grossAmount)} / withholding{' '}
-              {formatCurrency(earning.withholdingAmount)} / net {formatCurrency(earning.netAmount)}
-              {earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''}
-            </p>
-          ))}
-        </div>
+        <PartnerDetailRecentPayoutRecordsCard
+          earningCount={provider.earnings?.length ?? 0}
+          earnings={partnerRecentPayoutRecordLines}
+          payoutBatchCount={provider.payoutBatches?.length ?? 0}
+        />
       </section>
     </>
   );
@@ -5187,6 +5150,54 @@ function buildPartnerAccountControlRows(provider: ProviderDetail): PartnerAccoun
     status: sanction.status,
     timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`,
     type: sanction.type,
+  }));
+}
+
+function buildPartnerBasicProfileRows(provider: ProviderDetail): PartnerDetailInfoLine[] {
+  return [
+    { label: 'Display name', value: provider.displayName },
+    { label: 'Legal name', value: provider.legalName },
+    { label: 'Activity nickname', value: provider.activityNickname },
+    {
+      label: 'Experience',
+      value:
+        provider.experienceYears === null || provider.experienceYears === undefined
+          ? null
+          : `${provider.experienceYears} year(s)`,
+    },
+    { label: 'Specialties', value: formatJsonList(provider.specialties) },
+    { label: 'Languages', value: formatJsonList(provider.languages) },
+    { label: 'Service style', value: provider.serviceStyle },
+    { label: 'Date of birth', value: formatDateOnly(provider.dateOfBirth) },
+    { label: 'Gender', value: provider.gender },
+    { label: 'Phone', value: provider.user?.phone },
+    { label: 'Facebook', value: provider.facebookId },
+    { label: 'Address', value: provider.residentialAddress },
+    { label: 'Service city', value: provider.city },
+    { label: 'Service area', value: formatJsonSummary(provider.serviceArea) },
+    { label: 'Feedback records', value: `${provider.reviewCount ?? 0} record(s) saved` },
+    { label: 'Next available', value: formatDate(provider.nextAvailableAt) },
+    { label: 'Profile review completed at', value: formatDate(provider.trustedAt) },
+    { label: 'User name', value: provider.user?.fullName },
+    { label: 'Supabase user', value: provider.user?.supabaseUserId },
+  ];
+}
+
+function buildPartnerAgreementBadges(provider: ProviderDetail): PartnerAgreementBadge[] {
+  return (provider.agreements ?? []).map((agreement) => ({
+    id: agreement.id,
+    label: `${agreement.type} v${agreement.version}`,
+  }));
+}
+
+function buildPartnerRecentPayoutRecordLines(provider: ProviderDetail): PartnerRecentPayoutRecordLine[] {
+  return (provider.earnings ?? []).slice(0, 3).map((earning) => ({
+    id: earning.id,
+    label: `${earning.status}: gross ${formatCurrency(earning.grossAmount)} / withholding ${formatCurrency(
+      earning.withholdingAmount,
+    )} / net ${formatCurrency(earning.netAmount)}${
+      earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''
+    }`,
   }));
 }
 
