@@ -28,6 +28,7 @@ import {
   bookingListSortTimestamp,
   bookingRequestOpenedAt,
 } from '../../lib/admin-booking-time';
+import { humanizeClosureReason } from '../../lib/booking-closure-summary';
 import {
   bookingListActionChipsFromFacts,
   type BookingListActionChip,
@@ -2396,14 +2397,6 @@ function bookingClosureListSignal(booking: AdminBooking) {
   }
 
   return null;
-}
-
-function humanizeClosureReason(reason: string) {
-  return reason
-    .split('_')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
