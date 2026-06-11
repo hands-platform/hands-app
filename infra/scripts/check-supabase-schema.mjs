@@ -93,6 +93,18 @@ requireSchemaFragments([
     label: 'nearby_providers radius search function',
     pattern: /create\s+or\s+replace\s+function\s+public\.nearby_providers/i,
   },
+  {
+    label: 'push devices role column',
+    pattern: /role\s+public\.user_role\s+not\s+null\s+default\s+'CUSTOMER'/i,
+  },
+  {
+    label: 'push devices last_seen_at column',
+    pattern: /last_seen_at\s+timestamptz\s+not\s+null\s+default\s+now\(\)/i,
+  },
+  {
+    label: 'push devices user role enabled index',
+    pattern: /push_devices_user_role_enabled_idx/i,
+  },
 ]);
 
 const requiredFileSchemaFragments = [
