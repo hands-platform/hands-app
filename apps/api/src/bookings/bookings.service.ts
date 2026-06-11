@@ -798,41 +798,7 @@ export class BookingsService {
     if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId)) {
       await this.ensureProviderWalletCanJoinMarketplace(providerId);
     }
-    let booking: SelectedBookingForClientResponse;
-    try {
-      booking = await this.prisma.$transaction(async (transaction) => {
-        const matchedBooking = await transaction.booking.update({
-          where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-          data: bookingMatchedUpdateData({
-            bookingId,
-            providerProfileId: providerId,
-            matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
-          }),
-          include: {
-            addressSnapshot: true,
-            chatRoom: true,
-            preferredProvider: true,
-            selectedProvider: true,
-            payment: true,
-          },
-        });
-        await transaction.adminAuditLog.create(
-          bookingMatchedAuditCreateInput({
-            actorId: customerUserId,
-            action: 'booking.matched.customer_selected',
-            bookingId,
-            providerProfileId: providerId,
-            matchSource: MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
-          }),
-        );
-        return matchedBooking;
-      });
-    } catch (error) {
-      this.throwStaleBookingMatchRequest(
-        error,
-        'Booking is already matched or no longer open for customer final selection',
-      );
-    }
+    const booking = await this.matchCustomerSelectedProvider({ bookingId, customerUserId, providerId });
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
@@ -1071,6 +1037,47 @@ export class BookingsService {
   }) {
     await this.notifyCustomerSelectedPartnerMatched(input);
     this.matchingGateway.emitBookingMatched(input.bookingId, input.matchingPayload);
+  }
+
+  private async matchCustomerSelectedProvider(input: {
+    bookingId: string;
+    customerUserId: string;
+    providerId: string;
+  }): Promise<SelectedBookingForClientResponse> {
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const matchedBooking = await transaction.booking.update({
+          where: { id: input.bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+          data: bookingMatchedUpdateData({
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+            matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
+          }),
+          include: {
+            addressSnapshot: true,
+            chatRoom: true,
+            preferredProvider: true,
+            selectedProvider: true,
+            payment: true,
+          },
+        });
+        await transaction.adminAuditLog.create(
+          bookingMatchedAuditCreateInput({
+            actorId: input.customerUserId,
+            action: 'booking.matched.customer_selected',
+            bookingId: input.bookingId,
+            providerProfileId: input.providerId,
+            matchSource: MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
+          }),
+        );
+        return matchedBooking;
+      });
+    } catch (error) {
+      this.throwStaleBookingMatchRequest(
+        error,
+        'Booking is already matched or no longer open for customer final selection',
+      );
+    }
   }
 
   private async notifyFirstPickAcceptedMatched(input: {
