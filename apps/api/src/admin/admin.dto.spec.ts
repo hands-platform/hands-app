@@ -245,10 +245,10 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('createProviderReport', 1) as { name?: string })?.name).toBe(
       'CreatePartnerReportDto',
     );
-    expect((bodyMetatype('updatePartnerReport', 2) as { name?: string })?.name).toBe(
+    expect((bodyMetatype('updateProviderReport', 2) as { name?: string })?.name).toBe(
       'UpdatePartnerReportDto',
     );
-    expect((bodyMetatype('createPartnerSanction', 2) as { name?: string })?.name).toBe(
+    expect((bodyMetatype('createProviderSanction', 2) as { name?: string })?.name).toBe(
       'CreatePartnerSanctionDto',
     );
     expect((bodyMetatype('moderateReview', 2) as { name?: string })?.name).toBe(
@@ -301,7 +301,7 @@ describe('admin request DTO validation', () => {
     await expect(
       pipe.transform(
         { type: 'AUTO_BAN', reason: 'bad sanction type' },
-        { type: 'body', metatype: bodyMetatype('createPartnerSanction', 2) as never, data: '' },
+        { type: 'body', metatype: bodyMetatype('createProviderSanction', 2) as never, data: '' },
       ),
     ).rejects.toThrow();
 

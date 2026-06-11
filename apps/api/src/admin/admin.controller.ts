@@ -168,17 +168,12 @@ export class AdminController {
     return this.admin.unblockProviderAccount(user.id, providerProfileId);
   }
 
-  @Get('provider-reports')
+  @Get(['provider-reports', 'partner-reports'])
   providerReports() {
     return this.admin.listProviderReports();
   }
 
-  @Get('partner-reports')
-  partnerReports() {
-    return this.admin.listProviderReports();
-  }
-
-  @Post('provider-reports')
+  @Post(['provider-reports', 'partner-reports'])
   createProviderReport(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: CreatePartnerReportDto,
@@ -186,15 +181,7 @@ export class AdminController {
     return this.admin.createProviderReport(user.id, body);
   }
 
-  @Post('partner-reports')
-  createPartnerReport(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreatePartnerReportDto,
-  ) {
-    return this.admin.createProviderReport(user.id, body);
-  }
-
-  @Patch('provider-reports/:id')
+  @Patch(['provider-reports/:id', 'partner-reports/:id'])
   updateProviderReport(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') reportId: string,
@@ -203,26 +190,12 @@ export class AdminController {
     return this.admin.updateProviderReport(user.id, reportId, body);
   }
 
-  @Patch('partner-reports/:id')
-  updatePartnerReport(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') reportId: string,
-    @Body() body: UpdatePartnerReportDto,
-  ) {
-    return this.admin.updateProviderReport(user.id, reportId, body);
-  }
-
-  @Get('provider-sanctions')
+  @Get(['provider-sanctions', 'partner-sanctions'])
   providerSanctions() {
     return this.admin.listProviderSanctions();
   }
 
-  @Get('partner-sanctions')
-  partnerSanctions() {
-    return this.admin.listProviderSanctions();
-  }
-
-  @Post('providers/:id/sanctions')
+  @Post(['providers/:id/sanctions', 'partners/:id/sanctions'])
   createProviderSanction(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
@@ -231,22 +204,8 @@ export class AdminController {
     return this.admin.createProviderSanction(user.id, providerProfileId, body);
   }
 
-  @Post('partners/:id/sanctions')
-  createPartnerSanction(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') providerProfileId: string,
-    @Body() body: CreatePartnerSanctionDto,
-  ) {
-    return this.admin.createProviderSanction(user.id, providerProfileId, body);
-  }
-
-  @Post('provider-sanctions/:id/lift')
+  @Post(['provider-sanctions/:id/lift', 'partner-sanctions/:id/lift'])
   liftProviderSanction(@CurrentUser() user: AuthenticatedUser, @Param('id') sanctionId: string) {
-    return this.admin.liftProviderSanction(user.id, sanctionId);
-  }
-
-  @Post('partner-sanctions/:id/lift')
-  liftPartnerSanction(@CurrentUser() user: AuthenticatedUser, @Param('id') sanctionId: string) {
     return this.admin.liftProviderSanction(user.id, sanctionId);
   }
 
