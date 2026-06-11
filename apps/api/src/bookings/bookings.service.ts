@@ -20,12 +20,9 @@ import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
 import {
-  BACKUP_OPEN_IMMEDIATE,
-  BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   MatchingPolicy,
   MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
-  PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -57,6 +54,11 @@ import {
   partnerBookingResponses,
   partnerOpenBookingResponses,
 } from './bookings.response';
+import {
+  bookingMatchingPolicySnapshot,
+  readPlainRecord,
+  restoreBookingMatchingPolicy,
+} from './bookings.matching-policy';
 
 const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -1342,63 +1344,7 @@ export class BookingsService {
     booking: { metadata?: Prisma.JsonValue | null },
     fallback: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ): Awaited<ReturnType<MatchingService['getPolicy']>> {
-    const metadata = readPlainRecord(booking.metadata);
-    const snapshot = readPlainRecord(metadata?.matchingPolicy);
-    if (!snapshot) {
-      return fallback;
-    }
-
-    return {
-      providerResponseWindowMinutes: readSnapshotInteger(
-        snapshot.providerResponseWindowMinutes,
-        fallback.providerResponseWindowMinutes,
-      ),
-      backupProviderRadiusMeters: readSnapshotInteger(
-        snapshot.marketplaceRadiusMeters ?? snapshot.backupProviderRadiusMeters,
-        fallback.backupProviderRadiusMeters,
-      ),
-      travelBufferMinutes: readSnapshotInteger(snapshot.travelBufferMinutes, fallback.travelBufferMinutes),
-      backupProviderLocationMaxAgeMinutes: readSnapshotInteger(
-        snapshot.marketplaceLocationMaxAgeMinutes ?? snapshot.backupProviderLocationMaxAgeMinutes,
-        fallback.backupProviderLocationMaxAgeMinutes,
-      ),
-      backupProviderInvitationLimit: readSnapshotInteger(
-        snapshot.marketplaceInvitationLimit ?? snapshot.backupProviderInvitationLimit,
-        fallback.backupProviderInvitationLimit,
-      ),
-      bookingMaxCustomerCurrentToAddressKm: readSnapshotInteger(
-        snapshot.bookingMaxCustomerCurrentToAddressKm,
-        fallback.bookingMaxCustomerCurrentToAddressKm,
-      ),
-      bookingMaxPreferredProviderDistanceKm: readSnapshotInteger(
-        snapshot.bookingMaxPreferredProviderDistanceKm,
-        fallback.bookingMaxPreferredProviderDistanceKm,
-      ),
-      bookingCurrentLocationFreshnessMinutes: readSnapshotInteger(
-        snapshot.bookingCurrentLocationFreshnessMinutes,
-        fallback.bookingCurrentLocationFreshnessMinutes,
-      ),
-      bookingDistanceGateEnabled: readSnapshotBoolean(
-        snapshot.bookingDistanceGateEnabled,
-        fallback.bookingDistanceGateEnabled,
-      ),
-      bookingServiceAreaRequired: readSnapshotBoolean(
-        snapshot.bookingServiceAreaRequired,
-        fallback.bookingServiceAreaRequired,
-      ),
-      preferredAcceptMode:
-        snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
-          ? snapshot.preferredAcceptMode
-          : PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
-      backupOpenMode:
-        snapshot.marketplaceOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
-        snapshot.marketplaceOpenMode === BACKUP_OPEN_IMMEDIATE
-          ? snapshot.marketplaceOpenMode
-          : snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
-              snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE
-            ? snapshot.backupOpenMode
-            : fallback.backupOpenMode,
-    };
+    return restoreBookingMatchingPolicy(booking.metadata, fallback);
   }
 
   private async findEligibleBackupProviders(input: {
@@ -1832,27 +1778,6 @@ function assertProviderCanReceiveBooking(provider: {
   }
 }
 
-function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingService['getPolicy']>>) {
-  return {
-    providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
-    marketplaceRadiusMeters: policy.backupProviderRadiusMeters,
-    marketplaceLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
-    marketplaceInvitationLimit: policy.backupProviderInvitationLimit,
-    marketplaceOpenMode: policy.backupOpenMode,
-    backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
-    backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
-    backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
-    bookingMaxCustomerCurrentToAddressKm: policy.bookingMaxCustomerCurrentToAddressKm,
-    bookingMaxPreferredProviderDistanceKm: policy.bookingMaxPreferredProviderDistanceKm,
-    bookingCurrentLocationFreshnessMinutes: policy.bookingCurrentLocationFreshnessMinutes,
-    bookingDistanceGateEnabled: policy.bookingDistanceGateEnabled,
-    bookingServiceAreaRequired: policy.bookingServiceAreaRequired,
-    preferredAcceptMode: policy.preferredAcceptMode,
-    backupOpenMode: policy.backupOpenMode,
-    travelBufferMinutes: policy.travelBufferMinutes,
-  };
-}
-
 function assertWorldBookingCoordinate(lat: number, lng: number) {
   if (!isWorldBookingCoordinate(lat, lng)) {
     throw new BadRequestException('Booking address coordinate is invalid');
@@ -1987,21 +1912,6 @@ function backupAlertPolicyMetadata(input: {
     backupOpenMode: input.backupOpenMode,
     backupProviderInvitationLimit: input.backupProviderInvitationLimit,
   };
-}
-
-function readPlainRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function readSnapshotInteger(value: unknown, fallback: number) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
-}
-
-function readSnapshotBoolean(value: unknown, fallback: boolean) {
-  return typeof value === 'boolean' ? value : fallback;
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {
