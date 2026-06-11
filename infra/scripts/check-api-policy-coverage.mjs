@@ -320,7 +320,21 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
     missingMarkers.push('updateParticipant must keep the negative-wallet marketplace participation gate');
   }
-  if (!updateParticipant.includes('if (booking.preferredProviderId === provider.id)')) {
+  const firstPickAcceptedBranch = updateParticipant.indexOf("responseRoute === 'first-pick-accepted'");
+  const firstPickRejectedBranch = updateParticipant.indexOf("responseRoute === 'first-pick-rejected'");
+  const marketplaceWalletGate = updateParticipant.indexOf(
+    'await this.ensureProviderWalletCanJoinMarketplace(provider.id);',
+  );
+  if (
+    !updateParticipant.includes(
+      'bookingParticipantResponseRoute(booking.preferredProviderId, provider.id, status)',
+    ) ||
+    firstPickAcceptedBranch === -1 ||
+    firstPickRejectedBranch === -1 ||
+    marketplaceWalletGate === -1 ||
+    firstPickAcceptedBranch > marketplaceWalletGate ||
+    firstPickRejectedBranch > marketplaceWalletGate
+  ) {
     missingMarkers.push('updateParticipant must keep the preferred first-pick branch before marketplace wallet gate');
   }
   if (!lifecycleStatus.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
