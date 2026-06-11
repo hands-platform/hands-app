@@ -69,7 +69,7 @@ import {
   toJson,
 } from './admin-audit-helpers';
 import {
-  PRICE_STEP_UNIT_VND,
+  normalizeServiceDurationSetInput,
   normalizeServiceInput,
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
@@ -1514,28 +1514,12 @@ export class AdminService {
       }>;
     },
   ) {
-    const name = input.name?.trim();
-    if (!name) {
-      throw new BadRequestException('Service name is required');
-    }
-    const groupKey = normalizeNullable(input.serviceGroupKey) ?? slugify(name);
-    const priceStep = input.priceStep ?? PRICE_STEP_UNIT_VND;
-    const displayOrder = input.displayOrder ?? 100;
-    const durationRows = (input.durations ?? []).filter((row) => row.basePrice !== undefined);
-    if (durationRows.length === 0) {
-      throw new BadRequestException('At least one duration price is required');
-    }
-    const durationSet = new Set<number>();
-    for (const row of durationRows) {
-      if (row.durationMin === undefined || durationSet.has(row.durationMin)) {
-        throw new BadRequestException('Duration options must be unique and explicit');
-      }
-      durationSet.add(row.durationMin);
-    }
+    const { name, groupKey, priceStep, displayOrder, durationRows, durationMins } =
+      normalizeServiceDurationSetInput(input);
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.massageService.findMany({
-        where: { serviceGroupKey: groupKey, durationMin: { in: [...durationSet] } },
+        where: { serviceGroupKey: groupKey, durationMin: { in: durationMins } },
         select: { id: true, durationMin: true },
       });
       if (existing.length > 0) {
@@ -1594,7 +1578,7 @@ export class AdminService {
           metadata: toJson({
             groupKey,
             name,
-            durationMins: [...durationSet].sort((left, right) => left - right),
+            durationMins: [...durationMins].sort((left, right) => left - right),
             serviceIds: created,
           }),
         },

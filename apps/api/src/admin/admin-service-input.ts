@@ -4,6 +4,45 @@ import { normalizeNullable, slugify } from './admin-text-helpers';
 
 export const PRICE_STEP_UNIT_VND = 100000;
 
+export function normalizeServiceDurationSetInput(input: {
+  serviceGroupKey?: string;
+  name?: string;
+  priceStep?: number;
+  displayOrder?: number;
+  durations?: Array<{
+    durationMin?: number;
+    basePrice?: number;
+    providerPayoutAmount?: number | null;
+  }>;
+}) {
+  const name = input.name?.trim();
+  if (!name) {
+    throw new BadRequestException('Service name is required');
+  }
+  const groupKey = normalizeNullable(input.serviceGroupKey) ?? slugify(name);
+  const priceStep = input.priceStep ?? PRICE_STEP_UNIT_VND;
+  const displayOrder = input.displayOrder ?? 100;
+  const durationRows = (input.durations ?? []).filter((row) => row.basePrice !== undefined);
+  if (durationRows.length === 0) {
+    throw new BadRequestException('At least one duration price is required');
+  }
+  const durationSet = new Set<number>();
+  for (const row of durationRows) {
+    if (row.durationMin === undefined || durationSet.has(row.durationMin)) {
+      throw new BadRequestException('Duration options must be unique and explicit');
+    }
+    durationSet.add(row.durationMin);
+  }
+  return {
+    name,
+    groupKey,
+    priceStep,
+    displayOrder,
+    durationRows,
+    durationMins: [...durationSet],
+  };
+}
+
 export function normalizeServiceInput(
   input: {
     serviceGroupKey?: string | null;

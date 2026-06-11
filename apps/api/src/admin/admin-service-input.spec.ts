@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   PRICE_STEP_UNIT_VND,
+  normalizeServiceDurationSetInput,
   normalizeServiceInput,
   normalizeServicePayoutRuleInput,
 } from './admin-service-input';
@@ -35,6 +36,44 @@ describe('admin service input helpers', () => {
     expect(() =>
       normalizeServiceInput({ basePrice: 350000, durationMin: 60, name: 'Massage' }, true),
     ).toThrow(BadRequestException);
+  });
+
+  it('normalizes service duration set input', () => {
+    expect(
+      normalizeServiceDurationSetInput({
+        durations: [
+          { basePrice: 300000, durationMin: 60 },
+          { durationMin: 90 },
+          { basePrice: 500000, durationMin: 120, providerPayoutAmount: 350000 },
+        ],
+        name: '  Massage Đặc Biệt  ',
+      }),
+    ).toEqual({
+      displayOrder: 100,
+      durationMins: [60, 120],
+      durationRows: [
+        { basePrice: 300000, durationMin: 60 },
+        { basePrice: 500000, durationMin: 120, providerPayoutAmount: 350000 },
+      ],
+      groupKey: 'massage_dac_biet',
+      name: 'Massage Đặc Biệt',
+      priceStep: PRICE_STEP_UNIT_VND,
+    });
+  });
+
+  it('rejects duration sets with missing or duplicate durations', () => {
+    expect(() => normalizeServiceDurationSetInput({ name: 'Massage', durations: [] })).toThrow(
+      new BadRequestException('At least one duration price is required'),
+    );
+    expect(() =>
+      normalizeServiceDurationSetInput({
+        name: 'Massage',
+        durations: [
+          { basePrice: 300000, durationMin: 60 },
+          { basePrice: 400000, durationMin: 60 },
+        ],
+      }),
+    ).toThrow(new BadRequestException('Duration options must be unique and explicit'));
   });
 
   it('normalizes payout rule input with VND defaults', () => {
