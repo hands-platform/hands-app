@@ -183,6 +183,10 @@ import {
   type PartnerRecentPayoutRecordLine,
 } from './partner-detail-profile-finance-summary-section';
 import {
+  PartnerDetailKycDecisionSection,
+  type PartnerKycDecisionEvidence,
+} from './partner-detail-kyc-decision-section';
+import {
   PartnerDetailFastOverviewSection,
   type PartnerDetailFastOverviewCard,
   type PartnerDetailFastOverviewInfoLine,
@@ -245,23 +249,8 @@ type PartnerDispatchPolicy = {
   locationFreshnessMinutes: number;
 };
 type PartnerDetailSection = 'overview' | 'full';
-type PartnerKycEvidence = {
-  allRequiredApproved: boolean;
+type PartnerKycEvidence = PartnerKycDecisionEvidence & {
   missingDocuments: string[];
-  nextAction: string;
-  decisionChecklist: Array<{
-    label: string;
-    ok: boolean;
-    detail: string;
-  }>;
-  rows: Array<{
-    type: string;
-    label: string;
-    status: string;
-    uploadedAt?: string | null;
-    rejectionReason?: string | null;
-    fileLabel: string;
-  }>;
 };
 type PartnerDetailBooking = {
   id: string;
@@ -448,6 +437,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
   const kycEvidence = buildPartnerKycEvidence(provider);
   const canApproveKyc = kycEvidence.allRequiredApproved;
+  const partnerKycReviewActions = buildPartnerKycReviewActions(provider, canApproveKyc);
   const payoutHold = activePayoutHold(provider);
   const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
   const partnerReportRows = buildPartnerReportRows(provider);
@@ -965,86 +955,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           rows={partnerBasicProfileRows}
         />
 
-        <div className="card" id="kyc">
-          <h2>KYC decision</h2>
-          <div className="participant-list admin-mb-10">
-            <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
-              KYC {provider.kyc?.status ?? 'MISSING'}
-            </span>
-            <span className={`pill ${kycEvidence.allRequiredApproved ? 'pill-success' : 'pill-danger'}`}>
-              {kycEvidence.allRequiredApproved ? 'Evidence complete' : 'Evidence incomplete'}
-            </span>
-          </div>
-          <p className="muted">
-            CCCD last 4: {provider.kyc?.cccdNumberLast4 ? `****${provider.kyc.cccdNumberLast4}` : 'Missing'}
-          </p>
-          <p className="muted">Submitted: {formatDate(provider.kyc?.submittedAt)}</p>
-          <p className="muted">Reviewed: {formatDate(provider.kyc?.reviewedAt)}</p>
-          {provider.kyc?.rejectionReason ? (
-            <p className="muted">Rejection reason: {provider.kyc.rejectionReason}</p>
-          ) : null}
-          <div className="actions admin-mt-12">
-            <ActionMenu
-              actions={[
-                {
-                  description: canApproveKyc
-                    ? 'Review before approving Partner KYC.'
-                    : 'Required identity documents must be approved before KYC approval.',
-                  disabled: provider.kyc?.status === 'APPROVED' || !canApproveKyc,
-                  href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-kyc'),
-                  kind: 'link',
-                  label: 'Approve KYC',
-                  tone: 'success',
-                },
-                {
-                  description: 'Review and enter a KYC rejection reason.',
-                  disabled: !provider.kyc || provider.kyc.status === 'REJECTED',
-                  href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-kyc'),
-                  kind: 'link',
-                  label: 'Reject KYC',
-                  tone: 'danger',
-                },
-              ]}
-              label="KYC review actions"
-            />
-          </div>
-          {!canApproveKyc ? (
-            <p className="muted admin-mt-10">
-              Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.
-            </p>
-          ) : null}
-          <div className="setup-stage-list admin-mt-12">
-            {kycEvidence.decisionChecklist.map((item) => (
-              <div className="setup-stage-item" key={item.label}>
-                <span>{item.ok ? 'OK' : 'FIX'}</span>
-                <div>
-                  <strong>{item.label}</strong>
-                  <p className="muted">{item.detail}</p>
-                </div>
-                <small>{item.ok ? 'Clear' : 'Needs review'}</small>
-              </div>
-            ))}
-          </div>
-          <div className="setup-stage-list admin-mt-12">
-            {kycEvidence.rows.map((row) => (
-              <div className="setup-stage-item" key={row.type}>
-                <span>{row.status === 'APPROVED' ? 'OK' : 'CHECK'}</span>
-                <div>
-                  <strong>{row.label}</strong>
-                  <p className="muted">
-                    {row.status} / {row.fileLabel}
-                    {row.uploadedAt ? ` / uploaded ${formatDate(row.uploadedAt)}` : ''}
-                  </p>
-                  {row.rejectionReason ? <p className="muted">Rejection: {row.rejectionReason}</p> : null}
-                </div>
-                <small>{row.status}</small>
-              </div>
-            ))}
-          </div>
-          <p className="muted admin-mt-10">
-            {kycEvidence.nextAction}
-          </p>
-        </div>
+        <PartnerDetailKycDecisionSection
+          canApprove={canApproveKyc}
+          cccdNumberLast4={provider.kyc?.cccdNumberLast4}
+          evidence={kycEvidence}
+          rejectionReason={provider.kyc?.rejectionReason}
+          reviewActions={partnerKycReviewActions}
+          reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
+          status={provider.kyc?.status}
+          submittedLabel={formatDate(provider.kyc?.submittedAt)}
+        />
 
         <PartnerDetailServicePricingSection
           readyCount={providerServicePricing.readyCount}
@@ -4706,6 +4626,32 @@ function bankAccountStatusLabel(provider: ProviderDetail) {
 
 function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
+}
+
+function buildPartnerKycReviewActions(
+  provider: ProviderDetail,
+  canApproveKyc: boolean,
+): ActionMenuItem[] {
+  return [
+    {
+      description: canApproveKyc
+        ? 'Review before approving Partner KYC.'
+        : 'Required identity documents must be approved before KYC approval.',
+      disabled: provider.kyc?.status === 'APPROVED' || !canApproveKyc,
+      href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-kyc'),
+      kind: 'link',
+      label: 'Approve KYC',
+      tone: 'success',
+    },
+    {
+      description: 'Review and enter a KYC rejection reason.',
+      disabled: !provider.kyc || provider.kyc.status === 'REJECTED',
+      href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-kyc'),
+      kind: 'link',
+      label: 'Reject KYC',
+      tone: 'danger',
+    },
+  ];
 }
 
 function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
