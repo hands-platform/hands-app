@@ -88,6 +88,7 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
   const cashDebt = cashFeeDebtAmount(provider);
+  const firstRevenue = providerHasFirstRevenueSignal(provider);
   const locationFresh = locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const latestStaffRecord = activityRecords.find((record) => STAFF_ACTIVITY_TYPES.includes(record.type));
 
@@ -153,15 +154,15 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       href: '#payout',
       latestAt: optionalDate(provider.earnings?.[0]?.createdAt ?? provider.payoutBatches?.[0]?.createdAt),
       tone: pillClass(payoutOps.tone),
-      evidence: [`${provider.earnings?.length ?? 0} earning row(s)`, `${provider.payoutBatches?.length ?? 0} payout batch row(s)`, providerHasFirstRevenueSignal(provider) ? 'First earning exists' : 'Tax can stay deferred'],
+      evidence: [`${provider.earnings?.length ?? 0} earning row(s)`, `${provider.payoutBatches?.length ?? 0} payout batch row(s)`, firstRevenue ? 'First earning exists' : 'Tax can stay deferred'],
     },
     {
       lane: 'Tax and bank',
-      status: `${provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'MISSING' : 'DEFERRED')} / ${primaryBank?.status ?? 'BANK MISSING'}`,
-      detail: providerHasFirstRevenueSignal(provider) ? 'First earning exists; tax, address, agreements, and bank rows must be complete before payout.' : 'Do not force tax data before first earning. Bank can still be reviewed early.',
+      status: `${provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'DEFERRED')} / ${primaryBank?.status ?? 'BANK MISSING'}`,
+      detail: firstRevenue ? 'First earning exists; tax, address, agreements, and bank rows must be complete before payout.' : 'Do not force tax data before first earning. Bank can still be reviewed early.',
       href: '#tax',
       latestAt: provider.taxProfile?.approvedAt ?? primaryBank?.reviewedAt ?? undefined,
-      tone: (provider.taxProfile?.status === 'APPROVED' || !providerHasFirstRevenueSignal(provider)) && primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
+      tone: (provider.taxProfile?.status === 'APPROVED' || !firstRevenue) && primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
       evidence: [primaryBank ? marketplaceDisplayText(primaryBank.bankName) : 'No bank row', `${provider.agreements?.length ?? 0} agreement row(s)`, provider.residentialAddress ? 'Address saved' : 'Address missing'],
     },
     {
