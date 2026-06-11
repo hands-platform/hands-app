@@ -65,11 +65,11 @@ export function PartnerLegacyOperationsTableSection({
                 {provider.verification?.rejectionReason ? (
                   <p className="muted">{provider.verification.rejectionReason}</p>
                 ) : null}
-                <p className="muted" style={{ marginTop: 4 }}>
+                <p className="muted admin-mt-4">
                   Queue status: {provider.status}
                 </p>
                 {provider.blockedAt ? (
-                  <p className="muted" style={{ marginTop: 4 }}>
+                  <p className="muted admin-mt-4">
                     Account blocked: {provider.blockedReason ?? 'No reason saved'}
                   </p>
                 ) : null}

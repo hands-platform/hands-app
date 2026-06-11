@@ -389,7 +389,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   Open booking
                 </Link>
               </div>
-              <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              <div className="admin-grid-gap-10 admin-mt-12">
                 {room.messages.length > 0 ? (
                   room.messages.slice(-8).map((message) => (
                     <div

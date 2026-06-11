@@ -178,7 +178,7 @@ export default async function OperationsHandoffPage({
         this before changing operators so open work keeps context.
       </p>
 
-      <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+      <section className="card admin-mt-16 admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Handoff date range</h2>
@@ -203,7 +203,7 @@ export default async function OperationsHandoffPage({
         </div>
       </section>
 
-      <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
+      <section className="grid admin-mt-16 admin-mb-16">
         <MetricCard
           label="Active bookings"
           value={activeBookings.length}
@@ -254,7 +254,7 @@ export default async function OperationsHandoffPage({
         />
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Shift handoff checklist</h2>
@@ -283,7 +283,7 @@ export default async function OperationsHandoffPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Immediate action queue</h2>
@@ -310,7 +310,7 @@ export default async function OperationsHandoffPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Finance handoff action map</h2>
@@ -339,7 +339,7 @@ export default async function OperationsHandoffPage({
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginBottom: 16 }}>
+      <section className="detail-grid admin-mb-16">
         <div className="card">
           <div className="toolbar">
             <div>
@@ -377,7 +377,7 @@ export default async function OperationsHandoffPage({
               Open audit log
             </Link>
           </div>
-          <form action={addOperationsHandoffNote} className="ops-note-form" style={{ marginBottom: 14 }}>
+          <form action={addOperationsHandoffNote} className="ops-note-form admin-mb-14">
             <div className="form-grid compact-form">
               <label>
                 Owner lane
@@ -435,7 +435,7 @@ export default async function OperationsHandoffPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Unified activity stream</h2>
@@ -501,7 +501,7 @@ export default async function OperationsHandoffPage({
         </table>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="toolbar">
           <div>
             <h2>Booking handoff queue</h2>
@@ -569,7 +569,7 @@ export default async function OperationsHandoffPage({
         </table>
       </section>
 
-      <section className="detail-grid" style={{ marginBottom: 16 }}>
+      <section className="detail-grid admin-mb-16">
         <div className="card">
           <div className="toolbar">
             <div>

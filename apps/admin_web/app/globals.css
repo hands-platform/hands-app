@@ -1275,6 +1275,10 @@ textarea:focus-visible {
   margin-bottom: 12px;
 }
 
+.admin-mb-14 {
+  margin-bottom: 14px;
+}
+
 .admin-ml-10 {
   margin-left: 10px;
 }
@@ -1290,6 +1294,11 @@ textarea:focus-visible {
 .admin-grid-gap-8 {
   display: grid;
   gap: 8px;
+}
+
+.admin-grid-gap-10 {
+  display: grid;
+  gap: 10px;
 }
 
 .booking-command-primary {
