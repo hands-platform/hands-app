@@ -243,14 +243,7 @@ export class BookingsService {
       currentLocationUpdatedAt?: string;
     },
   ) {
-    if (!userId) {
-      throw new BadRequestException('Authenticated customer is required');
-    }
-
-    const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
-    if (!customer) {
-      throw new NotFoundException('Customer profile not found');
-    }
+    const { customer, customerUserId } = await this.requireCustomerForBookingCreation(userId);
     assertBookingServiceId(input.serviceId);
     assertBookingPaymentMethod(input.paymentMethod);
 
@@ -307,7 +300,7 @@ export class BookingsService {
       const serviceAreaError = vietnamBookingCoordinateGateError(bookingLat, bookingLng);
       if (serviceAreaError) {
         await this.recordBookingGateRejection({
-          actorId: userId,
+          actorId: customerUserId,
           customerProfileId: customer.id,
           serviceId: service.id,
           preferredProviderId: preferredProvider?.id,
@@ -366,7 +359,7 @@ export class BookingsService {
     );
     if (preferredProviderDistanceGateError) {
       await this.recordBookingGateRejection({
-        actorId: userId,
+        actorId: customerUserId,
         customerProfileId: customer.id,
         serviceId: service.id,
         preferredProviderId: preferredProvider?.id,
@@ -469,7 +462,7 @@ export class BookingsService {
     await this.matching.registerActiveBooking(booking.id, result);
     await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? timing.expiresAt);
     await this.announceOpenBooking({
-      userId,
+      userId: customerUserId,
       bookingId: booking.id,
       customerProfileId: customer.id,
       preferredProvider,
@@ -487,6 +480,18 @@ export class BookingsService {
       matchingPayload: result,
     });
     return result;
+  }
+
+  private async requireCustomerForBookingCreation(userId: string | undefined) {
+    if (!userId) {
+      throw new BadRequestException('Authenticated customer is required');
+    }
+
+    const customer = await this.prisma.customerProfile.findUnique({ where: { userId } });
+    if (!customer) {
+      throw new NotFoundException('Customer profile not found');
+    }
+    return { customer, customerUserId: userId };
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
