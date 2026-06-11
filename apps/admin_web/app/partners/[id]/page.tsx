@@ -120,6 +120,10 @@ import {
   PartnerDetailBookingGateEvidenceSection,
   type PartnerBookingGateAttemptRow,
 } from './partner-detail-booking-gate-evidence-section';
+import {
+  PartnerDetailBookingEvidenceBundlesSection,
+  type PartnerBookingEvidenceRow,
+} from './partner-detail-booking-evidence-bundles-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -806,85 +810,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
 
-      <div className="card admin-mb-16" id="partner-booking-evidence-bundles">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner booking evidence bundles</h2>
-            <p className="muted">
-              Booking-by-booking partner work bundle for operators. Each row connects the partner role,
-              customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and
-              staff task records as factual history only.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerBookingEvidenceRows.length} booking bundle(s)</span>
-        </div>
-        <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Partner role</th>
-                <th>Customer and location</th>
-                <th>Chat archive</th>
-                <th>Money records</th>
-                <th>Ops evidence</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partnerBookingEvidenceRows.map((row) => (
-                <tr key={`${row.id}-${row.relation}`}>
-                  <td>
-                    <strong>{row.bookingLabel}</strong>
-                    <p className="muted">{row.serviceLabel}</p>
-                    <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
-                  </td>
-                  <td>
-                    <strong>{row.roleStatus}</strong>
-                    <p className="muted">{row.roleDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.customerStatus}</strong>
-                    <p className="muted">{row.customerDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.chatStatus}</strong>
-                    <p className="muted">{row.chatDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.moneyStatus}</strong>
-                    <p className="muted">{row.moneyDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.opsStatus}</strong>
-                    <p className="muted">{row.opsDetail}</p>
-                  </td>
-                  <td>
-                    <Link className="text-link" href={`/bookings/${row.id}`}>
-                      Booking
-                    </Link>
-                    {row.customerHref ? (
-                      <Link className="text-link admin-ml-10" href={row.customerHref}>
-                        Customer
-                      </Link>
-                    ) : null}
-                    {row.chatHref ? (
-                      <Link className="text-link admin-ml-10" href={row.chatHref}>
-                        Chat
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AdminTableScroll>
-        {partnerBookingEvidenceRows.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No partner booking bundle matched this date filter.
-          </p>
-        ) : null}
-      </div>
+      <PartnerDetailBookingEvidenceBundlesSection
+        rows={partnerBookingEvidenceRows}
+        statusPillClass={partnerBookingStatusPillClass}
+      />
 
       <PartnerDetailFullRecordIndexSection
         appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
@@ -3018,26 +2947,6 @@ type PartnerAcceptanceUnblockStep = {
   href: string;
   tone: ProviderOpsCard['tone'];
   bookingBlocked: boolean;
-};
-
-type PartnerBookingEvidenceRow = {
-  id: string;
-  relation: string;
-  bookingLabel: string;
-  serviceLabel: string;
-  status: string;
-  roleStatus: string;
-  roleDetail: string;
-  customerStatus: string;
-  customerDetail: string;
-  customerHref?: string;
-  chatStatus: string;
-  chatDetail: string;
-  chatHref?: string;
-  moneyStatus: string;
-  moneyDetail: string;
-  opsStatus: string;
-  opsDetail: string;
 };
 
 type PartnerDetailOpsBadge = {
