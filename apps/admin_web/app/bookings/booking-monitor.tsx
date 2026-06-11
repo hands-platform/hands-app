@@ -531,7 +531,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking operations command summary</h2>
@@ -545,7 +545,7 @@ export function BookingMonitor({
             {isPending ? 'refreshing' : `last ${hasMounted ? lastRefreshLabel : 'pending'}`}
           </span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {commandSummaryCards.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.label}>
               <span className="signal signal-info">{item.label}</span>
@@ -558,7 +558,7 @@ export function BookingMonitor({
             </Link>
           ))}
         </div>
-        <div className="ops-section-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header admin-mt-16">
           <div>
             <h3>Primary command queue</h3>
             <p className="muted">
@@ -570,7 +570,7 @@ export function BookingMonitor({
             {primaryCommandQueue.reduce((total, item) => total + item.count, 0)} booking(s)
           </span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {primaryCommandQueue.map((item) => (
             <Link className="ops-task-card" href={item.href} key={`${item.status}-${item.primaryAction}`}>
               <span className={`pill ${item.tone}`}>{item.status}</span>
@@ -589,7 +589,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking operations route map</h2>
@@ -600,7 +600,7 @@ export function BookingMonitor({
           </div>
           <span className="pill pill-info">No auto assignment</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {operatorRouteCards.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.label}>
               <span className="signal signal-info">{item.label}</span>
@@ -629,7 +629,7 @@ export function BookingMonitor({
         <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
       </div>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking command center</h2>
@@ -640,16 +640,16 @@ export function BookingMonitor({
           </div>
           <span className="pill pill-info">Operator first view</span>
         </div>
-        <div className="grid" style={{ marginTop: 12 }}>
+        <div className="grid admin-mt-12">
           {commandCenterWithGate.map((lane) => (
             <Link className="card" href={lane.href} key={lane.title}>
               <p>{lane.title}</p>
               <h2>{lane.status}</h2>
               <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-              <p className="muted" style={{ marginTop: 8 }}>
+              <p className="muted admin-mt-8">
                 {lane.detail}
               </p>
-              <div className="participant-list" style={{ marginTop: 10 }}>
+              <div className="participant-list admin-mt-10">
                 {lane.metrics.map((item) => (
                   <span className="pill" key={item.label}>
                     {item.label}: {item.value}
@@ -661,7 +661,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Matching escalation board</h2>
@@ -674,7 +674,7 @@ export function BookingMonitor({
             Change matching rules
           </Link>
         </div>
-        <div className="ops-section-header" style={{ marginTop: 14 }}>
+        <div className="ops-section-header admin-mt-14">
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
@@ -684,7 +684,7 @@ export function BookingMonitor({
           </div>
           <span className="pill pill-info">Live policy default</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {livePolicyCards.map((card) => (
             <div key={card.label}>
               <span>{card.label}</span>
@@ -693,7 +693,7 @@ export function BookingMonitor({
             </div>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {matchingEscalationBoard.map((lane) => (
             <Link className="ops-task-card" href={lane.href} key={lane.title}>
               <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
@@ -721,13 +721,13 @@ export function BookingMonitor({
             </Link>
           ))}
         </div>
-        <div style={{ marginTop: 16 }}>
+        <div className="admin-mt-16">
           <h3>Matching flow timeline</h3>
           <p className="muted">
             Stage view for direct partner requests, marketplace participation, customer final choice, and
             chat/location handoff.
           </p>
-          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          <div className="ops-task-grid admin-mt-12">
             {matchingFlowTimeline.map((step) => (
               <Link className="ops-task-card" href={step.href} key={step.stage}>
                 <span className={`signal ${commandToneClass(step.tone)}`}>{step.stage}</span>
@@ -756,13 +756,13 @@ export function BookingMonitor({
             ))}
           </div>
         </div>
-        <div style={{ marginTop: 16 }}>
+        <div className="admin-mt-16">
           <h3>Dispatch partner repair shortcuts</h3>
           <p className="muted">
             Use these when a matching booking needs partner supply, partner acceptance repair, cash-fee
             cleanup, or policy adjustment.
           </p>
-          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div className="service-trace-summary admin-mt-12">
             {dispatchPartnerShortcuts.map((item) => (
               <Link
                 className={`ops-task-breakdown-item ops-task-breakdown-${bookingDashboardTone(item.tone)}`}
@@ -776,7 +776,7 @@ export function BookingMonitor({
             ))}
           </div>
         </div>
-        <div className="participant-list" style={{ marginTop: 14 }}>
+        <div className="participant-list admin-mt-14">
           {matchingEscalationRows.slice(0, 6).map((item) => (
             <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
               <div className="ops-section-header">
@@ -811,7 +811,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Next operator actions</h2>
@@ -823,7 +823,7 @@ export function BookingMonitor({
             {nextActions.length > 0 ? `${nextActions.length} action(s)` : 'Clear'}
           </span>
         </div>
-        <div className="participant-list" style={{ marginTop: 12 }}>
+        <div className="participant-list admin-mt-12">
           {nextActions.map((item) => (
             <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`}>
               <div className="ops-section-header">
@@ -842,7 +842,7 @@ export function BookingMonitor({
               <p className="muted">
                 {bookingCustomerLabel(item.booking)} / {bookingProviderLabel(item.booking)}
               </p>
-              <div className="participant-list" style={{ marginTop: 10 }}>
+              <div className="participant-list admin-mt-10">
                 <span className="pill">{item.booking.status}</span>
                 <span className="pill">{item.owner}</span>
                 <span className="pill">{actionOrderLabel(item.priority)}</span>
@@ -867,7 +867,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Customer protection closeout board</h2>
@@ -885,7 +885,7 @@ export function BookingMonitor({
             {customerProtectionBoard.reduce((sum, lane) => sum + lane.bookings.length, 0)} open closeout
           </span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {customerProtectionBoard.map((lane) => (
             <Link className="ops-task-card" href={lane.href} key={lane.title}>
               <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
@@ -911,7 +911,7 @@ export function BookingMonitor({
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking operation filters</h2>
@@ -923,7 +923,7 @@ export function BookingMonitor({
             Showing {visibleBookings.length} of {baseVisibleBookings.length}
           </span>
         </div>
-        <div className="ops-filter-grid" style={{ marginBottom: 14 }}>
+        <div className="ops-filter-grid admin-mb-14">
           <label>
             Search booking/customer/partner
             <input
@@ -996,13 +996,13 @@ export function BookingMonitor({
             </button>
           ))}
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>
+        <p className="muted admin-mt-8">
           {activeView.operatorHint}
         </p>
       </section>
 
       {view === 'blocked-create' && (
-        <section className="card" style={{ marginTop: 16 }}>
+        <section className="card admin-mt-16">
           <div className="ops-section-header">
             <div>
               <h2>Blocked booking attempts</h2>
@@ -1015,7 +1015,7 @@ export function BookingMonitor({
               Open audit log
             </Link>
           </div>
-          <div className="filter-grid" style={{ marginTop: 14 }}>
+          <div className="filter-grid admin-mt-14">
             <label>
               Create gate filter
               <select
@@ -1035,7 +1035,7 @@ export function BookingMonitor({
               </button>
             </div>
           </div>
-          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-grid admin-mt-14">
             {bookingGateTriage.map((item) => (
               <article className="ops-task-card" key={item.filter}>
                 <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
@@ -1045,7 +1045,7 @@ export function BookingMonitor({
                   <span className="pill">{item.count} attempt(s)</span>
                   <span className="pill">Latest {item.latestAge}</span>
                 </div>
-                <div className="actions" style={{ marginTop: 12 }}>
+                <div className="actions admin-mt-12">
                   <button type="button" onClick={() => setGateFilter(item.filter)}>
                     Show this gate
                   </button>
@@ -1056,15 +1056,15 @@ export function BookingMonitor({
               </article>
             ))}
           </div>
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             {bookingGateFilterOptions.find((option) => option.value === gateFilter)?.operatorHint}
           </p>
           {visibleBookingCreateRejections.length === 0 ? (
-            <div className="empty-state" style={{ marginTop: 14 }}>
+            <div className="empty-state admin-mt-14">
               No blocked booking create attempts match this create gate filter.
             </div>
           ) : (
-            <div className="ops-task-grid" style={{ marginTop: 14 }}>
+            <div className="ops-task-grid admin-mt-14">
               {visibleBookingCreateRejections.slice(0, 30).map((log) => {
                 const evidence = bookingGateRejectionInfo(log);
                 return (
@@ -1079,12 +1079,12 @@ export function BookingMonitor({
                       <span className="pill">{evidence.customerDistanceLabel}</span>
                       <span className="pill">{evidence.preferredPartnerDistanceLabel}</span>
                     </div>
-                    <div className="stack" style={{ marginTop: 10 }}>
+                    <div className="stack admin-mt-10">
                       <span className="muted">Address: {evidence.addressText}</span>
                       <span className="muted">Optional customer GPS: {evidence.currentLocationLabel}</span>
                       <span className="muted">Booking pin: {evidence.bookingAddressLabel}</span>
                     </div>
-                    <div className="actions" style={{ marginTop: 12 }}>
+                    <div className="actions admin-mt-12">
                       {evidence.customerHref && (
                         <Link className="text-link" href={evidence.customerHref}>
                           Customer detail
@@ -1102,7 +1102,7 @@ export function BookingMonitor({
         </section>
       )}
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <div className="ops-section-header">
           <div>
             <h2>Marketplace participant ledger</h2>
@@ -1118,7 +1118,7 @@ export function BookingMonitor({
             All participant records {marketplaceLedgerSummary.total}
           </span>
         </div>
-        <section className="card" style={{ marginTop: 14 }}>
+        <section className="card admin-mt-14">
           <div className="ops-section-header">
             <div>
               <h3>Marketplace record boundary</h3>
@@ -1129,7 +1129,7 @@ export function BookingMonitor({
             </div>
             <span className="pill pill-info">Booking-address marketplace radius</span>
           </div>
-          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          <div className="ops-task-grid admin-mt-12">
             <article className="ops-task-card">
               <span className="signal signal-info">Actual participation rows</span>
               <h3>{marketplaceLedgerSummary.total}</h3>
@@ -1156,7 +1156,7 @@ export function BookingMonitor({
             </article>
           </div>
         </section>
-        <section className="card" style={{ marginTop: 14 }}>
+        <section className="card admin-mt-14">
           <div className="ops-section-header">
             <div>
               <h3>Marketplace operating queue</h3>
@@ -1167,7 +1167,7 @@ export function BookingMonitor({
             </div>
             <span className="pill pill-info">No auto assignment</span>
           </div>
-          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          <div className="ops-task-grid admin-mt-12">
             {marketplaceOperatingQueue.map((item) => (
               <Link className="ops-task-card" href={item.href} key={item.step}>
                 <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
@@ -1179,7 +1179,7 @@ export function BookingMonitor({
                 </div>
                 <small>{item.operatorAction}</small>
                 {item.bookings.length > 0 && (
-                  <div className="stack" style={{ marginTop: 10 }}>
+                  <div className="stack admin-mt-10">
                     {item.bookings.slice(0, 3).map((booking) => (
                       <span className="muted" key={`${item.step}-${booking.id}`}>
                         {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
@@ -1192,7 +1192,7 @@ export function BookingMonitor({
             ))}
           </div>
         </section>
-        <section className="card admin-card-scroll" style={{ marginTop: 14 }}>
+        <section className="card admin-card-scroll admin-mt-14">
           <div className="ops-section-header">
             <div>
               <h3>Marketplace booking coverage board</h3>
@@ -1211,14 +1211,14 @@ export function BookingMonitor({
               ))}
             </div>
           </div>
-          <div className="participant-list" style={{ marginTop: 12 }}>
+          <div className="participant-list admin-mt-12">
             <span className="pill">Booking rows, not visibility events</span>
             <span className="pill">Wallet gate blocks finalization</span>
             <span className="pill">No auto assignment</span>
             <span className="pill">Final partner selected {marketplaceBookingCoverageSummary.selected}</span>
           </div>
           {marketplaceBookingCoverageRows.length === 0 ? (
-            <div className="empty-state" style={{ marginTop: 14 }}>
+            <div className="empty-state admin-mt-14">
               No marketplace booking rows match the current filters.
             </div>
           ) : (
@@ -1286,7 +1286,7 @@ export function BookingMonitor({
             </AdminTableScroll>
           )}
         </section>
-        <div className="participant-list" style={{ marginTop: 12 }}>
+        <div className="participant-list admin-mt-12">
           <span className="pill pill-info">Participant rows only</span>
           <span className="pill pill-warn">Blocked wallet joins are not participant records</span>
           <span className="pill">Partners may view marketplace requests before join gate</span>
@@ -1301,7 +1301,7 @@ export function BookingMonitor({
           <span className="pill">Participant evidence</span>
           <span className="pill">Marketplace participation gate</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {marketplaceOperationsCards.map((card) => (
             <Link className="ops-task-card" href={card.href} key={card.title}>
               <span className={`signal ${card.tone}`}>{card.title}</span>
@@ -1311,7 +1311,7 @@ export function BookingMonitor({
           ))}
         </div>
         {marketplaceLedgerRows.length === 0 ? (
-          <div className="empty-state" style={{ marginTop: 14 }}>
+          <div className="empty-state admin-mt-14">
             No participant records match the current booking filters.
           </div>
         ) : (
@@ -1379,7 +1379,7 @@ export function BookingMonitor({
                     </td>
                     <td>
                       <span className={`pill ${row.choiceTone}`}>{row.choiceLabel}</span>
-                      <div className="participant-list" style={{ marginTop: 6 }}>
+                      <div className="participant-list admin-mt-6">
                         <span className={`pill ${row.chatHandoffTone}`}>{row.chatHandoffLabel}</span>
                       </div>
                       <div className="muted">{row.choiceReason}</div>
@@ -1400,7 +1400,7 @@ export function BookingMonitor({
         )}
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16">
         <table className="table">
           <thead>
             <tr>
@@ -1447,20 +1447,20 @@ export function BookingMonitor({
                       Opened {formatDate(bookingRequestOpenedAt(booking))}
                     </div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
-                    <div style={{ marginTop: 8 }}>
+                    <div className="admin-mt-8">
                       <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
                         {stage.label}
                       </Link>
                     </div>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="muted admin-mt-8">
                       {stage.detail}
                     </div>
                     <div className="muted">{stage.action}</div>
-                    <div style={{ marginTop: 8 }}>
+                    <div className="admin-mt-8">
                       <StatusBadge status={booking.status} />
                     </div>
                     {closureState && (
-                      <div className="participant-list" style={{ marginTop: 8 }}>
+                      <div className="participant-list admin-mt-8">
                         <span className={`pill ${closureState.tone}`}>{closureState.label}</span>
                         <span className="muted">{closureState.detail}</span>
                       </div>
@@ -1472,18 +1472,18 @@ export function BookingMonitor({
                   </td>
                   <td>
                     <span className={`pill ${addressState.tone}`}>{addressState.label}</span>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="muted admin-mt-8">
                       {addressState.detail}
                     </div>
                     <div className="muted">{addressState.pin}</div>
-                    <div style={{ marginTop: 10 }}>
+                    <div className="admin-mt-10">
                       <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
                     </div>
                     <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
                   </td>
                   <td>
                     <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="muted admin-mt-8">
                       {customerVisibleStateLabel(booking)}
                     </div>
                     <div className="muted">{selectionPathLabel(booking)}</div>
@@ -1506,7 +1506,7 @@ export function BookingMonitor({
                         ? `First-pick phone ${booking.preferredProvider.user.phone}`
                         : 'First-pick partner not set'}
                     </div>
-                    <div className="participant-list" style={{ marginTop: 8 }}>
+                    <div className="participant-list admin-mt-8">
                       <span className={`pill ${matchingPolicy ? 'pill-info' : 'pill-warn'}`}>
                         {matchingPolicy ? 'Saved policy' : 'Live policy default'}
                       </span>
@@ -1514,7 +1514,7 @@ export function BookingMonitor({
                         {bookingBackupAlertTracePill(booking)}
                       </span>
                     </div>
-                    <div className="stack" style={{ marginTop: 10 }}>
+                    <div className="stack admin-mt-10">
                       <span className="muted">Matching rule snapshot</span>
                       <span className={`pill ${matchingRuleSnapshot.sourceTone}`}>
                         {matchingRuleSnapshot.sourceLabel}
@@ -1525,7 +1525,7 @@ export function BookingMonitor({
                       <span className="muted">{matchingRuleSnapshot.customerChoiceLabel}</span>
                       <small>{matchingRuleSnapshot.operatorAction}</small>
                     </div>
-                    <div className="participant-list" style={{ marginTop: 8 }}>
+                    <div className="participant-list admin-mt-8">
                       {booking.preferredProvider && (
                         <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
                           First-pick: {partnerDisplayName(booking.preferredProvider)}{' '}
@@ -1548,18 +1548,18 @@ export function BookingMonitor({
                         ))}
                     </div>
                     {marketplaceParticipants(booking).length > 4 && (
-                      <div className="muted" style={{ marginTop: 6 }}>
+                      <div className="muted admin-mt-6">
                         +{marketplaceParticipants(booking).length - 4} more marketplace partner(s)
                       </div>
                     )}
                   </td>
                   <td>
                     <span className={`pill ${chatState.tone}`}>{chatState.label}</span>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="muted admin-mt-8">
                       {chatState.detail}
                     </div>
                     <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
-                    <div className="participant-list" style={{ marginTop: 8 }}>
+                    <div className="participant-list admin-mt-8">
                       <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
                         {bookingLocationPillLabel(booking, currentTimeMs)}
                       </span>
@@ -1573,7 +1573,7 @@ export function BookingMonitor({
                         : 'No payment'}
                     </div>
                     {booking.payment?.id && (
-                      <div className="actions" style={{ marginTop: 8 }}>
+                      <div className="actions admin-mt-8">
                         <Link className="text-link" href={`/bookings/${booking.id}`}>
                           Detail
                         </Link>
@@ -1588,18 +1588,18 @@ export function BookingMonitor({
                       </div>
                     )}
                     {bookingCashDebtNeedsOps(booking) && (
-                      <div style={{ marginTop: 8 }}>
+                      <div className="admin-mt-8">
                         <span className="pill pill-warn">Partner wallet debt</span>
                       </div>
                     )}
                     {bookingCashDebtNeedsOps(booking) && (
-                      <div className="muted" style={{ marginTop: 6 }}>
+                      <div className="muted admin-mt-6">
                         Cash fee debt{' '}
                         {money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}
                       </div>
                     )}
                     {booking.earning?.id && (
-                      <div className="actions" style={{ marginTop: 8 }}>
+                      <div className="actions admin-mt-8">
                         <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
                           Open earning
                         </Link>
@@ -1608,15 +1608,15 @@ export function BookingMonitor({
                   </td>
                   <td>
                     <span className={`signal ${checkSignal.tone}`}>{checkSignal.label}</span>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="muted admin-mt-8">
                       {checkSignal.helper}
                     </div>
                     {flags.length > 0 && <div className="muted">{flags[0].title}</div>}
-                    <div style={{ marginTop: 8 }}>{opsSignal(booking)}</div>
-                    <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="admin-mt-8">{opsSignal(booking)}</div>
+                    <div className="muted admin-mt-8">
                       {nextAction(booking)}
                     </div>
-                    <div className="participant-list" style={{ marginTop: 10 }}>
+                    <div className="participant-list admin-mt-10">
                       <span className="muted">Primary booking command</span>
                       <Link
                         className={`pill ${commandDecisionStrip.tone}`}
@@ -1626,10 +1626,10 @@ export function BookingMonitor({
                         {commandDecisionStrip.primaryAction}
                       </Link>
                     </div>
-                    <div className="muted" style={{ marginTop: 6 }}>
+                    <div className="muted admin-mt-6">
                       {commandDecisionStrip.status}: {commandDecisionStrip.primaryDetail}
                     </div>
-                    <div className="participant-list" style={{ marginTop: 10 }}>
+                    <div className="participant-list admin-mt-10">
                       <span className="muted">Booking gate reason</span>
                       <Link
                         className={`pill ${finalGateReason.tone}`}
@@ -1639,10 +1639,10 @@ export function BookingMonitor({
                         {finalGateReason.label}
                       </Link>
                     </div>
-                    <div className="muted" style={{ marginTop: 6 }}>
+                    <div className="muted admin-mt-6">
                       {finalGateReason.detail}
                     </div>
-                    <div className="participant-list" style={{ marginTop: 10 }}>
+                    <div className="participant-list admin-mt-10">
                       <span className="muted">Action status strip</span>
                       {actionChips.map((chip) => (
                         <Link
@@ -1656,7 +1656,7 @@ export function BookingMonitor({
                       ))}
                     </div>
                     {closureState && (
-                      <div className="muted" style={{ marginTop: 8 }}>
+                      <div className="muted admin-mt-8">
                         Closure evidence: {closureState.detail}
                       </div>
                     )}
