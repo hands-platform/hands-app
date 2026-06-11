@@ -1,5 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 
+const DEFAULT_WALLET_CURRENCY = 'VND';
+const SETTLEMENT_REFERENCE_SUFFIX_LENGTH = 8;
+
 export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT';
 export const PROVIDER_WALLET_BLOCK_REASON =
   'Outstanding HANDS fee settlement must be completed before final acceptance, service start, or payout release.';
@@ -10,7 +13,7 @@ export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
   'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible and participation is allowed, but final acceptance, service start, and payout release are blocked until HANDS confirms the deposit or admin offset.';
 
 export function providerWalletSettlementReference(providerProfileId: string) {
-  return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
+  return `HANDS-WALLET-${providerProfileId.slice(-SETTLEMENT_REFERENCE_SUFFIX_LENGTH).toUpperCase()}`;
 }
 
 export function providerWalletSettlementSteps(amount: number, currency: string, providerProfileId: string) {
@@ -28,7 +31,7 @@ export function providerWalletBlockedResponse(input: {
   currency?: string;
 }) {
   const walletDebtAmount = Math.abs(input.walletBalance);
-  const currency = input.currency ?? 'VND';
+  const currency = input.currency ?? DEFAULT_WALLET_CURRENCY;
   return {
     code: PROVIDER_WALLET_BLOCK_CODE,
     message: PROVIDER_WALLET_BLOCK_REASON,
