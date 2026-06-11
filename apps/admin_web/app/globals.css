@@ -1272,6 +1272,14 @@ textarea:focus-visible {
   gap: 8px;
 }
 
+.booking-command-primary {
+  background: #f8faf6;
+  border: 1px solid #d8e7ce;
+  border-radius: 12px;
+  margin-top: 12px;
+  padding: 16px;
+}
+
 .service-matrix th,
 .service-matrix td,
 .service-ledger th,

@@ -64,7 +64,7 @@ export function BookingCommandDecisionStripSection({
   commandDecisionStrip: BookingCommandDecisionStrip;
 }) {
   return (
-    <section className="card" id="booking-command-decision-strip" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-command-decision-strip">
       <div className="ops-section-header">
         <div>
           <h2>Booking command decision strip</h2>
@@ -74,20 +74,12 @@ export function BookingCommandDecisionStripSection({
         </div>
         <span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>
       </div>
-      <div
-        style={{
-          background: '#f8faf6',
-          border: '1px solid #d8e7ce',
-          borderRadius: 12,
-          marginTop: 12,
-          padding: 16,
-        }}
-      >
+      <div className="booking-command-primary">
         <strong>Primary booking command</strong>
         <p>{commandDecisionStrip.primaryAction}</p>
         <small>{commandDecisionStrip.primaryDetail}</small>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {commandDecisionStrip.rows.map((row) => (
           <a href={row.href} key={row.lane}>
             <span>{row.lane}</span>
@@ -175,7 +167,7 @@ export function BookingDetailToolbar({
 
 export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCard[] }) {
   return (
-    <section className="card" id="booking-operator-first-read" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-operator-first-read">
       <div className="ops-section-header">
         <div>
           <h2>Booking operator first read</h2>
@@ -185,7 +177,7 @@ export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCar
         </div>
         <span className="pill pill-info">Above-fold summary</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {rows.map((item) => (
           <a href={item.href} key={item.label}>
             <span>{item.label}</span>
@@ -200,7 +192,7 @@ export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCar
 
 export function BookingMetricGridSection({ metrics }: { metrics: MetricSummaryCard[] }) {
   return (
-    <section className="grid" style={{ marginBottom: 16 }}>
+    <section className="grid admin-mb-16">
       {metrics.map((metric) => (
         <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
       ))}
@@ -210,7 +202,7 @@ export function BookingMetricGridSection({ metrics }: { metrics: MetricSummaryCa
 
 export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkCard[] }) {
   return (
-    <section className="card" id="booking-operations-quick-rail" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-operations-quick-rail">
       <div className="ops-section-header">
         <div>
           <h2>Booking operations quick rail</h2>
@@ -222,7 +214,7 @@ export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkC
         </div>
         <span className="pill pill-info">{rows.length} shortcuts</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {rows.map((item) => (
           <a href={item.href} key={item.label}>
             <span>{item.label}</span>
@@ -241,7 +233,7 @@ export function BookingMatchingRuleSnapshotSection({
   matchingRuleSnapshot: MatchingRuleSnapshot;
 }) {
   return (
-    <section className="card" id="matching-rule-snapshot" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="matching-rule-snapshot">
       <div className="ops-section-header">
         <div>
           <h2>Matching rule snapshot</h2>
@@ -252,10 +244,10 @@ export function BookingMatchingRuleSnapshotSection({
         </div>
         <span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>
       </div>
-      <p className="muted" style={{ marginTop: 8 }}>
+      <p className="muted admin-mt-8">
         {matchingRuleSnapshot.summary}
       </p>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {matchingRuleSnapshot.rows.map((row) => (
           <div key={row.label}>
             <span>{row.label}</span>
@@ -264,7 +256,7 @@ export function BookingMatchingRuleSnapshotSection({
           </div>
         ))}
       </div>
-      <div className="actions" style={{ marginTop: 12 }}>
+      <div className="actions admin-mt-12">
         {matchingRuleSnapshot.actions.map((action) => (
           <Link className="text-link" href={action.href} key={action.label}>
             {action.label}
@@ -277,7 +269,7 @@ export function BookingMatchingRuleSnapshotSection({
 
 export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityContractRow[] }) {
   return (
-    <section className="card" id="mvp-authority-contract" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="mvp-authority-contract">
       <div className="ops-section-header">
         <div>
           <h2>MVP authority contract</h2>
@@ -333,7 +325,7 @@ export function BookingRecentOperationsTimelineSection({
   operatingTimeline: RecentTimelineItem[];
 }) {
   return (
-    <section className="card" id="booking-recent-operations-timeline" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-recent-operations-timeline">
       <div className="ops-section-header">
         <div>
           <h2>Booking recent operations timeline</h2>
@@ -346,7 +338,7 @@ export function BookingRecentOperationsTimelineSection({
           Open full operating timeline
         </Link>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {operatingTimeline.slice(0, 8).map((item) => (
           <div className="setup-stage-item" key={`recent-${item.id}`}>
             <span>{item.type}</span>
@@ -368,7 +360,7 @@ export function BookingPriorityBriefingSection({
   operatorPriorityBriefing: PriorityBriefing;
 }) {
   return (
-    <section className="card" id="booking-priority-briefing" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-priority-briefing">
       <div className="ops-section-header">
         <div>
           <h2>Booking priority briefing</h2>
@@ -379,7 +371,7 @@ export function BookingPriorityBriefingSection({
         </div>
         <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {operatorPriorityBriefing.rows.map((row) => (
           <div key={row.label}>
             <span>{row.label}</span>
@@ -388,7 +380,7 @@ export function BookingPriorityBriefingSection({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {operatorPriorityBriefing.steps.map((step) => (
           <div className="setup-stage-item" key={step.id}>
             <span>{step.label}</span>
