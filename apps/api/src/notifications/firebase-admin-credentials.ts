@@ -45,3 +45,18 @@ export function configuredFirebaseCredentialKeys(config: FirebaseCredentialConfi
 export function normalizePrivateKey(value?: string) {
   return value?.replace(/\\n/g, '\n');
 }
+
+export function parseFirebaseServiceAccount(raw: string) {
+  const decoded = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+  const parsed = JSON.parse(decoded) as {
+    project_id?: string;
+    client_email?: string;
+    private_key?: string;
+  };
+
+  return {
+    projectId: parsed.project_id,
+    clientEmail: parsed.client_email,
+    privateKey: normalizePrivateKey(parsed.private_key),
+  };
+}

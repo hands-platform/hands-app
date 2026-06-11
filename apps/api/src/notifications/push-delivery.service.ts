@@ -4,7 +4,7 @@ import { applicationDefault, cert, getApps, initializeApp, type App } from 'fire
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
 import {
   firebaseCredentialReadiness,
-  normalizePrivateKey,
+  parseFirebaseServiceAccount,
   readFirebaseCredentialConfig,
   type FirebaseCredentialConfig,
 } from './firebase-admin-credentials';
@@ -149,7 +149,10 @@ export class PushDeliveryService {
 
 function initializeFirebaseApp(config: FirebaseCredentialConfig): App {
   if (config.serviceAccountJson) {
-    return initializeApp({ credential: cert(parseServiceAccount(config.serviceAccountJson)) }, 'hands-fcm');
+    return initializeApp(
+      { credential: cert(parseFirebaseServiceAccount(config.serviceAccountJson)) },
+      'hands-fcm',
+    );
   }
 
   if (config.projectId && config.clientEmail && config.privateKey) {
@@ -166,19 +169,4 @@ function initializeFirebaseApp(config: FirebaseCredentialConfig): App {
   }
 
   return initializeApp({ credential: applicationDefault() }, 'hands-fcm');
-}
-
-function parseServiceAccount(raw: string) {
-  const decoded = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-  const parsed = JSON.parse(decoded) as {
-    project_id?: string;
-    client_email?: string;
-    private_key?: string;
-  };
-
-  return {
-    projectId: parsed.project_id,
-    clientEmail: parsed.client_email,
-    privateKey: normalizePrivateKey(parsed.private_key),
-  };
 }
