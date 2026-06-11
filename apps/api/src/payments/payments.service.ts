@@ -11,6 +11,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
 import {
+  callbackAmountVnd,
+  callbackAttemptEvidence,
+  callbackFailureOutcome,
+  callbackRawMeta,
+  errorCode,
+  errorMessage,
+  stringValue,
+} from './payment-callback.helpers';
+import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
   paymentStatusCheckJob,
 } from './payment-status.queue';
@@ -440,18 +449,6 @@ function asJsonObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function callbackRawMeta(
-  rawMeta: Record<string, unknown>,
-  verification: { verified: boolean; mode: string },
-) {
-  return {
-    ...rawMeta,
-    callbackReceivedAt: new Date().toISOString(),
-    callbackSignatureVerified: verification.verified,
-    callbackVerificationMode: verification.mode,
-  };
-}
-
 function momoSignatureCandidates(body: Record<string, unknown>, accessKey?: string) {
   const material: Record<string, unknown> = { ...body };
   delete material.signature;
@@ -500,83 +497,6 @@ function sortedKeyValueString(values: Record<string, unknown>) {
     .sort()
     .map((key) => `${key}=${stringValue(values[key])}`)
     .join('&');
-}
-
-function callbackAmountVnd(method: PaymentMethod, body: Record<string, unknown>) {
-  if (method === PaymentMethod.MOMO && body.amount !== undefined) {
-    return numberValue(body.amount);
-  }
-  if (method === PaymentMethod.VNPAY && body.vnp_Amount !== undefined) {
-    const rawAmount = numberValue(body.vnp_Amount);
-    return rawAmount === null ? null : Math.round(rawAmount / 100);
-  }
-  return null;
-}
-
-function callbackAttemptEvidence(method: PaymentMethod, body: Record<string, unknown>) {
-  return {
-    method,
-    providerRef: callbackProviderRef(body),
-    providerStatus:
-      stringValueOrNull(body.status) ??
-      stringValueOrNull(body.resultCode) ??
-      stringValueOrNull(body.vnp_ResponseCode) ??
-      stringValueOrNull(body.message),
-    gatewayTransactionId:
-      stringValueOrNull(body.transId) ??
-      stringValueOrNull(body.transactionId) ??
-      stringValueOrNull(body.vnp_TransactionNo) ??
-      stringValueOrNull(body.vnp_TxnRef),
-    callbackAmount: callbackAmountVnd(method, body),
-  };
-}
-
-function callbackProviderRef(body: Record<string, unknown>) {
-  return (
-    stringValueOrNull(body.providerRef) ??
-    stringValueOrNull(body.orderId) ??
-    stringValueOrNull(body.vnp_TxnRef)
-  );
-}
-
-function stringValueOrNull(value: unknown) {
-  const valueString = stringValue(value);
-  return valueString ? valueString : null;
-}
-
-function errorCode(error: unknown) {
-  if (error instanceof BadRequestException) {
-    return 'BAD_REQUEST';
-  }
-  if (error instanceof ConflictException) {
-    return 'CONFLICT';
-  }
-  return 'CALLBACK_ERROR';
-}
-
-function callbackFailureOutcome(error: unknown) {
-  return error instanceof ConflictException ? 'CONFLICT' : 'REJECTED';
-}
-
-function errorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'Payment callback processing failed';
-}
-
-function stringValue(value: unknown) {
-  return value === undefined || value === null ? '' : String(value);
-}
-
-function numberValue(value: unknown) {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
-    return Number(value);
-  }
-  return null;
 }
 
 function hmacHex(algorithm: 'sha256' | 'sha512', secret: string, data: string) {
