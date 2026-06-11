@@ -103,10 +103,6 @@ import {
   type PartnerControlConfirmationAction,
 } from './partner-detail-control-action-confirmation';
 import {
-  partnerOperatorCommandActionHref,
-  type PartnerOperatorCommandAction as PartnerOperatorCommandActionConfig,
-} from './partner-detail-operator-command-action';
-import {
   PartnerDetailBookingJourneySection,
   type PartnerBookingJourneyRow,
 } from './partner-detail-booking-journey-section';
@@ -166,6 +162,10 @@ import {
   PartnerDetailReviewHistorySection,
   type PartnerReviewHistoryRow,
 } from './partner-detail-review-progress-section';
+import {
+  PartnerDetailOperatorCommandQueueSection,
+  type PartnerOperatorCommand,
+} from './partner-detail-operator-command-queue-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -768,42 +768,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner connected operations records"
       />
 
-      <div className="card admin-mb-16" id="partner-operator-command-queue">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operator command queue</h2>
-            <p className="muted">
-              Same-shift partner operations queue for onboarding, direct and marketplace readiness gates,
-              payout, location, app reachability, and service setup. This is factual handling for operators.
-            </p>
-          </div>
-          <span className={`pill ${pillClass(partnerOperatorCommandQueue.tone)}`}>
-            {partnerOperatorCommandQueue.status}
-          </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {partnerOperatorCommandQueue.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list admin-mt-16">
-          {partnerOperatorCommandQueue.commands.map((command) => (
-            <div className="setup-stage-item" key={command.id}>
-              <span>{command.label}</span>
-              <div>
-                <strong>{command.title}</strong>
-                <p className="muted">{command.detail}</p>
-                <span className={`pill ${pillClass(command.tone)}`}>{command.owner}</span>
-              </div>
-              <PartnerOperatorCommandAction providerId={provider.id} command={command} />
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailOperatorCommandQueueSection
+        pillClassForTone={pillClass}
+        providerId={provider.id}
+        queue={partnerOperatorCommandQueue}
+      />
 
       <div className="card ops-note-panel admin-mb-16" id="partner-operator-notes">
         <div className="ops-section-header">
@@ -2143,30 +2112,6 @@ type PartnerAcceptanceRepairCommand = {
     tone: ProviderOpsCard['tone'];
   }>;
 };
-type PartnerOperatorCommand = {
-  id: string;
-  label: string;
-  title: string;
-  detail: string;
-  owner: string;
-  tone: ProviderOpsCard['tone'];
-  action: PartnerOperatorCommandActionConfig;
-};
-
-function PartnerOperatorCommandAction({
-  providerId,
-  command,
-}: {
-  providerId: string;
-  command: PartnerOperatorCommand;
-}) {
-  return (
-    <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>
-      {command.action.label}
-    </Link>
-  );
-}
-
 function PartnerDetailReadinessSnapshot({
   provider,
   bookingAcceptance,
