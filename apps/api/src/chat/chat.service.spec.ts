@@ -105,6 +105,60 @@ describe('ChatService access control', () => {
 });
 
 describe('ChatService message validation', () => {
+  it('notifies the other booking chat participant without exposing message text', async () => {
+    const notifications = {
+      create: jest.fn().mockResolvedValue({ id: 'notification-1' }),
+    };
+    const prisma = {
+      chatRoom: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'chat-room-1',
+            booking: {
+              customerProfileId: 'customer-1',
+              selectedProviderId: 'partner-1',
+            },
+          })
+          .mockResolvedValueOnce({
+            bookingId: 'booking-1',
+            booking: {
+              customerProfile: { userId: 'customer-user' },
+              selectedProvider: { userId: 'partner-user' },
+            },
+          }),
+      },
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      chatMessage: {
+        create: jest.fn().mockResolvedValue({
+          id: 'message-1',
+          chatRoomId: 'chat-room-1',
+          senderId: 'customer-user',
+          body: 'See you soon',
+        }),
+      },
+    };
+    const service = new ChatService(prisma as never, notifications as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'customer-user', roles: [Role.CUSTOMER] },
+        { text: 'See you soon' },
+      ),
+    ).resolves.toEqual(expect.objectContaining({ id: 'message-1' }));
+
+    expect(notifications.create).toHaveBeenCalledWith({
+      userId: 'partner-user',
+      type: 'chat.message.created',
+      title: 'New chat message',
+      body: 'A new message is available in your booking chat.',
+      data: { bookingId: 'booking-1', chatRoomId: 'chat-room-1' },
+    });
+  });
+
   it('rejects oversized realtime chat messages at the service boundary', async () => {
     const prisma = {
       chatRoom: {

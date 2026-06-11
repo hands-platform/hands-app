@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MAX_CHAT_MESSAGE_BODY_LENGTH } from './chat.policy';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications?: NotificationsService,
+  ) {}
 
   async listMessages(chatRoomId: string, user: AuthenticatedUser) {
     await this.requireChatAccess(chatRoomId, user);
@@ -33,7 +37,7 @@ export class ChatService {
       throw new BadRequestException(`Message body must be ${MAX_CHAT_MESSAGE_BODY_LENGTH} characters or fewer`);
     }
 
-    return this.prisma.chatMessage.create({
+    const message = await this.prisma.chatMessage.create({
       data: {
         chatRoomId,
         senderId: user.id,
@@ -42,6 +46,8 @@ export class ChatService {
       },
       include: { sender: { select: { id: true, fullName: true, roles: true } } },
     });
+    await this.notifyChatMessageRecipients(chatRoomId, user.id);
+    return message;
   }
 
   async canAccessChatRoom(chatRoomId: string, user: AuthenticatedUser) {
@@ -92,6 +98,44 @@ export class ChatService {
     const allowed = await this.canAccessChatRoom(chatRoomId, user);
     if (!allowed) {
       throw new BadRequestException('Chat room is not accessible for this user');
+    }
+  }
+
+  private async notifyChatMessageRecipients(chatRoomId: string, senderUserId: string) {
+    if (!this.notifications) {
+      return;
+    }
+
+    const chatRoom = await this.prisma.chatRoom.findUnique({
+      where: { id: chatRoomId },
+      select: {
+        bookingId: true,
+        booking: {
+          select: {
+            customerProfile: { select: { userId: true } },
+            selectedProvider: { select: { userId: true } },
+          },
+        },
+      },
+    });
+    if (!chatRoom) {
+      return;
+    }
+
+    const recipientIds = new Set(
+      [chatRoom.booking.customerProfile.userId, chatRoom.booking.selectedProvider?.userId].filter(
+        (userId): userId is string => Boolean(userId) && userId !== senderUserId,
+      ),
+    );
+
+    for (const userId of recipientIds) {
+      await this.notifications.create({
+        userId,
+        type: 'chat.message.created',
+        title: 'New chat message',
+        body: 'A new message is available in your booking chat.',
+        data: { bookingId: chatRoom.bookingId, chatRoomId },
+      });
     }
   }
 }
