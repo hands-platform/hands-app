@@ -65,7 +65,7 @@ export default async function NotificationsPage({
         { label: 'Needs retry', value: summary.needsRetry, helper: 'Failed or disabled delivery paths.' },
         { label: 'Sent', value: summary.sent, helper: 'Successful push delivery attempts.' },
         { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
-        { label: 'Failed', value: summary.failed, helper: 'Provider failures needing review.' },
+        { label: 'Failed', value: summary.failed, helper: 'Push failures needing review.' },
         { label: 'Disabled devices', value: summary.disabledDevices, helper: 'Push devices disabled.' },
         { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
         { label: 'Partner alerts', value: channelSummary.partnerAlertCount, helper: 'Partner-facing alerts.' },
