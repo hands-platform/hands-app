@@ -261,10 +261,13 @@ export class BookingsService {
     });
     const matchingPolicy = await this.matching.getPolicy();
     const distanceGateLimits = bookingDistanceGateLimits(matchingPolicy);
-    const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
-    const bookingLng = normalizeBookingCoordinate(input.lng ?? selectedLocation?.longitude, 'lng');
-    const addressTextForAudit =
-      bookingAddressText(input.address) ?? selectedLocation?.addressText?.trim() ?? 'Unknown booking address';
+    const { addressPayload, addressText, addressTextForAudit, bookingLat, bookingLng } =
+      this.resolveBookingAddressInput({
+        address: input.address,
+        lat: input.lat,
+        lng: input.lng,
+        selectedLocation,
+      });
     if (matchingPolicy.bookingServiceAreaRequired) {
       const serviceAreaError = vietnamBookingCoordinateGateError(bookingLat, bookingLng);
       if (serviceAreaError) {
@@ -289,11 +292,6 @@ export class BookingsService {
     } else {
       assertWorldBookingCoordinate(bookingLat, bookingLng);
     }
-    const addressText = bookingAddressText(input.address) ?? selectedLocation?.addressText?.trim();
-    if (!addressText) {
-      throw new BadRequestException('Booking address text is required');
-    }
-    const addressPayload = normalizeBookingAddress(input.address, addressText);
     // HANDS MVP is on-demand only. Keep the DB schedule fields as the immutable request clock.
     const timing = openBookingRequestTiming({
       durationMin: service.durationMin,
@@ -518,6 +516,31 @@ export class BookingsService {
       throw new BadRequestException('Selected customer location was not found');
     }
     return selectedLocation;
+  }
+
+  private resolveBookingAddressInput(input: {
+    address?: Prisma.InputJsonValue;
+    lat?: number;
+    lng?: number;
+    selectedLocation?: { latitude?: unknown; longitude?: unknown; addressText?: string | null } | null;
+  }) {
+    const bookingLat = normalizeBookingCoordinate(input.lat ?? input.selectedLocation?.latitude, 'lat');
+    const bookingLng = normalizeBookingCoordinate(input.lng ?? input.selectedLocation?.longitude, 'lng');
+    const addressTextForAudit =
+      bookingAddressText(input.address) ??
+      input.selectedLocation?.addressText?.trim() ??
+      'Unknown booking address';
+    const addressText = bookingAddressText(input.address) ?? input.selectedLocation?.addressText?.trim();
+    if (!addressText) {
+      throw new BadRequestException('Booking address text is required');
+    }
+    return {
+      addressPayload: normalizeBookingAddress(input.address, addressText),
+      addressText,
+      addressTextForAudit,
+      bookingLat,
+      bookingLng,
+    };
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
