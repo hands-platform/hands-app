@@ -38,6 +38,18 @@ import {
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
 import {
+  adminEarningDetailSelect,
+  adminEarningSummarySelect,
+  adminPaymentCallbackAttemptListSelect,
+  adminPaymentCallbackAttemptSummarySelect,
+  adminPaymentSummarySelect,
+  adminRecentPlatformFeeLogsSelect,
+  adminRecentProviderTaxLogsSelect,
+  adminRecentProviderWalletLedgerEntriesSelect,
+  adminRefundListSelect,
+  adminRefundSummarySelect,
+} from './admin-payment-selects';
+import {
   changedFields,
   serviceAuditSnapshot,
   servicePayoutRuleAuditSnapshot,
@@ -136,190 +148,6 @@ const adminAddressSnapshotSelect = {
   source: true,
   createdAt: true,
 } satisfies Prisma.BookingAddressSnapshotSelect;
-
-const adminRefundSummarySelect = {
-  id: true,
-  bookingId: true,
-  paymentId: true,
-  amount: true,
-  reason: true,
-  status: true,
-  createdAt: true,
-} satisfies Prisma.RefundSelect;
-
-const adminRefundListSelect = {
-  ...adminRefundSummarySelect,
-  payment: {
-    select: {
-      id: true,
-      bookingId: true,
-      method: true,
-      status: true,
-      amount: true,
-      currency: true,
-      providerRef: true,
-    },
-  },
-  booking: {
-    select: {
-      id: true,
-      status: true,
-      customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-      selectedProvider: { select: adminProviderSummarySelect },
-    },
-  },
-} satisfies Prisma.RefundSelect;
-
-const adminPaymentSummarySelect = {
-  id: true,
-  bookingId: true,
-  method: true,
-  status: true,
-  amount: true,
-  currency: true,
-  providerRef: true,
-  rawMeta: true,
-  refunds: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminRefundSummarySelect,
-  },
-} satisfies Prisma.PaymentSelect;
-
-const adminPaymentCallbackAttemptSummarySelect = {
-  id: true,
-  paymentId: true,
-  method: true,
-  providerRef: true,
-  outcome: true,
-  signatureVerified: true,
-  verificationMode: true,
-  providerStatus: true,
-  gatewayTransactionId: true,
-  callbackAmount: true,
-  errorCode: true,
-  errorMessage: true,
-  rawPayload: true,
-  createdAt: true,
-} satisfies Prisma.PaymentCallbackAttemptSelect;
-
-const adminPaymentCallbackAttemptListSelect = {
-  ...adminPaymentCallbackAttemptSummarySelect,
-  payment: {
-    select: {
-      id: true,
-      bookingId: true,
-      method: true,
-      status: true,
-      amount: true,
-      currency: true,
-      providerRef: true,
-      booking: {
-        select: {
-          id: true,
-          status: true,
-          customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-          selectedProvider: { select: adminProviderSummarySelect },
-        },
-      },
-    },
-  },
-} satisfies Prisma.PaymentCallbackAttemptSelect;
-
-const adminPlatformFeeLogSummarySelect = {
-  id: true,
-  providerProfileId: true,
-  bookingId: true,
-  earningId: true,
-  policyVersionId: true,
-  grossAmount: true,
-  platformFeeAmount: true,
-  currency: true,
-  ruleSnapshot: true,
-  createdAt: true,
-} satisfies Prisma.ProviderPlatformFeeLogSelect;
-
-const adminProviderTaxLogSummarySelect = {
-  id: true,
-  providerProfileId: true,
-  bookingId: true,
-  earningId: true,
-  taxProfileId: true,
-  policyVersionId: true,
-  grossAmount: true,
-  taxableAmount: true,
-  withholdingAmount: true,
-  currency: true,
-  ruleSnapshot: true,
-  createdAt: true,
-} satisfies Prisma.ProviderTaxLogSelect;
-
-const adminProviderWalletLedgerEntrySummarySelect = {
-  id: true,
-  providerProfileId: true,
-  bookingId: true,
-  earningId: true,
-  payoutBatchId: true,
-  type: true,
-  sourceKey: true,
-  amount: true,
-  currency: true,
-  reference: true,
-  notes: true,
-  metadata: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.ProviderWalletLedgerEntrySelect;
-
-const adminRecentPlatformFeeLogsSelect = (take: number) =>
-  ({
-    orderBy: { createdAt: 'desc' },
-    take,
-    select: adminPlatformFeeLogSummarySelect,
-  }) satisfies Prisma.ProviderPlatformFeeLogFindManyArgs;
-
-const adminRecentProviderTaxLogsSelect = (take: number) =>
-  ({
-    orderBy: { createdAt: 'desc' },
-    take,
-    select: adminProviderTaxLogSummarySelect,
-  }) satisfies Prisma.ProviderTaxLogFindManyArgs;
-
-const adminRecentProviderWalletLedgerEntriesSelect = (take: number) =>
-  ({
-    orderBy: { createdAt: 'desc' },
-    take,
-    select: adminProviderWalletLedgerEntrySummarySelect,
-  }) satisfies Prisma.ProviderWalletLedgerEntryFindManyArgs;
-
-const adminEarningSummarySelect = {
-  id: true,
-  providerProfileId: true,
-  bookingId: true,
-  grossAmount: true,
-  platformFee: true,
-  withholdingAmount: true,
-  netAmount: true,
-  currency: true,
-  status: true,
-  availableAt: true,
-  paidAt: true,
-  payoutBatchId: true,
-  settlementRef: true,
-  settlementNotes: true,
-  settlementMethod: true,
-  createdAt: true,
-  platformFeeLogs: adminRecentPlatformFeeLogsSelect(3),
-  taxLogs: adminRecentProviderTaxLogsSelect(3),
-  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(3),
-} satisfies Prisma.ProviderEarningSelect;
-
-const adminEarningDetailSelect = {
-  ...adminEarningSummarySelect,
-  platformFeeLogs: adminRecentPlatformFeeLogsSelect(5),
-  taxLogs: adminRecentProviderTaxLogsSelect(5),
-  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(5),
-} satisfies Prisma.ProviderEarningSelect;
 
 const adminChatRoomPresenceSelect = {
   id: true,
