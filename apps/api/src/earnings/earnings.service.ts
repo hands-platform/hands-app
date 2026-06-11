@@ -819,10 +819,7 @@ export class EarningsService {
 
     const rateBps = rule.rateBps ?? 0;
     const fixedAmount = rule.fixedAmount ?? 0;
-    const platformFeeAmount = Math.max(
-      0,
-      Math.min(input.grossAmount, Math.round((input.grossAmount * rateBps) / 10_000) + fixedAmount),
-    );
+    const platformFeeAmount = calculateCappedBpsAmount(input.grossAmount, rateBps, fixedAmount);
 
     return {
       platformFeeAmount,
@@ -1001,10 +998,7 @@ export class EarningsService {
     });
     const rateBps = rule?.rateBps ?? 0;
     const fixedAmount = rule?.fixedAmount ?? 0;
-    const withholdingAmount = Math.max(
-      0,
-      Math.min(taxableAmount, Math.round((taxableAmount * rateBps) / 10_000) + fixedAmount),
-    );
+    const withholdingAmount = calculateCappedBpsAmount(taxableAmount, rateBps, fixedAmount);
 
     return {
       taxableAmount,
@@ -1110,6 +1104,10 @@ function cleanOptionalText(value: string | null | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function calculateCappedBpsAmount(baseAmount: number, rateBps: number, fixedAmount: number) {
+  return Math.max(0, Math.min(baseAmount, Math.round((baseAmount * rateBps) / 10_000) + fixedAmount));
 }
 
 function payoutStatusChanged(
