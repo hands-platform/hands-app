@@ -234,6 +234,10 @@ import {
   type PartnerReadinessSnapshotView,
 } from './partner-detail-readiness-command-section';
 import {
+  PartnerDetailStatusCardsSection,
+  type PartnerStatusCard,
+} from './partner-detail-status-cards-section';
+import {
   buildPartnerOperationsQuickRail,
   buildPartnerOperatorFirstRead,
 } from './partner-detail-summary-rail-model';
@@ -479,6 +483,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerTypedDocumentRows = buildPartnerTypedDocumentRows(provider);
   const partnerPublicMediaRows = buildPartnerPublicMediaRows(provider);
   const payoutHold = activePayoutHold(provider);
+  const partnerStatusCards = buildPartnerStatusCards(provider, Boolean(payoutHold));
   const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
   const partnerReportRows = buildPartnerReportRows(provider);
   const partnerAccountControlRows = buildPartnerAccountControlRows(provider);
@@ -781,14 +786,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         title="Partner operator first read"
       />
 
-      <div className="grid admin-mb-16">
-        <StatusCard label="Level" value={provider.level ?? 'LEVEL_1_SIGNUP'} />
-        <StatusCard label="Partner status" value={provider.status} />
-        <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
-        <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
-        <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
-        <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
-      </div>
+      <PartnerDetailStatusCardsSection cards={partnerStatusCards} />
 
       <PartnerDetailSummaryRailSection
         description="Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace participation, wallet debt, payout, tax, location, retained chats, and staff notes."
@@ -1183,6 +1181,20 @@ function providerDisplayLabel(provider: ProviderDetail) {
   );
 }
 
+function buildPartnerStatusCards(
+  provider: ProviderDetail,
+  hasActivePayoutHold: boolean,
+): PartnerStatusCard[] {
+  return [
+    { label: 'Level', value: provider.level ?? 'LEVEL_1_SIGNUP' },
+    { label: 'Partner status', value: provider.status },
+    { label: 'KYC', value: provider.kyc?.status ?? 'DRAFT' },
+    { label: 'Verification', value: provider.verification?.status ?? 'DRAFT' },
+    { label: 'Account block', value: provider.blockedAt ? 'BLOCKED' : 'CLEAR' },
+    { label: 'Payout hold', value: hasActivePayoutHold ? 'ACTIVE' : 'CLEAR' },
+  ];
+}
+
 function PartnerDetailFastOverview({
   dispatchPolicy,
   provider,
@@ -1340,15 +1352,6 @@ function PartnerDetailFastOverview({
       payoutReadinessRows={payoutReadinessRows}
       subtitle={`Fast operations overview / ${provider.user?.phone ?? 'No phone'} / ${provider.city ?? 'No city'}`}
     />
-  );
-}
-
-function StatusCard({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <div className="card">
-      <p>{label}</p>
-      <h2>{value}</h2>
-    </div>
   );
 }
 
