@@ -180,6 +180,10 @@ import {
   type PartnerDetailInfoLine,
   type PartnerRecentPayoutRecordLine,
 } from './partner-detail-profile-finance-summary-section';
+import {
+  PartnerDetailServicePricingSection,
+  type PartnerServicePricingDisplayRow,
+} from './partner-detail-service-pricing-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -426,6 +430,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const reviewHistoryRows = buildPartnerReviewHistoryRows(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
+  const partnerServicePricingDisplayRows = buildPartnerServicePricingDisplayRows(providerServicePricing.rows);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
   const bookingGateDecision = buildPartnerBookingGateDecisionView(bookingAcceptance, dispatchPolicy);
   const acceptanceUnblockPlaybook = buildPartnerAcceptanceUnblockPlaybook(
@@ -1032,46 +1037,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </p>
         </div>
 
-        <div className="card" id="service-pricing">
-          <h2>Service price readiness</h2>
-          <p className="muted">
-            Customer apps only show options with an active partner service and an exact active payout rule.
-          </p>
-          <InfoLine
-            label="Bookable options"
-            value={`${providerServicePricing.readyCount}/${providerServicePricing.rows.length}`}
-          />
-          {providerServicePricing.rows.length ? (
-            <div className="provider-file-list">
-              {providerServicePricing.rows.map((row) => (
-                <div className="provider-file-row" key={row.id}>
-                  <div className="participant-list admin-mb-6">
-                    <span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>
-                      {row.bookable ? 'CUSTOMER VISIBLE' : 'HIDDEN'}
-                    </span>
-                    <span className="pill pill-info">
-                      {row.durationMin ? `${row.durationMin} min` : 'No duration'}
-                    </span>
-                    <span className="pill pill-info">{row.payoutRuleCount} payout rule(s)</span>
-                  </div>
-                  <p>
-                    <strong>{row.name}</strong>
-                  </p>
-                  <p className="muted">
-                    Customer {formatCurrency(row.customerPrice)} / admin minimum{' '}
-                    {formatCurrency(row.basePrice)}
-                    {row.providerPayoutAmount !== null
-                      ? ` / partner payout ${formatCurrency(row.providerPayoutAmount)}`
-                      : ''}
-                  </p>
-                  <p className="muted">{row.issue}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">No partner service prices are connected yet.</p>
-          )}
-        </div>
+        <PartnerDetailServicePricingSection
+          readyCount={providerServicePricing.readyCount}
+          rows={partnerServicePricingDisplayRows}
+        />
 
         <div className="card" id="documents">
           <h2>Typed documents</h2>
@@ -5198,6 +5167,22 @@ function buildPartnerRecentPayoutRecordLines(provider: ProviderDetail): PartnerR
     )} / net ${formatCurrency(earning.netAmount)}${
       earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''
     }`,
+  }));
+}
+
+function buildPartnerServicePricingDisplayRows(
+  rows: ProviderServicePricingRow[],
+): PartnerServicePricingDisplayRow[] {
+  return rows.map((row) => ({
+    bookable: row.bookable,
+    durationLabel: row.durationMin ? `${row.durationMin} min` : 'No duration',
+    id: row.id,
+    issue: row.issue,
+    name: row.name,
+    payoutRuleLabel: `${row.payoutRuleCount} payout rule(s)`,
+    priceLine: `Customer ${formatCurrency(row.customerPrice)} / admin minimum ${formatCurrency(
+      row.basePrice,
+    )}${row.providerPayoutAmount !== null ? ` / partner payout ${formatCurrency(row.providerPayoutAmount)}` : ''}`,
   }));
 }
 
