@@ -8,6 +8,21 @@ import {
   roundTo100Meters,
 } from '../matching/matching.policy';
 
+const MINUTE_MS = 60_000;
+const CUSTOMER_DIRECT_CANCELLATION_TERMINAL_STATUSES = new Set<BookingStatus>([
+  BookingStatus.COMPLETED,
+  BookingStatus.IN_SERVICE,
+  BookingStatus.CANCELLED,
+  BookingStatus.NO_SHOW,
+  BookingStatus.EXPIRED,
+  BookingStatus.REFUNDED,
+]);
+const PARTNER_COMMITMENT_BOOKING_STATUSES = new Set<BookingStatus>([
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+]);
+
 export function isCustomerSelectableParticipantForFinalChoice(
   participant: { status: ParticipantStatus; providerProfileId: string },
   preferredProviderId?: string | null,
@@ -54,7 +69,7 @@ export function isMarketplaceParticipationWindowOpen(
   if (Number.isNaN(openedAt)) {
     return false;
   }
-  return Date.now() >= openedAt + policy.providerResponseWindowMinutes * 60_000;
+  return Date.now() >= openedAt + policy.providerResponseWindowMinutes * MINUTE_MS;
 }
 
 export function assertPartnerResponseWindowOpen(booking: { status: BookingStatus; expiresAt?: Date | null }) {
@@ -71,28 +86,15 @@ export function assertCustomerDirectCancellationAllowed(booking: {
   selectedProviderId?: string | null;
   participants?: Array<{ status: ParticipantStatus | string }>;
 }) {
-  const terminalStatuses = new Set<BookingStatus>([
-    BookingStatus.COMPLETED,
-    BookingStatus.IN_SERVICE,
-    BookingStatus.CANCELLED,
-    BookingStatus.NO_SHOW,
-    BookingStatus.EXPIRED,
-    BookingStatus.REFUNDED,
-  ]);
-  if (terminalStatuses.has(booking.status)) {
+  if (CUSTOMER_DIRECT_CANCELLATION_TERMINAL_STATUSES.has(booking.status)) {
     throw new BadRequestException('Booking cannot be cancelled in its current state');
   }
 
-  const afterPartnerCommitmentStatuses = new Set<BookingStatus>([
-    BookingStatus.MATCHED,
-    BookingStatus.PROVIDER_ON_THE_WAY,
-    BookingStatus.ARRIVED,
-  ]);
   const hasAcceptedPartner = Boolean(
     booking.participants?.some((participant) => participant.status === ParticipantStatus.ACCEPTED),
   );
   const isAfterPartnerCommitment =
-    afterPartnerCommitmentStatuses.has(booking.status) ||
+    PARTNER_COMMITMENT_BOOKING_STATUSES.has(booking.status) ||
     Boolean(booking.selectedProviderId) ||
     hasAcceptedPartner;
   if (isAfterPartnerCommitment) {
@@ -179,7 +181,7 @@ export function providerLocationFreshEnough(value: Date | string | null | undefi
   if (!Number.isFinite(updatedAt)) {
     return false;
   }
-  return Date.now() - updatedAt <= maxAgeMinutes * 60_000;
+  return Date.now() - updatedAt <= maxAgeMinutes * MINUTE_MS;
 }
 
 export function bookingAddressText(address: unknown) {
