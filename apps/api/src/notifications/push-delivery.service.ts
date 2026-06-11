@@ -48,7 +48,6 @@ export class PushDeliveryService {
       disableDevice: false,
       response: {
         reason: 'OS push delivery is disabled. Notification is available in the in-app inbox.',
-        tokenPlatform: inferTokenPlatform(message.token),
         title: message.title,
       },
     };
@@ -71,7 +70,6 @@ export class PushDeliveryService {
         response: {
           reason: 'FCM push delivery is selected, but required server-side credentials are missing.',
           missing: readiness.missing,
-          tokenPlatform: inferTokenPlatform(message.token),
           title: message.title,
         },
       };
@@ -104,7 +102,6 @@ export class PushDeliveryService {
         disableDevice: false,
         response: {
           messageId,
-          tokenPlatform: inferTokenPlatform(message.token),
         },
       };
     } catch (error) {
@@ -116,7 +113,6 @@ export class PushDeliveryService {
         failureCode,
         response: {
           reason: safeErrorMessage(error),
-          tokenPlatform: inferTokenPlatform(message.token),
         },
       };
     }
@@ -180,18 +176,6 @@ function initializeFirebaseApp(config: FirebaseCredentialConfig): App {
   }
 
   return initializeApp({ credential: applicationDefault() }, 'hands-fcm');
-}
-
-function inferTokenPlatform(token: string) {
-  if (token.startsWith('ios')) {
-    return 'ios';
-  }
-
-  if (token.startsWith('web')) {
-    return 'web';
-  }
-
-  return 'android';
 }
 
 function parseServiceAccount(raw: string) {
