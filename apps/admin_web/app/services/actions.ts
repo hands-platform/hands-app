@@ -3,6 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { adminPatch, adminPost } from '../../lib/admin-api';
+import {
+  hasInvalidBulkPayoutRules,
+  isValidServicePayout,
+  isValidServicePriceStep,
+  parseBulkPayoutRules,
+  parseServiceInteger,
+} from './service-action-input';
 
 type CreatedService = {
   id: string;
@@ -16,18 +23,18 @@ export async function createService(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const description = String(formData.get('description') || '').trim();
-  const durationMin = parseInteger(formData.get('durationMin'));
-  const basePrice = parseInteger(formData.get('basePrice'));
-  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
-  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
-  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
-  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
-  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
+  const durationMin = parseServiceInteger(formData.get('durationMin'));
+  const basePrice = parseServiceInteger(formData.get('basePrice'));
+  const providerPayoutAmount = parseServiceInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseServiceInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseServiceInteger(formData.get('otherCostAmount')) ?? 0;
+  const priceStep = parseServiceInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseServiceInteger(formData.get('displayOrder')) ?? 0;
 
   if (!name || !durationMin || !basePrice) {
     redirectToServices('blocked', 'missing-service-fields');
   }
-  if (!isValidPriceStep(basePrice, priceStep) || !isValidPayout(providerPayoutAmount, basePrice)) {
+  if (!isValidServicePriceStep(basePrice, priceStep) || !isValidServicePayout(providerPayoutAmount, basePrice)) {
     redirectToServices('blocked', 'invalid-service-pricing');
   }
 
@@ -77,10 +84,10 @@ export async function createServiceDurationSet(formData: FormData) {
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const name = String(formData.get('name') || '').trim();
   const description = String(formData.get('description') || '').trim();
-  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
-  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 100;
-  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
-  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const priceStep = parseServiceInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseServiceInteger(formData.get('displayOrder')) ?? 100;
+  const vatBps = parseServiceInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseServiceInteger(formData.get('otherCostAmount')) ?? 0;
   const durations = [60, 90, 120];
 
   if (!name) {
@@ -90,8 +97,8 @@ export async function createServiceDurationSet(formData: FormData) {
   const durationRows = durations
     .map((durationMin) => ({
       durationMin,
-      basePrice: parseInteger(formData.get(`basePrice${durationMin}`)),
-      providerPayoutAmount: parseInteger(formData.get(`providerPayoutAmount${durationMin}`)),
+      basePrice: parseServiceInteger(formData.get(`basePrice${durationMin}`)),
+      providerPayoutAmount: parseServiceInteger(formData.get(`providerPayoutAmount${durationMin}`)),
     }))
     .filter((row) => row.basePrice !== null);
 
@@ -103,8 +110,8 @@ export async function createServiceDurationSet(formData: FormData) {
     durationRows.some(
       (row) =>
         row.basePrice === null ||
-        !isValidPriceStep(row.basePrice, priceStep) ||
-        !isValidPayout(row.providerPayoutAmount, row.basePrice),
+        !isValidServicePriceStep(row.basePrice, priceStep) ||
+        !isValidServicePayout(row.providerPayoutAmount, row.basePrice),
     )
   ) {
     redirectToServices('blocked', 'invalid-duration-set');
@@ -143,16 +150,16 @@ export async function updateService(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const description = String(formData.get('description') || '').trim();
-  const durationMin = parseInteger(formData.get('durationMin'));
-  const basePrice = parseInteger(formData.get('basePrice'));
-  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
-  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
+  const durationMin = parseServiceInteger(formData.get('durationMin'));
+  const basePrice = parseServiceInteger(formData.get('basePrice'));
+  const priceStep = parseServiceInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseServiceInteger(formData.get('displayOrder')) ?? 0;
   const active = formData.get('active') === 'on';
 
   if (!serviceId || !name || !durationMin || !basePrice) {
     redirectToServices('blocked', 'missing-service-fields');
   }
-  if (!isValidPriceStep(basePrice, priceStep)) {
+  if (!isValidServicePriceStep(basePrice, priceStep)) {
     redirectToServices('blocked', 'invalid-service-pricing');
   }
 
@@ -180,10 +187,10 @@ export async function updateService(formData: FormData) {
 
 export async function upsertPayoutRule(formData: FormData) {
   const serviceId = String(formData.get('serviceId') || '').trim();
-  const customerPrice = parseInteger(formData.get('customerPrice'));
-  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
-  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
-  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const customerPrice = parseServiceInteger(formData.get('customerPrice'));
+  const providerPayoutAmount = parseServiceInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseServiceInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseServiceInteger(formData.get('otherCostAmount')) ?? 0;
   const notes = String(formData.get('notes') || '').trim();
 
   if (!serviceId || !customerPrice || providerPayoutAmount === null) {
@@ -216,33 +223,17 @@ export async function upsertPayoutRule(formData: FormData) {
 export async function bulkUpsertPayoutRules(formData: FormData) {
   const serviceId = String(formData.get('serviceId') || '').trim();
   const rawRules = String(formData.get('rules') || '').trim();
-  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
-  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const vatBps = parseServiceInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseServiceInteger(formData.get('otherCostAmount')) ?? 0;
   const notes = String(formData.get('notes') || '').trim();
 
   if (!serviceId || !rawRules) {
     redirectToServices('blocked', 'missing-bulk-payout-fields');
   }
 
-  const rules = rawRules
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [customerPriceRaw, providerPayoutRaw] = line
-        .split(/[,\t]/)
-        .map((value) => value.trim());
-      return {
-        customerPrice: parseInteger(customerPriceRaw),
-        providerPayoutAmount: parseInteger(providerPayoutRaw),
-      };
-    });
+  const rules = parseBulkPayoutRules(rawRules);
 
-  if (
-    rules.length === 0 ||
-    rules.some((rule) => !rule.customerPrice || rule.providerPayoutAmount === null) ||
-    rules.some((rule) => (rule.providerPayoutAmount ?? 0) > (rule.customerPrice ?? 0))
-  ) {
+  if (hasInvalidBulkPayoutRules(rules)) {
     redirectToServices('blocked', 'invalid-bulk-payout');
   }
 
@@ -270,10 +261,10 @@ export async function bulkUpsertPayoutRules(formData: FormData) {
 
 export async function updatePayoutRule(formData: FormData) {
   const ruleId = String(formData.get('ruleId') || '').trim();
-  const customerPrice = parseInteger(formData.get('customerPrice'));
-  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
-  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
-  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const customerPrice = parseServiceInteger(formData.get('customerPrice'));
+  const providerPayoutAmount = parseServiceInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseServiceInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseServiceInteger(formData.get('otherCostAmount')) ?? 0;
   const active = formData.get('active') === 'on';
   const notes = String(formData.get('notes') || '').trim();
 
@@ -302,23 +293,6 @@ export async function updatePayoutRule(formData: FormData) {
   revalidatePath('/services');
   revalidatePath('/audit-log');
   redirectToServices('saved', 'payout-rule-updated');
-}
-
-function parseInteger(value: FormDataEntryValue | null) {
-  const raw = String(value ?? '').trim();
-  if (!raw) {
-    return null;
-  }
-  const number = Number(raw);
-  return Number.isInteger(number) ? number : null;
-}
-
-function isValidPriceStep(price: number, priceStep: number) {
-  return price > 0 && priceStep >= 100000 && price % priceStep === 0;
-}
-
-function isValidPayout(providerPayoutAmount: number | null, customerPrice: number) {
-  return providerPayoutAmount === null || (providerPayoutAmount >= 0 && providerPayoutAmount <= customerPrice);
 }
 
 function redirectToServices(status: 'saved' | 'blocked', reason: string): never {
