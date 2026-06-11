@@ -9,7 +9,6 @@ import {
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderKycStatus,
-  ProviderTaxProfileStatus,
   ProviderStatus,
   VerificationStatus,
 } from '@prisma/client';
@@ -23,7 +22,6 @@ import {
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
-import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -68,6 +66,10 @@ import {
   bookingCompletedUpdateData,
   bookingServiceStartedUpdateData,
 } from './bookings.lifecycle';
+import {
+  providerPayoutSetupMissingRequirements,
+  providerPayoutSetupNeedsNotification,
+} from './bookings.payout-setup';
 import { bookingOpenMatchingPayload } from './bookings.matching-payload';
 import {
   appendBackupNotificationTrace,
@@ -1499,14 +1501,8 @@ export class BookingsService {
       return;
     }
 
-    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
-    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
-    const missing = {
-      taxProfileApproved: provider.taxProfile?.status !== ProviderTaxProfileStatus.APPROVED,
-      residentialAddress: !provider.residentialAddress,
-      agreements: missingAgreements,
-    };
-    if (!missing.taxProfileApproved && !missing.residentialAddress && missing.agreements.length === 0) {
+    const missing = providerPayoutSetupMissingRequirements(provider);
+    if (!providerPayoutSetupNeedsNotification(missing)) {
       return;
     }
 
