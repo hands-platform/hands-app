@@ -13,6 +13,9 @@ type CreateNotificationInput = {
   data?: unknown;
 };
 
+const NOTIFICATION_SEND_ATTEMPTS = 3;
+const NOTIFICATION_SEND_BACKOFF_MS = 5_000;
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -31,32 +34,14 @@ export class NotificationsService {
       },
     });
 
-    await this.notificationQueue.add(
-      'notification-send',
-      { notificationId: notification.id },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5_000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    await this.enqueueNotificationSend(notification.id);
 
     return notification;
   }
 
   async retry(notificationId: string) {
     const notification = await this.prisma.notification.findUniqueOrThrow({ where: { id: notificationId } });
-    await this.notificationQueue.add(
-      'notification-send',
-      { notificationId: notification.id },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5_000 },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    await this.enqueueNotificationSend(notification.id);
     return { ok: true, notificationId: notification.id };
   }
 
@@ -105,6 +90,19 @@ export class NotificationsService {
     });
 
     return { ok: result.count > 0, disabled: result.count };
+  }
+
+  private async enqueueNotificationSend(notificationId: string) {
+    await this.notificationQueue.add(
+      'notification-send',
+      { notificationId },
+      {
+        attempts: NOTIFICATION_SEND_ATTEMPTS,
+        backoff: { type: 'exponential', delay: NOTIFICATION_SEND_BACKOFF_MS },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
   }
 }
 

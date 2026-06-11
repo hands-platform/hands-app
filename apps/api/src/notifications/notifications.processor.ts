@@ -13,6 +13,13 @@ type NotificationSendJob = {
   notificationId: string;
 };
 
+const PARTNER_BOOKING_ALERT_TYPES = new Set([
+  'booking.requested',
+  'booking.backup_available',
+  'booking.matched',
+  'provider.payout_setup_required',
+]);
+
 @Processor('notification-retry')
 export class NotificationRetryProcessor extends WorkerHost {
   constructor(
@@ -103,12 +110,7 @@ export class NotificationRetryProcessor extends WorkerHost {
 }
 
 function isPartnerBookingAlert(notificationType: string) {
-  return [
-    'booking.requested',
-    'booking.backup_available',
-    'booking.matched',
-    'provider.payout_setup_required',
-  ].includes(notificationType);
+  return PARTNER_BOOKING_ALERT_TYPES.has(notificationType);
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {
