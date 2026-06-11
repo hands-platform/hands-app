@@ -91,7 +91,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <form className="form-grid" action="/chat-archive">
           <label>
             Search
@@ -154,7 +154,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         </form>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <MetricCard label="Rooms loaded" value={rooms.length.toString()} helper={dateFilters.label} />
         <MetricCard
           label="Messages"
@@ -180,7 +180,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         <MetricCard label="Latest message" value={summary.latestMessageAt} helper="Newest loaded message" />
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Chat integrity repair queue</h2>
@@ -193,7 +193,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             Booking chat repair
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           <div>
             <span>Repair rows</span>
             <strong>{repairRows.length}</strong>
@@ -276,13 +276,13 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             </table>
           </AdminTableScroll>
         ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
+          <p className="muted admin-mt-12">
             No chat repair row matches this filter.
           </p>
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Chat archive index</h2>
@@ -373,7 +373,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </div>
           <span className="pill pill-info">Admin retained</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        <div className="setup-stage-list admin-mt-16">
           {rooms.slice(0, 12).map((room) => (
             <article className="card" key={`${room.roomId}-messages`}>
               <div className="ops-section-header">
