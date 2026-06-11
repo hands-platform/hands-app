@@ -15,6 +15,7 @@ const PARTNER_ALERT_TYPES = [
   'booking.backup_available',
   'booking.matched',
   'provider.payout_setup_required',
+  'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 
@@ -409,6 +410,9 @@ function typeMeaning(type: string) {
   if (type.includes('payment')) {
     return 'Payment or refund alert';
   }
+  if (type.includes('payout_batch')) {
+    return 'Partner payout batch lifecycle alert';
+  }
   if (type.includes('payout') || type.includes('tax')) {
     return 'Partner tax or payout setup alert';
   }
@@ -427,6 +431,9 @@ function notificationDataHint(notification: AdminNotification) {
     }
     if (data?.providerProfileId) {
       parts.push(`partner ${shortId(String(data.providerProfileId))}`);
+    }
+    if (data?.payoutBatchId) {
+      parts.push(`payout batch ${shortId(String(data.payoutBatchId))}`);
     }
     if (data?.distanceMeters !== undefined && data?.distanceMeters !== null) {
       parts.push(`distance ${formatMeters(data.distanceMeters)}`);

@@ -216,6 +216,29 @@ describe('notification page model', () => {
     });
   });
 
+  it('treats payout batch updates as partner alerts without exposing payout metadata', () => {
+    const notifications = [
+      notification({
+        data: { payoutBatchId: 'payout-batch-123456', providerProfileId: 'partner-987654' },
+        deliveries: [],
+        id: 'notification-payout-batch',
+        type: 'provider.payout_batch.updated',
+        user: {
+          fullName: 'Mai Partner',
+          phone: '+8490',
+          providerProfile: { displayName: 'Mai', id: 'partner-987654', status: 'APPROVED' },
+        },
+      }),
+    ];
+
+    expect(filterNotifications(notifications, { booking: '', review: 'partner-alerts' })).toHaveLength(1);
+    expect(buildNotificationChannelSummary(notifications, []).partnerAlertCount).toBe(1);
+    expect(buildNotificationTableRows(notifications)[0]).toMatchObject({
+      bookingDataHint: 'partner partner- / payout batch payout-b',
+      typeMeaning: 'Partner payout batch lifecycle alert',
+    });
+  });
+
   it('keeps review descriptions and empty table messages stable', () => {
     expect(buildNotificationFilters({ booking: 'booking-1', review: 'failed' })).toEqual({
       booking: 'booking-1',
