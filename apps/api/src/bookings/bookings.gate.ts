@@ -1,0 +1,114 @@
+import { BadRequestException } from '@nestjs/common';
+import { MatchingPolicy } from '../matching/matching.policy';
+import { isVietnamBookingCoordinate } from './bookings.policy';
+
+export type BookingAttemptCurrentLocation = ReturnType<typeof normalizeBookingAttemptCurrentLocation>;
+
+export function assertWorldBookingCoordinate(lat: number, lng: number) {
+  if (!isWorldBookingCoordinate(lat, lng)) {
+    throw new BadRequestException('Booking address coordinate is invalid');
+  }
+}
+
+export function normalizeBookingAttemptCurrentLocation(
+  input: { currentLat?: number; currentLng?: number; currentLocationUpdatedAt?: string },
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled) {
+    return null;
+  }
+  const hasAnyCurrentLocationInput =
+    input.currentLat != null || input.currentLng != null || input.currentLocationUpdatedAt != null;
+  if (!hasAnyCurrentLocationInput) {
+    return null;
+  }
+  const lat = Number(input.currentLat);
+  const lng = Number(input.currentLng);
+  if (!isWorldBookingCoordinate(lat, lng)) {
+    return null;
+  }
+  const recordedAt = input.currentLocationUpdatedAt ? new Date(input.currentLocationUpdatedAt) : null;
+  if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
+    return null;
+  }
+  const now = Date.now();
+  if (recordedAt.getTime() > now + 60_000) {
+    return null;
+  }
+  const ageMinutes = Math.max(0, (now - recordedAt.getTime()) / 60_000);
+  if (ageMinutes > policy.bookingCurrentLocationFreshnessMinutes) {
+    return null;
+  }
+  return { lat, lng, recordedAt, ageMinutes };
+}
+
+export function preferredProviderBookingDistanceGateError(
+  preferredProvider: { id: string } | null,
+  distanceMeters: number | null,
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled || !preferredProvider) {
+    return null;
+  }
+  const limitMeters = policy.bookingMaxPreferredProviderDistanceKm * 1000;
+  if (distanceMeters === null || distanceMeters > limitMeters) {
+    return {
+      limitMeters,
+      message: `Preferred partner must be within ${policy.bookingMaxPreferredProviderDistanceKm}km of the booking address`,
+    };
+  }
+  return null;
+}
+
+export function bookingDistanceGateSnapshot(input: {
+  matchingPolicy: MatchingPolicy;
+  bookingLat: number;
+  bookingLng: number;
+  addressText: string;
+  customerCurrentLocation: BookingAttemptCurrentLocation;
+  customerToBookingDistanceMeters: number | null;
+  preferredProvider: {
+    id: string;
+    currentLat?: unknown;
+    currentLng?: unknown;
+    currentLocationUpdatedAt?: Date | null;
+  } | null;
+  preferredProviderDistanceMeters: number | null;
+}) {
+  return {
+    distanceGateEnabled: input.matchingPolicy.bookingDistanceGateEnabled,
+    serviceAreaRequired: input.matchingPolicy.bookingServiceAreaRequired,
+    serviceArea: 'VIETNAM',
+    serviceAreaValid: isVietnamBookingCoordinate(input.bookingLat, input.bookingLng),
+    bookingAddress: {
+      lat: input.bookingLat,
+      lng: input.bookingLng,
+      addressText: input.addressText,
+    },
+    customerCurrentLocation: input.customerCurrentLocation
+      ? {
+          lat: input.customerCurrentLocation.lat,
+          lng: input.customerCurrentLocation.lng,
+          recordedAt: input.customerCurrentLocation.recordedAt.toISOString(),
+          ageMinutes: Number(input.customerCurrentLocation.ageMinutes.toFixed(2)),
+        }
+      : null,
+    customerToBookingAddressDistanceMeters: input.customerToBookingDistanceMeters,
+    customerDistanceLimitMeters: input.matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+    preferredProviderId: input.preferredProvider?.id ?? null,
+    preferredProviderLocation: input.preferredProvider
+      ? {
+          lat: input.preferredProvider.currentLat === null ? null : Number(input.preferredProvider.currentLat),
+          lng: input.preferredProvider.currentLng === null ? null : Number(input.preferredProvider.currentLng),
+          updatedAt: input.preferredProvider.currentLocationUpdatedAt?.toISOString() ?? null,
+        }
+      : null,
+    preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
+    preferredProviderDistanceLimitMeters: input.matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+    gatePassed: true,
+  };
+}
+
+function isWorldBookingCoordinate(lat: number, lng: number) {
+  return Number.isFinite(lat) && lat >= -90 && lat <= 90 && Number.isFinite(lng) && lng >= -180 && lng <= 180;
+}
