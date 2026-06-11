@@ -17,6 +17,19 @@ export function openBookingRequestTiming(input: {
   };
 }
 
+export function bookingResponseTimeoutAt(input: {
+  expiresAt?: Date | null;
+  providerResponseWindowMinutes: number;
+  now?: Date;
+}) {
+  if (input.expiresAt) {
+    return input.expiresAt;
+  }
+
+  const now = input.now ?? new Date();
+  return new Date(now.getTime() + input.providerResponseWindowMinutes * MINUTE_MS);
+}
+
 export function bookingServiceStartedUpdateData() {
   return {
     status: BookingStatus.IN_SERVICE,

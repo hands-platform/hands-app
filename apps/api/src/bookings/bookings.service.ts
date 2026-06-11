@@ -62,6 +62,7 @@ import {
 import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
 import {
   bookingCompletedUpdateData,
+  bookingResponseTimeoutAt,
   bookingServiceStartedUpdateData,
   openBookingRequestTiming,
 } from './bookings.lifecycle';
@@ -914,7 +915,10 @@ export class BookingsService {
       await this.matching.registerActiveBooking(bookingId, result);
       await this.matching.scheduleBookingTimeout(
         bookingId,
-        updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
+        bookingResponseTimeoutAt({
+          expiresAt: updated.expiresAt,
+          providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
+        }),
       );
       await this.notifyBackupProvidersAndRecordTrace({
         stage: 'first_pick_declined',

@@ -1,6 +1,7 @@
 import { BookingStatus, PaymentStatus } from '@prisma/client';
 import {
   bookingCompletedUpdateData,
+  bookingResponseTimeoutAt,
   bookingServiceStartedUpdateData,
   openBookingRequestTiming,
 } from './bookings.lifecycle';
@@ -21,6 +22,27 @@ describe('booking lifecycle update helpers', () => {
       openedAt,
       expiresAt: new Date('2026-06-11T00:10:00.000Z'),
     });
+  });
+
+  it('keeps persisted booking response timeout when available', () => {
+    const expiresAt = new Date('2026-06-11T00:15:00.000Z');
+
+    expect(
+      bookingResponseTimeoutAt({
+        expiresAt,
+        providerResponseWindowMinutes: 10,
+        now: new Date('2026-06-11T00:00:00.000Z'),
+      }),
+    ).toBe(expiresAt);
+  });
+
+  it('builds booking response timeout fallback from the current clock', () => {
+    expect(
+      bookingResponseTimeoutAt({
+        providerResponseWindowMinutes: 10,
+        now: new Date('2026-06-11T00:00:00.000Z'),
+      }),
+    ).toEqual(new Date('2026-06-11T00:10:00.000Z'));
   });
 
   it('builds the service-started update data with chat handoff ready', () => {
