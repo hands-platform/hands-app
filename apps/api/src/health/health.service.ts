@@ -171,7 +171,7 @@ export class HealthService {
     return {
       name: 'File storage and CDN',
       category: 'storage',
-      status: storage.ok ? 'READY' : configured.length > 0 ? 'PARTIAL' : 'BLOCKED',
+      status: externalCheckStatus({ configured, invalid: [], missing: storage.missing }),
       configured,
       missing: storage.missing,
       invalid: [],
@@ -413,8 +413,7 @@ export class HealthService {
       configured.push(requirement.key);
     }
 
-    const status =
-      missing.length === 0 && invalid.length === 0 ? 'READY' : configured.length > 0 ? 'PARTIAL' : 'BLOCKED';
+    const status = externalCheckStatus({ configured, invalid, missing });
 
     return {
       name,
@@ -479,6 +478,17 @@ function isSecretLikeValue(value: string) {
 
 function isDeferredExternalCategory(category: string) {
   return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage'].includes(category);
+}
+
+function externalCheckStatus(input: {
+  configured: readonly string[];
+  invalid: readonly string[];
+  missing: readonly string[];
+}): ExternalReadinessCheck['status'] {
+  if (input.missing.length === 0 && input.invalid.length === 0) {
+    return 'READY';
+  }
+  return input.configured.length > 0 ? 'PARTIAL' : 'BLOCKED';
 }
 
 function uniqueCategories(categories: string[]) {
