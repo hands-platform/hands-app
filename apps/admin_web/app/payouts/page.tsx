@@ -358,41 +358,57 @@ function payoutActionMenuItems(batch: AdminPayoutBatch) {
   return [
     ...(batch.status === 'DRAFT'
       ? [
-          {
-            kind: 'link' as const,
-            href: payoutActionConfirmHref(batch.id, 'processing'),
-            label: 'Processing',
-            disabled: Boolean(payoutActionDisabledReason(batch, 'processing')),
-            description: payoutActionDisabledReason(batch, 'processing') ?? 'Review before starting transfer processing.',
-            tone: 'info' as const,
-          },
+          payoutActionMenuItem(
+            batch,
+            'processing',
+            'Processing',
+            'Review before starting transfer processing.',
+            'info',
+          ),
         ]
       : []),
     ...(batch.status !== 'PAID' && batch.status !== 'CANCELLED'
       ? [
-          {
-            kind: 'link' as const,
-            href: payoutActionConfirmHref(batch.id, 'paid'),
-            label: 'Paid',
-            disabled: Boolean(payoutActionDisabledReason(batch, 'paid')),
-            description: payoutActionDisabledReason(batch, 'paid') ?? 'Review before marking this payout paid.',
-            tone: 'warning' as const,
-          },
+          payoutActionMenuItem(
+            batch,
+            'paid',
+            'Paid',
+            'Review before marking this payout paid.',
+            'warning',
+          ),
         ]
       : []),
     ...(batch.status === 'PROCESSING'
       ? [
-          {
-            kind: 'link' as const,
-            href: payoutActionConfirmHref(batch.id, 'failed'),
-            label: 'Failed',
-            disabled: Boolean(payoutActionDisabledReason(batch, 'failed')),
-            description: payoutActionDisabledReason(batch, 'failed') ?? 'Review before preserving a failed transfer state.',
-            tone: 'danger' as const,
-          },
+          payoutActionMenuItem(
+            batch,
+            'failed',
+            'Failed',
+            'Review before preserving a failed transfer state.',
+            'danger',
+          ),
         ]
       : []),
   ];
+}
+
+function payoutActionMenuItem(
+  batch: AdminPayoutBatch,
+  action: PayoutConfirmationAction,
+  label: string,
+  fallbackDescription: string,
+  tone: 'danger' | 'info' | 'warning',
+) {
+  const disabledReason = payoutActionDisabledReason(batch, action);
+
+  return {
+    kind: 'link' as const,
+    href: payoutActionConfirmHref(batch.id, action),
+    label,
+    disabled: Boolean(disabledReason),
+    description: disabledReason ?? fallbackDescription,
+    tone,
+  };
 }
 
 function payoutActionAvailability(batch: AdminPayoutBatch, action: PayoutConfirmationAction | null) {
