@@ -152,6 +152,17 @@ type SelectedBookingForClientResponse = Prisma.BookingGetPayload<{
   };
 }>;
 
+type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
+  include: {
+    services: { include: { service: true } };
+    addressSnapshot: true;
+    payment: true;
+    participants: { include: { providerProfile: true } };
+    preferredProvider: true;
+    selectedProvider: true;
+  };
+}>;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -335,7 +346,7 @@ export class BookingsService {
       preferredProviderDistanceMeters,
     });
 
-    let booking = await this.prisma.booking.create({
+    let booking: OpenBookingForClientResponse = await this.prisma.booking.create({
       data: {
         customerProfileId: customer.id,
         status: BookingStatus.OPEN_MATCHING,
@@ -389,10 +400,7 @@ export class BookingsService {
       },
     });
 
-    if (booking.payment?.id) {
-      const payment = await this.payments.refreshAuthorizationForBooking(booking.payment.id, booking.id);
-      booking = { ...booking, payment };
-    }
+    booking = await this.refreshBookingPaymentAuthorization(booking);
 
     const dispatchPin = bookingDispatchCoordinates(booking);
     const eligibleBackupProviders = await this.findEligibleBackupProviders({
@@ -409,9 +417,7 @@ export class BookingsService {
       policy: matchingPolicy,
       payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length),
     });
-    if (booking.payment?.id) {
-      await this.payments.scheduleStatusCheck(booking.payment.id);
-    }
+    await this.scheduleBookingPaymentStatusCheck(booking);
     await this.matching.registerActiveBooking(booking.id, result);
     await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? timing.expiresAt);
     await this.notifyCustomerBookingOpened({
@@ -438,6 +444,21 @@ export class BookingsService {
     });
     await this.recordBackupNotificationTrace(booking.id, backupNotificationTrace);
     return result;
+  }
+
+  private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
+    if (!booking.payment?.id) {
+      return booking;
+    }
+
+    const payment = await this.payments.refreshAuthorizationForBooking(booking.payment.id, booking.id);
+    return { ...booking, payment };
+  }
+
+  private async scheduleBookingPaymentStatusCheck(booking: OpenBookingForClientResponse) {
+    if (booking.payment?.id) {
+      await this.payments.scheduleStatusCheck(booking.payment.id);
+    }
   }
 
   private async resolveCoupon(code: string) {
