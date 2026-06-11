@@ -25,6 +25,7 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('memo(s)');
     expect(rendered).toContain('Details');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/customers/customer-1']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll']));
   });
 
   it('renders the empty state when no customers match filters', () => {
@@ -120,6 +121,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

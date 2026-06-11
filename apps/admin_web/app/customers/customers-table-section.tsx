@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
 import type { CustomerRow } from './customer-list-model';
 
@@ -18,7 +19,7 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
         </div>
         <span className="pill pill-info">{rows.length} rows</span>
       </div>
-      <div style={{ marginTop: 14, overflowX: 'auto' }}>
+      <AdminTableScroll>
         <table className="table">
           <thead>
             <tr>
@@ -126,7 +127,7 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
             ) : null}
           </tbody>
         </table>
-      </div>
+      </AdminTableScroll>
     </section>
   );
 }
