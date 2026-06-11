@@ -120,6 +120,7 @@ import {
   PartnerDetailBookingGateEvidenceSection,
   type PartnerBookingGateAttemptRow,
 } from './partner-detail-booking-gate-evidence-section';
+import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
   PartnerDetailChatRetentionLedgerSection,
 } from './partner-detail-chat-retention-ledger-section';
@@ -800,27 +801,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </form>
       </div>
 
-      <div className="card admin-mb-16" id="partner-master-facts">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner master facts</h2>
-            <p className="muted">
-              Single-page operating sheet for identity, verification, service, booking, revenue, tax,
-              location, review, and account facts.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerMasterFacts.length} field(s)</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {partnerMasterFacts.map((fact) => (
-            <div key={fact.label}>
-              <span>{fact.label}</span>
-              <strong>{fact.value}</strong>
-              <small className="muted">{fact.helper}</small>
-            </div>
-          ))}
-        </div>
-      </div>
+      <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
 
       <div className="card admin-mb-16" id="partner-booking-evidence-bundles">
         <div className="ops-section-header">
