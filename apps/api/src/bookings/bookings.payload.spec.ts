@@ -1,5 +1,6 @@
 import { BookingStatus, Role } from '@prisma/client';
 import {
+  bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
   customerCancellationCloseData,
   normalizeBookingAddress,
@@ -46,6 +47,17 @@ describe('booking payload helpers', () => {
       closedReason: 'customer_cancelled',
       closedNote: 'Customer cancelled before partner commitment.',
     });
+  });
+
+  it('uses the released payment record in the cancellation response when available', () => {
+    const booking = { id: 'booking-1', payment: { id: 'payment-1', status: 'AUTHORIZED' } };
+    const releasedPayment = { id: 'payment-1', status: 'RELEASED' };
+
+    expect(bookingCancellationResultWithReleasedPayment(booking, releasedPayment)).toEqual({
+      id: 'booking-1',
+      payment: releasedPayment,
+    });
+    expect(bookingCancellationResultWithReleasedPayment(booking, null)).toBe(booking);
   });
 
   it('dedupes provider user ids for cancellation notifications', () => {

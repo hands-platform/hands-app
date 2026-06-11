@@ -25,6 +25,13 @@ export function customerCancellationCloseData(now = new Date()) {
   };
 }
 
+export function bookingCancellationResultWithReleasedPayment<TBooking, TPayment>(
+  booking: TBooking,
+  releasedPayment: TPayment | null | undefined,
+) {
+  return releasedPayment ? { ...booking, payment: releasedPayment } : booking;
+}
+
 export function bookingCancellationProviderUserIds(booking: {
   preferredProvider?: { userId?: string | null } | null;
   selectedProvider?: { userId?: string | null } | null;

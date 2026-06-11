@@ -103,6 +103,7 @@ import {
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
 import {
+  bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
   customerCancellationCloseData,
   normalizeBookingAddress,
@@ -592,7 +593,7 @@ export class BookingsService {
       },
     });
     const releasedPayment = updated.payment ? await this.payments.release(updated.payment.id) : null;
-    const result = releasedPayment ? { ...updated, payment: releasedPayment } : updated;
+    const result = bookingCancellationResultWithReleasedPayment(updated, releasedPayment);
 
     await this.matching.closeBooking(bookingId);
     await this.notifyBookingCancelled({
