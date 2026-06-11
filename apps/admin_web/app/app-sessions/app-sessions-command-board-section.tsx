@@ -19,7 +19,7 @@ export function AppSessionsCommandBoardSection({
   checkCount,
 }: AppSessionsCommandBoardSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Live demand, Partner supply, push reachability, and shared-device checks for the current shift."
         status={
@@ -29,7 +29,7 @@ export function AppSessionsCommandBoardSection({
         }
         title="Session command board"
       />
-      <div className="ops-task-grid" style={{ marginTop: 12 }}>
+      <div className="ops-task-grid admin-mt-12">
         {cards.map((card) => (
           <div className={`ops-task-card ${card.tone}`} key={card.title}>
             <small>{card.status}</small>

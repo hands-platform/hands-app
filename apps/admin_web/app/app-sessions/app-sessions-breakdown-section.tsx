@@ -35,7 +35,7 @@ export function AppSessionsBreakdownSection({
   versionRows,
 }: AppSessionsBreakdownSectionProps) {
   return (
-    <section className="detail-grid" style={{ marginBottom: 16 }}>
+    <section className="detail-grid admin-mb-16">
       <div className="card">
         <h2>Role split</h2>
         <table className="table">

@@ -15,7 +15,7 @@ type AppSessionsCheckQueueSectionProps = {
 
 export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Check old app versions, stale sessions, missing push readiness, and duplicate device usage."
         status={
@@ -26,7 +26,7 @@ export function AppSessionsCheckQueueSection({ items }: AppSessionsCheckQueueSec
         title="Session check queue"
       />
       {items.length ? (
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+        <div className="ops-task-grid admin-mt-12">
           {items.slice(0, 12).map((item) => (
             <div className={`ops-task-card ${item.tone}`} key={item.key}>
               <small>{item.status}</small>
