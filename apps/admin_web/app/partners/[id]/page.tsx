@@ -40,7 +40,6 @@ import {
   approveProviderKyc,
   approveProviderTaxProfile,
   approvePublicProviderMedia,
-  addProviderOpsNote,
   blockProviderAccount,
   blockProviderDevice,
   rejectProvider,
@@ -166,6 +165,10 @@ import {
   PartnerDetailOperatorCommandQueueSection,
   type PartnerOperatorCommand,
 } from './partner-detail-operator-command-queue-section';
+import {
+  PartnerDetailOperatorNotesSection,
+  type PartnerOperatorNoteRow,
+} from './partner-detail-operator-notes-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -527,6 +530,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     canApproveKyc,
   });
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const partnerOperatorNoteRows = buildPartnerOperatorNoteRows(partnerOpsNotes);
   const partnerFirstReadNextAction = nextProviderAction(provider, dispatchPolicy);
   const connectedPartnerRecordLinks = buildPartnerConnectedRecordLinks({
     provider,
@@ -774,61 +778,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         queue={partnerOperatorCommandQueue}
       />
 
-      <div className="card ops-note-panel admin-mb-16" id="partner-operator-notes">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner operator notes</h2>
-            <p className="muted">
-              Manual handoff notes for partner operations. Use this for factual contact, onboarding,
-              settlement, service setup, and dispatch context that should appear in the audit log.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerOpsNotes.length} note(s)</span>
-        </div>
-        <div className="ops-note-history">
-          {partnerOpsNotes.length ? (
-            partnerOpsNotes.slice(0, 6).map((log) => (
-              <div className="ops-note-entry" key={log.id}>
-                <strong>{formatDate(log.createdAt)}</strong>
-                <p>{auditLogNoteText(log)}</p>
-                <small className="muted">
-                  {log.actor?.fullName ?? log.actor?.phone ?? 'System'} / {log.target}
-                </small>
-              </div>
-            ))
-          ) : (
-            <p className="muted">No manual partner operation notes have been saved yet.</p>
-          )}
-        </div>
-        <form action={addProviderOpsNote} className="ops-note-form">
-          <input type="hidden" name="providerId" value={provider.id} />
-          <label>
-            Quick note preset
-            <select name="preset" defaultValue="">
-              <option value="">Manual note only</option>
-              <option value="Partner contacted; waiting for reply.">
-                Partner contacted; waiting for reply.
-              </option>
-              <option value="Partner app session and push reachability checked.">
-                Partner app session and push reachability checked.
-              </option>
-              <option value="Partner location refresh requested.">Partner location refresh requested.</option>
-              <option value="Partner service pricing reviewed.">Partner service pricing reviewed.</option>
-              <option value="Partner cash settlement or payout context reviewed.">
-                Partner cash settlement or payout context reviewed.
-              </option>
-              <option value="Partner onboarding document follow-up requested.">
-                Partner onboarding document follow-up requested.
-              </option>
-            </select>
-          </label>
-          <textarea
-            name="note"
-            placeholder="Example: Partner confirmed they will refresh location before receiving new requests."
-          />
-          <button type="submit">Save partner operation note</button>
-        </form>
-      </div>
+      <PartnerDetailOperatorNotesSection
+        notes={partnerOperatorNoteRows}
+        providerId={provider.id}
+        totalCount={partnerOpsNotes.length}
+      />
 
       <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
 
@@ -5402,6 +5356,15 @@ function buildPartnerReviewHistoryRows(provider: ProviderDetail): PartnerReviewH
     preview: metadataPreview(log.metadata),
     statusLabel: statusTransition(log),
     title: humanizeProviderLogAction(log.action),
+  }));
+}
+
+function buildPartnerOperatorNoteRows(logs: AdminAuditLog[]): PartnerOperatorNoteRow[] {
+  return logs.slice(0, 6).map((log) => ({
+    actorTargetLabel: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${log.target}`,
+    createdLabel: formatDate(log.createdAt),
+    id: log.id,
+    note: auditLogNoteText(log),
   }));
 }
 
