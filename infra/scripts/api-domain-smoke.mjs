@@ -8,17 +8,7 @@ const earningsPolicyDistPath = '../../apps/api/dist/earnings/earnings.policy.js'
 const matchingPolicyDistPath = '../../apps/api/dist/matching/matching.policy.js';
 const providerWalletPolicyDistPath = '../../apps/api/dist/provider-wallet/provider-wallet.policy.js';
 
-const build = spawnSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm.cmd run build --workspace @massage-vn/api'], {
-  cwd: fileURLToPath(new URL('../..', import.meta.url)),
-  stdio: 'inherit',
-  shell: false,
-});
-if (build.status !== 0) {
-  if (build.error) {
-    console.error(build.error.message);
-  }
-  process.exit(build.status ?? 1);
-}
+runApiBuild();
 
 const {
   calculateProviderWalletDelta,
@@ -228,3 +218,22 @@ assert.ok(
 console.log(
   'API domain smoke passed: wallet, service payout, VAT, matching, marketplace, and fee evidence policies.',
 );
+
+function runApiBuild() {
+  const build = spawnSync(
+    process.env.ComSpec ?? 'cmd.exe',
+    ['/d', '/s', '/c', 'npm.cmd run build --workspace @massage-vn/api'],
+    {
+      cwd: fileURLToPath(new URL('../..', import.meta.url)),
+      stdio: 'inherit',
+      shell: false,
+    },
+  );
+  if (build.status === 0) {
+    return;
+  }
+  if (build.error) {
+    console.error(build.error.message);
+  }
+  process.exit(build.status ?? 1);
+}
