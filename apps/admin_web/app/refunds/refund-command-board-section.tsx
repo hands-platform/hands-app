@@ -29,7 +29,7 @@ export function RefundCommandBoardSection({ items }: RefundCommandBoardSectionPr
   const hasOpenOperatorWork = items.some((item) => item.refunds.length > 0 && item.tone !== 'ok');
 
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one operational view before closing a shift."
         status={

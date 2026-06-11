@@ -138,9 +138,9 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
   const callback = paymentCallbackMeta(payment);
   if (!callback.receivedAt) {
     return (
-      <div className="ops-task-note" style={{ marginTop: 8 }}>
+      <div className="ops-task-note admin-mt-8">
         <span className="pill pill-neutral">No callback</span>
-        <p className="muted" style={{ marginTop: 6 }}>
+        <p className="muted admin-mt-6">
           No gateway callback has been stored yet.
         </p>
       </div>
@@ -151,9 +151,9 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
   const callbackLabel = callback.verified ? 'Verified callback' : 'Review callback';
 
   return (
-    <div className="ops-task-note" style={{ marginTop: 8 }}>
+    <div className="ops-task-note admin-mt-8">
       <span className={`pill ${callbackPill}`}>{callbackLabel}</span>
-      <div className="setup-stage-list" style={{ marginTop: 8 }}>
+      <div className="setup-stage-list admin-mt-8">
         <div className="setup-stage-item">
           <span className="pill pill-info">Received</span>
           <div>
@@ -173,7 +173,7 @@ function PaymentCallbackEvidence({ payment }: { readonly payment: AdminPayment }
         </div>
       </div>
       {callback.rawKeys.length ? (
-        <details style={{ marginTop: 8 }}>
+        <details className="admin-mt-8">
           <summary>Callback payload keys</summary>
           <p className="muted">{callback.rawKeys.join(', ')}</p>
         </details>
@@ -191,7 +191,7 @@ function CashDebtSettlementForm({ payment }: { readonly payment: AdminPayment })
   const debtAmount = Math.abs(earning.netAmount);
   const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
   return (
-    <form action={settleCashDebt} className="inline-form" style={{ marginTop: 8 }}>
+    <form action={settleCashDebt} className="inline-form admin-mt-8">
       <input name="earningId" type="hidden" value={earning.id} />
       <input name="settlementMethod" type="hidden" value="PARTNER_DEPOSIT" />
       <input

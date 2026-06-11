@@ -49,7 +49,7 @@ export function RefundsTableSection({ emptyMessage, rows }: RefundsTableSectionP
             <td>
               {row.bookingStatus}
               <div className="muted">Booking {row.bookingIdLabel}</div>
-              <div className="actions" style={{ marginTop: 8 }}>
+              <div className="actions admin-mt-8">
                 <a className="text-link" href={row.bookingHref}>
                   Open booking
                 </a>
@@ -62,12 +62,12 @@ export function RefundsTableSection({ emptyMessage, rows }: RefundsTableSectionP
             <td>{row.status}</td>
             <td>
               <div>{row.opsSignal}</div>
-              <div className="muted" style={{ marginTop: 8 }}>
+              <div className="muted admin-mt-8">
                 {row.opsHint}
               </div>
-              <div className="ops-task-note" style={{ marginTop: 10 }}>
+              <div className="ops-task-note admin-mt-10">
                 <strong>Refund action execution map</strong>
-                <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                <div className="setup-stage-list admin-mt-8">
                   {row.executionRows.map((item) => (
                     <div className="setup-stage-item" key={`${row.id}-${item.action}`}>
                       <span className={`pill ${item.pillClass}`}>{item.status}</span>

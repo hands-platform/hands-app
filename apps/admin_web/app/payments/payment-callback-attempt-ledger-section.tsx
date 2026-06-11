@@ -25,7 +25,7 @@ type PaymentCallbackAttemptLedgerSectionProps = {
 
 export function PaymentCallbackAttemptLedgerSection({ rows }: PaymentCallbackAttemptLedgerSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Accepted, replayed, rejected, and conflicting gateway callbacks. Unknown gateway references remain visible here even when they cannot attach to a payment row."
         status={<span className="pill pill-info">{rows.length} attempt(s)</span>}

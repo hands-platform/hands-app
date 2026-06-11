@@ -18,7 +18,7 @@ type RefundDecisionChecklistSectionProps = {
 
 export function RefundDecisionChecklistSection({ items }: RefundDecisionChecklistSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
           <Link className="text-link" href="/bookings?view=manual-decision">

@@ -40,7 +40,7 @@ export function RefundFilterBoardSection({
   const isFiltered = Boolean(review || activeRange !== 'all');
 
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Refund operation filters</h2>
@@ -56,7 +56,7 @@ export function RefundFilterBoardSection({
           Showing {filteredCount} of {totalCount}
         </span>
       </div>
-      <div className="participant-list" style={{ marginBottom: 12 }}>
+      <div className="participant-list admin-mb-12">
         {rangeLinks.map((item) => (
           <Link
             className={`pill ${activeRange === item.range ? 'pill-info' : 'pill-neutral'}`}
