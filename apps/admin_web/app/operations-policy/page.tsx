@@ -159,7 +159,7 @@ export default async function OperationsPolicyPage({
         </section>
       ) : null}
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>MVP authority baseline</h2>
@@ -170,7 +170,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-success">Command center rules</span>
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           <div className="ops-task-card ops-task-done">
             <span className="pill pill-success">BookingAddressSnapshot</span>
             <h3>Address snapshot required</h3>
@@ -216,7 +216,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" id="action-gate-policy-checklist" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="action-gate-policy-checklist">
         <div className="ops-section-header">
           <div>
             <h2>Action gate policy checklist</h2>
@@ -236,7 +236,7 @@ export default async function OperationsPolicyPage({
             {actionGatePolicyChecklist.alignedCount}/{actionGatePolicyChecklist.totalCount} recommended
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {actionGatePolicyChecklist.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -245,7 +245,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {actionGatePolicyChecklist.cards.map((item) => (
             <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
               <span className={`pill ${item.pillClass}`}>{item.status}</span>
@@ -258,7 +258,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Booking create gate controls</h2>
@@ -270,7 +270,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{bookingCreateGateReview.currentPolicyLabel}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {bookingCreateGateReview.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -309,7 +309,7 @@ export default async function OperationsPolicyPage({
             </tbody>
           </table>
         </AdminTableScroll>
-        <div className="ops-section-header" style={{ marginTop: 18 }}>
+        <div className="ops-section-header admin-mt-18">
           <div>
             <h3>Recent blocked create attempts</h3>
             <p className="muted">
@@ -321,18 +321,18 @@ export default async function OperationsPolicyPage({
           </Link>
         </div>
         {bookingCreateGateReview.recentAttempts.length === 0 ? (
-          <div className="empty-state" style={{ marginTop: 12 }}>
+          <div className="empty-state admin-mt-12">
             No booking create gate rejections are currently recorded.
           </div>
         ) : (
-          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-grid admin-mt-14">
             {bookingCreateGateReview.recentAttempts.map((attempt) => (
               <article className="ops-task-card" key={attempt.id}>
                 <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
                 <h3>{shortId(attempt.id)}</h3>
                 <p>{attempt.detail}</p>
                 <small>Recorded {formatDate(attempt.createdAt)}</small>
-                <div className="actions" style={{ marginTop: 10 }}>
+                <div className="actions admin-mt-10">
                   <Link className="text-link" href={attempt.href}>
                     Open evidence
                   </Link>
@@ -343,7 +343,7 @@ export default async function OperationsPolicyPage({
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Recommended value review</h2>
@@ -358,7 +358,7 @@ export default async function OperationsPolicyPage({
               : 'Aligned'}
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {recommendationReview.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -367,7 +367,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {recommendationReview.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.key}>
               <span className={`pill ${card.pillClass}`}>{card.status}</span>
@@ -379,7 +379,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Final partner choice control matrix</h2>
@@ -393,7 +393,7 @@ export default async function OperationsPolicyPage({
             {acceptanceMatrix.blockingCount} control choice(s)
           </span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {acceptanceMatrix.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -402,7 +402,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+        <div className="ops-task-grid admin-mt-14">
           {acceptanceMatrix.cards.map((card) => (
             <div className={`ops-task-card ${card.className}`} key={card.title}>
               <span className={`pill ${card.pillClass}`}>{card.status}</span>
@@ -412,7 +412,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="ops-section-header" style={{ marginTop: 18 }}>
+        <div className="ops-section-header admin-mt-18">
           <div>
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
@@ -425,7 +425,7 @@ export default async function OperationsPolicyPage({
             Open partner queue
           </Link>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {acceptanceMatrix.impact.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -436,7 +436,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Policy sensitivity preview</h2>
@@ -448,7 +448,7 @@ export default async function OperationsPolicyPage({
           </div>
           <span className="pill pill-info">{supplySensitivity.currentPolicyLabel}</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div className="service-trace-summary admin-mt-12">
           {supplySensitivity.summary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -457,7 +457,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="detail-grid" style={{ marginTop: 14 }}>
+        <div className="detail-grid admin-mt-14">
           <div className="admin-scroll-x">
             <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
