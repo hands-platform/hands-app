@@ -136,6 +136,12 @@ import {
   PartnerDetailCashDebtOriginSection,
   type PartnerCashDebtOriginRow,
 } from './partner-detail-cash-debt-origin-section';
+import {
+  PartnerDetailPayoutOperationsSection,
+  type PartnerPayoutBatchRow,
+  type PartnerPayoutEarningRow,
+  type PartnerPayoutOperationsView,
+} from './partner-detail-payout-operations-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -390,6 +396,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
+  const payoutOperationsView = buildPartnerPayoutOperationsView(payoutOps);
+  const payoutEarningRows = buildPartnerPayoutEarningRows(provider.earnings ?? []);
+  const payoutBatchRows = buildPartnerPayoutBatchRows(provider.payoutBatches ?? []);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
   const filteredPartnerBookingArchive = orderPartnerBookingArchive(
@@ -1132,153 +1141,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         summary={opsSummary}
       />
 
-      <div className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout operations</h2>
-            <p className="muted">
-              Settlement view for unpaid earnings, withholding, payout batches, and payout holds.
-            </p>
-          </div>
-          <span className={`pill ${pillClass(payoutOps.tone)}`}>{payoutOps.status}</span>
-        </div>
-        <div className="ops-task-grid">
-          {payoutOps.cards.map((card) => (
-            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
-              <div>
-                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
-                <h3>{card.title}</h3>
-                <p className="muted">{card.detail}</p>
-              </div>
-              <small>{card.action}</small>
-            </div>
-          ))}
-        </div>
-        {payoutOps.hold ? (
-          <div className="setup-stage-item admin-mt-16">
-            <span>HELD</span>
-            <div>
-              <strong>Active payout hold</strong>
-              <p className="muted">{payoutOps.hold.reason}</p>
-              <p className="muted">
-                Started {formatDate(payoutOps.hold.startsAt)} / expires {formatDate(payoutOps.hold.expiresAt)}
-              </p>
-            </div>
-            <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
-              Reports desk
-            </Link>
-          </div>
-        ) : null}
-        {payoutOps.blockers.length ? (
-          <div className="setup-stage-list">
-            {payoutOps.blockers.map((blocker) => (
-              <div className="setup-stage-item" key={blocker}>
-                <span>GATE</span>
-                <div>
-                  <strong>Payout blocker</strong>
-                  <p className="muted">{blocker}</p>
-                </div>
-                <small>Resolve</small>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="detail-grid admin-mt-16">
-          <div>
-            <div className="ops-section-header">
-              <h3>Recent earnings</h3>
-              <div className="actions">
-                {hasCashFeeDebt ? (
-                  <Link className="text-link" href="/cash-settlements">
-                    Cash debt queue
-                  </Link>
-                ) : null}
-                <Link className="text-link" href="/earnings">
-                  Open earnings
-                </Link>
-              </div>
-            </div>
-            {(provider.earnings ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.earnings?.slice(0, 5).map((earning) => (
-                  <div className="setup-stage-item" key={earning.id}>
-                    <span>{isCashFeeDebt(earning) ? 'CASH DEBT' : earning.status}</span>
-                    <div>
-                      <strong>
-                        {isCashFeeDebt(earning)
-                          ? `Owes HANDS ${formatCurrency(Math.abs(earning.netAmount))}`
-                          : `Net ${formatCurrency(earning.netAmount)}`}
-                      </strong>
-                      <p className="muted">
-                        Gross {formatCurrency(earning.grossAmount)} / platform fee{' '}
-                        {formatCurrency(earning.platformFee)} / withholding{' '}
-                        {formatCurrency(earning.withholdingAmount)}
-                      </p>
-                      <p className="muted">
-                        {earning.bookingId ? `Booking ${shortRecordId(earning.bookingId)} / ` : ''}
-                        payment {earning.booking?.payment?.method ?? 'UNKNOWN'} / created{' '}
-                        {formatDate(earning.createdAt)}
-                      </p>
-                      {earning.settlementRef ? (
-                        <p className="muted">Settlement ref {earning.settlementRef}</p>
-                      ) : null}
-                      {earning.settlementNotes ? <p className="muted">{earning.settlementNotes}</p> : null}
-                      {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
-                        <p className="muted" key={entry.id}>
-                          Wallet {walletLedgerLabel(entry.type)}:{' '}
-                          {formatCurrency(entry.amount, entry.currency ?? earning.currency ?? 'VND')}
-                          {entry.reference ? ` / ref ${entry.reference}` : ''}
-                        </p>
-                      ))}
-                    </div>
-                    <small>
-                      {earning.paidAt
-                        ? `Settled ${formatDate(earning.paidAt)}`
-                        : isCashFeeDebt(earning)
-                          ? 'Blocks booking'
-                          : 'Unpaid'}
-                    </small>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">
-                No earnings yet. Payout eligibility starts after the first completed service.
-              </p>
-            )}
-          </div>
-          <div>
-            <div className="ops-section-header">
-              <h3>Recent payout batches</h3>
-              <Link className="text-link" href="/payouts">
-                Open payouts
-              </Link>
-            </div>
-            {(provider.payoutBatches ?? []).length ? (
-              <div className="setup-stage-list">
-                {provider.payoutBatches?.slice(0, 5).map((batch) => (
-                  <div className="setup-stage-item" key={batch.id}>
-                    <span>{batch.status}</span>
-                    <div>
-                      <strong>{formatCurrency(batch.totalNetAmount)}</strong>
-                      <p className="muted">
-                        Created {formatDate(batch.createdAt)}
-                        {batch.transferRef ? ` / transfer ${batch.transferRef}` : ''}
-                      </p>
-                      {batch.paidAt ? <p className="muted">Paid {formatDate(batch.paidAt)}</p> : null}
-                    </div>
-                    <Link className="text-link" href={`/payouts#${batch.id}`}>
-                      View
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">No payout batch has been created for this partner yet.</p>
-            )}
-          </div>
-        </div>
-      </div>
+      <PartnerDetailPayoutOperationsSection
+        cardClassForTone={cardClass}
+        earningsRows={payoutEarningRows}
+        hasCashFeeDebt={hasCashFeeDebt}
+        operations={payoutOperationsView}
+        partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+        payoutBatchRows={payoutBatchRows}
+        pillClassForTone={pillClass}
+      />
 
       <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
 
@@ -5757,6 +5628,72 @@ function buildPartnerCashDebtOriginRows(
     originLabel: partnerCashDebtOriginLabel(earning),
     paymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
     taxLabel: formatCurrency(earning.withholdingAmount),
+  }));
+}
+
+function buildPartnerPayoutOperationsView(
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+): PartnerPayoutOperationsView {
+  return {
+    blockers: payoutOps.blockers,
+    cards: payoutOps.cards,
+    hold: payoutOps.hold
+      ? {
+          expiresAtLabel: formatDate(payoutOps.hold.expiresAt),
+          reason: payoutOps.hold.reason,
+          startsAtLabel: formatDate(payoutOps.hold.startsAt),
+        }
+      : null,
+    status: payoutOps.status,
+    tone: payoutOps.tone,
+  };
+}
+
+function buildPartnerPayoutEarningRows(
+  earnings: Array<NonNullable<ProviderDetail['earnings']>[number]>,
+): PartnerPayoutEarningRow[] {
+  return earnings.slice(0, 5).map((earning) => {
+    const cashDebt = isCashFeeDebt(earning);
+    const bookingPrefix = earning.bookingId ? `Booking ${shortRecordId(earning.bookingId)} / ` : '';
+
+    return {
+      amountLine: `Gross ${formatCurrency(earning.grossAmount)} / platform fee ${formatCurrency(
+        earning.platformFee,
+      )} / withholding ${formatCurrency(earning.withholdingAmount)}`,
+      detailLine: `${bookingPrefix}payment ${earning.booking?.payment?.method ?? 'UNKNOWN'} / created ${formatDate(
+        earning.createdAt,
+      )}`,
+      id: earning.id,
+      settlementNotes: earning.settlementNotes,
+      settlementRef: earning.settlementRef,
+      smallLabel: earning.paidAt ? `Settled ${formatDate(earning.paidAt)}` : cashDebt ? 'Blocks booking' : 'Unpaid',
+      statusLabel: cashDebt ? 'CASH DEBT' : earning.status,
+      title: cashDebt
+        ? `Owes HANDS ${formatCurrency(Math.abs(amountValue(earning.netAmount)))}`
+        : `Net ${formatCurrency(earning.netAmount)}`,
+      walletLines: (earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => {
+        const reference = entry.reference ? ` / ref ${entry.reference}` : '';
+        return `Wallet ${walletLedgerLabel(entry.type)}: ${formatCurrency(
+          entry.amount,
+          entry.currency ?? earning.currency ?? 'VND',
+        )}${reference}`;
+      }),
+    };
+  });
+}
+
+function buildPartnerPayoutBatchRows(
+  batches: Array<NonNullable<ProviderDetail['payoutBatches']>[number]>,
+): PartnerPayoutBatchRow[] {
+  return batches.slice(0, 5).map((batch) => ({
+    createdLine: `Created ${formatDate(batch.createdAt)}${
+      batch.transferRef ? ` / transfer ${batch.transferRef}` : ''
+    }`,
+    href: `/payouts#${batch.id}`,
+    id: batch.id,
+    paidLine: batch.paidAt ? `Paid ${formatDate(batch.paidAt)}` : null,
+    status: batch.status,
+    totalNetLabel: formatCurrency(batch.totalNetAmount),
   }));
 }
 
