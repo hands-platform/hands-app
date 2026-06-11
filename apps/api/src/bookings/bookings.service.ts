@@ -103,6 +103,10 @@ import {
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
 import {
+  openBookingWhereForProvider,
+  providerBookingHistoryWhere,
+} from './bookings.provider-query';
+import {
   bookingCancellationResultWithReleasedPayment,
   bookingCancellationProviderUserIds,
   customerCancellationCloseData,
@@ -620,33 +624,7 @@ export class BookingsService {
   async getOpenBookings(providerUserId?: string) {
     const provider = providerUserId ? await this.requireProvider(providerUserId) : null;
     const bookings = await this.prisma.booking.findMany({
-      where: {
-        status: BookingStatus.OPEN_MATCHING,
-        expiresAt: { gt: new Date() },
-        ...(provider
-          ? {
-              OR: [
-                {
-                  preferredProviderId: provider.id,
-                  participants: {
-                    none: {
-                      providerProfileId: provider.id,
-                      status: ParticipantStatus.REJECTED,
-                    },
-                  },
-                },
-                {
-                  participants: {
-                    none: {
-                      providerProfileId: provider.id,
-                      status: ParticipantStatus.REJECTED,
-                    },
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
+      where: openBookingWhereForProvider(provider?.id),
       include: {
         services: { include: { service: true } },
         addressSnapshot: true,
@@ -676,13 +654,7 @@ export class BookingsService {
   async listProviderBookings(providerUserId: string) {
     const provider = await this.requireProvider(providerUserId);
     const bookings = await this.prisma.booking.findMany({
-      where: {
-        OR: [
-          { preferredProviderId: provider.id },
-          { selectedProviderId: provider.id },
-          { participants: { some: { providerProfileId: provider.id } } },
-        ],
-      },
+      where: providerBookingHistoryWhere(provider.id),
       include: {
         services: { include: { service: true } },
         addressSnapshot: true,
