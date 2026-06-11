@@ -652,23 +652,30 @@ export class BookingsService {
 
   async cancelCustomerBooking(bookingId: string, customerUserId: string) {
     await this.requireCustomerCancellableBooking(bookingId, customerUserId);
-    const updated = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: customerCancellationCloseData(),
-      include: clientBookingListInclude,
-    });
-    const cancellation = await this.bookingCancellationResultWithPaymentRelease(updated);
+    const cancellation = await this.closeCustomerBookingWithPaymentRelease(bookingId);
 
     await this.matching.closeBooking(bookingId);
     const clientResult = clientBookingResponse(cancellation.result);
     await this.announceCustomerBookingCancelled({
       bookingId,
       customerUserId,
-      providerUserIds: bookingCancellationProviderUserIds(updated),
+      providerUserIds: cancellation.providerUserIds,
       releasedPayment: cancellation.releasedPayment,
       matchingPayload: clientResult,
     });
     return clientResult;
+  }
+
+  private async closeCustomerBookingWithPaymentRelease(bookingId: string) {
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: customerCancellationCloseData(),
+      include: clientBookingListInclude,
+    });
+    return {
+      ...(await this.bookingCancellationResultWithPaymentRelease(updated)),
+      providerUserIds: bookingCancellationProviderUserIds(updated),
+    };
   }
 
   private async requireCustomerCancellableBooking(bookingId: string, customerUserId: string) {
