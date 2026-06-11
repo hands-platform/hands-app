@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { BookingStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
+import { BookingStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
 import {
+  asJsonObject,
   callbackAmountVnd,
   callbackAttemptEvidence,
   callbackFailureOutcome,
@@ -17,22 +18,18 @@ import {
   errorCode,
   errorMessage,
   hmacHex,
+  isTerminalPaymentStatus,
   momoSignatureCandidates,
   secureEqualHex,
   sortedKeyValueString,
   stringValue,
+  toJsonOrUndefined,
   vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
   paymentStatusCheckJob,
 } from './payment-status.queue';
-
-const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
-  PaymentStatus.CAPTURED,
-  PaymentStatus.REFUNDED,
-  PaymentStatus.RELEASED,
-]);
 
 @Injectable()
 export class PaymentsService {
@@ -52,7 +49,7 @@ export class PaymentsService {
     method: PaymentMethod,
     amount: number,
     bookingId = 'pending-booking',
-    extraRawMeta?: Prisma.InputJsonValue,
+    extraRawMeta?: unknown,
   ) {
     const authorization = this.adapterFor(method).authorize({ bookingId, amount, currency: 'VND' });
     const authorizationMeta = asJsonObject(authorization.rawMeta);
@@ -433,22 +430,4 @@ export class PaymentsService {
       // Callback verification decisions must not become unavailable because audit storage failed.
     }
   }
-}
-
-function isTerminalPaymentStatus(status: PaymentStatus) {
-  return TERMINAL_PAYMENT_STATUSES.has(status);
-}
-
-function toJsonOrUndefined(value: unknown): Prisma.InputJsonValue | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function asJsonObject(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-  return value as Record<string, unknown>;
 }

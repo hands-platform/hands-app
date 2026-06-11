@@ -1,6 +1,12 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
+
+const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
+  PaymentStatus.CAPTURED,
+  PaymentStatus.REFUNDED,
+  PaymentStatus.RELEASED,
+]);
 
 export function callbackRawMeta(
   rawMeta: Record<string, unknown>,
@@ -12,6 +18,24 @@ export function callbackRawMeta(
     callbackSignatureVerified: verification.verified,
     callbackVerificationMode: verification.mode,
   };
+}
+
+export function isTerminalPaymentStatus(status: PaymentStatus) {
+  return TERMINAL_PAYMENT_STATUSES.has(status);
+}
+
+export function toJsonOrUndefined(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+export function asJsonObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }
 
 export function callbackAttemptEvidence(method: PaymentMethod, body: Record<string, unknown>) {

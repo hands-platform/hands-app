@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
+import { PaymentMethod, PaymentStatus } from '@prisma/client';
 import {
+  asJsonObject,
   callbackAmountVnd,
   callbackAttemptEvidence,
   callbackFailureOutcome,
@@ -9,10 +10,12 @@ import {
   errorCode,
   errorMessage,
   hmacHex,
+  isTerminalPaymentStatus,
   momoSignatureCandidates,
   secureEqualHex,
   sortedKeyValueString,
   stringValue,
+  toJsonOrUndefined,
   vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 
@@ -40,6 +43,21 @@ describe('payment callback helpers', () => {
     expect(callbackAmountVnd(PaymentMethod.MOMO, { amount: '300000' })).toBe(300000);
     expect(callbackAmountVnd(PaymentMethod.VNPAY, { vnp_Amount: '30000000' })).toBe(300000);
     expect(callbackAmountVnd(PaymentMethod.CASH, { amount: '300000' })).toBeNull();
+  });
+
+  it('identifies terminal payment statuses and serializes JSON payloads', () => {
+    expect(isTerminalPaymentStatus(PaymentStatus.CAPTURED)).toBe(true);
+    expect(isTerminalPaymentStatus(PaymentStatus.REFUNDED)).toBe(true);
+    expect(isTerminalPaymentStatus(PaymentStatus.RELEASED)).toBe(true);
+    expect(isTerminalPaymentStatus(PaymentStatus.AUTHORIZED)).toBe(false);
+
+    expect(toJsonOrUndefined(undefined)).toBeUndefined();
+    expect(toJsonOrUndefined({ recordedAt: new Date('2026-06-11T00:00:00.000Z') })).toEqual({
+      recordedAt: '2026-06-11T00:00:00.000Z',
+    });
+    expect(asJsonObject({ ok: true })).toEqual({ ok: true });
+    expect(asJsonObject(null)).toEqual({});
+    expect(asJsonObject(['nope'])).toEqual({});
   });
 
   it('builds callback attempt evidence from gateway payloads', () => {
