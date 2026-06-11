@@ -12,7 +12,6 @@ import {
   ProviderKycStatus,
   ProviderTaxProfileStatus,
   ProviderStatus,
-  Role,
   VerificationStatus,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
@@ -95,7 +94,12 @@ import {
   assertProviderCanReceiveBooking,
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
-import { normalizeBookingAddress, toJson } from './bookings.payload';
+import {
+  bookingCancellationProviderUserIds,
+  customerCancellationCloseData,
+  normalizeBookingAddress,
+  toJson,
+} from './bookings.payload';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: {
@@ -605,14 +609,7 @@ export class BookingsService {
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
-      data: {
-        status: BookingStatus.CANCELLED,
-        expiresAt: new Date(),
-        closedAt: new Date(),
-        closedByRole: Role.CUSTOMER,
-        closedReason: 'customer_cancelled',
-        closedNote: 'Customer cancelled before partner commitment.',
-      },
+      data: customerCancellationCloseData(),
       include: {
         addressSnapshot: true,
         preferredProvider: true,
@@ -627,23 +624,10 @@ export class BookingsService {
     const result = releasedPayment ? { ...updated, payment: releasedPayment } : updated;
 
     await this.matching.closeBooking(bookingId);
-    const providerUserIds = new Set<string>();
-    if (updated.preferredProvider?.userId) {
-      providerUserIds.add(updated.preferredProvider.userId);
-    }
-    if (updated.selectedProvider?.userId) {
-      providerUserIds.add(updated.selectedProvider.userId);
-    }
-    for (const participant of updated.participants) {
-      if (participant.providerProfile?.userId) {
-        providerUserIds.add(participant.providerProfile.userId);
-      }
-    }
-
     await this.notifyBookingCancelled({
       bookingId,
       customerUserId,
-      providerUserIds,
+      providerUserIds: bookingCancellationProviderUserIds(updated),
       releasedPayment: Boolean(releasedPayment),
     });
     const clientResult = clientBookingResponse(result);

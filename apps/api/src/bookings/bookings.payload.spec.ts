@@ -1,4 +1,10 @@
-import { normalizeBookingAddress, toJson } from './bookings.payload';
+import { BookingStatus, Role } from '@prisma/client';
+import {
+  bookingCancellationProviderUserIds,
+  customerCancellationCloseData,
+  normalizeBookingAddress,
+  toJson,
+} from './bookings.payload';
 
 describe('booking payload helpers', () => {
   it('normalizes object booking addresses while preserving the resolved address text', () => {
@@ -27,5 +33,32 @@ describe('booking payload helpers', () => {
       recordedAt: '2026-06-11T00:00:00.000Z',
       nested: { value: 1 },
     });
+  });
+
+  it('builds customer cancellation close data', () => {
+    const now = new Date('2026-06-11T00:00:00.000Z');
+
+    expect(customerCancellationCloseData(now)).toEqual({
+      status: BookingStatus.CANCELLED,
+      expiresAt: now,
+      closedAt: now,
+      closedByRole: Role.CUSTOMER,
+      closedReason: 'customer_cancelled',
+      closedNote: 'Customer cancelled before partner commitment.',
+    });
+  });
+
+  it('dedupes provider user ids for cancellation notifications', () => {
+    expect(
+      [...bookingCancellationProviderUserIds({
+        preferredProvider: { userId: 'provider-user-1' },
+        selectedProvider: { userId: 'provider-user-2' },
+        participants: [
+          { providerProfile: { userId: 'provider-user-1' } },
+          { providerProfile: { userId: 'provider-user-3' } },
+          { providerProfile: { userId: null } },
+        ],
+      })],
+    ).toEqual(['provider-user-1', 'provider-user-2', 'provider-user-3']);
   });
 });
