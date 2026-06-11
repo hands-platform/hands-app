@@ -112,6 +112,19 @@ export function assertProviderLifecycleTransitionAllowed(current: BookingStatus,
   }
 }
 
+export function providerLifecycleAllowedPreviousStatuses(next: BookingStatus) {
+  if (next === BookingStatus.ARRIVED) {
+    return [BookingStatus.MATCHED, BookingStatus.PROVIDER_ON_THE_WAY];
+  }
+  if (next === BookingStatus.IN_SERVICE) {
+    return [BookingStatus.MATCHED, BookingStatus.PROVIDER_ON_THE_WAY, BookingStatus.ARRIVED];
+  }
+  if (next === BookingStatus.COMPLETED) {
+    return [BookingStatus.IN_SERVICE];
+  }
+  return null;
+}
+
 export function addProviderMatchingDistance<
   T extends {
     lat: unknown;

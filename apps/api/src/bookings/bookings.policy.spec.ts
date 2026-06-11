@@ -16,6 +16,7 @@ import {
   isMarketplacePartnerAction,
   isCustomerSelectableParticipantForFinalChoice,
   normalizeBookingCoordinate,
+  providerLifecycleAllowedPreviousStatuses,
   providerLocationFreshEnough,
   vietnamBookingCoordinateGateError,
 } from './bookings.policy';
@@ -248,5 +249,21 @@ describe('booking policy helpers', () => {
     expect(() =>
       assertProviderLifecycleTransitionAllowed(BookingStatus.MATCHED, [BookingStatus.IN_SERVICE]),
     ).toThrow(BadRequestException);
+  });
+
+  it('keeps provider lifecycle previous-status rules centralized', () => {
+    expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.ARRIVED)).toEqual([
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+    ]);
+    expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.IN_SERVICE)).toEqual([
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+      BookingStatus.ARRIVED,
+    ]);
+    expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED)).toEqual([
+      BookingStatus.IN_SERVICE,
+    ]);
+    expect(providerLifecycleAllowedPreviousStatuses(BookingStatus.PROVIDER_ON_THE_WAY)).toBeNull();
   });
 });

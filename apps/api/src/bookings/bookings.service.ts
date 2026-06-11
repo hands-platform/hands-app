@@ -44,6 +44,7 @@ import {
   isMarketplacePartnerAction,
   isVietnamBookingCoordinate,
   normalizeBookingCoordinate,
+  providerLifecycleAllowedPreviousStatuses,
   providerLocationFreshEnough,
   vietnamBookingCoordinateGateError,
 } from './bookings.policy';
@@ -1503,18 +1504,11 @@ export class BookingsService {
   async updateProviderBookingStatus(bookingId: string, providerUserId: string, status: BookingStatus) {
     const provider = await this.requireProvider(providerUserId);
     const booking = await this.requireSelectedProvider(bookingId, provider.id);
-    if (status === BookingStatus.ARRIVED) {
-      this.assertProviderLifecycleTransition(booking.status, [
-        BookingStatus.MATCHED,
-        BookingStatus.PROVIDER_ON_THE_WAY,
-      ]);
+    const allowedPreviousStatuses = providerLifecycleAllowedPreviousStatuses(status);
+    if (allowedPreviousStatuses) {
+      this.assertProviderLifecycleTransition(booking.status, allowedPreviousStatuses);
     }
     if (status === BookingStatus.IN_SERVICE) {
-      this.assertProviderLifecycleTransition(booking.status, [
-        BookingStatus.MATCHED,
-        BookingStatus.PROVIDER_ON_THE_WAY,
-        BookingStatus.ARRIVED,
-      ]);
       await this.ensureProviderWalletCanJoinMarketplace(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
@@ -1539,7 +1533,10 @@ export class BookingsService {
   async complete(bookingId: string, providerUserId: string) {
     const provider = await this.requireProvider(providerUserId);
     const bookingBeforeComplete = await this.requireSelectedProvider(bookingId, provider.id);
-    this.assertProviderLifecycleTransition(bookingBeforeComplete.status, [BookingStatus.IN_SERVICE]);
+    this.assertProviderLifecycleTransition(
+      bookingBeforeComplete.status,
+      providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE],
+    );
 
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
