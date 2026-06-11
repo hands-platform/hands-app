@@ -1541,7 +1541,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-activity" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-activity">
         <div className="ops-section-header">
           <div>
             <h2>Customer chronological activity</h2>
@@ -1552,7 +1552,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{filteredCustomerActivityRecords.length} event(s)</span>
         </div>
-        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+        <div className="service-trace-summary admin-mt-14">
           {customerActivitySummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -1561,7 +1561,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {filteredCustomerActivityRecords.length > 0 ? (
             filteredCustomerActivityRecords.slice(0, 40).map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
@@ -1594,7 +1594,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" id="customer-daily-digest" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="customer-daily-digest">
         <div className="ops-section-header">
           <div>
             <h2>Customer daily activity digest</h2>
@@ -1605,7 +1605,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{customerDailyActivityDigest.length} day(s)</span>
         </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        <div className="setup-stage-list admin-mt-12">
           {customerDailyActivityDigest.length > 0 ? (
             customerDailyActivityDigest.map((day) => (
               <div className="setup-stage-item" key={day.key}>
@@ -1615,14 +1615,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <p className="muted">
                     {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
                   </p>
-                  <div className="setup-stage-list" style={{ marginTop: 10 }}>
+                  <div className="setup-stage-list admin-mt-10">
                     {day.highlights.map((record) => (
                       <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}`}>
                         <strong>{record.title}</strong>
                         <small>
                           {record.type} / {formatDate(record.at)}
                         </small>
-                        <p className="muted" style={{ margin: 0 }}>
+                        <p className="muted admin-m-0">
                           {record.detail}
                         </p>
                       </div>
@@ -1645,10 +1645,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <section className="card">
           <h2>Push devices</h2>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {pushDevices.length > 0 ? (
               pushDevices.map((device) => (
                 <div className="ops-row" key={device.id}>
@@ -1667,7 +1667,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
         <section className="card">
           <h2>App sessions</h2>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {(customer.user?.appSessions ?? []).length > 0 ? (
               (customer.user?.appSessions ?? []).slice(0, 8).map((session) => (
                 <div className="ops-row" key={session.id}>
@@ -1721,7 +1721,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </section>
 
-      <section className="card" id="audit-trail" style={{ marginTop: 16 }}>
+      <section className="card admin-mt-16" id="audit-trail">
         <div className="ops-section-header">
           <div>
             <h2>Customer audit trail</h2>
