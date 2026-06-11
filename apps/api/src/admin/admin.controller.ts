@@ -72,33 +72,18 @@ export class AdminController {
     return this.admin.listAppSessions();
   }
 
-  @Get('providers')
+  @Get(['providers', 'partners'])
   providers() {
     return this.admin.listProviders();
   }
 
-  @Get('partners')
-  partners() {
-    return this.admin.listProviders();
-  }
-
-  @Get('providers/:id/overview')
+  @Get(['providers/:id/overview', 'partners/:id/overview'])
   providerOverview(@Param('id') providerProfileId: string) {
     return this.admin.getProviderOverview(providerProfileId);
   }
 
-  @Get('partners/:id/overview')
-  partnerOverview(@Param('id') providerProfileId: string) {
-    return this.admin.getProviderOverview(providerProfileId);
-  }
-
-  @Get('providers/:id')
+  @Get(['providers/:id', 'partners/:id'])
   providerDetail(@Param('id') providerProfileId: string) {
-    return this.admin.getProviderDetail(providerProfileId);
-  }
-
-  @Get('partners/:id')
-  partnerDetail(@Param('id') providerProfileId: string) {
     return this.admin.getProviderDetail(providerProfileId);
   }
 
@@ -130,17 +115,12 @@ export class AdminController {
     return this.admin.unblockProviderDevice(user.id, providerDeviceId);
   }
 
-  @Post('providers/:id/approve')
+  @Post(['providers/:id/approve', 'partners/:id/approve'])
   approveProvider(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);
   }
 
-  @Post('partners/:id/approve')
-  approvePartner(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
-    return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);
-  }
-
-  @Post('providers/:id/block')
+  @Post(['providers/:id/block', 'partners/:id/block'])
   blockProviderAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
@@ -149,22 +129,8 @@ export class AdminController {
     return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
   }
 
-  @Post('partners/:id/block')
-  blockPartnerAccount(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') providerProfileId: string,
-    @Body() body: AdminReasonDto,
-  ) {
-    return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
-  }
-
-  @Post('providers/:id/unblock')
+  @Post(['providers/:id/unblock', 'partners/:id/unblock'])
   unblockProviderAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
-    return this.admin.unblockProviderAccount(user.id, providerProfileId);
-  }
-
-  @Post('partners/:id/unblock')
-  unblockPartnerAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.unblockProviderAccount(user.id, providerProfileId);
   }
 
@@ -209,13 +175,8 @@ export class AdminController {
     return this.admin.liftProviderSanction(user.id, sanctionId);
   }
 
-  @Post('providers/:id/sync-supabase-role')
+  @Post(['providers/:id/sync-supabase-role', 'partners/:id/sync-supabase-role'])
   syncProviderSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
-    return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
-  }
-
-  @Post('partners/:id/sync-supabase-role')
-  syncPartnerSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
   }
 
@@ -233,17 +194,8 @@ export class AdminController {
     return this.admin.reviewPublicProviderMedia(user.id, fileId, FileReviewStatus.REJECTED, body.reason);
   }
 
-  @Post('providers/:id/reject')
+  @Post(['providers/:id/reject', 'partners/:id/reject'])
   rejectProvider(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id') providerProfileId: string,
-    @Body() body: AdminReasonDto,
-  ) {
-    return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.REJECTED, body.reason);
-  }
-
-  @Post('partners/:id/reject')
-  rejectPartner(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
     @Body() body: AdminReasonDto,

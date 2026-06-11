@@ -233,10 +233,10 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('blockProviderDevice', 2) as { name?: string })?.name).toBe(
       'AdminReasonDto',
     );
-    expect((bodyMetatype('blockPartnerAccount', 2) as { name?: string })?.name).toBe(
+    expect((bodyMetatype('blockProviderAccount', 2) as { name?: string })?.name).toBe(
       'AdminReasonDto',
     );
-    expect((bodyMetatype('rejectPartner', 2) as { name?: string })?.name).toBe(
+    expect((bodyMetatype('rejectProvider', 2) as { name?: string })?.name).toBe(
       'AdminReasonDto',
     );
   });
