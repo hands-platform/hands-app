@@ -125,6 +125,7 @@ import {
   bookingParticipantJoinUpsert,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
+  preferredProviderInitialParticipantCreate,
 } from './bookings.participants';
 import { resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
 
@@ -374,14 +375,11 @@ export class BookingsService {
           ),
         },
         participants: preferredProvider
-          ? {
-              create: {
-                providerProfileId: preferredProvider.id,
-                status: ParticipantStatus.JOINED,
-                distanceMeters: preferredProviderDistanceMeters,
-                providerStatusAtJoin: preferredProvider.status,
-              },
-            }
+          ? preferredProviderInitialParticipantCreate({
+              providerProfileId: preferredProvider.id,
+              distanceMeters: preferredProviderDistanceMeters,
+              providerStatusAtJoin: preferredProvider.status,
+            })
           : undefined,
       },
       include: {

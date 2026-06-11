@@ -7,6 +7,7 @@ import {
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
   bookingSelectedParticipantUpdate,
+  preferredProviderInitialParticipantCreate,
 } from './bookings.participants';
 
 describe('booking participant helpers', () => {
@@ -69,6 +70,23 @@ describe('booking participant helpers', () => {
         providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
       },
       include: { providerProfile: true },
+    });
+  });
+
+  it('builds initial preferred provider participant create data', () => {
+    expect(
+      preferredProviderInitialParticipantCreate({
+        providerProfileId: 'partner-1',
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+        distanceMeters: null,
+      }),
+    ).toEqual({
+      create: {
+        providerProfileId: 'partner-1',
+        status: ParticipantStatus.JOINED,
+        distanceMeters: null,
+        providerStatusAtJoin: ProviderStatus.ONLINE_AVAILABLE,
+      },
     });
   });
 

@@ -44,6 +44,21 @@ export function bookingParticipantJoinUpsert(input: {
   };
 }
 
+export function preferredProviderInitialParticipantCreate(input: {
+  providerProfileId: string;
+  providerStatusAtJoin: ProviderStatus;
+  distanceMeters: number | null;
+}) {
+  return {
+    create: {
+      providerProfileId: input.providerProfileId,
+      status: ParticipantStatus.JOINED,
+      distanceMeters: input.distanceMeters,
+      providerStatusAtJoin: input.providerStatusAtJoin,
+    },
+  };
+}
+
 export function bookingMatchedUpdateData(input: {
   bookingId: string;
   providerProfileId: string;
