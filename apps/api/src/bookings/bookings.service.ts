@@ -71,6 +71,24 @@ import {
   type BackupNotificationTraceStage,
 } from './bookings.backup-notification-trace';
 import {
+  bookingOpenedNotification,
+  customerBookingCancelledNotification,
+  customerFirstPickRejectedNotification,
+  customerMarketplaceProviderAcceptedNotification,
+  customerMarketplaceProviderRejectedNotification,
+  customerProviderJoinedNotification,
+  customerServiceCompletedNotification,
+  firstPickMatchedCustomerNotification,
+  firstPickMatchedProviderNotification,
+  preferredProviderRequestedNotification,
+  providerBookingCancelledNotification,
+  providerEarningCreatedNotification,
+  selectedPartnerMatchedCustomerNotification,
+  selectedPartnerMatchedProviderNotification,
+  serviceStartedCustomerNotification,
+  serviceStartedProviderNotification,
+} from './bookings.notifications';
+import {
   assertProviderCanReceiveBooking,
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
@@ -1046,20 +1064,7 @@ export class BookingsService {
     couponCode?: string;
     discountAmount: number;
   }) {
-    await this.notifications.create({
-      userId: input.userId,
-      type: 'booking.opened',
-      title: input.preferredProvider ? 'Booking request sent' : 'Booking opened',
-      body: input.preferredProvider
-        ? `${input.preferredProvider.displayName} received your booking request.`
-        : 'We are looking for nearby partners.',
-      data: {
-        bookingId: input.bookingId,
-        providerProfileId: input.preferredProvider?.id,
-        couponCode: input.couponCode,
-        discountAmount: input.discountAmount,
-      },
-    });
+    await this.notifications.create(bookingOpenedNotification(input));
   }
 
   private async notifyPreferredProviderRequested(
@@ -1067,13 +1072,13 @@ export class BookingsService {
     bookingId: string,
     customerProfileId: string,
   ) {
-    await this.notifications.create({
-      userId: preferredProviderUserId,
-      type: 'booking.requested',
-      title: 'New direct booking request',
-      body: 'A customer requested one of your services.',
-      data: { bookingId, customerProfileId },
-    });
+    await this.notifications.create(
+      preferredProviderRequestedNotification({
+        userId: preferredProviderUserId,
+        bookingId,
+        customerProfileId,
+      }),
+    );
   }
 
   private async notifyBookingCancelled(input: {
@@ -1083,24 +1088,16 @@ export class BookingsService {
     releasedPayment: boolean;
   }) {
     for (const providerUserId of input.providerUserIds) {
-      await this.notifications.create({
-        userId: providerUserId,
-        type: 'booking.cancelled',
-        title: 'Booking cancelled',
-        body: 'The customer cancelled this booking request before partner commitment.',
-        data: { bookingId: input.bookingId },
-      });
+      await this.notifications.create(providerBookingCancelledNotification(providerUserId, input.bookingId));
     }
 
-    await this.notifications.create({
-      userId: input.customerUserId,
-      type: 'booking.cancelled',
-      title: 'Booking cancelled',
-      body: input.releasedPayment
-        ? 'Your request has been cancelled and the payment hold was released.'
-        : 'Your request has been cancelled.',
-      data: { bookingId: input.bookingId },
-    });
+    await this.notifications.create(
+      customerBookingCancelledNotification({
+        userId: input.customerUserId,
+        bookingId: input.bookingId,
+        releasedPayment: input.releasedPayment,
+      }),
+    );
   }
 
   private async notifyCustomerProviderJoined(
@@ -1108,13 +1105,9 @@ export class BookingsService {
     bookingId: string,
     provider: { id: string; displayName: string },
   ) {
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'provider.joined',
-      title: 'A partner joined',
-      body: `${provider.displayName} joined your booking.`,
-      data: { bookingId, providerProfileId: provider.id },
-    });
+    await this.notifications.create(
+      customerProviderJoinedNotification({ userId: customerUserId, bookingId, provider }),
+    );
   }
 
   private async notifyCustomerSelectedPartnerMatched(input: {
@@ -1124,21 +1117,17 @@ export class BookingsService {
     chatRoomId?: string;
   }) {
     if (input.selectedProviderUserId) {
-      await this.notifications.create({
-        userId: input.selectedProviderUserId,
-        type: 'booking.matched',
-        title: 'You were selected',
-        body: 'The customer selected you for this booking.',
-        data: { bookingId: input.bookingId },
-      });
+      await this.notifications.create(
+        selectedPartnerMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
+      );
     }
-    await this.notifications.create({
-      userId: input.customerUserId,
-      type: 'booking.matched',
-      title: 'Partner selected',
-      body: 'Your chat room is ready.',
-      data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
-    });
+    await this.notifications.create(
+      selectedPartnerMatchedCustomerNotification({
+        userId: input.customerUserId,
+        bookingId: input.bookingId,
+        chatRoomId: input.chatRoomId,
+      }),
+    );
   }
 
   private async notifyFirstPickAcceptedMatched(input: {
@@ -1149,25 +1138,18 @@ export class BookingsService {
     chatRoomId?: string;
   }) {
     if (input.selectedProviderUserId) {
-      await this.notifications.create({
-        userId: input.selectedProviderUserId,
-        type: 'booking.matched',
-        title: 'You were matched',
-        body: 'Your first-pick request was accepted and matched.',
-        data: { bookingId: input.bookingId },
-      });
+      await this.notifications.create(
+        firstPickMatchedProviderNotification(input.selectedProviderUserId, input.bookingId),
+      );
     }
-    await this.notifications.create({
-      userId: input.customerUserId,
-      type: 'booking.matched',
-      title: 'Partner matched',
-      body: `${input.provider.displayName} accepted your request. Your chat room is ready.`,
-      data: {
+    await this.notifications.create(
+      firstPickMatchedCustomerNotification({
+        userId: input.customerUserId,
         bookingId: input.bookingId,
+        provider: input.provider,
         chatRoomId: input.chatRoomId,
-        providerProfileId: input.provider.id,
-      },
-    });
+      }),
+    );
   }
 
   private async notifyCustomerFirstPickRejected(
@@ -1175,13 +1157,9 @@ export class BookingsService {
     bookingId: string,
     providerProfileId: string,
   ) {
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'booking.rejected',
-      title: 'Partner declined your booking',
-      body: 'We are still looking for another available partner.',
-      data: { bookingId, providerProfileId },
-    });
+    await this.notifications.create(
+      customerFirstPickRejectedNotification({ userId: customerUserId, bookingId, providerProfileId }),
+    );
   }
 
   private async notifyCustomerMarketplaceProviderAccepted(
@@ -1189,13 +1167,9 @@ export class BookingsService {
     bookingId: string,
     provider: { id: string; displayName: string },
   ) {
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'provider.accepted',
-      title: 'Marketplace partner is ready',
-      body: `${provider.displayName} can take this booking. Select this partner if you want to switch.`,
-      data: { bookingId, providerProfileId: provider.id },
-    });
+    await this.notifications.create(
+      customerMarketplaceProviderAcceptedNotification({ userId: customerUserId, bookingId, provider }),
+    );
   }
 
   private async notifyCustomerMarketplaceProviderRejected(
@@ -1203,13 +1177,9 @@ export class BookingsService {
     bookingId: string,
     provider: { id: string; displayName: string },
   ) {
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'provider.rejected',
-      title: 'Partner declined',
-      body: `${provider.displayName} cannot take this booking.`,
-      data: { bookingId, providerProfileId: provider.id },
-    });
+    await this.notifications.create(
+      customerMarketplaceProviderRejectedNotification({ userId: customerUserId, bookingId, provider }),
+    );
   }
 
   private async notifyServiceStarted(input: {
@@ -1218,42 +1188,30 @@ export class BookingsService {
     providerUserId?: string;
     chatRoomId?: string;
   }) {
-    await this.notifications.create({
-      userId: input.customerUserId,
-      type: 'service.started',
-      title: 'Service started',
-      body: 'Your partner started the service. Continue in the matched chat if needed.',
-      data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
-    });
+    await this.notifications.create(
+      serviceStartedCustomerNotification({
+        userId: input.customerUserId,
+        bookingId: input.bookingId,
+        chatRoomId: input.chatRoomId,
+      }),
+    );
     if (input.providerUserId) {
-      await this.notifications.create({
-        userId: input.providerUserId,
-        type: 'service.started',
-        title: 'Service started',
-        body: 'Continue with the customer in the matched chat if needed.',
-        data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
-      });
+      await this.notifications.create(
+        serviceStartedProviderNotification({
+          userId: input.providerUserId,
+          bookingId: input.bookingId,
+          chatRoomId: input.chatRoomId,
+        }),
+      );
     }
   }
 
   private async notifyCustomerServiceCompleted(customerUserId: string, bookingId: string) {
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'service.completed',
-      title: 'Service completed',
-      body: 'Please leave a review when you are ready.',
-      data: { bookingId },
-    });
+    await this.notifications.create(customerServiceCompletedNotification(customerUserId, bookingId));
   }
 
   private async notifyProviderEarningCreated(providerUserId: string, bookingId: string) {
-    await this.notifications.create({
-      userId: providerUserId,
-      type: 'earning.created',
-      title: 'Earning created',
-      body: 'Your completed service has been added to earnings.',
-      data: { bookingId },
-    });
+    await this.notifications.create(providerEarningCreatedNotification(providerUserId, bookingId));
   }
 
   private async notifyBackupProviders(input: {
