@@ -19,13 +19,13 @@ type PartnerCommandCenterSectionProps = {
 
 export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Operator overview across onboarding, dispatch readiness, payout/tax readiness, and report follow-up."
         status={<span className="pill pill-info">Daily control view</span>}
         title="Partner command center"
       />
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         {lanes.map((lane) => (
           <Link className="card" href={lane.href} key={lane.title}>
             <p>{lane.title}</p>
@@ -33,10 +33,10 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
             <span className={`signal ${partnerCommandCenterToneClass(lane.tone)}`}>
               {partnerCommandCenterToneLabel(lane.tone)}
             </span>
-            <p className="muted" style={{ marginTop: 8 }}>
+            <p className="muted admin-mt-8">
               {lane.detail}
             </p>
-            <div className="participant-list" style={{ marginTop: 10 }}>
+            <div className="participant-list admin-mt-10">
               {lane.metrics.map((item) => (
                 <span className="pill" key={item.label}>
                   {item.label}: {item.value}

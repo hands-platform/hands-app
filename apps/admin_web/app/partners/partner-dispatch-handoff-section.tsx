@@ -12,7 +12,7 @@ type PartnerDispatchHandoffSectionProps = {
 
 export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandoffSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
           <Link className="text-link" href="/operations-policy">
@@ -28,7 +28,7 @@ export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandof
         }
         title="Dispatch handoff links"
       />
-      <div className="service-trace-summary" style={{ marginTop: 14 }}>
+      <div className="service-trace-summary admin-mt-14">
         {handoff.links.map((item) => (
           <Link
             className={`ops-task-breakdown-item ops-task-breakdown-${partnerDashboardTone(item.tone)}`}

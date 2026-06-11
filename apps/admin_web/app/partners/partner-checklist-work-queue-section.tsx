@@ -18,7 +18,7 @@ export function PartnerChecklistWorkQueueSection({
   queue,
 }: PartnerChecklistWorkQueueSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Compact follow-up list for the current partner filter. It groups acceptance holds, payout/tax gates, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
         status={

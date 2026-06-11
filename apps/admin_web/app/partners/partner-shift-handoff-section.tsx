@@ -16,13 +16,13 @@ type PartnerShiftHandoffSectionProps = {
 
 export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness, location freshness, push readiness, and payout setup into a practical work order."
         status={<span className={`signal ${partnerCommandToneClass(handoff.tone)}`}>{handoff.label}</span>}
         title="Partner shift handoff"
       />
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <span className="pill pill-info">Next best partner move</span>
@@ -34,7 +34,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
           </Link>
         </div>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 14 }}>
+      <div className="service-trace-summary admin-mt-14">
         {handoff.stats.map((stat) => (
           <Link
             className={`ops-task-breakdown-item ops-task-breakdown-${partnerDashboardTone(stat.tone)}`}
@@ -47,7 +47,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
           </Link>
         ))}
       </div>
-      <div className="ops-task-grid" style={{ marginTop: 14 }}>
+      <div className="ops-task-grid admin-mt-14">
         {handoff.actions.map((item) => (
           <Link
             className={`ops-task-card ${partnerShiftCardClass(item.tone)}`}
@@ -58,7 +58,7 @@ export function PartnerShiftHandoffSection({ handoff }: PartnerShiftHandoffSecti
             <h3>{item.title}</h3>
             <p>{item.detail}</p>
             <small>{item.operatorAction}</small>
-            <div className="participant-list" style={{ marginTop: 10 }}>
+            <div className="participant-list admin-mt-10">
               {item.samples.length ? (
                 item.samples.map((sample) => (
                   <span className="pill" key={`${item.title}-${sample}`}>

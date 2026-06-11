@@ -21,7 +21,7 @@ type PartnerChecklistLaneSectionProps = {
 
 export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChecklistLaneSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Suggested operator order for fixing factual blockers from profile, KYC, document, bank, tax, wallet, location, and push readiness."
         status={

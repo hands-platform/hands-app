@@ -20,7 +20,7 @@ type PartnerReviewQueueSectionProps = {
 
 export function PartnerReviewQueueSection({ queue }: PartnerReviewQueueSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch location freshness."
         status={

@@ -45,7 +45,7 @@ export function PartnerDispatchForecastSection({
   staleLocationMinutes,
 }: PartnerDispatchForecastSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
           <Link className="text-link" href="/operations-policy">
@@ -55,7 +55,7 @@ export function PartnerDispatchForecastSection({
         description="Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply records for direct requests and marketplace matching."
         title="Dispatch capacity forecast"
       />
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         {forecast.totals.map((item) => (
           <Link className="card" href={item.href} key={item.label}>
             <p>{item.label}</p>
@@ -63,16 +63,16 @@ export function PartnerDispatchForecastSection({
             <span className={`signal ${partnerDispatchForecastToneClass(item.tone)}`}>
               {partnerDispatchForecastToneLabel(item.tone)}
             </span>
-            <p className="muted" style={{ marginTop: 8 }}>
+            <p className="muted admin-mt-8">
               {item.detail}
             </p>
           </Link>
         ))}
       </div>
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         <div className="card">
           <h3>Dispatch blockers</h3>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {forecast.blockers.map((item) => (
               <div className="setup-stage-item" key={item.label}>
                 <span>{item.count ? 'FIX' : 'OK'}</span>
@@ -93,7 +93,7 @@ export function PartnerDispatchForecastSection({
             Use this to see which partner onboarding, location refresh, or push registration records need
             operator attention.
           </p>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {forecast.supplyLanes.map((lane) => (
               <div className="setup-stage-item" key={lane.city}>
                 <span>{lane.ready ? 'LIVE' : 'CHECK'}</span>

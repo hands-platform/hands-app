@@ -28,7 +28,7 @@ type PartnerMarketplaceHoldBoardSectionProps = {
 
 export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplaceHoldBoardSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Shows why partners cannot join marketplace bookings before operators rely on them for booking recovery. Viewing marketplace requests is not treated as a partner action."
         status={
@@ -44,19 +44,19 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
         }
         title="Partner marketplace hold board"
       />
-      <div className="grid" style={{ marginTop: 12 }}>
+      <div className="grid admin-mt-12">
         {board.cards.map((card) => (
           <Link className="card" href={card.href} key={card.title}>
             <p>{card.title}</p>
             <h2>{card.count}</h2>
             <span className={`signal ${partnerMarketplaceHoldToneClass(card.tone)}`}>{card.status}</span>
-            <p className="muted" style={{ marginTop: 8 }}>
+            <p className="muted admin-mt-8">
               {card.detail}
             </p>
-            <p className="muted" style={{ marginTop: 8 }}>
+            <p className="muted admin-mt-8">
               {card.operatorAction}
             </p>
-            <div className="participant-list" style={{ marginTop: 10 }}>
+            <div className="participant-list admin-mt-10">
               {card.samples.length > 0 ? (
                 card.samples.map((sample) => (
                   <span className="pill" key={sample}>

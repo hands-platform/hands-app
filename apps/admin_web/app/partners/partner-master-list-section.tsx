@@ -14,7 +14,7 @@ type PartnerMasterListSectionProps = {
 
 export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="Compact admin list for ID, profile, contact, onboarding level, app status, location freshness, booking volume, feedback records, revenue, payout readiness, and account state."
         status={<span className="pill pill-info">{rows.length} visible row(s)</span>}
