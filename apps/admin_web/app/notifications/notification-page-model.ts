@@ -8,10 +8,7 @@ import {
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
-import type {
-  NotificationDeliveryRow,
-  NotificationTableRow,
-} from './notifications-table-section';
+import type { NotificationDeliveryRow, NotificationTableRow } from './notifications-table-section';
 
 const PARTNER_ALERT_TYPES = [
   'booking.requested',
@@ -119,9 +116,7 @@ export function buildNotificationTableRows(
   });
 }
 
-export function buildNotificationSummary(
-  notifications: readonly AdminNotification[],
-): NotificationSummary {
+export function buildNotificationSummary(notifications: readonly AdminNotification[]): NotificationSummary {
   return {
     disabledDevices: countDisabledDevices(notifications),
     failed: countDeliveries(notifications, 'FAILED'),
@@ -203,8 +198,8 @@ export function buildNotificationChannelSummary(
   const partnerAlerts = notifications.filter((notification) => isPartnerAlertType(notification.type));
   const deliveries = notifications.flatMap((notification) => notification.deliveries ?? []);
   return {
-    inAppDeliveries: deliveries.filter((delivery) => delivery.provider === 'IN_APP_ONLY').length,
-    fcmDeliveries: deliveries.filter((delivery) => delivery.provider === 'FCM').length,
+    inAppDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'IN_APP_ONLY')).length,
+    fcmDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'FCM')).length,
     partnerAlertCount: partnerAlerts.length,
     policyLabel: policyOptionLabel(partnerAlertPolicy),
   };
@@ -312,22 +307,20 @@ function countDisabledDevices(notifications: readonly AdminNotification[]) {
 }
 
 function hasRetrySignal(notification: AdminNotification) {
-  return (notification.deliveries ?? []).some(
-    (delivery) => delivery.status === 'FAILED' || delivery.pushDevice?.enabled === false,
-  );
+  return hasDeliveryStatus(notification, 'FAILED') || hasDisabledPushDevice(notification);
 }
 
 function notificationPriority(notification: AdminNotification) {
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED')) {
+  if (hasDeliveryStatus(notification, 'FAILED')) {
     return 4;
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false)) {
+  if (hasDisabledPushDevice(notification)) {
     return 3;
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED')) {
+  if (hasDeliveryStatus(notification, 'SKIPPED')) {
     return 2;
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SENT')) {
+  if (hasDeliveryStatus(notification, 'SENT')) {
     return 1;
   }
   return 0;
@@ -486,19 +479,19 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
     return true;
   }
   if (review === 'failed') {
-    return deliveries.some((delivery) => delivery.status === 'FAILED');
+    return hasDeliveryStatus(notification, 'FAILED');
   }
   if (review === 'disabled-device') {
-    return deliveries.some((delivery) => delivery.pushDevice?.enabled === false);
+    return hasDisabledPushDevice(notification);
   }
   if (review === 'needs-retry') {
     return hasRetrySignal(notification);
   }
   if (review === 'skipped') {
-    return deliveries.some((delivery) => delivery.status === 'SKIPPED');
+    return hasDeliveryStatus(notification, 'SKIPPED');
   }
   if (review === 'sent') {
-    return deliveries.some((delivery) => delivery.status === 'SENT');
+    return hasDeliveryStatus(notification, 'SENT');
   }
   if (review === 'pending') {
     return deliveries.length === 0;
@@ -513,10 +506,10 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
     return notification.type === 'booking.no_show';
   }
   if (review === 'fcm') {
-    return deliveries.some((delivery) => delivery.provider === 'FCM');
+    return hasDeliveryProvider(notification, 'FCM');
   }
   if (review === 'in-app-route') {
-    return deliveries.some((delivery) => delivery.provider === 'IN_APP_ONLY');
+    return hasDeliveryProvider(notification, 'IN_APP_ONLY');
   }
   return true;
 }
@@ -527,45 +520,45 @@ function notificationBookingId(notification: AdminNotification) {
 }
 
 function signalClass(notification: AdminNotification) {
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED')) {
+  if (hasDeliveryStatus(notification, 'FAILED')) {
     return 'signal signal-warn';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false)) {
+  if (hasDisabledPushDevice(notification)) {
     return 'signal signal-warn';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SENT')) {
+  if (hasDeliveryStatus(notification, 'SENT')) {
     return 'signal signal-ok';
   }
   return 'signal signal-info';
 }
 
 function opsSignal(notification: AdminNotification) {
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED')) {
+  if (hasDeliveryStatus(notification, 'FAILED')) {
     return 'Retry needed';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false)) {
+  if (hasDisabledPushDevice(notification)) {
     return 'Device disabled';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED')) {
+  if (hasDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped delivery';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SENT')) {
+  if (hasDeliveryStatus(notification, 'SENT')) {
     return 'Delivered';
   }
   return 'Pending';
 }
 
 function opsHint(notification: AdminNotification) {
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED')) {
+  if (hasDeliveryStatus(notification, 'FAILED')) {
     return 'Review failure code, confirm token health, then retry only after the device path makes sense.';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false)) {
+  if (hasDisabledPushDevice(notification)) {
     return 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED')) {
+  if (hasDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.';
   }
-  if ((notification.deliveries ?? []).some((delivery) => delivery.status === 'SENT')) {
+  if (hasDeliveryStatus(notification, 'SENT')) {
     return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
   }
   return 'Notification exists, but no delivery attempt was captured yet.';
@@ -589,4 +582,23 @@ function asRecord(value: unknown) {
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function hasDeliveryStatus(notification: AdminNotification, status: string) {
+  return (notification.deliveries ?? []).some((delivery) => delivery.status === status);
+}
+
+function hasDisabledPushDevice(notification: AdminNotification) {
+  return (notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false);
+}
+
+function hasDeliveryProvider(notification: AdminNotification, provider: string) {
+  return (notification.deliveries ?? []).some((delivery) => isDeliveryProvider(delivery, provider));
+}
+
+function isDeliveryProvider(
+  delivery: NonNullable<AdminNotification['deliveries']>[number],
+  provider: string,
+) {
+  return delivery.provider === provider;
 }
