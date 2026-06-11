@@ -113,7 +113,7 @@ export function BookingMarketplaceWalletEvidenceSection({
   marketplaceWalletEvidence: MarketplaceWalletEvidence;
 }) {
   return (
-    <section className="card" id="marketplace-wallet-evidence" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="marketplace-wallet-evidence">
       <div className="ops-section-header">
         <div>
           <h2>Marketplace participation and wallet evidence</h2>
@@ -128,7 +128,7 @@ export function BookingMarketplaceWalletEvidenceSection({
           {marketplaceWalletEvidence.status}
         </span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {marketplaceWalletEvidence.cards.map((card) => (
           <a href={card.href} key={card.label}>
             <span>{card.label}</span>
@@ -137,7 +137,7 @@ export function BookingMarketplaceWalletEvidenceSection({
           </a>
         ))}
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 14 }}>
+      <div className="setup-stage-list admin-mt-14">
         {marketplaceWalletEvidence.commandStrip.map((command) => (
           <div className="setup-stage-item" key={command.label}>
             <span>{command.label}</span>
@@ -188,7 +188,7 @@ export function BookingOperatingLedgerSection({
   operatingLedger: OperatingLedgerRow[];
 }) {
   return (
-    <section className="card" id="booking-operating-ledger" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-operating-ledger">
       <div className="ops-section-header">
         <div>
           <h2>Booking operating ledger</h2>
@@ -237,7 +237,7 @@ export function BookingCloseoutReadinessSection({
   closeoutReadiness: CloseoutReadiness;
 }) {
   return (
-    <section className="card" id="booking-closeout-readiness" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-closeout-readiness">
       <div className="ops-section-header">
         <div>
           <h2>Closeout readiness</h2>
@@ -248,10 +248,10 @@ export function BookingCloseoutReadinessSection({
         </div>
         <span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>
       </div>
-      <p className="muted" style={{ marginTop: 8 }}>
+      <p className="muted admin-mt-8">
         {closeoutReadiness.helper}
       </p>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {closeoutReadiness.items.map((item) => (
           <div className="setup-stage-item" key={item.id}>
             <span>{item.label}</span>
@@ -266,7 +266,7 @@ export function BookingCloseoutReadinessSection({
           </div>
         ))}
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-section-header">
           <div>
             <strong>Closeout exception register</strong>
@@ -282,7 +282,7 @@ export function BookingCloseoutReadinessSection({
           </span>
         </div>
         {closeoutReadiness.openItems.length > 0 ? (
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {closeoutReadiness.openItems.map((item) => (
               <div className="setup-stage-item" key={`exception-${item.id}`}>
                 <span>{item.owner}</span>
@@ -304,7 +304,7 @@ export function BookingCloseoutReadinessSection({
             ))}
           </div>
         ) : (
-          <p className="muted" style={{ marginTop: 10 }}>
+          <p className="muted admin-mt-10">
             Customer, partner, chat, payment, finance, cash, location, and audit records are aligned for the
             current booking stage.
           </p>
@@ -320,7 +320,7 @@ export function BookingOperatingSnapshotSection({
   operatingSnapshot: OperatingSnapshot;
 }) {
   return (
-    <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="operating-snapshot">
       <div className="ops-section-header">
         <div>
           <h2>Booking operating snapshot</h2>
@@ -331,7 +331,7 @@ export function BookingOperatingSnapshotSection({
         </div>
         <span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {operatingSnapshot.facts.map((fact) => (
           <div key={fact.label}>
             <span>{fact.label}</span>
@@ -340,7 +340,7 @@ export function BookingOperatingSnapshotSection({
           </div>
         ))}
       </div>
-      <div className={`ops-task-note ${operatingSnapshot.noteClassName}`} style={{ marginTop: 14 }}>
+      <div className={`ops-task-note ${operatingSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{operatingSnapshot.nextAction}</strong>
@@ -361,7 +361,7 @@ export function BookingOperatingTimelineSection({
   operatingTimeline: OperatingTimelineItem[];
 }) {
   return (
-    <section className="card" id="operating-timeline" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="operating-timeline">
       <div className="ops-section-header">
         <div>
           <h2>Operating timeline</h2>
@@ -372,7 +372,7 @@ export function BookingOperatingTimelineSection({
         </div>
         <span className="pill pill-info">{operatingTimeline.length} step(s)</span>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {operatingTimeline.map((item) => (
           <div className="setup-stage-item" key={item.id}>
             <span>{item.type}</span>
@@ -394,7 +394,7 @@ export function BookingHandoffChecklistSection({
   handoffChecklist: BookingHandoffChecklistItem[];
 }) {
   return (
-    <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="booking-handoff-checklist">
       <div className="ops-section-header">
         <div>
           <h2>Booking handoff checklist</h2>
@@ -405,7 +405,7 @@ export function BookingHandoffChecklistSection({
         </div>
         <span className="pill pill-info">{handoffChecklist.length} stage(s)</span>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {handoffChecklist.map((item) => (
           <div className="setup-stage-item" key={item.id}>
             <span>{item.label}</span>
@@ -433,7 +433,7 @@ export function BookingCommunicationMovementHandoffSection({
   communicationMovementHandoff: CommunicationMovementHandoff;
 }) {
   return (
-    <section className="card" id="communication-movement-handoff" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="communication-movement-handoff">
       <div className="ops-section-header">
         <div>
           <h2>Communication and movement handoff</h2>
@@ -446,7 +446,7 @@ export function BookingCommunicationMovementHandoffSection({
           {communicationMovementHandoff.status}
         </span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {communicationMovementHandoff.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -455,7 +455,7 @@ export function BookingCommunicationMovementHandoffSection({
           </div>
         ))}
       </div>
-      <div className={`ops-task-note ${communicationMovementHandoff.noteClassName}`} style={{ marginTop: 14 }}>
+      <div className={`ops-task-note ${communicationMovementHandoff.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{communicationMovementHandoff.nextAction}</strong>
@@ -466,7 +466,7 @@ export function BookingCommunicationMovementHandoffSection({
           </Link>
         </div>
       </div>
-      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+      <div className="setup-stage-list admin-mt-12">
         {communicationMovementHandoff.events.length ? (
           communicationMovementHandoff.events.map((event) => (
             <div className="setup-stage-item" key={event.id}>
@@ -494,7 +494,7 @@ export function BookingChatLifecycleSection({
   messageCount: number;
 }) {
   return (
-    <section className="card" id="structured-ops-status" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="structured-ops-status">
       <div className="ops-section-header">
         <div>
           <h2>Chat lifecycle and retention</h2>
@@ -505,7 +505,7 @@ export function BookingChatLifecycleSection({
         </div>
         <span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Mobile customer app</span>
           <strong>{chatLifecycle.customerState}</strong>
