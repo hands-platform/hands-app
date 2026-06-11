@@ -302,7 +302,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         )}
       </section>
 
-      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+      <section className="card admin-card-scroll" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
             <h2>Duration pricing matrix</h2>

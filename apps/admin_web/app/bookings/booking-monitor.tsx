@@ -1192,7 +1192,7 @@ export function BookingMonitor({
             ))}
           </div>
         </section>
-        <section className="card" style={{ marginTop: 14, overflowX: 'auto' }}>
+        <section className="card admin-card-scroll" style={{ marginTop: 14 }}>
           <div className="ops-section-header">
             <div>
               <h3>Marketplace booking coverage board</h3>
