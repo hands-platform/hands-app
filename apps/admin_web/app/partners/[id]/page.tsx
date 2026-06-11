@@ -1342,14 +1342,6 @@ function StatusCard({ label, value }: { readonly label: string; readonly value: 
   );
 }
 
-function InfoLine({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
-    </p>
-  );
-}
-
 function displaySessionCheckText(value?: string | null) {
   const text = value?.trim() || 'Session check';
 
