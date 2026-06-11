@@ -82,25 +82,9 @@ const forbiddenSchemaFragments = [
 
 rejectPatterns(forbiddenSchemaFragments, 'Supabase core schema still contains forbidden MVP field');
 
-for (const check of enumChecks) {
-  const prismaValues = extractPrismaEnum(check.prisma);
-  const sqlValues = extractSqlEnum(check.sql);
-  const missing = prismaValues.filter((value) => !sqlValues.includes(value));
-  if (missing.length > 0) {
-    failures.push(`${check.sql} is missing Prisma ${check.prisma} values: ${missing.join(', ')}`);
-  }
-}
-
-for (const table of requiredTables) {
-  if (!hasPublicTable(table)) {
-    failures.push(`Supabase core schema is missing table public.${table}`);
-  }
-  if (!hasPublicTableRls(table)) {
-    failures.push(`Supabase core schema table public.${table} does not enable RLS.`);
-  }
-}
-
-requirePatterns([
+checkEnumParity(enumChecks);
+checkRequiredTables(requiredTables);
+requireSchemaFragments([
   {
     label: 'chat participant message insert RLS policy',
     pattern: /create\s+policy\s+"messages participants insert"/i,
@@ -130,7 +114,7 @@ const requiredFileSchemaFragments = [
   { label: 'files review status purpose index', pattern: /files_review_status_purpose_idx/i },
 ];
 
-requirePatterns(requiredFileSchemaFragments);
+requireSchemaFragments(requiredFileSchemaFragments);
 
 if (failures.length > 0) {
   console.error(JSON.stringify({ ok: false, failures }, null, 2));
@@ -162,7 +146,29 @@ function extractPrismaEnum(name) {
     .map((line) => line.split(/\s+/)[0]);
 }
 
-function requirePatterns(fragments) {
+function checkEnumParity(checks) {
+  for (const check of checks) {
+    const prismaValues = extractPrismaEnum(check.prisma);
+    const sqlValues = extractSqlEnum(check.sql);
+    const missing = prismaValues.filter((value) => !sqlValues.includes(value));
+    if (missing.length > 0) {
+      failures.push(`${check.sql} is missing Prisma ${check.prisma} values: ${missing.join(', ')}`);
+    }
+  }
+}
+
+function checkRequiredTables(tables) {
+  for (const table of tables) {
+    if (!hasPublicTable(table)) {
+      failures.push(`Supabase core schema is missing table public.${table}`);
+    }
+    if (!hasPublicTableRls(table)) {
+      failures.push(`Supabase core schema table public.${table} does not enable RLS.`);
+    }
+  }
+}
+
+function requireSchemaFragments(fragments) {
   for (const fragment of fragments) {
     if (!fragment.pattern.test(supabaseSchema)) {
       failures.push(`Supabase core schema is missing ${fragment.label}.`);
