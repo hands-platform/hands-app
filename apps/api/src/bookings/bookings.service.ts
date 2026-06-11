@@ -164,6 +164,16 @@ type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
   };
 }>;
 
+type FirstPickRejectedBookingResponse = Prisma.BookingGetPayload<{
+  include: {
+    participants: true;
+    preferredProvider: true;
+    selectedProvider: true;
+    chatRoom: true;
+    addressSnapshot: true;
+  };
+}>;
+
 type BackupProviderNotificationInput = {
   stage: BackupNotificationTraceStage;
   bookingId: string;
@@ -465,6 +475,53 @@ export class BookingsService {
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
+  }
+
+  private async reopenBookingAfterFirstPickRejected(input: {
+    bookingId: string;
+    booking: { metadata?: Prisma.JsonValue | null; services: Array<{ serviceId: string }> };
+    reopenedBooking: FirstPickRejectedBookingResponse;
+    preferredProviderId: string;
+  }) {
+    const matchingPolicy = this.bookingPolicy(input.booking, await this.matching.getPolicy());
+    const serviceId = input.booking.services[0]?.serviceId;
+    const dispatchPin = bookingDispatchCoordinates(input.reopenedBooking);
+    const eligibleBackupProviders = serviceId
+      ? await this.findEligibleBackupProviders({
+          bookingId: input.bookingId,
+          serviceId,
+          lat: dispatchPin.lat,
+          lng: dispatchPin.lng,
+          preferredProviderId: input.preferredProviderId,
+          backupOpenMode: matchingPolicy.backupOpenMode,
+          forceOpen: true,
+          policy: matchingPolicy,
+        })
+      : [];
+    const result = this.matching.openBooking({
+      booking: input.reopenedBooking,
+      policy: matchingPolicy,
+      payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
+        firstPickDeclined: true,
+      }),
+    });
+    await this.matching.registerActiveBooking(input.bookingId, result);
+    await this.matching.scheduleBookingTimeout(
+      input.bookingId,
+      bookingResponseTimeoutAt({
+        expiresAt: input.reopenedBooking.expiresAt,
+        providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
+      }),
+    );
+    await this.notifyBackupProvidersAndRecordTrace({
+      stage: 'first_pick_declined',
+      bookingId: input.bookingId,
+      providers: eligibleBackupProviders,
+      backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+      backupOpenMode: matchingPolicy.backupOpenMode,
+      backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
+      matchingPayload: result,
+    });
   }
 
   private async announceOpenBooking(input: {
@@ -880,54 +937,27 @@ export class BookingsService {
     }
 
     if (responseRoute === 'first-pick-rejected') {
-      const updated = await this.prisma.booking.update({
+      const updated: FirstPickRejectedBookingResponse = await this.prisma.booking.update({
         where: { id: bookingId },
         data: bookingFirstPickRejectedUpdateData({
           bookingId,
           providerProfileId: provider.id,
         }),
-        include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+        include: {
+          participants: true,
+          preferredProvider: true,
+          selectedProvider: true,
+          chatRoom: true,
+          addressSnapshot: true,
+        },
       });
       await this.matching.closeBooking(bookingId);
       await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
-      const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
-      const serviceId = booking.services[0]?.serviceId;
-      const dispatchPin = bookingDispatchCoordinates(updated);
-      const eligibleBackupProviders = serviceId
-        ? await this.findEligibleBackupProviders({
-            bookingId,
-            serviceId,
-            lat: dispatchPin.lat,
-            lng: dispatchPin.lng,
-            preferredProviderId: provider.id,
-            backupOpenMode: matchingPolicy.backupOpenMode,
-            forceOpen: true,
-            policy: matchingPolicy,
-          })
-        : [];
-      const result = this.matching.openBooking({
-        booking: updated,
-        policy: matchingPolicy,
-        payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
-          firstPickDeclined: true,
-        }),
-      });
-      await this.matching.registerActiveBooking(bookingId, result);
-      await this.matching.scheduleBookingTimeout(
+      await this.reopenBookingAfterFirstPickRejected({
         bookingId,
-        bookingResponseTimeoutAt({
-          expiresAt: updated.expiresAt,
-          providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
-        }),
-      );
-      await this.notifyBackupProvidersAndRecordTrace({
-        stage: 'first_pick_declined',
-        bookingId,
-        providers: eligibleBackupProviders,
-        backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-        backupOpenMode: matchingPolicy.backupOpenMode,
-        backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-        matchingPayload: result,
+        booking,
+        reopenedBooking: updated,
+        preferredProviderId: provider.id,
       });
       return updated;
     }
