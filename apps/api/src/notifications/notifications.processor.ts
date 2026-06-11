@@ -19,6 +19,18 @@ const PARTNER_BOOKING_ALERT_TYPES = new Set([
   'booking.matched',
   'provider.payout_setup_required',
 ]);
+const PUSH_DATA_KEYS = new Set([
+  'bookingId',
+  'chatRoomId',
+  'providerProfileId',
+  'customerProfileId',
+  'notificationId',
+  'paymentId',
+  'earningId',
+  'payoutBatchId',
+  'fileId',
+  'sanctionId',
+]);
 
 @Processor('notification-retry')
 export class NotificationRetryProcessor extends WorkerHost {
@@ -45,7 +57,7 @@ export class NotificationRetryProcessor extends WorkerHost {
     }
 
     const results = [];
-    const data = toStringData(notification.data);
+    const data = toPushData(notification.data);
     const providerOverride = await this.resolveProviderOverride(notification.type);
 
     for (const device of devices) {
@@ -117,12 +129,21 @@ function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-function toStringData(value: unknown) {
+export function toPushData(value: unknown) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
   }
 
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, String(entry)]),
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    ([key, entry]) => PUSH_DATA_KEYS.has(key) && isPushDataScalar(entry),
   );
+  if (entries.length === 0) {
+    return undefined;
+  }
+
+  return Object.fromEntries(entries.map(([key, entry]) => [key, String(entry)]));
+}
+
+function isPushDataScalar(value: unknown) {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
