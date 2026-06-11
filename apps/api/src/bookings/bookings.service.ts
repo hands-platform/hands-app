@@ -1503,7 +1503,7 @@ export class BookingsService {
     }
   }
 
-  updateStatus(bookingId: string, status: BookingStatus) {
+  private updateBookingStatus(bookingId: string, status: BookingStatus) {
     return this.prisma.booking.update({ where: { id: bookingId }, data: { status } });
   }
 
@@ -1517,7 +1517,7 @@ export class BookingsService {
     if (status === BookingStatus.IN_SERVICE) {
       return this.startProviderService({ bookingId, providerProfileId: provider.id });
     }
-    return this.updateStatus(bookingId, status);
+    return this.updateBookingStatus(bookingId, status);
   }
 
   private async startProviderService(input: { bookingId: string; providerProfileId: string }) {
