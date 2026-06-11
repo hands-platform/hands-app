@@ -183,6 +183,12 @@ import {
   type PartnerRecentPayoutRecordLine,
 } from './partner-detail-profile-finance-summary-section';
 import {
+  PartnerDetailFastOverviewSection,
+  type PartnerDetailFastOverviewCard,
+  type PartnerDetailFastOverviewInfoLine,
+  type PartnerDetailFastOverviewLink,
+} from './partner-detail-fast-overview-section';
+import {
   PartnerDetailServicePricingSection,
   type PartnerServicePricingDisplayRow,
 } from './partner-detail-service-pricing-section';
@@ -1471,7 +1477,7 @@ function PartnerDetailFastOverview({
     0,
   );
   const enabledPushDevices = (provider.devices ?? []).filter((device) => device.enabled !== false).length;
-  const overviewCards = [
+  const overviewCards: PartnerDetailFastOverviewCard[] = [
     {
       label: 'KYC',
       value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
@@ -1537,123 +1543,65 @@ function PartnerDetailFastOverview({
       tone: latestAccessAt ? 'pill-info' : 'pill-neutral',
     },
   ];
+  const identityRows: PartnerDetailFastOverviewInfoLine[] = [
+    { label: 'Display name', value: partnerName },
+    { label: 'Legal name', value: provider.legalName },
+    { label: 'Phone', value: provider.user?.phone },
+    { label: 'City', value: provider.city },
+    { label: 'Joined', value: provider.user?.createdAt ? formatDate(provider.user.createdAt) : null },
+    { label: 'Last access', value: latestAccessAt ? formatDate(latestAccessAt) : null },
+  ];
+  const bookingCommandRows: PartnerDetailFastOverviewInfoLine[] = [
+    {
+      label: 'Policy',
+      value: `${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
+        dispatchPolicy.backupRadiusMeters / 1000,
+      )}km marketplace radius`,
+    },
+    {
+      label: 'Latest booking',
+      value: latestBooking
+        ? `${shortRecordId(latestBooking.id)} / ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(
+            latestBooking,
+          )}`
+        : null,
+    },
+    { label: 'Marketplace rows', value: `${provider.participants?.length ?? 0} loaded` },
+    { label: 'Retained chats', value: `${chatRoomCount} room(s), ${chatMessageCount} message(s)` },
+  ];
+  const payoutReadinessRows: PartnerDetailFastOverviewInfoLine[] = [
+    { label: 'Bank', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
+    { label: 'Tax profile', value: provider.taxProfile?.status ?? 'Deferred until first earning' },
+    { label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' },
+    { label: 'Payout status', value: payoutOps.status },
+  ];
+  const nextOperatorActionNotes = [
+    kycEvidence.nextAction,
+    payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'No payout blocker is loaded for this partner.',
+  ];
+  const nextOperatorActionLinks: PartnerDetailFastOverviewLink[] = [
+    { href: fullHref, label: 'Full dossier' },
+    { href: '/cash-settlements', label: 'Cash settlements' },
+    { href: '/payouts', label: 'Payout batches' },
+  ];
 
   return (
-    <>
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/partners">
-              Back to partners
-            </Link>
-          </p>
-          <h1>{partnerName}</h1>
-          <p className="muted">
-            Fast operations overview / {provider.user?.phone ?? 'No phone'} / {provider.city ?? 'No city'}
-          </p>
-        </div>
-        <div className="actions">
-          <Link className="text-link" href={fullHref}>
-            Open full dossier
-          </Link>
-          <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
-            Account controls
-          </Link>
-        </div>
-      </section>
-
-      <section className="grid admin-mb-16">
-        {overviewCards.map((card) => (
-          <div className="card" key={card.label}>
-            <span className={`pill ${card.tone}`}>{card.label}</span>
-            <h2>{card.value}</h2>
-            <p className="muted">{card.detail}</p>
-            <Link className="text-link" href={card.href}>
-              Open section
-            </Link>
-          </div>
-        ))}
-      </section>
-
-      <section className="detail-grid">
-        <div className="card">
-          <h2>Identity</h2>
-          <InfoLine label="Display name" value={partnerName} />
-          <InfoLine label="Legal name" value={provider.legalName} />
-          <InfoLine label="Phone" value={provider.user?.phone} />
-          <InfoLine label="City" value={provider.city} />
-          <InfoLine
-            label="Joined"
-            value={provider.user?.createdAt ? formatDate(provider.user.createdAt) : null}
-          />
-          <InfoLine label="Last access" value={latestAccessAt ? formatDate(latestAccessAt) : null} />
-        </div>
-
-        <div className="card">
-          <h2>Booking command</h2>
-          <InfoLine
-            label="Policy"
-            value={`${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
-              dispatchPolicy.backupRadiusMeters / 1000,
-            )}km marketplace radius`}
-          />
-          <InfoLine
-            label="Latest booking"
-            value={
-              latestBooking
-                ? `${shortRecordId(latestBooking.id)} / ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(
-                    latestBooking,
-                  )}`
-                : null
-            }
-          />
-          <InfoLine label="Marketplace rows" value={`${provider.participants?.length ?? 0} loaded`} />
-          <InfoLine
-            label="Retained chats"
-            value={`${chatRoomCount} room(s), ${chatMessageCount} message(s)`}
-          />
-        </div>
-
-        <div className="card">
-          <h2>Payout readiness</h2>
-          <InfoLine
-            label="Bank"
-            value={primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null}
-          />
-          <InfoLine
-            label="Tax profile"
-            value={provider.taxProfile?.status ?? 'Deferred until first earning'}
-          />
-          <InfoLine label="Cash fee debt" value={cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear'} />
-          <InfoLine label="Payout status" value={payoutOps.status} />
-        </div>
-
-        <div className="card">
-          <h2>Next operator action</h2>
-          <p className="muted">{kycEvidence.nextAction}</p>
-          <p className="muted">
-            {payoutOps.blockers[0] ??
-              payoutOps.hold?.reason ??
-              'No payout blocker is loaded for this partner.'}
-          </p>
-          <div className="participant-list">
-            <Link className="pill pill-info" href={fullHref}>
-              Full dossier
-            </Link>
-            <Link className="pill pill-info" href="/cash-settlements">
-              Cash settlements
-            </Link>
-            <Link className="pill pill-info" href="/payouts">
-              Payout batches
-            </Link>
-          </div>
-        </div>
-      </section>
-    </>
+    <PartnerDetailFastOverviewSection
+      accountControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+      bookingCommandRows={bookingCommandRows}
+      fullHref={fullHref}
+      identityRows={identityRows}
+      nextOperatorActionLinks={nextOperatorActionLinks}
+      nextOperatorActionNotes={nextOperatorActionNotes}
+      overviewCards={overviewCards}
+      partnerName={partnerName}
+      payoutReadinessRows={payoutReadinessRows}
+      subtitle={`Fast operations overview / ${provider.user?.phone ?? 'No phone'} / ${provider.city ?? 'No city'}`}
+    />
   );
 }
 
-function StatusCard({ label, value }: { label: string; value: string }) {
+function StatusCard({ label, value }: { readonly label: string; readonly value: string }) {
   return (
     <div className="card">
       <p>{label}</p>
