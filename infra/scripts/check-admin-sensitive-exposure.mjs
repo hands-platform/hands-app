@@ -8,6 +8,7 @@ checkAdminServicePushDeviceSelects();
 checkAdminApiTypes();
 checkAdminUiTokenAccess();
 checkAdminPaymentPayloadRedaction();
+checkAdminNotificationBodies();
 
 console.log(
   JSON.stringify(
@@ -102,6 +103,18 @@ function checkAdminPaymentPayloadRedaction() {
     'compactValue(record[key])',
     'Payment callback raw payload values must not be rendered directly.',
   );
+}
+
+function checkAdminNotificationBodies() {
+  const file = 'apps/api/src/admin/admin.service.ts';
+  const source = read(file);
+
+  for (const marker of ['body: reason', 'body: blockReason', 'body: normalizedReason']) {
+    reject(file, source, marker, 'Admin notification bodies must not expose free-form operator reasons.');
+  }
+  for (const marker of [': (reason ??', ': (normalizedReason ??', ': (blockReason ??']) {
+    reject(file, source, marker, 'Admin notification bodies must use generic copy instead of fallback operator reasons.');
+  }
 }
 
 function reject(file, source, marker, message) {
