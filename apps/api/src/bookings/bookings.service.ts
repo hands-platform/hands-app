@@ -106,6 +106,7 @@ import {
   bookingParticipantCompoundKey,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
+  bookingSelectedParticipantUpdate,
 } from './bookings.participants';
 import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
 
@@ -756,12 +757,7 @@ export class BookingsService {
             selectedProviderId: providerId,
             matchedAt: new Date(),
             matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
-            participants: {
-              update: {
-                where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
-                data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
-              },
-            },
+            participants: bookingSelectedParticipantUpdate(bookingId, providerId),
             chatRoom: { upsert: { create: {}, update: {} } },
           },
           include: {
@@ -847,12 +843,7 @@ export class BookingsService {
               selectedProviderId: provider.id,
               matchedAt: new Date(),
               matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
-              participants: {
-                update: {
-                  where: participantKey,
-                  data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
-                },
-              },
+              participants: bookingSelectedParticipantUpdate(bookingId, provider.id),
               chatRoom: { upsert: { create: {}, update: {} } },
             },
             include: {

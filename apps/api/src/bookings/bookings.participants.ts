@@ -6,6 +6,19 @@ export function bookingParticipantCompoundKey(bookingId: string, providerProfile
   };
 }
 
+export function bookingSelectedParticipantUpdate(
+  bookingId: string,
+  providerProfileId: string,
+  respondedAt = new Date(),
+) {
+  return {
+    update: {
+      where: bookingParticipantCompoundKey(bookingId, providerProfileId),
+      data: { status: ParticipantStatus.SELECTED, respondedAt },
+    },
+  };
+}
+
 export function bookingParticipantResponseRoute(
   preferredProviderId: string | null | undefined,
   providerProfileId: string,

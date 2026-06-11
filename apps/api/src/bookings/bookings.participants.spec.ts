@@ -3,6 +3,7 @@ import {
   bookingParticipantCompoundKey,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
+  bookingSelectedParticipantUpdate,
 } from './bookings.participants';
 
 describe('booking participant helpers', () => {
@@ -11,6 +12,25 @@ describe('booking participant helpers', () => {
       bookingId_providerProfileId: {
         bookingId: 'booking-1',
         providerProfileId: 'partner-1',
+      },
+    });
+  });
+
+  it('builds the selected participant update payload', () => {
+    const respondedAt = new Date('2026-06-11T00:00:00.000Z');
+
+    expect(bookingSelectedParticipantUpdate('booking-1', 'partner-1', respondedAt)).toEqual({
+      update: {
+        where: {
+          bookingId_providerProfileId: {
+            bookingId: 'booking-1',
+            providerProfileId: 'partner-1',
+          },
+        },
+        data: {
+          status: ParticipantStatus.SELECTED,
+          respondedAt,
+        },
       },
     });
   });
