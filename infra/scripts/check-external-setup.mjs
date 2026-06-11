@@ -9,6 +9,19 @@ const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : 
 const env = { ...fileEnv, ...process.env };
 
 const checks = [];
+const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
+const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
+const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
+const storageRequiredEnvKeys = [
+  'STORAGE_PROVIDER',
+  'S3_ENDPOINT',
+  'S3_REGION',
+  'S3_ACCESS_KEY',
+  'S3_SECRET_KEY',
+  'S3_PUBLIC_BASE_URL',
+];
+const storageSplitBucketEnvKeys = ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET'];
 const validPhases = new Set([
   'advisory',
   'supabase-core',
@@ -182,13 +195,13 @@ addRecommended(
 addRecommended(
   'mobile-release',
   'Android customer/partner upload keystores',
-  allHaveExistingPath(['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE']),
+  allHaveExistingPath(mobileReleaseKeystoreEnvKeys),
   'Create separate Android upload keystores, store them outside Git, and set valid local keystore paths before Play release.',
 );
 addPhaseRequired(
   'mobile-release',
   'Android customer/partner upload keystores',
-  allHaveExistingPath(['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE']),
+  allHaveExistingPath(mobileReleaseKeystoreEnvKeys),
   'Fill ANDROID_CUSTOMER_UPLOAD_KEYSTORE and ANDROID_PROVIDER_UPLOAD_KEYSTORE with existing local files before production Android release.',
   ['production'],
 );
@@ -196,26 +209,26 @@ addPhaseRequired(
 addRecommended(
   'payments',
   'MoMo credentials',
-  allHaveValue(['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY']),
+  allHaveValue(momoEnvKeys),
   'Fill MoMo merchant credentials before MoMo E2E.',
 );
 addPhaseRequired(
   'payments',
   'MoMo credentials',
-  allHaveValue(['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY']),
+  allHaveValue(momoEnvKeys),
   'Fill MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY before payment E2E.',
   ['payments', 'production'],
 );
 addRecommended(
   'payments',
   'VNPay credentials',
-  allHaveValue(['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET']),
+  allHaveValue(vnpayEnvKeys),
   'Fill VNPay merchant credentials before VNPay E2E.',
 );
 addPhaseRequired(
   'payments',
   'VNPay credentials',
-  allHaveValue(['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET']),
+  allHaveValue(vnpayEnvKeys),
   'Fill VNPAY_TMN_CODE and VNPAY_HASH_SECRET before VNPay E2E.',
   ['payments', 'production'],
 );
@@ -325,22 +338,14 @@ function allHaveExistingPath(keys) {
 function firebaseAdminConfigured() {
   return (
     hasValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
-    allHaveValue(['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']) ||
+    allHaveValue(firebaseAdminEnvKeys) ||
     hasValue('GOOGLE_APPLICATION_CREDENTIALS')
   );
 }
 
 function storageConfigured() {
   return (
-    allHaveValue([
-      'STORAGE_PROVIDER',
-      'S3_ENDPOINT',
-      'S3_REGION',
-      'S3_ACCESS_KEY',
-      'S3_SECRET_KEY',
-      'S3_PUBLIC_BASE_URL',
-    ]) &&
-    (hasValue('S3_BUCKET') || allHaveValue(['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET']))
+    allHaveValue(storageRequiredEnvKeys) && (hasValue('S3_BUCKET') || allHaveValue(storageSplitBucketEnvKeys))
   );
 }
 
