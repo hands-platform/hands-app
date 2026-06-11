@@ -71,7 +71,7 @@ export function buildPartnerMasterRow(
   const lastSeenAt = partnerLastSessionAt(provider);
   const latestSessionFacts = partnerLatestSessionFacts(provider);
   const accountBlocked = Boolean(provider.blockedAt);
-  const closedRows = bookingRows.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
+  const closureCounts = partnerBookingClosureCounts(bookingRows);
   const latestAuditLog = latestProviderAuditLog(provider);
 
   return {
@@ -98,11 +98,11 @@ export function buildPartnerMasterRow(
     completedCount:
       bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
       partnerCompletedWorkCount(provider),
-    closedCount: closedRows.length,
-    customerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'CUSTOMER').length,
-    adminClosedCount: closedRows.filter((booking) => booking.closedByRole === 'ADMIN').length,
-    partnerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
-    noShowCount: bookingRows.filter((booking) => booking.status === 'NO_SHOW').length,
+    closedCount: closureCounts.closed,
+    customerClosedCount: closureCounts.customerClosed,
+    adminClosedCount: closureCounts.adminClosed,
+    partnerClosedCount: closureCounts.partnerClosed,
+    noShowCount: closureCounts.noShow,
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: partnerGrossRevenue(provider),
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
@@ -115,6 +115,18 @@ export function buildPartnerMasterRow(
       : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
+  };
+}
+
+function partnerBookingClosureCounts(bookings: ReturnType<typeof partnerBookingRows>) {
+  const closedRows = bookings.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
+
+  return {
+    adminClosed: closedRows.filter((booking) => booking.closedByRole === 'ADMIN').length,
+    closed: closedRows.length,
+    customerClosed: closedRows.filter((booking) => booking.closedByRole === 'CUSTOMER').length,
+    noShow: bookings.filter((booking) => booking.status === 'NO_SHOW').length,
+    partnerClosed: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
   };
 }
 
