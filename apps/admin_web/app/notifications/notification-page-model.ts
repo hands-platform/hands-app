@@ -7,6 +7,10 @@ import {
   enablePushDeviceConfirmHref,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
+import {
+  notificationDeliveryFailureCode,
+  notificationDeliveryFailureReason,
+} from './notification-delivery-response';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
 import type { NotificationDeliveryRow, NotificationTableRow } from './notifications-table-section';
 
@@ -277,8 +281,8 @@ function buildNotificationDeliveryRows(notification: AdminNotification): Notific
       delivery.pushDevice?.enabled === false && delivery.pushDevice.id
         ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
         : null,
-    failureCodeLabel: readFailureCode(delivery) ?? '-',
-    failureReasonLabel: readFailureReason(delivery) ?? '-',
+    failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
+    failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
     httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
     id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
     platformLabel: delivery.pushDevice?.platform ?? 'device',
@@ -361,37 +365,6 @@ function notificationActionMenuItems(notification: AdminNotification): readonly 
   });
 
   return actions;
-}
-
-function readFailureCode(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
-  const body = asRecord(delivery.response?.body);
-  const error = asRecord(body?.error);
-  const details = Array.isArray(error?.details) ? error.details : [];
-  const firstDetail = asRecord(details[0]);
-  return (
-    readString(delivery.response?.failureCode) ??
-    readString(firstDetail?.errorCode) ??
-    readString(body?.code) ??
-    readString(error?.code)
-  );
-}
-
-function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
-  const body = asRecord(delivery.response?.body);
-  const error = asRecord(body?.error);
-  const details = Array.isArray(error?.details) ? error.details : [];
-  const firstDetail = asRecord(details[0]);
-  const errors = Array.isArray(body?.errors) ? body.errors.map(String).join(', ') : undefined;
-  return (
-    readString(delivery.response?.reason) ??
-    readString(delivery.response?.message) ??
-    readString(body?.reason) ??
-    readString(body?.message) ??
-    readString(error?.message) ??
-    readString(firstDetail?.errorMessage) ??
-    readString(firstDetail?.errorCode) ??
-    errors
-  );
 }
 
 function humanizeType(type: string) {
