@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { MetricCard } from '../../../components/metric-card';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
@@ -289,37 +290,39 @@ export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityCo
           Open policy controls
         </Link>
       </div>
-      <table className="table" style={{ marginTop: 14 }}>
-        <thead>
-          <tr>
-            <th>Contract</th>
-            <th>Current state</th>
-            <th>Evidence</th>
-            <th>Operator use</th>
-            <th>Open</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.contract}>
-              <td>
-                <strong>{row.contract}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-              </td>
-              <td>{row.evidence}</td>
-              <td>{row.operatorUse}</td>
-              <td>
-                <Link className="text-link" href={row.href}>
-                  Open
-                </Link>
-              </td>
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Contract</th>
+              <th>Current state</th>
+              <th>Evidence</th>
+              <th>Operator use</th>
+              <th>Open</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.contract}>
+                <td>
+                  <strong>{row.contract}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </section>
   );
 }
