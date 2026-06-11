@@ -49,6 +49,19 @@ export function confirmDialogButtonClassName(tone: StatusBadgeTone = 'danger', s
   return statusBadgeClassName(tone);
 }
 
+export function confirmDialogButtonState(input: {
+  readonly confirmLabel: string;
+  readonly disabled?: boolean;
+  readonly loading?: boolean;
+  readonly loadingLabel?: string;
+}) {
+  const loading = Boolean(input.loading);
+  return {
+    disabled: Boolean(input.disabled || loading),
+    label: loading ? (input.loadingLabel ?? 'Working...') : input.confirmLabel,
+  };
+}
+
 export function ConfirmDialog({
   action,
   cancelHref,
@@ -66,7 +79,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const titleId = `${id}-title`;
   const descriptionId = `${id}-description`;
-  const confirmDisabled = disabled || loading;
+  const confirmState = confirmDialogButtonState({ confirmLabel, disabled, loading, loadingLabel });
 
   return (
     <section
@@ -103,8 +116,8 @@ export function ConfirmDialog({
               />
             </label>
           ))}
-          <button className={confirmDialogButtonClassName(tone, { disabled, loading })} disabled={confirmDisabled} type="submit">
-            {loading ? loadingLabel : confirmLabel}
+          <button className={confirmDialogButtonClassName(tone, { disabled, loading })} disabled={confirmState.disabled} type="submit">
+            {confirmState.label}
           </button>
         </form>
         <Link className={statusBadgeClassName('neutral')} href={cancelHref}>

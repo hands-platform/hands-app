@@ -1,4 +1,4 @@
-import { ConfirmDialog, confirmDialogButtonClassName } from './confirm-dialog';
+import { ConfirmDialog, confirmDialogButtonClassName, confirmDialogButtonState } from './confirm-dialog';
 
 describe('ConfirmDialog', () => {
   it('maps confirm tone to stable pill classes', () => {
@@ -7,6 +7,21 @@ describe('ConfirmDialog', () => {
     expect(confirmDialogButtonClassName('success')).toBe('pill pill-success');
     expect(confirmDialogButtonClassName('danger', { disabled: true })).toBe('pill pill-neutral');
     expect(confirmDialogButtonClassName('danger', { loading: true })).toBe('pill pill-neutral');
+  });
+
+  it('derives confirm button disabled state and label from loading state', () => {
+    expect(confirmDialogButtonState({ confirmLabel: 'Confirm' })).toEqual({
+      disabled: false,
+      label: 'Confirm',
+    });
+    expect(confirmDialogButtonState({ confirmLabel: 'Confirm', disabled: true })).toEqual({
+      disabled: true,
+      label: 'Confirm',
+    });
+    expect(confirmDialogButtonState({ confirmLabel: 'Confirm', loading: true, loadingLabel: 'Saving...' })).toEqual({
+      disabled: true,
+      label: 'Saving...',
+    });
   });
 
   it('renders a confirm form and cancel link without deciding business behavior', () => {
