@@ -1,10 +1,10 @@
-import { PayoutBatchTable } from './payout-batch-table';
+import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
 
 describe('PayoutBatchTable', () => {
   it('renders payout batch rows with finance actions and row anchors', () => {
     const table = PayoutBatchTable({
       rows: [
-        {
+        buildPayoutBatchRow({
           actionExecutionItems: [
             {
               action: 'Mark paid',
@@ -68,7 +68,7 @@ describe('PayoutBatchTable', () => {
           opsHint: 'Review before processing.',
           opsSignal: 'Review',
           opsSignalClassName: 'signal signal-warn',
-        },
+        }),
       ],
       updateTransferRefAction: async () => undefined,
     });
@@ -86,6 +86,70 @@ describe('PayoutBatchTable', () => {
     expect(hrefsIn(table)).toContain('/partners/partner-1');
   });
 
+  it('renders settled payout rows with metadata save controls but no status action', () => {
+    const table = PayoutBatchTable({
+      rows: [
+        buildPayoutBatchRow({
+          actionExecutionItems: [
+            {
+              action: 'Mark paid',
+              operatorRule: 'Already settled.',
+              pillClass: 'pill-success',
+              reason: 'The payout was already marked paid.',
+              status: 'Complete',
+            },
+          ],
+          actionMenuItems: [],
+          blockingActionSummary: 'Historical transfer metadata can still be edited.',
+          blockingReasons: [],
+          checklist: [
+            {
+              detail: 'Bank transfer reference: BANK-PAID-1',
+              label: 'Bank ref',
+              ok: true,
+            },
+            {
+              detail: 'Earnings moved to paid.',
+              label: 'Earnings paid',
+              ok: true,
+            },
+            {
+              detail: 'Withholding tax logs were marked paid.',
+              label: 'Tax paid',
+              ok: true,
+            },
+            {
+              detail: 'Paid timestamp is present.',
+              label: 'Paid date',
+              ok: true,
+            },
+          ],
+          notes: 'Final settlement memo',
+          paidAtLabel: 'Jun 11, 2026, 9:00 AM',
+          paidAtRelativeLabel: 'Settled today',
+          paidBlockedByReleaseCheck: false,
+          payoutHold: false,
+          phase: 'Settlement finished',
+          readinessSummary: 'Settlement side effects are complete.',
+          statusLabel: 'Paid',
+          transferRef: 'BANK-PAID-1',
+        }),
+      ],
+      updateTransferRefAction: async () => undefined,
+    });
+
+    const rendered = textContent(table);
+
+    expect(rendered).toContain('Paid');
+    expect(rendered).toContain('Settlement finished');
+    expect(rendered).toContain('BANK-PAID-1');
+    expect(rendered).toContain('Final settlement memo');
+    expect(rendered).toContain('Earnings paid');
+    expect(rendered).toContain('Tax paid');
+    expect(rendered).toContain('Paid date');
+    expect(rendered).toContain('No status action');
+  });
+
   it('renders the empty state when there are no payout batches', () => {
     const table = PayoutBatchTable({
       rows: [],
@@ -95,6 +159,41 @@ describe('PayoutBatchTable', () => {
     expect(textContent(table)).toContain('No payout batches loaded.');
   });
 });
+
+function buildPayoutBatchRow(overrides: Partial<PayoutBatchTableRow> = {}): PayoutBatchTableRow {
+  return {
+    actionExecutionItems: [],
+    actionMenuItems: [],
+    blockingActionSummary: 'No blockers.',
+    blockingReasons: [],
+    checklist: [],
+    earningCount: 0,
+    earningsHint: '0/0 linked to this batch',
+    id: 'batch-123456',
+    notes: '',
+    paidAtLabel: '-',
+    paidAtRelativeLabel: 'Awaiting settlement',
+    partnerChecksHref: '/partners/partner-1',
+    partnerLabel: 'Partner One',
+    partnerPhone: '+84900000000',
+    payoutHold: false,
+    paidBlockedByReleaseCheck: false,
+    phase: 'Finance review',
+    readinessSummary: 'Ready for review.',
+    serviceEvidencePills: [],
+    shortId: 'batch-123',
+    statusLabel: 'Draft',
+    totalAmountLabel: '0 VND',
+    transferRef: '',
+    taxLogCount: 0,
+    updatedLabel: 'Updated just now',
+    withholdingAmountLabel: '0 VND',
+    opsHint: 'Review before processing.',
+    opsSignal: 'Review',
+    opsSignalClassName: 'signal signal-warn',
+    ...overrides,
+  };
+}
 
 function textContent(value: unknown): string {
   value = resolveElement(value);
