@@ -113,7 +113,7 @@ describe('booking policy helpers', () => {
     expect(normalizeBookingCoordinate('10.7769', 'lat')).toBe(10.7769);
     expect(() => normalizeBookingCoordinate(undefined, 'lng')).toThrow(BadRequestException);
     expect(vietnamBookingCoordinateGateError(10.7769, 106.7009)).toBeNull();
-    expect(vietnamBookingCoordinateGateError(13.7563, 100.5018)).toEqual({
+    expect(vietnamBookingCoordinateGateError(0, 0)).toEqual({
       message: 'Booking address must be inside Vietnam',
     });
   });

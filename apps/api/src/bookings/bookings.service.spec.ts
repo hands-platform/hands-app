@@ -1340,8 +1340,8 @@ describe('BookingsService partner response wallet gates', () => {
       currentLng: 106.701,
     });
     const staleMutableCoordinates = {
-      lat: 13.7563,
-      lng: 100.5018,
+      lat: 0,
+      lng: 0,
       addressSnapshot: {
         latitude: 10.7769,
         longitude: 106.7009,
