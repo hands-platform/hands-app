@@ -110,7 +110,7 @@ type MarketplaceSupply = {
 
 export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: StageSnapshot }) {
   return (
-    <section className="card" id="alerts" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="alerts">
       <div className="ops-section-header">
         <div>
           <h2>Booking stage snapshot</h2>
@@ -121,7 +121,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: 
         </div>
         <span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {stageSnapshot.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -130,12 +130,12 @@ export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: 
           </div>
         ))}
       </div>
-      <div className={`ops-task-note ${stageSnapshot.noteClassName}`} style={{ marginTop: 14 }}>
+      <div className={`ops-task-note ${stageSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{stageSnapshot.headline}</strong>
             <p className="muted">{stageSnapshot.detail}</p>
-            <div className="participant-list" style={{ marginTop: 8 }}>
+            <div className="participant-list admin-mt-8">
               {stageSnapshot.badges.map((badge) => (
                 <span className={`pill ${badge.tone}`} key={badge.label}>
                   {badge.label}
@@ -158,7 +158,7 @@ export function BookingCustomerWaitPanelSection({
   customerWaitPanel: CustomerWaitPanel;
 }) {
   return (
-    <section className="card" id="audit" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="audit">
       <div className="ops-section-header">
         <div>
           <h2>Customer wait and matching decision</h2>
@@ -169,12 +169,12 @@ export function BookingCustomerWaitPanelSection({
         </div>
         <span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <strong>{customerWaitPanel.headline}</strong>
             <p className="muted">{customerWaitPanel.detail}</p>
-            <div className="participant-list" style={{ marginTop: 8 }}>
+            <div className="participant-list admin-mt-8">
               {customerWaitPanel.badges.map((badge) => (
                 <span className={`pill ${badge.tone}`} key={badge.label} title={badge.detail}>
                   {badge.label}
@@ -187,7 +187,7 @@ export function BookingCustomerWaitPanelSection({
           </Link>
         </div>
       </div>
-      <div className="ops-task-grid" style={{ marginTop: 14 }}>
+      <div className="ops-task-grid admin-mt-14">
         {customerWaitPanel.cards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.title}>
             <span className={`pill ${card.pillClass}`}>{card.status}</span>
@@ -203,7 +203,7 @@ export function BookingCustomerWaitPanelSection({
 
 export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot: PolicySnapshot }) {
   return (
-    <section className="card" id="applied-operations-policy" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="applied-operations-policy">
       <div className="ops-section-header">
         <div>
           <h2>Applied operations policy</h2>
@@ -216,7 +216,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
           Open policy
         </Link>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {policySnapshot.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -225,7 +225,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
           </div>
         ))}
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <span className={`pill ${policySnapshot.decisionTone}`}>{policySnapshot.decisionStatus}</span>
@@ -237,7 +237,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
           </Link>
         </div>
       </div>
-      <div className="ops-task-grid" style={{ marginTop: 14 }}>
+      <div className="ops-task-grid admin-mt-14">
         {policySnapshot.decisionCards.map((decision) => (
           <div className={`ops-task-card ${decision.className}`} key={decision.key}>
             <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
@@ -257,7 +257,7 @@ export function BookingAddressRadiusContractSection({
   addressRadiusContract: AddressRadiusContract;
 }) {
   return (
-    <section className="card" id="address-radius-contract" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="address-radius-contract">
       <div className="ops-section-header">
         <div>
           <h2>Booking address radius contract</h2>
@@ -267,7 +267,7 @@ export function BookingAddressRadiusContractSection({
         </div>
         <span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {addressRadiusContract.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -276,7 +276,7 @@ export function BookingAddressRadiusContractSection({
           </div>
         ))}
       </div>
-      <div className="ops-task-grid" style={{ marginTop: 14 }}>
+      <div className="ops-task-grid admin-mt-14">
         {addressRadiusContract.cards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.title}>
             <span className={`pill ${card.pillClass}`}>{card.status}</span>
@@ -296,7 +296,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
   marketplaceSupply: MarketplaceSupply;
 }) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Booking-address supply check</h2>
@@ -310,7 +310,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           {marketplaceSupply.candidateCommand.status}
         </span>
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <strong>{marketplaceSupply.candidateCommand.title}</strong>
@@ -321,14 +321,14 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           </Link>
         </div>
       </div>
-      <div className="grid" style={{ marginTop: 14 }}>
+      <div className="grid admin-mt-14">
         <div className="card">
           <h3>Top usable partners</h3>
           <p className="muted">
             Closest eligible partners under the booking pin, radius, online, verification, and location freshness
             gates.
           </p>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {marketplaceSupply.topCandidates.map((row) => (
               <div className="setup-stage-item" key={`candidate-${row.id}`}>
                 <span>GO</span>
@@ -366,7 +366,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             Non-wallet supply repair groups for this booking pin. Wallet debt repair is handled outside the
             booking candidate list.
           </p>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          <div className="setup-stage-list admin-mt-12">
             {marketplaceSupply.excludedGroups.map((group) => (
               <div className="setup-stage-item" key={group.label}>
                 <span>{group.count ? 'FIX' : 'OK'}</span>
@@ -389,7 +389,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
 
 export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketplaceSupply: MarketplaceSupply }) {
   return (
-    <section className="card" id="marketplace-supply" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="marketplace-supply">
       <div className="ops-section-header">
         <div>
           <h2>Marketplace partner supply for this booking</h2>
@@ -402,7 +402,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
           {marketplaceSupply.eligibleCount} eligible
         </span>
       </div>
-      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+      <div className="service-trace-summary admin-mt-12">
         {marketplaceSupply.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
@@ -411,7 +411,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
           </div>
         ))}
       </div>
-      <div className="ops-task-note" style={{ marginTop: 14 }}>
+      <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
             <span className={`pill ${marketplaceSupply.decisionTone}`}>{marketplaceSupply.decisionStatus}</span>
@@ -423,7 +423,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
           </Link>
         </div>
       </div>
-      <div className="stack" style={{ marginTop: 14 }}>
+      <div className="stack admin-mt-14">
         {marketplaceSupply.rows.map((row) => (
           <div className="ops-row" key={row.id}>
             <div>
