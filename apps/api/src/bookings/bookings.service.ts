@@ -771,9 +771,7 @@ export class BookingsService {
 
     await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
-    const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
-    await this.notifyCustomerProviderJoined(customerUserId, bookingId, provider);
-    this.matchingGateway.emitProviderJoined(bookingId, result);
+    await this.announceProviderJoined({ bookingId, provider, matchingPayload: result });
     return result;
   }
 
@@ -1047,6 +1045,16 @@ export class BookingsService {
     await this.notifications.create(
       customerProviderJoinedNotification({ userId: customerUserId, bookingId, provider }),
     );
+  }
+
+  private async announceProviderJoined(input: {
+    bookingId: string;
+    provider: { id: string; displayName: string };
+    matchingPayload: unknown;
+  }) {
+    const customerUserId = await this.getCustomerUserIdForBooking(input.bookingId);
+    await this.notifyCustomerProviderJoined(customerUserId, input.bookingId, input.provider);
+    this.matchingGateway.emitProviderJoined(input.bookingId, input.matchingPayload);
   }
 
   private async notifyCustomerSelectedPartnerMatched(input: {
