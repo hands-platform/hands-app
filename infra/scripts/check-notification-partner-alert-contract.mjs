@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const apiPartnerAlerts = readStringCollection(
-  resolve(repoRoot, 'apps/api/src/notifications/notifications.processor.ts'),
+  resolve(repoRoot, 'apps/api/src/notifications/notification-push-payload.ts'),
   'PARTNER_ALERT_TYPES',
 );
 const adminPartnerAlerts = readStringCollection(
