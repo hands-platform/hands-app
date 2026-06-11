@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { PaymentMethod } from '@prisma/client';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export function callbackRawMeta(
   rawMeta: Record<string, unknown>,
@@ -75,6 +76,68 @@ export function stringValue(value: unknown) {
   return value === undefined || value === null ? '' : String(value);
 }
 
+export function momoSignatureCandidates(body: Record<string, unknown>, accessKey?: string) {
+  const material: Record<string, unknown> = { ...body };
+  delete material.signature;
+  if (accessKey?.trim()) {
+    material.accessKey = accessKey.trim();
+  }
+
+  const sorted = sortedKeyValueString(material);
+  const fixedOrder = [
+    'accessKey',
+    'amount',
+    'extraData',
+    'message',
+    'orderId',
+    'orderInfo',
+    'orderType',
+    'partnerCode',
+    'payType',
+    'requestId',
+    'responseTime',
+    'resultCode',
+    'transId',
+  ];
+  const fixed = fixedOrder
+    .filter((key) => material[key] !== undefined && material[key] !== null)
+    .map((key) => `${key}=${stringValue(material[key])}`)
+    .join('&');
+  return Array.from(new Set([sorted, fixed].filter(Boolean)));
+}
+
+export function vnpaySignatureCandidates(body: Record<string, unknown>) {
+  const material = Object.fromEntries(
+    Object.entries(body).filter(([key]) => key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType'),
+  );
+  const raw = sortedKeyValueString(material);
+  const encoded = Object.keys(material)
+    .sort()
+    .map((key) => `${key}=${phpUrlEncode(stringValue(material[key]))}`)
+    .join('&');
+  return Array.from(new Set([raw, encoded].filter(Boolean)));
+}
+
+export function sortedKeyValueString(values: Record<string, unknown>) {
+  return Object.keys(values)
+    .filter((key) => values[key] !== undefined && values[key] !== null)
+    .sort()
+    .map((key) => `${key}=${stringValue(values[key])}`)
+    .join('&');
+}
+
+export function hmacHex(algorithm: 'sha256' | 'sha512', secret: string, data: string) {
+  return createHmac(algorithm, secret).update(Buffer.from(data, 'utf8')).digest('hex');
+}
+
+export function secureEqualHex(expected: string, actual: string) {
+  const normalizedActual = actual.toLowerCase();
+  if (!/^[a-f0-9]+$/i.test(normalizedActual) || expected.length !== normalizedActual.length) {
+    return false;
+  }
+  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(normalizedActual, 'hex'));
+}
+
 function stringValueOrNull(value: unknown) {
   const valueString = stringValue(value);
   return valueString ? valueString : null;
@@ -88,4 +151,8 @@ function numberValue(value: unknown) {
     return Number(value);
   }
   return null;
+}
+
+function phpUrlEncode(value: string) {
+  return encodeURIComponent(value).replace(/%20/g, '+');
 }

@@ -3,7 +3,6 @@ import { BadRequestException, ConflictException, Injectable } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { BookingStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
-import { createHmac, timingSafeEqual } from 'crypto';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -17,7 +16,12 @@ import {
   callbackRawMeta,
   errorCode,
   errorMessage,
+  hmacHex,
+  momoSignatureCandidates,
+  secureEqualHex,
+  sortedKeyValueString,
   stringValue,
+  vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 import {
   PAYMENT_STATUS_CHECK_QUEUE_NAME,
@@ -447,70 +451,4 @@ function asJsonObject(value: unknown): Record<string, unknown> {
     return {};
   }
   return value as Record<string, unknown>;
-}
-
-function momoSignatureCandidates(body: Record<string, unknown>, accessKey?: string) {
-  const material: Record<string, unknown> = { ...body };
-  delete material.signature;
-  if (accessKey?.trim()) {
-    material.accessKey = accessKey.trim();
-  }
-
-  const sorted = sortedKeyValueString(material);
-  const fixedOrder = [
-    'accessKey',
-    'amount',
-    'extraData',
-    'message',
-    'orderId',
-    'orderInfo',
-    'orderType',
-    'partnerCode',
-    'payType',
-    'requestId',
-    'responseTime',
-    'resultCode',
-    'transId',
-  ];
-  const fixed = fixedOrder
-    .filter((key) => material[key] !== undefined && material[key] !== null)
-    .map((key) => `${key}=${stringValue(material[key])}`)
-    .join('&');
-  return Array.from(new Set([sorted, fixed].filter(Boolean)));
-}
-
-function vnpaySignatureCandidates(body: Record<string, unknown>) {
-  const material = Object.fromEntries(
-    Object.entries(body).filter(([key]) => key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType'),
-  );
-  const raw = sortedKeyValueString(material);
-  const encoded = Object.keys(material)
-    .sort()
-    .map((key) => `${key}=${phpUrlEncode(stringValue(material[key]))}`)
-    .join('&');
-  return Array.from(new Set([raw, encoded].filter(Boolean)));
-}
-
-function sortedKeyValueString(values: Record<string, unknown>) {
-  return Object.keys(values)
-    .filter((key) => values[key] !== undefined && values[key] !== null)
-    .sort()
-    .map((key) => `${key}=${stringValue(values[key])}`)
-    .join('&');
-}
-
-function hmacHex(algorithm: 'sha256' | 'sha512', secret: string, data: string) {
-  return createHmac(algorithm, secret).update(Buffer.from(data, 'utf8')).digest('hex');
-}
-
-function secureEqualHex(expected: string, actual: string) {
-  const normalizedActual = actual.toLowerCase();
-  if (!/^[a-f0-9]+$/i.test(normalizedActual) || expected.length !== normalizedActual.length) {
-    return false;
-  }
-  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(normalizedActual, 'hex'));
-}
-
-function phpUrlEncode(value: string) {
-  return encodeURIComponent(value).replace(/%20/g, '+');
 }

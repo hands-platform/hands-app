@@ -8,7 +8,12 @@ import {
   callbackRawMeta,
   errorCode,
   errorMessage,
+  hmacHex,
+  momoSignatureCandidates,
+  secureEqualHex,
+  sortedKeyValueString,
   stringValue,
+  vnpaySignatureCandidates,
 } from './payment-callback.helpers';
 
 describe('payment callback helpers', () => {
@@ -64,5 +69,43 @@ describe('payment callback helpers', () => {
     expect(errorMessage(new Error('boom'))).toBe('boom');
     expect(errorMessage('boom')).toBe('Payment callback processing failed');
     expect(stringValue(null)).toBe('');
+  });
+
+  it('builds deterministic signature material candidates', () => {
+    expect(
+      momoSignatureCandidates(
+        {
+          amount: 300000,
+          orderId: 'booking-1',
+          signature: 'ignored',
+          requestId: 'request-1',
+        },
+        'access-key',
+      ),
+    ).toEqual([
+      'accessKey=access-key&amount=300000&orderId=booking-1&requestId=request-1',
+    ]);
+
+    expect(
+      vnpaySignatureCandidates({
+        vnp_Amount: '30000000',
+        vnp_OrderInfo: 'Booking 1',
+        vnp_SecureHash: 'ignored',
+        vnp_TxnRef: 'booking-1',
+      }),
+    ).toEqual([
+      'vnp_Amount=30000000&vnp_OrderInfo=Booking 1&vnp_TxnRef=booking-1',
+      'vnp_Amount=30000000&vnp_OrderInfo=Booking+1&vnp_TxnRef=booking-1',
+    ]);
+
+    expect(sortedKeyValueString({ b: 2, a: 1, c: null })).toBe('a=1&b=2');
+  });
+
+  it('compares callback signatures without leaking timing for valid hex values', () => {
+    const digest = hmacHex('sha256', 'secret', 'payload');
+
+    expect(secureEqualHex(digest, digest.toUpperCase())).toBe(true);
+    expect(secureEqualHex(digest, 'not-hex')).toBe(false);
+    expect(secureEqualHex(digest, digest.slice(0, -2))).toBe(false);
   });
 });
