@@ -96,6 +96,17 @@ describe('remaining API request DTO validation', () => {
 
     await expect(
       pipe.transform(
+        { token: 'push-token', platform: 'web' },
+        {
+          type: 'body',
+          metatype: bodyMetatype(NotificationsController.prototype, 'registerDeviceToken', 1) as never,
+          data: '',
+        },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
         { refreshToken: '' },
         { type: 'body', metatype: bodyMetatype(AuthController.prototype, 'refresh', 0) as never, data: '' },
       ),

@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-const devicePlatforms = ['ios', 'android', 'web'] as const;
+const devicePlatforms = ['ios', 'android'] as const;
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -14,6 +14,7 @@ export class RegisterDeviceTokenDto {
   @MaxLength(512)
   token!: string;
 
+  @Transform(({ value }) => trimString(value))
   @IsIn(devicePlatforms)
   platform!: (typeof devicePlatforms)[number];
 }
