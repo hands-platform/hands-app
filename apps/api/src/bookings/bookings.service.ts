@@ -402,28 +402,15 @@ export class BookingsService {
     }
     await this.matching.registerActiveBooking(booking.id, result);
     await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? expiresAt);
-    await this.notifications.create({
+    await this.notifyCustomerBookingOpened({
       userId,
-      type: 'booking.opened',
-      title: preferredProvider ? 'Booking request sent' : 'Booking opened',
-      body: preferredProvider
-        ? `${preferredProvider.displayName} received your booking request.`
-        : 'We are looking for nearby partners.',
-      data: {
-        bookingId: booking.id,
-        providerProfileId: preferredProvider?.id,
-        couponCode: coupon?.code,
-        discountAmount,
-      },
+      bookingId: booking.id,
+      preferredProvider,
+      couponCode: coupon?.code,
+      discountAmount,
     });
     if (preferredProvider?.userId) {
-      await this.notifications.create({
-        userId: preferredProvider.userId,
-        type: 'booking.requested',
-        title: 'New direct booking request',
-        body: 'A customer requested one of your services.',
-        data: { bookingId: booking.id, customerProfileId: customer.id },
-      });
+      await this.notifyPreferredProviderRequested(preferredProvider.userId, booking.id, customer.id);
       this.matchingGateway.emitDirectBookingRequested(preferredProvider.userId, booking.id, result);
     } else {
       this.matchingGateway.emitBookingOpened(booking.id, result);
@@ -620,24 +607,11 @@ export class BookingsService {
       }
     }
 
-    for (const providerUserId of providerUserIds) {
-      await this.notifications.create({
-        userId: providerUserId,
-        type: 'booking.cancelled',
-        title: 'Booking cancelled',
-        body: 'The customer cancelled this booking request before partner commitment.',
-        data: { bookingId },
-      });
-    }
-
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'booking.cancelled',
-      title: 'Booking cancelled',
-      body: releasedPayment
-        ? 'Your request has been cancelled and the payment hold was released.'
-        : 'Your request has been cancelled.',
-      data: { bookingId },
+    await this.notifyBookingCancelled({
+      bookingId,
+      customerUserId,
+      providerUserIds,
+      releasedPayment: Boolean(releasedPayment),
     });
     const clientResult = clientBookingResponse(result);
     this.matchingGateway.emitBookingExpired(bookingId, clientResult);
@@ -768,13 +742,7 @@ export class BookingsService {
     await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
     const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'provider.joined',
-      title: 'A partner joined',
-      body: `${provider.displayName} joined your booking.`,
-      data: { bookingId, providerProfileId: provider.id },
-    });
+    await this.notifyCustomerProviderJoined(customerUserId, bookingId, provider);
     this.matchingGateway.emitProviderJoined(bookingId, result);
     return result;
   }
@@ -793,7 +761,10 @@ export class BookingsService {
     const participant = await this.prisma.bookingParticipant.findUnique({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
     });
-    if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
+    if (
+      !participant ||
+      !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)
+    ) {
       throw new BadRequestException('Partner must participate or accept before customer selection');
     }
     if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId)) {
@@ -841,28 +812,20 @@ export class BookingsService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new BadRequestException('Booking is already matched or no longer open for customer final selection');
+        throw new BadRequestException(
+          'Booking is already matched or no longer open for customer final selection',
+        );
       }
       throw error;
     }
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
-    if (booking.selectedProvider?.userId) {
-      await this.notifications.create({
-        userId: booking.selectedProvider.userId,
-        type: 'booking.matched',
-        title: 'You were selected',
-        body: 'The customer selected you for this booking.',
-        data: { bookingId },
-      });
-    }
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'booking.matched',
-      title: 'Partner selected',
-      body: 'Your chat room is ready.',
-      data: { bookingId, chatRoomId: booking.chatRoom?.id },
+    await this.notifyCustomerSelectedPartnerMatched({
+      bookingId,
+      customerUserId,
+      selectedProviderUserId: booking.selectedProvider?.userId,
+      chatRoomId: booking.chatRoom?.id,
     });
     this.matchingGateway.emitBookingMatched(bookingId, result);
     return result;
@@ -943,7 +906,9 @@ export class BookingsService {
           });
         } catch (error) {
           if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new BadRequestException('Booking is already matched or no longer open for first-pick acceptance');
+            throw new BadRequestException(
+              'Booking is already matched or no longer open for first-pick acceptance',
+            );
           }
           throw error;
         }
@@ -954,21 +919,12 @@ export class BookingsService {
           clientBookingResponse(updated),
           MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
         );
-        if (updated.selectedProvider?.userId) {
-          await this.notifications.create({
-            userId: updated.selectedProvider.userId,
-            type: 'booking.matched',
-            title: 'You were matched',
-            body: 'Your first-pick request was accepted and matched.',
-            data: { bookingId },
-          });
-        }
-        await this.notifications.create({
-          userId: booking.customerProfile.userId,
-          type: 'booking.matched',
-          title: 'Partner matched',
-          body: `${provider.displayName} accepted your request. Your chat room is ready.`,
-          data: { bookingId, chatRoomId: updated.chatRoom?.id, providerProfileId: provider.id },
+        await this.notifyFirstPickAcceptedMatched({
+          bookingId,
+          customerUserId: booking.customerProfile.userId,
+          provider,
+          selectedProviderUserId: updated.selectedProvider?.userId,
+          chatRoomId: updated.chatRoom?.id,
         });
         this.matchingGateway.emitBookingMatched(bookingId, result);
         return result;
@@ -990,13 +946,7 @@ export class BookingsService {
           include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
         });
         await this.matching.closeBooking(bookingId);
-        await this.notifications.create({
-          userId: booking.customerProfile.userId,
-          type: 'booking.rejected',
-          title: 'Partner declined your booking',
-          body: 'We are still looking for another available partner.',
-          data: { bookingId, providerProfileId: provider.id },
-        });
+        await this.notifyCustomerFirstPickRejected(booking.customerProfile.userId, bookingId, provider.id);
         const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
         const serviceId = booking.services[0]?.serviceId;
         const dispatchPin = bookingDispatchCoordinates(updated);
@@ -1043,7 +993,10 @@ export class BookingsService {
       }
     }
 
-    if (status === ParticipantStatus.ACCEPTED && isMarketplacePartnerAction(provider.id, booking.preferredProviderId)) {
+    if (
+      status === ParticipantStatus.ACCEPTED &&
+      isMarketplacePartnerAction(provider.id, booking.preferredProviderId)
+    ) {
       await this.ensureProviderWalletCanJoinMarketplace(provider.id);
     }
 
@@ -1054,28 +1007,241 @@ export class BookingsService {
     });
 
     if (status === ParticipantStatus.ACCEPTED) {
-      await this.notifications.create({
-        userId: booking.customerProfile.userId,
-        type: 'provider.accepted',
-        title: 'Marketplace partner is ready',
-        body: `${provider.displayName} can take this booking. Select this partner if you want to switch.`,
-        data: { bookingId, providerProfileId: provider.id },
-      });
+      await this.notifyCustomerMarketplaceProviderAccepted(
+        booking.customerProfile.userId,
+        bookingId,
+        provider,
+      );
       this.matchingGateway.emitProviderAccepted(bookingId, updatedParticipant);
     }
 
     if (status === ParticipantStatus.REJECTED) {
-      await this.notifications.create({
-        userId: booking.customerProfile.userId,
-        type: 'provider.rejected',
-        title: 'Partner declined',
-        body: `${provider.displayName} cannot take this booking.`,
-        data: { bookingId, providerProfileId: provider.id },
-      });
+      await this.notifyCustomerMarketplaceProviderRejected(
+        booking.customerProfile.userId,
+        bookingId,
+        provider,
+      );
       this.matchingGateway.emitProviderRejected(bookingId, updatedParticipant);
     }
 
     return updatedParticipant;
+  }
+
+  private async notifyCustomerBookingOpened(input: {
+    userId: string;
+    bookingId: string;
+    preferredProvider?: { id: string; displayName: string } | null;
+    couponCode?: string;
+    discountAmount: number;
+  }) {
+    await this.notifications.create({
+      userId: input.userId,
+      type: 'booking.opened',
+      title: input.preferredProvider ? 'Booking request sent' : 'Booking opened',
+      body: input.preferredProvider
+        ? `${input.preferredProvider.displayName} received your booking request.`
+        : 'We are looking for nearby partners.',
+      data: {
+        bookingId: input.bookingId,
+        providerProfileId: input.preferredProvider?.id,
+        couponCode: input.couponCode,
+        discountAmount: input.discountAmount,
+      },
+    });
+  }
+
+  private async notifyPreferredProviderRequested(
+    preferredProviderUserId: string,
+    bookingId: string,
+    customerProfileId: string,
+  ) {
+    await this.notifications.create({
+      userId: preferredProviderUserId,
+      type: 'booking.requested',
+      title: 'New direct booking request',
+      body: 'A customer requested one of your services.',
+      data: { bookingId, customerProfileId },
+    });
+  }
+
+  private async notifyBookingCancelled(input: {
+    bookingId: string;
+    customerUserId: string;
+    providerUserIds: Iterable<string>;
+    releasedPayment: boolean;
+  }) {
+    for (const providerUserId of input.providerUserIds) {
+      await this.notifications.create({
+        userId: providerUserId,
+        type: 'booking.cancelled',
+        title: 'Booking cancelled',
+        body: 'The customer cancelled this booking request before partner commitment.',
+        data: { bookingId: input.bookingId },
+      });
+    }
+
+    await this.notifications.create({
+      userId: input.customerUserId,
+      type: 'booking.cancelled',
+      title: 'Booking cancelled',
+      body: input.releasedPayment
+        ? 'Your request has been cancelled and the payment hold was released.'
+        : 'Your request has been cancelled.',
+      data: { bookingId: input.bookingId },
+    });
+  }
+
+  private async notifyCustomerProviderJoined(
+    customerUserId: string,
+    bookingId: string,
+    provider: { id: string; displayName: string },
+  ) {
+    await this.notifications.create({
+      userId: customerUserId,
+      type: 'provider.joined',
+      title: 'A partner joined',
+      body: `${provider.displayName} joined your booking.`,
+      data: { bookingId, providerProfileId: provider.id },
+    });
+  }
+
+  private async notifyCustomerSelectedPartnerMatched(input: {
+    bookingId: string;
+    customerUserId: string;
+    selectedProviderUserId?: string;
+    chatRoomId?: string;
+  }) {
+    if (input.selectedProviderUserId) {
+      await this.notifications.create({
+        userId: input.selectedProviderUserId,
+        type: 'booking.matched',
+        title: 'You were selected',
+        body: 'The customer selected you for this booking.',
+        data: { bookingId: input.bookingId },
+      });
+    }
+    await this.notifications.create({
+      userId: input.customerUserId,
+      type: 'booking.matched',
+      title: 'Partner selected',
+      body: 'Your chat room is ready.',
+      data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
+    });
+  }
+
+  private async notifyFirstPickAcceptedMatched(input: {
+    bookingId: string;
+    customerUserId: string;
+    provider: { id: string; displayName: string };
+    selectedProviderUserId?: string;
+    chatRoomId?: string;
+  }) {
+    if (input.selectedProviderUserId) {
+      await this.notifications.create({
+        userId: input.selectedProviderUserId,
+        type: 'booking.matched',
+        title: 'You were matched',
+        body: 'Your first-pick request was accepted and matched.',
+        data: { bookingId: input.bookingId },
+      });
+    }
+    await this.notifications.create({
+      userId: input.customerUserId,
+      type: 'booking.matched',
+      title: 'Partner matched',
+      body: `${input.provider.displayName} accepted your request. Your chat room is ready.`,
+      data: {
+        bookingId: input.bookingId,
+        chatRoomId: input.chatRoomId,
+        providerProfileId: input.provider.id,
+      },
+    });
+  }
+
+  private async notifyCustomerFirstPickRejected(
+    customerUserId: string,
+    bookingId: string,
+    providerProfileId: string,
+  ) {
+    await this.notifications.create({
+      userId: customerUserId,
+      type: 'booking.rejected',
+      title: 'Partner declined your booking',
+      body: 'We are still looking for another available partner.',
+      data: { bookingId, providerProfileId },
+    });
+  }
+
+  private async notifyCustomerMarketplaceProviderAccepted(
+    customerUserId: string,
+    bookingId: string,
+    provider: { id: string; displayName: string },
+  ) {
+    await this.notifications.create({
+      userId: customerUserId,
+      type: 'provider.accepted',
+      title: 'Marketplace partner is ready',
+      body: `${provider.displayName} can take this booking. Select this partner if you want to switch.`,
+      data: { bookingId, providerProfileId: provider.id },
+    });
+  }
+
+  private async notifyCustomerMarketplaceProviderRejected(
+    customerUserId: string,
+    bookingId: string,
+    provider: { id: string; displayName: string },
+  ) {
+    await this.notifications.create({
+      userId: customerUserId,
+      type: 'provider.rejected',
+      title: 'Partner declined',
+      body: `${provider.displayName} cannot take this booking.`,
+      data: { bookingId, providerProfileId: provider.id },
+    });
+  }
+
+  private async notifyServiceStarted(input: {
+    bookingId: string;
+    customerUserId: string;
+    providerUserId?: string;
+    chatRoomId?: string;
+  }) {
+    await this.notifications.create({
+      userId: input.customerUserId,
+      type: 'service.started',
+      title: 'Service started',
+      body: 'Your partner started the service. Continue in the matched chat if needed.',
+      data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
+    });
+    if (input.providerUserId) {
+      await this.notifications.create({
+        userId: input.providerUserId,
+        type: 'service.started',
+        title: 'Service started',
+        body: 'Continue with the customer in the matched chat if needed.',
+        data: { bookingId: input.bookingId, chatRoomId: input.chatRoomId },
+      });
+    }
+  }
+
+  private async notifyCustomerServiceCompleted(customerUserId: string, bookingId: string) {
+    await this.notifications.create({
+      userId: customerUserId,
+      type: 'service.completed',
+      title: 'Service completed',
+      body: 'Please leave a review when you are ready.',
+      data: { bookingId },
+    });
+  }
+
+  private async notifyProviderEarningCreated(providerUserId: string, bookingId: string) {
+    await this.notifications.create({
+      userId: providerUserId,
+      type: 'earning.created',
+      title: 'Earning created',
+      body: 'Your completed service has been added to earnings.',
+      data: { bookingId },
+    });
   }
 
   private async notifyBackupProviders(input: {
@@ -1240,7 +1406,7 @@ export class BookingsService {
           : snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
               snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE
             ? snapshot.backupOpenMode
-          : fallback.backupOpenMode,
+            : fallback.backupOpenMode,
     };
   }
 
@@ -1323,8 +1489,7 @@ export class BookingsService {
           provider.distanceMeters !== null && provider.distanceMeters <= policy.backupProviderRadiusMeters,
       )
       .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }));
-    const providersWithClearWallets =
-      await this.excludeNegativeWalletProviders(providersWithinRadius);
+    const providersWithClearWallets = await this.excludeNegativeWalletProviders(providersWithinRadius);
 
     return providersWithClearWallets
       .sort((left, right) => left.distanceMeters - right.distanceMeters)
@@ -1346,9 +1511,7 @@ export class BookingsService {
       _sum: { netAmount: true },
     });
     const blockedProviderIds = new Set(
-      walletRows
-        .filter((row) => (row._sum.netAmount ?? 0) < 0)
-        .map((row) => row.providerProfileId),
+      walletRows.filter((row) => (row._sum.netAmount ?? 0) < 0).map((row) => row.providerProfileId),
     );
 
     return providers.filter((provider) => !blockedProviderIds.has(provider.id));
@@ -1487,22 +1650,12 @@ export class BookingsService {
         },
         include: { chatRoom: true, preferredProvider: true, selectedProvider: true, customerProfile: true },
       });
-      await this.notifications.create({
-        userId: updated.customerProfile.userId,
-        type: 'service.started',
-        title: 'Service started',
-        body: 'Your partner started the service. Continue in the matched chat if needed.',
-        data: { bookingId, chatRoomId: updated.chatRoom?.id },
+      await this.notifyServiceStarted({
+        bookingId,
+        customerUserId: updated.customerProfile.userId,
+        providerUserId: updated.selectedProvider?.userId,
+        chatRoomId: updated.chatRoom?.id,
       });
-      if (updated.selectedProvider?.userId) {
-        await this.notifications.create({
-          userId: updated.selectedProvider.userId,
-          type: 'service.started',
-          title: 'Service started',
-          body: 'Continue with the customer in the matched chat if needed.',
-          data: { bookingId, chatRoomId: updated.chatRoom?.id },
-        });
-      }
       this.matchingGateway.emitServiceStarted(bookingId, updated);
       return updated;
     }
@@ -1525,21 +1678,9 @@ export class BookingsService {
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
     const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
-    await this.notifications.create({
-      userId: customerUserId,
-      type: 'service.completed',
-      title: 'Service completed',
-      body: 'Please leave a review when you are ready.',
-      data: { bookingId },
-    });
+    await this.notifyCustomerServiceCompleted(customerUserId, bookingId);
     if (booking.selectedProvider?.userId) {
-      await this.notifications.create({
-        userId: booking.selectedProvider.userId,
-        type: 'earning.created',
-        title: 'Earning created',
-        body: 'Your completed service has been added to earnings.',
-        data: { bookingId },
-      });
+      await this.notifyProviderEarningCreated(booking.selectedProvider.userId, bookingId);
       await this.notifyProviderFirstRevenuePayoutSetup(
         provider.id,
         booking.selectedProvider.userId,
