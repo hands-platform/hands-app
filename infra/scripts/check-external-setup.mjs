@@ -76,7 +76,7 @@ addPhaseRequired(
   'push',
   'Firebase Admin credentials for OS push',
   firebaseAdminConfigured(),
-  'Fill FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY before production-like OS push E2E.',
+  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or GOOGLE_APPLICATION_CREDENTIALS before production-like OS push E2E.',
   ['production'],
 );
 

@@ -116,6 +116,7 @@ function Invoke-Preflight {
 
 function Invoke-Api {
   Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npx.cmd prisma validate --schema apps/api/prisma/schema.prisma"
+  Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
   Invoke-Check "realtime event contract" "npm.cmd run realtime:contract"
   Invoke-Check "api test" "npm.cmd run api:test"
@@ -129,6 +130,7 @@ function Invoke-Api {
 }
 
 function Invoke-Admin {
+  Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
   Invoke-Check "admin test" "npm.cmd run test --workspace @massage-vn/admin-web"
   Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
@@ -162,6 +164,7 @@ function Invoke-Harness {
   Invoke-Check "script syntax: admin sensitive exposure" "node --check infra\scripts\check-admin-sensitive-exposure.mjs"
   Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\check-admin-visible-copy.mjs"
   Invoke-Check "script syntax: notification partner alert contract" "node --check infra\scripts\check-notification-partner-alert-contract.mjs"
+  Invoke-Check "script syntax: fcm env contract" "node --check infra\scripts\check-fcm-env-contract.mjs"
   Invoke-Check "script syntax: vietnam scope" "node --check infra\scripts\check-vietnam-scope.mjs"
 }
 

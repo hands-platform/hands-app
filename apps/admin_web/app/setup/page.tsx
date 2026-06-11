@@ -181,6 +181,7 @@ const setupOrder = [
       'FIREBASE_CLIENT_EMAIL',
       'FIREBASE_PRIVATE_KEY',
       'FIREBASE_SERVICE_ACCOUNT_JSON',
+      'GOOGLE_APPLICATION_CREDENTIALS',
     ],
     notes: [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
@@ -303,7 +304,14 @@ const externalRegistrationPlan = [
     statusClass: 'pill-neutral',
     detail:
       'Use in-app notifications locally until FCM app config and server-side Firebase Admin credentials are ready.',
-    env: ['PUSH_PROVIDER', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'],
+    env: [
+      'PUSH_PROVIDER',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      'GOOGLE_APPLICATION_CREDENTIALS',
+    ],
   },
   {
     id: 'payments-vn',
