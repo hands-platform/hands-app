@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import {
+  FCM_CREDENTIAL_REQUIREMENT,
+  configuredFirebaseCredentialKeys,
+  firebaseCredentialReadiness,
+  readFirebaseCredentialConfig,
+} from '../notifications/firebase-admin-credentials';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 
@@ -183,18 +189,14 @@ export class HealthService {
 
   private pushProviderExternalReadiness() {
     const pushProvider = this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() || 'in_app_only';
-    const firebaseServiceAccountJson = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_JSON')?.trim();
-    const firebaseProjectId = this.config.get<string>('FIREBASE_PROJECT_ID')?.trim();
-    const firebaseClientEmail = this.config.get<string>('FIREBASE_CLIENT_EMAIL')?.trim();
-    const firebasePrivateKey = this.config.get<string>('FIREBASE_PRIVATE_KEY')?.trim();
-    const googleApplicationCredentials = this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim();
+    const firebaseConfig = readFirebaseCredentialConfig(this.config);
 
     if (pushProvider === 'in_app_only') {
       return {
         name: 'OS push provider',
         category: 'push',
         status: 'BLOCKED',
-        missing: ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'],
+        missing: [FCM_CREDENTIAL_REQUIREMENT],
         configured: ['PUSH_PROVIDER'],
         invalid: [],
         detail:
@@ -215,31 +217,18 @@ export class HealthService {
       };
     }
 
-    const hasJson = Boolean(firebaseServiceAccountJson);
-    const hasSplitCredentials = Boolean(firebaseProjectId && firebaseClientEmail && firebasePrivateKey);
-    const hasApplicationDefault = Boolean(googleApplicationCredentials);
-    const missing =
-      hasJson || hasSplitCredentials || hasApplicationDefault
-        ? []
-        : ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'];
-    const configured = [
-      'PUSH_PROVIDER',
-      firebaseServiceAccountJson ? 'FIREBASE_SERVICE_ACCOUNT_JSON' : null,
-      firebaseProjectId ? 'FIREBASE_PROJECT_ID' : null,
-      firebaseClientEmail ? 'FIREBASE_CLIENT_EMAIL' : null,
-      firebasePrivateKey ? 'FIREBASE_PRIVATE_KEY' : null,
-      googleApplicationCredentials ? 'GOOGLE_APPLICATION_CREDENTIALS' : null,
-    ].filter((key): key is string => Boolean(key));
+    const readiness = firebaseCredentialReadiness(firebaseConfig);
+    const configured = ['PUSH_PROVIDER', ...configuredFirebaseCredentialKeys(firebaseConfig)];
 
     return {
       name: 'OS push provider',
       category: 'push',
-      status: missing.length === 0 ? 'READY' : 'BLOCKED',
-      missing,
+      status: readiness.ready ? 'READY' : 'BLOCKED',
+      missing: readiness.missing,
       configured,
       invalid: [],
       detail:
-        missing.length === 0
+        readiness.ready
           ? 'FCM credentials are configured and backend Firebase Admin delivery is enabled.'
           : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
     };

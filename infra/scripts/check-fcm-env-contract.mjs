@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
-const servicePath = resolve(repoRoot, 'apps/api/src/notifications/push-delivery.service.ts');
+const apiSourcePaths = [
+  resolve(repoRoot, 'apps/api/src/notifications/push-delivery.service.ts'),
+  resolve(repoRoot, 'apps/api/src/notifications/firebase-admin-credentials.ts'),
+];
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -12,10 +15,10 @@ const requiredSources = [
   resolve(repoRoot, 'docs/architecture/notifications.md'),
 ];
 
-const serviceSource = readFileSync(servicePath, 'utf8');
+const apiSource = apiSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
 const fcmEnvKeys = Array.from(
   new Set(
-    [...serviceSource.matchAll(/config\.get<string>\('([^']+)'\)/g)]
+    [...apiSource.matchAll(/config\.get<string>\('([^']+)'\)/g)]
       .map((match) => match[1])
       .filter(
         (key) =>

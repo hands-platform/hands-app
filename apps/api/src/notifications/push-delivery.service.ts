@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { applicationDefault, cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getMessaging, type Messaging } from 'firebase-admin/messaging';
+import {
+  firebaseCredentialReadiness,
+  normalizePrivateKey,
+  readFirebaseCredentialConfig,
+  type FirebaseCredentialConfig,
+} from './firebase-admin-credentials';
 
 export type PushMessage = {
   token: string;
@@ -20,14 +26,6 @@ export type PushSendResult = {
 };
 
 type PushProvider = 'in_app_only' | 'fcm';
-
-type FirebaseCredentialConfig = {
-  projectId?: string;
-  clientEmail?: string;
-  privateKey?: string;
-  serviceAccountJson?: string;
-  googleApplicationCredentials?: string;
-};
 
 @Injectable()
 export class PushDeliveryService {
@@ -120,18 +118,11 @@ export class PushDeliveryService {
 
   private fcmReadiness() {
     const credentialConfig = this.readFirebaseConfig();
-    const hasJson = Boolean(credentialConfig.serviceAccountJson);
-    const hasFieldCredentials = Boolean(
-      credentialConfig.projectId && credentialConfig.clientEmail && credentialConfig.privateKey,
-    );
-    const hasApplicationDefault = Boolean(credentialConfig.googleApplicationCredentials);
+    const readiness = firebaseCredentialReadiness(credentialConfig);
 
     return {
       config: credentialConfig,
-      missing:
-        hasJson || hasFieldCredentials || hasApplicationDefault
-          ? []
-          : ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'],
+      missing: readiness.missing,
     };
   }
 
@@ -147,13 +138,7 @@ export class PushDeliveryService {
   }
 
   private readFirebaseConfig(): FirebaseCredentialConfig {
-    return {
-      projectId: this.config.get<string>('FIREBASE_PROJECT_ID')?.trim(),
-      clientEmail: this.config.get<string>('FIREBASE_CLIENT_EMAIL')?.trim(),
-      privateKey: normalizePrivateKey(this.config.get<string>('FIREBASE_PRIVATE_KEY')?.trim()),
-      serviceAccountJson: this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_JSON')?.trim(),
-      googleApplicationCredentials: this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim(),
-    };
+    return readFirebaseCredentialConfig(this.config);
   }
 }
 
@@ -191,10 +176,6 @@ function parseServiceAccount(raw: string) {
     clientEmail: parsed.client_email,
     privateKey: normalizePrivateKey(parsed.private_key),
   };
-}
-
-function normalizePrivateKey(value?: string) {
-  return value?.replace(/\\n/g, '\n');
 }
 
 function firebaseFailureCode(error: unknown) {

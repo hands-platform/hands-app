@@ -17,6 +17,12 @@ function storageCheck(values: Record<string, string> = {}) {
     .checks.find((check) => check.category === 'storage');
 }
 
+function pushCheck(values: Record<string, string> = {}) {
+  return service(values)
+    .externalReadiness()
+    .checks.find((check) => check.category === 'push');
+}
+
 describe('HealthService external storage readiness', () => {
   it('keeps storage blocked when no storage values are configured', () => {
     const check = storageCheck();
@@ -66,5 +72,45 @@ describe('HealthService external storage readiness', () => {
     expect(check?.status).toBe('READY');
     expect(check?.missing).toEqual([]);
     expect(check?.detail).toContain('supabase-storage-s3 storage is configured');
+  });
+});
+
+describe('HealthService external push readiness', () => {
+  it('keeps FCM blocked until Firebase Admin credentials are configured', () => {
+    const check = pushCheck({ PUSH_PROVIDER: 'fcm' });
+
+    expect(check?.status).toBe('BLOCKED');
+    expect(check?.missing).toEqual([
+      'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS',
+    ]);
+  });
+
+  it('marks FCM ready when application default credentials are configured', () => {
+    const check = pushCheck({
+      PUSH_PROVIDER: 'fcm',
+      GOOGLE_APPLICATION_CREDENTIALS: 'C:\\secure\\firebase-admin.json',
+    });
+
+    expect(check?.status).toBe('READY');
+    expect(check?.configured).toEqual(['PUSH_PROVIDER', 'GOOGLE_APPLICATION_CREDENTIALS']);
+    expect(check?.missing).toEqual([]);
+  });
+
+  it('marks FCM ready when split Firebase Admin credentials are configured', () => {
+    const check = pushCheck({
+      PUSH_PROVIDER: 'fcm',
+      FIREBASE_PROJECT_ID: 'hands-demo',
+      FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+      FIREBASE_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\\ndemo\\n-----END PRIVATE KEY-----\\n',
+    });
+
+    expect(check?.status).toBe('READY');
+    expect(check?.configured).toEqual([
+      'PUSH_PROVIDER',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+    ]);
+    expect(check?.missing).toEqual([]);
   });
 });
