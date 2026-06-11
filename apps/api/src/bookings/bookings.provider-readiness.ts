@@ -66,3 +66,15 @@ export function assertProviderCanReceiveBooking(provider: {
     throw new BadRequestException('Partner bank account must be approved before receiving bookings');
   }
 }
+
+export function assertProviderOffersRequestedService(input: {
+  providerService?: { active: boolean } | null;
+  configuredServiceCount: number;
+}) {
+  if (input.providerService && !input.providerService.active) {
+    throw new BadRequestException('Partner does not offer this service');
+  }
+  if (!input.providerService && input.configuredServiceCount > 0) {
+    throw new BadRequestException('Partner does not offer this service');
+  }
+}

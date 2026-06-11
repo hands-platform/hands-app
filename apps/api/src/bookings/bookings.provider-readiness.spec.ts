@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import {
   assertProviderCanReceiveBooking,
+  assertProviderOffersRequestedService,
   REQUIRED_BOOKING_DOCUMENT_TYPES,
 } from './bookings.provider-readiness';
 
@@ -78,6 +79,36 @@ describe('booking provider readiness helpers', () => {
         }),
       ),
     ).toThrow(new BadRequestException('Partner bank account must be approved before receiving bookings'));
+  });
+
+  it('accepts active requested services and partners without explicit service rows', () => {
+    expect(() =>
+      assertProviderOffersRequestedService({
+        providerService: { active: true },
+        configuredServiceCount: 1,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertProviderOffersRequestedService({
+        providerService: null,
+        configuredServiceCount: 0,
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects inactive requested services or missing services after service rows are configured', () => {
+    expect(() =>
+      assertProviderOffersRequestedService({
+        providerService: { active: false },
+        configuredServiceCount: 1,
+      }),
+    ).toThrow(new BadRequestException('Partner does not offer this service'));
+    expect(() =>
+      assertProviderOffersRequestedService({
+        providerService: null,
+        configuredServiceCount: 1,
+      }),
+    ).toThrow(new BadRequestException('Partner does not offer this service'));
   });
 });
 

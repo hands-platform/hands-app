@@ -100,7 +100,10 @@ import {
   serviceStartedCustomerNotification,
   serviceStartedProviderNotification,
 } from './bookings.notifications';
-import { assertProviderCanReceiveBooking } from './bookings.provider-readiness';
+import {
+  assertProviderCanReceiveBooking,
+  assertProviderOffersRequestedService,
+} from './bookings.provider-readiness';
 import {
   openBookingWhereForProvider,
   providerBookingHistoryWhere,
@@ -254,12 +257,7 @@ export class BookingsService {
           providerProfileId: preferredProvider.id,
         },
       });
-      if (providerService && !providerService.active) {
-        throw new BadRequestException('Partner does not offer this service');
-      }
-      if (!providerService && configuredServiceCount > 0) {
-        throw new BadRequestException('Partner does not offer this service');
-      }
+      assertProviderOffersRequestedService({ providerService, configuredServiceCount });
     }
     const customerPrice = resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
