@@ -45,27 +45,16 @@ export class ProviderOnboardingService {
       }),
     ]);
 
-    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
-    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
-    const approvedBankAccount = provider.bankAccounts.some(
-      (account) => account.status === ProviderBankAccountStatus.APPROVED,
-    );
-    const kycApproved = provider.kyc?.status === ProviderKycStatus.APPROVED;
-    const legacyVerificationApproved = provider.verification?.status === VerificationStatus.APPROVED;
-    const taxProfileApproved = provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED;
-    const hasAddress = Boolean(provider.residentialAddress?.trim());
-    const payoutSetupStarted = completedBookingCount > 0;
-    const canWithdraw =
-      payoutSetupStarted && taxProfileApproved && hasAddress && missingAgreements.length === 0;
+    const readiness = this.providerReadiness(provider, completedBookingCount);
 
     return {
       providerProfileId: provider.id,
       level: provider.level,
       recommendedLevel: this.recommendedLevel({
-        kycApproved,
-        legacyVerificationApproved,
-        approvedBankAccount,
-        canWithdraw,
+        kycApproved: readiness.kycApproved,
+        legacyVerificationApproved: readiness.legacyVerificationApproved,
+        approvedBankAccount: readiness.approvedBankAccount,
+        canWithdraw: readiness.canWithdraw,
         trustedAt: provider.trustedAt,
       }),
       basicProfile: {
@@ -93,12 +82,12 @@ export class ProviderOnboardingService {
       recentVerificationLogs: provider.verificationLogs,
       completedBookingCount,
       payoutGate: {
-        canWithdraw,
+        canWithdraw: readiness.canWithdraw,
         missing: {
-          firstCompletedService: !payoutSetupStarted,
-          taxProfileApproved: payoutSetupStarted && !taxProfileApproved,
-          residentialAddress: payoutSetupStarted && !hasAddress,
-          agreements: payoutSetupStarted ? missingAgreements : [],
+          firstCompletedService: !readiness.payoutSetupStarted,
+          taxProfileApproved: readiness.payoutSetupStarted && !readiness.taxProfileApproved,
+          residentialAddress: readiness.payoutSetupStarted && !readiness.hasAddress,
+          agreements: readiness.payoutSetupStarted ? readiness.missingAgreements : [],
         },
       },
       activeTaxPolicy,
@@ -111,13 +100,13 @@ export class ProviderOnboardingService {
       },
       nextRequiredActions: this.nextRequiredActions({
         provider,
-        kycApproved,
-        legacyVerificationApproved,
-        approvedBankAccount,
+        kycApproved: readiness.kycApproved,
+        legacyVerificationApproved: readiness.legacyVerificationApproved,
+        approvedBankAccount: readiness.approvedBankAccount,
         completedBookingCount,
-        taxProfileApproved,
-        hasAddress,
-        missingAgreements,
+        taxProfileApproved: readiness.taxProfileApproved,
+        hasAddress: readiness.hasAddress,
+        missingAgreements: readiness.missingAgreements,
       }),
     };
   }
@@ -824,19 +813,12 @@ export class ProviderOnboardingService {
         status: BookingStatus.COMPLETED,
       },
     });
-    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
-    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
+    const readiness = this.providerReadiness(provider, completedBookingCount);
     const level = this.recommendedLevel({
-      kycApproved: provider.kyc?.status === ProviderKycStatus.APPROVED,
-      legacyVerificationApproved: provider.verification?.status === VerificationStatus.APPROVED,
-      approvedBankAccount: provider.bankAccounts.some(
-        (account) => account.status === ProviderBankAccountStatus.APPROVED,
-      ),
-      canWithdraw:
-        completedBookingCount > 0 &&
-        provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED &&
-        Boolean(provider.residentialAddress?.trim()) &&
-        missingAgreements.length === 0,
+      kycApproved: readiness.kycApproved,
+      legacyVerificationApproved: readiness.legacyVerificationApproved,
+      approvedBankAccount: readiness.approvedBankAccount,
+      canWithdraw: readiness.canWithdraw,
       trustedAt: provider.trustedAt,
     });
     if (provider.level === level) {
@@ -859,6 +841,38 @@ export class ProviderOnboardingService {
     });
     const approvedTypes = new Set(approvedDocuments.map((document) => document.type));
     return REQUIRED_KYC_DOCUMENT_TYPES.filter((type) => !approvedTypes.has(type));
+  }
+
+  private providerReadiness(
+    provider: {
+      verification?: { status: VerificationStatus } | null;
+      kyc?: { status: ProviderKycStatus } | null;
+      bankAccounts: readonly { status: ProviderBankAccountStatus }[];
+      taxProfile?: { status: ProviderTaxProfileStatus } | null;
+      agreements: readonly { type: ProviderAgreementType }[];
+      residentialAddress?: string | null;
+    },
+    completedBookingCount: number,
+  ) {
+    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
+    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
+    const taxProfileApproved = provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED;
+    const hasAddress = Boolean(provider.residentialAddress?.trim());
+    const payoutSetupStarted = completedBookingCount > 0;
+
+    return {
+      approvedBankAccount: provider.bankAccounts.some(
+        (account) => account.status === ProviderBankAccountStatus.APPROVED,
+      ),
+      canWithdraw:
+        payoutSetupStarted && taxProfileApproved && hasAddress && missingAgreements.length === 0,
+      hasAddress,
+      kycApproved: provider.kyc?.status === ProviderKycStatus.APPROVED,
+      legacyVerificationApproved: provider.verification?.status === VerificationStatus.APPROVED,
+      missingAgreements,
+      payoutSetupStarted,
+      taxProfileApproved,
+    };
   }
 
   private recommendedLevel(input: {
