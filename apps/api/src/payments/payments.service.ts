@@ -10,10 +10,11 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashPaymentAdapter, MomoPaymentAdapter, VnpayPaymentAdapter } from './adapters';
 import { PaymentAdapter } from './payment-adapter';
+import {
+  PAYMENT_STATUS_CHECK_QUEUE_NAME,
+  paymentStatusCheckJob,
+} from './payment-status.queue';
 
-const PAYMENT_STATUS_CHECK_DELAY_MS = 30_000;
-const PAYMENT_STATUS_CHECK_ATTEMPTS = 5;
-const PAYMENT_STATUS_CHECK_BACKOFF_MS = 10_000;
 const TERMINAL_PAYMENT_STATUSES = new Set<PaymentStatus>([
   PaymentStatus.CAPTURED,
   PaymentStatus.REFUNDED,
@@ -30,7 +31,7 @@ export class PaymentsService {
     private readonly momo: MomoPaymentAdapter,
     private readonly vnpay: VnpayPaymentAdapter,
     private readonly cash: CashPaymentAdapter,
-    @InjectQueue('payment-status-check') private readonly paymentStatusQueue: Queue,
+    @InjectQueue(PAYMENT_STATUS_CHECK_QUEUE_NAME) private readonly paymentStatusQueue: Queue,
     private readonly notifications?: NotificationsService,
   ) {}
 
@@ -53,17 +54,8 @@ export class PaymentsService {
   }
 
   async scheduleStatusCheck(paymentId: string) {
-    await this.paymentStatusQueue.add(
-      'payment-status-check',
-      { paymentId },
-      {
-        delay: PAYMENT_STATUS_CHECK_DELAY_MS,
-        attempts: PAYMENT_STATUS_CHECK_ATTEMPTS,
-        backoff: { type: 'exponential', delay: PAYMENT_STATUS_CHECK_BACKOFF_MS },
-        removeOnComplete: true,
-        removeOnFail: false,
-      },
-    );
+    const job = paymentStatusCheckJob(paymentId);
+    await this.paymentStatusQueue.add(job.name, job.data, job.options);
   }
 
   async refreshAuthorizationForBooking(paymentId: string, bookingId: string) {

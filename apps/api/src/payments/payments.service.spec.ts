@@ -3,6 +3,26 @@ import { PaymentMethod, PaymentStatus } from '@prisma/client';
 
 import { PaymentsService } from './payments.service';
 
+describe('PaymentsService status check queue', () => {
+  it('schedules payment status checks with the shared queue descriptor', async () => {
+    const { queue, service } = createService({ existingPayment: null });
+
+    await service.scheduleStatusCheck('payment-1');
+
+    expect(queue.add).toHaveBeenCalledWith(
+      'payment-status-check',
+      { paymentId: 'payment-1' },
+      {
+        delay: 30_000,
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    );
+  });
+});
+
 describe('PaymentsService callbacks', () => {
   it('accepts a non-terminal callback and records accepted evidence', async () => {
     const { prisma, service } = createService({
@@ -168,6 +188,7 @@ function createService({
 
   return {
     prisma,
+    queue,
     service: new PaymentsService(
       prisma as never,
       config as never,
