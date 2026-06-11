@@ -106,7 +106,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         </div>
       </section>
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <MetricCard label="Payment status" value={payment.status} helper={paymentStatusHint(payment)} />
         <MetricCard label="Method" value={payment.method} helper={gatewayReferenceLabel(payment)} />
         <MetricCard label="Amount" value={money(payment.amount, payment.currency)} helper={serviceLabel} />
@@ -142,7 +142,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
 
       <PaymentDetailCallbackTimelineSection reviewCount={callbackReviewCount} rows={callbackTimelineRows} />
 
-      <section className="grid" style={{ marginBottom: 16 }}>
+      <section className="grid admin-mb-16">
         <section className="card" id="booking-evidence">
           <h2>Linked booking evidence</h2>
           <div className="setup-stage-list">
@@ -168,7 +168,7 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
         </section>
       </section>
 
-      <section className="card" id="chat-payment-evidence" style={{ marginBottom: 16 }}>
+      <section className="card admin-mb-16" id="chat-payment-evidence">
         <div className="ops-section-header">
           <div>
             <h2>Chat and operation evidence</h2>
@@ -315,7 +315,7 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
   const debtAmount = Math.abs(earning.netAmount);
   const settlementRef = `HANDS-CASH-${shortId(payment.bookingId).toUpperCase()}`;
   return (
-    <form action={settleCashDebt} className="inline-form" style={{ marginTop: 16 }}>
+    <form action={settleCashDebt} className="inline-form admin-mt-16">
       <input type="hidden" name="earningId" value={earning.id} />
       <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
       <input

@@ -28,7 +28,7 @@ export function PaymentDetailActionMapSection({
   rows,
 }: PaymentDetailActionMapSectionProps) {
   return (
-    <section className="card" id="payment-action-map" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="payment-action-map">
       {confirmation}
       <div className="ops-section-header">
         <div>
@@ -51,7 +51,7 @@ export function PaymentDetailActionMapSection({
           </div>
         ))}
       </div>
-      <div className="actions" style={{ marginTop: 16 }}>
+      <div className="actions admin-mt-16">
         <ActionMenu actions={actions} label={actionLabel} />
       </div>
       {cashDebtSettlementForm}

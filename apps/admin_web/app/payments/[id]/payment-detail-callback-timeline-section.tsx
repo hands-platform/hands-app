@@ -22,7 +22,7 @@ type PaymentDetailCallbackTimelineSectionProps = {
 
 export function PaymentDetailCallbackTimelineSection({ reviewCount, rows }: PaymentDetailCallbackTimelineSectionProps) {
   return (
-    <section className="card" id="callback-timeline" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16" id="callback-timeline">
       <div className="ops-section-header">
         <div>
           <h2>Gateway callback attempt timeline</h2>
