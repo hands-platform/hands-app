@@ -1,10 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
-const envPath = resolve(envFile);
-const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
-const env = { ...fileEnv, ...process.env };
+const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 const mapTilerApiKey = String(env.MAPTILER_API_KEY ?? '').trim();
 const geoapifyApiKey = String(env.GEOAPIFY_API_KEY ?? '').trim();
@@ -71,7 +68,7 @@ await addAsyncCheck('geoapify', 'Vietnam geocoding', async () => {
 const failures = checks.filter((check) => check.status !== 'PASS');
 const result = {
   ok: failures.length === 0,
-  envFile: existsSync(envPath) ? envPath : null,
+  envFile: envFileExists ? envPath : null,
   checks,
   nextActions: failures.map((check) => check.fix).filter(Boolean),
 };
@@ -116,25 +113,4 @@ async function fetchJson(url) {
   }
 
   return response.json();
-}
-
-function parseEnv(source) {
-  const entries = {};
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-    const index = line.indexOf('=');
-    if (index === -1) {
-      continue;
-    }
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, '');
-    entries[key] = value;
-  }
-  return entries;
 }

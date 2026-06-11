@@ -1,11 +1,10 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { basename } from 'node:path';
+
+import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv[2] ?? '.env';
-const envPath = resolve(envFile);
+const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const isTemplate = basename(envPath) === '.env.example' || process.argv.includes('--template');
-const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
-const env = { ...fileEnv, ...process.env };
 
 const required = [
   'NODE_ENV',
@@ -79,7 +78,7 @@ const missingRecommended = recommended.filter((key) => !env[key]);
 
 const result = {
   ok: missingRequired.length === 0 && (isTemplate || insecureRequired.length === 0),
-  envFile: existsSync(envPath) ? envPath : null,
+  envFile: envFileExists ? envPath : null,
   mode: isTemplate ? 'template' : 'runtime',
   missingRequired,
   insecureRequired: isTemplate ? [] : insecureRequired,
@@ -90,25 +89,4 @@ console.log(JSON.stringify(result, null, 2));
 
 if (!result.ok) {
   process.exitCode = 1;
-}
-
-function parseEnv(source) {
-  const entries = {};
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-    const index = line.indexOf('=');
-    if (index === -1) {
-      continue;
-    }
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, '');
-    entries[key] = value;
-  }
-  return entries;
 }

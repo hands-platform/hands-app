@@ -1,12 +1,12 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const strict = process.argv.includes('--strict');
 const phase = process.argv.find((arg) => arg.startsWith('--phase='))?.slice('--phase='.length) ?? 'advisory';
-const envPath = resolve(envFile);
-const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
-const env = { ...fileEnv, ...process.env };
+const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 const checks = [];
 const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
@@ -253,7 +253,7 @@ const recommendedFailures = checks.filter((check) => !check.required && check.st
 const result = {
   ok: requiredFailures.length === 0 && (!strict || recommendedFailures.length === 0),
   mode: strict ? 'strict' : phase,
-  envFile: existsSync(envPath) ? envPath : null,
+  envFile: envFileExists ? envPath : null,
   phase,
   checks,
   nextActions: [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix),
@@ -347,25 +347,4 @@ function storageConfigured() {
   return (
     allHaveValue(storageRequiredEnvKeys) && (hasValue('S3_BUCKET') || allHaveValue(storageSplitBucketEnvKeys))
   );
-}
-
-function parseEnv(source) {
-  const entries = {};
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-    const index = line.indexOf('=');
-    if (index === -1) {
-      continue;
-    }
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, '');
-    entries[key] = value;
-  }
-  return entries;
 }

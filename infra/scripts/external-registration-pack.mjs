@@ -1,15 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const format =
   process.argv.find((arg) => arg.startsWith('--format='))?.slice('--format='.length) ?? 'markdown';
 const outFile = process.argv.find((arg) => arg.startsWith('--out='))?.slice('--out='.length);
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const envPath = resolve(envFile);
-const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
-const env = { ...fileEnv, ...process.env };
+const { env } = loadMergedEnv(envFile);
 
 const registrationItems = [
   {
@@ -452,27 +452,6 @@ function isHttpsUrl(value) {
   } catch {
     return false;
   }
-}
-
-function parseEnv(source) {
-  const entries = {};
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
-      continue;
-    }
-    const index = line.indexOf('=');
-    if (index === -1) {
-      continue;
-    }
-    const key = line.slice(0, index).trim();
-    const value = line
-      .slice(index + 1)
-      .trim()
-      .replace(/^['"]|['"]$/g, '');
-    entries[key] = value;
-  }
-  return entries;
 }
 
 function normalizePath(value) {
