@@ -1,4 +1,4 @@
-import { isPartnerAlert, toPushData } from './notifications.processor';
+import { NotificationRetryProcessor, isPartnerAlert, toPushData } from './notifications.processor';
 
 describe('notification push data', () => {
   it('keeps OS push data limited to routing identifiers', () => {
@@ -51,5 +51,88 @@ describe('notification partner alert policy', () => {
 
   it('keeps customer payment updates out of partner alert channel policy', () => {
     expect(isPartnerAlert('payment.updated')).toBe(false);
+  });
+});
+
+describe('NotificationRetryProcessor', () => {
+  it('disables a push device after a permanent FCM token failure', async () => {
+    const tx = {
+      notificationDelivery: {
+        create: jest.fn(),
+      },
+      pushDevice: {
+        update: jest.fn(),
+      },
+    };
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'chat.message.created',
+          data: { chatRoomId: 'chat-1', internalNote: 'do not send' },
+          user: {
+            pushDevices: [
+              {
+                id: 'device-1',
+                token: 'fcm-token-1',
+              },
+            ],
+          },
+        }),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = {
+      send: jest.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'FAILED',
+        disableDevice: true,
+        failureCode: 'messaging/registration-token-not-registered',
+        response: { reason: 'registration token [masked]' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      notificationId: 'notification-1',
+      userId: 'user-1',
+      results: [
+        {
+          deviceId: 'device-1',
+          provider: 'FCM',
+          status: 'FAILED',
+          disableDevice: true,
+          failureCode: 'messaging/registration-token-not-registered',
+        },
+      ],
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledWith({
+      token: 'fcm-token-1',
+      title: 'Booking update',
+      body: 'A booking update is available.',
+      data: { chatRoomId: 'chat-1' },
+      providerOverride: undefined,
+    });
+    expect(tx.notificationDelivery.create).toHaveBeenCalledWith({
+      data: {
+        notificationId: 'notification-1',
+        pushDeviceId: 'device-1',
+        provider: 'FCM',
+        status: 'FAILED',
+        response: { reason: 'registration token [masked]' },
+      },
+    });
+    expect(tx.pushDevice.update).toHaveBeenCalledWith({
+      where: { id: 'device-1' },
+      data: { enabled: false },
+    });
   });
 });
