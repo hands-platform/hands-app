@@ -104,10 +104,10 @@ import {
   toJson,
 } from './bookings.payload';
 import {
+  bookingMatchedUpdateData,
   bookingParticipantCompoundKey,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
-  bookingSelectedParticipantUpdate,
 } from './bookings.participants';
 import { calculateCouponDiscount, resolveCustomerPrice } from './bookings.pricing';
 
@@ -753,14 +753,11 @@ export class BookingsService {
       booking = await this.prisma.$transaction(async (transaction) => {
         const matchedBooking = await transaction.booking.update({
           where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-          data: {
-            status: BookingStatus.MATCHED,
-            selectedProviderId: providerId,
-            matchedAt: new Date(),
+          data: bookingMatchedUpdateData({
+            bookingId,
+            providerProfileId: providerId,
             matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
-            participants: bookingSelectedParticipantUpdate(bookingId, providerId),
-            chatRoom: { upsert: { create: {}, update: {} } },
-          },
+          }),
           include: {
             addressSnapshot: true,
             chatRoom: true,
@@ -836,14 +833,11 @@ export class BookingsService {
         updated = await this.prisma.$transaction(async (transaction) => {
           const matchedBooking = await transaction.booking.update({
             where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
-            data: {
-              status: BookingStatus.MATCHED,
-              selectedProviderId: provider.id,
-              matchedAt: new Date(),
+            data: bookingMatchedUpdateData({
+              bookingId,
+              providerProfileId: provider.id,
               matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
-              participants: bookingSelectedParticipantUpdate(bookingId, provider.id),
-              chatRoom: { upsert: { create: {}, update: {} } },
-            },
+            }),
             include: {
               participants: true,
               preferredProvider: true,

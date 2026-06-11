@@ -1,5 +1,6 @@
 import { ParticipantStatus } from '@prisma/client';
 import {
+  bookingMatchedUpdateData,
   bookingParticipantCompoundKey,
   bookingParticipantResponseRoute,
   bookingParticipantResponseUnavailableMessage,
@@ -32,6 +33,41 @@ describe('booking participant helpers', () => {
           respondedAt,
         },
       },
+    });
+  });
+
+  it('builds matched booking update data with selected participant state', () => {
+    const matchedAt = new Date('2026-06-11T01:00:00.000Z');
+    const respondedAt = new Date('2026-06-11T01:00:01.000Z');
+
+    expect(
+      bookingMatchedUpdateData({
+        bookingId: 'booking-1',
+        providerProfileId: 'partner-1',
+        matchSource: 'CUSTOMER_SELECTED_PARTNER',
+        matchedAt,
+        respondedAt,
+      }),
+    ).toEqual({
+      status: 'MATCHED',
+      selectedProviderId: 'partner-1',
+      matchedAt,
+      matchSource: 'CUSTOMER_SELECTED_PARTNER',
+      participants: {
+        update: {
+          where: {
+            bookingId_providerProfileId: {
+              bookingId: 'booking-1',
+              providerProfileId: 'partner-1',
+            },
+          },
+          data: {
+            status: ParticipantStatus.SELECTED,
+            respondedAt,
+          },
+        },
+      },
+      chatRoom: { upsert: { create: {}, update: {} } },
     });
   });
 

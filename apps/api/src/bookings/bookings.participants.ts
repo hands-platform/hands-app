@@ -1,4 +1,4 @@
-import { ParticipantStatus } from '@prisma/client';
+import { BookingMatchSource, BookingStatus, ParticipantStatus } from '@prisma/client';
 
 export function bookingParticipantCompoundKey(bookingId: string, providerProfileId: string) {
   return {
@@ -16,6 +16,27 @@ export function bookingSelectedParticipantUpdate(
       where: bookingParticipantCompoundKey(bookingId, providerProfileId),
       data: { status: ParticipantStatus.SELECTED, respondedAt },
     },
+  };
+}
+
+export function bookingMatchedUpdateData(input: {
+  bookingId: string;
+  providerProfileId: string;
+  matchSource: BookingMatchSource;
+  matchedAt?: Date;
+  respondedAt?: Date;
+}) {
+  return {
+    status: BookingStatus.MATCHED,
+    selectedProviderId: input.providerProfileId,
+    matchedAt: input.matchedAt ?? new Date(),
+    matchSource: input.matchSource,
+    participants: bookingSelectedParticipantUpdate(
+      input.bookingId,
+      input.providerProfileId,
+      input.respondedAt,
+    ),
+    chatRoom: { upsert: { create: {}, update: {} } },
   };
 }
 
