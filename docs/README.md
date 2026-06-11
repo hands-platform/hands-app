@@ -19,6 +19,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 - `docs/architecture/master-progress-roadmap.md` - single execution board for current progress, decision backlog, validation commands, and next work.
 - `docs/api/routes.md` - active API route reference.
 - `docs/architecture/partner-acceptance-operations.md` - first-pick, marketplace, wallet, and closeout policy.
+- `docs/architecture/notifications.md` - FCM push architecture, token registration, and Firebase scope rules.
 - `docs/architecture/admin-web-integration.md` - Admin Operations Command Center integration.
 - `docs/architecture/mobile-api-integration.md` - Flutter app integration notes.
 
@@ -30,6 +31,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 - Realtime matching: `docs/architecture/realtime-matching.md`
 - Operations policy: `docs/architecture/partner-acceptance-operations.md`
 - Payments and settlement: `docs/architecture/payments.md`, `docs/architecture/earnings.md`
+- Notifications and push: `docs/architecture/notifications.md`
 - Service pricing: `docs/architecture/service-pricing.md`
 - Provider-to-partner onboarding: `docs/architecture/provider-onboarding.md`
 - Supabase migration: `docs/architecture/supabase-migration-runbook.md`
