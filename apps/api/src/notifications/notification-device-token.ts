@@ -19,7 +19,7 @@ export function resolvePushDeviceRole(roles: readonly Role[]) {
     return Role.PROVIDER;
   }
 
-  return Role.ADMIN;
+  return null;
 }
 
 export function pushDeviceRegistrationInput(
@@ -27,7 +27,7 @@ export function pushDeviceRegistrationInput(
   input: RegisterDeviceTokenInput,
   lastSeenAt = new Date(),
 ) {
-  const role = resolvePushDeviceRole(user.roles);
+  const role = requirePushDeviceRole(user.roles);
 
   return {
     where: { token: input.token },
@@ -46,6 +46,14 @@ export function pushDeviceRegistrationInput(
       lastSeenAt,
     },
   };
+}
+
+function requirePushDeviceRole(roles: readonly Role[]) {
+  const role = resolvePushDeviceRole(roles);
+  if (!role) {
+    throw new Error('Push device registration requires a customer or provider role');
+  }
+  return role;
 }
 
 export function pushDeviceDisableInput(userId: string, token: string, lastSeenAt = new Date()) {

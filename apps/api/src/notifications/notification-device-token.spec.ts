@@ -9,7 +9,7 @@ describe('notification device token helpers', () => {
   it('resolves the stored push device role from authenticated roles', () => {
     expect(resolvePushDeviceRole([Role.CUSTOMER, Role.PROVIDER])).toBe(Role.CUSTOMER);
     expect(resolvePushDeviceRole([Role.PROVIDER])).toBe(Role.PROVIDER);
-    expect(resolvePushDeviceRole([Role.ADMIN])).toBe(Role.ADMIN);
+    expect(resolvePushDeviceRole([Role.ADMIN])).toBeNull();
   });
 
   it('builds authenticated token registration upsert input', () => {
@@ -38,6 +38,15 @@ describe('notification device token helpers', () => {
         lastSeenAt,
       },
     });
+  });
+
+  it('rejects registration input without a customer or provider role', () => {
+    expect(() =>
+      pushDeviceRegistrationInput(
+        { id: 'admin-1', roles: [Role.ADMIN] },
+        { token: 'fcm-token-1', platform: 'ios' },
+      ),
+    ).toThrow('Push device registration requires a customer or provider role');
   });
 
   it('builds authenticated token disable input', () => {
