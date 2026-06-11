@@ -4,6 +4,10 @@ import { Role } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  NOTIFICATION_SEND_QUEUE_NAME,
+  notificationSendJob,
+} from './notification-send.queue';
 
 type CreateNotificationInput = {
   userId: string;
@@ -13,15 +17,11 @@ type CreateNotificationInput = {
   data?: unknown;
 };
 
-const NOTIFICATION_SEND_ATTEMPTS = 3;
-const NOTIFICATION_SEND_BACKOFF_MS = 5_000;
-const NOTIFICATION_SEND_JOB_NAME = 'notification-send';
-
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
-    @InjectQueue('notification-retry') private readonly notificationQueue: Queue,
+    @InjectQueue(NOTIFICATION_SEND_QUEUE_NAME) private readonly notificationQueue: Queue,
   ) {}
 
   async create(input: CreateNotificationInput) {
@@ -97,19 +97,6 @@ export class NotificationsService {
     const job = notificationSendJob(notificationId);
     await this.notificationQueue.add(job.name, job.data, job.options);
   }
-}
-
-function notificationSendJob(notificationId: string) {
-  return {
-    name: NOTIFICATION_SEND_JOB_NAME,
-    data: { notificationId },
-    options: {
-      attempts: NOTIFICATION_SEND_ATTEMPTS,
-      backoff: { type: 'exponential', delay: NOTIFICATION_SEND_BACKOFF_MS },
-      removeOnComplete: true,
-      removeOnFail: false,
-    },
-  };
 }
 
 function resolvePushDeviceRole(roles: readonly Role[]) {

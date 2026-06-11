@@ -7,6 +7,10 @@ import {
 } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  NOTIFICATION_SEND_QUEUE_NAME,
+  type NotificationSendJob,
+} from './notification-send.queue';
+import {
   isPartnerAlert,
   notificationDeliveryResponse,
   toJson,
@@ -16,11 +20,7 @@ import { PushDeliveryService } from './push-delivery.service';
 
 export { isPartnerAlert, toPushData } from './notification-push-payload';
 
-type NotificationSendJob = {
-  notificationId: string;
-};
-
-@Processor('notification-retry')
+@Processor(NOTIFICATION_SEND_QUEUE_NAME)
 export class NotificationRetryProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
