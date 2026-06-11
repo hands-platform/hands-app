@@ -20,11 +20,7 @@ import {
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
-import {
-  detailDateRangeOptions,
-  isWithinDetailDateFilter,
-  readDetailDateFilters,
-} from '../../../lib/detail-date-filter';
+import { isWithinDetailDateFilter, readDetailDateFilters } from '../../../lib/detail-date-filter';
 import {
   detailActivityTypeLabel,
   isWithinDetailActivityType,
@@ -64,9 +60,7 @@ import {
   updateProviderReport,
 } from '../../partner-controls/actions';
 import {
-  DETAIL_ACTIVITY_ORDER_OPTIONS,
   PARTNER_ACTIVITY_TYPE_OPTIONS,
-  activityOrderLabel,
   orderPartnerActivityRecords,
   orderPartnerBookingArchive,
   readDetailActivityOrder,
@@ -128,6 +122,7 @@ import {
   PartnerDetailBookingOpsLedgerSection,
   type PartnerBookingOpsLedgerRow,
 } from './partner-detail-booking-ops-ledger-section';
+import { PartnerDetailRecordDateFilterSection } from './partner-detail-record-date-filter-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import {
@@ -834,101 +829,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         rows={partnerOperatingChecklist}
       />
 
-      <div className="card admin-mb-16" id="record-date-filter">
-        <div className="ops-section-header">
-          <div>
-            <h2>Record date filter</h2>
-            <p className="muted">
-              Narrow booking, chat, app, location, payout, and verification records without changing partner
-              data.
-            </p>
-          </div>
-          <div className="participant-list">
-            <span className="pill pill-info">{dateFilters.label}</span>
-            <span className="pill pill-neutral">
-              {detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}
-            </span>
-            <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
-          </div>
-        </div>
-        <form className="form-grid admin-mt-14" action={`/partners/${provider.id}`}>
-          <label>
-            Preset
-            <select name="range" defaultValue={dateFilters.range}>
-              {detailDateRangeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Record type
-            <select name="type" defaultValue={activityType}>
-              {PARTNER_ACTIVITY_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sort order
-            <select name="order" defaultValue={activityOrder}>
-              {DETAIL_ACTIVITY_ORDER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            From
-            <input type="date" name="from" defaultValue={dateFilters.from} />
-          </label>
-          <label>
-            To
-            <input type="date" name="to" defaultValue={dateFilters.to} />
-          </label>
-          <div className="actions">
-            <button type="submit">Apply filter</button>
-            <a
-              className="text-link"
-              download={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
-              href={filteredActivityCsvHref}
-            >
-              Export activity CSV
-            </a>
-            <Link className="text-link" href={`/partners/${provider.id}`}>
-              Clear
-            </Link>
-          </div>
-        </form>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Filtered booking archive</span>
-            <strong>{filteredPartnerBookingArchive.length}</strong>
-            <small>Preferred, selected, and marketplace participation records.</small>
-          </div>
-          <div>
-            <span>Filtered activity</span>
-            <strong>{filteredPartnerActivityRecords.length}</strong>
-            <small>
-              {detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)} in this period.
-            </small>
-          </div>
-          <div>
-            <span>Loaded bookings</span>
-            <strong>{partnerBookingArchive.length}</strong>
-            <small>Total visible archive before this filter.</small>
-          </div>
-          <div>
-            <span>Loaded events</span>
-            <strong>{partnerActivityRecords.length}</strong>
-            <small>Total factual activity before this filter.</small>
-          </div>
-        </div>
-      </div>
+      <PartnerDetailRecordDateFilterSection
+        activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
+        activityOrder={activityOrder}
+        activityType={activityType}
+        dateFilters={dateFilters}
+        filteredActivityCount={filteredPartnerActivityRecords.length}
+        filteredActivityCsvHref={filteredActivityCsvHref}
+        filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
+        partnerId={provider.id}
+        totalActivityCount={partnerActivityRecords.length}
+        totalBookingArchiveCount={partnerBookingArchive.length}
+      />
 
       <PartnerDetailChatRetentionLedgerSection
         description="Customer final selection creates the partner chat. Mobile apps can hide completed-service chats, while admin keeps the retained transcript for cancellation, no-show, payment, and service evidence review."
