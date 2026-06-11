@@ -189,7 +189,7 @@ export function BookingRecordDetailSections({
         </div>
       </section>
 
-      <section className="detail-grid" style={{ marginTop: 16 }}>
+      <section className="detail-grid admin-mt-16">
         <ParticipantLedgerSection participantLedger={participantLedger} />
 
         <div className="card" id="payment">
@@ -224,7 +224,7 @@ export function BookingRecordDetailSections({
             <span className="route-dot route-customer">Customer</span>
             {hasLatestPartnerLocation && <span className="route-dot route-provider">Partner</span>}
           </div>
-          <div className="stack" style={{ marginTop: 12 }}>
+          <div className="stack admin-mt-12">
             {locationTrailRows.map((snapshot) => (
               <div className="ops-row" key={snapshot.id}>
                 <div>
@@ -258,18 +258,18 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
         </div>
         <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
       </div>
-      <div className="participant-list" style={{ marginTop: 12 }}>
+      <div className="participant-list admin-mt-12">
         {participantLedger.boundary.pills.map((pill, index) => (
           <span className={index === 1 ? 'pill pill-warn' : index === 0 ? 'pill pill-info' : 'pill'} key={pill}>
             {pill}
           </span>
         ))}
       </div>
-      <p className="muted" style={{ marginTop: 10 }}>
+      <p className="muted admin-mt-10">
         {participantLedger.boundary.helper}
       </p>
       <SummaryCards cards={participantLedger.cards} />
-      <div className="setup-stage-list" style={{ marginTop: 14 }}>
+      <div className="setup-stage-list admin-mt-14">
         {participantLedger.selectionTrace.map((item) => (
           <div className="setup-stage-item" key={item.label}>
             <span>{item.label}</span>
@@ -307,12 +307,12 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
           </tbody>
         </table>
       </AdminTableScroll>
-      <h3 style={{ marginTop: 18 }}>Customer eligibility matrix</h3>
+      <h3 className="admin-mt-18">Customer eligibility matrix</h3>
       <p className="muted">
         Shows who participated, who is customer-selectable, the Customer-selectable reason, and Why not
         selectable for evidence-only rows.
       </p>
-      <table className="table" style={{ marginTop: 10 }}>
+      <table className="table admin-mt-10">
         <thead>
           <tr>
             <th>Partner</th>
@@ -391,7 +391,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
                 </td>
                 <td>
                   <strong>{row.distance}</strong>
-                  <div className="filter-row" style={{ marginTop: 6 }}>
+                  <div className="filter-row admin-mt-6">
                     <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
                   </div>
                   <p className="muted">{row.distancePolicyHelper}</p>
@@ -405,7 +405,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
                       </span>
                     ))}
                   </div>
-                  <p className="muted" style={{ marginTop: 8 }}>
+                  <p className="muted admin-mt-8">
                     {row.operatorUse}
                   </p>
                 </td>
@@ -474,7 +474,7 @@ function CashFeeSettlementPathSection({
 
 function SummaryCards({ cards }: { cards: SummaryCard[] }) {
   return (
-    <div className="service-trace-summary" style={{ marginTop: 12 }}>
+    <div className="service-trace-summary admin-mt-12">
       {cards.map((card) => (
         <a href={card.href} key={card.label}>
           <span>{card.label}</span>
