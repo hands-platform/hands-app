@@ -88,15 +88,7 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
       const stage = readOptionalString(batch.stage) ?? 'backup_invite';
       const notifiedCount = readOptionalNumber(batch.notifiedCount) ?? providers.length;
       const websocketTargetCount = readOptionalNumber(batch.websocketTargetCount);
-      const radius =
-        readOptionalNumber(batch.marketplaceRadiusMeters) ??
-        readOptionalNumber(batch.marketplacePartnerRadiusMeters) ??
-        readOptionalNumber(batch.backupProviderRadiusMeters);
-      const limit =
-        readOptionalNumber(batch.marketplaceInvitationLimit) ??
-        readOptionalNumber(batch.marketplacePartnerInvitationLimit) ??
-        readOptionalNumber(batch.backupProviderInvitationLimit);
-      const mode = readOptionalString(batch.marketplaceOpenMode) ?? readOptionalString(batch.backupOpenMode);
+      const marketplaceFields = readMarketplaceTraceFields(batch);
       const providerSummary = providers
         .map((providerValue) => {
           const provider = readPlainRecord(providerValue);
@@ -130,9 +122,9 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
         meta: [
           createdAt ? `created ${formatDate(createdAt)}` : null,
           websocketTargetCount !== null ? `websocket targets ${websocketTargetCount}` : null,
-          radius !== null ? `radius ${formatDistanceMeters(radius)}` : null,
-          limit !== null ? `invite cap ${limit}` : null,
-          mode ? `mode ${mode}` : null,
+          marketplaceFields.radius !== null ? `radius ${formatDistanceMeters(marketplaceFields.radius)}` : null,
+          marketplaceFields.invitationLimit !== null ? `invite cap ${marketplaceFields.invitationLimit}` : null,
+          marketplaceFields.openMode ? `mode ${marketplaceFields.openMode}` : null,
         ]
           .filter(Boolean)
           .join(' / '),
@@ -161,17 +153,8 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     notification.user?.phone ??
     (partner?.id ? `Partner ${shortId(partner.id)}` : 'Unknown target');
   const providerProfileId = readOptionalString(data?.providerProfileId);
-  const radius =
-    readOptionalNumber(data?.marketplaceRadiusMeters) ??
-    readOptionalNumber(data?.marketplacePartnerRadiusMeters) ??
-    readOptionalNumber(data?.backupProviderRadiusMeters);
+  const marketplaceFields = readMarketplaceTraceFields(data);
   const distance = readOptionalNumber(data?.distanceMeters);
-  const invitationLimit =
-    readOptionalNumber(data?.marketplaceInvitationLimit) ??
-    readOptionalNumber(data?.marketplacePartnerInvitationLimit) ??
-    readOptionalNumber(data?.backupProviderInvitationLimit);
-  const marketplaceOpenMode =
-    readOptionalString(data?.marketplaceOpenMode) ?? readOptionalString(data?.backupOpenMode);
   const deliveryStatuses = deliveries.map((delivery) => delivery.status);
 
   return {
@@ -197,9 +180,11 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
       `created ${formatDate(notification.createdAt)}`,
       providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
-      radius !== null ? `marketplace radius ${formatDistanceMeters(radius)}` : null,
-      invitationLimit !== null ? `invite cap ${invitationLimit}` : null,
-      marketplaceOpenMode ? `marketplace mode ${marketplaceOpenMode}` : null,
+      marketplaceFields.radius !== null
+        ? `marketplace radius ${formatDistanceMeters(marketplaceFields.radius)}`
+        : null,
+      marketplaceFields.invitationLimit !== null ? `invite cap ${marketplaceFields.invitationLimit}` : null,
+      marketplaceFields.openMode ? `marketplace mode ${marketplaceFields.openMode}` : null,
       data?.noShowPolicy ? `no-show policy ${String(data.noShowPolicy)}` : null,
       data?.reason ? `reason ${String(data.reason)}` : null,
     ]
@@ -216,6 +201,20 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
             )
             .join(' / ')
         : 'No delivery attempt captured.',
+  };
+}
+
+function readMarketplaceTraceFields(data: ReturnType<typeof readPlainRecord> | undefined) {
+  return {
+    radius:
+      readOptionalNumber(data?.marketplaceRadiusMeters) ??
+      readOptionalNumber(data?.marketplacePartnerRadiusMeters) ??
+      readOptionalNumber(data?.backupProviderRadiusMeters),
+    invitationLimit:
+      readOptionalNumber(data?.marketplaceInvitationLimit) ??
+      readOptionalNumber(data?.marketplacePartnerInvitationLimit) ??
+      readOptionalNumber(data?.backupProviderInvitationLimit),
+    openMode: readOptionalString(data?.marketplaceOpenMode) ?? readOptionalString(data?.backupOpenMode),
   };
 }
 
