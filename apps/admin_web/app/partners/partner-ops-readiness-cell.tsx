@@ -55,14 +55,14 @@ export function PartnerOpsReadinessCell({
 
 function PartnerNextActionSummary({ action }: { readonly action: ProviderListAction }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div className="participant-list" style={{ marginBottom: 6 }}>
+    <div className="admin-mb-10">
+      <div className="participant-list admin-mb-6">
         <span className={`pill ${partnerListActionPillClass(action.tone)}`}>{action.status}</span>
       </div>
-      <p className="muted" style={{ marginBottom: 4 }}>
+      <p className="muted admin-mb-4">
         {action.detail}
       </p>
-      <p className="muted" style={{ marginBottom: 8 }}>
+      <p className="muted admin-mb-8">
         {action.operatorAction}
       </p>
     </div>
@@ -71,7 +71,7 @@ function PartnerNextActionSummary({ action }: { readonly action: ProviderListAct
 
 function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsBadge[] }) {
   return (
-    <div className="participant-list" style={{ marginBottom: 8 }}>
+    <div className="participant-list admin-mb-8">
       {badges.map((badge) => (
         <span
           className={`pill ${partnerOpsBadgePillClass(badge.tone)}`}
@@ -88,14 +88,14 @@ function PartnerOpsBadgeList({ badges }: { readonly badges: readonly PartnerOpsB
 function PartnerIssuePills({ issues }: { readonly issues: readonly PartnerOpsReadinessIssue[] }) {
   if (!issues.length) {
     return (
-      <div className="participant-list" style={{ marginBottom: 8 }}>
+      <div className="participant-list admin-mb-8">
         <span className="pill pill-success">No blocking issues</span>
       </div>
     );
   }
 
   return (
-    <div className="participant-list" style={{ marginBottom: 8 }}>
+    <div className="participant-list admin-mb-8">
       {issues.slice(0, 5).map((issue) => (
         <span className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`} key={issue.label}>
           {issue.label}
@@ -114,7 +114,7 @@ function PartnerBackupEligibilityCard({
   readonly opsPolicy: ProviderOpsPolicy;
 }) {
   return (
-    <div className="card" style={{ marginTop: 10, padding: 12 }}>
+    <div className="card admin-mt-10 admin-p-12">
       <div className="ops-section-header">
         <div>
           <strong>Marketplace participation eligibility</strong>
@@ -124,13 +124,13 @@ function PartnerBackupEligibilityCard({
           {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
         </span>
       </div>
-      <div className="participant-list" style={{ marginTop: 8 }}>
+      <div className="participant-list admin-mt-8">
         <span className="pill pill-info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</span>
         <span className="pill pill-info">First window: {opsPolicy.responseWindowMinutes}m</span>
         <span className="pill pill-info">Location: {opsPolicy.staleLocationMinutes}m fresh</span>
       </div>
       {eligibility.blockers.length ? (
-        <div className="participant-list" style={{ marginTop: 8 }}>
+        <div className="participant-list admin-mt-8">
           {eligibility.blockers.map((blocker) => (
             <span
               className={`pill ${blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}`}
@@ -141,7 +141,7 @@ function PartnerBackupEligibilityCard({
           ))}
         </div>
       ) : null}
-      <p className="muted" style={{ marginTop: 8 }}>
+      <p className="muted admin-mt-8">
         {eligibility.operatorAction}
       </p>
     </div>

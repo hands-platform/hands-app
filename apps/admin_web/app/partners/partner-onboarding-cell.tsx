@@ -60,7 +60,7 @@ export function PartnerOnboardingCell({
 
   return (
     <div>
-      <div className="participant-list" style={{ marginBottom: 8 }}>
+      <div className="participant-list admin-mb-8">
         <span className="pill pill-info">{provider.level ?? 'LEVEL_1_SIGNUP'}</span>
         <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
           KYC {provider.kyc?.status ?? 'DRAFT'}
@@ -70,11 +70,11 @@ export function PartnerOnboardingCell({
         </span>
         <span className={`pill ${partnerTaxPillClass(provider)}`}>Tax {taxStatus}</span>
       </div>
-      <p className="muted" style={{ marginBottom: 8 }}>
+      <p className="muted admin-mb-8">
         {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
         {provider.kyc?.cccdNumberLast4 ? ` / CCCD ****${provider.kyc.cccdNumberLast4}` : ''}
       </p>
-      <div className="participant-list" style={{ marginBottom: 8 }}>
+      <div className="participant-list admin-mb-8">
         {ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((documentType) => {
           const documentStatus = providerKycDocumentStatus(provider, documentType);
           return (
@@ -84,48 +84,48 @@ export function PartnerOnboardingCell({
           );
         })}
       </div>
-      <p className="muted" style={{ marginBottom: 8 }}>
+      <p className="muted admin-mb-8">
         {kycState.operatorAction}
       </p>
-      <p className="muted" style={{ marginBottom: 8 }}>
+      <p className="muted admin-mb-8">
         Agreements: {provider.agreements?.length ?? 0}/5
         {missingAgreements > 0 ? ` (${missingAgreements} missing)` : ''}
       </p>
       {primaryBank ? (
-        <p className="muted" style={{ marginBottom: 8 }}>
+        <p className="muted admin-mb-8">
           {marketplaceDisplayText(primaryBank.bankName)} / {primaryBank.accountNumberMasked ?? 'no account'} /{' '}
           {marketplaceDisplayText(primaryBank.accountHolderName)}
         </p>
       ) : null}
       {provider.taxProfile ? (
-        <p className="muted" style={{ marginBottom: 8 }}>
+        <p className="muted admin-mb-8">
           Tax code ****{provider.taxProfile.taxCodeLast4 ?? '----'} / {provider.taxProfile.registeredAddress}
         </p>
       ) : null}
       {documents.length ? (
-        <div style={{ marginBottom: 10 }}>
-          <p className="muted" style={{ marginBottom: 6 }}>
+        <div className="admin-mb-10">
+          <p className="muted admin-mb-6">
             Typed documents
           </p>
           {documents.map((document) => (
             <div key={document.id} className="provider-file-row">
-              <div className="participant-list" style={{ marginBottom: 6 }}>
+              <div className="participant-list admin-mb-6">
                 <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
                 <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
                   {document.status}
                 </span>
               </div>
-              <p className="muted" style={{ marginBottom: 6 }}>
+              <p className="muted admin-mb-6">
                 {providerDocumentReviewHint(document.type)}
               </p>
-              <p className="muted" style={{ marginBottom: 6 }}>
+              <p className="muted admin-mb-6">
                 {document.fileAsset?.contentType ?? 'unknown file'}
                 {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
                 {document.fileAsset?.uploadedAt
                   ? ` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}`
                   : ''}
               </p>
-              <p className="muted" style={{ marginBottom: 6 }}>
+              <p className="muted admin-mb-6">
                 {marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')}
                 {document.fileAsset?.id ? (
                   <>
@@ -144,7 +144,7 @@ export function PartnerOnboardingCell({
           ))}
         </div>
       ) : (
-        <p className="muted" style={{ marginBottom: 8 }}>
+        <p className="muted admin-mb-8">
           No typed partner documents yet.
         </p>
       )}
@@ -158,7 +158,7 @@ export function PartnerOnboardingCell({
         ) : null}
       </div>
       {!canApproveKyc ? (
-        <p className="muted" style={{ marginTop: 8 }}>
+        <p className="muted admin-mt-8">
           KYC approval unlocks after CCCD front, CCCD back, and selfie documents are approved.
         </p>
       ) : null}

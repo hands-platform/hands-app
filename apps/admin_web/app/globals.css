@@ -1211,6 +1211,10 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.admin-mt-6 {
+  margin-top: 6px;
+}
+
 .admin-mt-8 {
   margin-top: 8px;
 }
@@ -1235,8 +1239,28 @@ textarea:focus-visible {
   margin-bottom: 16px;
 }
 
+.admin-mb-4 {
+  margin-bottom: 4px;
+}
+
+.admin-mb-6 {
+  margin-bottom: 6px;
+}
+
+.admin-mb-8 {
+  margin-bottom: 8px;
+}
+
+.admin-mb-10 {
+  margin-bottom: 10px;
+}
+
 .admin-ml-10 {
   margin-left: 10px;
+}
+
+.admin-p-12 {
+  padding: 12px;
 }
 
 .service-matrix th,

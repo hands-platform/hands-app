@@ -28,7 +28,7 @@ export function PartnerOperationsListSection({
   walletHoldCount,
 }: PartnerOperationsListSectionProps) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card admin-mb-16">
       <AdminSectionHeader
         description="List-first partner control view. Operators can check onboarding, direct and marketplace readiness, completed work, last work, wallet, location, push, services, and app activity before opening the full partner record."
         status={
@@ -62,7 +62,7 @@ export function PartnerOperationsListSection({
                 <td>
                   <strong>{row.name}</strong>
                   <p className="muted">{row.phone}</p>
-                  <div className="participant-list" style={{ marginTop: 6 }}>
+                  <div className="participant-list admin-mt-6">
                     <span className="pill pill-info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</span>
                     <span className={`pill ${row.provider.blockedAt ? 'pill-danger' : 'pill-success'}`}>
                       {row.provider.blockedAt ? 'Account blocked' : 'Account open'}
@@ -82,7 +82,7 @@ export function PartnerOperationsListSection({
                   <span className={`signal ${partnerOperationSignalClass(row.acceptanceTone)}`}>
                     {row.acceptanceLabel}
                   </span>
-                  <p className="muted" style={{ marginTop: 8 }}>
+                  <p className="muted admin-mt-8">
                     {row.acceptanceDetail}
                   </p>
                 </td>
@@ -94,7 +94,7 @@ export function PartnerOperationsListSection({
                       </span>
                     ))}
                   </div>
-                  <p className="muted" style={{ marginTop: 8 }}>
+                  <p className="muted admin-mt-8">
                     {row.matchingFlowDetail}
                   </p>
                 </td>
@@ -102,11 +102,11 @@ export function PartnerOperationsListSection({
                   <span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>
                     {row.marketplaceAccessLabel}
                   </span>
-                  <p className="muted" style={{ marginTop: 8 }}>
+                  <p className="muted admin-mt-8">
                     {row.marketplaceAccessDetail}
                   </p>
                   {row.marketplacePartnerAppMessage ? (
-                    <p className="muted" style={{ marginTop: 8 }}>
+                    <p className="muted admin-mt-8">
                       Partner app message: {row.marketplacePartnerAppMessage}
                     </p>
                   ) : null}

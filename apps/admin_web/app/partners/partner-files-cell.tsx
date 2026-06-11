@@ -32,7 +32,7 @@ export function PartnerFilesCell({
       {provider.verification?.files?.length ? (
         provider.verification.files.map((file) => (
           <div key={file.id} className="provider-file-row">
-            <div className="participant-list" style={{ marginBottom: 6 }}>
+            <div className="participant-list admin-mb-6">
               <span className="pill pill-info">{file.purpose ?? 'Partner verification'}</span>
               <span className={`pill ${file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'}`}>
                 {file.uploadStatus ?? 'PENDING'}
@@ -72,31 +72,31 @@ function PartnerPublicMediaQueue({
   const media = providerPublicMedia(provider);
   if (!media.length) {
     return (
-      <p className="muted" style={{ marginTop: 8 }}>
+      <p className="muted admin-mt-8">
         No public profile media uploaded.
       </p>
     );
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <p className="muted" style={{ marginBottom: 6 }}>
+    <div className="admin-mt-10">
+      <p className="muted admin-mb-6">
         Public media review
       </p>
       {media.slice(0, 4).map((file) => (
         <div key={file.id} className="provider-file-row">
-          <div className="participant-list" style={{ marginBottom: 6 }}>
+          <div className="participant-list admin-mb-6">
             <span className="pill pill-info">{file.purpose}</span>
             <span className={`pill ${publicMediaReviewPillClass(file.reviewStatus)}`}>
               {file.reviewStatus ?? 'PENDING_REVIEW'}
             </span>
           </div>
-          <p className="muted" style={{ marginBottom: 6 }}>
+          <p className="muted admin-mb-6">
             {file.contentType}
             {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
             {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
           </p>
-          <p className="muted" style={{ marginBottom: 6 }}>
+          <p className="muted admin-mb-6">
             {file.url ? (
               <a href={file.url} target="_blank" rel="noreferrer">
                 {file.key}
@@ -106,7 +106,7 @@ function PartnerPublicMediaQueue({
             )}
           </p>
           {file.reviewReason ? (
-            <p className="muted" style={{ marginBottom: 6 }}>
+            <p className="muted admin-mb-6">
               Reason: {file.reviewReason}
             </p>
           ) : null}
