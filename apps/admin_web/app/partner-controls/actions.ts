@@ -14,7 +14,7 @@ export async function createProviderReport(formData: FormData) {
   const source = readOptional(formData, 'source') ?? 'ADMIN';
   const bookingId = readOptional(formData, 'bookingId');
   await adminPost(
-    '/admin/partner-reports',
+    '/admin/provider-reports',
     { providerProfileId, category, summary, details, severity, source, bookingId },
     null,
   );
@@ -27,7 +27,7 @@ export async function updateProviderReport(formData: FormData) {
   const status = readOptional(formData, 'status');
   const severity = readOptional(formData, 'severity');
   const resolutionNote = readOptional(formData, 'resolutionNote');
-  await adminPatch(`/admin/partner-reports/${reportId}`, { status, severity, resolutionNote }, null);
+  await adminPatch(`/admin/provider-reports/${reportId}`, { status, severity, resolutionNote }, null);
   revalidatePartnerControls(providerProfileId);
 }
 
@@ -38,7 +38,7 @@ export async function createProviderSanction(formData: FormData) {
   const expiresAt = readOptional(formData, 'expiresAt');
   const reason = readReason(formData);
   await adminPost(
-    `/admin/partners/${providerProfileId}/sanctions`,
+    `/admin/providers/${providerProfileId}/sanctions`,
     { type, reportId, expiresAt, reason },
     null,
   );
@@ -48,7 +48,7 @@ export async function createProviderSanction(formData: FormData) {
 export async function liftProviderSanction(formData: FormData) {
   const sanctionId = readRequired(formData, 'sanctionId');
   const providerProfileId = readOptional(formData, 'providerProfileId');
-  await adminPost(`/admin/partner-sanctions/${sanctionId}/lift`, {}, null);
+  await adminPost(`/admin/provider-sanctions/${sanctionId}/lift`, {}, null);
   revalidatePartnerControls(providerProfileId);
 }
 
