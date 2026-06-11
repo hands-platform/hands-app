@@ -1646,7 +1646,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Payout operations</h2>
@@ -1669,7 +1669,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           ))}
         </div>
         {payoutOps.hold ? (
-          <div className="setup-stage-item" style={{ marginTop: 16 }}>
+          <div className="setup-stage-item admin-mt-16">
             <span>HELD</span>
             <div>
               <strong>Active payout hold</strong>
@@ -1697,7 +1697,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             ))}
           </div>
         ) : null}
-        <div className="detail-grid" style={{ marginTop: 16 }}>
+        <div className="detail-grid admin-mt-16">
           <div>
             <div className="ops-section-header">
               <h3>Recent earnings</h3>
@@ -1794,7 +1794,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Approval checklist</h2>
@@ -1820,7 +1820,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Partner registration dossier</h2>
@@ -1849,7 +1849,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Device and session activity</h2>
@@ -1873,7 +1873,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
-        <div className="detail-grid" style={{ marginTop: 16 }}>
+        <div className="detail-grid admin-mt-16">
           <div>
             <h3>Partner app devices</h3>
             {(provider.devices ?? []).length ? (
@@ -1934,7 +1934,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
         </div>
         {(provider.sharedDeviceMatches ?? []).length ? (
-          <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          <div className="setup-stage-list admin-mt-16">
             {provider.sharedDeviceMatches?.map((match) => (
               <div className="setup-stage-item" key={match.id}>
                 <span>SHARED</span>
@@ -1953,7 +1953,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         ) : null}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
             <h2>Reports and account controls</h2>
@@ -1966,7 +1966,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Open reports desk
           </Link>
         </div>
-        <form className="form-grid" action={createProviderReport} style={{ marginBottom: 16 }}>
+        <form className="form-grid admin-mb-16" action={createProviderReport}>
           <input type="hidden" name="providerProfileId" value={provider.id} />
           <label>
             Category
@@ -2002,7 +2002,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <button type="submit">Create report</button>
           </div>
         </form>
-        <div className="ops-task-card ops-task-pending" style={{ marginBottom: 16 }}>
+        <div className="ops-task-card ops-task-pending admin-mb-16">
           <div className="ops-section-header">
             <div>
               <h3>Manual account control</h3>
@@ -2015,7 +2015,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </span>
           </div>
           {payoutHold ? (
-            <div className="setup-stage-item" style={{ marginBottom: 12 }}>
+            <div className="setup-stage-item admin-mb-12">
               <span>ACTIVE</span>
               <div>
                 <strong>{payoutHold.type}</strong>
@@ -2073,7 +2073,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       <p className="muted">
                         {report.category} / {report.source} / {formatDate(report.createdAt)}
                       </p>
-                      <div className="participant-list" style={{ marginTop: 6 }}>
+                      <div className="participant-list admin-mt-6">
                         <span className={`pill ${reportSeverityPill(report.severity)}`}>
                           {report.severity}
                         </span>
@@ -2088,7 +2088,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       {report.resolutionNote ? (
                         <p className="muted">Resolution: {report.resolutionNote}</p>
                       ) : null}
-                      <form className="actions" action={updateProviderReport} style={{ marginTop: 8 }}>
+                      <form className="actions admin-mt-8" action={updateProviderReport}>
                         <input type="hidden" name="reportId" value={report.id} />
                         <input type="hidden" name="providerProfileId" value={provider.id} />
                         <select name="status" defaultValue={report.status}>
@@ -2106,7 +2106,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         <input name="resolutionNote" placeholder="Resolution note" />
                         <button type="submit">Update</button>
                       </form>
-                      <form className="actions" action={createProviderSanction} style={{ marginTop: 8 }}>
+                      <form className="actions admin-mt-8" action={createProviderSanction}>
                         <input type="hidden" name="providerProfileId" value={provider.id} />
                         <input type="hidden" name="reportId" value={report.id} />
                         <select

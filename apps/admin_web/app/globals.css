@@ -1255,6 +1255,10 @@ textarea:focus-visible {
   margin-bottom: 10px;
 }
 
+.admin-mb-12 {
+  margin-bottom: 12px;
+}
+
 .admin-ml-10 {
   margin-left: 10px;
 }
