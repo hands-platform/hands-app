@@ -74,6 +74,8 @@ export function buildPartnerOperationRow(
   const taxStatus = provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'deferred');
   const nextAction = nextPartnerListAction(provider, opsPolicy);
   const matchingFlow = buildPartnerMatchingFlow(provider, opsPolicy);
+  const kycReady = provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
+  const activeServiceCount = partnerActiveServiceCount(provider);
 
   return {
     provider,
@@ -82,12 +84,9 @@ export function buildPartnerOperationRow(
     checklist: [
       {
         label: 'KYC',
-        status:
-          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
-            ? 'ok'
-            : (provider.kyc?.status ?? 'missing'),
+        status: kycReady ? 'ok' : (provider.kyc?.status ?? 'missing'),
         tone:
-          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+          kycReady
             ? 'ok'
             : provider.kyc?.status === 'REJECTED'
               ? 'danger'
@@ -120,8 +119,8 @@ export function buildPartnerOperationRow(
       },
       {
         label: 'Services',
-        status: partnerActiveServiceCount(provider) > 0 ? `${partnerActiveServiceCount(provider)} active` : 'none',
-        tone: partnerActiveServiceCount(provider) > 0 ? 'ok' : 'warn',
+        status: activeServiceCount > 0 ? `${activeServiceCount} active` : 'none',
+        tone: activeServiceCount > 0 ? 'ok' : 'warn',
       },
       {
         label: 'App',
