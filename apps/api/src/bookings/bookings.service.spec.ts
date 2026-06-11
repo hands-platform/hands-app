@@ -1416,7 +1416,11 @@ describe('BookingsService partner response wallet gates', () => {
         data: expect.objectContaining({
           distanceMeters: 0,
           marketplaceRadiusMeters: 10000,
+          marketplaceOpenMode: 'IMMEDIATE',
+          marketplaceInvitationLimit: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
           backupProviderRadiusMeters: 10000,
+          backupOpenMode: 'IMMEDIATE',
+          backupProviderInvitationLimit: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
         }),
       }),
     );
