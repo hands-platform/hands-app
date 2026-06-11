@@ -184,6 +184,15 @@ type BackupProviderNotificationInput = {
   matchingPayload: unknown;
 };
 
+const clientBookingDetailInclude = {
+  services: { include: { service: true } },
+  addressSnapshot: true,
+  preferredProvider: true,
+  participants: { include: { providerProfile: true } },
+  payment: true,
+  chatRoom: true,
+} satisfies Prisma.BookingInclude;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -594,14 +603,7 @@ export class BookingsService {
   async getBooking(id: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        payment: true,
-        chatRoom: true,
-      },
+      include: clientBookingDetailInclude,
     });
     return clientBookingResponse(booking);
   }
@@ -612,14 +614,7 @@ export class BookingsService {
     });
     const booking = await this.prisma.booking.findFirstOrThrow({
       where: { id, customerProfileId: customer.id },
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        payment: true,
-        chatRoom: true,
-      },
+      include: clientBookingDetailInclude,
     });
     return clientBookingResponse(booking);
   }
