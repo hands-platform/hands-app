@@ -12,6 +12,7 @@ import {
 } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import type { ActionMenuItem } from '../../../components/action-menu';
+import { AdminTableScroll } from '../../../components/admin-data-table';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import {
   bookingLatestActivityAt,
@@ -890,65 +891,67 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerBookingEvidenceRows.length} booking bundle(s)</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Partner role</th>
-              <th>Customer and location</th>
-              <th>Chat archive</th>
-              <th>Money records</th>
-              <th>Ops evidence</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {partnerBookingEvidenceRows.map((row) => (
-              <tr key={`${row.id}-${row.relation}`}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.roleStatus}</strong>
-                  <p className="muted">{row.roleDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.customerStatus}</strong>
-                  <p className="muted">{row.customerDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.chatStatus}</strong>
-                  <p className="muted">{row.chatDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.moneyStatus}</strong>
-                  <p className="muted">{row.moneyDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.opsStatus}</strong>
-                  <p className="muted">{row.opsDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
-                  </Link>
-                  {row.customerHref ? (
-                    <Link className="text-link" href={row.customerHref} style={{ marginLeft: 10 }}>
-                      Customer
-                    </Link>
-                  ) : null}
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Partner role</th>
+                <th>Customer and location</th>
+                <th>Chat archive</th>
+                <th>Money records</th>
+                <th>Ops evidence</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {partnerBookingEvidenceRows.map((row) => (
+                <tr key={`${row.id}-${row.relation}`}>
+                  <td>
+                    <strong>{row.bookingLabel}</strong>
+                    <p className="muted">{row.serviceLabel}</p>
+                    <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td>
+                    <strong>{row.roleStatus}</strong>
+                    <p className="muted">{row.roleDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.customerStatus}</strong>
+                    <p className="muted">{row.customerDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.chatStatus}</strong>
+                    <p className="muted">{row.chatDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.moneyStatus}</strong>
+                    <p className="muted">{row.moneyDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.opsStatus}</strong>
+                    <p className="muted">{row.opsDetail}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${row.id}`}>
+                      Booking
+                    </Link>
+                    {row.customerHref ? (
+                      <Link className="text-link" href={row.customerHref} style={{ marginLeft: 10 }}>
+                        Customer
+                      </Link>
+                    ) : null}
+                    {row.chatHref ? (
+                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                        Chat
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {partnerBookingEvidenceRows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No partner booking bundle matched this date filter.
@@ -1008,30 +1011,32 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerOperatingLedger.length} record areas</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Evidence</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {partnerOperatingLedger.map((row) => (
-              <tr key={row.area}>
-                <td>{row.area}</td>
-                <td>{row.status}</td>
-                <td>{row.evidence}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Evidence</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {partnerOperatingLedger.map((row) => (
+                <tr key={row.area}>
+                  <td>{row.area}</td>
+                  <td>{row.status}</td>
+                  <td>{row.evidence}</td>
+                  <td>
+                    <Link className="text-link" href={row.href}>
+                      Open
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       </div>
 
       <div className="card" id="partner-operating-checklist" style={{ marginBottom: 16 }}>
@@ -1287,52 +1292,54 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <span className="pill pill-info">{partnerBookingOpsLedgerRows.length} booking note row(s)</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Relation</th>
-              <th>Manual notes</th>
-              <th>Staff tasks</th>
-              <th>Closeout context</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {partnerBookingOpsLedgerRows.map((row) => (
-              <tr key={`${row.id}-${row.relation}`}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>{row.relation}</td>
-                <td>
-                  <strong>{row.noteStatus}</strong>
-                  <p className="muted">{row.noteDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.taskStatus}</strong>
-                  <p className="muted">{row.taskDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.closeoutStatus}</strong>
-                  <p className="muted">{row.closeoutDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
+        <AdminTableScroll>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Relation</th>
+                <th>Manual notes</th>
+                <th>Staff tasks</th>
+                <th>Closeout context</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {partnerBookingOpsLedgerRows.map((row) => (
+                <tr key={`${row.id}-${row.relation}`}>
+                  <td>
+                    <strong>{row.bookingLabel}</strong>
+                    <p className="muted">{row.serviceLabel}</p>
+                    <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
+                  </td>
+                  <td>{row.relation}</td>
+                  <td>
+                    <strong>{row.noteStatus}</strong>
+                    <p className="muted">{row.noteDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.taskStatus}</strong>
+                    <p className="muted">{row.taskDetail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.closeoutStatus}</strong>
+                    <p className="muted">{row.closeoutDetail}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${row.id}`}>
+                      Booking
+                    </Link>
+                    {row.chatHref ? (
+                      <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                        Chat
+                      </Link>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
         {partnerBookingOpsLedgerRows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No booking-level operation notes or staff tasks matched this partner date filter.
