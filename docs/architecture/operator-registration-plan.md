@@ -56,7 +56,7 @@ npm.cmd run external:check:maps
 
 6. Push
    - Current: in-app notification records.
-   - Future: OneSignal or equivalent backend adapter.
+   - Future: FCM backend adapter with Firebase Admin credentials.
    - Keep REST API keys server-side only.
 
 7. Payments

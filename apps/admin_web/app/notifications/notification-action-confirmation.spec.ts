@@ -15,7 +15,7 @@ const notification = {
   deliveries: [
     {
       id: 'delivery-1',
-      provider: 'ONESIGNAL',
+      provider: 'FCM',
       status: 'FAILED',
       attemptedAt: '2026-06-01T00:01:00.000Z',
       pushDevice: {

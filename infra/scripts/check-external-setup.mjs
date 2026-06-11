@@ -44,26 +44,26 @@ addRecommended(
   'push',
   'PUSH_PROVIDER',
   hasValue('PUSH_PROVIDER'),
-  'Use PUSH_PROVIDER=in_app_only locally; set PUSH_PROVIDER=onesignal before production push E2E.',
+  'Use PUSH_PROVIDER=in_app_only locally; set PUSH_PROVIDER=fcm before production push E2E.',
 );
 addRecommended(
   'push',
-  'OneSignal credentials',
-  allHaveValue(['ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY']),
-  'Choose OneSignal or another OS push provider and fill server-side credentials before production launch.',
+  'Firebase Admin credentials',
+  firebaseAdminConfigured(),
+  'Fill server-side Firebase Admin credentials before production Android/iOS push launch.',
 );
 addPhaseRequired(
   'push',
-  'PUSH_PROVIDER=onesignal for OS push',
-  hasExpectedValue('PUSH_PROVIDER', 'onesignal'),
-  'Set PUSH_PROVIDER=onesignal before production-like OS push E2E.',
+  'PUSH_PROVIDER=fcm for OS push',
+  hasExpectedValue('PUSH_PROVIDER', 'fcm'),
+  'Set PUSH_PROVIDER=fcm before production-like OS push E2E.',
   ['production'],
 );
 addPhaseRequired(
   'push',
-  'OneSignal credentials for OS push',
-  allHaveValue(['ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY']),
-  'Fill ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY before production-like OS push E2E.',
+  'Firebase Admin credentials for OS push',
+  firebaseAdminConfigured(),
+  'Fill FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY before production-like OS push E2E.',
   ['production'],
 );
 
@@ -320,6 +320,14 @@ function pathExists(key) {
 
 function allHaveExistingPath(keys) {
   return keys.every(pathExists);
+}
+
+function firebaseAdminConfigured() {
+  return (
+    hasValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
+    allHaveValue(['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY']) ||
+    hasValue('GOOGLE_APPLICATION_CREDENTIALS')
+  );
 }
 
 function storageConfigured() {

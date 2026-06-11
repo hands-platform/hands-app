@@ -3,7 +3,8 @@ import { Prisma } from '@prisma/client';
 import { Job } from 'bullmq';
 import {
   NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
-  PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS,
+  PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
+  PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS,
 } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushDeliveryService } from './push-delivery.service';
@@ -94,7 +95,10 @@ export class NotificationRetryProcessor extends WorkerHost {
       select: { value: true },
     });
 
-    return setting?.value === PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS ? 'onesignal' : 'in_app_only';
+    return setting?.value === PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS ||
+      setting?.value === PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS
+      ? 'fcm'
+      : 'in_app_only';
   }
 }
 

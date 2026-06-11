@@ -210,7 +210,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Growth',
       title: 'Partner alert channel',
       question:
-        'When should time-sensitive booking alerts move from in-app only to mandatory OneSignal push delivery?',
+        'When should time-sensitive booking alerts move from in-app only to mandatory FCM push delivery?',
       evidence:
         'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
       options: [
@@ -220,14 +220,14 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
             'Lowest setup work and easiest local testing, but partners may miss requests when the app is closed.',
         },
         {
-          label: 'OneSignal required',
+          label: 'FCM required',
           tradeoff: 'Better booking reach, but depends on production credentials and delivery monitoring.',
         },
       ],
       recommendation:
-        'Keep in-app first locally, then enable OneSignal once production credentials and failure dashboards are ready.',
+        'Keep in-app first locally, then enable FCM once production credentials and failure dashboards are ready.',
       decisionTrigger:
-        'Revisit immediately after OneSignal production setup is complete and device delivery logs are visible.',
+        'Revisit immediately after FCM production setup is complete and device delivery logs are visible.',
       href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.partnerAlertChannel),
       className: 'ops-task-done',
       pillClass: 'pill-success',

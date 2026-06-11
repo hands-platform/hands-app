@@ -183,23 +183,26 @@ export class HealthService {
 
   private pushProviderExternalReadiness() {
     const pushProvider = this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() || 'in_app_only';
-    const oneSignalAppId = this.config.get<string>('ONESIGNAL_APP_ID')?.trim();
-    const oneSignalRestApiKey = this.config.get<string>('ONESIGNAL_REST_API_KEY')?.trim();
+    const firebaseServiceAccountJson = this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_JSON')?.trim();
+    const firebaseProjectId = this.config.get<string>('FIREBASE_PROJECT_ID')?.trim();
+    const firebaseClientEmail = this.config.get<string>('FIREBASE_CLIENT_EMAIL')?.trim();
+    const firebasePrivateKey = this.config.get<string>('FIREBASE_PRIVATE_KEY')?.trim();
+    const googleApplicationCredentials = this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim();
 
     if (pushProvider === 'in_app_only') {
       return {
         name: 'OS push provider',
         category: 'push',
         status: 'BLOCKED',
-        missing: ['ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY'],
+        missing: ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'],
         configured: ['PUSH_PROVIDER'],
         invalid: [],
         detail:
-          'Current delivery is intentionally in-app only. Set PUSH_PROVIDER=onesignal and server credentials before OS push E2E.',
+          'Current delivery is in-app only. Set PUSH_PROVIDER=fcm and server-side Firebase Admin credentials before OS push E2E.',
       };
     }
 
-    if (pushProvider !== 'onesignal') {
+    if (pushProvider !== 'fcm') {
       return {
         name: 'OS push provider',
         category: 'push',
@@ -208,18 +211,24 @@ export class HealthService {
         configured: [],
         invalid: ['PUSH_PROVIDER'],
         detail:
-          'Unsupported push provider. Use PUSH_PROVIDER=in_app_only locally or PUSH_PROVIDER=onesignal for staging.',
+          'Unsupported push provider. Use PUSH_PROVIDER=in_app_only locally or PUSH_PROVIDER=fcm for staging.',
       };
     }
 
-    const missing = [
-      oneSignalAppId ? null : 'ONESIGNAL_APP_ID',
-      oneSignalRestApiKey ? null : 'ONESIGNAL_REST_API_KEY',
-    ].filter((key): key is string => Boolean(key));
+    const hasJson = Boolean(firebaseServiceAccountJson);
+    const hasSplitCredentials = Boolean(firebaseProjectId && firebaseClientEmail && firebasePrivateKey);
+    const hasApplicationDefault = Boolean(googleApplicationCredentials);
+    const missing =
+      hasJson || hasSplitCredentials || hasApplicationDefault
+        ? []
+        : ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'];
     const configured = [
       'PUSH_PROVIDER',
-      oneSignalAppId ? 'ONESIGNAL_APP_ID' : null,
-      oneSignalRestApiKey ? 'ONESIGNAL_REST_API_KEY' : null,
+      firebaseServiceAccountJson ? 'FIREBASE_SERVICE_ACCOUNT_JSON' : null,
+      firebaseProjectId ? 'FIREBASE_PROJECT_ID' : null,
+      firebaseClientEmail ? 'FIREBASE_CLIENT_EMAIL' : null,
+      firebasePrivateKey ? 'FIREBASE_PRIVATE_KEY' : null,
+      googleApplicationCredentials ? 'GOOGLE_APPLICATION_CREDENTIALS' : null,
     ].filter((key): key is string => Boolean(key));
 
     return {
@@ -231,8 +240,8 @@ export class HealthService {
       invalid: [],
       detail:
         missing.length === 0
-          ? 'OneSignal credentials are configured and backend HTTP delivery is enabled.'
-          : 'OneSignal push is selected, but server-side credentials are missing.',
+          ? 'FCM credentials are configured and backend Firebase Admin delivery is enabled.'
+          : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
     };
   }
 
@@ -327,16 +336,13 @@ export class HealthService {
       const rootGradle = this.readRepoFile(repoRoot, app.rootGradlePath);
       const appGradle = this.readRepoFile(repoRoot, app.appGradlePath);
       const checked = pubspec !== null || rootGradle !== null || appGradle !== null;
-      const hasFirebasePackages =
-        /firebase_core|firebase_messaging|cloud_firestore|firebase_auth|firebase_storage/.test(pubspec ?? '');
-      const hasGoogleServicesPlugin = /com\.google\.gms\.google-services/.test(
-        `${rootGradle ?? ''}\n${appGradle ?? ''}`,
+      const hasBlockedFirebasePackages = /cloud_firestore|firebase_auth|firebase_database|firebase_storage/.test(
+        pubspec ?? '',
       );
-      const hasGoogleServicesConfig = existsSync(join(repoRoot, app.configPath));
       return {
         name: app.name,
         checked,
-        ok: checked && !hasFirebasePackages && !hasGoogleServicesPlugin && !hasGoogleServicesConfig,
+        ok: checked && !hasBlockedFirebasePackages,
       };
     });
 
@@ -344,17 +350,17 @@ export class HealthService {
     const failingApps = apps.filter((app) => !app.ok);
 
     return {
-      name: 'Mobile Firebase removal guard',
+      name: 'Mobile Firebase scope guard',
       category: 'mobile',
       status: !sourceAvailable ? 'PARTIAL' : failingApps.length === 0 ? 'READY' : 'BLOCKED',
       configured: apps.filter((app) => app.ok).map((app) => app.name),
       missing: failingApps.map((app) => app.name),
       invalid: [],
       detail: !sourceAvailable
-        ? 'Mobile app source files were not available to this API runtime; run the local Firebase removal script from the repository.'
+        ? 'Mobile app source files were not available to this API runtime; run the local Firebase scope script from the repository.'
         : failingApps.length === 0
-          ? 'Customer and provider Flutter apps are Firebase-free.'
-          : 'Remove Firebase packages, Google Services plugin usage, or google-services.json from the listed mobile apps.',
+          ? 'Customer and provider Flutter apps keep Firebase limited to FCM-only surfaces.'
+          : 'Remove Firebase DB/Auth/Firestore/Storage packages from the listed mobile apps. FCM is allowed.',
     };
   }
 
@@ -537,7 +543,7 @@ function externalReadinessMetadata(category: string, name: string) {
   if (category === 'push') {
     return {
       operatorAction:
-        'Keep in-app notifications now. Add OneSignal credentials later for OS push E2E.',
+        'Keep in-app notifications locally. Add FCM credentials later for Android/iOS OS push E2E.',
       commands: ['npm.cmd run external:check:production'],
     };
   }
@@ -554,7 +560,7 @@ function externalReadinessMetadata(category: string, name: string) {
     return {
       operatorAction:
         name.includes('Firebase')
-          ? 'Keep mobile Firebase-free before continuing Supabase migration work.'
+          ? 'Keep Firebase DB/Auth/Firestore out of mobile; FCM setup is the only allowed Firebase mobile surface.'
           : 'Run the mobile guard scripts from the repository.',
       commands: ['node infra\\scripts\\check-mobile-firebase.mjs'],
     };

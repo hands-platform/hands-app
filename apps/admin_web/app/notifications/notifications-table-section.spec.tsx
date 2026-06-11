@@ -16,7 +16,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Booking Created');
     expect(rendered).toContain('booking bookin / partner partne');
     expect(rendered).toContain('Retry needed');
-    expect(rendered).toContain('ONESIGNAL');
+    expect(rendered).toContain('FCM');
     expect(rendered).toContain('FAILED');
     expect(rendered).toContain('IOS');
     expect(rendered).toContain('Device disabled');
@@ -72,7 +72,7 @@ function buildRow(): NotificationTableRow {
         httpStatusLabel: '400',
         id: 'delivery-1',
         platformLabel: 'IOS',
-        provider: 'ONESIGNAL',
+        provider: 'FCM',
         status: 'FAILED',
       },
     ],

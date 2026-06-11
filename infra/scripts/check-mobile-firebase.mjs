@@ -22,7 +22,7 @@ const optional = process.argv.includes('--optional');
 const result = {
   ok: true,
   optional,
-  mode: 'firebase_removed',
+  mode: 'firebase_fcm_only',
   apps: [],
 };
 
@@ -33,18 +33,17 @@ for (const app of apps) {
 
   const appResult = {
     name: app.name,
-    hasFirebasePackages: /firebase_core|firebase_messaging/.test(pubspecSource),
+    hasFcmPackages: /firebase_core|firebase_messaging/.test(pubspecSource),
+    hasBlockedFirebasePackages: /cloud_firestore|firebase_auth|firebase_database|firebase_storage/.test(
+      pubspecSource,
+    ),
     hasGoogleServicesPlugin: /com\.google\.gms\.google-services/.test(
       `${rootGradleSource}\n${appGradleSource}`,
     ),
     hasGoogleServicesConfig: existsSync(resolve(app.configPath)),
   };
 
-  if (
-    appResult.hasFirebasePackages ||
-    appResult.hasGoogleServicesPlugin ||
-    appResult.hasGoogleServicesConfig
-  ) {
+  if (appResult.hasBlockedFirebasePackages) {
     result.ok = false;
   }
 

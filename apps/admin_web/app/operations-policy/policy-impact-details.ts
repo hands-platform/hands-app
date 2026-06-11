@@ -378,7 +378,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Alert routing',
       title: 'Controls partner booking alert delivery route',
       detail:
-        'In-app mode records inbox notifications only. OneSignal mode routes partner booking alerts through OS push delivery and logs delivery results.',
+        'In-app mode records inbox notifications only. FCM mode routes partner booking alerts through OS push delivery and logs delivery results.',
       saveChecks: [
         {
           label: 'Delivery operations queue',
@@ -387,7 +387,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Setup checklist',
-          detail: 'Verify OneSignal, app IDs, and secrets are configured before enabling external push.',
+          detail: 'Verify FCM project IDs, server credentials, and mobile config files are ready before enabling external push.',
           href: '/setup',
         },
       ],

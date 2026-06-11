@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { RegisterDeviceTokenDto } from './notifications.dto';
+import { DeleteDeviceTokenDto, RegisterDeviceTokenDto } from './notifications.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
@@ -25,18 +25,26 @@ export class NotificationsController {
   }
 
   @Patch('device-token/register')
+  @Roles(Role.CUSTOMER, Role.PROVIDER)
   registerDeviceToken(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: RegisterDeviceTokenDto,
   ) {
-    return this.notifications.registerDeviceToken(user.id, body);
+    return this.notifications.registerDeviceToken(user, body);
   }
 
   @Post('device-token/register')
+  @Roles(Role.CUSTOMER, Role.PROVIDER)
   registerDeviceTokenPost(
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: RegisterDeviceTokenDto,
   ) {
-    return this.notifications.registerDeviceToken(user.id, body);
+    return this.notifications.registerDeviceToken(user, body);
+  }
+
+  @Delete('device-token')
+  @Roles(Role.CUSTOMER, Role.PROVIDER)
+  disableDeviceToken(@CurrentUser() user: AuthenticatedUser, @Body() body: DeleteDeviceTokenDto) {
+    return this.notifications.disableDeviceToken(user, body);
   }
 }

@@ -1042,7 +1042,7 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Partner alert channel"
-            recommendation="Keep in-app notifications first, then promote OneSignal after production credentials are stable."
+            recommendation="Keep in-app notifications first, then promote FCM after production credentials are stable."
             detail="The system can record notifications now; push delivery should become mandatory only after monitoring is ready."
           />
         </div>
@@ -1466,7 +1466,7 @@ function buildPolicySimulation(
         label: 'Partner alert',
         value: policyDisplayByKey(settings, 'notification.partner_alert_channel'),
         helper: `${
-          alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS'
+          alertChannel === 'FCM_FOR_ALL_BOOKINGS'
             ? 'OS push plus in-app listing'
             : 'In-app listing now, OS push later'
         } for eligible partners.`,
@@ -1978,7 +1978,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
 
   const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const immediateBackup = marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
-  const pushReady = alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS';
+  const pushReady = alertChannel === 'FCM_FOR_ALL_BOOKINGS';
   const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
   const baselineRadius = backupRadiusMeters === 10000;
   const baselineTimer = responseWindowMinutes === 10;
@@ -2048,11 +2048,11 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Partner alert delivery',
       status: pushReady ? 'Push enabled' : 'In-app first',
       detail: pushReady
-        ? 'Partner booking and marketplace participation alerts are ready to route through OneSignal.'
-        : 'Booking notifications are recorded in-app until OneSignal production setup is fully ready.',
+        ? 'Partner booking and marketplace participation alerts are ready to route through FCM.'
+        : 'Booking notifications are recorded in-app until FCM production setup is fully ready.',
       operatorAction: pushReady
         ? 'Monitor delivery failures and disabled devices on the Notifications board.'
-        : 'Keep this until OneSignal and production SMS credentials/monitoring are complete.',
+        : 'Keep this until FCM and production SMS credentials/monitoring are complete.',
       className: pushReady ? 'ops-task-done' : 'ops-task-pending',
       pillClass: pushReady ? 'pill-success' : 'pill-info',
       blocking: false,
@@ -3165,7 +3165,7 @@ function buildOwnerDecisionPressure(
       status: pushGap ? 'Push gap' : 'Ready',
       detail: `${enabledPushPartners}/${onlinePartners} online partner(s) have enabled push devices in the current snapshot.`,
       operatorAction: pushGap
-        ? 'Keep in-app request listing as the fallback until OneSignal device coverage is reliable.'
+        ? 'Keep in-app request listing as the fallback until FCM device coverage is reliable.'
         : 'Push coverage is ready enough for production-device testing.',
       href: '/notifications?review=failed',
       className: pushGap ? 'ops-task-pending' : 'ops-task-done',

@@ -94,7 +94,7 @@ npm.cmd run external:check:production
 | --- | --- | --- | --- |
 | Monorepo and GitHub workflow | Done | Repo is under `hands-platform/hands-app`, branch `develop`, modular commit flow active. | None. Keep every stable step commit-ready. |
 | Final authority guard | Done | Final MVP rules are documented and protected by `authority:check`. | None unless product policy changes. |
-| Firebase removal | Done | Flutter apps no longer use Firebase as the active MVP path. | Decide production push provider timing separately. |
+| Firebase scope | Active | Firebase is allowed only for FCM push. Firebase DB/Auth/Firestore remain outside MVP. | Decide production FCM rollout timing separately. |
 | Supabase core | Active | Supabase URL, anon, service role, JWT, schema/RLS pack are tracked. NestJS remains business authority. | Decide when to switch real mobile OTP to Supabase Phone Auth plus SMS. |
 | Map/location | Active | MapTiler and Geoapify are configured locally; low-cost map path is active. | Decide when to replace remaining placeholder map visuals with final MapLibre screens. |
 | Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. Date-range `Today` filters use the Vietnam business day. | Continue adding depth inside existing command lanes before creating new top-level pages. |
@@ -106,7 +106,7 @@ npm.cmd run external:check:production
 | Service pricing | Active | Admin service names, duration options, minimum price, price step, partner price, payout rules, and booking price snapshots are modeled. | Decide if service catalog should be frozen before final mobile UI. |
 | Earnings and payouts | Active | Earnings, payout batches, payout holds, tax/fee logs, and payout pages exist. | Decide weekly/monthly/manual payout default for first Vietnam launch. |
 | Chat archive | Active | Matched bookings open chat; admin keeps chat evidence. | Decide retention/export policy for disputes before production. |
-| Notifications | Active | In-app notification path is active; push delivery abstraction exists. | External wait for OneSignal production E2E. |
+| Notifications | Active | In-app notification path is active; FCM delivery abstraction exists. | External wait for FCM production E2E. |
 | Mobile customer app | Active | MVP scaffold supports address, discovery, partner detail, booking, matching, final selection, chat, and maps. | Decide whether to audit mobile flow before Admin consolidation. |
 | Mobile partner app | Active | MVP scaffold supports online/location, requests, marketplace, accept/start/chat/complete, earnings/wallet, and negative-wallet marketplace participation blocking. | Decide first login/onboarding flow before final mobile UI pass. |
 | Final design and localization | Later | Figma and multilingual customer/partner/admin copy are intentionally deferred. | Resume after backend/admin/mobile flows stop changing. |
@@ -131,7 +131,7 @@ These items should be proposed to the owner before implementation.
 
 4. External production integrations
    - Option A: Supabase Phone Auth plus Vonage SMS first.
-   - Option B: OneSignal push first.
+   - Option B: FCM push first.
    - Option C: MoMo/VNPay sandbox first.
    - Recommended: Phone Auth first only when we are ready to test real mobile login; otherwise keep local dev auth stable.
 
@@ -155,7 +155,7 @@ Deferred for production-like E2E:
 
 - Supabase Phone Auth switch with `AUTH_BACKEND=supabase`
 - Vonage SMS provider credentials
-- OneSignal app id and server REST key
+- FCM project config and Firebase Admin server credentials
 - MoMo merchant sandbox credentials
 - VNPay merchant sandbox credentials
 - Production storage/CDN values
@@ -179,7 +179,7 @@ Do not implement these automatically. Propose the selected slice first, then pro
    - Decide production finance SLA, accepted deposit evidence, admin offset approval rule, and customer-support wording for partner settlement delays.
 
 5. External integration plan
-   - Prepare exact account/credential checklist for Vonage, OneSignal, MoMo, VNPay, storage/CDN, and deployment.
+   - Prepare exact account/credential checklist for Vonage, FCM, MoMo, VNPay, storage/CDN, and deployment.
 
 ## Code Rules
 

@@ -60,8 +60,10 @@ export type AdminUser = {
   }>;
   pushDevices?: Array<{
     id: string;
+    role?: string;
     platform: string;
     enabled: boolean;
+    lastSeenAt?: string;
     createdAt?: string;
     updatedAt?: string;
     deliveries?: Array<{
@@ -105,8 +107,10 @@ export type AdminCustomer = {
     appSessions?: AdminAppSession[];
     pushDevices?: Array<{
       id: string;
+      role?: string;
       platform: string;
       enabled: boolean;
+      lastSeenAt?: string;
       createdAt?: string;
       updatedAt?: string;
       deliveries?: Array<{
@@ -330,8 +334,10 @@ export type AdminProvider = {
     }>;
     pushDevices?: Array<{
       id: string;
+      role?: string;
       platform: string;
       enabled: boolean;
+      lastSeenAt?: string;
       createdAt?: string;
       deliveries?: Array<{
         id: string;
@@ -992,7 +998,7 @@ export type AdminNotification = {
       statusCode?: number;
       body?: unknown;
     } | null;
-    pushDevice?: { id?: string; platform?: string; enabled?: boolean };
+    pushDevice?: { id?: string; role?: string; platform?: string; enabled?: boolean; lastSeenAt?: string };
   }>;
 };
 

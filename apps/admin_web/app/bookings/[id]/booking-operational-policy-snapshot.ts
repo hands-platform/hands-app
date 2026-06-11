@@ -146,8 +146,8 @@ export function bookingOperationalPolicySnapshot(
         key: 'notification.partner_alert_channel',
         label: 'Partner alert route',
         helper:
-          String(partnerAlertPolicy?.value) === 'ONESIGNAL_FOR_ALL_BOOKINGS'
-            ? 'Booking and marketplace alerts should create OneSignal delivery logs.'
+          String(partnerAlertPolicy?.value) === 'FCM_FOR_ALL_BOOKINGS'
+            ? 'Booking and marketplace alerts should create FCM delivery logs.'
             : 'Partner alerts are kept in the app inbox until production push is ready.',
         enforced: false,
       }),

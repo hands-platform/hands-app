@@ -65,7 +65,7 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
    - Keep UI calling `RegisterCurrentDevicePushToken`.
    - Keep notification setup behind `PushTokenDataSource`.
    - Use in-app notifications for the MVP.
-   - Later add OneSignal or another production push datasource without changing screens.
+   - Later add FCM push without adding Firebase DB/Auth/Firestore or changing screens.
 
 2. Auth boundary
    - Keep current NestJS OTP/JWT login during MVP stabilization.
@@ -90,8 +90,8 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
    - Keep current presigned upload flow first.
    - Replace S3/MinIO adapter with Supabase Storage adapter when verification UX is stable.
 
-7. Firebase removal
-   - Mobile Firebase packages, Gradle plugin, and `google-services.json` files are removed.
+7. Firebase scope
+   - Firebase is allowed only for FCM push. Firebase DB/Auth/Firestore and Firebase Storage stay out of MVP.
    - API FCM service is removed and replaced by an in-app-only delivery adapter.
 
 ## Supabase Data Model Direction

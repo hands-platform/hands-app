@@ -84,7 +84,7 @@ describe('notification page model', () => {
 
     expect(summary).toEqual({
       inAppDeliveries: 1,
-      oneSignalDeliveries: 2,
+      fcmDeliveries: 2,
       partnerAlertCount: 3,
       policyLabel: 'In-app first',
     });
@@ -102,7 +102,7 @@ describe('notification page model', () => {
           {
             attemptedAt: '2026-06-01T10:00:00.000Z',
             id: 'delivery-failed',
-            provider: 'ONESIGNAL',
+            provider: 'FCM',
             status: 'FAILED',
           },
         ],
@@ -115,7 +115,7 @@ describe('notification page model', () => {
           {
             attemptedAt: '2026-06-01T10:01:00.000Z',
             id: 'delivery-sent',
-            provider: 'ONESIGNAL',
+            provider: 'FCM',
             status: 'SENT',
           },
         ],
@@ -143,7 +143,7 @@ describe('notification page model', () => {
           {
             attemptedAt: '2026-06-01T10:02:00.000Z',
             id: 'delivery-sent',
-            provider: 'ONESIGNAL',
+            provider: 'FCM',
             status: 'SENT',
           },
         ],
@@ -156,7 +156,7 @@ describe('notification page model', () => {
           {
             attemptedAt: '2026-06-01T10:01:00.000Z',
             id: 'delivery-failed',
-            provider: 'ONESIGNAL',
+            provider: 'FCM',
             status: 'FAILED',
           },
         ],
@@ -182,7 +182,7 @@ describe('notification page model', () => {
           {
             attemptedAt: '2026-06-01T10:01:00.000Z',
             id: 'delivery-disabled',
-            provider: 'ONESIGNAL',
+            provider: 'FCM',
             pushDevice: { enabled: false, id: 'device-disabled', platform: 'ios' },
             response: { body: { error: { details: [{ errorCode: 'BAD_TOKEN' }] } }, statusCode: 400 },
             status: 'FAILED',
@@ -250,7 +250,7 @@ function buildNotifications(): AdminNotification[] {
         {
           attemptedAt: '2026-06-01T10:00:00.000Z',
           id: 'delivery-failed',
-          provider: 'ONESIGNAL',
+          provider: 'FCM',
           status: 'FAILED',
         },
       ],
@@ -262,7 +262,7 @@ function buildNotifications(): AdminNotification[] {
         {
           attemptedAt: '2026-06-01T10:01:00.000Z',
           id: 'delivery-disabled',
-          provider: 'ONESIGNAL',
+          provider: 'FCM',
           pushDevice: { enabled: false, id: 'device-disabled', platform: 'ios' },
           status: 'SENT',
         },

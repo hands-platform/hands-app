@@ -1,6 +1,8 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { Queue } from 'bullmq';
+import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 
 type CreateNotificationInput = {
@@ -73,19 +75,47 @@ export class NotificationsService {
     });
   }
 
-  registerDeviceToken(userId: string, input: { token: string; platform: string }) {
+  registerDeviceToken(user: AuthenticatedUser, input: { token: string; platform: string }) {
+    const role = resolvePushDeviceRole(user.roles);
+    const lastSeenAt = new Date();
+
     return this.prisma.pushDevice.upsert({
       where: { token: input.token },
       update: {
-        userId,
+        userId: user.id,
+        role,
         platform: input.platform,
         enabled: true,
+        lastSeenAt,
       },
       create: {
-        userId,
+        userId: user.id,
+        role,
         token: input.token,
         platform: input.platform,
+        lastSeenAt,
       },
     });
   }
+
+  async disableDeviceToken(user: AuthenticatedUser, input: { token: string }) {
+    const result = await this.prisma.pushDevice.updateMany({
+      where: { userId: user.id, token: input.token },
+      data: { enabled: false, lastSeenAt: new Date() },
+    });
+
+    return { ok: result.count > 0, disabled: result.count };
+  }
+}
+
+function resolvePushDeviceRole(roles: readonly Role[]) {
+  if (roles.includes(Role.CUSTOMER)) {
+    return Role.CUSTOMER;
+  }
+
+  if (roles.includes(Role.PROVIDER)) {
+    return Role.PROVIDER;
+  }
+
+  return Role.ADMIN;
 }

@@ -70,7 +70,7 @@ export default async function NotificationsPage({
         { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
         { label: 'Partner alerts', value: channelSummary.partnerAlertCount, helper: 'Partner-facing alerts.' },
         { label: 'No-show alerts', value: summary.noShow, helper: 'No-show support review alerts.' },
-        { label: 'OneSignal route', value: channelSummary.oneSignalDeliveries, helper: 'OS push attempts.' },
+        { label: 'FCM route', value: channelSummary.fcmDeliveries, helper: 'OS push attempts.' },
       ]}
       title="Notifications"
     >
@@ -92,7 +92,7 @@ export default async function NotificationsPage({
 
         <NotificationChannelPolicySection
           inAppDeliveries={channelSummary.inAppDeliveries}
-          oneSignalDeliveries={channelSummary.oneSignalDeliveries}
+          fcmDeliveries={channelSummary.fcmDeliveries}
           partnerAlertCount={channelSummary.partnerAlertCount}
           policyLabel={channelSummary.policyLabel}
         />

@@ -1951,7 +1951,7 @@ try {
   );
 }
 
-let oneSignalPolicyNotification = null;
+let fcmPolicyNotification = null;
 const partnerAlertChannelBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
   'notification.partner_alert_channel',
@@ -1959,10 +1959,10 @@ const partnerAlertChannelBeforeSmoke = await getOperationalPolicyValue(
 await patchOperationalPolicyValue(
   adminAuth.accessToken,
   'notification.partner_alert_channel',
-  'ONESIGNAL_FOR_ALL_BOOKINGS',
+  'FCM_FOR_ALL_BOOKINGS',
 );
 try {
-  const oneSignalPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  const fcmPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
     address: { line1: 'Partner alert channel policy smoke flow' },
@@ -1973,21 +1973,21 @@ try {
   for (let attempt = 0; attempt < 20; attempt++) {
     await sleep(500);
     const adminNotifications = await getJson('/admin/notifications', adminAuth.accessToken);
-    oneSignalPolicyNotification = adminNotifications.find(
+    fcmPolicyNotification = adminNotifications.find(
       (item) =>
         item.type === 'booking.requested' &&
-        item.data?.bookingId === oneSignalPolicyBooking.id &&
+        item.data?.bookingId === fcmPolicyBooking.id &&
         (item.deliveries?.length ?? 0) > 0,
     );
-    if (oneSignalPolicyNotification) {
+    if (fcmPolicyNotification) {
       break;
     }
   }
-  const deliveryProvider = oneSignalPolicyNotification?.deliveries?.[0]?.provider;
-  if (deliveryProvider !== 'ONESIGNAL') {
+  const deliveryProvider = fcmPolicyNotification?.deliveries?.[0]?.provider;
+  if (deliveryProvider !== 'FCM') {
     throw new Error(
-      `Partner alert channel policy did not route direct booking push through OneSignal: ${JSON.stringify(
-        oneSignalPolicyNotification,
+      `Partner alert channel policy did not route direct booking push through FCM: ${JSON.stringify(
+        fcmPolicyNotification,
       )}`,
     );
   }

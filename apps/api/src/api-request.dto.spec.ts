@@ -44,6 +44,9 @@ describe('remaining API request DTO validation', () => {
     expect(
       (bodyMetatype(NotificationsController.prototype, 'registerDeviceToken', 1) as { name?: string })?.name,
     ).toBe('RegisterDeviceTokenDto');
+    expect(
+      (bodyMetatype(NotificationsController.prototype, 'disableDeviceToken', 1) as { name?: string })?.name,
+    ).toBe('DeleteDeviceTokenDto');
     expect((bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as { name?: string })?.name).toBe(
       'RecordAppSessionDto',
     );

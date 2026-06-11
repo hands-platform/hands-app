@@ -33,7 +33,7 @@ export type NotificationSummary = {
 
 export type NotificationChannelSummary = {
   readonly inAppDeliveries: number;
-  readonly oneSignalDeliveries: number;
+  readonly fcmDeliveries: number;
   readonly partnerAlertCount: number;
   readonly policyLabel: string;
 };
@@ -61,7 +61,7 @@ export const notificationFilterLinks = [
     review: 'partner-alerts',
   },
   { label: 'No-show', href: '/notifications?review=no-show', review: 'no-show' },
-  { label: 'OneSignal', href: '/notifications?review=onesignal', review: 'onesignal' },
+  { label: 'FCM', href: '/notifications?review=fcm', review: 'fcm' },
   { label: 'In-app route', href: '/notifications?review=in-app-route', review: 'in-app-route' },
 ] as const;
 
@@ -204,7 +204,7 @@ export function buildNotificationChannelSummary(
   const deliveries = notifications.flatMap((notification) => notification.deliveries ?? []);
   return {
     inAppDeliveries: deliveries.filter((delivery) => delivery.provider === 'IN_APP_ONLY').length,
-    oneSignalDeliveries: deliveries.filter((delivery) => delivery.provider === 'ONESIGNAL').length,
+    fcmDeliveries: deliveries.filter((delivery) => delivery.provider === 'FCM').length,
     partnerAlertCount: partnerAlerts.length,
     policyLabel: policyOptionLabel(partnerAlertPolicy),
   };
@@ -250,8 +250,8 @@ export function notificationFilterDescription(review: string) {
   if (review === 'no-show') {
     return 'customer and partner alerts created when operations marks a booking as no-show.';
   }
-  if (review === 'onesignal') {
-    return 'notifications that attempted OS push delivery through OneSignal.';
+  if (review === 'fcm') {
+    return 'notifications that attempted OS push delivery through FCM.';
   }
   if (review === 'in-app-route') {
     return 'notifications intentionally kept in the app inbox route.';
@@ -512,8 +512,8 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
   if (review === 'no-show') {
     return notification.type === 'booking.no_show';
   }
-  if (review === 'onesignal') {
-    return deliveries.some((delivery) => delivery.provider === 'ONESIGNAL');
+  if (review === 'fcm') {
+    return deliveries.some((delivery) => delivery.provider === 'FCM');
   }
   if (review === 'in-app-route') {
     return deliveries.some((delivery) => delivery.provider === 'IN_APP_ONLY');

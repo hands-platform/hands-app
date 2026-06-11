@@ -2,20 +2,15 @@
 
 ## Current MVP
 
-The API creates persistent `Notification` rows for booking lifecycle events:
+The API creates persistent `Notification` rows for booking lifecycle and operations events before any OS push attempt. Each notification schedules a `notification-retry` BullMQ job. The worker records one `NotificationDelivery` attempt per enabled `PushDevice`.
 
-- `booking.opened`
-- `provider.joined`
-- `booking.matched`
-- `service.completed`
+HANDS uses Firebase Cloud Messaging for Android/iOS push notifications only. Firebase Realtime Database, Firestore, and Firebase Auth are not part of the MVP architecture.
 
-Each notification schedules a `notification-retry` BullMQ job. The worker records one `NotificationDelivery` attempt per enabled device token.
+Socket.IO remains the realtime channel while the app is open. FCM is only for background, killed-app, and OS-level notification delivery.
 
-## In-App Notifications
+## Device Tokens
 
-The Flutter apps currently use in-app notification state only. They no longer bundle Firebase packages, `google-services.json`, or the Google Services Gradle plugin.
-
-The backend route for registering OS push tokens still exists for a future push provider adapter:
+Apps register FCM tokens through authenticated API routes:
 
 ```http
 PATCH /api/notifications/device-token/register
@@ -23,44 +18,59 @@ Authorization: Bearer <accessToken>
 Content-Type: application/json
 
 {
-  "token": "device-token",
+  "token": "fcm-device-token",
   "platform": "android"
 }
 ```
 
-Tokens are stored in `PushDevice` when a production push provider is enabled. The current mobile apps do not call this route during automatic notification setup.
+`POST /api/notifications/device-token/register` is kept as an equivalent compatibility route. `DELETE /api/notifications/device-token` disables a token for the authenticated user. A user can only register or disable their own token because the API always takes `userId` and role from the access token.
+
+`PushDevice` stores the user, actor role, platform, token, enabled state, last seen time, and created/updated timestamps. Admin views must never expose raw token values.
 
 ## Delivery Adapter
 
-The current delivery adapter is intentionally `IN_APP_ONLY` through `PUSH_PROVIDER=in_app_only`.
-It records a skipped delivery attempt for existing enabled `PushDevice` rows and does not call Firebase, Google, OneSignal, or any external push provider.
-
-This keeps the local retry/audit flow visible in Admin Web while avoiding paid or vendor-specific push dependencies during the MVP.
-
-Production OS push should be enabled explicitly:
+Local development should keep:
 
 ```dotenv
-PUSH_PROVIDER=onesignal
-ONESIGNAL_APP_ID=
-ONESIGNAL_REST_API_KEY=
+PUSH_PROVIDER=in_app_only
 ```
 
-`ONESIGNAL_REST_API_KEY` is server-side only. It must never be sent to Flutter, admin browser JavaScript, or Git.
-When `PUSH_PROVIDER=onesignal` is selected, `PushDeliveryService` sends through the OneSignal REST API and stores the provider response on `NotificationDelivery`.
-OneSignal subscription identifiers should be registered as `PushDevice.token`; generic device tokens are not interchangeable.
+This records skipped delivery attempts and keeps the in-app inbox/audit path visible without requiring Firebase credentials.
 
-When a production provider is selected, keep the replacement behind `PushDeliveryService` and preserve this contract:
+Staging or production OS push should be enabled explicitly:
 
-- create the in-app `Notification` row before any OS push attempt
-- record every provider attempt in `NotificationDelivery`
-- disable only the specific `PushDevice` that receives a permanent provider token failure
-- keep retry behavior in BullMQ so booking and matching APIs do not wait on push latency
+```dotenv
+PUSH_PROVIDER=fcm
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+# or
+FIREBASE_SERVICE_ACCOUNT_JSON=
+# optional local ADC path
+GOOGLE_APPLICATION_CREDENTIALS=
+```
 
-## Mobile Firebase Removal Check
+Firebase Admin credentials are server-side only. Never send service account JSON, private keys, APNs keys, or Admin SDK credentials to Flutter, Admin Web, browser JavaScript, or Git.
 
-The repository includes `node infra/scripts/check-mobile-firebase.mjs` and the full local verifier runs it automatically. The check fails when either Flutter app still has Firebase packages, Google Services Gradle plugin usage, or `google-services.json`.
+When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. Payloads stay minimal and should use identifiers such as `bookingId`; do not place sensitive customer address details in push bodies.
 
-## Next Adapter Step
+## Mobile Setup Notes
 
-- Add notification templates per locale.
-- Add the OneSignal mobile SDK after the production push account is created, then register the app subscription ID with the existing device-token route.
+Android uses `google-services.json` and the Google Services Gradle plugin when FCM client integration is added. iOS uses `GoogleService-Info.plist`, APNs key/cert configuration through Firebase, and the Flutter FCM client. These files are secrets/config artifacts and must stay outside Git.
+
+Mobile code must not replace Socket.IO booking/chat realtime behavior. Register the FCM token after login, refresh it when FCM rotates the token, and send it to the NestJS API.
+
+## Notification Event Boundaries
+
+Current or planned call sites should stay at service boundaries:
+
+- first-pick request to a partner
+- open request available to eligible marketplace partners
+- partner joined booking request
+- customer final selection / booking matched
+- chat message notification
+- booking cancelled
+- booking completed
+- payment or payout notification placeholder
+
+If a flow is not ready, add the TODO at the relevant service boundary instead of scattering push-specific logic across booking, matching, payment, or chat code.

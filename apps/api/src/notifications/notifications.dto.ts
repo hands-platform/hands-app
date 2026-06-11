@@ -17,3 +17,11 @@ export class RegisterDeviceTokenDto {
   @IsIn(devicePlatforms)
   platform!: (typeof devicePlatforms)[number];
 }
+
+export class DeleteDeviceTokenDto {
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(512)
+  token!: string;
+}

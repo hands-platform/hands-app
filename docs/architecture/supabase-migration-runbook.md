@@ -8,7 +8,7 @@ HANDS will move away from Firebase and keep the Flutter apps behind Clean Archit
 
 - Customer and Partner apps now have feature repositories for auth, discovery, booking, chat, map, notification, coupons, partner profile, earnings, and verification.
 - `app_state.dart` is now a compatibility facade for existing screens rather than a direct API integration layer.
-- Mobile Firebase packages, Android Google Services config, and Flutter Firebase imports have been removed.
+- Firebase is limited to FCM push only. Firebase DB/Auth/Firestore and Firebase Storage are not part of the MVP.
 - API FCM HTTP delivery has been removed and replaced with in-app-only delivery records.
 - Mobile apps currently use in-app notifications instead of OS-level push tokens.
 - `supabase_flutter` is installed but no production flow depends on direct Supabase calls yet.
@@ -202,9 +202,9 @@ Rollback during staging is simple: create a fresh staging Supabase project and r
 2. Add Supabase PostgreSQL as the backing database under the API.
 3. Move file metadata and verification uploads to Supabase Storage through the API.
 4. Keep mobile notifications as in-app rows first.
-5. Add OneSignal or another push provider later for OS-level push.
+5. Add FCM credentials and mobile config later for OS-level push.
 6. Move chat history to Supabase tables, while keeping Socket.IO events until delivery semantics are validated.
-7. Add OneSignal or another production push provider behind `PushDeliveryService` after launch requirements are clear.
+7. Enable FCM behind `PushDeliveryService` after launch requirements are clear.
 
 ## Risk Notes
 

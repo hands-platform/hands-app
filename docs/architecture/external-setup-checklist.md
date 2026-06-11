@@ -29,8 +29,8 @@ Canonical operator order:
 | Supabase | Staging project created and SQL applied | Phone Auth/SMS E2E deferred |
 | MapTiler | Local/staging key configured | Keep key out of Git |
 | Geoapify | Local/staging key configured | Keep key out of Git |
-| Firebase | Removed from Flutter apps | Do not reintroduce config files |
-| Push | In-app notifications active | OneSignal or equivalent later |
+| Firebase | FCM allowed for push only | Do not use Firebase DB/Auth/Firestore |
+| Push | In-app notifications active | FCM production E2E later |
 | SMS | Dev OTP active | Vonage Phone Auth/SMS E2E later |
 | Payments | Cash active, MoMo/VNPay adapters exist | Merchant sandbox credentials later |
 | Storage | Local MinIO works | Supabase Storage S3/R2 production choice later |
@@ -63,8 +63,10 @@ GEOAPIFY_API_KEY=
 
 ```dotenv
 PUSH_PROVIDER=in_app_only
-ONESIGNAL_APP_ID=
-ONESIGNAL_REST_API_KEY=
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_SERVICE_ACCOUNT_JSON=
 ```
 
 ```dotenv
@@ -93,7 +95,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 
 ## Production Notes
 
-- `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, OneSignal REST keys, S3 secrets, and Android keystore passwords must never be committed.
+- `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
 - Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
 - Keep `PUSH_PROVIDER=in_app_only` until OS-level push E2E is intentionally tested.
 - Customers never carry negative wallet balances in MVP.

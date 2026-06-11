@@ -90,8 +90,10 @@ const adminAppSessionSummarySelect = {
 
 const adminPushDeviceSummarySelect = {
   id: true,
+  role: true,
   platform: true,
   enabled: true,
+  lastSeenAt: true,
   createdAt: true,
   updatedAt: true,
   deliveries: {
@@ -109,8 +111,10 @@ const adminPushDeviceSummarySelect = {
 
 const adminNotificationPushDeviceSelect = {
   id: true,
+  role: true,
   platform: true,
   enabled: true,
+  lastSeenAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.PushDeviceSelect;
@@ -128,8 +132,10 @@ const adminNotificationDeliverySelect = {
 
 const adminUserListPushDeviceSelect = {
   id: true,
+  role: true,
   platform: true,
   enabled: true,
+  lastSeenAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.PushDeviceSelect;

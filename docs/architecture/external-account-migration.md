@@ -20,7 +20,7 @@ Use this file when moving external services to clean HANDS-owned accounts under 
 | Supabase | `hands-staging` created, SQL applied, storage buckets verified | Phone Auth/SMS E2E later |
 | MapTiler | HANDS-owned key configured locally | Add restrictions later if needed |
 | Geoapify | HANDS-owned key configured locally | Add restrictions later if needed |
-| Push | In-app mode active | OneSignal or equivalent later |
+| Push | In-app mode active | FCM production E2E later |
 | Storage | Local MinIO active | Supabase Storage S3/R2 decision later |
 | Payments | Cash active, adapters exist | MoMo/VNPay sandbox credentials later |
 | SMS | Dev OTP active | Vonage Phone Auth/SMS E2E later |

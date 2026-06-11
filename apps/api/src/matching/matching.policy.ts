@@ -43,7 +43,8 @@ export const NO_SHOW_ADMIN_REVIEW_REQUIRED = 'ADMIN_REVIEW_REQUIRED';
 export const NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW = 'EVIDENCE_ASSISTED_ADMIN_REVIEW';
 export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_alert_channel';
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
-export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
+export const PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS = 'FCM_FOR_ALL_BOOKINGS';
+export const PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
 export const WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
 // Compatibility: older saved policy rows may keep the earlier "accepts" wording.
@@ -484,12 +485,12 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
         label: 'In-app now, push later',
-        tradeoff: 'Keeps MVP stable until OneSignal and production SMS accounts are fully approved.',
+        tradeoff: 'Keeps MVP stable until FCM credentials and mobile app config are ready for OS push E2E.',
       },
       {
-        value: PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS,
-        label: 'OneSignal for all bookings',
-        tradeoff: 'Better reach, but depends on production push setup and delivery monitoring.',
+        value: PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
+        label: 'FCM for all bookings',
+        tradeoff: 'Better reach, but depends on Firebase Admin credentials and delivery monitoring.',
       },
     ],
     enforced: true,

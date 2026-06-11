@@ -54,7 +54,7 @@ The partner Flutter app now includes:
 - Tokens are runtime-only and not persisted securely yet.
 - UI is intentionally MVP-plain and close to the reference flow hierarchy, not final branding.
 - Google Maps has been replaced for MVP by MapTiler/MapLibre map rendering and Geoapify address search.
-- Notification setup now runs after login and reports setup state in the app UI without Firebase mobile dependencies. OS-level push will be added later through a replacement provider such as OneSignal.
+- Notification setup runs after login and should register FCM tokens when mobile push integration is enabled. Firebase DB/Auth/Firestore remain outside the MVP.
 - `flutter pub get`, `flutter analyze`, and widget smoke tests pass for both customer and partner apps in the local Windows environment.
 - Android platform folders are generated for both Flutter apps.
 - Customer and Partner apps have been build-installed-launched on `emulator-5554` from an ASCII-only path.
@@ -62,7 +62,7 @@ The partner Flutter app now includes:
 
 ## Mobile Firebase Removal Check
 
-The Flutter apps should not contain Firebase packages, Google Services Gradle plugins, or `google-services.json` files.
+The Flutter apps may use Firebase Messaging for FCM push. They must not use Firebase Realtime Database, Firestore, Firebase Auth, or Firebase Storage. Google service config files must stay outside Git.
 
 Verification command:
 

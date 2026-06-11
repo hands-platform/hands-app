@@ -5,16 +5,16 @@ import { MetricCard } from '../../components/metric-card';
 const setupOrder = [
   {
     id: 'mobile',
-    title: 'Mobile Firebase removal guard',
+    title: 'Mobile Firebase scope guard',
     phase: 'Code baseline',
-    operatorAction: 'Keep Firebase packages and config files out of both Flutter apps.',
-    exitCriteria: 'Firebase removal and Flutter architecture guards pass.',
-    purpose: 'Required to keep the Flutter apps Firebase-free while Supabase migration continues.',
+    operatorAction: 'Keep Firebase limited to FCM-only surfaces in both Flutter apps.',
+    exitCriteria: 'Firebase scope and Flutter architecture guards pass.',
+    purpose: 'Required to keep Firebase DB/Auth/Firestore out while FCM remains the official push path.',
     env: ['customer_app', 'provider_app'],
     notes: [
-      'The Flutter apps should not contain Firebase packages.',
-      'Android builds should not use the Google Services Gradle plugin.',
-      'Do not restore google-services.json unless the push strategy changes intentionally.',
+      'Firebase Messaging is allowed for Android/iOS push only.',
+      'Do not add Firebase Realtime Database, Firestore, Firebase Auth, or Firebase Storage.',
+      'Keep google-services.json and GoogleService-Info.plist out of Git; use local or CI secret delivery.',
     ],
     commands: [
       'node infra\\scripts\\check-mobile-firebase.mjs',
@@ -171,15 +171,21 @@ const setupOrder = [
     title: 'OS push notifications',
     phase: 'Messaging E2E',
     operatorAction:
-      'Keep in-app notifications locally; configure OneSignal only when native push E2E starts.',
-    exitCriteria: 'OneSignal app id, server REST key, and mobile device delivery are confirmed.',
+      'Keep in-app notifications locally; configure FCM only when native push E2E starts.',
+    exitCriteria: 'FCM project, Firebase Admin credentials, and mobile device delivery are confirmed.',
     purpose:
       'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
-    env: ['PUSH_PROVIDER', 'ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY'],
+    env: [
+      'PUSH_PROVIDER',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_CLIENT_EMAIL',
+      'FIREBASE_PRIVATE_KEY',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+    ],
     notes: [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
-      'Firebase Messaging has been removed; keep PUSH_PROVIDER=in_app_only locally until OneSignal is ready.',
-      'OneSignal REST API keys are server-side only and must not be copied into Flutter or browser code.',
+      'FCM is for push only; Firebase DB/Auth/Firestore are not part of HANDS MVP.',
+      'Firebase Admin service account values are server-side only and must not be copied into Flutter or browser code.',
     ],
     commands: ['npm.cmd run external:check:production', 'npm.cmd run verify:local'],
   },
@@ -288,16 +294,16 @@ const externalRegistrationPlan = [
     env: ['SMS_PROVIDER', 'SMS_API_KEY', 'SMS_API_URL'],
   },
   {
-    id: 'onesignal',
+    id: 'fcm',
     groupId: 'notifications',
     title: 'Push notification service',
-    provider: 'OneSignal',
+    provider: 'Firebase Cloud Messaging',
     owner: 'administration@hands.vn',
     status: 'Deferred',
     statusClass: 'pill-neutral',
     detail:
-      'Firebase Messaging is out. Use in-app notifications until OneSignal app id and server-side REST key are ready.',
-    env: ['PUSH_PROVIDER', 'ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY'],
+      'Use in-app notifications locally until FCM app config and server-side Firebase Admin credentials are ready.',
+    env: ['PUSH_PROVIDER', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'],
   },
   {
     id: 'payments-vn',
@@ -360,7 +366,7 @@ const projectControlSequence = [
     title: 'Production integrations',
     status: 'Deferred',
     detail:
-      'Connect production SMS, OneSignal, MoMo, VNPay, production storage/CDN, and Android release signing only after local E2E remains stable.',
+      'Connect production SMS, FCM, MoMo, VNPay, production storage/CDN, and Android release signing only after local E2E remains stable.',
   },
   {
     phase: 'Phase E',

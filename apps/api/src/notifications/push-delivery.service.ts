@@ -1,32 +1,45 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { applicationDefault, cert, getApps, initializeApp, type App } from 'firebase-admin/app';
+import { getMessaging, type Messaging } from 'firebase-admin/messaging';
 
 export type PushMessage = {
   token: string;
   title: string;
   body: string;
   data?: Record<string, string>;
-  providerOverride?: 'in_app_only' | 'onesignal';
+  providerOverride?: PushProvider;
 };
 
 export type PushSendResult = {
-  provider: 'IN_APP_ONLY' | 'ONESIGNAL';
+  provider: 'IN_APP_ONLY' | 'FCM';
   status: 'SENT' | 'SKIPPED' | 'FAILED';
   disableDevice: boolean;
   failureCode?: string;
   response: Record<string, unknown>;
 };
 
+type PushProvider = 'in_app_only' | 'fcm';
+
+type FirebaseCredentialConfig = {
+  projectId?: string;
+  clientEmail?: string;
+  privateKey?: string;
+  serviceAccountJson?: string;
+  googleApplicationCredentials?: string;
+};
+
 @Injectable()
 export class PushDeliveryService {
+  private messaging?: Messaging;
+
   constructor(private readonly config: ConfigService) {}
 
   async send(message: PushMessage): Promise<PushSendResult> {
-    const provider =
-      message.providerOverride ?? this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() ?? 'in_app_only';
+    const provider = this.resolveProvider(message.providerOverride);
 
-    if (provider === 'onesignal') {
-      return this.sendWithOneSignal(message);
+    if (provider === 'fcm') {
+      return this.sendWithFcm(message);
     }
 
     return {
@@ -41,132 +54,132 @@ export class PushDeliveryService {
     };
   }
 
-  private async sendWithOneSignal(message: PushMessage): Promise<PushSendResult> {
-    const appId = this.config.get<string>('ONESIGNAL_APP_ID')?.trim();
-    const restApiKey = this.config.get<string>('ONESIGNAL_REST_API_KEY')?.trim();
-    const missing = [
-      !appId ? 'ONESIGNAL_APP_ID' : null,
-      !restApiKey ? 'ONESIGNAL_REST_API_KEY' : null,
-    ].filter(Boolean);
+  private resolveProvider(providerOverride?: PushProvider): PushProvider {
+    const configured = this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase();
+    return providerOverride ?? (configured === 'fcm' ? 'fcm' : 'in_app_only');
+  }
 
-    if (missing.length > 0) {
+  private async sendWithFcm(message: PushMessage): Promise<PushSendResult> {
+    const readiness = this.fcmReadiness();
+
+    if (readiness.missing.length > 0) {
       return {
-        provider: 'ONESIGNAL',
+        provider: 'FCM',
         status: 'FAILED',
         disableDevice: false,
         failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
         response: {
-          reason: 'OneSignal push delivery is selected, but required server-side credentials are missing.',
-          missing,
+          reason: 'FCM push delivery is selected, but required server-side credentials are missing.',
+          missing: readiness.missing,
           tokenPlatform: inferTokenPlatform(message.token),
           title: message.title,
         },
       };
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8_000);
-
     try {
-      const response = await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${restApiKey}`,
-          'Content-Type': 'application/json',
+      const messaging = this.getMessagingClient();
+      const messageId = await messaging.send({
+        token: message.token,
+        notification: {
+          title: message.title,
+          body: message.body,
         },
-        body: JSON.stringify({
-          app_id: appId,
-          include_subscription_ids: [message.token],
-          headings: { en: message.title },
-          contents: { en: message.body },
-          data: message.data ?? {},
-        }),
-        signal: controller.signal,
-      });
-      const payload = await readJsonResponse(response);
-      const recipients = Number(payload.recipients ?? 0);
-      const disableDevice = hasInvalidOneSignalDevice(payload);
-
-      if (response.ok && recipients > 0) {
-        return {
-          provider: 'ONESIGNAL',
-          status: 'SENT',
-          disableDevice: false,
-          response: {
-            oneSignalId: payload.id,
-            recipients,
-            tokenPlatform: inferTokenPlatform(message.token),
+        data: message.data ?? {},
+        android: {
+          priority: 'high',
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+            },
           },
-        };
-      }
+        },
+      });
 
       return {
-        provider: 'ONESIGNAL',
-        status: 'FAILED',
-        disableDevice,
-        failureCode: disableDevice ? 'ONESIGNAL_INVALID_SUBSCRIPTION' : oneSignalFailureCode(response.status, payload),
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
         response: {
-          httpStatus: response.status,
-          recipients,
+          messageId,
           tokenPlatform: inferTokenPlatform(message.token),
-          payload,
         },
       };
     } catch (error) {
+      const failureCode = firebaseFailureCode(error);
       return {
-        provider: 'ONESIGNAL',
+        provider: 'FCM',
         status: 'FAILED',
-        disableDevice: false,
-        failureCode:
-          error instanceof DOMException && error.name === 'AbortError' ? 'ONESIGNAL_TIMEOUT' : 'ONESIGNAL_ERROR',
+        disableDevice: isPermanentTokenFailure(failureCode),
+        failureCode,
         response: {
-          reason: error instanceof Error ? error.message : 'Unknown OneSignal delivery error.',
+          reason: safeErrorMessage(error),
           tokenPlatform: inferTokenPlatform(message.token),
         },
       };
-    } finally {
-      clearTimeout(timeout);
     }
   }
-}
 
-async function readJsonResponse(response: Response): Promise<Record<string, unknown>> {
-  try {
-    const payload = await response.json();
-    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-      return payload as Record<string, unknown>;
+  private fcmReadiness() {
+    const credentialConfig = this.readFirebaseConfig();
+    const hasJson = Boolean(credentialConfig.serviceAccountJson);
+    const hasFieldCredentials = Boolean(
+      credentialConfig.projectId && credentialConfig.clientEmail && credentialConfig.privateKey,
+    );
+    const hasApplicationDefault = Boolean(credentialConfig.googleApplicationCredentials);
+
+    return {
+      config: credentialConfig,
+      missing:
+        hasJson || hasFieldCredentials || hasApplicationDefault
+          ? []
+          : ['FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY'],
+    };
+  }
+
+  private getMessagingClient() {
+    if (this.messaging) {
+      return this.messaging;
     }
-  } catch {
-    // Non-JSON response bodies are treated as empty delivery payloads.
+
+    const { config } = this.fcmReadiness();
+    const app = getApps().find((candidate) => candidate.name === 'hands-fcm') ?? initializeFirebaseApp(config);
+    this.messaging = getMessaging(app);
+    return this.messaging;
   }
 
-  return {};
+  private readFirebaseConfig(): FirebaseCredentialConfig {
+    return {
+      projectId: this.config.get<string>('FIREBASE_PROJECT_ID')?.trim(),
+      clientEmail: this.config.get<string>('FIREBASE_CLIENT_EMAIL')?.trim(),
+      privateKey: normalizePrivateKey(this.config.get<string>('FIREBASE_PRIVATE_KEY')?.trim()),
+      serviceAccountJson: this.config.get<string>('FIREBASE_SERVICE_ACCOUNT_JSON')?.trim(),
+      googleApplicationCredentials: this.config.get<string>('GOOGLE_APPLICATION_CREDENTIALS')?.trim(),
+    };
+  }
 }
 
-function hasInvalidOneSignalDevice(payload: Record<string, unknown>) {
-  const errors = payload.errors;
-  if (!errors || typeof errors !== 'object' || Array.isArray(errors)) {
-    return false;
+function initializeFirebaseApp(config: FirebaseCredentialConfig): App {
+  if (config.serviceAccountJson) {
+    return initializeApp({ credential: cert(parseServiceAccount(config.serviceAccountJson)) }, 'hands-fcm');
   }
 
-  const invalidPlayers = (errors as Record<string, unknown>).invalid_player_ids;
-  return Array.isArray(invalidPlayers) && invalidPlayers.length > 0;
-}
-
-function oneSignalFailureCode(httpStatus: number, payload: Record<string, unknown>) {
-  if (httpStatus === 401 || httpStatus === 403) {
-    return 'ONESIGNAL_AUTH_FAILED';
+  if (config.projectId && config.clientEmail && config.privateKey) {
+    return initializeApp(
+      {
+        credential: cert({
+          projectId: config.projectId,
+          clientEmail: config.clientEmail,
+          privateKey: config.privateKey,
+        }),
+      },
+      'hands-fcm',
+    );
   }
 
-  if (httpStatus === 429) {
-    return 'ONESIGNAL_RATE_LIMITED';
-  }
-
-  if (Number(payload.recipients ?? 0) === 0) {
-    return 'ONESIGNAL_NO_RECIPIENTS';
-  }
-
-  return 'ONESIGNAL_DELIVERY_FAILED';
+  return initializeApp({ credential: applicationDefault() }, 'hands-fcm');
 }
 
 function inferTokenPlatform(token: string) {
@@ -179,4 +192,45 @@ function inferTokenPlatform(token: string) {
   }
 
   return 'android';
+}
+
+function parseServiceAccount(raw: string) {
+  const decoded = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+  const parsed = JSON.parse(decoded) as {
+    project_id?: string;
+    client_email?: string;
+    private_key?: string;
+  };
+
+  return {
+    projectId: parsed.project_id,
+    clientEmail: parsed.client_email,
+    privateKey: normalizePrivateKey(parsed.private_key),
+  };
+}
+
+function normalizePrivateKey(value?: string) {
+  return value?.replace(/\\n/g, '\n');
+}
+
+function firebaseFailureCode(error: unknown) {
+  if (error && typeof error === 'object' && 'code' in error) {
+    return String((error as { code?: unknown }).code);
+  }
+
+  return 'FCM_DELIVERY_FAILED';
+}
+
+function isPermanentTokenFailure(failureCode: string) {
+  return ['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'].includes(
+    failureCode,
+  );
+}
+
+function safeErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message.replace(/registration token [^ .]+/gi, 'registration token [masked]');
+  }
+
+  return 'Unknown FCM delivery error.';
 }

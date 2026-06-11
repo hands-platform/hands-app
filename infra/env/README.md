@@ -10,7 +10,7 @@ Start from:
 C:\dev\massage-on-demand-vn\infra\env\hands-staging.env.example
 ```
 
-Copy values into your local `.env` when you receive real credentials from Supabase, MapTiler, Geoapify, MoMo, VNPay, storage/CDN, or a push provider.
+Copy values into your local `.env` when you receive real credentials from Supabase, MapTiler, Geoapify, MoMo, VNPay, storage/CDN, or Firebase Cloud Messaging.
 
 Do not commit real `.env` files or secrets.
 
@@ -20,7 +20,7 @@ Do not commit real `.env` files or secrets.
 2. MapTiler and Geoapify keys
 3. Storage/CDN credentials
 4. MoMo and VNPay sandbox credentials
-5. OneSignal or another OS push provider
+5. Firebase Cloud Messaging for Android/iOS push
 6. Vonage SMS credentials for Supabase Phone Auth after the deferred Phone Auth E2E pass starts
 
 ## Verification

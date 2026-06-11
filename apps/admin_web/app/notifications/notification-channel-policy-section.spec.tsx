@@ -4,7 +4,7 @@ describe('NotificationChannelPolicySection', () => {
   it('renders partner alert routing policy and channel counts', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 7,
-      oneSignalDeliveries: 2,
+      fcmDeliveries: 2,
       partnerAlertCount: 5,
       policyLabel: 'In-app first',
     });
@@ -17,16 +17,16 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('5');
     expect(rendered).toContain('In-app route');
     expect(rendered).toContain('7');
-    expect(rendered).toContain('OneSignal route');
+    expect(rendered).toContain('FCM route');
     expect(rendered).toContain('2');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
   });
 
-  it('uses a neutral OneSignal badge when no OS push deliveries exist', () => {
+  it('uses a neutral FCM badge when no OS push deliveries exist', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 3,
-      oneSignalDeliveries: 0,
+      fcmDeliveries: 0,
       partnerAlertCount: 3,
       policyLabel: 'In-app only',
     });
