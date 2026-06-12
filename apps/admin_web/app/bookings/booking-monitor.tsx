@@ -22,7 +22,6 @@ import {
   type BookingMatchingRuleSnapshot,
 } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
-import { humanizeClosureReason } from '../../lib/booking-closure-summary';
 import {
   bookingListActionChipsFromFacts,
   type BookingListActionChip,
@@ -139,6 +138,10 @@ import {
   bookingMatchingChatReady,
   isHandoffBookingStatus,
 } from './booking-chat-handoff-state';
+import {
+  bookingClosureListSignal,
+  terminalBookingStatuses,
+} from './booking-closure-list-signal';
 import {
   bookingDispatchPartnerShortcutFacts as buildBookingDispatchPartnerShortcutFactsFromFacts,
 } from './booking-dispatch-partner-shortcut-facts';
@@ -283,8 +286,6 @@ type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 type AdminMarketplaceParticipantLedgerRow = MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>;
 
 type AdminMarketplaceBookingCoverageRow = MarketplaceBookingCoverageRow<AdminBooking>;
-
-const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
 export function BookingMonitor({
   bookings,
@@ -689,7 +690,7 @@ function buildBookingMonitorListRow(
     cashDebtNeedsOps,
     chatState: bookingChatListState(booking),
     checkSignal: bookingCheckLevel(flags),
-    closureState: bookingClosureListSignal(booking),
+    closureState: bookingClosureListSignal(booking, { formatDate }),
     commandDecisionStrip: bookingListCommandDecisionStrip(booking),
     customerVisibleStateLabel: customerVisibleStateLabel(booking),
     expiresAtLabel: booking.expiresAt ? formatDate(booking.expiresAt) : null,
@@ -998,30 +999,6 @@ function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): Bookin
     stageKey: bookingListStage(booking, nowMs).key,
     status: booking.status,
   };
-}
-
-function bookingClosureListSignal(booking: AdminBooking) {
-  if (booking.closedAt) {
-    const actor = booking.closedByRole ? booking.closedByRole.toLowerCase() : 'actor missing';
-    const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
-    const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
-
-    return {
-      label: `Closed ${formatDate(booking.closedAt)}`,
-      detail: `${actor} closure / ${reason}${note}`,
-      tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-info',
-    };
-  }
-
-  if (terminalBookingStatuses.has(booking.status)) {
-    return {
-      label: 'Terminal',
-      detail: 'Terminal booking has no explicit closure actor/reason saved yet.',
-      tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-warn',
-    };
-  }
-
-  return null;
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
