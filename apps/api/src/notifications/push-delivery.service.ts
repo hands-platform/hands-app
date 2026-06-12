@@ -70,7 +70,8 @@ export class PushDeliveryService {
         disableDevice: false,
         failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
         response: {
-          reason: 'FCM push delivery is selected, but required server-side credentials are missing.',
+          reason:
+            'FCM push delivery is selected, but required server-side credentials are missing or invalid.',
           missing: readiness.missing,
           invalid: readiness.invalid,
           title: message.title,

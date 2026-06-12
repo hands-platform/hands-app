@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 export const FCM_CREDENTIAL_REQUIREMENT =
   'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS';
+export const FIREBASE_SERVICE_ACCOUNT_JSON_KEY = 'FIREBASE_SERVICE_ACCOUNT_JSON';
 export const GOOGLE_APPLICATION_CREDENTIALS_KEY = 'GOOGLE_APPLICATION_CREDENTIALS';
 
 export type FirebaseCredentialConfig = {
@@ -25,25 +26,31 @@ export function readFirebaseCredentialConfig(config: ConfigService): FirebaseCre
 }
 
 export function firebaseCredentialReadiness(config: FirebaseCredentialConfig) {
-  const hasJson = Boolean(config.serviceAccountJson);
+  const hasServiceAccountJson = hasValidFirebaseServiceAccountJson(config.serviceAccountJson);
   const hasFieldCredentials = Boolean(config.projectId && config.clientEmail && config.privateKey);
-  const hasExplicitCredentials = hasJson || hasFieldCredentials;
   const hasApplicationDefault = existingApplicationDefaultCredentials(config.googleApplicationCredentials);
-  const invalid =
-    !hasExplicitCredentials && config.googleApplicationCredentials && !hasApplicationDefault
-      ? [GOOGLE_APPLICATION_CREDENTIALS_KEY]
-      : [];
+  const invalid = [
+    config.serviceAccountJson && !hasServiceAccountJson ? FIREBASE_SERVICE_ACCOUNT_JSON_KEY : null,
+    !hasServiceAccountJson &&
+    !hasFieldCredentials &&
+    config.googleApplicationCredentials &&
+    !hasApplicationDefault
+      ? GOOGLE_APPLICATION_CREDENTIALS_KEY
+      : null,
+  ].filter((key): key is string => Boolean(key));
+  const ready =
+    invalid.length === 0 && (hasServiceAccountJson || hasFieldCredentials || hasApplicationDefault);
 
   return {
-    ready: hasExplicitCredentials || hasApplicationDefault,
-    missing: hasExplicitCredentials || hasApplicationDefault ? [] : [FCM_CREDENTIAL_REQUIREMENT],
+    ready,
+    missing: ready || invalid.length > 0 ? [] : [FCM_CREDENTIAL_REQUIREMENT],
     invalid,
   };
 }
 
 export function configuredFirebaseCredentialKeys(config: FirebaseCredentialConfig) {
   return [
-    config.serviceAccountJson ? 'FIREBASE_SERVICE_ACCOUNT_JSON' : null,
+    config.serviceAccountJson ? FIREBASE_SERVICE_ACCOUNT_JSON_KEY : null,
     config.projectId ? 'FIREBASE_PROJECT_ID' : null,
     config.clientEmail ? 'FIREBASE_CLIENT_EMAIL' : null,
     config.privateKey ? 'FIREBASE_PRIVATE_KEY' : null,
@@ -72,4 +79,17 @@ export function parseFirebaseServiceAccount(raw: string) {
     clientEmail: parsed.client_email,
     privateKey: normalizePrivateKey(parsed.private_key),
   };
+}
+
+export function hasValidFirebaseServiceAccountJson(raw?: string) {
+  if (!raw) {
+    return false;
+  }
+
+  try {
+    const parsed = parseFirebaseServiceAccount(raw);
+    return Boolean(parsed.projectId && parsed.clientEmail && parsed.privateKey);
+  } catch {
+    return false;
+  }
 }

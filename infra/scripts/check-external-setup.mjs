@@ -338,11 +338,26 @@ function allHaveExistingPath(keys) {
 }
 
 function firebaseAdminConfigured() {
-  return (
-    hasValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
-    allHaveValue(firebaseAdminEnvKeys) ||
-    pathExists(firebaseApplicationCredentialsEnvKey)
-  );
+  if (hasValue('FIREBASE_SERVICE_ACCOUNT_JSON')) {
+    return firebaseServiceAccountJsonConfigured();
+  }
+
+  return allHaveValue(firebaseAdminEnvKeys) || pathExists(firebaseApplicationCredentialsEnvKey);
+}
+
+function firebaseServiceAccountJsonConfigured() {
+  const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '').trim();
+  if (!raw) {
+    return false;
+  }
+
+  try {
+    const decoded = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+    const parsed = JSON.parse(decoded);
+    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
+  } catch {
+    return false;
+  }
 }
 
 function storageConfigured() {

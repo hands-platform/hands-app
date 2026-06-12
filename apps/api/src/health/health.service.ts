@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   FCM_CREDENTIAL_REQUIREMENT,
+  FIREBASE_SERVICE_ACCOUNT_JSON_KEY,
+  GOOGLE_APPLICATION_CREDENTIALS_KEY,
   configuredFirebaseCredentialKeys,
   firebaseCredentialReadiness,
   readFirebaseCredentialConfig,
@@ -89,9 +91,7 @@ export class HealthService {
         .map((check) => check.category),
     );
     const currentStageCommands = uniqueStrings(
-      currentStageChecks
-        .filter((check) => check.status !== 'READY')
-        .flatMap((check) => check.commands ?? []),
+      currentStageChecks.filter((check) => check.status !== 'READY').flatMap((check) => check.commands ?? []),
     );
     const deferredCommands = uniqueStrings(
       checks
@@ -227,12 +227,13 @@ export class HealthService {
       missing: readiness.missing,
       configured,
       invalid: readiness.invalid,
-      detail:
-        readiness.ready
-          ? 'FCM credentials are configured and backend Firebase Admin delivery is enabled.'
-          : readiness.invalid.length > 0
+      detail: readiness.ready
+        ? 'FCM credentials are configured and backend Firebase Admin delivery is enabled.'
+        : readiness.invalid.includes(FIREBASE_SERVICE_ACCOUNT_JSON_KEY)
+          ? 'FCM push is selected, but FIREBASE_SERVICE_ACCOUNT_JSON is not a valid Firebase service account JSON payload.'
+          : readiness.invalid.includes(GOOGLE_APPLICATION_CREDENTIALS_KEY)
             ? 'FCM push is selected, but GOOGLE_APPLICATION_CREDENTIALS does not point to an existing service account JSON file.'
-          : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
+            : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
     };
   }
 
@@ -327,9 +328,8 @@ export class HealthService {
       const rootGradle = this.readRepoFile(repoRoot, app.rootGradlePath);
       const appGradle = this.readRepoFile(repoRoot, app.appGradlePath);
       const checked = pubspec !== null || rootGradle !== null || appGradle !== null;
-      const hasBlockedFirebasePackages = /cloud_firestore|firebase_auth|firebase_database|firebase_storage/.test(
-        pubspec ?? '',
-      );
+      const hasBlockedFirebasePackages =
+        /cloud_firestore|firebase_auth|firebase_database|firebase_storage/.test(pubspec ?? '');
       return {
         name: app.name,
         checked,
@@ -563,10 +563,9 @@ function externalReadinessMetadata(category: string, name: string) {
 
   if (category === 'mobile') {
     return {
-      operatorAction:
-        name.includes('Firebase')
-          ? 'Keep Firebase DB/Auth/Firestore out of mobile; FCM setup is the only allowed Firebase mobile surface.'
-          : 'Run the mobile guard scripts from the repository.',
+      operatorAction: name.includes('Firebase')
+        ? 'Keep Firebase DB/Auth/Firestore out of mobile; FCM setup is the only allowed Firebase mobile surface.'
+        : 'Run the mobile guard scripts from the repository.',
       commands: ['node infra\\scripts\\check-mobile-firebase.mjs'],
     };
   }

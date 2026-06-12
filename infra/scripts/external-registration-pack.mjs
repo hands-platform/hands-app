@@ -257,11 +257,15 @@ const registrationItems = [
       envItem('PUSH_PROVIDER', 'fcm', env.PUSH_PROVIDER === 'fcm'),
       envItem('FIREBASE_PROJECT_ID', '<firebase-project-id>', hasValue(env.FIREBASE_PROJECT_ID)),
       envItem('FIREBASE_CLIENT_EMAIL', '<firebase-client-email>', hasValue(env.FIREBASE_CLIENT_EMAIL)),
-      envItem('FIREBASE_PRIVATE_KEY', '<firebase-private-key-server-only>', hasValue(env.FIREBASE_PRIVATE_KEY)),
+      envItem(
+        'FIREBASE_PRIVATE_KEY',
+        '<firebase-private-key-server-only>',
+        hasValue(env.FIREBASE_PRIVATE_KEY),
+      ),
       envItem(
         'FIREBASE_SERVICE_ACCOUNT_JSON',
         '<service-account-json-or-base64-server-only>',
-        hasValue(env.FIREBASE_SERVICE_ACCOUNT_JSON),
+        firebaseServiceAccountJsonConfigured(env.FIREBASE_SERVICE_ACCOUNT_JSON),
       ),
       envItem(
         'GOOGLE_APPLICATION_CREDENTIALS',
@@ -272,6 +276,7 @@ const registrationItems = [
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
       'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
+      'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file available to the API process or Docker container.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',
     ],
@@ -450,6 +455,23 @@ function hasValue(value) {
 function pathExists(value) {
   const normalized = String(value ?? '').trim();
   return normalized.length > 0 && existsSync(resolve(repoRoot, normalized));
+}
+
+function firebaseServiceAccountJsonConfigured(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) {
+    return false;
+  }
+
+  try {
+    const decoded = normalized.startsWith('{')
+      ? normalized
+      : Buffer.from(normalized, 'base64').toString('utf8');
+    const parsed = JSON.parse(decoded);
+    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
+  } catch {
+    return false;
+  }
 }
 
 function isSecretLikeValue(value) {

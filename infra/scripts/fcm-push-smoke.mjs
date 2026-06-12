@@ -135,11 +135,13 @@ const latestDelivery = newDelivery(after.deliveries ?? [], {
 });
 if (!latestDelivery) {
   fail(
-    `Notification retry recorded a delivery count increase but no delivery details were returned: ${JSON.stringify({
-      notificationId,
-      beforeDeliveryCount,
-      deliveryCount,
-    })}`,
+    `Notification retry recorded a delivery count increase but no delivery details were returned: ${JSON.stringify(
+      {
+        notificationId,
+        beforeDeliveryCount,
+        deliveryCount,
+      },
+    )}`,
   );
 }
 const provider = String(latestDelivery.provider ?? '').toUpperCase();
@@ -301,11 +303,26 @@ function pathExists(key) {
 }
 
 function firebaseAdminConfigured() {
-  return (
-    hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
-    allHaveEnvValues(firebaseAdminEnvKeys) ||
-    pathExists(firebaseApplicationCredentialsEnvKey)
-  );
+  if (hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON')) {
+    return firebaseServiceAccountJsonConfigured();
+  }
+
+  return allHaveEnvValues(firebaseAdminEnvKeys) || pathExists(firebaseApplicationCredentialsEnvKey);
+}
+
+function firebaseServiceAccountJsonConfigured() {
+  const raw = envValue('FIREBASE_SERVICE_ACCOUNT_JSON');
+  if (!raw) {
+    return false;
+  }
+
+  try {
+    const decoded = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+    const parsed = JSON.parse(decoded);
+    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
+  } catch {
+    return false;
+  }
 }
 
 function dryRunNextActions() {
@@ -328,7 +345,14 @@ function dryRunNextActions() {
 }
 
 function firebaseAdminCredentialAction() {
-  if (hasEnvValue(firebaseApplicationCredentialsEnvKey) && !pathExists(firebaseApplicationCredentialsEnvKey)) {
+  if (hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON') && !firebaseServiceAccountJsonConfigured()) {
+    return 'Fill FIREBASE_SERVICE_ACCOUNT_JSON with a valid Firebase service account JSON or base64 payload.';
+  }
+
+  if (
+    hasEnvValue(firebaseApplicationCredentialsEnvKey) &&
+    !pathExists(firebaseApplicationCredentialsEnvKey)
+  ) {
     return 'Point GOOGLE_APPLICATION_CREDENTIALS to an existing service account JSON file.';
   }
 

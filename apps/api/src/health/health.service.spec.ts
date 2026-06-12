@@ -114,6 +114,19 @@ describe('HealthService external push readiness', () => {
     expect(check?.detail).toContain('does not point to an existing service account JSON file');
   });
 
+  it('keeps FCM blocked when service account JSON is present but incomplete', () => {
+    const check = pushCheck({
+      PUSH_PROVIDER: 'fcm',
+      FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+    });
+
+    expect(check?.status).toBe('BLOCKED');
+    expect(check?.configured).toEqual(['PUSH_PROVIDER', 'FIREBASE_SERVICE_ACCOUNT_JSON']);
+    expect(check?.missing).toEqual([]);
+    expect(check?.invalid).toEqual(['FIREBASE_SERVICE_ACCOUNT_JSON']);
+    expect(check?.detail).toContain('not a valid Firebase service account JSON payload');
+  });
+
   it('marks FCM ready when application default credentials point to an existing file', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
     const serviceAccountPath = join(tempDir, 'firebase-admin.json');

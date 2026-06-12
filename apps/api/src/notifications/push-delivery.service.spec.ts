@@ -60,6 +60,23 @@ describe('PushDeliveryService', () => {
     });
   });
 
+  it('fails safely when service account JSON is present but incomplete', async () => {
+    await expect(
+      pushService({
+        PUSH_PROVIDER: 'fcm',
+        FIREBASE_SERVICE_ACCOUNT_JSON: '{}',
+      }).send(message),
+    ).resolves.toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: false,
+      failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
+      response: {
+        invalid: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+      },
+    });
+  });
+
   it('masks raw FCM tokens from provider error messages', async () => {
     mockMessagingSend.mockRejectedValueOnce(
       Object.assign(

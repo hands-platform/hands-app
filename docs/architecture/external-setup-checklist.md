@@ -23,18 +23,18 @@ Canonical operator order:
 
 ## Current Status
 
-| Area | Status | Next action |
-| --- | --- | --- |
-| GitHub | Connected to HANDS org repo | Keep pushing `develop` |
-| Supabase | Staging project created and SQL applied | Phone Auth/SMS E2E deferred |
-| MapTiler | Local/staging key configured | Keep key out of Git |
-| Geoapify | Local/staging key configured | Keep key out of Git |
-| Firebase | FCM allowed for push only | Do not use Firebase DB/Auth/Firestore |
-| Push | In-app notifications active | FCM production E2E later |
-| SMS | Dev OTP active | Vonage Phone Auth/SMS E2E later |
-| Payments | Cash active, MoMo/VNPay adapters exist | Merchant sandbox credentials later |
-| Storage | Local MinIO works | Supabase Storage S3/R2 production choice later |
-| Android signing | Local helper ready | Production keystores stay in secrets folder |
+| Area            | Status                                  | Next action                                    |
+| --------------- | --------------------------------------- | ---------------------------------------------- |
+| GitHub          | Connected to HANDS org repo             | Keep pushing `develop`                         |
+| Supabase        | Staging project created and SQL applied | Phone Auth/SMS E2E deferred                    |
+| MapTiler        | Local/staging key configured            | Keep key out of Git                            |
+| Geoapify        | Local/staging key configured            | Keep key out of Git                            |
+| Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore          |
+| Push            | In-app notifications active             | FCM production E2E later                       |
+| SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                |
+| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials later             |
+| Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later |
+| Android signing | Local helper ready                      | Production keystores stay in secrets folder    |
 
 ## Required Env Groups
 
@@ -99,6 +99,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 ## Production Notes
 
 - `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
+- If using `FIREBASE_SERVICE_ACCOUNT_JSON`, provide raw or base64 Firebase service account JSON with `project_id`, `client_email`, and `private_key`.
 - If using `GOOGLE_APPLICATION_CREDENTIALS` for FCM, point it to an existing service account JSON file available to the API process or Docker container.
 - Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
 - Keep `PUSH_PROVIDER=in_app_only` until OS-level push E2E is intentionally tested.
