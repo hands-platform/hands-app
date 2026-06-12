@@ -764,21 +764,12 @@ export class BookingsService {
       preferredProviderId: input.preferredProviderId,
       matchingPolicy,
     });
-    const result = this.matching.openBooking({
-      booking: input.reopenedBooking,
-      policy: matchingPolicy,
-      payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length, {
-        firstPickDeclined: true,
-      }),
+    const result = await this.activateFirstPickDeclinedOpenMatching({
+      bookingId: input.bookingId,
+      reopenedBooking: input.reopenedBooking,
+      matchingPolicy,
+      eligibleBackupProviderCount: eligibleBackupProviders.length,
     });
-    await this.matching.registerActiveBooking(input.bookingId, result);
-    await this.matching.scheduleBookingTimeout(
-      input.bookingId,
-      bookingResponseTimeoutAt({
-        expiresAt: input.reopenedBooking.expiresAt,
-        providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
-      }),
-    );
     await this.notifyBackupProvidersAndRecordTrace({
       stage: 'first_pick_declined',
       bookingId: input.bookingId,
@@ -812,6 +803,30 @@ export class BookingsService {
       forceOpen: true,
       policy: input.matchingPolicy,
     });
+  }
+
+  private async activateFirstPickDeclinedOpenMatching(input: {
+    bookingId: string;
+    reopenedBooking: FirstPickRejectedBookingResponse;
+    matchingPolicy: MatchingPolicy;
+    eligibleBackupProviderCount: number;
+  }) {
+    const result = this.matching.openBooking({
+      booking: input.reopenedBooking,
+      policy: input.matchingPolicy,
+      payload: bookingOpenMatchingPayload(input.matchingPolicy, input.eligibleBackupProviderCount, {
+        firstPickDeclined: true,
+      }),
+    });
+    await this.matching.registerActiveBooking(input.bookingId, result);
+    await this.matching.scheduleBookingTimeout(
+      input.bookingId,
+      bookingResponseTimeoutAt({
+        expiresAt: input.reopenedBooking.expiresAt,
+        providerResponseWindowMinutes: input.matchingPolicy.providerResponseWindowMinutes,
+      }),
+    );
+    return result;
   }
 
   private async announceOpenBooking(input: {
