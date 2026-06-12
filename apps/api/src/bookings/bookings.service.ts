@@ -410,15 +410,11 @@ export class BookingsService {
 
     booking = await this.refreshBookingPaymentAuthorization(booking);
 
-    const dispatchPin = bookingDispatchCoordinates(booking);
-    const eligibleBackupProviders = await this.findEligibleBackupProviders({
-      bookingId: booking.id,
+    const eligibleBackupProviders = await this.findInitialEligibleBackupProviders({
+      booking,
       serviceId: service.id,
-      lat: dispatchPin.lat,
-      lng: dispatchPin.lng,
       preferredProviderId: preferredProvider?.id,
-      backupOpenMode: matchingPolicy.backupOpenMode,
-      policy: matchingPolicy,
+      matchingPolicy,
     });
     const result = this.matching.openBooking({
       booking: clientBookingResponse(booking),
@@ -541,6 +537,24 @@ export class BookingsService {
       bookingLat,
       bookingLng,
     };
+  }
+
+  private async findInitialEligibleBackupProviders(input: {
+    booking: OpenBookingForClientResponse;
+    serviceId: string;
+    preferredProviderId?: string;
+    matchingPolicy: MatchingPolicy;
+  }) {
+    const dispatchPin = bookingDispatchCoordinates(input.booking);
+    return this.findEligibleBackupProviders({
+      bookingId: input.booking.id,
+      serviceId: input.serviceId,
+      lat: dispatchPin.lat,
+      lng: dispatchPin.lng,
+      preferredProviderId: input.preferredProviderId,
+      backupOpenMode: input.matchingPolicy.backupOpenMode,
+      policy: input.matchingPolicy,
+    });
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
