@@ -23,6 +23,7 @@ describe('notification page model', () => {
       needsRetry: 2,
       noShow: 1,
       payoutSetup: 1,
+      pending: 1,
       sent: 2,
       skipped: 1,
       staleDevices: 1,
@@ -86,9 +87,7 @@ describe('notification page model', () => {
         enforced: true,
         key: 'notification.partner_alert_channel',
         label: 'Partner alert channel',
-        options: [
-          { label: 'In-app first', tradeoff: 'No OS push by default.', value: 'in_app_first' },
-        ],
+        options: [{ label: 'In-app first', tradeoff: 'No OS push by default.', value: 'in_app_first' }],
         value: 'in_app_first',
       },
     ]);
@@ -339,7 +338,9 @@ describe('notification page model', () => {
     expect(notificationFilterDescription('failed')).toBe(
       'delivery attempts that returned a push provider failure.',
     );
-    expect(notificationFilterDescription('partner-alerts')).toBe('booking and payout alerts sent to partners.');
+    expect(notificationFilterDescription('partner-alerts')).toBe(
+      'booking and payout alerts sent to partners.',
+    );
     expect(notificationFilterDescription('stale-device')).toBe(
       'delivery attempts made with old push token timestamps.',
     );

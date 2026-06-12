@@ -65,11 +65,16 @@ export default async function NotificationsPage({
         { label: 'Needs retry', value: summary.needsRetry, helper: 'Failed or disabled delivery paths.' },
         { label: 'Sent', value: summary.sent, helper: 'Successful push delivery attempts.' },
         { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
+        { label: 'Pending', value: summary.pending, helper: 'Rows without delivery attempts.' },
         { label: 'Failed', value: summary.failed, helper: 'Push failures needing review.' },
         { label: 'Disabled devices', value: summary.disabledDevices, helper: 'Push devices disabled.' },
         { label: 'Stale devices', value: summary.staleDevices, helper: 'Old token timestamps at send.' },
         { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
-        { label: 'Partner alerts', value: channelSummary.partnerAlertCount, helper: 'Partner-facing alerts.' },
+        {
+          label: 'Partner alerts',
+          value: channelSummary.partnerAlertCount,
+          helper: 'Partner-facing alerts.',
+        },
         { label: 'No-show alerts', value: summary.noShow, helper: 'No-show support review alerts.' },
         { label: 'FCM route', value: channelSummary.fcmDeliveries, helper: 'OS push attempts.' },
       ]}

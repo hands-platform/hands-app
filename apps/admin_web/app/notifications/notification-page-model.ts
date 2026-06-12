@@ -62,6 +62,7 @@ export type NotificationSummary = {
   readonly needsRetry: number;
   readonly noShow: number;
   readonly payoutSetup: number;
+  readonly pending: number;
   readonly sent: number;
   readonly skipped: number;
   readonly staleDevices: number;
@@ -169,6 +170,7 @@ export function buildNotificationSummary(notifications: readonly AdminNotificati
     payoutSetup: notifications.filter(
       (notification) => notification.type === 'provider.payout_setup_required',
     ).length,
+    pending: countPendingNotifications(notifications),
     sent: countDeliveries(notifications, 'SENT'),
     skipped: countDeliveries(notifications, 'SKIPPED'),
     staleDevices: countStalePushDeviceDeliveries(notifications),
@@ -186,7 +188,7 @@ export function buildNotificationDeliveryOpsQueue(
   const skipped = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED'),
   ).length;
-  const pending = notifications.filter((notification) => (notification.deliveries ?? []).length === 0).length;
+  const pending = countPendingNotifications(notifications);
   const items: NotificationDeliveryOpsQueueItem[] = [];
 
   if (failed) {
@@ -331,6 +333,10 @@ function countDisabledDevices(notifications: readonly AdminNotification[]) {
     }
   }
   return ids.size;
+}
+
+function countPendingNotifications(notifications: readonly AdminNotification[]) {
+  return notifications.filter((notification) => (notification.deliveries ?? []).length === 0).length;
 }
 
 function countStalePushDeviceDeliveries(notifications: readonly AdminNotification[]) {
