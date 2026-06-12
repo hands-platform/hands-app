@@ -21,6 +21,7 @@ import {
   matchingPolicySummaryLabel,
   type BookingMatchingRuleSnapshot,
 } from '../../lib/booking-matching-rule-snapshot';
+import { bookingMatchingCheckFlagsFromFacts } from '../../lib/booking-matching-check-flags';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { humanizeClosureReason } from '../../lib/booking-closure-summary';
 import {
@@ -1724,30 +1725,13 @@ function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
 
 function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
   const isOpenMatching = booking.status === 'OPEN_MATCHING';
-  const participantCount = bookingMarketplaceParticipantCount(booking);
-
-  return compactBookingCheckFlags([
-    bookingCheckFlag(
-      isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
-      'high',
-      'Matching window expired',
-    ),
-    bookingCheckFlag(
-      isOpenMatching && bookingFirstPickPending(booking),
-      'medium',
-      'First-pick partner pending',
-    ),
-    bookingCheckFlag(
-      isOpenMatching && participantCount === 0,
-      'medium',
-      'No partner supply',
-    ),
-    bookingCheckFlag(
-      booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
-      'high',
-      'Matched without chat',
-    ),
-  ]);
+  return bookingMatchingCheckFlagsFromFacts({
+    status: booking.status,
+    matchingWindowExpired: isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
+    firstPickPending: isOpenMatching && bookingFirstPickPending(booking),
+    participantCount: bookingMarketplaceParticipantCount(booking),
+    matchingChatReady: booking.status === 'MATCHED' ? bookingMatchingChatReady(booking) : true,
+  });
 }
 
 function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
