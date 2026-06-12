@@ -25,6 +25,44 @@ describe('booking notification trace', () => {
     expect(row.meta).toContain('marketplace mode IMMEDIATE_WITHIN_WINDOW');
   });
 
+  it('surfaces stale push token evidence in booking notification traces', () => {
+    const notification = {
+      id: 'notification-stale',
+      type: 'booking.matched',
+      title: 'Partner matched',
+      body: 'A partner accepted the booking.',
+      createdAt: '2026-06-07T01:00:00.000Z',
+      data: { bookingId: 'booking-1' },
+      deliveries: [
+        {
+          id: 'delivery-stale',
+          provider: 'FCM',
+          status: 'SENT',
+          attemptedAt: '2026-06-07T01:00:00.000Z',
+          pushDevice: {
+            id: 'device-stale',
+            enabled: true,
+            platform: 'android',
+            lastSeenAt: '2026-04-20T01:00:00.000Z',
+          },
+        },
+      ],
+    } as AdminNotification;
+
+    const row = bookingNotificationTraceRow(notification);
+    const trace = bookingNotificationTrace({ id: 'booking-1', status: 'MATCHED' } as AdminBookingDetail, [
+      notification,
+    ]);
+
+    expect(row.staleDeviceCount).toBe(1);
+    expect(row.delivery).toContain('30+ day token timestamp');
+    expect(trace.metrics).toContainEqual({
+      label: 'Stale devices',
+      value: '1',
+      helper: 'App should refresh FCM token before retry.',
+    });
+  });
+
   it('reads current marketplace fields from saved invite batch traces', () => {
     const trace = bookingNotificationTrace(
       {

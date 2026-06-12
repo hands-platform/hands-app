@@ -1,6 +1,10 @@
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { type AdminBookingDetail, type AdminNotification } from '../../../lib/admin-api';
 import { formatDistanceMeters, readPlainRecord } from '../../../lib/admin-format';
+import {
+  isStaleNotificationPushDeviceDelivery,
+  notificationPushDeviceFreshnessLabel,
+} from '../../../lib/admin-notification-push-device';
 import { formatDate, shortId } from './booking-formatters';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
 
@@ -18,6 +22,7 @@ export function bookingNotificationTrace(booking: AdminBookingDetail, notificati
     deliveries.filter((status) => status === 'SKIPPED').length +
     rows.filter((row) => row.deliveryStatuses.length === 0).length;
   const disabledDevices = rows.reduce((total, row) => total + row.disabledDeviceCount, 0);
+  const staleDevices = rows.reduce((total, row) => total + row.staleDeviceCount, 0);
 
   return {
     rows,
@@ -54,6 +59,11 @@ export function bookingNotificationTrace(booking: AdminBookingDetail, notificati
         label: 'Disabled devices',
         value: `${disabledDevices}`,
         helper: disabledDevices ? 'Fresh device token is needed before re-enable.' : 'No disabled devices.',
+      },
+      {
+        label: 'Stale devices',
+        value: `${staleDevices}`,
+        helper: staleDevices ? 'App should refresh FCM token before retry.' : 'No old token timestamps.',
       },
       {
         label: 'Marketplace alert batches',
@@ -163,6 +173,7 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     isPartnerAlert: isPartnerNotificationType(notification.type),
     deliveryStatuses,
     disabledDeviceCount: deliveries.filter((delivery) => delivery.pushDevice?.enabled === false).length,
+    staleDeviceCount: deliveries.filter(isStaleNotificationPushDeviceDelivery).length,
     signal: failed
       ? 'Retry needed'
       : disabled
@@ -197,7 +208,7 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
               (delivery) =>
                 `${delivery.provider} ${delivery.status} (${delivery.pushDevice?.platform ?? 'device'}, ${formatDate(
                   delivery.attemptedAt,
-                )})`,
+                )}, ${notificationPushDeviceFreshnessLabel(delivery)})`,
             )
             .join(' / ')
         : 'No delivery attempt captured.',

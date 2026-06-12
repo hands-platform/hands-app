@@ -2,6 +2,11 @@ import type { AdminNotification, AdminOperationalPolicySetting } from '../../lib
 import type { ActionMenuItem } from '../../components/action-menu';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime, formatRelativeTime, shortId } from '../../lib/admin-format';
+import {
+  isStaleNotificationPushDeviceDelivery,
+  notificationPushDeviceFreshnessLabel,
+  STALE_PUSH_DEVICE_AGE_DAYS,
+} from '../../lib/admin-notification-push-device';
 import { readSearchParam } from '../../lib/date-range';
 import {
   enablePushDeviceConfirmHref,
@@ -22,8 +27,6 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
-const STALE_PUSH_DEVICE_AGE_DAYS = 30;
-const STALE_PUSH_DEVICE_AGE_MS = STALE_PUSH_DEVICE_AGE_DAYS * 24 * 60 * 60 * 1000;
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
   failed: 'delivery attempts that returned a push provider failure.',
@@ -291,7 +294,7 @@ export function emptyNotificationMessage(
 function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
   return (notification.deliveries ?? []).map((delivery) => ({
     attemptedAtLabel: formatDateTime(delivery.attemptedAt),
-    deviceFreshnessLabel: notificationDeliveryPushDeviceFreshnessLabel(delivery),
+    deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
     deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
       ? formatDateTime(delivery.pushDevice.lastSeenAt)
       : '-',
@@ -308,16 +311,6 @@ function buildNotificationDeliveryRows(notification: AdminNotification): Notific
     provider: delivery.provider,
     status: delivery.status,
   }));
-}
-
-function notificationDeliveryPushDeviceFreshnessLabel(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
-  if (isStalePushDeviceDelivery(delivery)) {
-    return `${STALE_PUSH_DEVICE_AGE_DAYS}+ day token timestamp`;
-  }
-  if (!delivery.pushDevice?.lastSeenAt) {
-    return 'Token timestamp unknown';
-  }
-  return 'Token timestamp current';
 }
 
 function countDeliveries(notifications: readonly AdminNotification[], status: string) {
@@ -343,28 +336,16 @@ function countDisabledDevices(notifications: readonly AdminNotification[]) {
 function countStalePushDeviceDeliveries(notifications: readonly AdminNotification[]) {
   return notifications.reduce(
     (total, notification) =>
-      total + (notification.deliveries ?? []).filter(isStalePushDeviceDelivery).length,
+      total + (notification.deliveries ?? []).filter(isStaleNotificationPushDeviceDelivery).length,
     0,
   );
 }
 
 function hasStalePushDeviceDelivery(notification: AdminNotification) {
-  return (notification.deliveries ?? []).some(isStalePushDeviceDelivery);
+  return (notification.deliveries ?? []).some(isStaleNotificationPushDeviceDelivery);
 }
 
-export function isStalePushDeviceDelivery(
-  delivery: NonNullable<AdminNotification['deliveries']>[number],
-) {
-  if (delivery.pushDevice?.enabled === false) {
-    return false;
-  }
-  const lastSeenAt = Date.parse(delivery.pushDevice?.lastSeenAt ?? '');
-  const attemptedAt = Date.parse(delivery.attemptedAt);
-  if (!Number.isFinite(lastSeenAt) || !Number.isFinite(attemptedAt)) {
-    return false;
-  }
-  return attemptedAt - lastSeenAt >= STALE_PUSH_DEVICE_AGE_MS;
-}
+export { isStaleNotificationPushDeviceDelivery as isStalePushDeviceDelivery };
 
 function hasRetrySignal(notification: AdminNotification) {
   return hasDeliveryStatus(notification, 'FAILED') || hasDisabledPushDevice(notification);
