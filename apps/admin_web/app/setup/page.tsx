@@ -1,4 +1,5 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
+import { SetupExternalBacklogSection } from './setup-external-backlog-section';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
 import { SetupOverviewSection } from './setup-overview-section';
 import { SetupOperatorActionsSection } from './setup-operator-actions-section';
@@ -433,32 +434,7 @@ export default async function SetupPage() {
 
       <SetupReadinessOrderSection readinessChecks={readiness.checks} recommendedOrder={setupOrder} />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>What still needs external registration</h2>
-            <p className="muted">
-              This is the human-action backlog. Code checks stay green while these production keys are not
-              filled.
-            </p>
-          </div>
-          <span className={`signal ${summary.missing === 0 ? 'signal-ok' : 'signal-warn'}`}>
-            {summary.missing === 0 ? 'No missing values' : `${summary.missing} value(s) pending`}
-          </span>
-        </div>
-        <div className="setup-backlog">
-          {externalBacklog.map((item) => (
-            <a className="setup-backlog-item" href={`#${item.groupId}`} key={`${item.groupId}-${item.name}`}>
-              <span>{item.groupTitle}</span>
-              <strong>{item.name}</strong>
-              <p className="muted">{item.reason}</p>
-            </a>
-          ))}
-          {externalBacklog.length === 0 && (
-            <p className="muted">All external readiness values are configured for the current environment.</p>
-          )}
-        </div>
-      </section>
+      <SetupExternalBacklogSection missingCount={summary.missing} backlog={externalBacklog} />
 
       <section className="stack admin-mt-16">
         {setupOrder.map((group) => {
