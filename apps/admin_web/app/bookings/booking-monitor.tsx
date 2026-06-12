@@ -186,7 +186,7 @@ import {
   bookingFinalPartnerLabel,
   bookingHasFinalPartner,
 } from './booking-final-partner-state';
-import { bookingMarketplaceOperationsBookingFact } from './booking-marketplace-operations-card-inputs';
+import { bookingMarketplaceOperationsBookingFactFromBooking } from './booking-marketplace-operations-card-inputs';
 import {
   bookingIsBackupSelected,
   bookingIsSelectedProviderParticipant,
@@ -1401,10 +1401,9 @@ function buildMarketplaceOperationsCards(
   return buildMarketplaceOperationsCardItems(
     buildMarketplaceOperationsCardCounts({
       bookings: bookings.map((booking) =>
-        bookingMarketplaceOperationsBookingFact(booking, nowMs, {
-          hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
+        bookingMarketplaceOperationsBookingFactFromBooking(booking, nowMs, {
+          customerSelectableCount: bookingCustomerSelectableCount(booking),
           marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-          selectedPartnerPresent: bookingHasFinalPartner(booking),
         }),
       ),
       ledgerRows,
