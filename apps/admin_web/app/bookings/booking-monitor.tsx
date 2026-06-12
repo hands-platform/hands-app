@@ -85,6 +85,7 @@ import {
   buildBookingGateTriage,
   type BookingGateFilter,
 } from './booking-gate-filters';
+import { bookingGateRejectionLaneFacts } from './booking-gate-rejection-lane-facts';
 import { bookingGateReasonCode } from './booking-gate-rejections';
 import { bookingMatchingPolicySnapshot } from './booking-matching-policy-snapshot';
 import {
@@ -1153,34 +1154,29 @@ function bookingNextActionReaders(
 }
 
 function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
-  const customerTooFar = logs.filter(
-    (log) => bookingGateReasonCode(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+  const facts = bookingGateRejectionLaneFacts(
+    logs.map((log) => ({
+      createdAt: log.createdAt,
+      reasonCode: bookingGateReasonCode(log),
+    })),
+    { relativeTimeLabel: (value) => relativeTimeLabel(value, nowMs) },
   );
-  const partnerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'PREFERRED_PARTNER_TOO_FAR');
-  const serviceArea = logs.filter(
-    (log) => bookingGateReasonCode(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
-  );
-  const locationEvidence = logs.filter((log) =>
-    bookingGateReasonCode(log).startsWith('CUSTOMER_CURRENT_LOCATION_'),
-  );
-  const latest = logs[0];
-  const latestAge = latest ? relativeTimeLabel(latest.createdAt, nowMs) : 'none';
 
   return {
     title: 'Blocked booking attempts',
-    status: logs.length > 0 ? `${logs.length} stopped` : 'Clear',
-    tone: logs.length > 0 ? 'warn' : 'ok',
+    status: facts.totalCount > 0 ? `${facts.totalCount} stopped` : 'Clear',
+    tone: facts.totalCount > 0 ? 'warn' : 'ok',
     detail:
-      logs.length > 0
-        ? `${customerTooFar.length} optional GPS distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationEvidence.length} optional GPS evidence attempt(s). Latest ${latestAge}.`
+      facts.totalCount > 0
+        ? `${facts.customerTooFarCount} optional GPS distance, ${facts.partnerTooFarCount} first-pick distance, ${facts.serviceAreaCount} service-area, and ${facts.locationEvidenceCount} optional GPS evidence attempt(s). Latest ${facts.latestAge}.`
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [
-      { label: 'Optional GPS evidence', value: customerTooFar.length.toString() },
-      { label: 'First-pick distance', value: partnerTooFar.length.toString() },
-      { label: 'Service area', value: serviceArea.length.toString() },
-      { label: 'Optional GPS evidence attempts', value: locationEvidence.length.toString() },
-      { label: 'Latest', value: latestAge },
+      { label: 'Optional GPS evidence', value: facts.customerTooFarCount.toString() },
+      { label: 'First-pick distance', value: facts.partnerTooFarCount.toString() },
+      { label: 'Service area', value: facts.serviceAreaCount.toString() },
+      { label: 'Optional GPS evidence attempts', value: facts.locationEvidenceCount.toString() },
+      { label: 'Latest', value: facts.latestAge },
     ],
   };
 }
