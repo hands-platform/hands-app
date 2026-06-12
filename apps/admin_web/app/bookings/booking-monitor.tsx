@@ -1627,10 +1627,19 @@ type BookingCheckFlag = {
 };
 
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
+  return [
+    ...bookingPaymentOutcomeCheckFlags(booking),
+    ...bookingPricingCheckFlags(booking),
+    ...bookingMatchingCheckFlags(booking, nowMs),
+    ...bookingLocationCheckFlags(booking, nowMs),
+    ...bookingChatCheckFlags(booking),
+    ...bookingPaymentReferenceCheckFlags(booking),
+  ];
+}
+
+function bookingPaymentOutcomeCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
   const flags: BookingCheckFlag[] = [];
   const paymentStatus = booking.payment?.status;
-  const participantCount = bookingMarketplaceParticipantCount(booking);
-  const expired = nowMs > 0 && booking.expiresAt ? new Date(booking.expiresAt).getTime() < nowMs : false;
 
   if (
     booking.status === 'CANCELLED' &&
@@ -1662,13 +1671,26 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   if (bookingCashDebtNeedsOps(booking)) {
     flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace alerts' });
   }
+
+  return flags;
+}
+
+function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
-    flags.push({ severity: 'high', title: pricingPolicy.label });
-  } else if (pricingPolicy.status === 'warning') {
-    flags.push({ severity: 'medium', title: pricingPolicy.label });
+    return [{ severity: 'high', title: pricingPolicy.label }];
   }
-  if (booking.status === 'OPEN_MATCHING' && expired) {
+  if (pricingPolicy.status === 'warning') {
+    return [{ severity: 'medium', title: pricingPolicy.label }];
+  }
+  return [];
+}
+
+function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
+  const flags: BookingCheckFlag[] = [];
+  const participantCount = bookingMarketplaceParticipantCount(booking);
+
+  if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
     flags.push({ severity: 'high', title: 'Matching window expired' });
   }
   if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
@@ -1680,6 +1702,13 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
+
+  return flags;
+}
+
+function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
+  const flags: BookingCheckFlag[] = [];
+
   if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
     flags.push({ severity: 'medium', title: 'No partner location record' });
   }
@@ -1690,14 +1719,22 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   ) {
     flags.push({ severity: 'medium', title: 'Partner location is stale' });
   }
-  if (bookingChatQuietNeedsOps(booking)) {
-    flags.push({ severity: 'low', title: 'Chat quiet' });
-  }
-  if (paymentStatus === 'AUTHORIZED' && !booking.payment?.providerRef) {
-    flags.push({ severity: 'medium', title: 'Payment reference missing' });
-  }
 
   return flags;
+}
+
+function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
+  if (bookingChatQuietNeedsOps(booking)) {
+    return [{ severity: 'low', title: 'Chat quiet' }];
+  }
+  return [];
+}
+
+function bookingPaymentReferenceCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
+  if (booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef) {
+    return [{ severity: 'medium', title: 'Payment reference missing' }];
+  }
+  return [];
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
