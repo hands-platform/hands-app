@@ -1,12 +1,13 @@
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { envValue, normalizeApiBaseUrl, normalizePlatform } from './lib/fcm-smoke-config.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
-const apiBaseUrl = normalizeApiBaseUrl(envValue('API_BASE_URL') ?? 'http://localhost:3000/api');
-const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
-const otp = envValue('FCM_SMOKE_OTP') ?? envValue('DEV_OTP') ?? '123456';
-const customerPhone = envValue('FCM_TOKEN_SMOKE_CUSTOMER_PHONE') ?? '+84900000001';
-const providerPhone = envValue('FCM_TOKEN_SMOKE_PROVIDER_PHONE') ?? '+84900000002';
+const apiBaseUrl = normalizeApiBaseUrl(envValue(env, 'API_BASE_URL') ?? 'http://localhost:3000/api', fail);
+const platform = normalizePlatform(envValue(env, 'FCM_SMOKE_PLATFORM') ?? 'android', fail);
+const otp = envValue(env, 'FCM_SMOKE_OTP') ?? envValue(env, 'DEV_OTP') ?? '123456';
+const customerPhone = envValue(env, 'FCM_TOKEN_SMOKE_CUSTOMER_PHONE') ?? '+84900000001';
+const providerPhone = envValue(env, 'FCM_TOKEN_SMOKE_PROVIDER_PHONE') ?? '+84900000002';
 const dryRun = process.argv.includes('--dry-run');
 
 if (dryRun) {
@@ -115,34 +116,6 @@ async function request(path, options = {}) {
     throw new Error(`${options.method ?? 'GET'} ${path} failed: ${response.status} ${JSON.stringify(body)}`);
   }
   return body;
-}
-
-function envValue(key) {
-  const value = env[key]?.trim();
-  return value ? value : undefined;
-}
-
-function normalizeApiBaseUrl(value) {
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    fail(`Unsupported API_BASE_URL=${value}. Use an absolute http(s) URL such as http://localhost:3000/api.`);
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    fail(`Unsupported API_BASE_URL protocol=${url.protocol}. Use http or https.`);
-  }
-
-  return url.toString().replace(/\/$/, '');
-}
-
-function normalizePlatform(value) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized !== 'android' && normalized !== 'ios') {
-    fail(`Unsupported FCM_SMOKE_PLATFORM=${value}. Use android or ios.`);
-  }
-  return normalized;
 }
 
 function maskTokenFields(value, token) {

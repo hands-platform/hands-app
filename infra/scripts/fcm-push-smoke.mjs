@@ -1,5 +1,11 @@
 import { loadMergedEnv } from './lib/env-file.mjs';
 import {
+  envValue,
+  normalizeApiBaseUrl,
+  normalizePlatform,
+  positiveIntegerEnv,
+} from './lib/fcm-smoke-config.mjs';
+import {
   firebaseAdminCredentialsConfigured,
   firebaseApplicationCredentialsConfigured,
   firebaseApplicationCredentialsEnvKey,
@@ -9,19 +15,19 @@ import {
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
-const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
-const apiBaseUrl = normalizeApiBaseUrl(envValue('API_BASE_URL') ?? 'http://localhost:3000/api');
-const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
-const role = normalizeRole(envValue('FCM_SMOKE_ROLE') ?? 'CUSTOMER');
-const phone = envValue('FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
-const otp = envValue('FCM_SMOKE_OTP') ?? envValue('DEV_OTP') ?? '123456';
-const adminPhone = envValue('FCM_SMOKE_ADMIN_PHONE') ?? envValue('ADMIN_DEMO_PHONE') ?? '+84900000099';
-const adminOtp = envValue('FCM_SMOKE_ADMIN_OTP') ?? envValue('ADMIN_DEMO_OTP') ?? '123456';
-const requestedNotificationId = envValue('FCM_SMOKE_NOTIFICATION_ID');
-const expectedStatus = (envValue('FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpperCase();
-const expectedProvider = (envValue('FCM_SMOKE_EXPECT_PROVIDER') ?? 'FCM').toUpperCase();
-const timeoutMs = positiveIntegerEnv('FCM_SMOKE_TIMEOUT_MS', 30_000);
-const pollIntervalMs = positiveIntegerEnv('FCM_SMOKE_POLL_INTERVAL_MS', 1_000);
+const deviceToken = envValue(env, 'FCM_SMOKE_DEVICE_TOKEN');
+const apiBaseUrl = normalizeApiBaseUrl(envValue(env, 'API_BASE_URL') ?? 'http://localhost:3000/api', fail);
+const platform = normalizePlatform(envValue(env, 'FCM_SMOKE_PLATFORM') ?? 'android', fail);
+const role = normalizeRole(envValue(env, 'FCM_SMOKE_ROLE') ?? 'CUSTOMER');
+const phone = envValue(env, 'FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
+const otp = envValue(env, 'FCM_SMOKE_OTP') ?? envValue(env, 'DEV_OTP') ?? '123456';
+const adminPhone = envValue(env, 'FCM_SMOKE_ADMIN_PHONE') ?? envValue(env, 'ADMIN_DEMO_PHONE') ?? '+84900000099';
+const adminOtp = envValue(env, 'FCM_SMOKE_ADMIN_OTP') ?? envValue(env, 'ADMIN_DEMO_OTP') ?? '123456';
+const requestedNotificationId = envValue(env, 'FCM_SMOKE_NOTIFICATION_ID');
+const expectedStatus = (envValue(env, 'FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpperCase();
+const expectedProvider = (envValue(env, 'FCM_SMOKE_EXPECT_PROVIDER') ?? 'FCM').toUpperCase();
+const timeoutMs = positiveIntegerEnv(env, 'FCM_SMOKE_TIMEOUT_MS', 30_000, fail);
+const pollIntervalMs = positiveIntegerEnv(env, 'FCM_SMOKE_POLL_INTERVAL_MS', 1_000, fail);
 const dryRun = process.argv.includes('--dry-run');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -249,54 +255,12 @@ function normalizeRole(value) {
   return normalized;
 }
 
-function normalizePlatform(value) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized !== 'android' && normalized !== 'ios') {
-    fail(`Unsupported FCM_SMOKE_PLATFORM=${value}. Use android or ios.`);
-  }
-  return normalized;
-}
-
-function normalizeApiBaseUrl(value) {
-  let url;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    fail(`Unsupported API_BASE_URL=${value}. Use an absolute http(s) URL such as http://localhost:3000/api.`);
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    fail(`Unsupported API_BASE_URL protocol=${url.protocol}. Use http or https.`);
-  }
-
-  return url.toString().replace(/\/$/, '');
-}
-
-function positiveIntegerEnv(key, fallback) {
-  const rawValue = envValue(key);
-  if (!rawValue) {
-    return fallback;
-  }
-
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    fail(`Unsupported ${key}=${rawValue}. Use a positive integer in milliseconds.`);
-  }
-
-  return value;
-}
-
-function envValue(key) {
-  const value = env[key]?.trim();
-  return value ? value : undefined;
-}
-
 function hasEnvValue(key) {
-  return Boolean(envValue(key));
+  return Boolean(envValue(env, key));
 }
 
 function hasExpectedEnvValue(key, expected) {
-  return (envValue(key) ?? '').toLowerCase() === expected.toLowerCase();
+  return (envValue(env, key) ?? '').toLowerCase() === expected.toLowerCase();
 }
 
 function firebaseAdminConfigured() {
@@ -331,14 +295,14 @@ function dryRunNextActions() {
 function firebaseAdminCredentialAction() {
   if (
     hasEnvValue(firebaseServiceAccountJsonEnvKey) &&
-    !firebaseServiceAccountJsonConfigured(envValue(firebaseServiceAccountJsonEnvKey))
+    !firebaseServiceAccountJsonConfigured(envValue(env, firebaseServiceAccountJsonEnvKey))
   ) {
     return 'Fill FIREBASE_SERVICE_ACCOUNT_JSON with a valid Firebase service account JSON or base64 payload.';
   }
 
   if (
     hasEnvValue(firebaseApplicationCredentialsEnvKey) &&
-    !firebaseApplicationCredentialsConfigured(envValue(firebaseApplicationCredentialsEnvKey))
+    !firebaseApplicationCredentialsConfigured(envValue(env, firebaseApplicationCredentialsEnvKey))
   ) {
     return 'Point GOOGLE_APPLICATION_CREDENTIALS to an existing valid service account JSON file.';
   }
