@@ -3,6 +3,10 @@ import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+import {
+  firebaseServiceAccountJsonConfigured,
+  firebaseServiceAccountJsonEnvKey,
+} from './lib/firebase-admin-credentials.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const format =
@@ -265,7 +269,7 @@ const registrationItems = [
       envItem(
         'FIREBASE_SERVICE_ACCOUNT_JSON',
         '<service-account-json-or-base64-server-only>',
-        firebaseServiceAccountJsonConfigured(env.FIREBASE_SERVICE_ACCOUNT_JSON),
+        firebaseServiceAccountJsonConfigured(env[firebaseServiceAccountJsonEnvKey]),
       ),
       envItem(
         'GOOGLE_APPLICATION_CREDENTIALS',
@@ -455,23 +459,6 @@ function hasValue(value) {
 function pathExists(value) {
   const normalized = String(value ?? '').trim();
   return normalized.length > 0 && existsSync(resolve(repoRoot, normalized));
-}
-
-function firebaseServiceAccountJsonConfigured(value) {
-  const normalized = String(value ?? '').trim();
-  if (!normalized) {
-    return false;
-  }
-
-  try {
-    const decoded = normalized.startsWith('{')
-      ? normalized
-      : Buffer.from(normalized, 'base64').toString('utf8');
-    const parsed = JSON.parse(decoded);
-    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
-  } catch {
-    return false;
-  }
 }
 
 function isSecretLikeValue(value) {

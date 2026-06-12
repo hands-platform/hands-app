@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+import { firebaseAdminCredentialsConfigured } from './lib/firebase-admin-credentials.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const strict = process.argv.includes('--strict');
@@ -9,8 +10,6 @@ const phase = process.argv.find((arg) => arg.startsWith('--phase='))?.slice('--p
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 const checks = [];
-const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
-const firebaseApplicationCredentialsEnvKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
 const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
@@ -329,8 +328,12 @@ function allHaveValue(keys) {
 }
 
 function pathExists(key) {
-  const value = String(env[key] ?? '').trim();
-  return value.length > 0 && existsSync(resolve(value));
+  return pathValueExists(env[key]);
+}
+
+function pathValueExists(value) {
+  const normalized = String(value ?? '').trim();
+  return normalized.length > 0 && existsSync(resolve(normalized));
 }
 
 function allHaveExistingPath(keys) {
@@ -338,26 +341,7 @@ function allHaveExistingPath(keys) {
 }
 
 function firebaseAdminConfigured() {
-  if (hasValue('FIREBASE_SERVICE_ACCOUNT_JSON')) {
-    return firebaseServiceAccountJsonConfigured();
-  }
-
-  return allHaveValue(firebaseAdminEnvKeys) || pathExists(firebaseApplicationCredentialsEnvKey);
-}
-
-function firebaseServiceAccountJsonConfigured() {
-  const raw = String(env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '').trim();
-  if (!raw) {
-    return false;
-  }
-
-  try {
-    const decoded = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-    const parsed = JSON.parse(decoded);
-    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
-  } catch {
-    return false;
-  }
+  return firebaseAdminCredentialsConfigured(env, pathValueExists);
 }
 
 function storageConfigured() {

@@ -2,11 +2,15 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
+import {
+  firebaseAdminCredentialsConfigured,
+  firebaseApplicationCredentialsEnvKey,
+  firebaseServiceAccountJsonConfigured,
+  firebaseServiceAccountJsonEnvKey,
+} from './lib/firebase-admin-credentials.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
-const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
-const firebaseApplicationCredentialsEnvKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
 const apiBaseUrl = normalizeApiBaseUrl(envValue('API_BASE_URL') ?? 'http://localhost:3000/api');
 const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
@@ -293,36 +297,16 @@ function hasExpectedEnvValue(key, expected) {
   return (envValue(key) ?? '').toLowerCase() === expected.toLowerCase();
 }
 
-function allHaveEnvValues(keys) {
-  return keys.every(hasEnvValue);
-}
-
 function pathExists(key) {
-  const value = envValue(key);
-  return Boolean(value) && existsSync(resolve(value));
+  return pathValueExists(envValue(key));
 }
 
 function firebaseAdminConfigured() {
-  if (hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON')) {
-    return firebaseServiceAccountJsonConfigured();
-  }
-
-  return allHaveEnvValues(firebaseAdminEnvKeys) || pathExists(firebaseApplicationCredentialsEnvKey);
+  return firebaseAdminCredentialsConfigured(env, pathValueExists);
 }
 
-function firebaseServiceAccountJsonConfigured() {
-  const raw = envValue('FIREBASE_SERVICE_ACCOUNT_JSON');
-  if (!raw) {
-    return false;
-  }
-
-  try {
-    const decoded = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-    const parsed = JSON.parse(decoded);
-    return Boolean(parsed.project_id && parsed.client_email && parsed.private_key);
-  } catch {
-    return false;
-  }
+function pathValueExists(value) {
+  return Boolean(value) && existsSync(resolve(value));
 }
 
 function dryRunNextActions() {
@@ -345,7 +329,10 @@ function dryRunNextActions() {
 }
 
 function firebaseAdminCredentialAction() {
-  if (hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON') && !firebaseServiceAccountJsonConfigured()) {
+  if (
+    hasEnvValue(firebaseServiceAccountJsonEnvKey) &&
+    !firebaseServiceAccountJsonConfigured(envValue(firebaseServiceAccountJsonEnvKey))
+  ) {
     return 'Fill FIREBASE_SERVICE_ACCOUNT_JSON with a valid Firebase service account JSON or base64 payload.';
   }
 
