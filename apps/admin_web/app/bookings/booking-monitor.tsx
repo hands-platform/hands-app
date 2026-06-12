@@ -235,6 +235,7 @@ type MarketplaceCoveragePillState = {
 };
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
+const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
@@ -1083,8 +1084,12 @@ function terminalBookingsWithUnresolvedPayment(bookings: AdminBooking[], status:
     (booking) =>
       booking.status === status &&
       Boolean(booking.payment) &&
-      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
+      paymentOutcomeNeedsReview(booking.payment?.status),
   );
+}
+
+function paymentOutcomeNeedsReview(status?: string | null) {
+  return !resolvedPaymentOutcomeStatuses.has(status ?? '');
 }
 
 function buildMatchingEscalationBoard(
@@ -1569,7 +1574,7 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
 function opsSignal(booking: AdminBooking) {
   const participantCount = bookingMarketplaceParticipantCount(booking);
   if (booking.status === 'NO_SHOW') {
-    return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status) ? (
+    return booking.payment && paymentOutcomeNeedsReview(booking.payment.status) ? (
       <span className="signal signal-warn">No-show, check payment</span>
     ) : (
       <span className="signal signal-ok">No-show closed</span>
@@ -1630,14 +1635,14 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   if (
     booking.status === 'CANCELLED' &&
     booking.payment &&
-    !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
+    paymentOutcomeNeedsReview(paymentStatus)
   ) {
     flags.push({ severity: 'high', title: 'Cancelled payment unresolved' });
   }
   if (
     booking.status === 'EXPIRED' &&
     booking.payment &&
-    !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
+    paymentOutcomeNeedsReview(paymentStatus)
   ) {
     flags.push({ severity: 'high', title: 'Expired payment unresolved' });
   }
@@ -1650,7 +1655,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   if (
     booking.status === 'NO_SHOW' &&
     booking.payment &&
-    !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
+    paymentOutcomeNeedsReview(paymentStatus)
   ) {
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
