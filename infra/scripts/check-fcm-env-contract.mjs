@@ -62,6 +62,7 @@ const securitySecretsCommandRequiredSources = [
   resolve(repoRoot, 'infra/env/README.md'),
   resolve(repoRoot, 'infra/scripts/check-firebase-admin-credentials.mjs'),
   resolve(repoRoot, 'infra/scripts/external-registration-pack.mjs'),
+  resolve(repoRoot, 'infra/scripts/install-firebase-admin-credentials.ps1'),
   resolve(repoRoot, 'infra/scripts/setup-doctor.mjs'),
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-readiness-order-section.tsx'),
