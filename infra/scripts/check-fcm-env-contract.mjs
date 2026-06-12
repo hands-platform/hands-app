@@ -14,6 +14,7 @@ const dockerFcmEnvKeys = [
   'FIREBASE_ADMIN_CREDENTIALS_HOST_PATH',
   'FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH',
 ];
+const dockerContractCommand = 'npm.cmd run docker:contract';
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -40,6 +41,20 @@ const dockerEnvRequiredSources = [
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
   resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
+];
+const dockerContractCommandRequiredSources = [
+  resolve(repoRoot, 'infra/env/README.md'),
+  resolve(repoRoot, 'infra/scripts/check-external-setup.mjs'),
+  resolve(repoRoot, 'infra/scripts/external-registration-pack.mjs'),
+  resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs'),
+  resolve(repoRoot, 'infra/scripts/install-firebase-admin-credentials.ps1'),
+  resolve(repoRoot, 'infra/scripts/setup-doctor.mjs'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-readiness-order-section.tsx'),
+  resolve(repoRoot, 'docs/architecture/e2e-smoke.md'),
+  resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
+  resolve(repoRoot, 'docs/architecture/notifications.md'),
+  resolve(repoRoot, 'docs/architecture/operator-registration-plan.md'),
 ];
 
 const apiSource = apiSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
@@ -85,17 +100,28 @@ for (const sourcePath of dockerEnvRequiredSources) {
   }
 }
 
+const missingDockerContractCommandBySource = {};
+for (const sourcePath of dockerContractCommandRequiredSources) {
+  const source = readFileSync(sourcePath, 'utf8');
+  if (!source.includes(dockerContractCommand)) {
+    missingDockerContractCommandBySource[relativePath(sourcePath)] = dockerContractCommand;
+  }
+}
+
 const result = {
   ok:
     Object.keys(missingBySource).length === 0 &&
     Object.keys(missingSmokeBySource).length === 0 &&
-    Object.keys(missingDockerBySource).length === 0,
+    Object.keys(missingDockerBySource).length === 0 &&
+    Object.keys(missingDockerContractCommandBySource).length === 0,
   fcmEnvKeys,
   fcmSmokeEnvKeys,
   dockerFcmEnvKeys,
+  dockerContractCommand,
   missingBySource,
   missingSmokeBySource,
   missingDockerBySource,
+  missingDockerContractCommandBySource,
 };
 
 if (!result.ok) {
