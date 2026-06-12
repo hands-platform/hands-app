@@ -196,7 +196,7 @@ import { bookingMarketplaceOperationsBookingFactFromBooking } from './booking-ma
 import {
   bookingIsBackupSelected,
   bookingIsSelectedProviderParticipant,
-  bookingPreferredAwaitingDecision,
+  bookingPreferredAwaitingDecision as bookingFirstPickPending,
   bookingPreferredProviderStateLabel,
 } from './booking-preferred-provider-state';
 import {
@@ -1417,10 +1417,6 @@ function buildMarketplaceOperatingQueue(
       }),
     ),
   );
-}
-
-function bookingFirstPickPending(booking: AdminBooking) {
-  return bookingPreferredAwaitingDecision(booking);
 }
 
 function selectionLabel(booking: AdminBooking) {
