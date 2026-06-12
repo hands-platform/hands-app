@@ -31,6 +31,7 @@ import {
   bookingListStageFromFacts,
   type BookingListStage,
 } from '../../lib/booking-list-stage';
+import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import {
   bookingCheckLevel,
   type BookingCheckLevelFlag as BookingCheckFlag,
@@ -288,15 +289,12 @@ export function BookingMonitor({
 
   const orderedBookings = useMemo(
     () =>
-      [...bookings].sort((left, right) => {
-        const leftPriority = bookingPriority(left);
-        const rightPriority = bookingPriority(right);
-        if (leftPriority !== rightPriority) {
-          return rightPriority - leftPriority;
-        }
-
-        return bookingTimestamp(right) - bookingTimestamp(left);
-      }),
+      [...bookings].sort((left, right) =>
+        compareBookingMonitorListOrder(
+          { status: left.status, sortTimestampMs: bookingTimestamp(left) },
+          { status: right.status, sortTimestampMs: bookingTimestamp(right) },
+        ),
+      ),
     [bookings],
   );
   const orderedBookingCreateRejections = useMemo(
@@ -1587,25 +1585,6 @@ function bookingFallbackOperatorAction(flag?: BookingCheckFlag) {
   return flag
     ? `Review ${flag.title.toLowerCase()} and add an ops note before closing.`
     : 'Keep watching status, chat, and partner handoff.';
-}
-
-function bookingPriority(booking: AdminBooking) {
-  if (booking.status === 'NO_SHOW') {
-    return 6;
-  }
-  if (booking.status === 'IN_SERVICE') {
-    return 5;
-  }
-  if (booking.status === 'PROVIDER_ON_THE_WAY' || booking.status === 'ARRIVED') {
-    return 4;
-  }
-  if (booking.status === 'MATCHED') {
-    return 3;
-  }
-  if (booking.status === 'OPEN_MATCHING') {
-    return 2;
-  }
-  return 1;
 }
 
 function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
