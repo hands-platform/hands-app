@@ -64,7 +64,11 @@ import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
-import { bookingPricingPolicySignalFromFacts } from '../../lib/booking-pricing-policy-signal';
+import {
+  bookingPricingPolicyCheckFlagsFromSignal,
+  bookingPricingPolicySignalFromFacts,
+  type BookingPricingPolicySignal,
+} from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import {
   bookingBackupAlertTraceLabel,
@@ -1714,14 +1718,7 @@ function bookingPaymentOutcomeCheckFlags(booking: AdminBooking): BookingCheckFla
 }
 
 function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  const pricingPolicy = bookingPricingPolicySignal(booking);
-  if (pricingPolicy.status === 'blocked') {
-    return [{ severity: 'high', title: pricingPolicy.label }];
-  }
-  if (pricingPolicy.status === 'warning') {
-    return [{ severity: 'medium', title: pricingPolicy.label }];
-  }
-  return [];
+  return bookingPricingPolicyCheckFlagsFromSignal(bookingPricingPolicySignal(booking));
 }
 
 function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
@@ -1825,11 +1822,7 @@ function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
   return bookingPricingPolicySignal(booking).status !== 'ready';
 }
 
-function bookingPricingPolicySignal(booking: AdminBooking): {
-  status: 'ready' | 'warning' | 'blocked';
-  label: string;
-  tone: string;
-} {
+function bookingPricingPolicySignal(booking: AdminBooking): BookingPricingPolicySignal {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
   return bookingPricingPolicySignalFromFacts({

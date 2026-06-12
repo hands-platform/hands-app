@@ -1,3 +1,9 @@
+import {
+  bookingCheckFlag,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag,
+} from './booking-check-level';
+
 export type BookingPricingPolicyPayoutRule = {
   readonly active: boolean;
   readonly customerPrice: number | string | null | undefined;
@@ -66,6 +72,15 @@ export function bookingPricingPolicySignalFromFacts(
   }
 
   return { status: 'ready', label: 'Pricing ready', tone: 'pill-success' };
+}
+
+export function bookingPricingPolicyCheckFlagsFromSignal(
+  signal: BookingPricingPolicySignal,
+): BookingCheckLevelFlag[] {
+  return compactBookingCheckFlags([
+    bookingCheckFlag(signal.status === 'blocked', 'high', signal.label),
+    bookingCheckFlag(signal.status === 'warning', 'medium', signal.label),
+  ]);
 }
 
 function readAmount(value: number | string | null | undefined) {

@@ -1,4 +1,5 @@
 import {
+  bookingPricingPolicyCheckFlagsFromSignal,
   bookingPricingPolicySignalFromFacts,
   type BookingPricingPolicySignalInput,
 } from './booking-pricing-policy-signal';
@@ -79,5 +80,31 @@ describe('bookingPricingPolicySignalFromFacts', () => {
       label: 'Pricing ready',
       tone: 'pill-success',
     });
+  });
+
+  it('builds pricing policy check flags from signal severity', () => {
+    expect(
+      bookingPricingPolicyCheckFlagsFromSignal({
+        status: 'blocked',
+        label: 'Price missing',
+        tone: 'pill-danger',
+      }),
+    ).toEqual([{ severity: 'high', title: 'Price missing' }]);
+
+    expect(
+      bookingPricingPolicyCheckFlagsFromSignal({
+        status: 'warning',
+        label: 'Zero company gross fee',
+        tone: 'pill-warn',
+      }),
+    ).toEqual([{ severity: 'medium', title: 'Zero company gross fee' }]);
+
+    expect(
+      bookingPricingPolicyCheckFlagsFromSignal({
+        status: 'ready',
+        label: 'Pricing ready',
+        tone: 'pill-success',
+      }),
+    ).toEqual([]);
   });
 });
