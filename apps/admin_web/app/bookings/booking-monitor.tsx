@@ -37,10 +37,7 @@ import {
   buildBookingOperatorRouteCards,
 } from '../../lib/booking-command-route-cards';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
-import {
-  formatMoney as money,
-  readPlainRecord,
-} from '../../lib/admin-format';
+import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
@@ -110,7 +107,7 @@ import {
 import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
-import { bookingMonitorCheckFlagsInput } from './booking-monitor-check-flags-inputs';
+import { bookingMonitorCheckFlagsInputFromBooking } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
@@ -195,7 +192,6 @@ import {
   bookingLocationPillLabel,
   bookingLocationSignalLabel,
   bookingLocationToneClass,
-  providerLocationFreshness,
 } from './booking-location-display';
 import {
   bookingHasProviderLocation as hasProviderLocation,
@@ -1209,28 +1205,14 @@ function bookingOpsSignal(tone: BookingOpsSignalTone, label: string) {
 }
 
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const isOpenMatching = booking.status === 'OPEN_MATCHING';
-  const providerLocationAvailable = hasProviderLocation(booking);
-  const hasChatRoom = bookingMatchingChatReady(booking);
-
   return bookingMonitorCheckFlagsFromFacts(
-    bookingMonitorCheckFlagsInput({
-      status: booking.status,
-      hasPayment: Boolean(booking.payment),
-      paymentStatus: booking.payment?.status,
-      paymentProviderRef: booking.payment?.providerRef,
+    bookingMonitorCheckFlagsInputFromBooking(booking, nowMs, {
       completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
       cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
       pricingPolicy: bookingPricingPolicySignal(booking),
-      responseWindowExpired: isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
-      firstPickAwaitingDecision: isOpenMatching && bookingFirstPickPending(booking),
-      participantCount: bookingMarketplaceParticipantCount(booking),
-      hasProviderLocation: providerLocationAvailable,
-      providerLocationFreshness: providerLocationAvailable
-        ? providerLocationFreshness(booking, nowMs)
-        : 'missing',
-      hasChatRoom,
-      chatMessageCount: booking.chatRoom?.messages?.length ?? 0,
+      responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+      firstPickPending: bookingFirstPickPending(booking),
+      marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
     }),
   );
 }

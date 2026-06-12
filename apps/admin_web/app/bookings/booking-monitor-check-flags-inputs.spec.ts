@@ -1,4 +1,8 @@
-import { bookingMonitorCheckFlagsInput } from './booking-monitor-check-flags-inputs';
+import type { AdminBooking } from '../../lib/admin-api';
+import {
+  bookingMonitorCheckFlagsInput,
+  bookingMonitorCheckFlagsInputFromBooking,
+} from './booking-monitor-check-flags-inputs';
 
 const pricingPolicy = {
   label: 'Pricing ready',
@@ -24,6 +28,30 @@ function input(overrides: Partial<Parameters<typeof bookingMonitorCheckFlagsInpu
     status: 'OPEN_MATCHING',
     ...overrides,
   });
+}
+
+const nowMs = new Date('2026-06-07T10:00:00.000Z').getTime();
+
+function booking(overrides: Partial<AdminBooking> = {}): AdminBooking {
+  return {
+    id: 'booking-1',
+    status: 'OPEN_MATCHING',
+    ...overrides,
+  } as AdminBooking;
+}
+
+function bookingFacts(
+  overrides: Partial<Parameters<typeof bookingMonitorCheckFlagsInputFromBooking>[2]> = {},
+): Parameters<typeof bookingMonitorCheckFlagsInputFromBooking>[2] {
+  return {
+    cashDebtNeedsOps: false,
+    completedCloseoutNeedsOps: false,
+    firstPickPending: false,
+    marketplaceParticipantCount: 0,
+    pricingPolicy,
+    responseWindowExpired: false,
+    ...overrides,
+  };
 }
 
 describe('bookingMonitorCheckFlagsInput', () => {
@@ -57,6 +85,61 @@ describe('bookingMonitorCheckFlagsInput', () => {
     });
     expect(input({ hasChatRoom: false, status: 'OPEN_MATCHING' })).toMatchObject({
       matchingChatReady: true,
+    });
+  });
+
+  it('maps booking fields and caller facts into check flag facts', () => {
+    expect(
+      bookingMonitorCheckFlagsInputFromBooking(
+        booking({
+          status: 'OPEN_MATCHING',
+          payment: {
+            amount: 150000,
+            currency: 'VND',
+            method: 'CARD',
+            providerRef: null,
+            status: 'AUTHORIZED',
+          } as AdminBooking['payment'],
+          selectedProvider: {
+            currentLat: '10.7769',
+            currentLng: '106.7009',
+            currentLocationUpdatedAt: '2026-06-07T09:45:00.000Z',
+          } as AdminBooking['selectedProvider'],
+        }),
+        nowMs,
+        bookingFacts({
+          firstPickPending: true,
+          marketplaceParticipantCount: 3,
+          responseWindowExpired: true,
+        }),
+      ),
+    ).toMatchObject({
+      chatMessageCount: 0,
+      firstPickPending: true,
+      hasPayment: true,
+      hasProviderLocation: true,
+      matchingWindowExpired: true,
+      participantCount: 3,
+      paymentProviderRef: null,
+      paymentStatus: 'AUTHORIZED',
+      providerLocationFreshness: 'recent',
+    });
+  });
+
+  it('keeps first-pick and matching-window facts gated to open matching bookings', () => {
+    expect(
+      bookingMonitorCheckFlagsInputFromBooking(
+        booking({ status: 'MATCHED' }),
+        nowMs,
+        bookingFacts({
+          firstPickPending: true,
+          responseWindowExpired: true,
+        }),
+      ),
+    ).toMatchObject({
+      firstPickPending: false,
+      matchingWindowExpired: false,
+      matchingChatReady: false,
     });
   });
 });
