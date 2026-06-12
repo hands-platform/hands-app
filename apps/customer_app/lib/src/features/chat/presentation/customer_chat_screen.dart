@@ -42,7 +42,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final initialRoomId = widget.initialChatRoomId;
       if (initialRoomId != null && initialRoomId.isNotEmpty) {
-        unawaited(loadChatRoom(
+        unawaited(openInitialChatRoom(
           initialRoomId,
           bookingId: widget.initialBookingId,
         ));
@@ -104,6 +104,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await loadLatestChat();
     } catch (exception) {
       setState(() => error = '$exception');
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  Future<void> openInitialChatRoom(
+    String roomId, {
+    String? bookingId,
+  }) async {
+    setState(() {
+      loading = true;
+      error = null;
+      statusMessage = null;
+    });
+    try {
+      final authController = ref.read(authControllerProvider.notifier);
+      final session = ref.read(authControllerProvider) ??
+          await authController.restoreSession();
+      if (!mounted) {
+        return;
+      }
+      if (session == null) {
+        setState(() => statusMessage = 'Login to load this chat.');
+        return;
+      }
+
+      await loadChatRoom(roomId, bookingId: bookingId);
+    } catch (exception) {
+      if (mounted) {
+        setState(() => error = '$exception');
+      }
     } finally {
       if (mounted) {
         setState(() => loading = false);
