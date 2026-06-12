@@ -1,6 +1,8 @@
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
+  bookingPaymentOutcomeCheckFlagsFromFacts,
+  bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
   bookingPaymentReleaseNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
@@ -53,6 +55,32 @@ describe('booking payment operations helpers', () => {
     expect(bookingPaymentReleaseNeedsOpsFromFacts({ payment: { status: 'REFUNDED' } })).toBe(
       false,
     );
+    expect(bookingPaymentOutcomeNeedsReview('AUTHORIZED')).toBe(true);
+    expect(bookingPaymentOutcomeNeedsReview('RELEASED')).toBe(false);
+  });
+
+  it('builds payment outcome check flags from booking facts', () => {
+    expect(
+      bookingPaymentOutcomeCheckFlagsFromFacts({
+        status: 'CANCELLED',
+        hasPayment: true,
+        paymentStatus: 'AUTHORIZED',
+      }),
+    ).toEqual([{ severity: 'high', title: 'Cancelled payment unresolved' }]);
+
+    expect(
+      bookingPaymentOutcomeCheckFlagsFromFacts({
+        status: 'COMPLETED',
+        hasPayment: true,
+        paymentStatus: 'AUTHORIZED',
+        completedCloseoutNeedsOps: true,
+        cashDebtNeedsOps: true,
+      }),
+    ).toEqual([
+      { severity: 'high', title: 'Completed service still on hold' },
+      { severity: 'high', title: 'Completed closeout incomplete' },
+      { severity: 'high', title: 'Cash fee debt blocks marketplace alerts' },
+    ]);
   });
 
   it('requires payment operations for payment holds, missing references, cash pending, and cash debt', () => {

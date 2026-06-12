@@ -2,6 +2,11 @@ import {
   canCloseoutCompletedBooking,
   type BookingCloseoutPolicyInput,
 } from './booking-closeout-policy';
+import {
+  bookingCheckFlag,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag,
+} from './booking-check-level';
 
 export type BookingPaymentOpsInput = {
   status?: string | null;
@@ -29,12 +34,65 @@ export type BookingManualDecisionOpsInput = {
   cashDebtNeedsOps?: boolean;
 };
 
+export type BookingPaymentOutcomeCheckFlagsInput = {
+  status?: string | null;
+  paymentStatus?: string | null;
+  hasPayment?: boolean;
+  completedCloseoutNeedsOps?: boolean;
+  cashDebtNeedsOps?: boolean;
+};
+
 const activePreCloseoutStatuses = new Set(['CREATED', 'OPEN_MATCHING', 'MATCHED']);
 const manualDecisionStatuses = new Set(['CANCELLED', 'EXPIRED', 'NO_SHOW']);
 const releaseCompletePaymentStatuses = new Set(['RELEASED', 'REFUNDED']);
 
 function paymentIsReleaseComplete(status?: string | null) {
   return releaseCompletePaymentStatuses.has(status ?? '');
+}
+
+export function bookingPaymentOutcomeNeedsReview(status?: string | null) {
+  return !paymentIsReleaseComplete(status);
+}
+
+export function bookingPaymentOutcomeCheckFlagsFromFacts(
+  input: BookingPaymentOutcomeCheckFlagsInput,
+): BookingCheckLevelFlag[] {
+  const status = input.status ?? '';
+  const paymentOutcomeNeedsOperatorReview =
+    Boolean(input.hasPayment) && bookingPaymentOutcomeNeedsReview(input.paymentStatus);
+
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      status === 'CANCELLED' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'Cancelled payment unresolved',
+    ),
+    bookingCheckFlag(
+      status === 'EXPIRED' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'Expired payment unresolved',
+    ),
+    bookingCheckFlag(
+      status === 'COMPLETED' && input.paymentStatus === 'AUTHORIZED',
+      'high',
+      'Completed service still on hold',
+    ),
+    bookingCheckFlag(
+      Boolean(input.completedCloseoutNeedsOps),
+      'high',
+      'Completed closeout incomplete',
+    ),
+    bookingCheckFlag(
+      status === 'NO_SHOW' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'No-show payment unresolved',
+    ),
+    bookingCheckFlag(
+      Boolean(input.cashDebtNeedsOps),
+      'high',
+      'Cash fee debt blocks marketplace alerts',
+    ),
+  ]);
 }
 
 export function bookingCompletedCloseoutNeedsOpsFromFacts(

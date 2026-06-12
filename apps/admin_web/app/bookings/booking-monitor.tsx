@@ -159,6 +159,8 @@ import {
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
+  bookingPaymentOutcomeCheckFlagsFromFacts,
+  bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
@@ -242,7 +244,6 @@ type MarketplaceCoveragePillState = {
 type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
-const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const p0ActionPriorityStatuses = new Set(['NO_SHOW', 'EXPIRED']);
@@ -1108,12 +1109,8 @@ function terminalBookingsWithUnresolvedPayment(bookings: AdminBooking[], status:
     (booking) =>
       booking.status === status &&
       Boolean(booking.payment) &&
-      paymentOutcomeNeedsReview(booking.payment?.status),
+      bookingPaymentOutcomeNeedsReview(booking.payment?.status),
   );
-}
-
-function paymentOutcomeNeedsReview(status?: string | null) {
-  return !resolvedPaymentOutcomeStatuses.has(status ?? '');
 }
 
 function isHandoffBookingStatus(status: string) {
@@ -1648,7 +1645,7 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
 function opsSignal(booking: AdminBooking) {
   const participantCount = bookingMarketplaceParticipantCount(booking);
   if (booking.status === 'NO_SHOW') {
-    return booking.payment && paymentOutcomeNeedsReview(booking.payment.status)
+    return booking.payment && bookingPaymentOutcomeNeedsReview(booking.payment.status)
       ? bookingOpsSignal('warn', 'No-show, check payment')
       : bookingOpsSignal('ok', 'No-show closed');
   }
@@ -1705,41 +1702,13 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
 }
 
 function bookingPaymentOutcomeCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  const paymentStatus = booking.payment?.status;
-  const paymentOutcomeNeedsOperatorReview = Boolean(booking.payment) && paymentOutcomeNeedsReview(paymentStatus);
-
-  return compactBookingCheckFlags([
-    bookingCheckFlag(
-      booking.status === 'CANCELLED' && paymentOutcomeNeedsOperatorReview,
-      'high',
-      'Cancelled payment unresolved',
-    ),
-    bookingCheckFlag(
-      booking.status === 'EXPIRED' && paymentOutcomeNeedsOperatorReview,
-      'high',
-      'Expired payment unresolved',
-    ),
-    bookingCheckFlag(
-      booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED',
-      'high',
-      'Completed service still on hold',
-    ),
-    bookingCheckFlag(
-      bookingCompletedCloseoutNeedsOps(booking),
-      'high',
-      'Completed closeout incomplete',
-    ),
-    bookingCheckFlag(
-      booking.status === 'NO_SHOW' && paymentOutcomeNeedsOperatorReview,
-      'high',
-      'No-show payment unresolved',
-    ),
-    bookingCheckFlag(
-      bookingCashDebtNeedsOps(booking),
-      'high',
-      'Cash fee debt blocks marketplace alerts',
-    ),
-  ]);
+  return bookingPaymentOutcomeCheckFlagsFromFacts({
+    status: booking.status,
+    hasPayment: Boolean(booking.payment),
+    paymentStatus: booking.payment?.status,
+    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+  });
 }
 
 function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
