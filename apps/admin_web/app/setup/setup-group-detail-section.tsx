@@ -60,7 +60,7 @@ export function SetupGroupDetailSection({ groups }: SetupGroupDetailSectionProps
           <div className="setup-command-block">
             <h3>Verification commands</h3>
             <p className="muted">
-              Run from <code>C:\dev\massage-vn-workspace\repo</code>. Values inside angle brackets must be
+              Run from <code>C:\dev\massage-on-demand-vn</code>. Values inside angle brackets must be
               replaced locally.
             </p>
             <div className="setup-command-list">

@@ -32,6 +32,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('FIREBASE_PROJECT_ID');
     expect(rendered).toContain('Exit criteria: Push readiness check passes.');
     expect(rendered).toContain('npm.cmd run external:check:push');
+    expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
     expect(section.props.children[0].props.id).toBe('notifications');
   });
 });

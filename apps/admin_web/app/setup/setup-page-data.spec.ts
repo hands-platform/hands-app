@@ -23,6 +23,19 @@ describe('setup page data', () => {
     expect(setupOrder.find((item) => item.id === 'notifications')?.env).toEqual(
       expect.arrayContaining(['PUSH_PROVIDER', 'FIREBASE_PROJECT_ID']),
     );
+    const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
+    expect(notificationSetup?.notes).toEqual(
+      expect.arrayContaining([
+        'After fcm:push-smoke, review the FCM route, failed sends, and stale device queues before enabling OS push broadly.',
+      ]),
+    );
+    expect(notificationSetup?.commands).toEqual(
+      expect.arrayContaining([
+        'Open http://localhost:3101/notifications?review=fcm',
+        'Open http://localhost:3101/notifications?review=failed',
+        'Open http://localhost:3101/notifications?review=stale-device',
+      ]),
+    );
   });
 
   it('keeps external registration and baseline handoff data populated', () => {

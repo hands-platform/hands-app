@@ -20,6 +20,7 @@ describe('SetupMigrationRunwaySection', () => {
     expect(rendered).toContain('Staging foundation');
     expect(rendered).toContain('Supabase core database');
     expect(rendered).toContain('Operator handoff files');
+    expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
     expect(rendered).toContain('docs\\architecture\\operator-registration-plan.md');
     expect(hrefsIn(section)).toContain('#supabase');
   });

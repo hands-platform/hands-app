@@ -31,7 +31,7 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
         <h3>Operator handoff files</h3>
         <p className="muted">
           Use these files when filling external console values. They stay in the repo path under
-          <code>C:\dev\massage-vn-workspace\repo</code>.
+          <code>C:\dev\massage-on-demand-vn</code>.
         </p>
         <div className="setup-command-list">
           <code>docs\architecture\operator-registration-plan.md</code>
