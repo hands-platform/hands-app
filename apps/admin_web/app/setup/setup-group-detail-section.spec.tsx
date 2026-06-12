@@ -35,9 +35,53 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
     expect(section.props.children[0].props.id).toBe('notifications');
   });
+
+  it('groups notification commands by dry-run, token registration, live send, and review queues', () => {
+    const section = SetupGroupDetailSection({
+      groups: [
+        {
+          id: 'notifications',
+          title: 'OS push notifications',
+          phase: 'Messaging E2E',
+          operatorAction: 'Configure FCM only when native push E2E starts.',
+          purpose: 'Required before native OS push notifications.',
+          status: 'Partial',
+          statusClass: 'signal signal-info',
+          envPills: [],
+          notes: ['Run fcm:token-smoke before live push smoke.'],
+          exitCriteria: 'Mobile device delivery is confirmed.',
+          commands: [
+            'npm.cmd run external:check:push',
+            'npm.cmd run fcm:env-contract',
+            'npm.cmd run fcm:token-smoke -- --dry-run',
+            'npm.cmd run fcm:push-smoke -- --dry-run',
+            'npm.cmd run fcm:token-smoke',
+            '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
+            'Open http://localhost:3101/notifications?review=fcm',
+            'Open http://localhost:3101/notifications?review=disabled-device',
+            'npm.cmd run notifications:future-check',
+          ],
+        },
+      ],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('Dry-run readiness');
+    expect(rendered).toContain('Token registration');
+    expect(rendered).toContain('Live push send');
+    expect(rendered).toContain('Review queues');
+    expect(rendered).toContain('Additional checks');
+    expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
+    expect(rendered).toContain('npm.cmd run fcm:token-smoke');
+    expect(rendered).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
+    expect(rendered).toContain('Open http://localhost:3101/notifications?review=disabled-device');
+    expect(rendered).toContain('npm.cmd run notifications:future-check');
+  });
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -51,6 +95,12 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
