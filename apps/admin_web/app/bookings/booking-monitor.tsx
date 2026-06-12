@@ -62,7 +62,6 @@ import {
   bookingPricingPolicySignalFromFacts,
   type BookingPricingPolicySignal,
 } from '../../lib/booking-pricing-policy-signal';
-import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
@@ -132,6 +131,7 @@ import {
   bookingCustomerProtectionBoardFromFacts,
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
+import { bookingCustomerVisibleStateLabel } from './booking-customer-visible-state';
 import {
   bookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps,
@@ -1459,12 +1459,10 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
 function customerVisibleStateLabel(booking: AdminBooking) {
   const selectableCount = bookingCustomerSelectableCount(booking);
   const marketplaceCount = bookingMarketplaceParticipantCount(booking);
-  return customerVisibleStateLabelFromFacts({
-    status: booking.status,
+  return bookingCustomerVisibleStateLabel(booking, {
     selectedPartnerLabel: bookingFinalPartnerLabel(booking),
     hasChatRoom: bookingMatchingChatReady(booking),
     customerSelectablePartnerCount: selectableCount,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
     preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplacePartnerCount: marketplaceCount,
   });
