@@ -1302,73 +1302,56 @@ function metric(label: string, value: number) {
 }
 
 function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: number) {
-  if (view === 'attention') {
-    return bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high');
+  switch (view) {
+    case 'attention':
+      return bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high');
+    case 'matching':
+      return bookingMatchingEscalationNeedsOps(booking, nowMs);
+    case 'first-pick':
+      return bookingListStage(booking, nowMs).key === 'first-pick';
+    case 'marketplace':
+      return bookingListStage(booking, nowMs).key === 'marketplace';
+    case 'customer-choice':
+      return bookingListStage(booking, nowMs).key === 'customer-choice';
+    case 'handoff-repair':
+      return bookingListStage(booking, nowMs).key === 'handoff-repair';
+    case 'no-supply':
+      return booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0;
+    case 'address':
+      return bookingAddressNeedsOps(booking);
+    case 'manual-decision':
+      return bookingManualDecisionNeedsOps(booking);
+    case 'payment':
+      return bookingPaymentNeedsOps(booking);
+    case 'cash-debt':
+      return bookingCashDebtNeedsOps(booking);
+    case 'closeout':
+      return bookingCompletedCloseoutNeedsOps(booking);
+    case 'pricing':
+      return bookingPricingPolicyNeedsOps(booking);
+    case 'location':
+      return bookingLocationNeedsOps(booking, nowMs);
+    case 'chat':
+      return bookingMatchingChatReady(booking);
+    case 'chat-repair':
+      return bookingChatRepairNeedsOps(booking);
+    case 'chat-evidence':
+      return bookingChatEvidenceNeedsOps(booking, nowMs);
+    case 'evidence-missing':
+      return bookingDecisionEvidenceMissing(booking, nowMs);
+    case 'refund-review':
+      return bookingRefundReviewNeedsOps(booking);
+    case 'expired':
+      return booking.status === 'EXPIRED';
+    case 'no-show':
+      return booking.status === 'NO_SHOW';
+    case 'all':
+      return true;
+    case 'active':
+    case 'blocked-create':
+    default:
+      return activeStatuses.has(booking.status);
   }
-  if (view === 'matching') {
-    return bookingMatchingEscalationNeedsOps(booking, nowMs);
-  }
-  if (view === 'first-pick') {
-    return bookingListStage(booking, nowMs).key === 'first-pick';
-  }
-  if (view === 'marketplace') {
-    return bookingListStage(booking, nowMs).key === 'marketplace';
-  }
-  if (view === 'customer-choice') {
-    return bookingListStage(booking, nowMs).key === 'customer-choice';
-  }
-  if (view === 'handoff-repair') {
-    return bookingListStage(booking, nowMs).key === 'handoff-repair';
-  }
-  if (view === 'no-supply') {
-    return booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0;
-  }
-  if (view === 'address') {
-    return bookingAddressNeedsOps(booking);
-  }
-  if (view === 'manual-decision') {
-    return bookingManualDecisionNeedsOps(booking);
-  }
-  if (view === 'payment') {
-    return bookingPaymentNeedsOps(booking);
-  }
-  if (view === 'cash-debt') {
-    return bookingCashDebtNeedsOps(booking);
-  }
-  if (view === 'closeout') {
-    return bookingCompletedCloseoutNeedsOps(booking);
-  }
-  if (view === 'pricing') {
-    return bookingPricingPolicyNeedsOps(booking);
-  }
-  if (view === 'location') {
-    return bookingLocationNeedsOps(booking, nowMs);
-  }
-  if (view === 'chat') {
-    return bookingMatchingChatReady(booking);
-  }
-  if (view === 'chat-repair') {
-    return bookingChatRepairNeedsOps(booking);
-  }
-  if (view === 'chat-evidence') {
-    return bookingChatEvidenceNeedsOps(booking, nowMs);
-  }
-  if (view === 'evidence-missing') {
-    return bookingDecisionEvidenceMissing(booking, nowMs);
-  }
-  if (view === 'refund-review') {
-    return bookingRefundReviewNeedsOps(booking);
-  }
-  if (view === 'expired') {
-    return booking.status === 'EXPIRED';
-  }
-  if (view === 'no-show') {
-    return booking.status === 'NO_SHOW';
-  }
-  if (view === 'all') {
-    return true;
-  }
-  return activeStatuses.has(booking.status);
 }
 
 function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string) {
@@ -1384,41 +1367,37 @@ function bookingMatchesEvidenceFilter(
   evidenceFilter: BookingEvidenceFilter,
   nowMs: number,
 ) {
-  if (evidenceFilter === 'all') {
-    return true;
+  switch (evidenceFilter) {
+    case 'all':
+      return true;
+    case 'address':
+      return bookingAddressNeedsOps(booking);
+    case 'partner':
+      return (
+        booking.status === 'OPEN_MATCHING' ||
+        (activeStatuses.has(booking.status) && !bookingHasFinalPartner(booking))
+      );
+    case 'chat':
+      return bookingChatRepairNeedsOps(booking) || bookingMatchingChatReady(booking);
+    case 'money':
+      return (
+        bookingPaymentNeedsOps(booking) ||
+        bookingCashDebtNeedsOps(booking) ||
+        bookingCompletedCloseoutNeedsOps(booking)
+      );
+    case 'location':
+      return bookingLocationNeedsOps(booking, nowMs) || hasProviderLocation(booking);
+    case 'alerts':
+      return bookingAlertEvidenceNeedsOps(booking, nowMs);
+    case 'closeout':
+      return (
+        terminalBookingStatuses.has(booking.status) ||
+        bookingCompletedCloseoutNeedsOps(booking) ||
+        booking.status === 'NO_SHOW'
+      );
+    default:
+      return true;
   }
-  if (evidenceFilter === 'address') {
-    return bookingAddressNeedsOps(booking);
-  }
-  if (evidenceFilter === 'partner') {
-    return (
-      booking.status === 'OPEN_MATCHING' || (activeStatuses.has(booking.status) && !bookingHasFinalPartner(booking))
-    );
-  }
-  if (evidenceFilter === 'chat') {
-    return bookingChatRepairNeedsOps(booking) || bookingMatchingChatReady(booking);
-  }
-  if (evidenceFilter === 'money') {
-    return (
-      bookingPaymentNeedsOps(booking) ||
-      bookingCashDebtNeedsOps(booking) ||
-      bookingCompletedCloseoutNeedsOps(booking)
-    );
-  }
-  if (evidenceFilter === 'location') {
-    return bookingLocationNeedsOps(booking, nowMs) || hasProviderLocation(booking);
-  }
-  if (evidenceFilter === 'alerts') {
-    return bookingAlertEvidenceNeedsOps(booking, nowMs);
-  }
-  if (evidenceFilter === 'closeout') {
-    return (
-      terminalBookingStatuses.has(booking.status) ||
-      bookingCompletedCloseoutNeedsOps(booking) ||
-      booking.status === 'NO_SHOW'
-    );
-  }
-  return true;
 }
 
 function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
