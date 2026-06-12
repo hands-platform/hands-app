@@ -143,6 +143,13 @@ import {
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
 import {
+  bookingChatQuietNeedsOps,
+  bookingChatRepairNeedsOps,
+  bookingHasQuietHandoffChat,
+  bookingMatchingChatReady,
+  isHandoffBookingStatus,
+} from './booking-chat-handoff-state';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -158,10 +165,6 @@ import { BookingMonitorMatchingEscalationSection } from './booking-monitor-match
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
-import {
-  bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
-  bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
-} from '../../lib/booking-chat-repair-action-state';
 import {
   buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
   buildMarketplaceBookingCoveragePills,
@@ -254,7 +257,6 @@ type MarketplaceCoveragePillState = {
 };
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
-const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
   missing: 'No location',
@@ -803,12 +805,7 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
     paymentChecks: bookings.filter((booking) => bookingPaymentNeedsOps(booking)),
     preferredPending: open.filter((booking) => bookingFirstPickPending(booking)),
     pricingChecks: bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking)),
-    quietChat: bookings.filter(
-      (booking) =>
-        booking.chatRoom &&
-        (booking.chatRoom.messages?.length ?? 0) === 0 &&
-        isHandoffBookingStatus(booking.status),
-    ),
+    quietChat: bookings.filter((booking) => bookingHasQuietHandoffChat(booking)),
     refundReview: bookings.filter((booking) => bookingRefundReviewNeedsOps(booking)),
   };
 }
@@ -890,10 +887,6 @@ function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
 
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
   return bookingCustomerProtectionBoardFromFacts(bookingCustomerProtectionFactsFromBookings(bookings));
-}
-
-function isHandoffBookingStatus(status: string) {
-  return handoffBookingStatuses.has(status);
 }
 
 function buildMatchingEscalationBoard(
@@ -1328,14 +1321,6 @@ function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
   );
 }
 
-function bookingChatQuietNeedsOps(booking: AdminBooking) {
-  return buildBookingChatQuietNeedsOps({
-    status: booking.status,
-    hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
-}
-
 function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
   if (!bookingManualDecisionNeedsOps(booking) && !bookingChatRepairNeedsOps(booking)) {
     return false;
@@ -1395,13 +1380,6 @@ function bookingListCommandDecisionStrip(booking: AdminBooking) {
 
 function bookingAddressNeedsOps(booking: AdminBooking) {
   return !booking.addressSnapshot;
-}
-
-function bookingChatRepairNeedsOps(booking: AdminBooking) {
-  return buildBookingChatRepairNeedsOps({
-    status: booking.status,
-    hasChatRoom: bookingMatchingChatReady(booking),
-  });
 }
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -1780,10 +1758,6 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
 
 function customerSelectableParticipants(booking: AdminBooking) {
   return buildBookingCustomerSelectableParticipants(booking);
-}
-
-function bookingMatchingChatReady(booking: AdminBooking) {
-  return booking.matchingEvidence?.chatReady ?? Boolean(booking.chatRoom);
 }
 
 function bookingMarketplaceParticipantCount(booking: AdminBooking) {
