@@ -1,3 +1,5 @@
+import { PathCopyRow } from '../../components/path-copy-row';
+
 type SetupMigrationRunwayStatus = {
   readonly id: string;
   readonly title: string;
@@ -34,10 +36,10 @@ export function SetupMigrationRunwaySection({ groupStatuses }: SetupMigrationRun
           <code>C:\dev\massage-on-demand-vn</code>.
         </p>
         <div className="setup-command-list">
-          <code>docs\architecture\operator-registration-plan.md</code>
-          <code>docs\architecture\master-progress-roadmap.md</code>
-          <code>infra\setup\.generated\hands-external-registration-pack.md</code>
-          <code>infra\supabase\.generated\hands-staging-setup.sql</code>
+          <PathCopyRow path="docs\architecture\operator-registration-plan.md" />
+          <PathCopyRow path="docs\architecture\master-progress-roadmap.md" />
+          <PathCopyRow path="infra\setup\.generated\hands-external-registration-pack.md" />
+          <PathCopyRow path="infra\supabase\.generated\hands-staging-setup.sql" />
         </div>
       </div>
     </div>

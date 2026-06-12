@@ -1,4 +1,5 @@
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { PathCopyRow } from '../../components/path-copy-row';
 
 type SetupProgressStep = {
   readonly phase: string;
@@ -70,7 +71,7 @@ export function SetupProgressControlSection({
             becomes required.
           </p>
           <div className="setup-command-list">
-            <code>docs\architecture\master-progress-roadmap.md</code>
+            <PathCopyRow path="docs\architecture\master-progress-roadmap.md" />
           </div>
         </div>
       </div>

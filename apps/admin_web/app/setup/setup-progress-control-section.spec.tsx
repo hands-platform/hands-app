@@ -63,10 +63,13 @@ function classNamesIn(value: unknown): string[] {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return typeof record?.type === 'function' && record.type.name === 'CommandCopyRow'
-    ? resolveElement(record.type(props))
+  const component = record?.type;
+  return typeof component === 'function' && ['CommandCopyRow', 'PathCopyRow'].includes(component.name)
+    ? resolveElement((component as RenderableComponent)(props ?? {}))
     : value;
 }
+
+type RenderableComponent = (props: Record<string, unknown>) => unknown;
 
 function readRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
