@@ -1,0 +1,135 @@
+import type { AdminBooking } from '../../lib/admin-api';
+import { BookingMonitorMarketplaceParticipantLedgerSection } from './booking-monitor-marketplace-participant-ledger-section';
+
+describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
+  it('renders participant ledger pills, operations cards, and row details', () => {
+    const booking = {
+      id: 'booking_123456789',
+      payment: { currency: 'VND' },
+      services: [
+        {
+          price: 120000,
+          service: {
+            basePrice: 120000,
+            durationMin: 60,
+            name: 'Foot Massage',
+            payoutRules: [],
+          },
+        },
+      ],
+      status: 'OPEN_MATCHING',
+    } as unknown as AdminBooking;
+    const participant = {
+      id: 'participant_123',
+      providerProfile: { user: { phone: '+84900000000' } },
+      providerStatusAtJoin: 'ONLINE',
+    } as NonNullable<AdminBooking['participants']>[number];
+
+    const section = BookingMonitorMarketplaceParticipantLedgerSection({
+      getCustomerLabel: () => 'Customer A',
+      marketplaceLedgerPills: [{ label: 'Marketplace participants 1', tone: 'pill-info' }],
+      marketplaceLedgerRows: [
+        {
+          alertLabel: 'Alert delivered',
+          alertTone: 'pill-info',
+          booking,
+          chatHandoffLabel: 'Chat ready',
+          chatHandoffTone: 'pill-success',
+          choiceLabel: 'Customer-selectable',
+          choiceNextStep: 'Wait for customer choice.',
+          choiceReason: 'Partner is selectable.',
+          choiceTone: 'pill-info',
+          distanceLabel: '2 km',
+          distancePolicyHelper: 'Inside service radius.',
+          distancePolicyLabel: 'Inside radius',
+          distancePolicyTone: 'pill-success',
+          evidenceDetail: 'Participant retained.',
+          evidenceLabel: 'Ledger row',
+          evidenceTone: 'pill-info',
+          joinedLabel: 'Joined now',
+          participant,
+          partnerLabel: 'Partner A',
+          respondedLabel: 'No response yet',
+          roleLabel: 'Marketplace participant',
+          statusLabel: 'Waiting',
+          statusTone: 'pill-warn',
+          walletLabel: 'Wallet clear',
+          walletTone: 'pill-success',
+          windowLabel: '8m left',
+        },
+      ],
+      marketplaceOperationsCards: [
+        {
+          detail: 'Bookings still visible for partner participation or customer choice.',
+          href: '/bookings?view=marketplace',
+          title: 'Open marketplace',
+          tone: 'pill-warn',
+          value: '1',
+        },
+      ],
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Participant rows only');
+    expect(rendered).toContain('Marketplace participants 1');
+    expect(rendered).toContain('Open marketplace');
+    expect(rendered).toContain('Customer A');
+    expect(rendered).toContain('Partner A');
+    expect(rendered).toContain('Wallet clear');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/bookings?view=marketplace', '/bookings/booking_123456789']),
+    );
+  });
+
+  it('renders the empty participant state', () => {
+    const section = BookingMonitorMarketplaceParticipantLedgerSection({
+      getCustomerLabel: () => 'Customer A',
+      marketplaceLedgerPills: [],
+      marketplaceLedgerRows: [],
+      marketplaceOperationsCards: [],
+    });
+
+    expect(normalizedText(section)).toContain('No participant records match the current booking filters.');
+  });
+});
+
+function textContent(value: unknown): string {
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function normalizedText(value: unknown): string {
+  return textContent(value).replace(/\s+/g, ' ').trim();
+}
+
+function hrefsIn(value: unknown): string[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
