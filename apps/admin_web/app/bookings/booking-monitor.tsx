@@ -151,6 +151,11 @@ import {
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
 import {
+  bookingParticipantJoinedLabel,
+  bookingParticipantRespondedLabel,
+  bookingParticipantTimestamp,
+} from './booking-participant-time-labels';
+import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
   bookingMonitorSelectionPathLabel,
@@ -1617,17 +1622,13 @@ function buildMarketplaceParticipantLedgerRows(
           customerSelectable: isCustomerSelectableBookingParticipant(participant, preferredPartnerId),
           distanceMeters,
           hasChatRoom: bookingMatchingChatReady(booking),
-          joinedLabel: participant.joinedAt
-            ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
-            : 'Participation time not saved',
+          joinedLabel: bookingParticipantJoinedLabel(participant, nowMs),
           marketplaceRadiusMeters,
           participant,
           participantPartnerId,
           partnerLabel: partnerDisplayName(participant.providerProfile),
           preferredPartnerId,
-          respondedLabel: participant.respondedAt
-            ? `Responded ${formatDate(participant.respondedAt)}`
-            : 'No response time saved',
+          respondedLabel: bookingParticipantRespondedLabel(participant),
           selectedPartnerId,
           sortTimestamp: bookingParticipantTimestamp(participant),
           status: participant.status ?? 'UNKNOWN',
@@ -1678,15 +1679,6 @@ function buildMarketplaceOperatingQueue(
       })),
     ),
   );
-}
-
-function bookingParticipantTimestamp(participant: BookingParticipant) {
-  const value = participant.respondedAt ?? participant.joinedAt;
-  if (!value) {
-    return 0;
-  }
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
