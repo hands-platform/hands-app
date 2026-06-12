@@ -101,6 +101,18 @@ const adminAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: adminPhone, otp: adminOtp, role: 'ADMIN' }),
 });
 
+const registeredDevicePreflight =
+  useRegisteredDevice && !deviceToken
+    ? await findRegisteredDevicePreflight(adminAuth.accessToken)
+    : null;
+if (registeredDevicePreflight && registeredDevicePreflight.enabledCount === 0) {
+  fail(
+    `No enabled registered push device is available for the selected smoke app session: ${JSON.stringify(
+      registeredDevicePreflight,
+    )}`,
+  );
+}
+
 const registeredDevice = deviceToken
   ? await request('/notifications/device-token/register', {
       method: 'PATCH',
@@ -209,6 +221,7 @@ console.log(
           }
         : null,
       reusedRegisteredDevice: !registeredDevice,
+      registeredDevicePreflight,
       pushReadiness: pushCheck
         ? {
             status: pushCheck.status,
@@ -247,6 +260,29 @@ async function findAdminNotification(accessToken, notificationId) {
     : null;
 }
 
+async function findRegisteredDevicePreflight(accessToken) {
+  const users = await request('/admin/users', {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  const smokeUser = Array.isArray(users)
+    ? users.find((user) => user.phone === phone && userHasRole(user, role))
+    : null;
+  const matchingDevices = (smokeUser?.pushDevices ?? []).filter(
+    (device) => device.platform === platform && deviceRoleMatches(device, role),
+  );
+  const enabledDevices = matchingDevices.filter((device) => device.enabled);
+
+  return {
+    userId: smokeUser?.id ?? null,
+    role,
+    phone,
+    platform,
+    matchingCount: matchingDevices.length,
+    enabledCount: enabledDevices.length,
+    latestDevice: summarizePushDevice(matchingDevices[0]),
+  };
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
@@ -261,6 +297,28 @@ async function request(path, options = {}) {
     );
   }
   return body;
+}
+
+function userHasRole(user, expectedRole) {
+  return (user.roles ?? []).map((item) => String(item).toUpperCase()).includes(expectedRole);
+}
+
+function deviceRoleMatches(device, expectedRole) {
+  return !device.role || String(device.role).toUpperCase() === expectedRole;
+}
+
+function summarizePushDevice(device) {
+  if (!device) {
+    return null;
+  }
+  return {
+    id: device.id ?? null,
+    role: device.role ?? null,
+    platform: device.platform ?? null,
+    enabled: Boolean(device.enabled),
+    lastSeenAt: device.lastSeenAt ?? null,
+    updatedAt: device.updatedAt ?? null,
+  };
 }
 
 function normalizeRole(value) {
