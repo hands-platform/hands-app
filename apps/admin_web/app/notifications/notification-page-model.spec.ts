@@ -263,6 +263,41 @@ describe('notification page model', () => {
     });
   });
 
+  it('marks stale push token deliveries as an operator warning even when FCM accepted the send', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: { bookingId: 'booking-1' },
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-stale',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'device-stale',
+              lastSeenAt: '2026-04-15T10:01:00.000Z',
+              platform: 'android',
+            },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-stale',
+        type: 'booking.matched',
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      opsSignal: 'Stale device',
+      signalClassName: 'signal signal-warn',
+    });
+    expect(rows[0]?.opsHint).toContain('Push token timestamp is old');
+    expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      deviceFreshnessLabel: '30+ day token timestamp',
+      deviceStateLabel: 'Device enabled',
+      status: 'SENT',
+    });
+  });
+
   it('treats payout batch updates as partner alerts without exposing payout metadata', () => {
     const notifications = [
       notification({

@@ -515,6 +515,9 @@ function signalClass(notification: AdminNotification) {
   if (hasDisabledPushDevice(notification)) {
     return 'signal signal-warn';
   }
+  if (hasStalePushDeviceDelivery(notification)) {
+    return 'signal signal-warn';
+  }
   if (hasDeliveryStatus(notification, 'SENT')) {
     return 'signal signal-ok';
   }
@@ -527,6 +530,9 @@ function opsSignal(notification: AdminNotification) {
   }
   if (hasDisabledPushDevice(notification)) {
     return 'Device disabled';
+  }
+  if (hasStalePushDeviceDelivery(notification)) {
+    return 'Stale device';
   }
   if (hasDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped delivery';
@@ -543,6 +549,9 @@ function opsHint(notification: AdminNotification) {
   }
   if (hasDisabledPushDevice(notification)) {
     return 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.';
+  }
+  if (hasStalePushDeviceDelivery(notification)) {
+    return 'Push token timestamp is old. Ask the user to open the app so FCM can refresh before relying on retry.';
   }
   if (hasDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.';
