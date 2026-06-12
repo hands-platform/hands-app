@@ -39,6 +39,10 @@ Run phase-specific checks when those credentials are ready:
 npm.cmd run external:check:supabase
 npm.cmd run external:check:supabase-auth
 npm.cmd run external:check:maps
+npm.cmd run external:check:push
+npm.cmd run fcm:credentials-check
+npm.cmd run fcm:token-smoke -- --dry-run
+npm.cmd run fcm:push-smoke -- --dry-run
 npm.cmd run external:check:payments
 npm.cmd run external:check:storage
 npm.cmd run storage:smoke
