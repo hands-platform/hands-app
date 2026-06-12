@@ -11,7 +11,7 @@ import {
 } from './notification-send.queue';
 import {
   isPartnerAlert,
-  toPushData,
+  notificationPushData,
 } from './notification-push-payload';
 import {
   notificationDeliveryCreateInput,
@@ -44,7 +44,7 @@ export class NotificationRetryProcessor extends WorkerHost {
     }
 
     const results = [];
-    const data = toPushData(notification.data);
+    const data = notificationPushData(notification);
     const providerOverride = await this.resolveProviderOverride(notification.type);
 
     for (const device of devices) {

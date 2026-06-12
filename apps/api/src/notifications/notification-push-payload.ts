@@ -60,6 +60,13 @@ export function toPushData(value: unknown) {
   return Object.fromEntries(entries.map(([key, entry]) => [key, String(entry)]));
 }
 
+export function notificationPushData(notification: { id: string; data?: unknown }) {
+  return {
+    ...(toPushData(notification.data) ?? {}),
+    notificationId: notification.id,
+  };
+}
+
 function isPushDataScalar(value: unknown) {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }

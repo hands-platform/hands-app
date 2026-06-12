@@ -1,6 +1,7 @@
 import {
   isPartnerAlert,
   maskPushTokenInJson,
+  notificationPushData,
   notificationDeliveryResponse,
   toJson,
   toPushData,
@@ -45,6 +46,22 @@ describe('notification push payload helpers', () => {
     ).toEqual({
       bookingId: 'booking-1',
       providerProfileId: 'provider-1',
+    });
+  });
+
+  it('adds the stored notification id to safe OS push data', () => {
+    expect(
+      notificationPushData({
+        id: 'notification-1',
+        data: {
+          bookingId: 'booking-1',
+          notificationId: 'stale-client-value',
+          reason: 'Internal operator note',
+        },
+      }),
+    ).toEqual({
+      bookingId: 'booking-1',
+      notificationId: 'notification-1',
     });
   });
 
