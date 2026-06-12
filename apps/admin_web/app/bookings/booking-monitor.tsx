@@ -1814,17 +1814,19 @@ function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): Bookin
 }
 
 function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  if (bookingChatQuietNeedsOps(booking)) {
-    return [{ severity: 'low', title: 'Chat quiet' }];
-  }
-  return [];
+  return compactBookingCheckFlags([
+    bookingCheckFlag(bookingChatQuietNeedsOps(booking), 'low', 'Chat quiet'),
+  ]);
 }
 
 function bookingPaymentReferenceCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  if (booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef) {
-    return [{ severity: 'medium', title: 'Payment reference missing' }];
-  }
-  return [];
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
+      'medium',
+      'Payment reference missing',
+    ),
+  ]);
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
