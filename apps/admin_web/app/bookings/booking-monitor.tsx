@@ -1006,9 +1006,11 @@ function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): B
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
+  const counts = bookingMarketplaceCountFacts(booking);
+
   return bookingListStageFromBooking(booking, nowMs, {
-    marketplaceCount: bookingMarketplaceParticipantCount(booking),
-    selectableCount: bookingCustomerSelectableCount(booking),
+    marketplaceCount: counts.marketplaceParticipantCount,
+    selectableCount: counts.customerSelectableCount,
   });
 }
 
@@ -1017,15 +1019,16 @@ function buildMatchingEscalationRows(
   nowMs: number,
 ): readonly AdminBookingMatchingEscalationRow[] {
   return buildBookingMatchingEscalationRowsFromFacts(
-    bookings.map((booking) =>
-      bookingMatchingEscalationRowInputFromBooking(booking, nowMs, {
-        marketplaceCount: bookingMarketplaceParticipantCount(booking),
+    bookings.map((booking) => {
+      const counts = bookingMarketplaceCountFacts(booking);
+      return bookingMatchingEscalationRowInputFromBooking(booking, nowMs, {
+        marketplaceCount: counts.marketplaceParticipantCount,
         preferredAwaitingDecision: bookingFirstPickPending(booking),
-        selectableCount: bookingCustomerSelectableCount(booking),
+        selectableCount: counts.customerSelectableCount,
         selectionLabel: selectionLabel(booking),
         selectionPathLabel: selectionPathLabel(booking),
-      }),
-    ),
+      });
+    }),
   );
 }
 
