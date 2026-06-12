@@ -105,6 +105,12 @@ import {
   bookingNextActionPriorityFromFacts,
 } from './booking-next-action-priority';
 import {
+  bookingNextActionOwnerInput,
+  bookingNextActionPriorityInput,
+  bookingNextOperatorActionInput,
+  type BookingNextActionInputReaders,
+} from './booking-next-action-inputs';
+import {
   bookingNextActionOwnerFromFacts,
   type BookingNextActionOwner,
 } from './booking-next-action-owner';
@@ -813,7 +819,7 @@ function bookingFlagNextAction(
     title: highestFlag.title,
     detail: nextAction(booking),
     operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
-    owner: bookingActionOwner(booking, highestFlag),
+    owner: bookingActionOwner(booking, nowMs, highestFlag),
     priority: bookingActionPriority(booking, nowMs, highestFlag),
     tone: highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
     href: `/bookings/${booking.id}`,
@@ -827,7 +833,7 @@ function bookingActiveNextAction(booking: AdminBooking, nowMs: number): BookingN
     title: 'Monitor active booking',
     detail: nextAction(booking),
     operatorAction: bookingOperatorAction(booking, nowMs),
-    owner: bookingActionOwner(booking),
+    owner: bookingActionOwner(booking, nowMs),
     priority: bookingActionPriority(booking, nowMs),
     tone: 'info',
     href: `/bookings/${booking.id}`,
@@ -1107,35 +1113,43 @@ function bookingActionPriority(
   nowMs: number,
   flag?: BookingCheckFlag,
 ): BookingNextAction['priority'] {
-  return bookingNextActionPriorityFromFacts({
-    completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-    flagSeverity: flag?.severity,
-    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-    status: booking.status,
-  });
+  return bookingNextActionPriorityFromFacts(
+    bookingNextActionPriorityInput(bookingNextActionReaders(booking, nowMs, flag)),
+  );
 }
 
-function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
-  return bookingNextActionOwnerFromFacts({
-    completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-    flagTitle: flag?.title,
-    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-    status: booking.status,
-  });
+function bookingActionOwner(
+  booking: AdminBooking,
+  nowMs: number,
+  flag?: BookingCheckFlag,
+): BookingNextAction['owner'] {
+  return bookingNextActionOwnerFromFacts(
+    bookingNextActionOwnerInput(bookingNextActionReaders(booking, nowMs, flag)),
+  );
 }
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
-  return bookingNextOperatorActionFromFacts({
+  return bookingNextOperatorActionFromFacts(
+    bookingNextOperatorActionInput(bookingNextActionReaders(booking, nowMs, flag)),
+  );
+}
+
+function bookingNextActionReaders(
+  booking: AdminBooking,
+  nowMs: number,
+  flag?: BookingCheckFlag,
+): BookingNextActionInputReaders {
+  return {
     cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
     completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
     firstPickPending: () => bookingFirstPickPending(booking),
+    flagSeverity: flag?.severity,
     flagTitle: flag?.title,
     locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
     matchingChatReady: () => bookingMatchingChatReady(booking),
     paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
     status: booking.status,
-  });
+  };
 }
 
 function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
