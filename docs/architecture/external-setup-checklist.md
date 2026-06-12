@@ -98,6 +98,12 @@ npm.cmd run security:secrets
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices
 ```
 
+After downloading the Firebase Admin private key JSON, install it outside Git with:
+
+```powershell
+npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json
+```
+
 `fcm:push-smoke -- --dry-run` is config-only. It does not contact the API or FCM; run `npm.cmd run fcm:push-smoke` without `--dry-run` only after Firebase Admin credentials and a real app FCM token are ready.
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
