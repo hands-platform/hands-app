@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const expectedNotificationChannelId = 'hands_priority_alerts';
+const apiPushDeliverySource = readIfExists('apps/api/src/notifications/push-delivery.service.ts');
+const apiNotificationChannelId = apiPushDeliverySource.match(
+  /\bFCM_ANDROID_NOTIFICATION_CHANNEL_ID\s*=\s*'([^']+)'/,
+)?.[1];
 const apps = [
   {
     name: 'customer_app',
@@ -8,6 +13,8 @@ const apps = [
     pubspecPath: 'apps/customer_app/pubspec.yaml',
     rootGradlePath: 'apps/customer_app/android/build.gradle.kts',
     appGradlePath: 'apps/customer_app/android/app/build.gradle.kts',
+    manifestPath: 'apps/customer_app/android/app/src/main/AndroidManifest.xml',
+    fcmHandlerPath: 'apps/customer_app/lib/src/core/fcm_message_handling_service.dart',
     configPath: 'apps/customer_app/android/app/google-services.json',
   },
   {
@@ -16,6 +23,8 @@ const apps = [
     pubspecPath: 'apps/provider_app/pubspec.yaml',
     rootGradlePath: 'apps/provider_app/android/build.gradle.kts',
     appGradlePath: 'apps/provider_app/android/app/build.gradle.kts',
+    manifestPath: 'apps/provider_app/android/app/src/main/AndroidManifest.xml',
+    fcmHandlerPath: 'apps/provider_app/lib/src/core/fcm_message_handling_service.dart',
     configPath: 'apps/provider_app/android/app/google-services.json',
   },
 ];
@@ -32,8 +41,12 @@ for (const app of apps) {
   const pubspecSource = readIfExists(app.pubspecPath);
   const rootGradleSource = readIfExists(app.rootGradlePath);
   const appGradleSource = readIfExists(app.appGradlePath);
+  const manifestSource = readIfExists(app.manifestPath);
+  const fcmHandlerSource = readIfExists(app.fcmHandlerPath);
   const googleServicesPackages = googleServicesAndroidPackages(app.configPath);
   const androidApplicationId = androidApplicationIdFromGradle(appGradleSource);
+  const androidManifestChannelId = androidManifestDefaultChannelId(manifestSource);
+  const fcmHandlerChannelId = dartFcmNotificationChannelId(fcmHandlerSource);
   const hasGoogleServicesConfig = existsSync(resolve(app.configPath));
 
   const appResult = {
@@ -52,12 +65,21 @@ for (const app of apps) {
     googleServicesPackages,
     googleServicesPackageMatches:
       !hasGoogleServicesConfig || googleServicesPackages.includes(app.expectedAndroidPackage),
+    expectedNotificationChannelId,
+    apiNotificationChannelId,
+    androidManifestChannelId,
+    fcmHandlerChannelId,
+    notificationChannelIdMatches:
+      apiNotificationChannelId === expectedNotificationChannelId &&
+      androidManifestChannelId === expectedNotificationChannelId &&
+      fcmHandlerChannelId === expectedNotificationChannelId,
   };
 
   if (
     appResult.hasBlockedFirebasePackages ||
     !appResult.androidApplicationIdMatches ||
-    !appResult.googleServicesPackageMatches
+    !appResult.googleServicesPackageMatches ||
+    !appResult.notificationChannelIdMatches
   ) {
     result.ok = false;
   }
@@ -94,4 +116,12 @@ function googleServicesAndroidPackages(path) {
   } catch {
     return [];
   }
+}
+
+function androidManifestDefaultChannelId(source) {
+  return source.match(/default_notification_channel_id"[\s\S]*?android:value="([^"]+)"/)?.[1] ?? null;
+}
+
+function dartFcmNotificationChannelId(source) {
+  return source.match(/\bhandsFcmNotificationChannelId\s*=\s*'([^']+)'/)?.[1] ?? null;
 }
