@@ -199,6 +199,7 @@ export const setupOrder = [
       'google-services.json is mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'Firebase Admin service account values are server-side only and must not be copied into Flutter or browser code.',
       'For Docker, the host JSON path is mounted into the API container at /run/secrets/firebase-admin.json.',
+      'Run fcm:token-smoke -- --dry-run first; it lists customer/provider actors and config without contacting the API or FCM.',
       'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
       'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
       'Live push smoke needs a real app FCM token from the current Android/iOS build.',

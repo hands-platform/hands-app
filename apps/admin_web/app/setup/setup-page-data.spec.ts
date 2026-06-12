@@ -28,6 +28,7 @@ describe('setup page data', () => {
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
         'google-services.json is mobile client config only; it does not replace server-side Firebase Admin credentials.',
+        'Run fcm:token-smoke -- --dry-run first; it lists customer/provider actors and config without contacting the API or FCM.',
         'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
         'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
         'Live push smoke needs a real app FCM token from the current Android/iOS build.',
