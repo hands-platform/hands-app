@@ -1588,51 +1588,49 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
 function opsSignal(booking: AdminBooking) {
   const participantCount = bookingMarketplaceParticipantCount(booking);
   if (booking.status === 'NO_SHOW') {
-    return booking.payment && paymentOutcomeNeedsReview(booking.payment.status) ? (
-      <span className="signal signal-warn">No-show, check payment</span>
-    ) : (
-      <span className="signal signal-ok">No-show closed</span>
-    );
+    return booking.payment && paymentOutcomeNeedsReview(booking.payment.status)
+      ? bookingOpsSignal('warn', 'No-show, check payment')
+      : bookingOpsSignal('ok', 'No-show closed');
   }
   if (booking.status === 'EXPIRED') {
-    return booking.payment?.status === 'RELEASED' ? (
-      <span className="signal signal-ok">Expired and released</span>
-    ) : (
-      <span className="signal signal-warn">Expired, check payment</span>
-    );
+    return booking.payment?.status === 'RELEASED'
+      ? bookingOpsSignal('ok', 'Expired and released')
+      : bookingOpsSignal('warn', 'Expired, check payment');
   }
   if (booking.status === 'CANCELLED') {
-    return booking.payment?.status === 'RELEASED' ? (
-      <span className="signal signal-ok">Cancelled and released</span>
-    ) : (
-      <span className="signal signal-warn">Cancelled, check payment</span>
-    );
+    return booking.payment?.status === 'RELEASED'
+      ? bookingOpsSignal('ok', 'Cancelled and released')
+      : bookingOpsSignal('warn', 'Cancelled, check payment');
   }
   if (booking.status === 'REFUNDED') {
-    return <span className="signal signal-warn">Refunded</span>;
+    return bookingOpsSignal('warn', 'Refunded');
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return <span className="signal signal-warn">Cash fee debt</span>;
+    return bookingOpsSignal('warn', 'Cash fee debt');
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
     bookingFirstPickPending(booking)
   ) {
-    return <span className="signal signal-warn">First-pick partner pending</span>;
+    return bookingOpsSignal('warn', 'First-pick partner pending');
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return <span className="signal signal-warn">No marketplace partners yet</span>;
+    return bookingOpsSignal('warn', 'No marketplace partners yet');
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return <span className="signal signal-info">Marketplace options ready</span>;
+    return bookingOpsSignal('info', 'Marketplace options ready');
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return <span className="signal signal-info">Marketplace partner selected</span>;
+    return bookingOpsSignal('info', 'Marketplace partner selected');
   }
   if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
-    return <span className="signal signal-warn">Chat missing</span>;
+    return bookingOpsSignal('warn', 'Chat missing');
   }
-  return <span className="signal signal-ok">Normal</span>;
+  return bookingOpsSignal('ok', 'Normal');
+}
+
+function bookingOpsSignal(tone: 'info' | 'ok' | 'warn', label: string) {
+  return <span className={`signal signal-${tone}`}>{label}</span>;
 }
 
 type BookingCheckFlag = {
