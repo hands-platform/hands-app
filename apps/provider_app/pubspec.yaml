@@ -18,6 +18,8 @@ dependencies:
   socket_io_client: ^3.0.2
   supabase_flutter: ^2.12.4
   image_picker: ^1.2.2
+  firebase_core: ^4.10.0
+  firebase_messaging: ^16.3.0
 
 dev_dependencies:
   flutter_test:

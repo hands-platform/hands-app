@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    id("com.google.gms.google-services")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -34,7 +35,7 @@ android {
     }
 
     defaultConfig {
-        // HANDS provider Android application ID for Firebase-free/Supabase staging.
+        // HANDS provider Android application ID registered for FCM push.
         applicationId = "com.massagevn.provider.provider_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
