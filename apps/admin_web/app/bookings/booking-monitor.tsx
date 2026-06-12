@@ -80,7 +80,6 @@ import {
 } from './booking-command-display';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
-  bookingAgeLabel,
   bookingCreatedTimestamp,
   bookingRecencyLabel as recencyLabel,
   bookingTimestamp,
@@ -115,6 +114,7 @@ import { BookingMonitorCommandCenterSection } from './booking-monitor-command-ce
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
+import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
 import {
@@ -554,61 +554,12 @@ export function BookingMonitor({
         matchingFlowTimeline={matchingFlowTimeline}
       />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Next operator actions</h2>
-            <p className="muted">
-              Booking checklist ordered by customer wait, finance follow-up, and operational aging.
-            </p>
-          </div>
-          <span className={`pill ${nextActions.length > 0 ? 'pill-warn' : 'pill-success'}`}>
-            {nextActions.length > 0 ? `${nextActions.length} action(s)` : 'Clear'}
-          </span>
-        </div>
-        <div className="participant-list admin-mt-12">
-          {nextActions.map((item) => (
-            <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`}>
-              <div className="ops-section-header">
-                <div>
-                  <p>
-                    {shortId(item.booking.id)} / {bookingServiceOptionLabel(item.booking)}
-                  </p>
-                  <h2>{item.title}</h2>
-                </div>
-                <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
-              </div>
-              <p className="muted">{item.detail}</p>
-              <p>
-                <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}: {item.operatorAction}
-              </p>
-              <p className="muted">
-                {bookingCustomerLabel(item.booking)} / {bookingProviderLabel(item.booking)}
-              </p>
-              <div className="participant-list admin-mt-10">
-                <span className="pill">{item.booking.status}</span>
-                <span className="pill">{item.owner}</span>
-                <span className="pill">{actionOrderLabel(item.priority)}</span>
-                <span className="pill">{bookingAgeLabel(item.booking, currentTimeMs)}</span>
-                {item.tags.map((tag) => (
-                  <span className="pill" key={tag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-          {nextActions.length === 0 && (
-            <div className="card">
-              <h2>Booking operations are clear</h2>
-              <p className="muted">
-                No expired matching, unresolved payment, stale live location, missing chat, or pricing policy
-                blocker needs immediate review.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+      <BookingMonitorNextActionsSection
+        getCustomerLabel={bookingCustomerLabel}
+        getProviderLabel={bookingProviderLabel}
+        nextActions={nextActions}
+        nowMs={currentTimeMs}
+      />
 
       <section className="card admin-mt-16">
         <div className="ops-section-header">
