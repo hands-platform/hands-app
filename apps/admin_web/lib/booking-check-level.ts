@@ -3,6 +3,20 @@ export type BookingCheckLevelFlag = {
   readonly title: string;
 };
 
+export function bookingCheckFlag(
+  condition: boolean,
+  severity: BookingCheckLevelFlag['severity'],
+  title: string,
+): BookingCheckLevelFlag | null {
+  return condition ? { severity, title } : null;
+}
+
+export function compactBookingCheckFlags(
+  flags: readonly (BookingCheckLevelFlag | null)[],
+): BookingCheckLevelFlag[] {
+  return flags.filter((flag): flag is BookingCheckLevelFlag => Boolean(flag));
+}
+
 export type BookingCheckLevel = {
   readonly helper: string;
   readonly label: 'Action' | 'Monitor' | 'Note' | 'Clear';

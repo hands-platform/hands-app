@@ -31,7 +31,12 @@ import {
   bookingListStageFromFacts,
   type BookingListStage,
 } from '../../lib/booking-list-stage';
-import { bookingCheckLevel } from '../../lib/booking-check-level';
+import {
+  bookingCheckFlag,
+  bookingCheckLevel,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag as BookingCheckFlag,
+} from '../../lib/booking-check-level';
 import {
   buildBookingCommandSummaryCards,
   buildBookingOperatorRouteCards,
@@ -1686,23 +1691,6 @@ function opsSignal(booking: AdminBooking) {
 
 function bookingOpsSignal(tone: 'info' | 'ok' | 'warn', label: string) {
   return <span className={`signal signal-${tone}`}>{label}</span>;
-}
-
-type BookingCheckFlag = {
-  severity: 'high' | 'medium' | 'low';
-  title: string;
-};
-
-function bookingCheckFlag(
-  condition: boolean,
-  severity: BookingCheckFlag['severity'],
-  title: string,
-): BookingCheckFlag | null {
-  return condition ? { severity, title } : null;
-}
-
-function compactBookingCheckFlags(flags: readonly (BookingCheckFlag | null)[]): BookingCheckFlag[] {
-  return flags.filter((flag): flag is BookingCheckFlag => Boolean(flag));
 }
 
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {

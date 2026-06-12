@@ -1,4 +1,9 @@
-import { bookingCheckLevel, type BookingCheckLevelFlag } from './booking-check-level';
+import {
+  bookingCheckFlag,
+  bookingCheckLevel,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag,
+} from './booking-check-level';
 
 describe('bookingCheckLevel', () => {
   it('returns clear when there are no active booking checks', () => {
@@ -36,5 +41,14 @@ describe('bookingCheckLevel', () => {
       helper: '1 check(s)',
       tone: 'signal-info',
     });
+  });
+
+  it('creates and compacts conditional booking checks', () => {
+    expect(
+      compactBookingCheckFlags([
+        bookingCheckFlag(true, 'medium', 'Payment reference missing'),
+        bookingCheckFlag(false, 'low', 'Chat quiet'),
+      ]),
+    ).toEqual([{ severity: 'medium', title: 'Payment reference missing' }]);
   });
 });
