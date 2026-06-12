@@ -354,58 +354,23 @@ export class BookingsService {
       preferredProviderDistanceMeters,
     });
 
-    let booking: OpenBookingForClientResponse = await this.prisma.booking.create({
-      data: {
-        customerProfileId: customer.id,
-        status: BookingStatus.OPEN_MATCHING,
-        scheduledStartAt: timing.scheduledStartAt,
-        scheduledEndAt: timing.scheduledEndAt,
-        address: addressPayload,
-        lat: bookingLat,
-        lng: bookingLng,
-        addressSnapshot: bookingAddressSnapshotCreate({
-          customerProfileId: customer.id,
-          selectedLocationId: selectedLocation?.id,
-          address: addressPayload,
-          addressText,
-          latitude: bookingLat,
-          longitude: bookingLng,
-        }),
-        notes: input.notes,
-        travelBufferMin: matchingPolicy.travelBufferMinutes,
-        earlyAcceptMin: matchingPolicy.providerResponseWindowMinutes,
-        preferredProviderId: preferredProvider?.id,
-        openedAt: timing.openedAt,
-        expiresAt: timing.expiresAt,
-        metadata: bookingCreateMetadata({
-          policy: matchingPolicy,
-          bookingGate: bookingGateSnapshot as Prisma.InputJsonValue,
-        }),
-        services: bookingServiceLineCreate({ serviceId: service.id, price: customerPrice }),
-        payment: bookingPaymentCreate(
-          this.payments.buildAuthorization(
-            input.paymentMethod,
-            priceSummary.finalAmount,
-            'pending-booking',
-            priceSummary.paymentMetadata,
-          ),
-        ),
-        participants: preferredProvider
-          ? preferredProviderInitialParticipantCreate({
-              providerProfileId: preferredProvider.id,
-              distanceMeters: preferredProviderDistanceMeters,
-              providerStatusAtJoin: preferredProvider.status,
-            })
-          : undefined,
-      },
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        payment: true,
-        participants: { include: { providerProfile: true } },
-        preferredProvider: true,
-        selectedProvider: true,
-      },
+    let booking: OpenBookingForClientResponse = await this.createOpenMatchingBookingRecord({
+      customerProfileId: customer.id,
+      selectedLocationId: selectedLocation?.id,
+      addressPayload,
+      addressText,
+      bookingLat,
+      bookingLng,
+      notes: input.notes,
+      matchingPolicy,
+      timing,
+      preferredProvider,
+      bookingGateSnapshot,
+      serviceId: service.id,
+      customerPrice,
+      paymentMethod: input.paymentMethod,
+      priceSummary,
+      preferredProviderDistanceMeters,
     });
 
     booking = await this.refreshBookingPaymentAuthorization(booking);
@@ -585,6 +550,79 @@ export class BookingsService {
       backupOpenMode: input.matchingPolicy.backupOpenMode,
       backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
       matchingPayload: input.matchingPayload,
+    });
+  }
+
+  private createOpenMatchingBookingRecord(input: {
+    customerProfileId: string;
+    selectedLocationId?: string | null;
+    addressPayload: Prisma.InputJsonValue;
+    addressText: string;
+    bookingLat: number;
+    bookingLng: number;
+    notes?: string;
+    matchingPolicy: MatchingPolicy;
+    timing: ReturnType<typeof openBookingRequestTiming>;
+    preferredProvider?: { id: string; status: ProviderStatus } | null;
+    bookingGateSnapshot: unknown;
+    serviceId: string;
+    customerPrice: number;
+    paymentMethod: PaymentMethod;
+    priceSummary: ReturnType<typeof resolveBookingPriceSummary>;
+    preferredProviderDistanceMeters: number | null;
+  }) {
+    return this.prisma.booking.create({
+      data: {
+        customerProfileId: input.customerProfileId,
+        status: BookingStatus.OPEN_MATCHING,
+        scheduledStartAt: input.timing.scheduledStartAt,
+        scheduledEndAt: input.timing.scheduledEndAt,
+        address: input.addressPayload,
+        lat: input.bookingLat,
+        lng: input.bookingLng,
+        addressSnapshot: bookingAddressSnapshotCreate({
+          customerProfileId: input.customerProfileId,
+          selectedLocationId: input.selectedLocationId,
+          address: input.addressPayload,
+          addressText: input.addressText,
+          latitude: input.bookingLat,
+          longitude: input.bookingLng,
+        }),
+        notes: input.notes,
+        travelBufferMin: input.matchingPolicy.travelBufferMinutes,
+        earlyAcceptMin: input.matchingPolicy.providerResponseWindowMinutes,
+        preferredProviderId: input.preferredProvider?.id,
+        openedAt: input.timing.openedAt,
+        expiresAt: input.timing.expiresAt,
+        metadata: bookingCreateMetadata({
+          policy: input.matchingPolicy,
+          bookingGate: input.bookingGateSnapshot as Prisma.InputJsonValue,
+        }),
+        services: bookingServiceLineCreate({ serviceId: input.serviceId, price: input.customerPrice }),
+        payment: bookingPaymentCreate(
+          this.payments.buildAuthorization(
+            input.paymentMethod,
+            input.priceSummary.finalAmount,
+            'pending-booking',
+            input.priceSummary.paymentMetadata,
+          ),
+        ),
+        participants: input.preferredProvider
+          ? preferredProviderInitialParticipantCreate({
+              providerProfileId: input.preferredProvider.id,
+              distanceMeters: input.preferredProviderDistanceMeters,
+              providerStatusAtJoin: input.preferredProvider.status,
+            })
+          : undefined,
+      },
+      include: {
+        services: { include: { service: true } },
+        addressSnapshot: true,
+        payment: true,
+        participants: { include: { providerProfile: true } },
+        preferredProvider: true,
+        selectedProvider: true,
+      },
     });
   }
 
