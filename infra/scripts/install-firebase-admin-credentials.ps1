@@ -207,6 +207,7 @@ $summary = [ordered]@{
   }
   nextCommands = @(
     "npm.cmd run fcm:credentials-check$envCommandSuffix",
+    "npm.cmd run docker:contract",
     "npm.cmd run external:check:push$envCommandSuffix",
     "npm.cmd run fcm:push-smoke -- --dry-run$pushSmokeEnvArg"
   )
