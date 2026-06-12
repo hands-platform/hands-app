@@ -42,6 +42,11 @@ export type BookingPaymentOutcomeCheckFlagsInput = {
   cashDebtNeedsOps?: boolean;
 };
 
+export type BookingPaymentReferenceCheckFlagsInput = {
+  paymentStatus?: string | null;
+  paymentProviderRef?: string | null;
+};
+
 const activePreCloseoutStatuses = new Set(['CREATED', 'OPEN_MATCHING', 'MATCHED']);
 const manualDecisionStatuses = new Set(['CANCELLED', 'EXPIRED', 'NO_SHOW']);
 const releaseCompletePaymentStatuses = new Set(['RELEASED', 'REFUNDED']);
@@ -91,6 +96,18 @@ export function bookingPaymentOutcomeCheckFlagsFromFacts(
       Boolean(input.cashDebtNeedsOps),
       'high',
       'Cash fee debt blocks marketplace alerts',
+    ),
+  ]);
+}
+
+export function bookingPaymentReferenceCheckFlagsFromFacts(
+  input: BookingPaymentReferenceCheckFlagsInput,
+): BookingCheckLevelFlag[] {
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      input.paymentStatus === 'AUTHORIZED' && !input.paymentProviderRef,
+      'medium',
+      'Payment reference missing',
     ),
   ]);
 }

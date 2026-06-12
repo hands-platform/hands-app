@@ -5,6 +5,7 @@ import {
   bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
   bookingPaymentReleaseNeedsOpsFromFacts,
+  bookingPaymentReferenceCheckFlagsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from './booking-payment-ops';
 
@@ -81,6 +82,22 @@ describe('booking payment operations helpers', () => {
       { severity: 'high', title: 'Completed closeout incomplete' },
       { severity: 'high', title: 'Cash fee debt blocks marketplace alerts' },
     ]);
+  });
+
+  it('builds payment reference check flags from payment facts', () => {
+    expect(
+      bookingPaymentReferenceCheckFlagsFromFacts({
+        paymentStatus: 'AUTHORIZED',
+        paymentProviderRef: null,
+      }),
+    ).toEqual([{ severity: 'medium', title: 'Payment reference missing' }]);
+
+    expect(
+      bookingPaymentReferenceCheckFlagsFromFacts({
+        paymentStatus: 'AUTHORIZED',
+        paymentProviderRef: 'momo-auth',
+      }),
+    ).toEqual([]);
   });
 
   it('requires payment operations for payment holds, missing references, cash pending, and cash debt', () => {

@@ -1,4 +1,5 @@
 import {
+  bookingChatCheckFlagsFromFacts,
   bookingChatRepairActionState,
   bookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps,
@@ -38,6 +39,24 @@ describe('booking chat repair action state', () => {
         messageCount: 1,
       }),
     ).toBe(false);
+  });
+
+  it('builds quiet chat check flags from chat facts', () => {
+    expect(
+      bookingChatCheckFlagsFromFacts({
+        status: 'IN_SERVICE',
+        hasChatRoom: true,
+        messageCount: 0,
+      }),
+    ).toEqual([{ severity: 'low', title: 'Chat quiet' }]);
+
+    expect(
+      bookingChatCheckFlagsFromFacts({
+        status: 'COMPLETED',
+        hasChatRoom: true,
+        messageCount: 0,
+      }),
+    ).toEqual([]);
   });
 
   it('returns ready state when the chat room exists', () => {

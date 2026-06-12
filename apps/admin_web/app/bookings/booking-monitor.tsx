@@ -132,6 +132,7 @@ import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
 import {
+  bookingChatCheckFlagsFromFacts,
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../lib/booking-chat-repair-action-state';
@@ -165,6 +166,7 @@ import {
   bookingPaymentOutcomeCheckFlagsFromFacts,
   bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
+  bookingPaymentReferenceCheckFlagsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
 import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
@@ -1746,19 +1748,18 @@ function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): Bookin
 }
 
 function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return compactBookingCheckFlags([
-    bookingCheckFlag(bookingChatQuietNeedsOps(booking), 'low', 'Chat quiet'),
-  ]);
+  return bookingChatCheckFlagsFromFacts({
+    status: booking.status,
+    hasChatRoom: bookingMatchingChatReady(booking),
+    messageCount: booking.chatRoom?.messages?.length ?? 0,
+  });
 }
 
 function bookingPaymentReferenceCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return compactBookingCheckFlags([
-    bookingCheckFlag(
-      booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
-      'medium',
-      'Payment reference missing',
-    ),
-  ]);
+  return bookingPaymentReferenceCheckFlagsFromFacts({
+    paymentStatus: booking.payment?.status,
+    paymentProviderRef: booking.payment?.providerRef,
+  });
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {

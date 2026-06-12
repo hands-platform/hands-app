@@ -1,3 +1,9 @@
+import {
+  bookingCheckFlag,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag,
+} from './booking-check-level';
+
 export type BookingChatRepairNeedsOpsInput = {
   status: string;
   hasChatRoom: boolean;
@@ -37,6 +43,14 @@ export function bookingChatRepairNeedsOps(input: BookingChatRepairNeedsOpsInput)
 
 export function bookingChatQuietNeedsOps(input: BookingChatQuietNeedsOpsInput): boolean {
   return input.hasChatRoom && input.messageCount === 0 && activeChatStatuses.has(input.status);
+}
+
+export function bookingChatCheckFlagsFromFacts(
+  input: BookingChatQuietNeedsOpsInput,
+): BookingCheckLevelFlag[] {
+  return compactBookingCheckFlags([
+    bookingCheckFlag(bookingChatQuietNeedsOps(input), 'low', 'Chat quiet'),
+  ]);
 }
 
 export function bookingChatRepairActionState(
