@@ -13,6 +13,7 @@ const requiredSources = [
   resolve(repoRoot, 'infra/scripts/check-env.mjs'),
   resolve(repoRoot, 'infra/scripts/check-external-setup.mjs'),
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
+  resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
 ];
 const smokeEnvRequiredSources = [
