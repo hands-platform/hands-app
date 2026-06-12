@@ -56,7 +56,7 @@ npm.cmd run external:check:maps
 
 6. Push
    - Current: in-app notification records plus server-side FCM delivery path.
-   - Next: confirm live Android/iOS device delivery with a real app FCM token.
+   - Next: confirm live Android/iOS device delivery with a real app FCM token from the selected role, phone, and platform.
    - Keep Firebase Admin credentials server-side only.
    - Verify:
 

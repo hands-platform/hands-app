@@ -30,7 +30,7 @@ Canonical operator order:
 | MapTiler        | Local/staging key configured            | Keep key out of Git                            |
 | Geoapify        | Local/staging key configured            | Keep key out of Git                            |
 | Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore          |
-| Push            | Server-side FCM path testable           | Confirm real app token delivery before rollout |
+| Push            | Server-side FCM path testable           | Confirm same-session app token delivery before rollout |
 | SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                |
 | Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials later             |
 | Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later |
@@ -107,7 +107,7 @@ After downloading the Firebase Admin private key JSON, install it outside Git wi
 npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json -UpdateEnv
 ```
 
-`fcm:push-smoke -- --dry-run` is config-only. It does not contact the API or FCM; run `npm.cmd run fcm:push-smoke` without `--dry-run` only after Firebase Admin credentials and a real app FCM token are ready.
+`fcm:push-smoke -- --dry-run` is config-only. It does not contact the API or FCM; run `npm.cmd run fcm:push-smoke` without `--dry-run` only after Firebase Admin credentials and a real app FCM token from the selected role, phone, and platform are ready.
 For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `docker-compose.prod.yml` mounts that host file into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
