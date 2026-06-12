@@ -23,10 +23,6 @@ import {
 } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import {
-  bookingListActionChipsFromFacts,
-  type BookingListActionChip,
-} from '../../lib/booking-list-action-chips';
-import {
   bookingListStageFromFacts,
   type BookingListStage,
 } from '../../lib/booking-list-stage';
@@ -217,6 +213,7 @@ import {
 } from './booking-payment-ops-inputs';
 import { bookingPricingPolicySignalInput } from './booking-pricing-policy-inputs';
 import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
+import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
@@ -1325,36 +1322,6 @@ function bookingChatListState(booking: AdminBooking) {
     status: booking.status,
     hasChatRoom: bookingMatchingChatReady(booking),
     messageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
-}
-
-function bookingListActionChips(booking: AdminBooking, nowMs: number): readonly BookingListActionChip[] {
-  const paymentNeedsOps = bookingPaymentNeedsOps(booking);
-  const locationNeedsOps = bookingLocationNeedsOps(booking, nowMs);
-  const chatNeedsRepair = bookingChatRepairNeedsOps(booking);
-  const cashDebtNeedsOps = bookingCashDebtNeedsOps(booking);
-  const closeoutNeedsOps = bookingCompletedCloseoutNeedsOps(booking);
-  const pricingNeedsOps = bookingPricingPolicyNeedsOps(booking);
-  const chatState = bookingChatListState(booking);
-  const pricingPolicy = bookingPricingPolicySignal(booking);
-  const paymentAmount = booking.payment
-    ? money(Number(booking.payment.amount ?? 0), booking.payment.currency)
-    : 'No payment record';
-
-  return bookingListActionChipsFromFacts({
-    cashDebtNeedsOps,
-    chatNeedsRepair,
-    chatState,
-    closeoutNeedsOps,
-    locationDetail: bookingLocationSignalLabel(booking, nowMs),
-    locationNeedsOps,
-    paymentDetail: booking.payment
-      ? `${booking.payment.method} / ${booking.payment.status} / ${paymentAmount}`
-      : 'No payment record is attached to this booking.',
-    paymentNeedsOps,
-    pricingDetail: pricingPolicy.label,
-    pricingNeedsOps,
-    pricingTone: pricingPolicy.tone,
   });
 }
 
