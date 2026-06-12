@@ -198,6 +198,7 @@ export const setupOrder = [
     commands: [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
+      'npm.cmd run fcm:push-smoke -- --dry-run',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_PLATFORM="android"; npm.cmd run fcm:push-smoke',
       'Open http://localhost:3101/notifications?review=fcm',
       'Open http://localhost:3101/notifications?review=failed',
