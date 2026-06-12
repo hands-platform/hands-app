@@ -113,6 +113,10 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
+import {
+  bookingCheckFlagSeverityWeight,
+  bookingNextActionPriorityFromFacts,
+} from './booking-next-action-priority';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
@@ -250,9 +254,6 @@ type MarketplaceCoveragePillState = {
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
-const p0ActionPriorityStatuses = new Set(['NO_SHOW', 'EXPIRED']);
-const p1ActionPriorityStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY']);
-const p2ActionPriorityStatuses = new Set(['OPEN_MATCHING', 'ARRIVED', 'IN_SERVICE']);
 const financeActionFlagKeywords = ['payment', 'closeout', 'cash', 'payout'] as const;
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
@@ -981,7 +982,9 @@ function bookingNextActionCandidate(booking: AdminBooking, nowMs: number): Booki
 
 function highestBookingCheckFlag(booking: AdminBooking, nowMs: number) {
   return [...bookingCheckFlags(booking, nowMs)].sort(
-    (left, right) => checkFlagWeight(right) - checkFlagWeight(left),
+    (left, right) =>
+      bookingCheckFlagSeverityWeight(right.severity) -
+      bookingCheckFlagSeverityWeight(left.severity),
   )[0];
 }
 
@@ -1387,52 +1390,18 @@ function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
   });
 }
 
-function checkFlagWeight(flag: BookingCheckFlag) {
-  if (flag.severity === 'high') {
-    return 3;
-  }
-  if (flag.severity === 'medium') {
-    return 2;
-  }
-  return 1;
-}
-
 function bookingActionPriority(
   booking: AdminBooking,
   nowMs: number,
   flag?: BookingCheckFlag,
 ): BookingNextAction['priority'] {
-  if (bookingNeedsP0Action(booking, flag)) {
-    return 'P0';
-  }
-  if (bookingNeedsP1Action(booking, nowMs, flag)) {
-    return 'P1';
-  }
-  if (bookingNeedsP2Action(booking)) {
-    return 'P2';
-  }
-  return 'P3';
-}
-
-function bookingNeedsP0Action(booking: AdminBooking, flag?: BookingCheckFlag) {
-  return (
-    flag?.severity === 'high' ||
-    p0ActionPriorityStatuses.has(booking.status) ||
-    bookingPaymentNeedsOps(booking) ||
-    bookingCompletedCloseoutNeedsOps(booking)
-  );
-}
-
-function bookingNeedsP1Action(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
-  return (
-    flag?.severity === 'medium' ||
-    p1ActionPriorityStatuses.has(booking.status) ||
-    bookingLocationNeedsOps(booking, nowMs)
-  );
-}
-
-function bookingNeedsP2Action(booking: AdminBooking) {
-  return p2ActionPriorityStatuses.has(booking.status);
+  return bookingNextActionPriorityFromFacts({
+    completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+    flagSeverity: flag?.severity,
+    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
+    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+    status: booking.status,
+  });
 }
 
 function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
