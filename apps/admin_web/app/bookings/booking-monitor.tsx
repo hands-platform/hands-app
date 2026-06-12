@@ -111,6 +111,7 @@ import {
   bookingMonitorSummaryRows,
   type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
+import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
@@ -540,37 +541,7 @@ export function BookingMonitor({
         summary={summary}
       />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking command center</h2>
-            <p className="muted">
-              One-glance control for dispatch pressure, customer protection, payment closeout, and handoff
-              quality.
-            </p>
-          </div>
-          <span className="pill pill-info">Operator first view</span>
-        </div>
-        <div className="grid admin-mt-12">
-          {commandCenterWithGate.map((lane) => (
-            <Link className="card" href={lane.href} key={lane.title}>
-              <p>{lane.title}</p>
-              <h2>{lane.status}</h2>
-              <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-              <p className="muted admin-mt-8">
-                {lane.detail}
-              </p>
-              <div className="participant-list admin-mt-10">
-                {lane.metrics.map((item) => (
-                  <span className="pill" key={item.label}>
-                    {item.label}: {item.value}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <BookingMonitorCommandCenterSection lanes={commandCenterWithGate} />
 
       <section className="card admin-mt-16">
         <div className="ops-section-header">
