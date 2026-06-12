@@ -50,7 +50,6 @@ import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
   bookingLocationNeedsOpsFromFacts,
   hasProviderCoordinate,
-  isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
 } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
@@ -166,6 +165,12 @@ import {
 } from './booking-monitor-list-marketplace';
 import { bookingMarketplaceOperationsBookingFact } from './booking-marketplace-operations-card-inputs';
 import {
+  bookingIsBackupSelected,
+  bookingIsSelectedProviderParticipant,
+  bookingPreferredAwaitingDecision,
+  bookingPreferredProviderStateLabel,
+} from './booking-preferred-provider-state';
+import {
   bookingLocationPillLabel,
   bookingLocationSignalLabel,
   bookingLocationToneClass,
@@ -219,9 +224,6 @@ import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate
 import {
   bookingCustomerSelectableParticipantsForBooking as buildBookingCustomerSelectableParticipants,
   bookingMarketplaceParticipantsForBooking as buildBookingMarketplaceParticipants,
-  bookingParticipantPartnerId,
-  bookingPreferredPartnerIdForChoice,
-  bookingSelectedPartnerIdForChoice,
 } from '../../lib/booking-participant-choice';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
@@ -695,7 +697,9 @@ function buildBookingMonitorListRow(
     openedDateLabel: formatDate(bookingRequestOpenedAt(booking)),
     opsSignal: opsSignal(booking),
     preferredPartnerLabel: partnerDisplayName(booking.preferredProvider, 'none'),
-    preferredProviderStateLabel: booking.preferredProvider ? preferredProviderStateLabel(booking) : null,
+    preferredProviderStateLabel: booking.preferredProvider
+      ? bookingPreferredProviderStateLabel(booking)
+      : null,
     pricingPolicy: bookingPricingPolicySignal(booking),
     recencyLabel: recencyLabel(booking, nowMs),
     selectedFinalPartnerPillLabel: bookingMonitorListSelectedFinalPartnerPillLabel(booking),
@@ -732,7 +736,7 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
 
   return {
     active,
-    backupSelected: bookings.filter((booking) => isBackupSelected(booking)),
+    backupSelected: bookings.filter((booking) => bookingIsBackupSelected(booking)),
     cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
     chatEvidence: bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, nowMs)),
     chatReady: bookings.filter((booking) => bookingMatchingChatReady(booking)),
@@ -958,7 +962,7 @@ function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number)
 function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
   return {
     addressNeedsOps: bookingAddressNeedsOps(booking),
-    backupSelected: isBackupSelected(booking),
+    backupSelected: bookingIsBackupSelected(booking),
     chatEvidenceNeedsOps: bookingChatEvidenceNeedsOps(booking, nowMs),
     chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
     closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
@@ -1201,7 +1205,7 @@ function opsSignal(booking: AdminBooking) {
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
     return bookingOpsSignal('info', 'Marketplace options ready');
   }
-  if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
+  if (booking.status === 'MATCHED' && bookingIsBackupSelected(booking)) {
     return bookingOpsSignal('info', 'Marketplace partner selected');
   }
   if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
@@ -1424,7 +1428,7 @@ function nextAction(booking: AdminBooking) {
     hasPreferredPartner: Boolean(booking.preferredProvider),
     preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    backupSelected: isBackupSelected(booking),
+    backupSelected: bookingIsBackupSelected(booking),
     completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
   });
 }
@@ -1478,24 +1482,6 @@ function partnerDisplayName(provider?: { displayName?: string | null } | null, f
   return displayMarketplaceText(provider?.displayName ?? fallback);
 }
 
-function isSelectedProviderParticipant(booking: AdminBooking) {
-  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
-  if (!selectedProviderId) {
-    return false;
-  }
-
-  return (booking.participants ?? []).some(
-    (participant) =>
-      bookingParticipantPartnerId(participant) === selectedProviderId && participant.status !== 'REJECTED',
-  );
-}
-
-function isBackupSelected(booking: AdminBooking) {
-  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
-  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
-  return Boolean(selectedProviderId && preferredProviderId && selectedProviderId !== preferredProviderId);
-}
-
 function marketplaceParticipants(booking: AdminBooking) {
   return buildBookingMarketplaceParticipants(booking);
 }
@@ -1509,12 +1495,14 @@ function buildMarketplaceBookingCoverageRows(
       const hasPreferredProvider = Boolean(booking.preferredProvider);
 
       return bookingMarketplaceCoverageInput(booking, nowMs, {
-        backupSelected: hasPreferredProvider && isBackupSelected(booking),
+        backupSelected: hasPreferredProvider && bookingIsBackupSelected(booking),
         firstPickPending: hasPreferredProvider && bookingFirstPickPending(booking),
         hasFinalPartner: bookingHasFinalPartner(booking),
         marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
         matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-        preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
+        preferredProviderState: hasPreferredProvider
+          ? bookingPreferredProviderStateLabel(booking)
+          : null,
         selectableCount: bookingCustomerSelectableCount(booking),
         selectedPartnerLabel: bookingFinalPartnerLabel(booking),
       });
@@ -1584,7 +1572,7 @@ function bookingCustomerSelectableCount(booking: AdminBooking) {
 }
 
 function bookingFirstPickPending(booking: AdminBooking) {
-  return isPreferredAwaitingDecision(booking);
+  return bookingPreferredAwaitingDecision(booking);
 }
 
 function bookingHasFinalPartner(booking: AdminBooking) {
@@ -1633,58 +1621,10 @@ function bookingSelectionFacts(booking: AdminBooking) {
   const hasPreferredProvider = Boolean(booking.preferredProvider);
   return bookingMonitorSelectionFactsFromBooking(booking, {
     firstPickPending: bookingFirstPickPending(booking),
-    isBackupSelected: isBackupSelected(booking),
-    isSelectedProviderParticipant: isSelectedProviderParticipant(booking),
+    isBackupSelected: bookingIsBackupSelected(booking),
+    isSelectedProviderParticipant: bookingIsSelectedProviderParticipant(booking),
     marketplaceCount: bookingMarketplaceParticipantCount(booking),
-    preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
+    preferredProviderState: hasPreferredProvider ? bookingPreferredProviderStateLabel(booking) : null,
   });
-}
-
-function preferredParticipantState(booking: AdminBooking) {
-  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
-  if (!preferredProviderId) {
-    return null;
-  }
-
-  return (
-    (booking.participants ?? []).find(
-      (participant) => bookingParticipantPartnerId(participant) === preferredProviderId,
-    ) ?? null
-  );
-}
-
-function isPreferredAwaitingDecision(booking: AdminBooking) {
-  const participant = preferredParticipantState(booking);
-  return isPreferredAwaitingDecisionByStatus({
-    finalSelection: booking.matchingEvidence?.finalSelection,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredParticipantStatus: participant?.status,
-  });
-}
-
-function preferredProviderStateLabel(booking: AdminBooking) {
-  if (isBackupSelected(booking)) {
-    return 'not final';
-  }
-
-  if (booking.matchingEvidence?.firstPickStatus) {
-    return preferredPartnerDecisionLabel(booking.matchingEvidence.firstPickStatus);
-  }
-
-  const participant = preferredParticipantState(booking);
-  if (!participant) {
-    return 'requested';
-  }
-  return preferredPartnerDecisionLabel(participant.status);
-}
-
-function preferredPartnerDecisionLabel(status: string) {
-  if (status === 'REJECTED') {
-    return 'declined';
-  }
-  if (status === 'ACCEPTED' || status === 'SELECTED') {
-    return 'confirmed';
-  }
-  return 'pending';
 }
 
