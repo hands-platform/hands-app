@@ -416,14 +416,12 @@ export class BookingsService {
       preferredProviderId: preferredProvider?.id,
       matchingPolicy,
     });
-    const result = this.matching.openBooking({
-      booking: clientBookingResponse(booking),
-      policy: matchingPolicy,
-      payload: bookingOpenMatchingPayload(matchingPolicy, eligibleBackupProviders.length),
+    const result = await this.activateOpenMatchingBooking({
+      booking,
+      matchingPolicy,
+      eligibleBackupProviderCount: eligibleBackupProviders.length,
+      timeoutAt: booking.expiresAt ?? timing.expiresAt,
     });
-    await this.scheduleBookingPaymentStatusCheck(booking);
-    await this.matching.registerActiveBooking(booking.id, result);
-    await this.matching.scheduleBookingTimeout(booking.id, booking.expiresAt ?? timing.expiresAt);
     await this.announceOpenBooking({
       userId: customerUserId,
       bookingId: booking.id,
@@ -555,6 +553,23 @@ export class BookingsService {
       backupOpenMode: input.matchingPolicy.backupOpenMode,
       policy: input.matchingPolicy,
     });
+  }
+
+  private async activateOpenMatchingBooking(input: {
+    booking: OpenBookingForClientResponse;
+    matchingPolicy: MatchingPolicy;
+    eligibleBackupProviderCount: number;
+    timeoutAt: Date;
+  }) {
+    const result = this.matching.openBooking({
+      booking: clientBookingResponse(input.booking),
+      policy: input.matchingPolicy,
+      payload: bookingOpenMatchingPayload(input.matchingPolicy, input.eligibleBackupProviderCount),
+    });
+    await this.scheduleBookingPaymentStatusCheck(input.booking);
+    await this.matching.registerActiveBooking(input.booking.id, result);
+    await this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt);
+    return result;
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
