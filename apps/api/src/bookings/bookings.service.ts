@@ -770,13 +770,10 @@ export class BookingsService {
       matchingPolicy,
       eligibleBackupProviderCount: eligibleBackupProviders.length,
     });
-    await this.notifyBackupProvidersAndRecordTrace({
-      stage: 'first_pick_declined',
+    await this.notifyFirstPickDeclinedBackupProviders({
       bookingId: input.bookingId,
-      providers: eligibleBackupProviders,
-      backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-      backupOpenMode: matchingPolicy.backupOpenMode,
-      backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
+      matchingPolicy,
+      eligibleBackupProviders,
       matchingPayload: result,
     });
   }
@@ -827,6 +824,23 @@ export class BookingsService {
       }),
     );
     return result;
+  }
+
+  private async notifyFirstPickDeclinedBackupProviders(input: {
+    bookingId: string;
+    matchingPolicy: MatchingPolicy;
+    eligibleBackupProviders: BackupProviderNotificationInput['providers'];
+    matchingPayload: ReturnType<MatchingService['openBooking']>;
+  }) {
+    await this.notifyBackupProvidersAndRecordTrace({
+      stage: 'first_pick_declined',
+      bookingId: input.bookingId,
+      providers: input.eligibleBackupProviders,
+      backupProviderRadiusMeters: input.matchingPolicy.backupProviderRadiusMeters,
+      backupOpenMode: input.matchingPolicy.backupOpenMode,
+      backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
+      matchingPayload: input.matchingPayload,
+    });
   }
 
   private async announceOpenBooking(input: {
