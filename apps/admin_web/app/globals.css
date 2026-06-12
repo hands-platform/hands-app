@@ -773,7 +773,8 @@ a.action-button-card:hover {
 }
 
 .setup-command-list code,
-.setup-command-block code {
+.setup-command-block code,
+.command-copy-row code {
   background: #0f172a;
   border-radius: 6px;
   color: #e2e8f0;
@@ -783,6 +784,45 @@ a.action-button-card:hover {
   overflow-x: auto;
   padding: 10px;
   white-space: pre-wrap;
+}
+
+.command-copy-row {
+  align-items: flex-start;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 6px;
+}
+
+.command-copy-button {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-link);
+  display: inline-flex;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px;
+  width: 36px;
+}
+
+.command-copy-button:hover {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.command-copy-button.is-copied {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.command-copy-button.is-failed {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
 }
 
 .timeline-done {

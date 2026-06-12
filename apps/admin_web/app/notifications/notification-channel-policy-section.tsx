@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import type { NotificationPartnerAlertSmokeFallback } from './notification-page-model';
+import { NotificationPreflightCopyButton } from './notification-preflight-copy-button';
 
 type NotificationChannelPolicySectionProps = {
   readonly inAppDeliveries: number;
@@ -62,7 +63,10 @@ export function NotificationChannelPolicySection({
               Partner alert {partnerAlertSmokeFallback.partnerAlertType} is currently routed by policy.
             </p>
             {partnerAlertSmokeFallback.preflightCommand ? (
-              <code className="admin-mt-6">{partnerAlertSmokeFallback.preflightCommand}</code>
+              <div className="command-copy-row">
+                <code>{partnerAlertSmokeFallback.preflightCommand}</code>
+                <NotificationPreflightCopyButton command={partnerAlertSmokeFallback.preflightCommand} />
+              </div>
             ) : null}
           </div>
         ) : null}

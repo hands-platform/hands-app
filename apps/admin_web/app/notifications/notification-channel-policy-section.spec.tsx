@@ -60,6 +60,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID=notification-earning');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight');
     expect(rendered).toContain('provider.payout_batch.updated');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['command-copy-row']));
   });
 });
 
@@ -115,9 +116,7 @@ function classNamesIn(value: unknown): string[] {
 }
 
 function resolveElement(value: unknown): unknown {
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+  return value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
