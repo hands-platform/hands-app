@@ -26,7 +26,9 @@ describe('setup page data', () => {
     const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
-        'After fcm:push-smoke, review the FCM route, failed sends, and stale device queues before enabling OS push broadly.',
+        'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
+        'Live push smoke needs a real app FCM token from the current Android/iOS build.',
+        'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling OS push broadly.',
       ]),
     );
     expect(notificationSetup?.commands).toEqual(
@@ -35,9 +37,12 @@ describe('setup page data', () => {
         'npm.cmd run fcm:token-smoke -- --dry-run',
         'npm.cmd run fcm:push-smoke -- --dry-run',
         'npm.cmd run fcm:token-smoke',
+        '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
         'Open http://localhost:3101/notifications?review=fcm',
         'Open http://localhost:3101/notifications?review=failed',
+        'Open http://localhost:3101/notifications?review=disabled-device',
         'Open http://localhost:3101/notifications?review=stale-device',
+        'Open http://localhost:3101/notifications?review=pending',
       ]),
     );
   });
