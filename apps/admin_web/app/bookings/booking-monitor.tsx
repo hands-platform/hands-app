@@ -240,6 +240,9 @@ const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'R
 const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const p0ActionPriorityStatuses = new Set(['NO_SHOW', 'EXPIRED']);
+const p1ActionPriorityStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY']);
+const p2ActionPriorityStatuses = new Set(['OPEN_MATCHING', 'ARRIVED', 'IN_SERVICE']);
 const financeActionFlagKeywords = ['payment', 'closeout', 'cash', 'payout'] as const;
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
@@ -1447,29 +1450,37 @@ function bookingActionPriority(
   nowMs: number,
   flag?: BookingCheckFlag,
 ): BookingNextAction['priority'] {
-  if (flag?.severity === 'high') {
+  if (bookingNeedsP0Action(booking, flag)) {
     return 'P0';
   }
-  if (
-    booking.status === 'NO_SHOW' ||
-    booking.status === 'EXPIRED' ||
-    bookingPaymentNeedsOps(booking) ||
-    bookingCompletedCloseoutNeedsOps(booking)
-  ) {
-    return 'P0';
-  }
-  if (
-    flag?.severity === 'medium' ||
-    booking.status === 'MATCHED' ||
-    booking.status === 'PROVIDER_ON_THE_WAY' ||
-    bookingLocationNeedsOps(booking, nowMs)
-  ) {
+  if (bookingNeedsP1Action(booking, nowMs, flag)) {
     return 'P1';
   }
-  if (booking.status === 'OPEN_MATCHING' || booking.status === 'ARRIVED' || booking.status === 'IN_SERVICE') {
+  if (bookingNeedsP2Action(booking)) {
     return 'P2';
   }
   return 'P3';
+}
+
+function bookingNeedsP0Action(booking: AdminBooking, flag?: BookingCheckFlag) {
+  return (
+    flag?.severity === 'high' ||
+    p0ActionPriorityStatuses.has(booking.status) ||
+    bookingPaymentNeedsOps(booking) ||
+    bookingCompletedCloseoutNeedsOps(booking)
+  );
+}
+
+function bookingNeedsP1Action(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
+  return (
+    flag?.severity === 'medium' ||
+    p1ActionPriorityStatuses.has(booking.status) ||
+    bookingLocationNeedsOps(booking, nowMs)
+  );
+}
+
+function bookingNeedsP2Action(booking: AdminBooking) {
+  return p2ActionPriorityStatuses.has(booking.status);
 }
 
 function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
