@@ -100,6 +100,18 @@ function checkLine(file, lineNumber, line) {
     addFinding(file, lineNumber, 'private key block');
   }
 
+  if (/"type"\s*:\s*"service_account"/.test(line)) {
+    addFinding(file, lineNumber, 'Google service account JSON literal');
+  }
+
+  if (/"private_key_id"\s*:\s*"[A-Za-z0-9_-]{16,}"/.test(line)) {
+    addFinding(file, lineNumber, 'Google service account private key id literal');
+  }
+
+  if (/"client_email"\s*:\s*"[^"]+@[^"]+\.iam\.gserviceaccount\.com"/.test(line)) {
+    addFinding(file, lineNumber, 'Google service account client email literal');
+  }
+
   const assignment = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.+?)\s*$/);
   if (!assignment) {
     return;
