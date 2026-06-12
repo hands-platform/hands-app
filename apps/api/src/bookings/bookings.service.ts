@@ -252,9 +252,11 @@ export class BookingsService {
       providerId: input.providerId,
       serviceId: service.id,
     });
-    const customerPrice = resolveCustomerPrice(service, providerService?.price);
-    await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
-    const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
+    const { coupon, customerPrice, priceSummary } = await this.resolveBookingPricingForCreation({
+      service,
+      providerServicePrice: providerService?.price,
+      couponCode: input.couponCode,
+    });
     const selectedLocation = await this.resolveCustomerSelectedBookingLocation({
       customerProfileId: customer.id,
       selectedLocationId: input.selectedLocationId,
@@ -296,11 +298,6 @@ export class BookingsService {
     const timing = openBookingRequestTiming({
       durationMin: service.durationMin,
       providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
-    });
-    const priceSummary = resolveBookingPriceSummary({
-      customerPrice,
-      adminMinimumAmount: service.basePrice,
-      coupon,
     });
     const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
     const customerToBookingDistanceMeters = customerCurrentLocation
@@ -468,6 +465,25 @@ export class BookingsService {
       throw new BadRequestException('Selected customer location was not found');
     }
     return selectedLocation;
+  }
+
+  private async resolveBookingPricingForCreation(input: {
+    service: { id: string; basePrice: number; priceStep?: number | null };
+    providerServicePrice?: number | null;
+    couponCode?: string;
+  }) {
+    const customerPrice = resolveCustomerPrice(input.service, input.providerServicePrice);
+    await this.ensureServicePayoutRuleConfigured(input.service.id, customerPrice);
+    const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
+    return {
+      coupon,
+      customerPrice,
+      priceSummary: resolveBookingPriceSummary({
+        customerPrice,
+        adminMinimumAmount: input.service.basePrice,
+        coupon,
+      }),
+    };
   }
 
   private resolveBookingAddressInput(input: {
