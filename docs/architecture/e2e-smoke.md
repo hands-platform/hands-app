@@ -41,6 +41,8 @@ $env:FCM_SMOKE_EXPECT_STATUS='SENT'
 npm.cmd run fcm:push-smoke
 ```
 
+Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
+
 ## Expected Result
 
 The script prints a JSON object with `ok: true` and IDs for the booking, chat room, review, payout batch, refund, and verification file.

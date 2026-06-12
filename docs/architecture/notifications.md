@@ -66,6 +66,8 @@ $env:FCM_SMOKE_EXPECT_STATUS='SENT'
 npm.cmd run fcm:push-smoke
 ```
 
+The smoke also accepts `-- --env=.env` and merges that file with the current shell environment, so local-only values like `API_BASE_URL` and `FCM_SMOKE_DEVICE_TOKEN` can live outside the command line. Shell variables still win over file values.
+
 The smoke registers the device token for a demo customer/provider, retries an existing notification, and verifies that a new delivery record is created. It never prints the raw FCM token. If the selected user has no notification yet, run a booking/chat flow first or set `FCM_SMOKE_NOTIFICATION_ID` to a known notification.
 
 ## Mobile Setup Notes

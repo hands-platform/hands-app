@@ -1,15 +1,19 @@
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
-const deviceToken = process.env.FCM_SMOKE_DEVICE_TOKEN?.trim();
-const role = normalizeRole(process.env.FCM_SMOKE_ROLE ?? 'CUSTOMER');
-const phone = process.env.FCM_SMOKE_PHONE ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
-const otp = process.env.FCM_SMOKE_OTP ?? process.env.DEV_OTP ?? '123456';
-const adminPhone = process.env.FCM_SMOKE_ADMIN_PHONE ?? process.env.ADMIN_DEMO_PHONE ?? '+84900000099';
-const adminOtp = process.env.FCM_SMOKE_ADMIN_OTP ?? process.env.ADMIN_DEMO_OTP ?? '123456';
-const requestedNotificationId = process.env.FCM_SMOKE_NOTIFICATION_ID?.trim();
-const expectedStatus = (process.env.FCM_SMOKE_EXPECT_STATUS ?? 'ANY').trim().toUpperCase();
-const expectedProvider = (process.env.FCM_SMOKE_EXPECT_PROVIDER ?? 'FCM').trim().toUpperCase();
-const timeoutMs = Number(process.env.FCM_SMOKE_TIMEOUT_MS ?? 30_000);
-const pollIntervalMs = Number(process.env.FCM_SMOKE_POLL_INTERVAL_MS ?? 1_000);
+import { loadMergedEnv } from './lib/env-file.mjs';
+
+const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
+const { env, envFileExists, envPath } = loadMergedEnv(envFile);
+const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
+const deviceToken = env.FCM_SMOKE_DEVICE_TOKEN?.trim();
+const role = normalizeRole(env.FCM_SMOKE_ROLE ?? 'CUSTOMER');
+const phone = env.FCM_SMOKE_PHONE ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
+const otp = env.FCM_SMOKE_OTP ?? env.DEV_OTP ?? '123456';
+const adminPhone = env.FCM_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099';
+const adminOtp = env.FCM_SMOKE_ADMIN_OTP ?? env.ADMIN_DEMO_OTP ?? '123456';
+const requestedNotificationId = env.FCM_SMOKE_NOTIFICATION_ID?.trim();
+const expectedStatus = (env.FCM_SMOKE_EXPECT_STATUS ?? 'ANY').trim().toUpperCase();
+const expectedProvider = (env.FCM_SMOKE_EXPECT_PROVIDER ?? 'FCM').trim().toUpperCase();
+const timeoutMs = Number(env.FCM_SMOKE_TIMEOUT_MS ?? 30_000);
+const pollIntervalMs = Number(env.FCM_SMOKE_POLL_INTERVAL_MS ?? 1_000);
 const dryRun = process.argv.includes('--dry-run');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -26,6 +30,10 @@ if (dryRun) {
       {
         ok: true,
         mode: 'dry-run',
+        envFile: {
+          path: envPath,
+          exists: envFileExists,
+        },
         apiBaseUrl,
         role,
         phone,
