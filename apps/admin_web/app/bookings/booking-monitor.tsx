@@ -80,7 +80,6 @@ import {
   bookingDashboardTone,
   commandToneClass,
   commandToneLabel,
-  commandToneWeight,
   type BookingActionPriority,
   type BookingCommandTone,
 } from './booking-command-display';
@@ -121,6 +120,7 @@ import {
   bookingNextActionOwnerFromFacts,
   type BookingNextActionOwner,
 } from './booking-next-action-owner';
+import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
@@ -960,17 +960,12 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
 }
 
 function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
-  return bookings
-    .map((booking) => bookingNextActionCandidate(booking, nowMs))
-    .filter((item): item is BookingNextAction => Boolean(item))
-    .sort((left, right) => {
-      const toneDelta = commandToneWeight(right.tone) - commandToneWeight(left.tone);
-      if (toneDelta !== 0) {
-        return toneDelta;
-      }
-      return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
-    })
-    .slice(0, 5);
+  return orderedBookingNextActions(
+    bookings
+      .map((booking) => bookingNextActionCandidate(booking, nowMs))
+      .filter((item): item is BookingNextAction => Boolean(item)),
+    (action) => bookingTimestamp(action.booking),
+  );
 }
 
 function bookingNextActionCandidate(booking: AdminBooking, nowMs: number): BookingNextAction | null {
