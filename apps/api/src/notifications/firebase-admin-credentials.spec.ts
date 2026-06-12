@@ -82,6 +82,21 @@ describe('Firebase Admin credential helpers', () => {
     });
   });
 
+  it('does not hide malformed service account JSON behind split credentials', () => {
+    expect(
+      firebaseCredentialReadiness({
+        projectId: 'hands-demo',
+        clientEmail: 'firebase-admin@example.test',
+        privateKey: 'private-key',
+        serviceAccountJson: '{}',
+      }),
+    ).toEqual({
+      ready: false,
+      missing: [],
+      invalid: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+    });
+  });
+
   it('requires application default credentials to point to a valid service account file', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
     const serviceAccountPath = join(tempDir, 'firebase-admin.json');
