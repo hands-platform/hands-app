@@ -133,6 +133,7 @@ import {
   bookingCommandCenterFromFacts,
   type BookingCommandCenterLane,
 } from './booking-command-center-board';
+import { bookingCommandDecisionStripInput } from './booking-command-decision-strip-inputs';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
@@ -1293,21 +1294,17 @@ function bookingListCommandDecisionStrip(booking: AdminBooking) {
   const addressState = bookingAddressSnapshotState(booking);
   const marketplaceCount = bookingMarketplaceParticipantCount(booking);
 
-  return bookingCommandDecisionStrip({
-    bookingStatus: booking.status,
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressLabel: addressState.detail,
-    participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: bookingCustomerSelectableCount(booking),
-    marketplaceEligibleCount: marketplaceCount,
-    hasFinalPartner: bookingHasFinalPartner(booking),
-    hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
-    paymentMethod: booking.payment?.method ?? 'NONE',
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
-    closeoutOpenItemCount: bookingCompletedCloseoutNeedsOps(booking) ? 1 : 0,
-  });
+  return bookingCommandDecisionStrip(
+    bookingCommandDecisionStripInput(booking, {
+      addressLabel: addressState.detail,
+      cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
+      closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+      customerChoiceCandidateCount: bookingCustomerSelectableCount(booking),
+      marketplaceEligibleCount: marketplaceCount,
+      hasFinalPartner: bookingHasFinalPartner(booking),
+      hasChatRoom: bookingMatchingChatReady(booking),
+    }),
+  );
 }
 
 function bookingAddressNeedsOps(booking: AdminBooking) {
