@@ -73,6 +73,7 @@ import {
   bookingBackupAlertTraceSummary,
   bookingBackupAlertTraceTone,
 } from './booking-alert-trace';
+import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import {
   actionOrderLabel,
@@ -1381,13 +1382,12 @@ function bookingMatchesEvidenceFilter(
 
 function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
   const summary = bookingBackupAlertTraceSummary(booking, nowMs);
-  if (summary.batchCount > 0) {
-    return true;
-  }
-  return (
-    booking.status === 'OPEN_MATCHING' &&
-    ((booking.participants?.length ?? 0) === 0 || bookingListStage(booking, nowMs).key === 'marketplace')
-  );
+  return bookingAlertEvidenceNeedsOpsFromFacts({
+    alertBatchCount: summary.batchCount,
+    participantCount: booking.participants?.length,
+    stageKey: () => bookingListStage(booking, nowMs).key,
+    status: booking.status,
+  });
 }
 
 function checkFlagWeight(flag: BookingCheckFlag) {
