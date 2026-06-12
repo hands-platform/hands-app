@@ -1,9 +1,12 @@
 import Link from 'next/link';
 
+import type { NotificationPartnerAlertSmokeFallback } from './notification-page-model';
+
 type NotificationChannelPolicySectionProps = {
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
   readonly partnerAlertCount: number;
+  readonly partnerAlertSmokeFallback: NotificationPartnerAlertSmokeFallback | null;
   readonly policyLabel: string;
 };
 
@@ -11,6 +14,7 @@ export function NotificationChannelPolicySection({
   inAppDeliveries,
   fcmDeliveries,
   partnerAlertCount,
+  partnerAlertSmokeFallback,
   policyLabel,
 }: NotificationChannelPolicySectionProps) {
   return (
@@ -45,6 +49,20 @@ export function NotificationChannelPolicySection({
           <h3 className="admin-mt-10">{fcmDeliveries}</h3>
           <p className="muted">OS push delivery attempts created by the active policy.</p>
         </div>
+        {partnerAlertSmokeFallback ? (
+          <div className="ops-task-card">
+            <span className="pill pill-warn">FCM smoke fallback</span>
+            <h3 className="admin-mt-10">
+              {partnerAlertSmokeFallback.suggestedNotificationId
+                ? partnerAlertSmokeFallback.suggestedType
+                : 'Needs candidate'}
+            </h3>
+            <p className="muted">{partnerAlertSmokeFallback.detail}</p>
+            <p className="muted admin-mt-6">
+              Partner alert {partnerAlertSmokeFallback.partnerAlertType} is currently routed by policy.
+            </p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -75,6 +75,14 @@ export type NotificationChannelSummary = {
   readonly policyLabel: string;
 };
 
+export type NotificationPartnerAlertSmokeFallback = {
+  readonly partnerAlertNotificationId: string;
+  readonly partnerAlertType: string;
+  readonly suggestedNotificationId: string | null;
+  readonly suggestedType: string | null;
+  readonly detail: string;
+};
+
 export const notificationFilterLinks = [
   { label: 'All notifications', href: '/notifications', review: '' },
   { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
@@ -260,6 +268,49 @@ export function buildNotificationChannelSummary(
     fcmDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'FCM')).length,
     partnerAlertCount: partnerAlerts.length,
     policyLabel: policyOptionLabel(partnerAlertPolicy),
+  };
+}
+
+export function buildNotificationPartnerAlertSmokeFallback(
+  notifications: readonly AdminNotification[],
+  operationalPolicies: readonly AdminOperationalPolicySetting[],
+): NotificationPartnerAlertSmokeFallback | null {
+  const partnerAlertPolicy = operationalPolicies.find(
+    (setting) => setting.key === 'notification.partner_alert_channel',
+  );
+  if (policyRoutesPartnerAlertsToFcm(partnerAlertPolicy)) {
+    return null;
+  }
+
+  const partnerAlert = newestNotifications(
+    notifications.filter(
+      (notification) =>
+        isProviderNotification(notification) &&
+        isPartnerAlertType(notification.type) &&
+        hasDeliveryProvider(notification, 'IN_APP_ONLY'),
+    ),
+  )[0];
+  if (!partnerAlert) {
+    return null;
+  }
+
+  const suggestedNotification = newestNotifications(
+    notifications.filter(
+      (notification) =>
+        notification.id !== partnerAlert.id &&
+        isSameNotificationUser(notification, partnerAlert) &&
+        !isPartnerAlertType(notification.type),
+    ),
+  )[0];
+
+  return {
+    partnerAlertNotificationId: partnerAlert.id,
+    partnerAlertType: partnerAlert.type,
+    suggestedNotificationId: suggestedNotification?.id ?? null,
+    suggestedType: suggestedNotification?.type ?? null,
+    detail: suggestedNotification
+      ? `Use FCM_SMOKE_NOTIFICATION_ID=${suggestedNotification.id} for the same role/phone smoke preflight.`
+      : 'Create or select a non partner-alert notification for the same provider before expecting FCM smoke to pass.',
   };
 }
 
@@ -591,6 +642,29 @@ function opsHint(notification: AdminNotification) {
 
 function isPartnerAlertType(type: string) {
   return PARTNER_ALERT_TYPE_SET.has(type);
+}
+
+function isProviderNotification(notification: AdminNotification) {
+  return (
+    Boolean(notification.user?.providerProfile) ||
+    (notification.user?.roles ?? []).map((role) => role.toUpperCase()).includes('PROVIDER')
+  );
+}
+
+function isSameNotificationUser(left: AdminNotification, right: AdminNotification) {
+  if (left.user?.id && right.user?.id) {
+    return left.user.id === right.user.id;
+  }
+  return Boolean(left.user?.phone && right.user?.phone && left.user.phone === right.user.phone);
+}
+
+function newestNotifications(notifications: readonly AdminNotification[]) {
+  return [...notifications].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+}
+
+function policyRoutesPartnerAlertsToFcm(setting?: AdminOperationalPolicySetting) {
+  const value = String(setting?.value ?? '');
+  return value === 'FCM_FOR_ALL_BOOKINGS' || value === 'ONESIGNAL_FOR_ALL_BOOKINGS';
 }
 
 function policyOptionLabel(setting?: AdminOperationalPolicySetting) {

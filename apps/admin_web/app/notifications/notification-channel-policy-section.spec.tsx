@@ -6,6 +6,7 @@ describe('NotificationChannelPolicySection', () => {
       inAppDeliveries: 7,
       fcmDeliveries: 2,
       partnerAlertCount: 5,
+      partnerAlertSmokeFallback: null,
       policyLabel: 'In-app first',
     });
 
@@ -28,10 +29,34 @@ describe('NotificationChannelPolicySection', () => {
       inAppDeliveries: 3,
       fcmDeliveries: 0,
       partnerAlertCount: 3,
+      partnerAlertSmokeFallback: null,
       policyLabel: 'In-app only',
     });
 
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
+  });
+
+  it('shows the suggested non partner-alert smoke id when partner-alert policy blocks FCM', () => {
+    const section = NotificationChannelPolicySection({
+      inAppDeliveries: 4,
+      fcmDeliveries: 3,
+      partnerAlertCount: 2,
+      partnerAlertSmokeFallback: {
+        detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same role/phone smoke preflight.',
+        partnerAlertNotificationId: 'notification-payout',
+        partnerAlertType: 'provider.payout_batch.updated',
+        suggestedNotificationId: 'notification-earning',
+        suggestedType: 'earning.created',
+      },
+      policyLabel: 'In-app first',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('FCM smoke fallback');
+    expect(rendered).toContain('earning.created');
+    expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID=notification-earning');
+    expect(rendered).toContain('provider.payout_batch.updated');
   });
 });
 

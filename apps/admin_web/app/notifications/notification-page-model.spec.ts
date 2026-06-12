@@ -3,6 +3,7 @@ import {
   buildNotificationChannelSummary,
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
+  buildNotificationPartnerAlertSmokeFallback,
   buildNotificationSummary,
   buildNotificationTableRows,
   emptyNotificationMessage,
@@ -102,6 +103,89 @@ describe('notification page model', () => {
 
   it('uses an explicit fallback when the partner alert policy is not configured', () => {
     expect(buildNotificationChannelSummary([], []).policyLabel).toBe('Not configured');
+  });
+
+  it('suggests a same-provider non partner-alert notification for FCM smoke fallback', () => {
+    const fallback = buildNotificationPartnerAlertSmokeFallback(
+      [
+        notification({
+          createdAt: '2026-06-01T10:00:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-in-app',
+              provider: 'IN_APP_ONLY',
+              status: 'SKIPPED',
+            },
+          ],
+          id: 'notification-partner-alert',
+          type: 'provider.payout_batch.updated',
+          user: providerUser('provider-user-1'),
+        }),
+        notification({
+          createdAt: '2026-06-01T09:59:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:02:00.000Z',
+              id: 'delivery-fcm',
+              provider: 'FCM',
+              status: 'SENT',
+            },
+          ],
+          id: 'notification-earning',
+          type: 'earning.created',
+          user: providerUser('provider-user-1'),
+        }),
+      ],
+      [
+        {
+          category: 'notifications',
+          enforced: true,
+          key: 'notification.partner_alert_channel',
+          label: 'Partner alert channel',
+          value: 'IN_APP_WITH_PUSH_LATER',
+        },
+      ],
+    );
+
+    expect(fallback).toEqual({
+      detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same role/phone smoke preflight.',
+      partnerAlertNotificationId: 'notification-partner-alert',
+      partnerAlertType: 'provider.payout_batch.updated',
+      suggestedNotificationId: 'notification-earning',
+      suggestedType: 'earning.created',
+    });
+  });
+
+  it('does not suggest a partner-alert fallback when policy already routes partner alerts to FCM', () => {
+    expect(
+      buildNotificationPartnerAlertSmokeFallback(
+        [
+          notification({
+            deliveries: [
+              {
+                attemptedAt: '2026-06-01T10:01:00.000Z',
+                id: 'delivery-in-app',
+                provider: 'IN_APP_ONLY',
+                status: 'SKIPPED',
+              },
+            ],
+            id: 'notification-partner-alert',
+            type: 'provider.payout_batch.updated',
+            user: providerUser('provider-user-1'),
+          }),
+        ],
+        [
+          {
+            category: 'notifications',
+            enforced: true,
+            key: 'notification.partner_alert_channel',
+            label: 'Partner alert channel',
+            value: 'FCM_FOR_ALL_BOOKINGS',
+          },
+        ],
+      ),
+    ).toBeNull();
   });
 
   it('filters notifications by review queue and booking id', () => {
@@ -510,5 +594,14 @@ function notification({
     title: 'Title',
     type,
     user,
+  };
+}
+
+function providerUser(id: string): NonNullable<AdminNotification['user']> {
+  return {
+    id,
+    phone: '+84900000002',
+    roles: ['PROVIDER'],
+    providerProfile: { id: 'provider-profile-1', status: 'APPROVED' },
   };
 }

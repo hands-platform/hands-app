@@ -13,6 +13,7 @@ import {
   buildNotificationChannelSummary,
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
+  buildNotificationPartnerAlertSmokeFallback,
   buildNotificationSummary,
   buildNotificationTableRows,
   emptyNotificationMessage,
@@ -44,6 +45,10 @@ export default async function NotificationsPage({
   const notifications = filterNotifications(allNotifications, filters);
   const summary = buildNotificationSummary(allNotifications);
   const channelSummary = buildNotificationChannelSummary(allNotifications, operationalPolicies);
+  const partnerAlertSmokeFallback = buildNotificationPartnerAlertSmokeFallback(
+    allNotifications,
+    operationalPolicies,
+  );
   const opsQueue = buildNotificationDeliveryOpsQueue(allNotifications);
   const notificationRows = buildNotificationTableRows(notifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
@@ -99,6 +104,7 @@ export default async function NotificationsPage({
         <NotificationChannelPolicySection
           inAppDeliveries={channelSummary.inAppDeliveries}
           fcmDeliveries={channelSummary.fcmDeliveries}
+          partnerAlertSmokeFallback={partnerAlertSmokeFallback}
           partnerAlertCount={channelSummary.partnerAlertCount}
           policyLabel={channelSummary.policyLabel}
         />
