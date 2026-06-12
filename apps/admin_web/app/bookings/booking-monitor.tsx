@@ -2327,32 +2327,32 @@ function bookingMatchingWindowLabel(booking: AdminBooking, nowMs: number) {
 }
 
 function selectionLabel(booking: AdminBooking) {
-  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
-  if (finalSelectionCopy) {
-    return finalSelectionCopy.label;
+  const facts = bookingSelectionFacts(booking);
+  if (facts.finalSelectionCopy) {
+    return facts.finalSelectionCopy.label;
   }
 
-  if (!booking.preferredProvider) {
+  if (!facts.hasPreferredProvider) {
     return 'No first-pick partner';
   }
 
-  if (isBackupSelected(booking)) {
+  if (facts.isBackupSelected) {
     return 'Marketplace partner selected';
   }
 
-  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
+  if (facts.firstPickPending) {
     return 'First-pick partner pending';
   }
 
-  if (preferredProviderStateLabel(booking) === 'declined') {
+  if (facts.preferredProviderState === 'declined') {
     return 'First-pick partner declined';
   }
 
-  if (booking.status === 'MATCHED') {
+  if (facts.isMatched) {
     return 'Final partner selected';
   }
 
-  if (isSelectedProviderParticipant(booking)) {
+  if (facts.isSelectedProviderParticipant) {
     return 'First-pick partner is active';
   }
 
@@ -2360,32 +2360,31 @@ function selectionLabel(booking: AdminBooking) {
 }
 
 function selectionPathLabel(booking: AdminBooking) {
-  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
-  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
+  const facts = bookingSelectionFacts(booking);
 
-  if (!booking.preferredProvider) {
-    return marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
+  if (!facts.hasPreferredProvider) {
+    return facts.marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
   }
 
-  if (finalSelectionCopy?.pathLabel) {
-    return finalSelectionCopy.pathLabel;
+  if (facts.finalSelectionCopy?.pathLabel) {
+    return facts.finalSelectionCopy.pathLabel;
   }
 
-  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
-    return marketplaceCount > 0
+  if (facts.firstPickPending) {
+    return facts.marketplaceCount > 0
       ? 'Direct request first, with marketplace partners already waiting'
       : 'Direct request first, waiting on the first-pick partner';
   }
 
-  if (isBackupSelected(booking)) {
+  if (facts.isBackupSelected) {
     return 'Direct request escalated to marketplace participation, then the guest chose a marketplace partner';
   }
 
-  if (booking.status === 'MATCHED') {
+  if (facts.isMatched) {
     return 'Direct request confirmed by the first-pick partner';
   }
 
-  if (marketplaceCount > 0) {
+  if (facts.marketplaceCount > 0) {
     return 'Marketplace partners are available while the first-pick partner stays in the flow';
   }
 
@@ -2393,32 +2392,47 @@ function selectionPathLabel(booking: AdminBooking) {
 }
 
 function selectionToneClass(booking: AdminBooking) {
-  const finalSelectionCopy = bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection);
-  if (finalSelectionCopy) {
-    return finalSelectionCopy.toneClass;
+  const facts = bookingSelectionFacts(booking);
+  if (facts.finalSelectionCopy) {
+    return facts.finalSelectionCopy.toneClass;
   }
 
-  if (!booking.preferredProvider) {
+  if (!facts.hasPreferredProvider) {
     return 'pill-neutral';
   }
 
-  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
+  if (facts.firstPickPending) {
     return 'pill-warn';
   }
 
-  if (preferredProviderStateLabel(booking) === 'declined') {
+  if (facts.preferredProviderState === 'declined') {
     return 'pill-info';
   }
 
-  if (booking.status === 'MATCHED') {
+  if (facts.isMatched) {
     return 'pill-success';
   }
 
-  if (isSelectedProviderParticipant(booking)) {
+  if (facts.isSelectedProviderParticipant) {
     return 'pill-success';
   }
 
   return 'pill-neutral';
+}
+
+function bookingSelectionFacts(booking: AdminBooking) {
+  const hasPreferredProvider = Boolean(booking.preferredProvider);
+  return {
+    finalSelectionCopy: bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection),
+    firstPickPending:
+      hasPreferredProvider && booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking),
+    hasPreferredProvider,
+    isBackupSelected: hasPreferredProvider && isBackupSelected(booking),
+    isMatched: booking.status === 'MATCHED',
+    isSelectedProviderParticipant: hasPreferredProvider && isSelectedProviderParticipant(booking),
+    marketplaceCount: bookingMarketplaceParticipantCount(booking),
+    preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
+  };
 }
 
 function preferredParticipantState(booking: AdminBooking) {
