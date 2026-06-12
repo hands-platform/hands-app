@@ -21,7 +21,6 @@ import {
   matchingPolicySummaryLabel,
   type BookingMatchingRuleSnapshot,
 } from '../../lib/booking-matching-rule-snapshot';
-import { bookingMatchingCheckFlagsFromFacts } from '../../lib/booking-matching-check-flags';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { humanizeClosureReason } from '../../lib/booking-closure-summary';
 import {
@@ -33,11 +32,10 @@ import {
   type BookingListStage,
 } from '../../lib/booking-list-stage';
 import {
-  bookingCheckFlag,
   bookingCheckLevel,
-  compactBookingCheckFlags,
   type BookingCheckLevelFlag as BookingCheckFlag,
 } from '../../lib/booking-check-level';
+import { bookingMonitorCheckFlagsFromFacts } from '../../lib/booking-monitor-check-flags';
 import {
   buildBookingCommandSummaryCards,
   buildBookingOperatorRouteCards,
@@ -49,7 +47,6 @@ import {
 } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
-  bookingLocationCheckFlagsFromFacts,
   bookingLocationNeedsOpsFromFacts,
   hasProviderCoordinate,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
@@ -65,7 +62,6 @@ import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-hre
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
 import {
-  bookingPricingPolicyCheckFlagsFromSignal,
   bookingPricingPolicySignalFromFacts,
   type BookingPricingPolicySignal,
 } from '../../lib/booking-pricing-policy-signal';
@@ -136,7 +132,6 @@ import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
 import {
-  bookingChatCheckFlagsFromFacts,
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../lib/booking-chat-repair-action-state';
@@ -167,10 +162,8 @@ import {
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
-  bookingPaymentOutcomeCheckFlagsFromFacts,
   bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
-  bookingPaymentReferenceCheckFlagsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
 import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
@@ -1697,65 +1690,28 @@ function bookingOpsSignal(tone: 'info' | 'ok' | 'warn', label: string) {
 }
 
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  return [
-    ...bookingPaymentOutcomeCheckFlags(booking),
-    ...bookingPricingCheckFlags(booking),
-    ...bookingMatchingCheckFlags(booking, nowMs),
-    ...bookingLocationCheckFlags(booking, nowMs),
-    ...bookingChatCheckFlags(booking),
-    ...bookingPaymentReferenceCheckFlags(booking),
-  ];
-}
+  const isOpenMatching = booking.status === 'OPEN_MATCHING';
+  const providerLocationAvailable = hasProviderLocation(booking);
+  const hasChatRoom = bookingMatchingChatReady(booking);
 
-function bookingPaymentOutcomeCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return bookingPaymentOutcomeCheckFlagsFromFacts({
+  return bookingMonitorCheckFlagsFromFacts({
     status: booking.status,
     hasPayment: Boolean(booking.payment),
     paymentStatus: booking.payment?.status,
+    paymentProviderRef: booking.payment?.providerRef,
     completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
     cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-  });
-}
-
-function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return bookingPricingPolicyCheckFlagsFromSignal(bookingPricingPolicySignal(booking));
-}
-
-function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const isOpenMatching = booking.status === 'OPEN_MATCHING';
-  return bookingMatchingCheckFlagsFromFacts({
-    status: booking.status,
+    pricingPolicy: bookingPricingPolicySignal(booking),
     matchingWindowExpired: isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
     firstPickPending: isOpenMatching && bookingFirstPickPending(booking),
     participantCount: bookingMarketplaceParticipantCount(booking),
-    matchingChatReady: booking.status === 'MATCHED' ? bookingMatchingChatReady(booking) : true,
-  });
-}
-
-function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const providerLocationAvailable = hasProviderLocation(booking);
-
-  return bookingLocationCheckFlagsFromFacts({
-    status: booking.status,
+    matchingChatReady: booking.status === 'MATCHED' ? hasChatRoom : true,
     hasProviderLocation: providerLocationAvailable,
     providerLocationFreshness: providerLocationAvailable
       ? providerLocationFreshness(booking, nowMs)
       : 'missing',
-  });
-}
-
-function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return bookingChatCheckFlagsFromFacts({
-    status: booking.status,
-    hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
-}
-
-function bookingPaymentReferenceCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  return bookingPaymentReferenceCheckFlagsFromFacts({
-    paymentStatus: booking.payment?.status,
-    paymentProviderRef: booking.payment?.providerRef,
+    hasChatRoom,
+    chatMessageCount: booking.chatRoom?.messages?.length ?? 0,
   });
 }
 
