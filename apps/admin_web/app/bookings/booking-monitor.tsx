@@ -214,6 +214,7 @@ import {
   bookingPaymentNeedsOpsInput,
   bookingRefundReviewNeedsOpsInput,
 } from './booking-payment-ops-inputs';
+import { bookingPricingPolicySignalInput } from './booking-pricing-policy-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
@@ -1285,16 +1286,7 @@ function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
 }
 
 function bookingPricingPolicySignal(booking: AdminBooking): BookingPricingPolicySignal {
-  const bookedService = booking.services?.[0];
-  const service = bookedService?.service;
-  return bookingPricingPolicySignalFromFacts({
-    hasBookedService: Boolean(bookedService),
-    hasService: Boolean(service),
-    customerPrice: bookedService?.price ?? booking.payment?.amount,
-    minimumPrice: service?.basePrice,
-    priceStep: service?.priceStep,
-    payoutRules: service?.payoutRules ?? [],
-  });
+  return bookingPricingPolicySignalFromFacts(bookingPricingPolicySignalInput(booking));
 }
 
 function bookingListCommandDecisionStrip(booking: AdminBooking) {
