@@ -46,7 +46,7 @@ npm.cmd run fcm:push-smoke
 
 Use `npm.cmd run fcm:token-smoke -- --dry-run` to check the token-registration smoke inputs before writing a synthetic device token.
 Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
-Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry.
+Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
 
 ## Expected Result
 

@@ -27,6 +27,7 @@ describe('setup page data', () => {
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
         'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
+        'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
         'Live push smoke needs a real app FCM token from the current Android/iOS build.',
         'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling OS push broadly.',
       ]),

@@ -74,7 +74,7 @@ npm.cmd run fcm:push-smoke
 
 The smoke also accepts `-- --env=.env` and merges that file with the current shell environment, so local-only values like `API_BASE_URL` and `FCM_SMOKE_DEVICE_TOKEN` can live outside the command line. Shell variables still win over file values.
 Use `npm.cmd run fcm:token-smoke -- --dry-run` to confirm the API URL, platform, and demo actors before writing a synthetic device token.
-Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry.
+Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
 
 `fcm:token-smoke` registers and disables synthetic customer/provider device tokens without contacting FCM. The live FCM smoke registers the real device token, retries an existing notification, and verifies that a new delivery record is created. It never prints the raw FCM token. If the selected user has no notification yet, run a booking/chat flow first or set `FCM_SMOKE_NOTIFICATION_ID` to a known notification.
 

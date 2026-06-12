@@ -40,6 +40,9 @@ if (dryRun) {
       {
         ok: true,
         mode: 'dry-run',
+        scope: 'config-only',
+        contactsApi: false,
+        contactsFcm: false,
         envFile: {
           path: envPath,
           exists: envFileExists,
@@ -310,7 +313,10 @@ function pathValueExists(value) {
 }
 
 function dryRunNextActions() {
-  const actions = ['Run npm.cmd run external:check:push before the live FCM smoke.'];
+  const actions = [
+    'This dry-run checks merged config only; it does not contact the API or FCM.',
+    'Run npm.cmd run external:check:push before the live FCM smoke.',
+  ];
 
   if (!hasExpectedEnvValue('PUSH_PROVIDER', 'fcm')) {
     actions.push('Set PUSH_PROVIDER=fcm for OS push E2E.');
@@ -324,7 +330,7 @@ function dryRunNextActions() {
     actions.push('Set FCM_SMOKE_DEVICE_TOKEN to a real Android/iOS app FCM token.');
   }
 
-  actions.push('Run npm.cmd run fcm:push-smoke when API/Docker are ready.');
+  actions.push('Run npm.cmd run fcm:push-smoke without --dry-run when API/Docker are ready.');
   return actions;
 }
 
