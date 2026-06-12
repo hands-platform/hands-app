@@ -1,9 +1,14 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { bookingMatchingEscalationRowInput } from './booking-matching-escalation-row-inputs';
+import {
+  bookingMatchingEscalationRowInput,
+  bookingMatchingEscalationRowInputFromBooking,
+} from './booking-matching-escalation-row-inputs';
 
 function booking(input: Partial<AdminBooking>): AdminBooking {
   return input as AdminBooking;
 }
+
+const nowMs = new Date('2026-06-12T09:45:00.000Z').getTime();
 
 describe('bookingMatchingEscalationRowInput', () => {
   it('builds row input from booking data and matching escalation facts', () => {
@@ -64,6 +69,33 @@ describe('bookingMatchingEscalationRowInput', () => {
       hasPreferredPartner: false,
       needsOps: true,
       status: 'MATCHED',
+    });
+  });
+
+  it('builds row input from booking timing and chat facts', () => {
+    expect(
+      bookingMatchingEscalationRowInputFromBooking(
+        booking({
+          createdAt: '2026-06-12T09:40:00.000Z',
+          expiresAt: '2026-06-12T09:35:00.000Z',
+          id: 'booking-3',
+          status: 'OPEN_MATCHING',
+        }),
+        nowMs,
+        {
+          marketplaceCount: 0,
+          preferredAwaitingDecision: false,
+          selectableCount: 0,
+          selectionLabel: 'No first-pick partner',
+          selectionPathLabel: 'Open pool request',
+        },
+      ),
+    ).toMatchObject({
+      hasChatRoom: false,
+      needsOps: true,
+      responseWindowExpired: true,
+      status: 'OPEN_MATCHING',
+      windowLabel: '10m overdue',
     });
   });
 });

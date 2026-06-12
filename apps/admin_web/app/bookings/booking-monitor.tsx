@@ -159,7 +159,7 @@ import { bookingMarketplaceOperatingQueueFact } from './booking-marketplace-oper
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
 import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
-import { bookingMatchingEscalationRowInput } from './booking-matching-escalation-row-inputs';
+import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
 import { bookingMatchingFlowTimelineInput } from './booking-matching-flow-timeline-inputs';
 import {
   bookingMonitorSelectionFromFacts,
@@ -1029,21 +1029,15 @@ function buildMatchingEscalationRows(
   nowMs: number,
 ): readonly AdminBookingMatchingEscalationRow[] {
   return buildBookingMatchingEscalationRowsFromFacts(
-    bookings.map((booking) => {
-      const hasChatRoom = bookingMatchingChatReady(booking);
-      const responseWindowExpired = bookingMatchingWindowExpired(booking, nowMs);
-
-      return bookingMatchingEscalationRowInput(booking, {
-        hasChatRoom,
+    bookings.map((booking) =>
+      bookingMatchingEscalationRowInputFromBooking(booking, nowMs, {
         marketplaceCount: bookingMarketplaceParticipantCount(booking),
         preferredAwaitingDecision: bookingFirstPickPending(booking),
-        responseWindowExpired,
         selectableCount: bookingCustomerSelectableCount(booking),
         selectionLabel: selectionLabel(booking),
         selectionPathLabel: selectionPathLabel(booking),
-        windowLabel: bookingMatchingWindowLabel(booking, nowMs),
-      });
-    }),
+      }),
+    ),
   );
 }
 
