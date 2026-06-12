@@ -71,7 +71,7 @@ export class NotificationRetryProcessor extends WorkerHost {
         if (result.disableDevice) {
           await tx.pushDevice.update({
             where: { id: device.id },
-            data: { enabled: false },
+            data: { enabled: false, lastSeenAt: new Date() },
           });
         }
       });

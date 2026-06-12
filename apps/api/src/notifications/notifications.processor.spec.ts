@@ -180,7 +180,7 @@ describe('NotificationRetryProcessor', () => {
     expect(JSON.stringify(tx.notificationDelivery.create.mock.calls)).not.toContain('fcm-token-1');
     expect(tx.pushDevice.update).toHaveBeenCalledWith({
       where: { id: 'device-1' },
-      data: { enabled: false },
+      data: { enabled: false, lastSeenAt: expect.any(Date) },
     });
   });
 });
