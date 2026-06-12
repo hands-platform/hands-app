@@ -164,6 +164,11 @@ import {
   bookingMonitorListFirstPickPhoneLabel,
 } from './booking-monitor-list-labels';
 import {
+  bookingMonitorListMarketplaceParticipantOverflowCount,
+  bookingMonitorListMarketplaceParticipants,
+  bookingMonitorListSelectedFinalPartnerPillLabel,
+} from './booking-monitor-list-marketplace';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -740,32 +745,6 @@ function bookingMonitorListLocation(
     signalLabel: bookingLocationSignalLabel(booking, currentTimeMs),
     toneClass: bookingLocationToneClass(booking, currentTimeMs),
   };
-}
-
-function bookingMonitorListMarketplaceParticipantOverflowCount(
-  participants: readonly BookingParticipant[],
-) {
-  return Math.max(0, participants.length - 4);
-}
-
-function bookingMonitorListMarketplaceParticipants(
-  participants: readonly BookingParticipant[],
-): BookingMonitorListRow['marketplaceParticipants'] {
-  return participants.slice(0, 4).map((participant) => ({
-    id: participant.id,
-    partnerLabel: partnerDisplayName(participant.providerProfile),
-    status: participant.status,
-  }));
-}
-
-function bookingMonitorListSelectedFinalPartnerPillLabel(booking: AdminBooking) {
-  if (
-    !booking.selectedProvider ||
-    bookingSelectedPartnerIdForChoice(booking) === bookingPreferredPartnerIdForChoice(booking)
-  ) {
-    return null;
-  }
-  return partnerDisplayName(booking.selectedProvider);
 }
 
 function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
