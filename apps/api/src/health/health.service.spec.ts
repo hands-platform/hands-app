@@ -1,4 +1,7 @@
 import { ConfigService } from '@nestjs/config';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { HealthService } from './health.service';
 
 function config(values: Record<string, string> = {}) {
@@ -76,6 +79,15 @@ describe('HealthService external storage readiness', () => {
 });
 
 describe('HealthService external push readiness', () => {
+  let tempDir: string | undefined;
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true });
+      tempDir = undefined;
+    }
+  });
+
   it('keeps FCM blocked until Firebase Admin credentials are configured', () => {
     const check = pushCheck({ PUSH_PROVIDER: 'fcm' });
 
@@ -85,10 +97,26 @@ describe('HealthService external push readiness', () => {
     ]);
   });
 
-  it('marks FCM ready when application default credentials are configured', () => {
+  it('keeps FCM blocked when application default credentials point to a missing file', () => {
     const check = pushCheck({
       PUSH_PROVIDER: 'fcm',
-      GOOGLE_APPLICATION_CREDENTIALS: 'C:\\secure\\firebase-admin.json',
+      GOOGLE_APPLICATION_CREDENTIALS: 'C:\\secure\\missing-firebase-admin.json',
+    });
+
+    expect(check?.status).toBe('BLOCKED');
+    expect(check?.configured).toEqual(['PUSH_PROVIDER', 'GOOGLE_APPLICATION_CREDENTIALS']);
+    expect(check?.invalid).toEqual(['GOOGLE_APPLICATION_CREDENTIALS']);
+    expect(check?.detail).toContain('does not point to an existing service account JSON file');
+  });
+
+  it('marks FCM ready when application default credentials point to an existing file', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
+    const serviceAccountPath = join(tempDir, 'firebase-admin.json');
+    writeFileSync(serviceAccountPath, '{}');
+
+    const check = pushCheck({
+      PUSH_PROVIDER: 'fcm',
+      GOOGLE_APPLICATION_CREDENTIALS: serviceAccountPath,
     });
 
     expect(check?.status).toBe('READY');

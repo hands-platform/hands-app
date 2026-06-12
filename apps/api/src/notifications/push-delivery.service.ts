@@ -63,7 +63,7 @@ export class PushDeliveryService {
   private async sendWithFcm(message: PushMessage): Promise<PushSendResult> {
     const readiness = this.fcmReadiness();
 
-    if (readiness.missing.length > 0) {
+    if (readiness.missing.length > 0 || readiness.invalid.length > 0) {
       return {
         provider: 'FCM',
         status: 'FAILED',
@@ -72,6 +72,7 @@ export class PushDeliveryService {
         response: {
           reason: 'FCM push delivery is selected, but required server-side credentials are missing.',
           missing: readiness.missing,
+          invalid: readiness.invalid,
           title: message.title,
         },
       };
@@ -130,6 +131,7 @@ export class PushDeliveryService {
     return {
       config: credentialConfig,
       missing: readiness.missing,
+      invalid: readiness.invalid,
     };
   }
 

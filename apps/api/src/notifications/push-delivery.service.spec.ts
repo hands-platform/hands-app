@@ -43,6 +43,23 @@ describe('PushDeliveryService', () => {
     });
   });
 
+  it('fails safely when application default credentials point to a missing file', async () => {
+    await expect(
+      pushService({
+        PUSH_PROVIDER: 'fcm',
+        GOOGLE_APPLICATION_CREDENTIALS: 'C:\\secure\\missing-firebase-admin.json',
+      }).send(message),
+    ).resolves.toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: false,
+      failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
+      response: {
+        invalid: ['GOOGLE_APPLICATION_CREDENTIALS'],
+      },
+    });
+  });
+
   it('masks raw FCM tokens from provider error messages', async () => {
     mockMessagingSend.mockRejectedValueOnce(
       Object.assign(

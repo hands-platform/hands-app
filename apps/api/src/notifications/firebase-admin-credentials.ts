@@ -1,7 +1,10 @@
 import { ConfigService } from '@nestjs/config';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export const FCM_CREDENTIAL_REQUIREMENT =
   'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS';
+export const GOOGLE_APPLICATION_CREDENTIALS_KEY = 'GOOGLE_APPLICATION_CREDENTIALS';
 
 export type FirebaseCredentialConfig = {
   projectId?: string;
@@ -24,11 +27,17 @@ export function readFirebaseCredentialConfig(config: ConfigService): FirebaseCre
 export function firebaseCredentialReadiness(config: FirebaseCredentialConfig) {
   const hasJson = Boolean(config.serviceAccountJson);
   const hasFieldCredentials = Boolean(config.projectId && config.clientEmail && config.privateKey);
-  const hasApplicationDefault = Boolean(config.googleApplicationCredentials);
+  const hasExplicitCredentials = hasJson || hasFieldCredentials;
+  const hasApplicationDefault = existingApplicationDefaultCredentials(config.googleApplicationCredentials);
+  const invalid =
+    !hasExplicitCredentials && config.googleApplicationCredentials && !hasApplicationDefault
+      ? [GOOGLE_APPLICATION_CREDENTIALS_KEY]
+      : [];
 
   return {
-    ready: hasJson || hasFieldCredentials || hasApplicationDefault,
-    missing: hasJson || hasFieldCredentials || hasApplicationDefault ? [] : [FCM_CREDENTIAL_REQUIREMENT],
+    ready: hasExplicitCredentials || hasApplicationDefault,
+    missing: hasExplicitCredentials || hasApplicationDefault ? [] : [FCM_CREDENTIAL_REQUIREMENT],
+    invalid,
   };
 }
 
@@ -38,8 +47,12 @@ export function configuredFirebaseCredentialKeys(config: FirebaseCredentialConfi
     config.projectId ? 'FIREBASE_PROJECT_ID' : null,
     config.clientEmail ? 'FIREBASE_CLIENT_EMAIL' : null,
     config.privateKey ? 'FIREBASE_PRIVATE_KEY' : null,
-    config.googleApplicationCredentials ? 'GOOGLE_APPLICATION_CREDENTIALS' : null,
+    config.googleApplicationCredentials ? GOOGLE_APPLICATION_CREDENTIALS_KEY : null,
   ].filter((key): key is string => Boolean(key));
+}
+
+function existingApplicationDefaultCredentials(value?: string) {
+  return Boolean(value && existsSync(resolve(value)));
 }
 
 export function normalizePrivateKey(value?: string) {

@@ -226,10 +226,12 @@ export class HealthService {
       status: readiness.ready ? 'READY' : 'BLOCKED',
       missing: readiness.missing,
       configured,
-      invalid: [],
+      invalid: readiness.invalid,
       detail:
         readiness.ready
           ? 'FCM credentials are configured and backend Firebase Admin delivery is enabled.'
+          : readiness.invalid.length > 0
+            ? 'FCM push is selected, but GOOGLE_APPLICATION_CREDENTIALS does not point to an existing service account JSON file.'
           : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
     };
   }

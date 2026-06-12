@@ -1,4 +1,12 @@
 import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import {
   configuredFirebaseCredentialKeys,
   firebaseCredentialReadiness,
   normalizePrivateKey,
@@ -7,6 +15,15 @@ import {
 } from './firebase-admin-credentials';
 
 describe('Firebase Admin credential helpers', () => {
+  let tempDir: string | undefined;
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true });
+      tempDir = undefined;
+    }
+  });
+
   it('reads trimmed Firebase credential fields from config', () => {
     const config = {
       get: jest.fn((key: string) => {
@@ -32,6 +49,7 @@ describe('Firebase Admin credential helpers', () => {
     expect(firebaseCredentialReadiness({ serviceAccountJson: '{}' })).toEqual({
       ready: true,
       missing: [],
+      invalid: [],
     });
     expect(
       firebaseCredentialReadiness({
@@ -39,8 +57,35 @@ describe('Firebase Admin credential helpers', () => {
         clientEmail: 'firebase-admin@example.test',
         privateKey: 'private-key',
       }),
-    ).toEqual({ ready: true, missing: [] });
+    ).toEqual({ ready: true, missing: [], invalid: [] });
+    expect(
+      firebaseCredentialReadiness({
+        serviceAccountJson: '{}',
+        googleApplicationCredentials: 'C:\\secure\\missing-firebase-admin.json',
+      }),
+    ).toEqual({ ready: true, missing: [], invalid: [] });
     expect(firebaseCredentialReadiness({}).ready).toBe(false);
+  });
+
+  it('requires application default credentials to point to an existing file', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
+    const serviceAccountPath = join(tempDir, 'firebase-admin.json');
+    writeFileSync(serviceAccountPath, '{}');
+
+    expect(firebaseCredentialReadiness({ googleApplicationCredentials: serviceAccountPath })).toEqual({
+      ready: true,
+      missing: [],
+      invalid: [],
+    });
+    expect(
+      firebaseCredentialReadiness({ googleApplicationCredentials: join(tempDir, 'missing.json') }),
+    ).toEqual({
+      ready: false,
+      missing: [
+        'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS',
+      ],
+      invalid: ['GOOGLE_APPLICATION_CREDENTIALS'],
+    });
   });
 
   it('lists configured credential keys without exposing values', () => {
