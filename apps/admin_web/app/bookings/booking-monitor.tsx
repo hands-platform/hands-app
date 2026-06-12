@@ -1766,40 +1766,51 @@ function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
 }
 
 function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const flags: BookingCheckFlag[] = [];
+  const isOpenMatching = booking.status === 'OPEN_MATCHING';
   const participantCount = bookingMarketplaceParticipantCount(booking);
 
-  if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
-    flags.push({ severity: 'high', title: 'Matching window expired' });
-  }
-  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
-    flags.push({ severity: 'medium', title: 'First-pick partner pending' });
-  }
-  if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    flags.push({ severity: 'medium', title: 'No partner supply' });
-  }
-  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
-    flags.push({ severity: 'high', title: 'Matched without chat' });
-  }
-
-  return flags;
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
+      'high',
+      'Matching window expired',
+    ),
+    bookingCheckFlag(
+      isOpenMatching && bookingFirstPickPending(booking),
+      'medium',
+      'First-pick partner pending',
+    ),
+    bookingCheckFlag(
+      isOpenMatching && participantCount === 0,
+      'medium',
+      'No partner supply',
+    ),
+    bookingCheckFlag(
+      booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
+      'high',
+      'Matched without chat',
+    ),
+  ]);
 }
 
 function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const flags: BookingCheckFlag[] = [];
+  const locationRequired = locationRequiredStatuses.has(booking.status);
+  const providerLocationAvailable = hasProviderLocation(booking);
 
-  if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
-    flags.push({ severity: 'medium', title: 'No partner location record' });
-  }
-  if (
-    locationRequiredStatuses.has(booking.status) &&
-    hasProviderLocation(booking) &&
-    providerLocationFreshness(booking, nowMs) !== 'recent'
-  ) {
-    flags.push({ severity: 'medium', title: 'Partner location is stale' });
-  }
-
-  return flags;
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      locationRequired && !providerLocationAvailable,
+      'medium',
+      'No partner location record',
+    ),
+    bookingCheckFlag(
+      locationRequired &&
+        providerLocationAvailable &&
+        providerLocationFreshness(booking, nowMs) !== 'recent',
+      'medium',
+      'Partner location is stale',
+    ),
+  ]);
 }
 
 function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
