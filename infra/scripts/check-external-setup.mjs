@@ -248,15 +248,16 @@ addPhaseRequired(
   ['storage', 'production'],
 );
 
-const requiredFailures = checks.filter((check) => check.required && check.status !== 'PASS');
-const recommendedFailures = checks.filter((check) => !check.required && check.status !== 'PASS');
+const scopedChecks = checks.filter((check) => checkIncludedInPhase(check.category));
+const requiredFailures = scopedChecks.filter((check) => check.required && check.status !== 'PASS');
+const recommendedFailures = scopedChecks.filter((check) => !check.required && check.status !== 'PASS');
 
 const result = {
   ok: requiredFailures.length === 0 && (!strict || recommendedFailures.length === 0),
   mode: strict ? 'strict' : phase,
   envFile: envFileExists ? envPath : null,
   phase,
-  checks,
+  checks: scopedChecks,
   nextActions: [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix),
 };
 
@@ -291,6 +292,23 @@ function addPhaseRequired(category, name, passed, fix, phases) {
     return;
   }
   addCheck(category, name, passed, fix);
+}
+
+function checkIncludedInPhase(category) {
+  if (phase === 'advisory' || phase === 'production') {
+    return true;
+  }
+
+  const phaseCategories = {
+    maps: new Set(['workspace', 'maps', 'geocoding']),
+    payments: new Set(['workspace', 'payments']),
+    push: new Set(['workspace', 'push']),
+    storage: new Set(['workspace', 'storage']),
+    'supabase-auth': new Set(['workspace', 'supabase', 'sms']),
+    'supabase-core': new Set(['workspace', 'supabase']),
+  };
+
+  return (phaseCategories[phase] ?? new Set(['workspace'])).has(category);
 }
 
 function hasValue(key) {
