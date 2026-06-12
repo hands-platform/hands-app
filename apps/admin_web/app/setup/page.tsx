@@ -1,6 +1,5 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
-import { formatDateTime as formatDate } from '../../lib/admin-format';
-import { MetricCard } from '../../components/metric-card';
+import { SetupOverviewSection } from './setup-overview-section';
 
 const fcmEnvKeys = [
   'PUSH_PROVIDER',
@@ -409,54 +408,13 @@ export default async function SetupPage() {
 
   return (
     <>
-      <section className="toolbar">
-        <div>
-          <h1>External setup</h1>
-          <p className="muted">
-            One checklist for credentials, account setup, and external services needed before production-like
-            E2E.
-          </p>
-        </div>
-        <div className="actions">
-          <span className={`signal ${currentStage.ok ? 'signal-ok' : 'signal-warn'}`}>
-            {currentStage.label}
-          </span>
-          <span className={`signal ${readiness.ok ? 'signal-ok' : 'signal-info'}`}>
-            {readinessUnavailable ? 'External status unknown' : readiness.ok ? 'Production E2E ready' : 'Production deferred'}
-          </span>
-          <span className="pill pill-info">
-            {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readiness.timestamp)}`}
-          </span>
-        </div>
-      </section>
-
-      <section className="grid admin-mb-16">
-        <MetricCard
-          label="Current blockers"
-          value={currentStage.blockers}
-          helper={currentStage.helper}
-        />
-        <MetricCard
-          label="Ready"
-          value={summary.ready}
-          helper="External groups configured enough for local/E2E use."
-        />
-        <MetricCard
-          label="Partial"
-          value={summary.partial}
-          helper="Some values exist, but production values are missing."
-        />
-        <MetricCard
-          label="Blocked"
-          value={summary.blocked}
-          helper="Cannot run real E2E until required values are set."
-        />
-        <MetricCard
-          label="Missing values"
-          value={summary.missing}
-          helper="Secret values are never displayed here."
-        />
-      </section>
+      <SetupOverviewSection
+        readinessOk={readiness.ok}
+        readinessUnavailable={readinessUnavailable}
+        readinessTimestamp={readiness.timestamp}
+        currentStage={currentStage}
+        summary={summary}
+      />
 
       <section className="detail-grid admin-mb-16">
         <div className="card">
