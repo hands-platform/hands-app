@@ -16,7 +16,7 @@ export type BookingMatchingEscalationLane<TBooking> = {
   readonly tone: BookingMatchingEscalationTone;
 };
 
-type BookingMatchingEscalationBoardInput<TBooking> = {
+export type BookingMatchingEscalationBoardInput<TBooking> = {
   readonly chatReady: readonly TBooking[];
   readonly customerFinalSelection: readonly TBooking[];
   readonly expiredWindow: readonly TBooking[];

@@ -147,6 +147,7 @@ import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-
 import { bookingMarketplaceOperatingQueueFact } from './booking-marketplace-operating-queue-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
+import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
 import { bookingMatchingEscalationRowInput } from './booking-matching-escalation-row-inputs';
 import {
   bookingMonitorSelectionFromFacts,
@@ -854,19 +855,17 @@ function buildMatchingEscalationBoard(
 }
 
 function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
-  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-
-  return {
-    chatReady: bookings.filter((booking) => bookingMatchingChatReady(booking)),
-    customerFinalSelection: open.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
-    expiredWindow: open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs)),
-    firstPickWaiting: open.filter((booking) => bookingFirstPickPending(booking)),
-    marketplaceReady: open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0),
-    matchedWithoutChat: bookings.filter(
-      (booking) => booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
-    ),
-    noMarketplaceSupply: open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
-  };
+  return bookingMatchingEscalationBoardInput(
+    bookings.map((booking) => ({
+      booking,
+      customerSelectableCount: bookingCustomerSelectableCount(booking),
+      firstPickPending: bookingFirstPickPending(booking),
+      hasChatRoom: bookingMatchingChatReady(booking),
+      marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+      responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+      status: booking.status,
+    })),
+  );
 }
 
 function buildBookingDispatchPartnerShortcuts(
