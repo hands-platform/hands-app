@@ -925,48 +925,7 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
 
 function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
   return bookings
-    .map<BookingNextAction | null>((booking) => {
-      const flags = bookingCheckFlags(booking, nowMs);
-      const highestFlag = flags.sort((left, right) => checkFlagWeight(right) - checkFlagWeight(left))[0];
-
-      if (highestFlag) {
-        return {
-          booking,
-          title: highestFlag.title,
-          detail: nextAction(booking),
-          operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
-          owner: bookingActionOwner(booking, highestFlag),
-          priority: bookingActionPriority(booking, nowMs, highestFlag),
-          tone:
-            highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
-          href: `/bookings/${booking.id}`,
-          tags: [
-            booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
-            booking.chatRoom ? 'chat ready' : 'chat pending',
-            selectionLabel(booking),
-          ],
-        } satisfies BookingNextAction;
-      }
-
-      if (activeStatuses.has(booking.status)) {
-        return {
-          booking,
-          title: 'Monitor active booking',
-          detail: nextAction(booking),
-          operatorAction: bookingOperatorAction(booking, nowMs),
-          owner: bookingActionOwner(booking),
-          priority: bookingActionPriority(booking, nowMs),
-          tone: 'info',
-          href: `/bookings/${booking.id}`,
-          tags: [
-            booking.payment?.status ? `payment ${booking.payment.status}` : 'payment pending',
-            bookingLocationPillLabel(booking, nowMs),
-          ],
-        } satisfies BookingNextAction;
-      }
-
-      return null;
-    })
+    .map((booking) => bookingNextActionCandidate(booking, nowMs))
     .filter((item): item is BookingNextAction => Boolean(item))
     .sort((left, right) => {
       const toneDelta = commandToneWeight(right.tone) - commandToneWeight(left.tone);
@@ -976,6 +935,70 @@ function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): Booki
       return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
     })
     .slice(0, 5);
+}
+
+function bookingNextActionCandidate(booking: AdminBooking, nowMs: number): BookingNextAction | null {
+  const highestFlag = highestBookingCheckFlag(booking, nowMs);
+  if (highestFlag) {
+    return bookingFlagNextAction(booking, nowMs, highestFlag);
+  }
+  if (activeStatuses.has(booking.status)) {
+    return bookingActiveNextAction(booking, nowMs);
+  }
+  return null;
+}
+
+function highestBookingCheckFlag(booking: AdminBooking, nowMs: number) {
+  return [...bookingCheckFlags(booking, nowMs)].sort(
+    (left, right) => checkFlagWeight(right) - checkFlagWeight(left),
+  )[0];
+}
+
+function bookingFlagNextAction(
+  booking: AdminBooking,
+  nowMs: number,
+  highestFlag: BookingCheckFlag,
+): BookingNextAction {
+  return {
+    booking,
+    title: highestFlag.title,
+    detail: nextAction(booking),
+    operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
+    owner: bookingActionOwner(booking, highestFlag),
+    priority: bookingActionPriority(booking, nowMs, highestFlag),
+    tone: highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
+    href: `/bookings/${booking.id}`,
+    tags: bookingFlagNextActionTags(booking),
+  };
+}
+
+function bookingActiveNextAction(booking: AdminBooking, nowMs: number): BookingNextAction {
+  return {
+    booking,
+    title: 'Monitor active booking',
+    detail: nextAction(booking),
+    operatorAction: bookingOperatorAction(booking, nowMs),
+    owner: bookingActionOwner(booking),
+    priority: bookingActionPriority(booking, nowMs),
+    tone: 'info',
+    href: `/bookings/${booking.id}`,
+    tags: bookingActiveNextActionTags(booking, nowMs),
+  };
+}
+
+function bookingFlagNextActionTags(booking: AdminBooking) {
+  return [
+    booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
+    booking.chatRoom ? 'chat ready' : 'chat pending',
+    selectionLabel(booking),
+  ];
+}
+
+function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
+  return [
+    booking.payment?.status ? `payment ${booking.payment.status}` : 'payment pending',
+    bookingLocationPillLabel(booking, nowMs),
+  ];
 }
 
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
