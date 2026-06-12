@@ -154,6 +154,12 @@ import {
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
 import {
+  bookingMonitorSelectionFromFacts,
+  bookingMonitorSelectionLabel,
+  bookingMonitorSelectionPathLabel,
+  bookingMonitorSelectionToneClass,
+} from './booking-monitor-selection';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -772,11 +778,7 @@ function bookingMonitorListSelectedFinalPartnerPillLabel(booking: AdminBooking) 
 }
 
 function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
-  return {
-    label: selectionLabel(booking),
-    pathLabel: selectionPathLabel(booking),
-    toneClass: selectionToneClass(booking),
-  };
+  return bookingMonitorSelectionFromFacts(bookingSelectionFacts(booking));
 }
 
 function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): BookingCommandLane[] {
@@ -1807,97 +1809,15 @@ function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number)
 }
 
 function selectionLabel(booking: AdminBooking) {
-  const facts = bookingSelectionFacts(booking);
-  if (facts.finalSelectionCopy) {
-    return facts.finalSelectionCopy.label;
-  }
-
-  if (!facts.hasPreferredProvider) {
-    return 'No first-pick partner';
-  }
-
-  if (facts.isBackupSelected) {
-    return 'Marketplace partner selected';
-  }
-
-  if (facts.firstPickPending) {
-    return 'First-pick partner pending';
-  }
-
-  if (facts.preferredProviderState === 'declined') {
-    return 'First-pick partner declined';
-  }
-
-  if (facts.isMatched) {
-    return 'Final partner selected';
-  }
-
-  if (facts.isSelectedProviderParticipant) {
-    return 'First-pick partner is active';
-  }
-
-  return 'First-pick partner requested';
+  return bookingMonitorSelectionLabel(bookingSelectionFacts(booking));
 }
 
 function selectionPathLabel(booking: AdminBooking) {
-  const facts = bookingSelectionFacts(booking);
-
-  if (!facts.hasPreferredProvider) {
-    return facts.marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
-  }
-
-  if (facts.finalSelectionCopy?.pathLabel) {
-    return facts.finalSelectionCopy.pathLabel;
-  }
-
-  if (facts.firstPickPending) {
-    return facts.marketplaceCount > 0
-      ? 'Direct request first, with marketplace partners already waiting'
-      : 'Direct request first, waiting on the first-pick partner';
-  }
-
-  if (facts.isBackupSelected) {
-    return 'Direct request escalated to marketplace participation, then the guest chose a marketplace partner';
-  }
-
-  if (facts.isMatched) {
-    return 'Direct request confirmed by the first-pick partner';
-  }
-
-  if (facts.marketplaceCount > 0) {
-    return 'Marketplace partners are available while the first-pick partner stays in the flow';
-  }
-
-  return 'Direct request remains the active path';
+  return bookingMonitorSelectionPathLabel(bookingSelectionFacts(booking));
 }
 
 function selectionToneClass(booking: AdminBooking) {
-  const facts = bookingSelectionFacts(booking);
-  if (facts.finalSelectionCopy) {
-    return facts.finalSelectionCopy.toneClass;
-  }
-
-  if (!facts.hasPreferredProvider) {
-    return 'pill-neutral';
-  }
-
-  if (facts.firstPickPending) {
-    return 'pill-warn';
-  }
-
-  if (facts.preferredProviderState === 'declined') {
-    return 'pill-info';
-  }
-
-  if (facts.isMatched) {
-    return 'pill-success';
-  }
-
-  if (facts.isSelectedProviderParticipant) {
-    return 'pill-success';
-  }
-
-  return 'pill-neutral';
+  return bookingMonitorSelectionToneClass(bookingSelectionFacts(booking));
 }
 
 function bookingSelectionFacts(booking: AdminBooking) {
