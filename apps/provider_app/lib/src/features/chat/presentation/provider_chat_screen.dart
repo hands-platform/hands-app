@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,7 +13,14 @@ import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_chat_location_helpers.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({
+    super.key,
+    this.initialChatRoomId,
+    this.initialBookingId,
+  });
+
+  final String? initialChatRoomId;
+  final String? initialBookingId;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -36,6 +45,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _socket = ref.read(realtimeSocketProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialRoomId = widget.initialChatRoomId;
+      if (initialRoomId != null && initialRoomId.isNotEmpty) {
+        unawaited(loadChatRoom(
+          initialRoomId,
+          bookingId: widget.initialBookingId,
+        ));
+      }
+    });
   }
 
   @override
@@ -127,18 +145,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() => statusMessage = 'Chat room is not ready yet.');
       return;
     }
+    await loadChatRoom(
+      roomId,
+      bookingId: booking?['id']?.toString(),
+      booking: booking,
+    );
+  }
+
+  Future<void> loadChatRoom(
+    String roomId, {
+    String? bookingId,
+    Map<String, dynamic>? booking,
+  }) async {
     ref.read(providerRepositoryProvider).joinChat(roomId);
+    final bookingContext = booking ?? await _findBookingById(bookingId);
     final loadedMessages =
         await ref.read(providerRepositoryProvider).listChatMessages(roomId);
     setState(() {
       chatRoomId = roomId;
-      bookingId = booking?['id']?.toString();
-      customerLat = providerChatCustomerLatitude(booking);
-      customerLng = providerChatCustomerLongitude(booking);
+      this.bookingId = bookingId ?? bookingContext?['id']?.toString();
+      customerLat = providerChatCustomerLatitude(bookingContext);
+      customerLng = providerChatCustomerLongitude(bookingContext);
       messages = loadedMessages;
-      statusMessage = 'Chat is ready for booking ${booking?['id']}.';
+      statusMessage = this.bookingId == null
+          ? 'Chat is ready.'
+          : 'Chat is ready for booking ${this.bookingId}.';
     });
     attachChatListener();
+  }
+
+  Future<Map<String, dynamic>?> _findBookingById(String? bookingId) async {
+    if (bookingId == null || bookingId.isEmpty) {
+      return null;
+    }
+
+    final bookings = await ref.read(providerRepositoryProvider).listBookings();
+    for (final booking in bookings) {
+      final bookingMap = asMap(booking);
+      if (bookingMap?['id']?.toString() == bookingId) {
+        return bookingMap;
+      }
+    }
+    return null;
   }
 
   Future<void> sendMessage() async {

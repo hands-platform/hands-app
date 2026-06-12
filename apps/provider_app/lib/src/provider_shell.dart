@@ -25,6 +25,9 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   static const _profileIndex = 4;
 
   int index = 0;
+  String? _notificationChatRoomId;
+  String? _notificationBookingId;
+  int _chatOpenVersion = 0;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -42,19 +45,23 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screens = const [
-      RequestsScreen(),
-      PartnerJobsScreen(),
-      EarningsScreen(),
-      ChatScreen(),
-      ProfileScreen(),
+    final screens = [
+      const RequestsScreen(),
+      const PartnerJobsScreen(),
+      const EarningsScreen(),
+      ChatScreen(
+        key: ValueKey('provider-push-chat-$_chatOpenVersion'),
+        initialChatRoomId: _notificationChatRoomId,
+        initialBookingId: _notificationBookingId,
+      ),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
       body: screens[index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
+        onDestinationSelected: _selectDestination,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.radar_outlined), label: 'Requests'),
@@ -74,11 +81,29 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   void _handleNotificationOpen(FcmNotificationOpen notificationOpen) {
     final intent = PushNotificationOpenIntent.fromData(notificationOpen.data);
     final nextIndex = _tabIndexForNotificationDestination(intent.destination);
-    if (!mounted || index == nextIndex) {
+    if (!mounted) {
       return;
     }
 
-    setState(() => index = nextIndex);
+    setState(() {
+      if (intent.destination == PushNotificationOpenDestination.chat) {
+        _notificationChatRoomId = intent.chatRoomId;
+        _notificationBookingId = intent.bookingId;
+        _chatOpenVersion += 1;
+      }
+      index = nextIndex;
+    });
+  }
+
+  void _selectDestination(int value) {
+    setState(() {
+      if (value == _chatIndex) {
+        _notificationChatRoomId = null;
+        _notificationBookingId = null;
+        _chatOpenVersion += 1;
+      }
+      index = value;
+    });
   }
 
   int _tabIndexForNotificationDestination(
