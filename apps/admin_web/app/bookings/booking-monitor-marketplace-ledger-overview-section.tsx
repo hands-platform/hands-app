@@ -1,0 +1,113 @@
+import Link from 'next/link';
+import type { AdminBooking } from '../../lib/admin-api';
+import { shortId } from '../../lib/admin-format';
+import type { MarketplaceOperatingQueueItem } from '../../lib/marketplace-operating-queue';
+import type { MarketplaceParticipantLedgerSummary } from '../../lib/marketplace-participant-ledger';
+import { commandToneClass, stagePillClass } from './booking-command-display';
+import { bookingServiceOptionLabel } from './booking-service-labels';
+
+type BookingMonitorMarketplaceLedgerOverviewSectionProps = {
+  readonly getCustomerLabel: (booking: AdminBooking) => string;
+  readonly marketplaceLedgerSummary: MarketplaceParticipantLedgerSummary;
+  readonly marketplaceOperatingQueue: readonly MarketplaceOperatingQueueItem<AdminBooking>[];
+};
+
+export function BookingMonitorMarketplaceLedgerOverviewSection({
+  getCustomerLabel,
+  marketplaceLedgerSummary,
+  marketplaceOperatingQueue,
+}: BookingMonitorMarketplaceLedgerOverviewSectionProps) {
+  return (
+    <>
+      <div className="ops-section-header">
+        <div>
+          <h2>Marketplace participant ledger</h2>
+          <p className="muted">
+            All participant records by booking, including first-pick, marketplace participants, declined
+            responses, and the customer final choice. This is the operations record of who entered the
+            request. It shows the Customer-selectable reason and Why not selectable for evidence-only rows.
+            Marketplace visibility is not an activity record; wallet-blocked partners are stopped before
+            participation and never create participant rows.
+          </p>
+        </div>
+        <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
+          All participant records {marketplaceLedgerSummary.total}
+        </span>
+      </div>
+      <section className="card admin-mt-14">
+        <div className="ops-section-header">
+          <div>
+            <h3>Marketplace record boundary</h3>
+            <p className="muted">
+              Operator shorthand for what is retained as evidence, what is blocked before a row is created,
+              and where the customer final choice is verified.
+            </p>
+          </div>
+          <span className="pill pill-info">Booking-address marketplace radius</span>
+        </div>
+        <div className="ops-task-grid admin-mt-12">
+          <article className="ops-task-card">
+            <span className="signal signal-info">Actual participation rows</span>
+            <h3>{marketplaceLedgerSummary.total}</h3>
+            <p>
+              First-pick, marketplace participation, accepted, declined, and customer-selected rows stay in
+              this ledger as the operational evidence trail.
+            </p>
+          </article>
+          <article className="ops-task-card">
+            <span className="signal signal-warn">Pre-finalization wallet gate</span>
+            <h3>Not finalization rows</h3>
+            <p>
+              A negative-wallet Partner may see marketplace requests, but final acceptance, service start,
+              and payout release wait until settlement.
+            </p>
+          </article>
+          <article className="ops-task-card">
+            <span className="signal signal-ok">Customer choice evidence</span>
+            <h3>{marketplaceLedgerSummary.selected}</h3>
+            <p>
+              Customer fallback selection is retained when first-pick does not validly win. Operators verify
+              the selected participant row and retained chat evidence.
+            </p>
+          </article>
+        </div>
+      </section>
+      <section className="card admin-mt-14">
+        <div className="ops-section-header">
+          <div>
+            <h3>Marketplace operating queue</h3>
+            <p className="muted">
+              Practical dispatch sequence for first-pick timer control, partner participation pool, customer
+              final selection lane, chat handoff, and wallet unblock lane.
+            </p>
+          </div>
+          <span className="pill pill-info">No auto assignment</span>
+        </div>
+        <div className="ops-task-grid admin-mt-12">
+          {marketplaceOperatingQueue.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.step}>
+              <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>
+                <span className="pill">{item.value}</span>
+              </div>
+              <small>{item.operatorAction}</small>
+              {item.bookings.length > 0 && (
+                <div className="stack admin-mt-10">
+                  {item.bookings.slice(0, 3).map((booking) => (
+                    <span className="muted" key={`${item.step}-${booking.id}`}>
+                      {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                      {getCustomerLabel(booking)}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
