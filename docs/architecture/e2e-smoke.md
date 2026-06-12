@@ -36,6 +36,7 @@ For a smaller OS-push-only check after Firebase Admin credentials and a real dev
 ```powershell
 $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run external:check:push
+npm.cmd run fcm:token-smoke
 $env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
 $env:FCM_SMOKE_PLATFORM='android'
 $env:FCM_SMOKE_EXPECT_PROVIDER='FCM'
@@ -43,6 +44,7 @@ $env:FCM_SMOKE_EXPECT_STATUS='SENT'
 npm.cmd run fcm:push-smoke
 ```
 
+Use `npm.cmd run fcm:token-smoke -- --dry-run` to check the token-registration smoke inputs before writing a synthetic device token.
 Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
 Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry.
 
@@ -50,4 +52,4 @@ Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selecte
 
 The script prints a JSON object with `ok: true` and IDs for the booking, chat room, review, payout batch, refund, and verification file.
 
-The FCM smoke prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.
+The FCM token smoke prints `ok: true` after synthetic customer/provider device tokens are registered and disabled. The live FCM smoke prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.

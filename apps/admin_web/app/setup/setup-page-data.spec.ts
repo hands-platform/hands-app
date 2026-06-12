@@ -32,7 +32,9 @@ describe('setup page data', () => {
     expect(notificationSetup?.commands).toEqual(
       expect.arrayContaining([
         'npm.cmd run external:check:push',
+        'npm.cmd run fcm:token-smoke -- --dry-run',
         'npm.cmd run fcm:push-smoke -- --dry-run',
+        'npm.cmd run fcm:token-smoke',
         'Open http://localhost:3101/notifications?review=fcm',
         'Open http://localhost:3101/notifications?review=failed',
         'Open http://localhost:3101/notifications?review=stale-device',
@@ -52,10 +54,7 @@ describe('setup page data', () => {
       'Phase E',
     ]);
     expect(verifiedBaseline).toEqual(
-      expect.arrayContaining([
-        'API typecheck and build pass.',
-        'Secret leak guard passes.',
-      ]),
+      expect.arrayContaining(['API typecheck and build pass.', 'Secret leak guard passes.']),
     );
   });
 });

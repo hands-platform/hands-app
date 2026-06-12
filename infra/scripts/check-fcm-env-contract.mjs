@@ -6,7 +6,10 @@ const apiSourcePaths = [
   resolve(repoRoot, 'apps/api/src/notifications/push-delivery.service.ts'),
   resolve(repoRoot, 'apps/api/src/notifications/firebase-admin-credentials.ts'),
 ];
-const smokeSourcePath = resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs');
+const smokeSourcePaths = [
+  resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs'),
+  resolve(repoRoot, 'infra/scripts/fcm-token-registration-smoke.mjs'),
+];
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -33,9 +36,9 @@ const fcmEnvKeys = Array.from(
       ),
   ),
 ).sort();
-const smokeSource = readFileSync(smokeSourcePath, 'utf8');
+const smokeSource = smokeSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
 const fcmSmokeEnvKeys = Array.from(
-  new Set([...smokeSource.matchAll(/\b(FCM_SMOKE_[A-Z0-9_]+)\b/g)].map((match) => match[1])),
+  new Set([...smokeSource.matchAll(/\b(FCM_(?:SMOKE|TOKEN_SMOKE)_[A-Z0-9_]+)\b/g)].map((match) => match[1])),
 ).sort();
 
 const missingBySource = {};
