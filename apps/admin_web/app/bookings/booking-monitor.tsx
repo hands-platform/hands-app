@@ -142,6 +142,11 @@ import {
   bookingCustomerProtectionBoardFromFacts,
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
+import {
+  bookingCashDebtNeedsOps,
+  bookingCompletedCloseoutNeedsOps,
+  bookingCustomerProtectionFactsFromBookings,
+} from './booking-payment-closeout-facts';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
@@ -157,7 +162,6 @@ import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../lib/booking-chat-repair-action-state';
-import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
 import {
   buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
   buildMarketplaceBookingCoveragePills,
@@ -182,7 +186,6 @@ import {
   type MarketplaceOperatingQueueItem,
 } from '../../lib/marketplace-operating-queue';
 import {
-  bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
   bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
@@ -886,26 +889,7 @@ function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
 }
 
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
-  return bookingCustomerProtectionBoardFromFacts(buildCustomerProtectionFacts(bookings));
-}
-
-function buildCustomerProtectionFacts(bookings: AdminBooking[]) {
-  return {
-    cancelledUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'CANCELLED'),
-    cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
-    completedCloseout: bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking)),
-    expiredUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'EXPIRED'),
-    noShowUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'NO_SHOW'),
-  };
-}
-
-function terminalBookingsWithUnresolvedPayment(bookings: AdminBooking[], status: string) {
-  return bookings.filter(
-    (booking) =>
-      booking.status === status &&
-      Boolean(booking.payment) &&
-      bookingPaymentOutcomeNeedsReview(booking.payment?.status),
-  );
+  return bookingCustomerProtectionBoardFromFacts(bookingCustomerProtectionFactsFromBookings(bookings));
 }
 
 function isHandoffBookingStatus(status: string) {
@@ -1371,10 +1355,6 @@ function bookingRefundReviewNeedsOps(booking: AdminBooking) {
   });
 }
 
-function bookingCompletedCloseoutNeedsOps(booking: AdminBooking) {
-  return bookingCompletedCloseoutNeedsOpsFromFacts(booking);
-}
-
 function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
   return bookingPricingPolicySignal(booking).status !== 'ready';
 }
@@ -1389,15 +1369,6 @@ function bookingPricingPolicySignal(booking: AdminBooking): BookingPricingPolicy
     minimumPrice: service?.basePrice,
     priceStep: service?.priceStep,
     payoutRules: service?.payoutRules ?? [],
-  });
-}
-
-function bookingCashDebtNeedsOps(booking: AdminBooking) {
-  return bookingCashDebtNeedsSettlement({
-    paymentMethod: booking.payment?.method,
-    hasEarning: Boolean(booking.earning),
-    earningNetAmount: booking.earning?.netAmount,
-    earningStatus: booking.earning?.status,
   });
 }
 
@@ -1804,12 +1775,7 @@ function bookingMarketplaceWalletSignal(booking: AdminBooking): {
 }
 
 function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
-  return bookingCashDebtNeedsSettlement({
-    paymentMethod: booking.payment?.method,
-    hasEarning: Boolean(booking.earning),
-    earningNetAmount: booking.earning?.netAmount,
-    earningStatus: booking.earning?.status,
-  });
+  return bookingCashDebtNeedsOps(booking);
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
