@@ -211,7 +211,8 @@ $summary = [ordered]@{
     "npm.cmd run docker:contract",
     "npm.cmd run external:check:push$envCommandSuffix",
     "npm.cmd run fcm:token-smoke -- --dry-run$pushSmokeEnvArg",
-    "npm.cmd run fcm:push-smoke -- --dry-run$pushSmokeEnvArg"
+    "npm.cmd run fcm:push-smoke -- --dry-run$pushSmokeEnvArg",
+    "npm.cmd run fcm:push-smoke -- --preflight$pushSmokeEnvArg"
   )
 }
 

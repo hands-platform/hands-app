@@ -67,6 +67,7 @@ npm.cmd run fcm:credentials-check
 npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --dry-run
+npm.cmd run fcm:push-smoke -- --preflight
 ```
 
 7. Payments

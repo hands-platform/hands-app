@@ -312,6 +312,7 @@ const registrationItems = [
       'npm.cmd run docker:contract',
       'npm.cmd run fcm:token-smoke -- --dry-run',
       'npm.cmd run fcm:push-smoke -- --dry-run',
+      'npm.cmd run fcm:push-smoke -- --preflight',
       'Set FCM_SMOKE_DEVICE_TOKEN for the same app session, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers an enabled device, then run npm.cmd run fcm:push-smoke.',
     ],
   },

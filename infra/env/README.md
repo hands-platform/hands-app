@@ -45,6 +45,7 @@ npm.cmd run fcm:credentials-check
 npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --dry-run
+npm.cmd run fcm:push-smoke -- --preflight
 npm.cmd run external:check:payments
 npm.cmd run external:check:storage
 npm.cmd run storage:smoke

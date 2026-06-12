@@ -32,6 +32,7 @@ const useRegisteredDevice =
   process.argv.includes('--use-registered-device') ||
   booleanEnv(envValue(env, 'FCM_SMOKE_USE_REGISTERED_DEVICE'), false, 'FCM_SMOKE_USE_REGISTERED_DEVICE');
 const dryRun = process.argv.includes('--dry-run');
+const preflight = process.argv.includes('--preflight');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
   fail(`Unsupported FCM_SMOKE_EXPECT_STATUS=${expectedStatus}. Use ANY, SENT, FAILED, or SKIPPED.`);
@@ -77,7 +78,7 @@ if (dryRun) {
   process.exit(0);
 }
 
-if (!deviceToken && !useRegisteredDevice) {
+if (!deviceToken && !useRegisteredDevice && !preflight) {
   fail(
     `FCM_SMOKE_DEVICE_TOKEN is required unless FCM_SMOKE_USE_REGISTERED_DEVICE=true. Use a real ${role} ${platform} app token for ${phone}, or reuse an enabled device already registered by that same app session.`,
   );
@@ -101,11 +102,49 @@ const adminAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: adminPhone, otp: adminOtp, role: 'ADMIN' }),
 });
 
-const registeredDevicePreflight =
-  useRegisteredDevice && !deviceToken
-    ? await findRegisteredDevicePreflight(adminAuth.accessToken)
-    : null;
-if (registeredDevicePreflight && registeredDevicePreflight.enabledCount === 0) {
+const registeredDevicePreflight = await findRegisteredDevicePreflight(adminAuth.accessToken);
+const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
+const notificationPreflight = notificationId
+  ? summarizeNotification(await findAdminNotification(adminAuth.accessToken, notificationId))
+  : null;
+
+if (preflight) {
+  const blockers = preflightBlockers({ notificationId, notificationPreflight, registeredDevicePreflight });
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        mode: 'preflight',
+        scope: 'api-only',
+        contactsApi: true,
+        contactsFcm: false,
+        apiBaseUrl,
+        role,
+        phone,
+        platform,
+        hasDeviceToken: Boolean(deviceToken),
+        useRegisteredDevice,
+        pushReadiness: pushCheck
+          ? {
+              status: pushCheck.status,
+              detail: pushCheck.detail,
+              operatorAction: pushCheck.operatorAction ?? null,
+            }
+          : null,
+        registeredDevicePreflight,
+        notificationPreflight,
+        liveReady: blockers.length === 0,
+        blockers,
+        nextActions: preflightNextActions(blockers),
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(0);
+}
+
+if (useRegisteredDevice && !deviceToken && registeredDevicePreflight.enabledCount === 0) {
   fail(
     `No enabled registered push device is available for the selected smoke app session: ${JSON.stringify(
       registeredDevicePreflight,
@@ -121,7 +160,6 @@ const registeredDevice = deviceToken
     })
   : null;
 
-const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
 if (!notificationId) {
   fail(
     'No notification exists for the selected smoke user. Run a booking/chat flow first, or set FCM_SMOKE_NOTIFICATION_ID to an existing notification.',
@@ -321,6 +359,32 @@ function summarizePushDevice(device) {
   };
 }
 
+function summarizeNotification(notification) {
+  if (!notification) {
+    return null;
+  }
+  return {
+    id: notification.id,
+    type: notification.type,
+    createdAt: notification.createdAt,
+    deliveryCount: (notification.deliveries ?? []).length,
+    latestDelivery: summarizeDelivery((notification.deliveries ?? [])[0]),
+  };
+}
+
+function summarizeDelivery(delivery) {
+  if (!delivery) {
+    return null;
+  }
+  return {
+    id: delivery.id ?? null,
+    provider: delivery.provider ?? null,
+    status: delivery.status ?? null,
+    attemptedAt: delivery.attemptedAt ?? null,
+    pushDeviceId: delivery.pushDeviceId ?? null,
+  };
+}
+
 function normalizeRole(value) {
   const normalized = value.trim().toUpperCase();
   if (normalized !== 'CUSTOMER' && normalized !== 'PROVIDER') {
@@ -404,6 +468,54 @@ function dryRunNextActions() {
   }
 
   actions.push('Run npm.cmd run fcm:push-smoke without --dry-run when API/Docker are ready.');
+  return actions;
+}
+
+function preflightBlockers({ notificationId, notificationPreflight, registeredDevicePreflight }) {
+  const blockers = [];
+
+  if (!notificationId) {
+    blockers.push('NO_NOTIFICATION');
+  }
+  if (notificationId && !notificationPreflight) {
+    blockers.push('NOTIFICATION_NOT_FOUND');
+  }
+
+  if (!deviceToken && !useRegisteredDevice) {
+    blockers.push('NO_DEVICE_TOKEN_OR_REUSE_MODE');
+  }
+
+  if (useRegisteredDevice && registeredDevicePreflight.enabledCount === 0) {
+    blockers.push('NO_ENABLED_REGISTERED_DEVICE');
+  }
+
+  return blockers;
+}
+
+function preflightNextActions(blockers) {
+  if (blockers.length === 0) {
+    return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live retry.'];
+  }
+
+  const actions = [];
+  if (blockers.includes('NO_NOTIFICATION')) {
+    actions.push(
+      'Create a notification for the selected smoke user through a booking/chat flow, or set FCM_SMOKE_NOTIFICATION_ID to an existing notification.',
+    );
+  }
+  if (blockers.includes('NOTIFICATION_NOT_FOUND')) {
+    actions.push('Set FCM_SMOKE_NOTIFICATION_ID to a notification that is visible in the Admin notifications queue.');
+  }
+  if (blockers.includes('NO_DEVICE_TOKEN_OR_REUSE_MODE')) {
+    actions.push(
+      'Set FCM_SMOKE_DEVICE_TOKEN, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after the selected app session registers an enabled device.',
+    );
+  }
+  if (blockers.includes('NO_ENABLED_REGISTERED_DEVICE')) {
+    actions.push(
+      `Open the current ${role} ${platform} app session for ${phone} and let it register a push token through the API.`,
+    );
+  }
   return actions;
 }
 

@@ -158,6 +158,7 @@ function nextSetupSteps({ firebaseAdminReady }) {
         'Run npm.cmd run security:secrets before live push smoke to confirm Firebase client/admin config files are not tracked.',
         'Run npm.cmd run docker:contract after FCM credentials are ready to confirm Docker credential mounts and internal service URLs.',
         'Run npm.cmd run fcm:token-smoke -- --dry-run, then npm.cmd run fcm:token-smoke when API/Docker are ready.',
+        'Run npm.cmd run fcm:push-smoke -- --preflight to confirm notification and device readiness before sending FCM.',
         'Set FCM_SMOKE_DEVICE_TOKEN for the same app session, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers an enabled device, before running live fcm:push-smoke.',
       ]
     : [

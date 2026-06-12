@@ -177,6 +177,11 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
       commands: commands.filter((command) => command === 'npm.cmd run fcm:token-smoke'),
     },
     {
+      title: 'API preflight',
+      detail: 'Check API readiness, notification availability, and registered device state without sending FCM.',
+      commands: commands.filter((command) => command.includes('--preflight')),
+    },
+    {
       title: 'Live push send',
       detail:
         'Use a real app FCM token, or reuse an enabled device already registered by the selected role, phone, and platform.',
