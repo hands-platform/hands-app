@@ -95,6 +95,11 @@ describe('HealthService external push readiness', () => {
     expect(check?.missing).toEqual([
       'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS',
     ]);
+    expect(check?.commands).toEqual([
+      'npm.cmd run external:check:push',
+      'npm.cmd run fcm:env-contract',
+      'npm.cmd run fcm:push-smoke -- --dry-run',
+    ]);
   });
 
   it('keeps FCM blocked when application default credentials point to a missing file', () => {
