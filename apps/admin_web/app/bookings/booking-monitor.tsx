@@ -163,9 +163,7 @@ import {
   bookingMonitorListMarketplaceParticipants,
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
-import {
-  bookingHasPartnerWalletDebtSignal,
-} from './booking-marketplace-wallet-signal';
+import { bookingMarketplaceOperationsBookingFact } from './booking-marketplace-operations-card-inputs';
 import {
   bookingLocationPillLabel,
   bookingLocationSignalLabel,
@@ -1542,14 +1540,13 @@ function buildMarketplaceOperationsCards(
 ): MarketplaceOperationsCard[] {
   return buildMarketplaceOperationsCardItems(
     buildMarketplaceOperationsCardCounts({
-      bookings: bookings.map((booking) => ({
-        alertTraceBatchCount: bookingBackupAlertTraceSummary(booking, nowMs).batchCount,
-        hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
-        hasWalletDebt: bookingHasPartnerWalletDebtSignal(booking),
-        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        selectedPartnerPresent: bookingHasFinalPartner(booking),
-        status: booking.status,
-      })),
+      bookings: bookings.map((booking) =>
+        bookingMarketplaceOperationsBookingFact(booking, nowMs, {
+          hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
+          marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+          selectedPartnerPresent: bookingHasFinalPartner(booking),
+        }),
+      ),
       ledgerRows,
     }),
   );
