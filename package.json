@@ -58,6 +58,7 @@
     "local:stop": "powershell -ExecutionPolicy Bypass -File infra/scripts/stop-hands-local.ps1",
     "local:status": "powershell -ExecutionPolicy Bypass -File infra/scripts/status-hands-local.ps1",
     "dev-env:check": "powershell -ExecutionPolicy Bypass -File infra/scripts/check-dev-env.ps1",
+    "docker:contract": "node infra/scripts/check-docker-compose-contract.mjs",
     "verify:scope": "powershell -ExecutionPolicy Bypass -File infra/scripts/verify-scope.ps1",
     "verify:preflight": "powershell -ExecutionPolicy Bypass -File infra/scripts/verify-scope.ps1 -Scope preflight",
     "verify:api:fast": "powershell -ExecutionPolicy Bypass -File infra/scripts/verify-scope.ps1 -Scope api -SkipBuild",

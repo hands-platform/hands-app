@@ -34,6 +34,10 @@ const steps = [
     command: ['infra/scripts/check-external-setup-copy.mjs'],
   },
   {
+    name: 'docker compose contract',
+    command: ['infra/scripts/check-docker-compose-contract.mjs'],
+  },
+  {
     name: 'supabase sql pack',
     command: ['infra/scripts/prepare-supabase-sql-pack.mjs'],
   },
