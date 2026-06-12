@@ -46,6 +46,7 @@ export const NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW = 'EVIDENCE_ASSISTED_ADMIN_R
 export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_alert_channel';
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
 export const PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS = 'FCM_FOR_ALL_BOOKINGS';
+// Deprecated persisted value only. HANDS MVP supports FCM, not OneSignal.
 export const PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
 export const WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
@@ -498,6 +499,13 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
 ];
+
+export function isFcmPartnerAlertChannel(value: unknown): boolean {
+  return (
+    value === PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS ||
+    value === PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS
+  );
+}
 
 export function resolveMatchingPolicy(
   config: ConfigService,

@@ -1,9 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import {
+  isFcmPartnerAlertChannel,
   NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
-  PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
-  PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS,
 } from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -97,9 +96,6 @@ export class NotificationRetryProcessor extends WorkerHost {
       select: { value: true },
     });
 
-    return setting?.value === PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS ||
-      setting?.value === PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS
-      ? 'fcm'
-      : 'in_app_only';
+    return isFcmPartnerAlertChannel(setting?.value) ? 'fcm' : 'in_app_only';
   }
 }

@@ -16,10 +16,14 @@ import {
   MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
   OPERATIONAL_POLICY_DEFINITIONS,
+  PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
+  PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
+  PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
   WALLET_NEGATIVE_BALANCE_GATE_KEY,
   haversineMeters,
+  isFcmPartnerAlertChannel,
   resolveMatchingPolicy,
   resolveMatchingPolicyFromPayload,
   roundTo100Meters,
@@ -64,6 +68,14 @@ describe('matching policy', () => {
     const serializedPolicyCopy = JSON.stringify(OPERATIONAL_POLICY_DEFINITIONS);
 
     expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
+  });
+
+  it('treats only FCM and deprecated saved push values as OS push partner alert channels', () => {
+    expect(isFcmPartnerAlertChannel(PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS)).toBe(true);
+    expect(isFcmPartnerAlertChannel(PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS)).toBe(true);
+    expect(isFcmPartnerAlertChannel(PARTNER_ALERT_IN_APP_WITH_PUSH_LATER)).toBe(false);
+    expect(isFcmPartnerAlertChannel('onesignal')).toBe(false);
+    expect(isFcmPartnerAlertChannel(undefined)).toBe(false);
   });
 
   it('normalizes legacy delayed marketplace settings to immediate participation', () => {
