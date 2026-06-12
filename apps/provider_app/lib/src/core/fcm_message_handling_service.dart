@@ -12,7 +12,18 @@ const handsFcmNotificationChannelName = 'HANDS priority alerts';
 const handsFcmNotificationChannelDescription =
     'Booking, payment, and account alerts from HANDS.';
 
-final handsFcmMessageHandlingService = FcmMessageHandlingService();
+FcmMessageHandlingService? _handsFcmMessageHandlingService;
+
+FcmMessageHandlingService get handsFcmMessageHandlingService =>
+    _handsFcmMessageHandlingService ??= FcmMessageHandlingService();
+
+Stream<FcmNotificationOpen> get handsFcmNotificationOpens {
+  if (!isNativeFcmPushPlatform || Firebase.apps.isEmpty) {
+    return const Stream.empty();
+  }
+
+  return handsFcmMessageHandlingService.notificationOpens;
+}
 
 @pragma('vm:entry-point')
 Future<void> handsFcmBackgroundMessageHandler(RemoteMessage message) async {
@@ -73,12 +84,18 @@ class FcmMessageHandlingService {
   final FirebaseMessaging _messaging;
   final FlutterLocalNotificationsPlugin _localNotifications;
   final _notificationOpens = StreamController<FcmNotificationOpen>.broadcast();
+  final _pendingNotificationOpens = <FcmNotificationOpen>[];
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
   bool _started = false;
 
-  Stream<FcmNotificationOpen> get notificationOpens =>
-      _notificationOpens.stream;
+  Stream<FcmNotificationOpen> get notificationOpens async* {
+    for (final notificationOpen in _drainPendingNotificationOpens()) {
+      yield notificationOpen;
+    }
+
+    yield* _notificationOpens.stream;
+  }
 
   Future<void> start() async {
     if (!isNativeFcmPushPlatform || _started) {
@@ -96,7 +113,7 @@ class FcmMessageHandlingService {
     _foregroundSubscription =
         FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
-      (message) => _notificationOpens.add(
+      (message) => _addNotificationOpen(
         FcmNotificationOpen.fromRemoteMessage(
           message,
           source: 'fcm_notification_opened_app',
@@ -106,7 +123,7 @@ class FcmMessageHandlingService {
 
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
-      _notificationOpens.add(
+      _addNotificationOpen(
         FcmNotificationOpen.fromRemoteMessage(
           initialMessage,
           source: 'fcm_initial_message',
@@ -135,7 +152,7 @@ class FcmMessageHandlingService {
     await _localNotifications.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (response) {
-        _notificationOpens.add(
+        _addNotificationOpen(
           FcmNotificationOpen.fromLocalPayload(response.payload),
         );
       },
@@ -196,5 +213,20 @@ class FcmMessageHandlingService {
       'messageId': message.messageId,
       'data': message.data,
     });
+  }
+
+  List<FcmNotificationOpen> _drainPendingNotificationOpens() {
+    final pending = List<FcmNotificationOpen>.from(_pendingNotificationOpens);
+    _pendingNotificationOpens.clear();
+    return pending;
+  }
+
+  void _addNotificationOpen(FcmNotificationOpen notificationOpen) {
+    if (_notificationOpens.hasListener) {
+      _notificationOpens.add(notificationOpen);
+      return;
+    }
+
+    _pendingNotificationOpens.add(notificationOpen);
   }
 }
