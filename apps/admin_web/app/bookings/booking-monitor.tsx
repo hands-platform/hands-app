@@ -240,6 +240,7 @@ const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'R
 const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const financeActionFlagKeywords = ['payment', 'closeout', 'cash', 'payout'] as const;
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
   missing: 'No location',
@@ -1472,27 +1473,33 @@ function bookingActionPriority(
 }
 
 function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
+  const flagTitle = bookingCheckFlagSearchText(flag);
   if (
-    flag?.title.toLowerCase().includes('payment') ||
-    flag?.title.toLowerCase().includes('closeout') ||
-    flag?.title.toLowerCase().includes('cash') ||
-    flag?.title.toLowerCase().includes('payout') ||
+    bookingCheckFlagTitleHasAny(flagTitle, financeActionFlagKeywords) ||
     bookingPaymentNeedsOps(booking) ||
     bookingCompletedCloseoutNeedsOps(booking)
   ) {
     return 'Finance';
   }
-  if (booking.status === 'NO_SHOW' || flag?.title.toLowerCase().includes('no-show')) {
+  if (booking.status === 'NO_SHOW' || flagTitle.includes('no-show')) {
     return 'Safety';
   }
   if (
     booking.status === 'CANCELLED' ||
     booking.status === 'EXPIRED' ||
-    flag?.title.toLowerCase().includes('chat')
+    flagTitle.includes('chat')
   ) {
     return 'Support';
   }
   return 'Dispatch';
+}
+
+function bookingCheckFlagSearchText(flag?: BookingCheckFlag) {
+  return flag?.title.toLowerCase() ?? '';
+}
+
+function bookingCheckFlagTitleHasAny(flagTitle: string, keywords: readonly string[]) {
+  return keywords.some((keyword) => flagTitle.includes(keyword));
 }
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
