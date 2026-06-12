@@ -1,4 +1,7 @@
 import { ConfigService } from '@nestjs/config';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID, PushDeliveryService } from './push-delivery.service';
 
 const mockMessagingSend = jest.fn();
@@ -19,6 +22,15 @@ function pushService(env: Record<string, string | undefined>) {
 }
 
 describe('PushDeliveryService', () => {
+  let tempDir: string | undefined;
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true });
+      tempDir = undefined;
+    }
+  });
+
   const message = {
     token: 'fcm-demo-token',
     title: 'Booking update',
@@ -48,6 +60,27 @@ describe('PushDeliveryService', () => {
       pushService({
         PUSH_PROVIDER: 'fcm',
         GOOGLE_APPLICATION_CREDENTIALS: 'C:\\secure\\missing-firebase-admin.json',
+      }).send(message),
+    ).resolves.toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: false,
+      failureCode: 'PUSH_PROVIDER_NOT_CONFIGURED',
+      response: {
+        invalid: ['GOOGLE_APPLICATION_CREDENTIALS'],
+      },
+    });
+  });
+
+  it('fails safely when application default credentials file is not a service account', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
+    const serviceAccountPath = join(tempDir, 'firebase-admin.json');
+    writeFileSync(serviceAccountPath, '{}');
+
+    await expect(
+      pushService({
+        PUSH_PROVIDER: 'fcm',
+        GOOGLE_APPLICATION_CREDENTIALS: serviceAccountPath,
       }).send(message),
     ).resolves.toMatchObject({
       provider: 'FCM',
