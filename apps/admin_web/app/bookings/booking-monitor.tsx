@@ -113,6 +113,7 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
+import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import {
@@ -394,8 +395,12 @@ export function BookingMonitor({
     return baseVisibleBookings.filter(
       (booking) =>
         bookingMatchesSearch(booking, searchQuery) &&
-        bookingMatchesStatusFilter(booking, statusFilter) &&
-        bookingMatchesPaymentFilter(booking, paymentFilter) &&
+        bookingMatchesMonitorBasicFilters({
+          paymentFilter,
+          paymentMethod: booking.payment?.method,
+          status: booking.status,
+          statusFilter,
+        }) &&
         bookingMatchesEvidenceFilter(booking, evidenceFilter, currentTimeMs),
     );
   }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
@@ -1348,14 +1353,6 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
     stageKey: () => bookingListStage(booking, nowMs).key,
     status: () => booking.status,
   });
-}
-
-function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string) {
-  return statusFilter === 'all' || booking.status === statusFilter;
-}
-
-function bookingMatchesPaymentFilter(booking: AdminBooking, paymentFilter: string) {
-  return paymentFilter === 'all' || (booking.payment?.method ?? 'NO_PAYMENT') === paymentFilter;
 }
 
 function bookingMatchesEvidenceFilter(
