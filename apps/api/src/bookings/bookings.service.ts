@@ -133,45 +133,19 @@ import {
 import { resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
-  include: {
-    participants: true;
-    preferredProvider: true;
-    selectedProvider: true;
-    chatRoom: true;
-    addressSnapshot: true;
-    payment: true;
-  };
+  include: typeof matchedBookingForClientInclude;
 }>;
 
 type SelectedBookingForClientResponse = Prisma.BookingGetPayload<{
-  include: {
-    addressSnapshot: true;
-    chatRoom: true;
-    preferredProvider: true;
-    selectedProvider: true;
-    payment: true;
-  };
+  include: typeof selectedBookingForClientInclude;
 }>;
 
 type OpenBookingForClientResponse = Prisma.BookingGetPayload<{
-  include: {
-    services: { include: { service: true } };
-    addressSnapshot: true;
-    payment: true;
-    participants: { include: { providerProfile: true } };
-    preferredProvider: true;
-    selectedProvider: true;
-  };
+  include: typeof openBookingForClientInclude;
 }>;
 
 type FirstPickRejectedBookingResponse = Prisma.BookingGetPayload<{
-  include: {
-    participants: true;
-    preferredProvider: true;
-    selectedProvider: true;
-    chatRoom: true;
-    addressSnapshot: true;
-  };
+  include: typeof firstPickRejectedBookingInclude;
 }>;
 
 type BackupProviderNotificationInput = {
@@ -183,6 +157,40 @@ type BackupProviderNotificationInput = {
   backupProviderInvitationLimit: number;
   matchingPayload: unknown;
 };
+
+const matchedBookingForClientInclude = {
+  participants: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  chatRoom: true,
+  addressSnapshot: true,
+  payment: true,
+} satisfies Prisma.BookingInclude;
+
+const selectedBookingForClientInclude = {
+  addressSnapshot: true,
+  chatRoom: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  payment: true,
+} satisfies Prisma.BookingInclude;
+
+const openBookingForClientInclude = {
+  services: { include: { service: true } },
+  addressSnapshot: true,
+  payment: true,
+  participants: { include: { providerProfile: true } },
+  preferredProvider: true,
+  selectedProvider: true,
+} satisfies Prisma.BookingInclude;
+
+const firstPickRejectedBookingInclude = {
+  participants: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  chatRoom: true,
+  addressSnapshot: true,
+} satisfies Prisma.BookingInclude;
 
 const clientBookingDetailInclude = {
   services: { include: { service: true } },
@@ -723,14 +731,7 @@ export class BookingsService {
             })
           : undefined,
       },
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        payment: true,
-        participants: { include: { providerProfile: true } },
-        preferredProvider: true,
-        selectedProvider: true,
-      },
+      include: openBookingForClientInclude,
     });
   }
 
@@ -1372,13 +1373,7 @@ export class BookingsService {
             providerProfileId: input.providerId,
             matchSource: PrismaBookingMatchSource.CUSTOMER_SELECTED_PARTNER,
           }),
-          include: {
-            addressSnapshot: true,
-            chatRoom: true,
-            preferredProvider: true,
-            selectedProvider: true,
-            payment: true,
-          },
+          include: selectedBookingForClientInclude,
         });
         await transaction.adminAuditLog.create(
           bookingMatchedAuditCreateInput({
@@ -1409,13 +1404,7 @@ export class BookingsService {
         bookingId: input.bookingId,
         providerProfileId: input.providerId,
       }),
-      include: {
-        participants: true,
-        preferredProvider: true,
-        selectedProvider: true,
-        chatRoom: true,
-        addressSnapshot: true,
-      },
+      include: firstPickRejectedBookingInclude,
     });
   }
 
@@ -1433,14 +1422,7 @@ export class BookingsService {
             providerProfileId: input.providerId,
             matchSource: PrismaBookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
           }),
-          include: {
-            participants: true,
-            preferredProvider: true,
-            selectedProvider: true,
-            chatRoom: true,
-            addressSnapshot: true,
-            payment: true,
-          },
+          include: matchedBookingForClientInclude,
         });
         await transaction.adminAuditLog.create(
           bookingMatchedAuditCreateInput({
