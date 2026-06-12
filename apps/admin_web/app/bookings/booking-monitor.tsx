@@ -1693,6 +1693,18 @@ type BookingCheckFlag = {
   title: string;
 };
 
+function bookingCheckFlag(
+  condition: boolean,
+  severity: BookingCheckFlag['severity'],
+  title: string,
+): BookingCheckFlag | null {
+  return condition ? { severity, title } : null;
+}
+
+function compactBookingCheckFlags(flags: readonly (BookingCheckFlag | null)[]): BookingCheckFlag[] {
+  return flags.filter((flag): flag is BookingCheckFlag => Boolean(flag));
+}
+
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
   return [
     ...bookingPaymentOutcomeCheckFlags(booking),
@@ -1705,41 +1717,41 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
 }
 
 function bookingPaymentOutcomeCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
-  const flags: BookingCheckFlag[] = [];
   const paymentStatus = booking.payment?.status;
+  const paymentOutcomeNeedsOperatorReview = Boolean(booking.payment) && paymentOutcomeNeedsReview(paymentStatus);
 
-  if (
-    booking.status === 'CANCELLED' &&
-    booking.payment &&
-    paymentOutcomeNeedsReview(paymentStatus)
-  ) {
-    flags.push({ severity: 'high', title: 'Cancelled payment unresolved' });
-  }
-  if (
-    booking.status === 'EXPIRED' &&
-    booking.payment &&
-    paymentOutcomeNeedsReview(paymentStatus)
-  ) {
-    flags.push({ severity: 'high', title: 'Expired payment unresolved' });
-  }
-  if (booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
-    flags.push({ severity: 'high', title: 'Completed service still on hold' });
-  }
-  if (bookingCompletedCloseoutNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Completed closeout incomplete' });
-  }
-  if (
-    booking.status === 'NO_SHOW' &&
-    booking.payment &&
-    paymentOutcomeNeedsReview(paymentStatus)
-  ) {
-    flags.push({ severity: 'high', title: 'No-show payment unresolved' });
-  }
-  if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace alerts' });
-  }
-
-  return flags;
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      booking.status === 'CANCELLED' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'Cancelled payment unresolved',
+    ),
+    bookingCheckFlag(
+      booking.status === 'EXPIRED' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'Expired payment unresolved',
+    ),
+    bookingCheckFlag(
+      booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED',
+      'high',
+      'Completed service still on hold',
+    ),
+    bookingCheckFlag(
+      bookingCompletedCloseoutNeedsOps(booking),
+      'high',
+      'Completed closeout incomplete',
+    ),
+    bookingCheckFlag(
+      booking.status === 'NO_SHOW' && paymentOutcomeNeedsOperatorReview,
+      'high',
+      'No-show payment unresolved',
+    ),
+    bookingCheckFlag(
+      bookingCashDebtNeedsOps(booking),
+      'high',
+      'Cash fee debt blocks marketplace alerts',
+    ),
+  ]);
 }
 
 function bookingPricingCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
