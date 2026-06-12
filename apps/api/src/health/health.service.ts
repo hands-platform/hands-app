@@ -12,6 +12,7 @@ import {
 } from '../notifications/firebase-admin-credentials';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID } from '../notifications/push-delivery.service';
 
 @Injectable()
 export class HealthService {
@@ -311,29 +312,60 @@ export class HealthService {
     const apps = [
       {
         name: 'customer_app',
+        expectedAndroidPackage: 'com.massagevn.customer.customer_app',
         pubspecPath: 'apps/customer_app/pubspec.yaml',
         rootGradlePath: 'apps/customer_app/android/build.gradle.kts',
         appGradlePath: 'apps/customer_app/android/app/build.gradle.kts',
+        manifestPath: 'apps/customer_app/android/app/src/main/AndroidManifest.xml',
+        fcmHandlerPath: 'apps/customer_app/lib/src/core/fcm_message_handling_service.dart',
         configPath: 'apps/customer_app/android/app/google-services.json',
       },
       {
         name: 'provider_app',
+        expectedAndroidPackage: 'com.massagevn.provider.provider_app',
         pubspecPath: 'apps/provider_app/pubspec.yaml',
         rootGradlePath: 'apps/provider_app/android/build.gradle.kts',
         appGradlePath: 'apps/provider_app/android/app/build.gradle.kts',
+        manifestPath: 'apps/provider_app/android/app/src/main/AndroidManifest.xml',
+        fcmHandlerPath: 'apps/provider_app/lib/src/core/fcm_message_handling_service.dart',
         configPath: 'apps/provider_app/android/app/google-services.json',
       },
     ].map((app) => {
       const pubspec = this.readRepoFile(repoRoot, app.pubspecPath);
       const rootGradle = this.readRepoFile(repoRoot, app.rootGradlePath);
       const appGradle = this.readRepoFile(repoRoot, app.appGradlePath);
+      const manifest = this.readRepoFile(repoRoot, app.manifestPath);
+      const fcmHandler = this.readRepoFile(repoRoot, app.fcmHandlerPath);
+      const googleServices = this.readRepoFile(repoRoot, app.configPath);
       const checked = pubspec !== null || rootGradle !== null || appGradle !== null;
       const hasBlockedFirebasePackages =
         /cloud_firestore|firebase_auth|firebase_database|firebase_storage/.test(pubspec ?? '');
+      const androidApplicationId = androidApplicationIdFromGradle(appGradle ?? '');
+      const googleServicesPackages = googleServicesAndroidPackages(googleServices);
+      const androidManifestChannelId = androidManifestDefaultChannelId(manifest ?? '');
+      const fcmHandlerChannelId = dartFcmNotificationChannelId(fcmHandler ?? '');
+      const androidApplicationIdMatches = androidApplicationId === app.expectedAndroidPackage;
+      const googleServicesPackageMatches =
+        googleServices === null || googleServicesPackages.includes(app.expectedAndroidPackage);
+      const notificationChannelIdMatches =
+        androidManifestChannelId === FCM_ANDROID_NOTIFICATION_CHANNEL_ID &&
+        fcmHandlerChannelId === FCM_ANDROID_NOTIFICATION_CHANNEL_ID;
+
       return {
         name: app.name,
         checked,
-        ok: checked && !hasBlockedFirebasePackages,
+        ok:
+          checked &&
+          !hasBlockedFirebasePackages &&
+          androidApplicationIdMatches &&
+          googleServicesPackageMatches &&
+          notificationChannelIdMatches,
+        failures: [
+          hasBlockedFirebasePackages ? 'blocked_firebase_package' : null,
+          androidApplicationIdMatches ? null : 'android_application_id_mismatch',
+          googleServicesPackageMatches ? null : 'google_services_package_mismatch',
+          notificationChannelIdMatches ? null : 'fcm_channel_id_mismatch',
+        ].filter((value): value is string => Boolean(value)),
       };
     });
 
@@ -346,12 +378,12 @@ export class HealthService {
       status: !sourceAvailable ? 'PARTIAL' : failingApps.length === 0 ? 'READY' : 'BLOCKED',
       configured: apps.filter((app) => app.ok).map((app) => app.name),
       missing: failingApps.map((app) => app.name),
-      invalid: [],
+      invalid: failingApps.flatMap((app) => app.failures.map((failure) => `${app.name}:${failure}`)),
       detail: !sourceAvailable
         ? 'Mobile app source files were not available to this API runtime; run the local Firebase scope script from the repository.'
         : failingApps.length === 0
-          ? 'Customer and provider Flutter apps keep Firebase limited to FCM-only surfaces.'
-          : 'Remove Firebase DB/Auth/Firestore/Storage packages from the listed mobile apps. FCM is allowed.',
+          ? 'Customer and provider Flutter apps keep Firebase limited to FCM-only surfaces with matching Android FCM app IDs and channel IDs.'
+          : 'Fix Firebase package scope, Android app IDs, google-services package names, or FCM channel IDs in the listed mobile apps. FCM is allowed.',
     };
   }
 
@@ -480,6 +512,44 @@ function externalCheckStatus(input: {
     return 'READY';
   }
   return input.configured.length > 0 ? 'PARTIAL' : 'BLOCKED';
+}
+
+function androidApplicationIdFromGradle(source: string) {
+  return source.match(/\bapplicationId\s*=\s*"([^"]+)"/)?.[1] ?? null;
+}
+
+function googleServicesAndroidPackages(source: string | null) {
+  if (!source) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(source) as {
+      client?: Array<{
+        client_info?: {
+          android_client_info?: {
+            package_name?: unknown;
+          };
+        };
+      }>;
+    };
+
+    return (parsed.client ?? [])
+      .map((client) => client.client_info?.android_client_info?.package_name)
+      .filter(
+        (packageName): packageName is string => typeof packageName === 'string' && packageName.length > 0,
+      );
+  } catch {
+    return [];
+  }
+}
+
+function androidManifestDefaultChannelId(source: string) {
+  return source.match(/default_notification_channel_id"[\s\S]*?android:value="([^"]+)"/)?.[1] ?? null;
+}
+
+function dartFcmNotificationChannelId(source: string) {
+  return source.match(/\bhandsFcmNotificationChannelId\s*=\s*'([^']+)'/)?.[1] ?? null;
 }
 
 function uniqueCategories(categories: string[]) {
