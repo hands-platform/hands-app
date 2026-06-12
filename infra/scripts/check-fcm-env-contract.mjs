@@ -15,6 +15,7 @@ const dockerFcmEnvKeys = [
   'FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH',
 ];
 const dockerContractCommand = 'npm.cmd run docker:contract';
+const securitySecretsCommand = 'npm.cmd run security:secrets';
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -54,6 +55,17 @@ const dockerContractCommandRequiredSources = [
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-readiness-order-section.tsx'),
   resolve(repoRoot, 'docs/architecture/e2e-smoke.md'),
   resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
+  resolve(repoRoot, 'docs/architecture/notifications.md'),
+  resolve(repoRoot, 'docs/architecture/operator-registration-plan.md'),
+];
+const securitySecretsCommandRequiredSources = [
+  resolve(repoRoot, 'infra/env/README.md'),
+  resolve(repoRoot, 'infra/scripts/check-firebase-admin-credentials.mjs'),
+  resolve(repoRoot, 'infra/scripts/external-registration-pack.mjs'),
+  resolve(repoRoot, 'infra/scripts/setup-doctor.mjs'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-readiness-order-section.tsx'),
+  resolve(repoRoot, 'docs/architecture/e2e-smoke.md'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
   resolve(repoRoot, 'docs/architecture/operator-registration-plan.md'),
 ];
@@ -109,20 +121,31 @@ for (const sourcePath of dockerContractCommandRequiredSources) {
   }
 }
 
+const missingSecuritySecretsCommandBySource = {};
+for (const sourcePath of securitySecretsCommandRequiredSources) {
+  const source = readFileSync(sourcePath, 'utf8');
+  if (!source.includes(securitySecretsCommand)) {
+    missingSecuritySecretsCommandBySource[relativePath(sourcePath)] = securitySecretsCommand;
+  }
+}
+
 const result = {
   ok:
     Object.keys(missingBySource).length === 0 &&
     Object.keys(missingSmokeBySource).length === 0 &&
     Object.keys(missingDockerBySource).length === 0 &&
-    Object.keys(missingDockerContractCommandBySource).length === 0,
+    Object.keys(missingDockerContractCommandBySource).length === 0 &&
+    Object.keys(missingSecuritySecretsCommandBySource).length === 0,
   fcmEnvKeys,
   fcmSmokeEnvKeys,
   dockerFcmEnvKeys,
   dockerContractCommand,
+  securitySecretsCommand,
   missingBySource,
   missingSmokeBySource,
   missingDockerBySource,
   missingDockerContractCommandBySource,
+  missingSecuritySecretsCommandBySource,
 };
 
 if (!result.ok) {
