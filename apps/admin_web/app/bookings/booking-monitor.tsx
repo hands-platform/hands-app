@@ -111,6 +111,7 @@ import {
   bookingMonitorSummaryRows,
   type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
+import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
@@ -502,34 +503,23 @@ export function BookingMonitor({
     };
   }, [autoRefresh, router]);
 
+  const refreshNow = () => {
+    startTransition(() => {
+      router.refresh();
+      const refreshedAt = new Date();
+      setLastRefreshLabel(formatClockTime(refreshedAt));
+      setNowMs(refreshedAt.getTime());
+    });
+  };
+  const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
+
   return (
     <>
-      <section className="toolbar">
-        <div>
-          <h1>Booking Monitor</h1>
-          <p className="muted">
-            Live operational view for matching, partner selection, chat, and payment readiness.
-          </p>
-        </div>
-        <div className="actions">
-          <button type="button" onClick={() => setAutoRefresh((value) => !value)}>
-            {autoRefresh ? 'Pause refresh' : 'Resume refresh'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              startTransition(() => {
-                router.refresh();
-                const refreshedAt = new Date();
-                setLastRefreshLabel(formatClockTime(refreshedAt));
-                setNowMs(refreshedAt.getTime());
-              });
-            }}
-          >
-            Refresh now
-          </button>
-        </div>
-      </section>
+      <BookingMonitorToolbarSection
+        autoRefresh={autoRefresh}
+        onRefreshNow={refreshNow}
+        onToggleAutoRefresh={toggleAutoRefresh}
+      />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
