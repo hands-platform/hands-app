@@ -155,7 +155,7 @@ import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
-import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-inputs';
+import { bookingMarketplaceCoverageInputFromBooking } from './booking-marketplace-coverage-inputs';
 import { bookingMarketplaceOperatingQueueFactFromBooking } from './booking-marketplace-operating-queue-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
@@ -1362,22 +1362,12 @@ function buildMarketplaceBookingCoverageRows(
   nowMs: number,
 ): readonly AdminMarketplaceBookingCoverageRow[] {
   return buildMarketplaceBookingCoverageRowsFromFacts(
-    bookings.map((booking) => {
-      const hasPreferredProvider = Boolean(booking.preferredProvider);
-
-      return bookingMarketplaceCoverageInput(booking, nowMs, {
-        backupSelected: hasPreferredProvider && bookingIsBackupSelected(booking),
-        firstPickPending: hasPreferredProvider && bookingFirstPickPending(booking),
-        hasFinalPartner: bookingHasFinalPartner(booking),
+    bookings.map((booking) =>
+      bookingMarketplaceCoverageInputFromBooking(booking, nowMs, {
         marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-        preferredProviderState: hasPreferredProvider
-          ? bookingPreferredProviderStateLabel(booking)
-          : null,
         selectableCount: bookingCustomerSelectableCount(booking),
-        selectedPartnerLabel: bookingFinalPartnerLabel(booking),
-      });
-    }),
+      }),
+    ),
   );
 }
 

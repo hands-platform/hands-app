@@ -2,13 +2,23 @@ import type { AdminBooking } from '../../lib/admin-api';
 import type { MarketplaceBookingCoverageRowInput } from '../../lib/marketplace-booking-coverage';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingChatRepairNeedsOps } from './booking-chat-handoff-state';
+import {
+  bookingFinalPartnerLabel,
+  bookingHasFinalPartner,
+} from './booking-final-partner-state';
 import { bookingCreatedTimestamp } from './booking-list-time';
 import {
   firstPickCoverageStateFromFacts,
   marketplaceBookingNextActionFromFacts,
 } from './booking-marketplace-coverage-state';
 import { bookingMarketplaceWalletSignal } from './booking-marketplace-wallet-signal';
+import { bookingMatchingWindowExpired } from './booking-matching-window';
 import { bookingCashDebtNeedsOps } from './booking-payment-closeout-facts';
+import {
+  bookingIsBackupSelected,
+  bookingPreferredAwaitingDecision,
+  bookingPreferredProviderStateLabel,
+} from './booking-preferred-provider-state';
 
 export type BookingMarketplaceCoverageInputFacts = {
   readonly backupSelected: boolean;
@@ -19,6 +29,11 @@ export type BookingMarketplaceCoverageInputFacts = {
   readonly preferredProviderState: string | null;
   readonly selectableCount: number;
   readonly selectedPartnerLabel: string | null;
+};
+
+export type BookingMarketplaceCoverageBookingFacts = {
+  readonly marketplaceParticipantCount: number;
+  readonly selectableCount: number;
 };
 
 export function bookingMarketplaceCoverageInput(
@@ -69,4 +84,23 @@ export function bookingMarketplaceCoverageInput(
     walletLabel: wallet.walletLabel,
     walletTone: wallet.walletTone,
   };
+}
+
+export function bookingMarketplaceCoverageInputFromBooking(
+  booking: AdminBooking,
+  nowMs: number,
+  facts: BookingMarketplaceCoverageBookingFacts,
+): MarketplaceBookingCoverageRowInput<AdminBooking> {
+  const hasPreferredProvider = Boolean(booking.preferredProvider);
+
+  return bookingMarketplaceCoverageInput(booking, nowMs, {
+    backupSelected: hasPreferredProvider && bookingIsBackupSelected(booking),
+    firstPickPending: hasPreferredProvider && bookingPreferredAwaitingDecision(booking),
+    hasFinalPartner: bookingHasFinalPartner(booking),
+    marketplaceParticipantCount: facts.marketplaceParticipantCount,
+    matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+    preferredProviderState: hasPreferredProvider ? bookingPreferredProviderStateLabel(booking) : null,
+    selectableCount: facts.selectableCount,
+    selectedPartnerLabel: bookingFinalPartnerLabel(booking),
+  });
 }

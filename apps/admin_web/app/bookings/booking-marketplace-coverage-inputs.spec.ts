@@ -1,5 +1,8 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-inputs';
+import {
+  bookingMarketplaceCoverageInput,
+  bookingMarketplaceCoverageInputFromBooking,
+} from './booking-marketplace-coverage-inputs';
 
 function booking(input: Partial<AdminBooking>): AdminBooking {
   return input as AdminBooking;
@@ -64,6 +67,37 @@ describe('bookingMarketplaceCoverageInput', () => {
       traceTotalNotified: 2,
       walletLabel: 'Wallet 100.000 VND',
       walletTone: 'pill-info',
+    });
+  });
+
+  it('builds coverage row input from booking selection and marketplace counts', () => {
+    const nowMs = Date.parse('2026-06-12T10:00:00.000Z');
+    const item = booking({
+      createdAt: '2026-06-12T09:40:00.000Z',
+      id: 'booking-2',
+      matchingEvidence: {
+        chatReady: true,
+      } as AdminBooking['matchingEvidence'],
+      selectedProvider: {
+        id: 'selected',
+        displayName: 'Selected Partner',
+      } as AdminBooking['selectedProvider'],
+      status: 'MATCHED',
+    });
+
+    expect(
+      bookingMarketplaceCoverageInputFromBooking(item, nowMs, {
+        marketplaceParticipantCount: 2,
+        selectableCount: 0,
+      }),
+    ).toMatchObject({
+      marketplaceParticipantCount: 2,
+      nextActionLabel: 'Monitor handoff',
+      nextActionTone: 'pill-success',
+      selectableCount: 0,
+      selectedPartnerLabel: 'Selected Partner',
+      sortTimestamp: Date.parse('2026-06-12T09:40:00.000Z'),
+      status: 'MATCHED',
     });
   });
 });
