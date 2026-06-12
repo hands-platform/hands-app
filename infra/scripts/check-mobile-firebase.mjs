@@ -1,6 +1,8 @@
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const repoRoot = resolve(import.meta.dirname, '..', '..');
 const expectedNotificationChannelId = 'hands_priority_alerts';
 const apiPushDeliverySource = readIfExists('apps/api/src/notifications/push-delivery.service.ts');
 const apiNotificationChannelId = apiPushDeliverySource.match(
@@ -16,6 +18,7 @@ const apps = [
     manifestPath: 'apps/customer_app/android/app/src/main/AndroidManifest.xml',
     fcmHandlerPath: 'apps/customer_app/lib/src/core/fcm_message_handling_service.dart',
     configPath: 'apps/customer_app/android/app/google-services.json',
+    iosConfigPath: 'apps/customer_app/ios/Runner/GoogleService-Info.plist',
   },
   {
     name: 'provider_app',
@@ -26,6 +29,7 @@ const apps = [
     manifestPath: 'apps/provider_app/android/app/src/main/AndroidManifest.xml',
     fcmHandlerPath: 'apps/provider_app/lib/src/core/fcm_message_handling_service.dart',
     configPath: 'apps/provider_app/android/app/google-services.json',
+    iosConfigPath: 'apps/provider_app/ios/Runner/GoogleService-Info.plist',
   },
 ];
 
@@ -48,6 +52,8 @@ for (const app of apps) {
   const androidManifestChannelId = androidManifestDefaultChannelId(manifestSource);
   const fcmHandlerChannelId = dartFcmNotificationChannelId(fcmHandlerSource);
   const hasGoogleServicesConfig = existsSync(resolve(app.configPath));
+  const androidConfigIgnoredByGit = isGitIgnored(app.configPath);
+  const iosConfigIgnoredByGit = isGitIgnored(app.iosConfigPath);
 
   const appResult = {
     name: app.name,
@@ -62,6 +68,8 @@ for (const app of apps) {
       `${rootGradleSource}\n${appGradleSource}`,
     ),
     hasGoogleServicesConfig,
+    androidConfigIgnoredByGit,
+    iosConfigIgnoredByGit,
     googleServicesPackages,
     googleServicesPackageMatches:
       !hasGoogleServicesConfig || googleServicesPackages.includes(app.expectedAndroidPackage),
@@ -78,6 +86,8 @@ for (const app of apps) {
   if (
     appResult.hasBlockedFirebasePackages ||
     !appResult.androidApplicationIdMatches ||
+    !appResult.androidConfigIgnoredByGit ||
+    !appResult.iosConfigIgnoredByGit ||
     !appResult.googleServicesPackageMatches ||
     !appResult.notificationChannelIdMatches
   ) {
@@ -94,8 +104,12 @@ if (!result.ok && !optional) {
 }
 
 function readIfExists(path) {
-  const filePath = resolve(path);
+  const filePath = resolve(repoRoot, path);
   return existsSync(filePath) ? readFileSync(filePath, 'utf8') : '';
+}
+
+function isGitIgnored(path) {
+  return spawnSync('git', ['check-ignore', '-q', path], { cwd: repoRoot }).status === 0;
 }
 
 function androidApplicationIdFromGradle(source) {
