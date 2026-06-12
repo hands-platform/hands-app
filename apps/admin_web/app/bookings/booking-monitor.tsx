@@ -205,6 +205,11 @@ import {
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
 } from './booking-payment-closeout-facts';
+import {
+  bookingManualDecisionNeedsOpsInput,
+  bookingPaymentNeedsOpsInput,
+  bookingRefundReviewNeedsOpsInput,
+} from './booking-payment-ops-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
@@ -1227,20 +1232,23 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
-  return bookingPaymentNeedsOpsFromFacts({
-    status: booking.status,
-    payment: booking.payment,
-    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-  });
+  return bookingPaymentNeedsOpsFromFacts(
+    bookingPaymentNeedsOpsInput({
+      booking,
+      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    }),
+  );
 }
 
 function bookingManualDecisionNeedsOps(booking: AdminBooking) {
-  return bookingManualDecisionNeedsOpsFromFacts({
-    status: booking.status,
-    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-  });
+  return bookingManualDecisionNeedsOpsFromFacts(
+    bookingManualDecisionNeedsOpsInput({
+      booking,
+      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+    }),
+  );
 }
 
 function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -1265,12 +1273,7 @@ function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingRefundReviewNeedsOps(booking: AdminBooking) {
-  return bookingRefundReviewNeedsOpsFromFacts({
-    status: booking.status,
-    payment: booking.payment,
-    refundCount: booking.refunds?.length,
-    paymentRefundCount: booking.payment?.refunds?.length,
-  });
+  return bookingRefundReviewNeedsOpsFromFacts(bookingRefundReviewNeedsOpsInput(booking));
 }
 
 function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
