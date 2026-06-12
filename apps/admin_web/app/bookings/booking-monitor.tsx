@@ -149,6 +149,10 @@ import {
   isHandoffBookingStatus,
 } from './booking-chat-handoff-state';
 import {
+  bookingChatEvidenceNeedsOpsFromReaders,
+  bookingDecisionEvidenceMissingFromReaders,
+} from './booking-chat-evidence-ops-state';
+import {
   bookingClosureListSignal,
   terminalBookingStatuses,
 } from './booking-closure-list-signal';
@@ -1252,24 +1256,24 @@ function bookingManualDecisionNeedsOps(booking: AdminBooking) {
 }
 
 function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
-  const chatReady = bookingMatchingChatReady(booking);
-  return (
-    bookingChatRepairNeedsOps(booking) ||
-    bookingChatQuietNeedsOps(booking) ||
-    bookingDecisionEvidenceMissing(booking, nowMs) ||
-    (bookingManualDecisionNeedsOps(booking) && chatReady) ||
-    (bookingRefundReviewNeedsOps(booking) && chatReady)
-  );
+  return bookingChatEvidenceNeedsOpsFromReaders({
+    chatReady: bookingMatchingChatReady(booking),
+    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
+    chatQuietNeedsOps: () => bookingChatQuietNeedsOps(booking),
+    decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
+    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
+    refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
+  });
 }
 
 function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
-  if (!bookingManualDecisionNeedsOps(booking) && !bookingChatRepairNeedsOps(booking)) {
-    return false;
-  }
-  const hasChatMessage = (booking.chatRoom?.messages?.length ?? 0) > 0;
-  const hasLocation = hasProviderLocation(booking);
-  const hasAlertTrace = bookingBackupAlertTraceSummary(booking, nowMs).totalNotified > 0;
-  return !(hasChatMessage || hasLocation || hasAlertTrace);
+  return bookingDecisionEvidenceMissingFromReaders({
+    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
+    hasAlertTrace: () => bookingBackupAlertTraceSummary(booking, nowMs).totalNotified > 0,
+    hasChatMessage: () => (booking.chatRoom?.messages?.length ?? 0) > 0,
+    hasProviderLocation: () => hasProviderLocation(booking),
+    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
+  });
 }
 
 function bookingRefundReviewNeedsOps(booking: AdminBooking) {
