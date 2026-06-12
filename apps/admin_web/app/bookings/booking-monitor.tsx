@@ -118,9 +118,7 @@ import {
   BookingMonitorListSection,
   type BookingMonitorListRow,
 } from './booking-monitor-list-section';
-import { BookingMonitorMarketplaceCoverageSection } from './booking-monitor-marketplace-coverage-section';
-import { BookingMonitorMarketplaceLedgerOverviewSection } from './booking-monitor-marketplace-ledger-overview-section';
-import { BookingMonitorMarketplaceParticipantLedgerSection } from './booking-monitor-marketplace-participant-ledger-section';
+import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
@@ -606,26 +604,18 @@ export function BookingMonitor({
         />
       )}
 
-      <section className="card admin-mt-16">
-        <BookingMonitorMarketplaceLedgerOverviewSection
-          getCustomerLabel={bookingCustomerLabel}
-          marketplaceLedgerSummary={marketplaceLedgerSummary}
-          marketplaceOperatingQueue={marketplaceOperatingQueue}
-        />
-        <BookingMonitorMarketplaceCoverageSection
-          getCustomerLabel={bookingCustomerLabel}
-          getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
-          marketplaceBookingCoveragePills={marketplaceBookingCoveragePills}
-          marketplaceBookingCoverageRows={marketplaceBookingCoverageRows}
-          marketplaceBookingCoverageSummary={marketplaceBookingCoverageSummary}
-        />
-        <BookingMonitorMarketplaceParticipantLedgerSection
-          getCustomerLabel={bookingCustomerLabel}
-          marketplaceLedgerPills={marketplaceLedgerPills}
-          marketplaceLedgerRows={marketplaceLedgerRows}
-          marketplaceOperationsCards={marketplaceOperationsCards}
-        />
-      </section>
+      <BookingMonitorMarketplaceSection
+        getCustomerLabel={bookingCustomerLabel}
+        getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
+        marketplaceBookingCoveragePills={marketplaceBookingCoveragePills}
+        marketplaceBookingCoverageRows={marketplaceBookingCoverageRows}
+        marketplaceBookingCoverageSummary={marketplaceBookingCoverageSummary}
+        marketplaceLedgerPills={marketplaceLedgerPills}
+        marketplaceLedgerRows={marketplaceLedgerRows}
+        marketplaceLedgerSummary={marketplaceLedgerSummary}
+        marketplaceOperatingQueue={marketplaceOperatingQueue}
+        marketplaceOperationsCards={marketplaceOperationsCards}
+      />
 
       <BookingMonitorListSection emptyMessage={emptyBookingMessage(view)} rows={bookingListRows} />
     </>
