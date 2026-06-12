@@ -149,6 +149,7 @@ import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
 import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
 import { bookingMatchingEscalationRowInput } from './booking-matching-escalation-row-inputs';
+import { bookingMatchingFlowTimelineInput } from './booking-matching-flow-timeline-inputs';
 import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
@@ -945,23 +946,27 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): rea
 }
 
 function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number) {
-  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
-  const matched = bookings.filter((booking) => booking.status === 'MATCHED');
-  const liveHandoff = bookings.filter((booking) => isHandoffBookingStatus(booking.status));
+  return bookingMatchingFlowTimelineInput(
+    bookings.map((booking) => {
+      const status = booking.status;
+      const open = status === 'OPEN_MATCHING';
+      const matched = status === 'MATCHED';
+      const liveHandoff = isHandoffBookingStatus(status);
 
-  return {
-    backupAlerted: open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0),
-    customerChoice: open.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
-    firstPickExpired: firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs)),
-    firstPickWaiting,
-    liveHandoff,
-    locationChecks: liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
-    marketplaceVisible: open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0),
-    matched,
-    matchedWithoutChat: matched.filter((booking) => !bookingMatchingChatReady(booking)),
-    noSupply: open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
-  };
+      return {
+        backupAlertNotifiedCount: open ? bookingBackupAlertTraceSummary(booking).totalNotified : 0,
+        booking,
+        customerSelectableCount: open ? bookingCustomerSelectableCount(booking) : 0,
+        firstPickPending: open ? bookingFirstPickPending(booking) : false,
+        hasChatRoom: matched ? bookingMatchingChatReady(booking) : false,
+        isLiveHandoff: liveHandoff,
+        locationNeedsOps: liveHandoff ? bookingLocationNeedsOps(booking, nowMs) : false,
+        marketplaceParticipantCount: open ? bookingMarketplaceParticipantCount(booking) : 0,
+        responseWindowExpired: open ? bookingMatchingWindowExpired(booking, nowMs) : false,
+        status,
+      };
+    }),
+  );
 }
 
 function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {

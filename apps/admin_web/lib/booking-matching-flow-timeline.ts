@@ -17,7 +17,7 @@ export type BookingMatchingFlowStep<TBooking> = {
   readonly tone: BookingMatchingFlowTone;
 };
 
-type BookingMatchingFlowTimelineInput<TBooking> = {
+export type BookingMatchingFlowTimelineInput<TBooking> = {
   readonly backupAlerted: readonly TBooking[];
   readonly customerChoice: readonly TBooking[];
   readonly firstPickExpired: readonly TBooking[];
