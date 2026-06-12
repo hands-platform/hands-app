@@ -109,6 +109,7 @@ import { bookingNextOperatorActionFromFacts } from './booking-next-operator-acti
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMonitorCheckFlagsInputFromBooking } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
+import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
 import {
@@ -1087,21 +1088,17 @@ function bookingMatchesEvidenceFilter(
   evidenceFilter: BookingEvidenceFilter,
   nowMs: number,
 ) {
-  return bookingMatchesMonitorEvidenceFilter(evidenceFilter, {
-    activeStatus: () => activeStatuses.has(booking.status),
-    addressNeedsOps: () => bookingAddressNeedsOps(booking),
-    alertEvidenceNeedsOps: () => bookingAlertEvidenceNeedsOps(booking, nowMs),
-    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-    chatLive: () => bookingMatchingChatReady(booking),
-    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
-    closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-    hasFinalPartner: () => bookingHasFinalPartner(booking),
-    hasProviderLocation: () => hasProviderLocation(booking),
-    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-    status: () => booking.status,
-    terminalStatus: () => terminalBookingStatuses.has(booking.status),
-  });
+  return bookingMatchesMonitorEvidenceFilter(
+    evidenceFilter,
+    bookingMonitorEvidenceMatchReadersFromBooking(booking, {
+      addressNeedsOps: () => bookingAddressNeedsOps(booking),
+      alertEvidenceNeedsOps: () => bookingAlertEvidenceNeedsOps(booking, nowMs),
+      cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
+      closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+      locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
+      paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+    }),
+  );
 }
 
 function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
