@@ -27,10 +27,10 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
           {items.length ? `${items.length} issue(s)` : 'No delivery blockers'}
         </span>
       </div>
-      <div className="grid">
+      <div className="ops-task-grid">
         {items.length ? (
           items.map((item) => (
-            <div className="card" key={item.key}>
+            <div className="ops-task-card" key={item.key}>
               <span className={`pill ${item.tone}`}>{item.label}</span>
               <h3 className="admin-mt-10">{item.count}</h3>
               <p className="muted">{item.detail}</p>
@@ -40,7 +40,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
             </div>
           ))
         ) : (
-          <div className="card">
+          <div className="ops-task-card">
             <span className="pill pill-success">Ready</span>
             <h3 className="admin-mt-10">Delivery path is clean</h3>
             <p className="muted">

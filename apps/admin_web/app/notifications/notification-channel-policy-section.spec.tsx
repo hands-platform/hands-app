@@ -20,7 +20,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('FCM route');
     expect(rendered).toContain('2');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
   });
 
   it('uses a neutral FCM badge when no OS push deliveries exist', () => {

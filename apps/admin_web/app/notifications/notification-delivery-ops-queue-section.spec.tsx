@@ -17,7 +17,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(rendered).toContain('Push provider returned an error');
     expect(rendered).toContain('Open queue');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
   });
 
   it('renders a clean state when no delivery blockers exist', () => {
@@ -27,7 +27,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
 
     expect(rendered).toContain('No delivery blockers');
     expect(rendered).toContain('Delivery path is clean');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-success']));
   });
 });
 

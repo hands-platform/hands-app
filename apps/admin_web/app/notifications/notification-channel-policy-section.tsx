@@ -27,21 +27,21 @@ export function NotificationChannelPolicySection({
           Change alert policy
         </Link>
       </div>
-      <div className="grid">
-        <div className="card">
+      <div className="ops-task-grid">
+        <div className="ops-task-card">
           <span className="pill pill-info">Partner booking alerts</span>
           <h3 className="admin-mt-10">{partnerAlertCount}</h3>
-          <p className="muted">Direct requests, marketplace participation alerts, matching, and payout setup.</p>
+          <p className="muted">
+            Direct requests, marketplace participation alerts, matching, and payout setup.
+          </p>
         </div>
-        <div className="card">
+        <div className="ops-task-card">
           <span className="pill pill-success">In-app route</span>
           <h3 className="admin-mt-10">{inAppDeliveries}</h3>
           <p className="muted">Delivery attempts intentionally kept inside the app inbox.</p>
         </div>
-        <div className="card">
-          <span className={fcmDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>
-            FCM route
-          </span>
+        <div className="ops-task-card">
+          <span className={fcmDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>FCM route</span>
           <h3 className="admin-mt-10">{fcmDeliveries}</h3>
           <p className="muted">OS push delivery attempts created by the active policy.</p>
         </div>
