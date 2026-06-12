@@ -2,6 +2,9 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { loadMergedEnv } from './lib/env-file.mjs';
+import { firebaseAdminCredentialsConfigured } from './lib/firebase-admin-credentials.mjs';
+
 const steps = [
   {
     name: 'root env example',
@@ -89,6 +92,8 @@ const generatedFiles = [
 const failed = results.filter((result) => result.status === 'FAIL');
 const missingGenerated = generatedFiles.filter((file) => !file.exists);
 const ok = failed.length === 0 && missingGenerated.length === 0;
+const { env } = loadMergedEnv('.env');
+const firebaseAdminReady = firebaseAdminCredentialsConfigured(env);
 
 console.log(
   JSON.stringify(
@@ -97,16 +102,7 @@ console.log(
       purpose: 'HANDS external setup preflight before filling real console credentials.',
       generatedFiles,
       checks: results,
-      nextSteps: ok
-        ? [
-            'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
-            'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
-            'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
-            'After downloading Firebase service account JSON, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -UpdateEnv, then npm.cmd run fcm:credentials-check.',
-            'Run npm.cmd run external:check:supabase for Supabase core values.',
-            'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
-          ]
-        : failed.map((result) => result.fix),
+      nextSteps: ok ? nextSetupSteps({ firebaseAdminReady }) : failed.map((result) => result.fix),
     },
     null,
     2,
@@ -140,6 +136,29 @@ function runStep(step) {
           ? compactSuccess(output)
           : output.slice(-1200),
   };
+}
+
+function nextSetupSteps({ firebaseAdminReady }) {
+  const preparationSteps = [
+    'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
+    'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
+    'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
+  ];
+  const followUpSteps = [
+    'Run npm.cmd run external:check:supabase for Supabase core values.',
+    'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
+  ];
+  const fcmSteps = firebaseAdminReady
+    ? [
+        'Run npm.cmd run fcm:credentials-check before live push smoke.',
+        'Run npm.cmd run fcm:token-smoke -- --dry-run, then npm.cmd run fcm:token-smoke when API/Docker are ready.',
+        'Set FCM_SMOKE_DEVICE_TOKEN to a real app token and run npm.cmd run fcm:push-smoke for live OS push verification.',
+      ]
+    : [
+        'After downloading Firebase service account JSON, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -UpdateEnv, then npm.cmd run fcm:credentials-check.',
+      ];
+
+  return [...preparationSteps, ...fcmSteps, ...followUpSteps];
 }
 
 function compactSuccess(output) {
