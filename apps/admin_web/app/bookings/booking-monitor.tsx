@@ -63,7 +63,6 @@ import {
 } from '../../lib/booking-pricing-policy-signal';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
-import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import {
   actionOrderLabel,
   bookingDashboardTone,
@@ -216,6 +215,7 @@ import {
   bookingRefundReviewNeedsOpsInput,
 } from './booking-payment-ops-inputs';
 import { bookingPricingPolicySignalInput } from './booking-pricing-policy-inputs';
+import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import {
@@ -1320,15 +1320,7 @@ function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingAddressSnapshotState(booking: AdminBooking) {
-  const snapshot = booking.addressSnapshot;
-  const legacyAddress = readAddressText(booking.address);
-  return bookingAddressSnapshotStateFromFacts({
-    hasAddressSnapshot: Boolean(snapshot),
-    snapshotAddressText: snapshot?.addressText ? displayMarketplaceText(snapshot.addressText) : null,
-    snapshotPinLabel: snapshot ? coordinatePairLabel(snapshot.latitude, snapshot.longitude) : null,
-    legacyAddressText: legacyAddress ? displayMarketplaceText(legacyAddress) : null,
-    legacyPinLabel: coordinatePairLabel(booking.lat, booking.lng),
-  });
+  return bookingAddressSnapshotStateFromFacts(bookingAddressSnapshotStateInput(booking));
 }
 
 function bookingChatListState(booking: AdminBooking) {
