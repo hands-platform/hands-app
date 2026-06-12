@@ -99,6 +99,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 ## Production Notes
 
 - `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
+- If using `GOOGLE_APPLICATION_CREDENTIALS` for FCM, point it to an existing service account JSON file available to the API process or Docker container.
 - Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
 - Keep `PUSH_PROVIDER=in_app_only` until OS-level push E2E is intentionally tested.
 - Customers never carry negative wallet balances in MVP.

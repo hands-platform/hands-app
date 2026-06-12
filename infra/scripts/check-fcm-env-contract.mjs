@@ -34,11 +34,7 @@ const fcmEnvKeys = Array.from(
 ).sort();
 const smokeSource = readFileSync(smokeSourcePath, 'utf8');
 const fcmSmokeEnvKeys = Array.from(
-  new Set(
-    [...smokeSource.matchAll(/envValue\('([^']+)'\)/g)]
-      .map((match) => match[1])
-      .filter((key) => key.startsWith('FCM_SMOKE_')),
-  ),
+  new Set([...smokeSource.matchAll(/\b(FCM_SMOKE_[A-Z0-9_]+)\b/g)].map((match) => match[1])),
 ).sort();
 
 const missingBySource = {};

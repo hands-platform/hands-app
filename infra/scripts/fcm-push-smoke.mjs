@@ -1,8 +1,12 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+const firebaseApplicationCredentialsEnvKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
 const apiBaseUrl = normalizeApiBaseUrl(envValue('API_BASE_URL') ?? 'http://localhost:3000/api');
 const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
@@ -291,11 +295,16 @@ function allHaveEnvValues(keys) {
   return keys.every(hasEnvValue);
 }
 
+function pathExists(key) {
+  const value = envValue(key);
+  return Boolean(value) && existsSync(resolve(value));
+}
+
 function firebaseAdminConfigured() {
   return (
     hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
     allHaveEnvValues(firebaseAdminEnvKeys) ||
-    hasEnvValue('GOOGLE_APPLICATION_CREDENTIALS')
+    pathExists(firebaseApplicationCredentialsEnvKey)
   );
 }
 
@@ -307,7 +316,7 @@ function dryRunNextActions() {
   }
 
   if (!firebaseAdminConfigured()) {
-    actions.push('Configure server-side Firebase Admin credentials for FCM.');
+    actions.push(firebaseAdminCredentialAction());
   }
 
   if (!deviceToken) {
@@ -316,6 +325,14 @@ function dryRunNextActions() {
 
   actions.push('Run npm.cmd run fcm:push-smoke when API/Docker are ready.');
   return actions;
+}
+
+function firebaseAdminCredentialAction() {
+  if (hasEnvValue(firebaseApplicationCredentialsEnvKey) && !pathExists(firebaseApplicationCredentialsEnvKey)) {
+    return 'Point GOOGLE_APPLICATION_CREDENTIALS to an existing service account JSON file.';
+  }
+
+  return 'Configure server-side Firebase Admin credentials for FCM.';
 }
 
 function maskDeviceToken(value) {

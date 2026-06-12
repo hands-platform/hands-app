@@ -10,6 +10,7 @@ const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 
 const checks = [];
 const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+const firebaseApplicationCredentialsEnvKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
 const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
@@ -64,7 +65,7 @@ addRecommended(
   'push',
   'Firebase Admin credentials',
   firebaseAdminConfigured(),
-  'Fill server-side Firebase Admin credentials before production Android/iOS push launch.',
+  'Fill server-side Firebase Admin credentials before production Android/iOS push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file.',
 );
 addPhaseRequired(
   'push',
@@ -77,7 +78,7 @@ addPhaseRequired(
   'push',
   'Firebase Admin credentials for OS push',
   firebaseAdminConfigured(),
-  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or GOOGLE_APPLICATION_CREDENTIALS before production-like OS push E2E.',
+  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing GOOGLE_APPLICATION_CREDENTIALS file before production-like OS push E2E.',
   ['push', 'production'],
 );
 
@@ -340,7 +341,7 @@ function firebaseAdminConfigured() {
   return (
     hasValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
     allHaveValue(firebaseAdminEnvKeys) ||
-    hasValue('GOOGLE_APPLICATION_CREDENTIALS')
+    pathExists(firebaseApplicationCredentialsEnvKey)
   );
 }
 
