@@ -269,6 +269,9 @@ export function emptyNotificationMessage(
 function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
   return (notification.deliveries ?? []).map((delivery) => ({
     attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+    deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
+      ? formatDateTime(delivery.pushDevice.lastSeenAt)
+      : '-',
     deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
     enableDeviceHref:
       delivery.pushDevice?.enabled === false && delivery.pushDevice.id

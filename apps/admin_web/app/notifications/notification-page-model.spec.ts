@@ -183,7 +183,12 @@ describe('notification page model', () => {
             attemptedAt: '2026-06-01T10:01:00.000Z',
             id: 'delivery-disabled',
             provider: 'FCM',
-            pushDevice: { enabled: false, id: 'device-disabled', platform: 'ios' },
+            pushDevice: {
+              enabled: false,
+              id: 'device-disabled',
+              lastSeenAt: '2026-06-01T10:02:00.000Z',
+              platform: 'ios',
+            },
             response: { body: { error: { details: [{ errorCode: 'BAD_TOKEN' }] } }, statusCode: 400 },
             status: 'FAILED',
           },
@@ -209,6 +214,7 @@ describe('notification page model', () => {
     });
     expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Open Partner', 'Retry']);
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      deviceLastSeenAtLabel: '1 Jun 2026, 17:02',
       deviceStateLabel: 'Device disabled',
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
