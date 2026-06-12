@@ -238,6 +238,7 @@ type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
+const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
@@ -932,7 +933,7 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
       (booking) =>
         booking.chatRoom &&
         (booking.chatRoom.messages?.length ?? 0) === 0 &&
-        ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+        isHandoffBookingStatus(booking.status),
     ),
     refundReview: bookings.filter((booking) => bookingRefundReviewNeedsOps(booking)),
   };
@@ -1106,6 +1107,10 @@ function paymentOutcomeNeedsReview(status?: string | null) {
   return !resolvedPaymentOutcomeStatuses.has(status ?? '');
 }
 
+function isHandoffBookingStatus(status: string) {
+  return handoffBookingStatuses.has(status);
+}
+
 function buildMatchingEscalationBoard(
   bookings: AdminBooking[],
   nowMs: number,
@@ -1209,9 +1214,7 @@ function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number)
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
   const matched = bookings.filter((booking) => booking.status === 'MATCHED');
-  const liveHandoff = bookings.filter((booking) =>
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
-  );
+  const liveHandoff = bookings.filter((booking) => isHandoffBookingStatus(booking.status));
 
   return {
     backupAlerted: open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0),
@@ -1278,9 +1281,7 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
   return bookingListStageFromFacts({
     bookingId: booking.id,
     hasChatRoom: bookingMatchingChatReady(booking),
-    isHandoffStatus: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
-      booking.status,
-    ),
+    isHandoffStatus: isHandoffBookingStatus(booking.status),
     isTerminalStatus: terminalBookingStatuses.has(booking.status),
     locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
     matchingEvidence: booking.matchingEvidence,
