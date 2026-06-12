@@ -15,6 +15,21 @@ const trackedFiles = execFileSync('git', ['ls-files'], {
 
 const findings = [];
 
+const blockedTrackedFilePatterns = [
+  {
+    pattern: /(^|\/)google-services\.json$/i,
+    reason: 'Firebase Android client config must stay ignored',
+  },
+  {
+    pattern: /(^|\/)GoogleService-Info\.plist$/i,
+    reason: 'Firebase iOS client config must stay ignored',
+  },
+  {
+    pattern: /(^|\/)(?!.*placeholder).*firebase-admin.*\.json$/i,
+    reason: 'Firebase Admin service account JSON must stay outside Git',
+  },
+];
+
 const secretAssignmentKeys = new Set([
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_JWT_SECRET',
@@ -52,6 +67,7 @@ const safePlaceholderPattern =
   /^(|<[^>]+>|your[-_ ].*|change-me|changeme|dev-.*|example.*|.*example.*|.*placeholder.*)$/i;
 
 for (const file of trackedFiles) {
+  checkTrackedFileName(file);
   const absolutePath = resolve(root, file);
   if (!existsSync(absolutePath) || statSync(absolutePath).size > maxFileBytes) {
     continue;
@@ -125,6 +141,15 @@ function checkLine(file, lineNumber, line) {
   const value = rawValue.trim().replace(/^['"]|['"]$/g, '');
   if (!safePlaceholderPattern.test(value)) {
     addFinding(file, lineNumber, `${key} contains a non-placeholder value`);
+  }
+}
+
+function checkTrackedFileName(file) {
+  const normalized = file.replaceAll('\\', '/');
+  for (const blocked of blockedTrackedFilePatterns) {
+    if (blocked.pattern.test(normalized)) {
+      addFinding(file, 1, blocked.reason);
+    }
   }
 }
 
