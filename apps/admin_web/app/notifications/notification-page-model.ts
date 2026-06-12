@@ -22,6 +22,8 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
+const STALE_PUSH_DEVICE_AGE_DAYS = 30;
+const STALE_PUSH_DEVICE_AGE_MS = STALE_PUSH_DEVICE_AGE_DAYS * 24 * 60 * 60 * 1000;
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
   failed: 'delivery attempts that returned a push provider failure.',
@@ -34,6 +36,7 @@ const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   pending: 'notifications without a captured delivery attempt yet.',
   sent: 'successfully delivered push notifications.',
   skipped: 'alerts that were intentionally skipped or had no available send path.',
+  'stale-device': 'delivery attempts made with old push token timestamps.',
 };
 const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNotification) => boolean>> = {
   'disabled-device': hasDisabledPushDevice,
@@ -47,6 +50,7 @@ const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNo
   pending: (notification) => (notification.deliveries ?? []).length === 0,
   sent: (notification) => hasDeliveryStatus(notification, 'SENT'),
   skipped: (notification) => hasDeliveryStatus(notification, 'SKIPPED'),
+  'stale-device': hasStalePushDeviceDelivery,
 };
 
 export type NotificationSummary = {
@@ -57,6 +61,7 @@ export type NotificationSummary = {
   readonly payoutSetup: number;
   readonly sent: number;
   readonly skipped: number;
+  readonly staleDevices: number;
 };
 
 export type NotificationChannelSummary = {
@@ -73,6 +78,11 @@ export const notificationFilterLinks = [
     label: 'Disabled devices',
     href: '/notifications?review=disabled-device',
     review: 'disabled-device',
+  },
+  {
+    label: 'Stale devices',
+    href: '/notifications?review=stale-device',
+    review: 'stale-device',
   },
   { label: 'Needs retry', href: '/notifications?review=needs-retry', review: 'needs-retry' },
   { label: 'Skipped', href: '/notifications?review=skipped', review: 'skipped' },
@@ -158,6 +168,7 @@ export function buildNotificationSummary(notifications: readonly AdminNotificati
     ).length,
     sent: countDeliveries(notifications, 'SENT'),
     skipped: countDeliveries(notifications, 'SKIPPED'),
+    staleDevices: countStalePushDeviceDeliveries(notifications),
   };
 }
 
@@ -168,6 +179,7 @@ export function buildNotificationDeliveryOpsQueue(
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   ).length;
   const disabledDevices = countDisabledDevices(notifications);
+  const staleDevices = countStalePushDeviceDeliveries(notifications);
   const skipped = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED'),
   ).length;
@@ -191,6 +203,16 @@ export function buildNotificationDeliveryOpsQueue(
       href: '/notifications?review=disabled-device',
       key: 'disabled-devices',
       label: 'Disabled devices',
+      tone: 'pill-warn',
+    });
+  }
+  if (staleDevices) {
+    items.push({
+      count: staleDevices,
+      detail: `Push token timestamp is ${STALE_PUSH_DEVICE_AGE_DAYS}+ days old at delivery attempt. Confirm the app has refreshed its FCM token before retrying.`,
+      href: '/notifications?review=stale-device',
+      key: 'stale-devices',
+      label: 'Stale devices',
       tone: 'pill-warn',
     });
   }
@@ -269,6 +291,7 @@ export function emptyNotificationMessage(
 function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
   return (notification.deliveries ?? []).map((delivery) => ({
     attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+    deviceFreshnessLabel: notificationDeliveryPushDeviceFreshnessLabel(delivery),
     deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
       ? formatDateTime(delivery.pushDevice.lastSeenAt)
       : '-',
@@ -285,6 +308,16 @@ function buildNotificationDeliveryRows(notification: AdminNotification): Notific
     provider: delivery.provider,
     status: delivery.status,
   }));
+}
+
+function notificationDeliveryPushDeviceFreshnessLabel(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
+  if (isStalePushDeviceDelivery(delivery)) {
+    return `${STALE_PUSH_DEVICE_AGE_DAYS}+ day token timestamp`;
+  }
+  if (!delivery.pushDevice?.lastSeenAt) {
+    return 'Token timestamp unknown';
+  }
+  return 'Token timestamp current';
 }
 
 function countDeliveries(notifications: readonly AdminNotification[], status: string) {
@@ -305,6 +338,32 @@ function countDisabledDevices(notifications: readonly AdminNotification[]) {
     }
   }
   return ids.size;
+}
+
+function countStalePushDeviceDeliveries(notifications: readonly AdminNotification[]) {
+  return notifications.reduce(
+    (total, notification) =>
+      total + (notification.deliveries ?? []).filter(isStalePushDeviceDelivery).length,
+    0,
+  );
+}
+
+function hasStalePushDeviceDelivery(notification: AdminNotification) {
+  return (notification.deliveries ?? []).some(isStalePushDeviceDelivery);
+}
+
+export function isStalePushDeviceDelivery(
+  delivery: NonNullable<AdminNotification['deliveries']>[number],
+) {
+  if (delivery.pushDevice?.enabled === false) {
+    return false;
+  }
+  const lastSeenAt = Date.parse(delivery.pushDevice?.lastSeenAt ?? '');
+  const attemptedAt = Date.parse(delivery.attemptedAt);
+  if (!Number.isFinite(lastSeenAt) || !Number.isFinite(attemptedAt)) {
+    return false;
+  }
+  return attemptedAt - lastSeenAt >= STALE_PUSH_DEVICE_AGE_MS;
 }
 
 function hasRetrySignal(notification: AdminNotification) {

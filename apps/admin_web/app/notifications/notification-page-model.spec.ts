@@ -7,6 +7,7 @@ import {
   buildNotificationTableRows,
   emptyNotificationMessage,
   filterNotifications,
+  isStalePushDeviceDelivery,
   notificationFilterDescription,
   notificationFilterLinks,
   sortNotifications,
@@ -22,8 +23,9 @@ describe('notification page model', () => {
       needsRetry: 2,
       noShow: 1,
       payoutSetup: 1,
-      sent: 1,
+      sent: 2,
       skipped: 1,
+      staleDevices: 1,
     });
   });
 
@@ -46,6 +48,15 @@ describe('notification page model', () => {
         href: '/notifications?review=disabled-device',
         key: 'disabled-devices',
         label: 'Disabled devices',
+        tone: 'pill-warn',
+      },
+      {
+        count: 1,
+        detail:
+          'Push token timestamp is 30+ days old at delivery attempt. Confirm the app has refreshed its FCM token before retrying.',
+        href: '/notifications?review=stale-device',
+        key: 'stale-devices',
+        label: 'Stale devices',
         tone: 'pill-warn',
       },
       {
@@ -84,8 +95,8 @@ describe('notification page model', () => {
 
     expect(summary).toEqual({
       inAppDeliveries: 1,
-      fcmDeliveries: 2,
-      partnerAlertCount: 3,
+      fcmDeliveries: 3,
+      partnerAlertCount: 4,
       policyLabel: 'In-app first',
     });
   });
@@ -214,6 +225,7 @@ describe('notification page model', () => {
     });
     expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Open Partner', 'Retry']);
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      deviceFreshnessLabel: 'Token timestamp current',
       deviceLastSeenAtLabel: '1 Jun 2026, 17:02',
       deviceStateLabel: 'Device disabled',
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
@@ -284,10 +296,18 @@ describe('notification page model', () => {
       label: 'Partner alerts',
       review: 'partner-alerts',
     });
+    expect(notificationFilterLinks.find((item) => item.review === 'stale-device')).toEqual({
+      href: '/notifications?review=stale-device',
+      label: 'Stale devices',
+      review: 'stale-device',
+    });
     expect(notificationFilterDescription('failed')).toBe(
       'delivery attempts that returned a push provider failure.',
     );
     expect(notificationFilterDescription('partner-alerts')).toBe('booking and payout alerts sent to partners.');
+    expect(notificationFilterDescription('stale-device')).toBe(
+      'delivery attempts made with old push token timestamps.',
+    );
     expect(notificationFilterDescription('unknown')).toBe('all notification records.');
     expect(emptyNotificationMessage('', undefined, (value) => `short-${value}`)).toBe(
       'No notifications loaded.',
@@ -298,6 +318,37 @@ describe('notification page model', () => {
     expect(emptyNotificationMessage('failed', 'booking-1', (value) => `short-${value}`)).toBe(
       'No notifications currently match booking short-booking-1. Confirm the booking created an alert row before retrying delivery.',
     );
+  });
+
+  it('detects stale push token timestamps without double-counting disabled devices', () => {
+    expect(
+      isStalePushDeviceDelivery({
+        attemptedAt: '2026-06-01T10:00:00.000Z',
+        id: 'delivery-stale',
+        provider: 'FCM',
+        pushDevice: {
+          enabled: true,
+          id: 'device-stale',
+          lastSeenAt: '2026-04-15T10:00:00.000Z',
+          platform: 'android',
+        },
+        status: 'SENT',
+      }),
+    ).toBe(true);
+    expect(
+      isStalePushDeviceDelivery({
+        attemptedAt: '2026-06-01T10:00:00.000Z',
+        id: 'delivery-disabled',
+        provider: 'FCM',
+        pushDevice: {
+          enabled: false,
+          id: 'device-disabled',
+          lastSeenAt: '2026-04-15T10:00:00.000Z',
+          platform: 'android',
+        },
+        status: 'FAILED',
+      }),
+    ).toBe(false);
   });
 });
 
@@ -339,6 +390,24 @@ function buildNotifications(): AdminNotification[] {
       ],
       id: 'notification-skipped',
       type: 'booking.no_show',
+    }),
+    notification({
+      deliveries: [
+        {
+          attemptedAt: '2026-06-01T10:03:00.000Z',
+          id: 'delivery-stale',
+          provider: 'FCM',
+          pushDevice: {
+            enabled: true,
+            id: 'device-stale',
+            lastSeenAt: '2026-04-15T10:03:00.000Z',
+            platform: 'android',
+          },
+          status: 'SENT',
+        },
+      ],
+      id: 'notification-stale',
+      type: 'booking.matched',
     }),
     notification({
       deliveries: [],

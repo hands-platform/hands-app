@@ -67,6 +67,7 @@ export default async function NotificationsPage({
         { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
         { label: 'Failed', value: summary.failed, helper: 'Push failures needing review.' },
         { label: 'Disabled devices', value: summary.disabledDevices, helper: 'Push devices disabled.' },
+        { label: 'Stale devices', value: summary.staleDevices, helper: 'Old token timestamps at send.' },
         { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
         { label: 'Partner alerts', value: channelSummary.partnerAlertCount, helper: 'Partner-facing alerts.' },
         { label: 'No-show alerts', value: summary.noShow, helper: 'No-show support review alerts.' },

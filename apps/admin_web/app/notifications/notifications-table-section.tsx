@@ -5,6 +5,7 @@ import { AdminDataTable } from '../../components/admin-data-table';
 
 export type NotificationDeliveryRow = {
   readonly attemptedAtLabel: string;
+  readonly deviceFreshnessLabel: string;
   readonly deviceLastSeenAtLabel: string;
   readonly deviceStateLabel: string;
   readonly enableDeviceHref: string | null;
@@ -101,7 +102,7 @@ export function NotificationsTableSection({ emptyMessage, rows }: NotificationsT
                       {delivery.deviceStateLabel} - Attempted {delivery.attemptedAtLabel}
                     </div>
                     <div className="muted admin-mt-4">
-                      Device last seen {delivery.deviceLastSeenAtLabel}
+                      Device last seen {delivery.deviceLastSeenAtLabel} / {delivery.deviceFreshnessLabel}
                     </div>
                     <div className="muted admin-mt-4">
                       Failure {delivery.failureCodeLabel} / HTTP {delivery.httpStatusLabel}

@@ -24,6 +24,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('2026-06-09 10:01');
     expect(rendered).toContain('Device last seen');
     expect(rendered).toContain('2026-06-09 10:02');
+    expect(rendered).toContain('Token timestamp current');
     expect(rendered).toContain('Failure');
     expect(rendered).toContain('invalid_token');
     expect(rendered).toContain('HTTP');
@@ -67,6 +68,7 @@ function buildRow(): NotificationTableRow {
     deliveryRows: [
       {
         attemptedAtLabel: '2026-06-09 10:01',
+        deviceFreshnessLabel: 'Token timestamp current',
         deviceLastSeenAtLabel: '2026-06-09 10:02',
         deviceStateLabel: 'Device disabled',
         enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-1',
