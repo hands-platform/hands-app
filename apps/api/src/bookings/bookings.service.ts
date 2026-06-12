@@ -316,23 +316,21 @@ export class BookingsService {
       matchingPolicy,
     );
     if (preferredProviderDistanceGateError) {
-      await this.recordBookingGateRejection({
+      await this.rejectPreferredProviderTooFar({
         actorId: customerUserId,
         customerProfileId: customer.id,
         serviceId: service.id,
         preferredProviderId: preferredProvider?.id,
-        reasonCode: 'PREFERRED_PARTNER_TOO_FAR',
-        reason: preferredProviderDistanceGateError.message,
         bookingLat,
         bookingLng,
         addressText,
         customerDistanceMeters: customerToBookingDistanceMeters,
         preferredProviderDistanceMeters,
-        customerDistanceLimitMeters: distanceGateLimits.customerDistanceLimitMeters,
-        preferredProviderDistanceLimitMeters: preferredProviderDistanceGateError.limitMeters,
         currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
+        distanceGateLimits,
+        message: preferredProviderDistanceGateError.message,
+        preferredProviderDistanceLimitMeters: preferredProviderDistanceGateError.limitMeters,
       });
-      throw new BadRequestException(preferredProviderDistanceGateError.message);
     }
     const bookingGateSnapshot = bookingDistanceGateSnapshot({
       matchingPolicy,
@@ -506,6 +504,40 @@ export class BookingsService {
       customerDistanceLimitMeters: input.distanceGateLimits.customerDistanceLimitMeters,
       preferredProviderDistanceLimitMeters: input.distanceGateLimits.preferredProviderDistanceLimitMeters,
       currentLocationRecordedAt: null,
+    });
+    throw new BadRequestException(input.message);
+  }
+
+  private async rejectPreferredProviderTooFar(input: {
+    actorId: string;
+    customerProfileId: string;
+    serviceId: string;
+    preferredProviderId?: string | null;
+    bookingLat: number;
+    bookingLng: number;
+    addressText: string;
+    customerDistanceMeters: number | null;
+    preferredProviderDistanceMeters: number | null;
+    currentLocationRecordedAt?: Date | null;
+    distanceGateLimits: ReturnType<typeof bookingDistanceGateLimits>;
+    message: string;
+    preferredProviderDistanceLimitMeters: number;
+  }): Promise<never> {
+    await this.recordBookingGateRejection({
+      actorId: input.actorId,
+      customerProfileId: input.customerProfileId,
+      serviceId: input.serviceId,
+      preferredProviderId: input.preferredProviderId,
+      reasonCode: 'PREFERRED_PARTNER_TOO_FAR',
+      reason: input.message,
+      bookingLat: input.bookingLat,
+      bookingLng: input.bookingLng,
+      addressText: input.addressText,
+      customerDistanceMeters: input.customerDistanceMeters,
+      preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
+      customerDistanceLimitMeters: input.distanceGateLimits.customerDistanceLimitMeters,
+      preferredProviderDistanceLimitMeters: input.preferredProviderDistanceLimitMeters,
+      currentLocationRecordedAt: input.currentLocationRecordedAt,
     });
     throw new BadRequestException(input.message);
   }
