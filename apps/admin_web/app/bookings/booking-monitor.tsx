@@ -112,6 +112,7 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
+import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import {
   activeBookingStatuses as activeStatuses,
@@ -1361,37 +1362,21 @@ function bookingMatchesEvidenceFilter(
   evidenceFilter: BookingEvidenceFilter,
   nowMs: number,
 ) {
-  switch (evidenceFilter) {
-    case 'all':
-      return true;
-    case 'address':
-      return bookingAddressNeedsOps(booking);
-    case 'partner':
-      return (
-        booking.status === 'OPEN_MATCHING' ||
-        (activeStatuses.has(booking.status) && !bookingHasFinalPartner(booking))
-      );
-    case 'chat':
-      return bookingChatRepairNeedsOps(booking) || bookingMatchingChatReady(booking);
-    case 'money':
-      return (
-        bookingPaymentNeedsOps(booking) ||
-        bookingCashDebtNeedsOps(booking) ||
-        bookingCompletedCloseoutNeedsOps(booking)
-      );
-    case 'location':
-      return bookingLocationNeedsOps(booking, nowMs) || hasProviderLocation(booking);
-    case 'alerts':
-      return bookingAlertEvidenceNeedsOps(booking, nowMs);
-    case 'closeout':
-      return (
-        terminalBookingStatuses.has(booking.status) ||
-        bookingCompletedCloseoutNeedsOps(booking) ||
-        booking.status === 'NO_SHOW'
-      );
-    default:
-      return true;
-  }
+  return bookingMatchesMonitorEvidenceFilter(evidenceFilter, {
+    activeStatus: () => activeStatuses.has(booking.status),
+    addressNeedsOps: () => bookingAddressNeedsOps(booking),
+    alertEvidenceNeedsOps: () => bookingAlertEvidenceNeedsOps(booking, nowMs),
+    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
+    chatLive: () => bookingMatchingChatReady(booking),
+    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
+    closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+    hasFinalPartner: () => bookingHasFinalPartner(booking),
+    hasProviderLocation: () => hasProviderLocation(booking),
+    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
+    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+    status: () => booking.status,
+    terminalStatus: () => terminalBookingStatuses.has(booking.status),
+  });
 }
 
 function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
