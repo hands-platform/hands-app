@@ -66,6 +66,7 @@ For a narrow Docker/API push check after credentials are configured, use:
 $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run external:check:push
 npm.cmd run fcm:credentials-check
+npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke
 $env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
 $env:FCM_SMOKE_PLATFORM='android'

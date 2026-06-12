@@ -308,6 +308,7 @@ const registrationItems = [
             'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
           ]),
       'npm.cmd run fcm:credentials-check',
+      'npm.cmd run docker:contract',
       'npm.cmd run fcm:token-smoke -- --dry-run',
       'npm.cmd run fcm:push-smoke -- --dry-run',
       'Set FCM_SMOKE_DEVICE_TOKEN to a real app token, then run npm.cmd run fcm:push-smoke.',
