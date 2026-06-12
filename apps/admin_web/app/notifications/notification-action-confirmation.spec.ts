@@ -39,7 +39,7 @@ describe('notification action confirmation', () => {
       cancelHref: '/notifications',
       confirmLabel: 'Retry notification',
       description:
-        'Retry notification notifica after reviewing delivery failures, token health, and duplicate-send risk.',
+        'Retry notification notifica after reviewing duplicate-send risk. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
       hiddenInputs: [{ name: 'notificationId', value: notification.id }],
       id: notification.id,
       title: 'Retry notification notifica?',
@@ -58,12 +58,24 @@ describe('notification action confirmation', () => {
       cancelHref: '/notifications',
       confirmLabel: 'Re-enable device',
       description:
-        'Re-enable ios push device push-dev only after a fresh token or operator confirmation exists.',
+        'Re-enable ios push device push-dev only after a fresh token or operator confirmation exists. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
       hiddenInputs: [{ name: 'pushDeviceId', value: 'push-device-123456' }],
       id: 'push-device-123456',
       title: 'Re-enable device push-dev?',
       tone: 'danger',
     });
+  });
+
+  it('warns operators when retrying a notification with no delivery attempt yet', () => {
+    const pendingNotification = { ...notification, deliveries: [] };
+    const confirmation = buildNotificationActionConfirmation([pendingNotification], 'retry', {
+      notificationId: pendingNotification.id,
+      pushDeviceId: '',
+    });
+
+    expect(confirmation?.description).toBe(
+      'Retry notification notifica after reviewing duplicate-send risk. No delivery attempt is captured yet; confirm workers before retrying.',
+    );
   });
 
   it('returns null when the requested notification or device is not loaded', () => {
