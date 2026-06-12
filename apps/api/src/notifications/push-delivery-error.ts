@@ -1,3 +1,9 @@
+const PERMANENT_TOKEN_FAILURE_CODES = new Set([
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-registration-token',
+  'UNREGISTERED',
+]);
+
 export function firebaseFailureCode(error: unknown) {
   if (error && typeof error === 'object' && 'code' in error) {
     return String((error as { code?: unknown }).code);
@@ -7,8 +13,9 @@ export function firebaseFailureCode(error: unknown) {
 }
 
 export function isPermanentTokenFailure(failureCode: string) {
-  return ['messaging/registration-token-not-registered', 'messaging/invalid-registration-token'].includes(
-    failureCode,
+  return (
+    PERMANENT_TOKEN_FAILURE_CODES.has(failureCode) ||
+    PERMANENT_TOKEN_FAILURE_CODES.has(failureCode.toUpperCase())
   );
 }
 
