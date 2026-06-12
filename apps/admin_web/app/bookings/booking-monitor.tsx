@@ -2449,26 +2449,21 @@ function preferredProviderStateLabel(booking: AdminBooking) {
   }
 
   if (booking.matchingEvidence?.firstPickStatus) {
-    if (booking.matchingEvidence.firstPickStatus === 'REJECTED') {
-      return 'declined';
-    }
-    if (
-      booking.matchingEvidence.firstPickStatus === 'ACCEPTED' ||
-      booking.matchingEvidence.firstPickStatus === 'SELECTED'
-    ) {
-      return 'confirmed';
-    }
-    return 'pending';
+    return preferredPartnerDecisionLabel(booking.matchingEvidence.firstPickStatus);
   }
 
   const participant = preferredParticipantState(booking);
   if (!participant) {
     return 'requested';
   }
-  if (participant.status === 'REJECTED') {
+  return preferredPartnerDecisionLabel(participant.status);
+}
+
+function preferredPartnerDecisionLabel(status: string) {
+  if (status === 'REJECTED') {
     return 'declined';
   }
-  if (participant.status === 'ACCEPTED' || participant.status === 'SELECTED') {
+  if (status === 'ACCEPTED' || status === 'SELECTED') {
     return 'confirmed';
   }
   return 'pending';
