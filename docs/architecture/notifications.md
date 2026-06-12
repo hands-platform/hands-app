@@ -54,7 +54,7 @@ GOOGLE_APPLICATION_CREDENTIALS=
 
 Firebase Admin credentials are server-side only. Never send service account JSON, private keys, APNs keys, or Admin SDK credentials to Flutter, Admin Web, browser JavaScript, or Git.
 
-When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. OS push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
+When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. OS push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids, and the backend always adds the stored `notificationId` for open/read tracking. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
 
 For a narrow Docker/API push check after credentials are configured, use:
 
