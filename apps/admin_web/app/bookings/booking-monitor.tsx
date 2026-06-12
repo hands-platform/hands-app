@@ -46,10 +46,7 @@ import {
   readPlainRecord,
 } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
-import {
-  bookingLocationNeedsOpsFromFacts,
-  hasProviderCoordinate,
-} from '../../lib/booking-status-location-helpers';
+import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
 import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state';
@@ -204,6 +201,10 @@ import {
   bookingLocationToneClass,
   providerLocationFreshness,
 } from './booking-location-display';
+import {
+  bookingHasProviderLocation as hasProviderLocation,
+  bookingLocationNeedsOpsInput,
+} from './booking-location-ops-inputs';
 import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
@@ -1312,11 +1313,7 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 }
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
-  return bookingLocationNeedsOpsFromFacts({
-    status: booking.status,
-    hasProviderLocation: hasProviderLocation(booking),
-    providerLocationFreshness: providerLocationFreshness(booking, nowMs),
-  });
+  return bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs));
 }
 
 function bookingAddressSnapshotState(booking: AdminBooking) {
@@ -1378,15 +1375,6 @@ function bookingFinalGateReason(booking: AdminBooking) {
     bookingId: booking.id,
     reason,
   });
-}
-
-function hasProviderLocation(booking: AdminBooking) {
-  if (hasProviderCoordinate(booking.selectedProvider)) {
-    return true;
-  }
-  return (booking.participants ?? []).some((participant) =>
-    hasProviderCoordinate(participant.providerProfile),
-  );
 }
 
 function nextAction(booking: AdminBooking) {
