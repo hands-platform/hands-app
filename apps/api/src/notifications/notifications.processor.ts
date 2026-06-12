@@ -19,8 +19,6 @@ import {
 } from './notification-delivery-record';
 import { PushDeliveryService } from './push-delivery.service';
 
-export { isPartnerAlert, toPushData } from './notification-push-payload';
-
 @Processor(NOTIFICATION_SEND_QUEUE_NAME)
 export class NotificationRetryProcessor extends WorkerHost {
   constructor(
