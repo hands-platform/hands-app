@@ -100,6 +100,7 @@ console.log(
             'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
             'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
             'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
+            'After Firebase service account JSON is stored outside Git, run npm.cmd run fcm:credentials-check.',
             'Run npm.cmd run external:check:supabase for Supabase core values.',
             'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
           ]
