@@ -10,6 +10,10 @@ const smokeSourcePaths = [
   resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs'),
   resolve(repoRoot, 'infra/scripts/fcm-token-registration-smoke.mjs'),
 ];
+const dockerFcmEnvKeys = [
+  'FIREBASE_ADMIN_CREDENTIALS_HOST_PATH',
+  'FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH',
+];
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -24,6 +28,18 @@ const requiredSources = [
 const smokeEnvRequiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
+];
+const dockerEnvRequiredSources = [
+  resolve(repoRoot, '.env.example'),
+  resolve(repoRoot, 'infra/env/hands-staging.env.example'),
+  resolve(repoRoot, 'docker-compose.prod.yml'),
+  resolve(repoRoot, 'infra/docker/README.md'),
+  resolve(repoRoot, 'infra/scripts/check-env.mjs'),
+  resolve(repoRoot, 'infra/scripts/external-registration-pack.mjs'),
+  resolve(repoRoot, 'infra/scripts/install-firebase-admin-credentials.ps1'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
+  resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
+  resolve(repoRoot, 'docs/architecture/notifications.md'),
 ];
 
 const apiSource = apiSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
@@ -60,12 +76,26 @@ for (const sourcePath of smokeEnvRequiredSources) {
   }
 }
 
+const missingDockerBySource = {};
+for (const sourcePath of dockerEnvRequiredSources) {
+  const source = readFileSync(sourcePath, 'utf8');
+  const missing = dockerFcmEnvKeys.filter((key) => !source.includes(key));
+  if (missing.length > 0) {
+    missingDockerBySource[relativePath(sourcePath)] = missing;
+  }
+}
+
 const result = {
-  ok: Object.keys(missingBySource).length === 0 && Object.keys(missingSmokeBySource).length === 0,
+  ok:
+    Object.keys(missingBySource).length === 0 &&
+    Object.keys(missingSmokeBySource).length === 0 &&
+    Object.keys(missingDockerBySource).length === 0,
   fcmEnvKeys,
   fcmSmokeEnvKeys,
+  dockerFcmEnvKeys,
   missingBySource,
   missingSmokeBySource,
+  missingDockerBySource,
 };
 
 if (!result.ok) {
