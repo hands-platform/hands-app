@@ -7,7 +7,7 @@ services:
       - ${HANDS_ENV_FILE:-.env}
     environment:
       API_PORT: 3000
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-massage}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for production}@postgres:5432/${POSTGRES_DB:-massage_vn}?schema=public
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       GOOGLE_APPLICATION_CREDENTIALS: ${FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH:-/run/secrets/firebase-admin.json}

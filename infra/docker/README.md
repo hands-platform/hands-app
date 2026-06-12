@@ -1,6 +1,7 @@
 # Docker
 
 Docker Compose runs PostgreSQL/PostGIS, Redis, and MinIO for local development.
+The production-style API container connects to the compose `postgres` service internally, so local host-only `DATABASE_URL` values do not leak into the container runtime.
 
 Production-style app images:
 
