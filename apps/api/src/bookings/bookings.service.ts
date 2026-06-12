@@ -757,19 +757,13 @@ export class BookingsService {
   }) {
     const matchingPolicy = this.bookingPolicy(input.booking, await this.matching.getPolicy());
     const serviceId = input.booking.services[0]?.serviceId;
-    const dispatchPin = bookingDispatchCoordinates(input.reopenedBooking);
-    const eligibleBackupProviders = serviceId
-      ? await this.findEligibleBackupProviders({
-          bookingId: input.bookingId,
-          serviceId,
-          lat: dispatchPin.lat,
-          lng: dispatchPin.lng,
-          preferredProviderId: input.preferredProviderId,
-          backupOpenMode: matchingPolicy.backupOpenMode,
-          forceOpen: true,
-          policy: matchingPolicy,
-        })
-      : [];
+    const eligibleBackupProviders = await this.findFirstPickDeclinedBackupProviders({
+      bookingId: input.bookingId,
+      reopenedBooking: input.reopenedBooking,
+      serviceId,
+      preferredProviderId: input.preferredProviderId,
+      matchingPolicy,
+    });
     const result = this.matching.openBooking({
       booking: input.reopenedBooking,
       policy: matchingPolicy,
@@ -793,6 +787,30 @@ export class BookingsService {
       backupOpenMode: matchingPolicy.backupOpenMode,
       backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
       matchingPayload: result,
+    });
+  }
+
+  private async findFirstPickDeclinedBackupProviders(input: {
+    bookingId: string;
+    reopenedBooking: FirstPickRejectedBookingResponse;
+    serviceId?: string;
+    preferredProviderId: string;
+    matchingPolicy: MatchingPolicy;
+  }) {
+    if (!input.serviceId) {
+      return [];
+    }
+
+    const dispatchPin = bookingDispatchCoordinates(input.reopenedBooking);
+    return this.findEligibleBackupProviders({
+      bookingId: input.bookingId,
+      serviceId: input.serviceId,
+      lat: dispatchPin.lat,
+      lng: dispatchPin.lng,
+      preferredProviderId: input.preferredProviderId,
+      backupOpenMode: input.matchingPolicy.backupOpenMode,
+      forceOpen: true,
+      policy: input.matchingPolicy,
     });
   }
 
