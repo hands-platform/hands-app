@@ -1,4 +1,5 @@
 import {
+  bookingLocationCheckFlagsFromFacts,
   bookingLocationNeedsOpsFromFacts,
   bookingLocationNeedsOpsFromProvider,
   bookingLocationTrail,
@@ -125,6 +126,32 @@ describe('booking status location helpers', () => {
         providerLocationFreshness: 'recent',
       }),
     ).toBe(false);
+  });
+
+  it('builds location check flags from live handoff facts', () => {
+    expect(
+      bookingLocationCheckFlagsFromFacts({
+        status: 'PROVIDER_ON_THE_WAY',
+        hasProviderLocation: false,
+        providerLocationFreshness: 'missing',
+      }),
+    ).toEqual([{ severity: 'medium', title: 'No partner location record' }]);
+
+    expect(
+      bookingLocationCheckFlagsFromFacts({
+        status: 'ARRIVED',
+        hasProviderLocation: true,
+        providerLocationFreshness: 'stale',
+      }),
+    ).toEqual([{ severity: 'medium', title: 'Partner location is stale' }]);
+
+    expect(
+      bookingLocationCheckFlagsFromFacts({
+        status: 'OPEN_MATCHING',
+        hasProviderLocation: false,
+        providerLocationFreshness: 'missing',
+      }),
+    ).toEqual([]);
   });
 
   it('derives live handoff location review from the selected partner coordinate and timestamp', () => {

@@ -1,4 +1,9 @@
 import type { AdminBookingMatchingEvidence } from './admin-api';
+import {
+  bookingCheckFlag,
+  compactBookingCheckFlags,
+  type BookingCheckLevelFlag,
+} from './booking-check-level';
 
 export type PreferredAwaitingDecisionInput = {
   readonly finalSelection?: AdminBookingMatchingEvidence['finalSelection'] | null;
@@ -96,6 +101,27 @@ export function bookingLocationNeedsOpsFromFacts(input: BookingLocationNeedsOpsF
     return true;
   }
   return input.providerLocationFreshness !== 'recent';
+}
+
+export function bookingLocationCheckFlagsFromFacts(
+  input: BookingLocationNeedsOpsFromFactsInput,
+): BookingCheckLevelFlag[] {
+  const locationRequired = locationRequiredStatuses.has(input.status);
+
+  return compactBookingCheckFlags([
+    bookingCheckFlag(
+      locationRequired && !input.hasProviderLocation,
+      'medium',
+      'No partner location record',
+    ),
+    bookingCheckFlag(
+      locationRequired &&
+        input.hasProviderLocation &&
+        input.providerLocationFreshness !== 'recent',
+      'medium',
+      'Partner location is stale',
+    ),
+  ]);
 }
 
 export function bookingLocationNeedsOpsFromProvider(input: {

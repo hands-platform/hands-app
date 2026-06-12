@@ -49,10 +49,12 @@ import {
 } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
+  bookingLocationCheckFlagsFromFacts,
   bookingLocationNeedsOpsFromFacts,
   hasProviderCoordinate,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
   providerLocationFreshnessFromTimestamp,
+  type ProviderLocationFreshness,
 } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
@@ -242,11 +244,8 @@ type MarketplaceCoveragePillState = {
   readonly tone: MarketplaceBookingCoverageTone;
 };
 
-type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
-
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
-const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const p0ActionPriorityStatuses = new Set(['NO_SHOW', 'EXPIRED']);
 const p1ActionPriorityStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY']);
 const p2ActionPriorityStatuses = new Set(['OPEN_MATCHING', 'ARRIVED', 'IN_SERVICE']);
@@ -1735,23 +1734,15 @@ function bookingMatchingCheckFlags(booking: AdminBooking, nowMs: number): Bookin
 }
 
 function bookingLocationCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  const locationRequired = locationRequiredStatuses.has(booking.status);
   const providerLocationAvailable = hasProviderLocation(booking);
 
-  return compactBookingCheckFlags([
-    bookingCheckFlag(
-      locationRequired && !providerLocationAvailable,
-      'medium',
-      'No partner location record',
-    ),
-    bookingCheckFlag(
-      locationRequired &&
-        providerLocationAvailable &&
-        providerLocationFreshness(booking, nowMs) !== 'recent',
-      'medium',
-      'Partner location is stale',
-    ),
-  ]);
+  return bookingLocationCheckFlagsFromFacts({
+    status: booking.status,
+    hasProviderLocation: providerLocationAvailable,
+    providerLocationFreshness: providerLocationAvailable
+      ? providerLocationFreshness(booking, nowMs)
+      : 'missing',
+  });
 }
 
 function bookingChatCheckFlags(booking: AdminBooking): BookingCheckFlag[] {
