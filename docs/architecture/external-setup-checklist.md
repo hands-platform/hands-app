@@ -109,6 +109,7 @@ npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<fir
 ```
 
 `fcm:push-smoke -- --dry-run` is config-only. `fcm:push-smoke -- --preflight` contacts the API but does not call retry or FCM. Run `npm.cmd run fcm:push-smoke` without either flag only after Firebase Admin credentials and either a real app FCM token or `FCM_SMOKE_USE_REGISTERED_DEVICE=true` for an enabled device from the selected role, phone, and platform are ready.
+Provider partner-alert notifications are controlled by `notification.partner_alert_channel`; preflight reports a provider mismatch before live retry when the selected partner-alert notification is intentionally routed to `IN_APP_ONLY`.
 For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `docker-compose.prod.yml` mounts that host file into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadMergedEnv } from './lib/env-file.mjs';
 import {
   envValue,
@@ -13,6 +15,10 @@ import {
   firebaseServiceAccountJsonEnvKey,
 } from './lib/firebase-admin-credentials.mjs';
 
+const repoRoot = resolve(import.meta.dirname, '..', '..');
+const partnerAlertTypes = readPartnerAlertTypes();
+const partnerAlertPolicyKey = 'notification.partner_alert_channel';
+const partnerAlertFcmValues = new Set(['FCM_FOR_ALL_BOOKINGS', 'ONESIGNAL_FOR_ALL_BOOKINGS']);
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const deviceToken = envValue(env, 'FCM_SMOKE_DEVICE_TOKEN');
@@ -21,7 +27,8 @@ const platform = normalizePlatform(envValue(env, 'FCM_SMOKE_PLATFORM') ?? 'andro
 const role = normalizeRole(envValue(env, 'FCM_SMOKE_ROLE') ?? 'CUSTOMER');
 const phone = envValue(env, 'FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
 const otp = envValue(env, 'FCM_SMOKE_OTP') ?? envValue(env, 'DEV_OTP') ?? '123456';
-const adminPhone = envValue(env, 'FCM_SMOKE_ADMIN_PHONE') ?? envValue(env, 'ADMIN_DEMO_PHONE') ?? '+84900000099';
+const adminPhone =
+  envValue(env, 'FCM_SMOKE_ADMIN_PHONE') ?? envValue(env, 'ADMIN_DEMO_PHONE') ?? '+84900000099';
 const adminOtp = envValue(env, 'FCM_SMOKE_ADMIN_OTP') ?? envValue(env, 'ADMIN_DEMO_OTP') ?? '123456';
 const requestedNotificationId = envValue(env, 'FCM_SMOKE_NOTIFICATION_ID');
 const expectedStatus = (envValue(env, 'FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpperCase();
@@ -107,9 +114,18 @@ const notificationId = requestedNotificationId ?? (await findLatestUserNotificat
 const notificationPreflight = notificationId
   ? summarizeNotification(await findAdminNotification(adminAuth.accessToken, notificationId))
   : null;
+const partnerAlertPolicyPreflight = await findPartnerAlertPolicyPreflight(
+  adminAuth.accessToken,
+  notificationPreflight,
+);
 
 if (preflight) {
-  const blockers = preflightBlockers({ notificationId, notificationPreflight, registeredDevicePreflight });
+  const blockers = preflightBlockers({
+    notificationId,
+    notificationPreflight,
+    registeredDevicePreflight,
+    partnerAlertPolicyPreflight,
+  });
   console.log(
     JSON.stringify(
       {
@@ -133,6 +149,7 @@ if (preflight) {
           : null,
         registeredDevicePreflight,
         notificationPreflight,
+        partnerAlertPolicyPreflight,
         liveReady: blockers.length === 0,
         blockers,
         nextActions: preflightNextActions(blockers),
@@ -163,6 +180,16 @@ const registeredDevice = deviceToken
 if (!notificationId) {
   fail(
     'No notification exists for the selected smoke user. Run a booking/chat flow first, or set FCM_SMOKE_NOTIFICATION_ID to an existing notification.',
+  );
+}
+if (notificationId && !notificationPreflight) {
+  fail('Selected notification was not found in the Admin notifications queue.');
+}
+
+const partnerAlertPolicyBlocker = expectedProviderBlocker(partnerAlertPolicyPreflight);
+if (partnerAlertPolicyBlocker) {
+  fail(
+    `Selected notification is routed to ${partnerAlertPolicyPreflight.resolvedProvider} by ${partnerAlertPolicyKey}, but FCM_SMOKE_EXPECT_PROVIDER=${expectedProvider}. Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER=${partnerAlertPolicyPreflight.resolvedProvider}, or intentionally update the partner alert policy before live retry.`,
   );
 }
 
@@ -296,6 +323,44 @@ async function findAdminNotification(accessToken, notificationId) {
   return Array.isArray(notifications)
     ? notifications.find((notification) => notification.id === notificationId)
     : null;
+}
+
+async function findPartnerAlertPolicyPreflight(accessToken, notification) {
+  if (!notification) {
+    return null;
+  }
+
+  const applies = partnerAlertTypes.has(notification.type);
+  if (!applies) {
+    return {
+      key: partnerAlertPolicyKey,
+      notificationType: notification.type,
+      applies,
+      value: null,
+      resolvedProvider: null,
+      expectedProvider,
+      matchesExpectedProvider: true,
+    };
+  }
+
+  const settings = await request('/admin/operational-policy', {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  const setting = Array.isArray(settings)
+    ? settings.find((item) => item.key === partnerAlertPolicyKey)
+    : null;
+  const value = setting?.value ?? 'IN_APP_WITH_PUSH_LATER';
+  const resolvedProvider = partnerAlertFcmValues.has(String(value)) ? 'FCM' : 'IN_APP_ONLY';
+
+  return {
+    key: partnerAlertPolicyKey,
+    notificationType: notification.type,
+    applies,
+    value,
+    resolvedProvider,
+    expectedProvider,
+    matchesExpectedProvider: !expectedProviderBlocker({ applies, resolvedProvider }),
+  };
 }
 
 async function findRegisteredDevicePreflight(accessToken) {
@@ -441,6 +506,18 @@ function firebaseAdminConfigured() {
   return firebaseAdminCredentialsConfigured(env);
 }
 
+function readPartnerAlertTypes() {
+  const source = readFileSync(
+    resolve(repoRoot, 'apps/api/src/notifications/notification-push-payload.ts'),
+    'utf8',
+  );
+  const match = source.match(/const\s+PARTNER_ALERT_TYPES\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
+  if (!match) {
+    throw new Error('Unable to read partner alert notification types from the API source.');
+  }
+  return new Set(Array.from(match[1].matchAll(/'([^']+)'/g)).map((item) => item[1]));
+}
+
 function liveTokenRequirement() {
   return {
     tokenEnv: 'FCM_SMOKE_DEVICE_TOKEN',
@@ -493,7 +570,12 @@ function dryRunNextActions() {
   return actions;
 }
 
-function preflightBlockers({ notificationId, notificationPreflight, registeredDevicePreflight }) {
+function preflightBlockers({
+  notificationId,
+  notificationPreflight,
+  registeredDevicePreflight,
+  partnerAlertPolicyPreflight,
+}) {
   const blockers = [];
 
   if (!notificationId) {
@@ -511,7 +593,24 @@ function preflightBlockers({ notificationId, notificationPreflight, registeredDe
     blockers.push('NO_ENABLED_REGISTERED_DEVICE');
   }
 
+  const partnerAlertBlocker = expectedProviderBlocker(partnerAlertPolicyPreflight);
+  if (partnerAlertBlocker) {
+    blockers.push(partnerAlertBlocker);
+  }
+
   return blockers;
+}
+
+function expectedProviderBlocker(partnerAlertPolicyPreflight) {
+  if (
+    !partnerAlertPolicyPreflight?.applies ||
+    expectedProvider === 'ANY' ||
+    partnerAlertPolicyPreflight.resolvedProvider === expectedProvider
+  ) {
+    return null;
+  }
+
+  return 'PARTNER_ALERT_POLICY_PROVIDER_MISMATCH';
 }
 
 function preflightNextActions(blockers) {
@@ -526,7 +625,9 @@ function preflightNextActions(blockers) {
     );
   }
   if (blockers.includes('NOTIFICATION_NOT_FOUND')) {
-    actions.push('Set FCM_SMOKE_NOTIFICATION_ID to a notification that is visible in the Admin notifications queue.');
+    actions.push(
+      'Set FCM_SMOKE_NOTIFICATION_ID to a notification that is visible in the Admin notifications queue.',
+    );
   }
   if (blockers.includes('NO_DEVICE_TOKEN_OR_REUSE_MODE')) {
     actions.push(
@@ -536,6 +637,11 @@ function preflightNextActions(blockers) {
   if (blockers.includes('NO_ENABLED_REGISTERED_DEVICE')) {
     actions.push(
       `Open the current ${role} ${platform} app session for ${phone} and let it register a push token through the API.`,
+    );
+  }
+  if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
+    actions.push(
+      'The selected notification is a partner alert controlled by notification.partner_alert_channel. Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live retry.',
     );
   }
   return actions;
