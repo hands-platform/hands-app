@@ -53,7 +53,13 @@ class FcmNotificationOpen {
       return const FcmNotificationOpen(source: 'local_notification', data: {});
     }
 
-    final decoded = jsonDecode(payload);
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(payload);
+    } on FormatException {
+      return const FcmNotificationOpen(source: 'local_notification', data: {});
+    }
+
     if (decoded is! Map<String, dynamic>) {
       return const FcmNotificationOpen(source: 'local_notification', data: {});
     }
