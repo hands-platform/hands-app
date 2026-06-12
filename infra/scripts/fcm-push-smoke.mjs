@@ -305,19 +305,25 @@ async function findRegisteredDevicePreflight(accessToken) {
   const smokeUser = Array.isArray(users)
     ? users.find((user) => user.phone === phone && userHasRole(user, role))
     : null;
-  const matchingDevices = (smokeUser?.pushDevices ?? []).filter(
+  const detail = smokeUser ? await findSmokeUserDetail(accessToken, smokeUser) : null;
+  const deviceSource = detail ? 'admin-detail' : 'admin-users-summary';
+  const devices = detail?.user?.pushDevices ?? smokeUser?.pushDevices ?? [];
+  const matchingDevices = devices.filter(
     (device) => device.platform === platform && deviceRoleMatches(device, role),
   );
   const enabledDevices = matchingDevices.filter((device) => device.enabled);
 
   return {
     userId: smokeUser?.id ?? null,
+    profileId: smokeProfileId(smokeUser),
     role,
     phone,
     platform,
+    deviceSource,
     matchingCount: matchingDevices.length,
     enabledCount: enabledDevices.length,
     latestDevice: summarizePushDevice(matchingDevices[0]),
+    latestEnabledDevice: summarizePushDevice(enabledDevices[0]),
   };
 }
 
@@ -343,6 +349,22 @@ function userHasRole(user, expectedRole) {
 
 function deviceRoleMatches(device, expectedRole) {
   return !device.role || String(device.role).toUpperCase() === expectedRole;
+}
+
+async function findSmokeUserDetail(accessToken, user) {
+  const profileId = smokeProfileId(user);
+  if (!profileId) {
+    return null;
+  }
+
+  const path = role === 'PROVIDER' ? `/admin/partners/${profileId}` : `/admin/customers/${profileId}`;
+  return request(path, {
+    headers: { authorization: `Bearer ${accessToken}` },
+  }).catch(() => null);
+}
+
+function smokeProfileId(user) {
+  return role === 'PROVIDER' ? user.providerProfile?.id : user.customerProfile?.id;
 }
 
 function summarizePushDevice(device) {
