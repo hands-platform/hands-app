@@ -110,13 +110,18 @@ const adminAuth = await request('/auth/verify-otp', {
 });
 
 const registeredDevicePreflight = await findRegisteredDevicePreflight(adminAuth.accessToken);
+const adminNotifications = await listAdminNotifications(adminAuth.accessToken);
 const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
 const notificationPreflight = notificationId
-  ? summarizeNotification(await findAdminNotification(adminAuth.accessToken, notificationId))
+  ? summarizeNotification(findNotification(adminNotifications, notificationId))
   : null;
 const partnerAlertPolicyPreflight = await findPartnerAlertPolicyPreflight(
   adminAuth.accessToken,
   notificationPreflight,
+);
+const alternativeNotificationPreflights = findAlternativeNotificationPreflights(
+  adminNotifications,
+  notificationId,
 );
 
 if (preflight) {
@@ -126,6 +131,9 @@ if (preflight) {
     registeredDevicePreflight,
     partnerAlertPolicyPreflight,
   });
+  const blockedAlternativeNotificationPreflights = blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')
+    ? alternativeNotificationPreflights
+    : [];
   console.log(
     JSON.stringify(
       {
@@ -150,9 +158,10 @@ if (preflight) {
         registeredDevicePreflight,
         notificationPreflight,
         partnerAlertPolicyPreflight,
+        alternativeNotificationPreflights: blockedAlternativeNotificationPreflights,
         liveReady: blockers.length === 0,
         blockers,
-        nextActions: preflightNextActions(blockers),
+        nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights),
       },
       null,
       2,
@@ -189,11 +198,13 @@ if (notificationId && !notificationPreflight) {
 const partnerAlertPolicyBlocker = expectedProviderBlocker(partnerAlertPolicyPreflight);
 if (partnerAlertPolicyBlocker) {
   fail(
-    `Selected notification is routed to ${partnerAlertPolicyPreflight.resolvedProvider} by ${partnerAlertPolicyKey}, but FCM_SMOKE_EXPECT_PROVIDER=${expectedProvider}. Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER=${partnerAlertPolicyPreflight.resolvedProvider}, or intentionally update the partner alert policy before live retry.`,
+    `Selected notification is routed to ${partnerAlertPolicyPreflight.resolvedProvider} by ${partnerAlertPolicyKey}, but FCM_SMOKE_EXPECT_PROVIDER=${expectedProvider}. ${alternativeNotificationHint(
+      alternativeNotificationPreflights,
+    )}`,
   );
 }
 
-const before = await findAdminNotification(adminAuth.accessToken, notificationId);
+const before = findNotification(adminNotifications, notificationId);
 const beforeDeliveries = before?.deliveries ?? [];
 const beforeDeliveryCount = beforeDeliveries.length;
 const beforeDeliveryIds = new Set(beforeDeliveries.map((delivery) => delivery.id).filter(Boolean));
@@ -317,12 +328,35 @@ async function findLatestUserNotificationId(accessToken) {
 }
 
 async function findAdminNotification(accessToken, notificationId) {
+  return findNotification(await listAdminNotifications(accessToken), notificationId);
+}
+
+async function listAdminNotifications(accessToken) {
   const notifications = await request('/admin/notifications', {
     headers: { authorization: `Bearer ${accessToken}` },
   });
-  return Array.isArray(notifications)
-    ? notifications.find((notification) => notification.id === notificationId)
-    : null;
+  return Array.isArray(notifications) ? notifications : [];
+}
+
+function findNotification(notifications, notificationId) {
+  return notifications.find((notification) => notification.id === notificationId) ?? null;
+}
+
+function findAlternativeNotificationPreflights(notifications, selectedNotificationId) {
+  if (expectedProvider !== 'FCM') {
+    return [];
+  }
+
+  return notifications
+    .filter((notification) => notification.id !== selectedNotificationId)
+    .filter((notification) => notificationBelongsToSmokeUser(notification))
+    .filter((notification) => !partnerAlertTypes.has(notification.type))
+    .map(summarizeNotification)
+    .slice(0, 3);
+}
+
+function notificationBelongsToSmokeUser(notification) {
+  return notification.user?.phone === phone && userHasRole(notification.user, role);
 }
 
 async function findPartnerAlertPolicyPreflight(accessToken, notification) {
@@ -613,7 +647,7 @@ function expectedProviderBlocker(partnerAlertPolicyPreflight) {
   return 'PARTNER_ALERT_POLICY_PROVIDER_MISMATCH';
 }
 
-function preflightNextActions(blockers) {
+function preflightNextActions(blockers, alternativeNotificationPreflights = []) {
   if (blockers.length === 0) {
     return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live retry.'];
   }
@@ -640,11 +674,20 @@ function preflightNextActions(blockers) {
     );
   }
   if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
-    actions.push(
-      'The selected notification is a partner alert controlled by notification.partner_alert_channel. Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live retry.',
-    );
+    actions.push(alternativeNotificationHint(alternativeNotificationPreflights));
   }
   return actions;
+}
+
+function alternativeNotificationHint(alternativeNotificationPreflights) {
+  const fallback =
+    'Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live retry.';
+  const [firstAlternative] = alternativeNotificationPreflights;
+  if (!firstAlternative?.id) {
+    return `The selected notification is a partner alert controlled by ${partnerAlertPolicyKey}. ${fallback}`;
+  }
+
+  return `The selected notification is a partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest non partner-alert ${firstAlternative.type} notification for this same role/phone, or intentionally update the policy before live retry.`;
 }
 
 function firebaseAdminCredentialAction() {
