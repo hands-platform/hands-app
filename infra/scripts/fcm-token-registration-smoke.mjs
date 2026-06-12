@@ -15,14 +15,23 @@ if (dryRun) {
       {
         ok: true,
         mode: 'dry-run',
+        scope: 'config-only',
+        contactsApi: false,
+        contactsFcm: false,
         envFile: {
           path: envPath,
           exists: envFileExists,
         },
         apiBaseUrl,
         platform,
-        roles: ['CUSTOMER', 'PROVIDER'],
-        nextActions: ['Run npm.cmd run fcm:token-smoke when API/Docker are ready.'],
+        actors: [
+          { role: 'CUSTOMER', phone: customerPhone },
+          { role: 'PROVIDER', phone: providerPhone },
+        ],
+        nextActions: [
+          'Run npm.cmd run fcm:token-smoke when API/Docker are ready to verify customer/provider token registration.',
+          'Then set FCM_SMOKE_DEVICE_TOKEN to a real app token and run npm.cmd run fcm:push-smoke -- --dry-run before live OS push.',
+        ],
       },
       null,
       2,
