@@ -85,7 +85,10 @@ if (!notificationId) {
 }
 
 const before = await findAdminNotification(adminAuth.accessToken, notificationId);
-const beforeDeliveryCount = before?.deliveries?.length ?? 0;
+const beforeDeliveries = before?.deliveries ?? [];
+const beforeDeliveryCount = beforeDeliveries.length;
+const beforeDeliveryIds = new Set(beforeDeliveries.map((delivery) => delivery.id).filter(Boolean));
+const beforeLatestAttemptedAt = latestDeliveryTime(beforeDeliveries);
 await request(`/admin/notifications/${notificationId}/retry`, {
   method: 'POST',
   headers: { authorization: `Bearer ${adminAuth.accessToken}` },
@@ -113,7 +116,20 @@ if (deliveryCount <= beforeDeliveryCount) {
   );
 }
 
-const latestDelivery = after.deliveries[0];
+const latestDelivery = newDelivery(after.deliveries ?? [], {
+  beforeDeliveryCount,
+  beforeDeliveryIds,
+  beforeLatestAttemptedAt,
+});
+if (!latestDelivery) {
+  fail(
+    `Notification retry recorded a delivery count increase but no delivery details were returned: ${JSON.stringify({
+      notificationId,
+      beforeDeliveryCount,
+      deliveryCount,
+    })}`,
+  );
+}
 const provider = String(latestDelivery.provider ?? '').toUpperCase();
 const status = String(latestDelivery.status ?? '').toUpperCase();
 const failureCode = latestDelivery.failureCode ?? latestDelivery.response?.failureCode ?? null;
@@ -220,6 +236,31 @@ function envValue(key) {
 
 function maskDeviceToken(value) {
   return deviceToken ? value.replaceAll(deviceToken, '<FCM_SMOKE_DEVICE_TOKEN>') : value;
+}
+
+function newDelivery(deliveries, { beforeDeliveryCount, beforeDeliveryIds, beforeLatestAttemptedAt }) {
+  return (
+    deliveries.find((delivery) => delivery.id && !beforeDeliveryIds.has(delivery.id)) ??
+    newestDelivery(deliveries.filter((delivery) => deliveryTime(delivery) > beforeLatestAttemptedAt)) ??
+    newestDelivery(deliveries.slice(0, Math.max(0, deliveries.length - beforeDeliveryCount))) ??
+    newestDelivery(deliveries)
+  );
+}
+
+function newestDelivery(deliveries) {
+  return deliveries
+    .filter(Boolean)
+    .slice()
+    .sort((left, right) => deliveryTime(right) - deliveryTime(left))[0];
+}
+
+function latestDeliveryTime(deliveries) {
+  return deliveries.reduce((latest, delivery) => Math.max(latest, deliveryTime(delivery)), -Infinity);
+}
+
+function deliveryTime(delivery) {
+  const time = Date.parse(delivery?.attemptedAt ?? '');
+  return Number.isFinite(time) ? time : 0;
 }
 
 function sleep(ms) {
