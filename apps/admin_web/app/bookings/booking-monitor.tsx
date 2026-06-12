@@ -150,6 +150,10 @@ import {
   isHandoffBookingStatus,
 } from './booking-chat-handoff-state';
 import {
+  bookingMatchingWindowExpired,
+  bookingMatchingWindowLabel,
+} from './booking-matching-window';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -1800,33 +1804,6 @@ function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number)
     return true;
   }
   return bookingMatchingWindowExpired(booking, nowMs);
-}
-
-function bookingMatchingWindowExpired(booking: AdminBooking, nowMs: number) {
-  if (booking.status !== 'OPEN_MATCHING' || !booking.expiresAt || nowMs <= 0) {
-    return false;
-  }
-  const expiresAt = new Date(booking.expiresAt).getTime();
-  return Number.isFinite(expiresAt) && expiresAt < nowMs;
-}
-
-function bookingMatchingWindowLabel(booking: AdminBooking, nowMs: number) {
-  if (!booking.expiresAt || nowMs <= 0) {
-    return 'window pending';
-  }
-  const expiresAt = new Date(booking.expiresAt).getTime();
-  if (!Number.isFinite(expiresAt)) {
-    return 'window invalid';
-  }
-
-  const minutes = Math.round((expiresAt - nowMs) / 60_000);
-  if (minutes < 0) {
-    return `${Math.abs(minutes)}m overdue`;
-  }
-  if (minutes === 0) {
-    return 'expires now';
-  }
-  return `${minutes}m left`;
 }
 
 function selectionLabel(booking: AdminBooking) {
