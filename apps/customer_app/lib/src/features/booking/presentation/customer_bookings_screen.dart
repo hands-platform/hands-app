@@ -10,7 +10,14 @@ import '../../map/presentation/customer_map_widgets.dart';
 import 'customer_booking_ui_helpers.dart';
 
 class BookingsScreen extends ConsumerStatefulWidget {
-  const BookingsScreen({super.key});
+  const BookingsScreen({
+    super.key,
+    this.initialBookingId,
+    this.initialPaymentId,
+  });
+
+  final String? initialBookingId;
+  final String? initialPaymentId;
 
   @override
   ConsumerState<BookingsScreen> createState() => _BookingsScreenState();
@@ -21,6 +28,49 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   bool loading = false;
   String? error;
   String? statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_hasInitialTarget) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(restoreSessionAndLoadTarget());
+      });
+    }
+  }
+
+  bool get _hasInitialTarget =>
+      widget.initialBookingId != null || widget.initialPaymentId != null;
+
+  Future<void> restoreSessionAndLoadTarget() async {
+    setState(() {
+      loading = true;
+      error = null;
+      statusMessage = null;
+    });
+    try {
+      final authController = ref.read(authControllerProvider.notifier);
+      final session = ref.read(authControllerProvider) ??
+          await authController.restoreSession();
+      if (!mounted) {
+        return;
+      }
+      if (session == null) {
+        setState(() => statusMessage = 'Login to load this booking.');
+        return;
+      }
+
+      await loadBookings(showLoading: false);
+    } catch (exception) {
+      if (mounted) {
+        setState(() => error = '$exception');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
 
   Future<void> signInAndLoad() async {
     setState(() {
@@ -72,9 +122,11 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
-    final items = bookings.whereType<Map<String, dynamic>>().toList()
-      ..sort((left, right) => customerBookingTimestamp(right)
-          .compareTo(customerBookingTimestamp(left)));
+    final items = sortedCustomerBookingsForTarget(
+      bookings.whereType<Map<String, dynamic>>().toList(),
+      bookingId: widget.initialBookingId,
+      paymentId: widget.initialPaymentId,
+    );
     final activeCount = items.where(isCustomerActiveBooking).length;
     final closedCount = items.where(isCustomerClosedBooking).length;
     final chatReadyCount = items.where(isCustomerAppChatVisible).length;
@@ -122,7 +174,14 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
                     'No bookings yet. Choose a partner and book a service to start.')
           else
             for (final booking in items)
-              CustomerBookingHistoryCard(booking: booking),
+              CustomerBookingHistoryCard(
+                booking: booking,
+                highlighted: isCustomerBookingTarget(
+                  booking,
+                  bookingId: widget.initialBookingId,
+                  paymentId: widget.initialPaymentId,
+                ),
+              ),
         ],
       ),
     );
@@ -206,9 +265,14 @@ class CustomerSummaryTile extends StatelessWidget {
 }
 
 class CustomerBookingHistoryCard extends StatelessWidget {
-  const CustomerBookingHistoryCard({super.key, required this.booking});
+  const CustomerBookingHistoryCard({
+    super.key,
+    required this.booking,
+    this.highlighted = false,
+  });
 
   final Map<String, dynamic> booking;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +281,15 @@ class CustomerBookingHistoryCard extends StatelessWidget {
     final payment = booking['payment'] as Map<String, dynamic>?;
     final chatVisible = isCustomerAppChatVisible(booking);
     return Card(
+      shape: highlighted
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            )
+          : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -280,6 +353,47 @@ class CustomerBookingHistoryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+List<Map<String, dynamic>> sortedCustomerBookingsForTarget(
+  List<Map<String, dynamic>> bookings, {
+  String? bookingId,
+  String? paymentId,
+}) {
+  return bookings
+    ..sort((left, right) {
+      final leftTarget = isCustomerBookingTarget(
+        left,
+        bookingId: bookingId,
+        paymentId: paymentId,
+      );
+      final rightTarget = isCustomerBookingTarget(
+        right,
+        bookingId: bookingId,
+        paymentId: paymentId,
+      );
+      if (leftTarget != rightTarget) {
+        return leftTarget ? -1 : 1;
+      }
+
+      return customerBookingTimestamp(right)
+          .compareTo(customerBookingTimestamp(left));
+    });
+}
+
+bool isCustomerBookingTarget(
+  Map<String, dynamic> booking, {
+  String? bookingId,
+  String? paymentId,
+}) {
+  final matchesBooking =
+      bookingId != null && booking['id']?.toString() == bookingId;
+  final payment = booking['payment'];
+  final matchesPayment = paymentId != null &&
+      payment is Map &&
+      payment['id']?.toString() == paymentId;
+
+  return matchesBooking || matchesPayment;
 }
 
 class BookingHistoryPill extends StatelessWidget {

@@ -16,7 +16,12 @@ import 'provider_request_panels.dart';
 import 'provider_requests_list_section.dart';
 
 class RequestsScreen extends ConsumerStatefulWidget {
-  const RequestsScreen({super.key});
+  const RequestsScreen({
+    super.key,
+    this.initialBookingId,
+  });
+
+  final String? initialBookingId;
 
   @override
   ConsumerState<RequestsScreen> createState() => _RequestsScreenState();
@@ -40,6 +45,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialBookingId != null) {
+      requestView = 'all';
+    }
     _socket = ref.read(realtimeSocketProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(restoreSessionAndLoad());
@@ -393,6 +401,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             ref.read(providerLocationHeartbeatProvider).snapshot;
     final bookingItems = openBookings.whereType<Map<String, dynamic>>().toList()
       ..sort((left, right) {
+        final leftTarget = left['id']?.toString() == widget.initialBookingId;
+        final rightTarget = right['id']?.toString() == widget.initialBookingId;
+        if (leftTarget != rightTarget) {
+          return leftTarget ? -1 : 1;
+        }
+
         final leftPriority = providerRequestPriority(left, auth?.userId);
         final rightPriority = providerRequestPriority(right, auth?.userId);
         if (leftPriority != rightPriority) {

@@ -28,6 +28,7 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   String? _notificationChatRoomId;
   String? _notificationBookingId;
   int _chatOpenVersion = 0;
+  int _requestsOpenVersion = 0;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -46,7 +47,10 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      const RequestsScreen(),
+      RequestsScreen(
+        key: ValueKey('provider-push-requests-$_requestsOpenVersion'),
+        initialBookingId: _notificationBookingId,
+      ),
       const PartnerJobsScreen(),
       const EarningsScreen(),
       ChatScreen(
@@ -91,6 +95,10 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
         _notificationBookingId = intent.bookingId;
         _chatOpenVersion += 1;
       }
+      if (intent.destination == PushNotificationOpenDestination.booking) {
+        _notificationBookingId = intent.bookingId;
+        _requestsOpenVersion += 1;
+      }
       index = nextIndex;
     });
   }
@@ -101,6 +109,10 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
         _notificationChatRoomId = null;
         _notificationBookingId = null;
         _chatOpenVersion += 1;
+      }
+      if (value == _requestsIndex) {
+        _notificationBookingId = null;
+        _requestsOpenVersion += 1;
       }
       index = value;
     });

@@ -1,4 +1,5 @@
 import 'package:customer_app/customer_app.dart';
+import 'package:customer_app/src/features/booking/presentation/customer_bookings_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -453,5 +454,39 @@ void main() {
       }),
       'Booking request',
     );
+  });
+
+  test('customer booking target sort moves push booking first', () {
+    final bookings = sortedCustomerBookingsForTarget([
+      {
+        'id': 'booking-newer',
+        'createdAt': '2026-06-11T00:00:00.000Z',
+        'payment': {'id': 'payment-newer'},
+      },
+      {
+        'id': 'booking-target',
+        'createdAt': '2026-06-10T00:00:00.000Z',
+        'payment': {'id': 'payment-target'},
+      },
+    ], bookingId: 'booking-target');
+
+    expect(bookings.first['id'], 'booking-target');
+  });
+
+  test('customer booking target sort can match push payment id', () {
+    final bookings = sortedCustomerBookingsForTarget([
+      {
+        'id': 'booking-newer',
+        'createdAt': '2026-06-11T00:00:00.000Z',
+        'payment': {'id': 'payment-newer'},
+      },
+      {
+        'id': 'booking-payment-target',
+        'createdAt': '2026-06-10T00:00:00.000Z',
+        'payment': {'id': 'payment-target'},
+      },
+    ], paymentId: 'payment-target');
+
+    expect(bookings.first['id'], 'booking-payment-target');
   });
 }

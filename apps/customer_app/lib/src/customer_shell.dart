@@ -27,7 +27,9 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
   int index = 0;
   String? _notificationChatRoomId;
   String? _notificationBookingId;
+  String? _notificationPaymentId;
   int _chatOpenVersion = 0;
+  int _bookingOpenVersion = 0;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -48,7 +50,11 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
     final screens = [
       const HomeScreen(),
       const ProvidersScreen(),
-      const BookingsScreen(),
+      BookingsScreen(
+        key: ValueKey('customer-push-booking-$_bookingOpenVersion'),
+        initialBookingId: _notificationBookingId,
+        initialPaymentId: _notificationPaymentId,
+      ),
       ChatScreen(
         key: ValueKey('customer-push-chat-$_chatOpenVersion'),
         initialChatRoomId: _notificationChatRoomId,
@@ -88,7 +94,14 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
       if (intent.destination == PushNotificationOpenDestination.chat) {
         _notificationChatRoomId = intent.chatRoomId;
         _notificationBookingId = intent.bookingId;
+        _notificationPaymentId = null;
         _chatOpenVersion += 1;
+      }
+      if (intent.destination == PushNotificationOpenDestination.booking ||
+          intent.destination == PushNotificationOpenDestination.payment) {
+        _notificationBookingId = intent.bookingId;
+        _notificationPaymentId = intent.paymentId;
+        _bookingOpenVersion += 1;
       }
       index = nextIndex;
     });
@@ -99,7 +112,13 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
       if (value == _chatIndex) {
         _notificationChatRoomId = null;
         _notificationBookingId = null;
+        _notificationPaymentId = null;
         _chatOpenVersion += 1;
+      }
+      if (value == _bookingsIndex) {
+        _notificationBookingId = null;
+        _notificationPaymentId = null;
+        _bookingOpenVersion += 1;
       }
       index = value;
     });
