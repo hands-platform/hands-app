@@ -266,7 +266,7 @@ const registrationItems = [
       envItem(
         'GOOGLE_APPLICATION_CREDENTIALS',
         '<existing-service-account-json-path>',
-        hasValue(env.GOOGLE_APPLICATION_CREDENTIALS),
+        pathExists(env.GOOGLE_APPLICATION_CREDENTIALS),
       ),
     ],
     setup: [
@@ -445,6 +445,11 @@ function envItem(name, example, configured) {
 
 function hasValue(value) {
   return String(value ?? '').trim().length > 0;
+}
+
+function pathExists(value) {
+  const normalized = String(value ?? '').trim();
+  return normalized.length > 0 && existsSync(resolve(repoRoot, normalized));
 }
 
 function isSecretLikeValue(value) {
