@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { MetricCard } from '../../components/metric-card';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -26,6 +25,7 @@ import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { addOperationsHandoffNote } from './actions';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
+import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -181,56 +181,15 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffDateRangeSection range={filters.range} />
 
-      <section className="grid admin-mt-16 admin-mb-16">
-        <MetricCard
-          label="Active bookings"
-          value={activeBookings.length}
-          helper="Matching, on the way, arrived, or in service"
-          href="/bookings?view=attention"
-        />
-        <MetricCard
-          label="Matching wait"
-          value={matchingBookings.length}
-          helper="Customer can still receive marketplace participants"
-          href="/bookings?view=matching"
-        />
-        <MetricCard
-          label="In service"
-          value={inServiceBookings.length}
-          helper="Chat should be live until partner completion"
-          href="/bookings?view=closeout"
-        />
-        <MetricCard
-          label="Cash fee debt"
-          value={cashSummary.providerCount}
-          helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across partner wallet gates`}
-          href="/cash-settlements"
-        />
-        <MetricCard
-          label="Customer app online"
-          value={presence.customerLive}
-          helper={`${presence.customerRecent} customer session(s) seen recently`}
-          href="/app-sessions?role=CUSTOMER&state=live"
-        />
-        <MetricCard
-          label="Partner app online"
-          value={presence.partnerLive}
-          helper={`${presence.partnerRecent} partner session(s) seen recently`}
-          href="/app-sessions?role=PROVIDER&state=live"
-        />
-        <MetricCard
-          label="Chat rooms"
-          value={chatSignals.roomCount}
-          helper={`${chatSignals.recentMessageCount} recent message(s) visible to admin`}
-          href="/chat-archive"
-        />
-        <MetricCard
-          label="Failed notifications"
-          value={failedNotifications.length}
-          helper="Push/SMS/app delivery rows needing retry or device check"
-          href="/notifications?review=failed"
-        />
-      </section>
+      <OperationsHandoffMetricGridSection
+        activeBookingCount={activeBookings.length}
+        matchingBookingCount={matchingBookings.length}
+        inServiceBookingCount={inServiceBookings.length}
+        cashSummary={cashSummary}
+        presence={presence}
+        chatSignals={chatSignals}
+        failedNotificationCount={failedNotifications.length}
+      />
 
       <section className="card admin-mb-16">
         <div className="toolbar">
