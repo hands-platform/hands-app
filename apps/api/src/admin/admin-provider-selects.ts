@@ -5,6 +5,12 @@ import {
   adminUserSummarySelect,
 } from './admin-user-selects';
 
+export const adminProviderPushDeviceReachabilityOrder = [
+  { enabled: 'desc' },
+  { updatedAt: 'desc' },
+  { createdAt: 'desc' },
+] satisfies Prisma.PushDeviceOrderByWithRelationInput[];
+
 export const adminProviderSummarySelect = {
   id: true,
   userId: true,
@@ -65,7 +71,7 @@ export const adminProviderVerificationSummarySelect = {
 export const adminProviderDetailUserSelect = {
   ...adminUserAuthSelect,
   pushDevices: {
-    orderBy: { createdAt: 'desc' },
+    orderBy: adminProviderPushDeviceReachabilityOrder,
     select: adminPushDeviceSummarySelect,
   },
   fileAssets: {
@@ -83,7 +89,7 @@ export const adminProviderDetailUserSelect = {
 export const adminProviderOverviewUserSelect = {
   ...adminUserAuthSelect,
   pushDevices: {
-    orderBy: { createdAt: 'desc' },
+    orderBy: adminProviderPushDeviceReachabilityOrder,
     take: 3,
     select: adminPushDeviceSummarySelect,
   },

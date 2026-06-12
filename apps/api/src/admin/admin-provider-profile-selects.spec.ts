@@ -12,6 +12,7 @@ import {
   adminProviderOverviewSelect,
   adminProviderPayoutBatchSummarySelect,
 } from './admin-provider-profile-selects';
+import { adminProviderPushDeviceReachabilityOrder } from './admin-provider-selects';
 
 describe('admin provider profile selects', () => {
   it('keeps exported provider list limits stable', () => {
@@ -21,6 +22,9 @@ describe('admin provider profile selects', () => {
 
   it('keeps compact provider user rows media and device bounded', () => {
     expect(adminProviderListUserSelect.pushDevices).toMatchObject({ take: 2 });
+    expect(adminProviderListUserSelect.pushDevices.orderBy).toEqual(
+      adminProviderPushDeviceReachabilityOrder,
+    );
     expect(adminProviderListUserSelect.fileAssets).toMatchObject({ take: 2 });
   });
 

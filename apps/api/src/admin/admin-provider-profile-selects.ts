@@ -13,6 +13,7 @@ import {
   adminProviderDocumentSummarySelect,
   adminProviderKycSummarySelect,
   adminProviderOverviewUserSelect,
+  adminProviderPushDeviceReachabilityOrder,
   adminProviderPublicMediaSelect,
   adminProviderReportDetailSelect,
   adminProviderReportSummarySelect,
@@ -42,7 +43,7 @@ export const adminProviderListUserSelect = {
   ...adminUserSummarySelect,
   supabaseUserId: true,
   pushDevices: {
-    orderBy: { createdAt: 'desc' },
+    orderBy: adminProviderPushDeviceReachabilityOrder,
     take: 2,
     select: adminPushDeviceSummarySelect,
   },
