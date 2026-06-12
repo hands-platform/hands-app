@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
@@ -41,7 +40,6 @@ import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admi
 import {
   formatMoney as money,
   readPlainRecord,
-  shortId,
 } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
@@ -73,7 +71,6 @@ import {
   commandToneClass,
   commandToneLabel,
   commandToneWeight,
-  stagePillClass,
   type BookingActionPriority,
   type BookingCommandTone,
 } from './booking-command-display';
@@ -113,6 +110,10 @@ import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-cr
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
+import {
+  BookingMonitorListSection,
+  type BookingMonitorListRow,
+} from './booking-monitor-list-section';
 import { BookingMonitorMarketplaceCoverageSection } from './booking-monitor-marketplace-coverage-section';
 import { BookingMonitorMarketplaceLedgerOverviewSection } from './booking-monitor-marketplace-ledger-overview-section';
 import { BookingMonitorMarketplaceParticipantLedgerSection } from './booking-monitor-marketplace-participant-ledger-section';
@@ -380,6 +381,10 @@ export function BookingMonitor({
         bookingMatchesEvidenceFilter(booking, evidenceFilter, currentTimeMs),
     );
   }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
+  const bookingListRows = useMemo(
+    () => visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
+    [currentTimeMs, nowMs, visibleBookings],
+  );
   const marketplaceLedgerRows = useMemo(
     () =>
       buildMarketplaceParticipantLedgerRows(
@@ -628,280 +633,82 @@ export function BookingMonitor({
         />
       </section>
 
-      <section className="card admin-mt-16">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking / stage</th>
-              <th>Address / customer</th>
-              <th>Customer choice</th>
-              <th title="Matching rule snapshot">Partner supply</th>
-              <th>Chat / location</th>
-              <th>Payment / wallet</th>
-              <th title="Primary booking command Booking gate reason Action status strip">Ops check</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleBookings.map((booking) => {
-              const flags = bookingCheckFlags(booking, currentTimeMs);
-              const checkSignal = bookingCheckLevel(flags);
-              const servicePriceLabel = bookingServicePriceLabel(booking);
-              const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
-              const pricingPolicy = bookingPricingPolicySignal(booking);
-              const matchingPolicy = bookingMatchingPolicySnapshot(booking);
-              const stage = bookingListStage(booking, currentTimeMs);
-              const addressState = bookingAddressSnapshotState(booking);
-              const chatState = bookingChatListState(booking);
-              const closureState = bookingClosureListSignal(booking);
-              const actionChips = bookingListActionChips(booking, currentTimeMs);
-              const matchingRuleSnapshot = bookingMatchingRuleSnapshot(booking, currentTimeMs);
-              const finalGateReason = bookingFinalGateReason(booking);
-              const commandDecisionStrip = bookingListCommandDecisionStrip(booking);
-              return (
-                <tr id={`booking-${booking.id}`} key={booking.id}>
-                  <td>
-                    <strong>
-                      <Link className="text-link" href={`/bookings/${booking.id}`}>
-                        {shortId(booking.id)}
-                      </Link>
-                    </strong>
-                    <div className="muted">{bookingServiceOptionLabel(booking)}</div>
-                    <div className="muted">{servicePriceLabel}</div>
-                    {servicePayoutLabel && <div className="muted">{servicePayoutLabel}</div>}
-                    {pricingPolicy.status !== 'ready' && (
-                      <span className={`pill ${pricingPolicy.tone}`}>{pricingPolicy.label}</span>
-                    )}
-                    <div className="muted">
-                      Opened {formatDate(bookingRequestOpenedAt(booking))}
-                    </div>
-                    <div className="muted">{recencyLabel(booking, nowMs)}</div>
-                    <div className="admin-mt-8">
-                      <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
-                        {stage.label}
-                      </Link>
-                    </div>
-                    <div className="muted admin-mt-8">
-                      {stage.detail}
-                    </div>
-                    <div className="muted">{stage.action}</div>
-                    <div className="admin-mt-8">
-                      <StatusBadge status={booking.status} />
-                    </div>
-                    {closureState && (
-                      <div className="participant-list admin-mt-8">
-                        <span className={`pill ${closureState.tone}`}>{closureState.label}</span>
-                        <span className="muted">{closureState.detail}</span>
-                      </div>
-                    )}
-                    <div className="muted">
-                      {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
-                    </div>
-                    <div className="muted">{matchingPolicySummaryLabel(matchingPolicy)}</div>
-                  </td>
-                  <td>
-                    <span className={`pill ${addressState.tone}`}>{addressState.label}</span>
-                    <div className="muted admin-mt-8">
-                      {addressState.detail}
-                    </div>
-                    <div className="muted">{addressState.pin}</div>
-                    <div className="admin-mt-10">
-                      <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
-                    </div>
-                    <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
-                  </td>
-                  <td>
-                    <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
-                    <div className="muted admin-mt-8">
-                      {customerVisibleStateLabel(booking)}
-                    </div>
-                    <div className="muted">{selectionPathLabel(booking)}</div>
-                    {booking.selectedProvider ? (
-                      <div className="muted">
-                        Final partner: {partnerDisplayName(booking.selectedProvider)}
-                      </div>
-                    ) : (
-                      <div className="muted">Final partner: waiting for customer choice</div>
-                    )}
-                    <div className="muted">{bookingBackupAlertTraceLabel(booking, currentTimeMs)}</div>
-                  </td>
-                  <td>
-                    <strong>{booking.participants?.length ?? 0} participant row(s)</strong>
-                    <div className="muted">
-                      First-pick {partnerDisplayName(booking.preferredProvider, 'none')}
-                    </div>
-                    <div className="muted">
-                      {booking.preferredProvider?.user?.phone
-                        ? `First-pick phone ${booking.preferredProvider.user.phone}`
-                        : 'First-pick partner not set'}
-                    </div>
-                    <div className="participant-list admin-mt-8">
-                      <span className={`pill ${matchingPolicy ? 'pill-info' : 'pill-warn'}`}>
-                        {matchingPolicy ? 'Saved policy' : 'Live policy default'}
-                      </span>
-                      <span className={`pill ${bookingBackupAlertTraceTone(booking)}`}>
-                        {bookingBackupAlertTracePill(booking)}
-                      </span>
-                    </div>
-                    <div className="stack admin-mt-10">
-                      <span className="muted">Matching rule snapshot</span>
-                      <span className={`pill ${matchingRuleSnapshot.sourceTone}`}>
-                        {matchingRuleSnapshot.sourceLabel}
-                      </span>
-                      <span className="muted">{matchingRuleSnapshot.windowLabel}</span>
-                      <span className="muted">{matchingRuleSnapshot.radiusLabel}</span>
-                      <span className="muted">{matchingRuleSnapshot.supplyLabel}</span>
-                      <span className="muted">{matchingRuleSnapshot.customerChoiceLabel}</span>
-                      <small>{matchingRuleSnapshot.operatorAction}</small>
-                    </div>
-                    <div className="participant-list admin-mt-8">
-                      {booking.preferredProvider && (
-                        <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
-                          First-pick: {partnerDisplayName(booking.preferredProvider)}{' '}
-                          {preferredProviderStateLabel(booking)}
-                        </span>
-                      )}
-                      {booking.selectedProvider &&
-                        bookingSelectedPartnerIdForChoice(booking) !== bookingPreferredPartnerIdForChoice(booking) && (
-                          <span className="pill pill-success">
-                            Final: {partnerDisplayName(booking.selectedProvider)}
-                          </span>
-                        )}
-                      {marketplaceParticipants(booking)
-                        .slice(0, 4)
-                        .map((participant) => (
-                          <span className="pill" key={participant.id}>
-                            Marketplace: {partnerDisplayName(participant.providerProfile)} (
-                            {participant.status})
-                          </span>
-                        ))}
-                    </div>
-                    {marketplaceParticipants(booking).length > 4 && (
-                      <div className="muted admin-mt-6">
-                        +{marketplaceParticipants(booking).length - 4} more marketplace partner(s)
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`pill ${chatState.tone}`}>{chatState.label}</span>
-                    <div className="muted admin-mt-8">
-                      {chatState.detail}
-                    </div>
-                    <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
-                    <div className="participant-list admin-mt-8">
-                      <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
-                        {bookingLocationPillLabel(booking, currentTimeMs)}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    {booking.payment?.status ?? 'NONE'}
-                    <div className="muted">
-                      {booking.payment
-                        ? `${booking.payment.amount} ${booking.payment.currency ?? 'VND'} - ${booking.payment.method}`
-                        : 'No payment'}
-                    </div>
-                    {booking.payment?.id && (
-                      <div className="actions admin-mt-8">
-                        <Link className="text-link" href={`/bookings/${booking.id}`}>
-                          Detail
-                        </Link>
-                        <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
-                          Open payment
-                        </Link>
-                        {(booking.status === 'REFUNDED' || booking.payment.status === 'REFUNDED') && (
-                          <Link className="text-link" href="/refunds">
-                            Refund board
-                          </Link>
-                        )}
-                      </div>
-                    )}
-                    {bookingCashDebtNeedsOps(booking) && (
-                      <div className="admin-mt-8">
-                        <span className="pill pill-warn">Partner wallet debt</span>
-                      </div>
-                    )}
-                    {bookingCashDebtNeedsOps(booking) && (
-                      <div className="muted admin-mt-6">
-                        Cash fee debt{' '}
-                        {money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}
-                      </div>
-                    )}
-                    {booking.earning?.id && (
-                      <div className="actions admin-mt-8">
-                        <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
-                          Open earning
-                        </Link>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`signal ${checkSignal.tone}`}>{checkSignal.label}</span>
-                    <div className="muted admin-mt-8">
-                      {checkSignal.helper}
-                    </div>
-                    {flags.length > 0 && <div className="muted">{flags[0].title}</div>}
-                    <div className="admin-mt-8">{opsSignal(booking)}</div>
-                    <div className="muted admin-mt-8">
-                      {nextAction(booking)}
-                    </div>
-                    <div className="participant-list admin-mt-10">
-                      <span className="muted">Primary booking command</span>
-                      <Link
-                        className={`pill ${commandDecisionStrip.tone}`}
-                        href={`/bookings/${booking.id}#booking-command-decision-strip`}
-                        title={commandDecisionStrip.primaryDetail}
-                      >
-                        {commandDecisionStrip.primaryAction}
-                      </Link>
-                    </div>
-                    <div className="muted admin-mt-6">
-                      {commandDecisionStrip.status}: {commandDecisionStrip.primaryDetail}
-                    </div>
-                    <div className="participant-list admin-mt-10">
-                      <span className="muted">Booking gate reason</span>
-                      <Link
-                        className={`pill ${finalGateReason.tone}`}
-                        href={finalGateReason.href}
-                        title={finalGateReason.detail}
-                      >
-                        {finalGateReason.label}
-                      </Link>
-                    </div>
-                    <div className="muted admin-mt-6">
-                      {finalGateReason.detail}
-                    </div>
-                    <div className="participant-list admin-mt-10">
-                      <span className="muted">Action status strip</span>
-                      {actionChips.map((chip) => (
-                        <Link
-                          className={`pill ${chip.tone}`}
-                          href={chip.href}
-                          key={chip.label}
-                          title={chip.detail}
-                        >
-                          {chip.label}
-                        </Link>
-                      ))}
-                    </div>
-                    {closureState && (
-                      <div className="muted admin-mt-8">
-                        Closure evidence: {closureState.detail}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {visibleBookings.length === 0 && (
-              <tr>
-                <td colSpan={7}>{emptyBookingMessage(view)}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+      <BookingMonitorListSection emptyMessage={emptyBookingMessage(view)} rows={bookingListRows} />
     </>
   );
+}
+
+function buildBookingMonitorListRow(
+  booking: AdminBooking,
+  currentTimeMs: number,
+  nowMs: number | null,
+): BookingMonitorListRow {
+  const flags = bookingCheckFlags(booking, currentTimeMs);
+  const matchingPolicy = bookingMatchingPolicySnapshot(booking);
+  const marketplaceParticipantRows = marketplaceParticipants(booking);
+  const cashDebtNeedsOps = bookingCashDebtNeedsOps(booking);
+
+  return {
+    actionChips: bookingListActionChips(booking, currentTimeMs),
+    addressState: bookingAddressSnapshotState(booking),
+    backupAlert: {
+      label: bookingBackupAlertTraceLabel(booking, currentTimeMs),
+      pill: bookingBackupAlertTracePill(booking),
+      tone: bookingBackupAlertTraceTone(booking),
+    },
+    booking,
+    cashDebtAmountLabel: cashDebtNeedsOps
+      ? money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)
+      : null,
+    cashDebtNeedsOps,
+    chatState: bookingChatListState(booking),
+    checkSignal: bookingCheckLevel(flags),
+    closureState: bookingClosureListSignal(booking),
+    commandDecisionStrip: bookingListCommandDecisionStrip(booking),
+    customerVisibleStateLabel: customerVisibleStateLabel(booking),
+    expiresAtLabel: booking.expiresAt ? formatDate(booking.expiresAt) : null,
+    finalGateReason: bookingFinalGateReason(booking),
+    finalPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
+    firstCheckTitle: flags[0]?.title ?? null,
+    firstPickPhoneLabel: booking.preferredProvider?.user?.phone
+      ? `First-pick phone ${booking.preferredProvider.user.phone}`
+      : 'First-pick partner not set',
+    hasMatchingPolicySnapshot: Boolean(matchingPolicy),
+    location: {
+      pillLabel: bookingLocationPillLabel(booking, currentTimeMs),
+      signalLabel: bookingLocationSignalLabel(booking, currentTimeMs),
+      toneClass: bookingLocationToneClass(booking, currentTimeMs),
+    },
+    matchingPolicySummaryLabel: matchingPolicySummaryLabel(matchingPolicy),
+    matchingRuleSnapshot: bookingMatchingRuleSnapshot(booking, currentTimeMs),
+    marketplaceParticipantOverflowCount: Math.max(0, marketplaceParticipantRows.length - 4),
+    marketplaceParticipants: marketplaceParticipantRows.slice(0, 4).map((participant) => ({
+      id: participant.id,
+      partnerLabel: partnerDisplayName(participant.providerProfile),
+      status: participant.status,
+    })),
+    nextActionLabel: nextAction(booking),
+    openedDateLabel: formatDate(bookingRequestOpenedAt(booking)),
+    opsSignal: opsSignal(booking),
+    preferredPartnerLabel: partnerDisplayName(booking.preferredProvider, 'none'),
+    preferredProviderStateLabel: booking.preferredProvider ? preferredProviderStateLabel(booking) : null,
+    pricingPolicy: bookingPricingPolicySignal(booking),
+    recencyLabel: recencyLabel(booking, nowMs),
+    selectedFinalPartnerPillLabel:
+      booking.selectedProvider &&
+      bookingSelectedPartnerIdForChoice(booking) !== bookingPreferredPartnerIdForChoice(booking)
+        ? partnerDisplayName(booking.selectedProvider)
+        : null,
+    selection: {
+      label: selectionLabel(booking),
+      pathLabel: selectionPathLabel(booking),
+      toneClass: selectionToneClass(booking),
+    },
+    serviceOptionLabel: bookingServiceOptionLabel(booking),
+    servicePayoutLabel: bookingServicePayoutRuleLabel(booking) ?? null,
+    servicePriceLabel: bookingServicePriceLabel(booking),
+    stage: bookingListStage(booking, currentTimeMs),
+  };
 }
 
 const bookingViewOptions: Array<{
@@ -1883,10 +1690,6 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
       { label: 'Latest', value: latestAge },
     ],
   };
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{status}</span>;
 }
 
 function opsSignal(booking: AdminBooking) {
