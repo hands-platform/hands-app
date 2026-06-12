@@ -293,26 +293,17 @@ export class BookingsService {
       durationMin: service.durationMin,
       providerResponseWindowMinutes: matchingPolicy.providerResponseWindowMinutes,
     });
-    const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
-    const customerToBookingDistanceMeters = customerCurrentLocation
-      ? calculateDistanceMeters(
-          customerCurrentLocation.lat,
-          customerCurrentLocation.lng,
-          bookingLat,
-          bookingLng,
-        )
-      : null;
-    const preferredProviderDistanceMeters = preferredProvider
-      ? calculateDistanceMeters(
-          bookingLat,
-          bookingLng,
-          preferredProvider.currentLat,
-          preferredProvider.currentLng,
-        )
-      : null;
+    const distanceGate = this.resolveBookingDistanceGate({
+      attemptInput: input,
+      matchingPolicy,
+      bookingLat,
+      bookingLng,
+      addressText,
+      preferredProvider,
+    });
     const preferredProviderDistanceGateError = preferredProviderBookingDistanceGateError(
       preferredProvider,
-      preferredProviderDistanceMeters,
+      distanceGate.preferredProviderDistanceMeters,
       matchingPolicy,
     );
     if (preferredProviderDistanceGateError) {
@@ -324,24 +315,14 @@ export class BookingsService {
         bookingLat,
         bookingLng,
         addressText,
-        customerDistanceMeters: customerToBookingDistanceMeters,
-        preferredProviderDistanceMeters,
-        currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
+        customerDistanceMeters: distanceGate.customerToBookingDistanceMeters,
+        preferredProviderDistanceMeters: distanceGate.preferredProviderDistanceMeters,
+        currentLocationRecordedAt: distanceGate.customerCurrentLocation?.recordedAt,
         distanceGateLimits,
         message: preferredProviderDistanceGateError.message,
         preferredProviderDistanceLimitMeters: preferredProviderDistanceGateError.limitMeters,
       });
     }
-    const bookingGateSnapshot = bookingDistanceGateSnapshot({
-      matchingPolicy,
-      bookingLat,
-      bookingLng,
-      addressText,
-      customerCurrentLocation,
-      customerToBookingDistanceMeters,
-      preferredProvider,
-      preferredProviderDistanceMeters,
-    });
 
     let booking: OpenBookingForClientResponse = await this.createOpenMatchingBookingRecord({
       customerProfileId: customer.id,
@@ -354,12 +335,12 @@ export class BookingsService {
       matchingPolicy,
       timing,
       preferredProvider,
-      bookingGateSnapshot,
+      bookingGateSnapshot: distanceGate.bookingGateSnapshot,
       serviceId: service.id,
       customerPrice,
       paymentMethod: input.paymentMethod,
       priceSummary,
-      preferredProviderDistanceMeters,
+      preferredProviderDistanceMeters: distanceGate.preferredProviderDistanceMeters,
     });
 
     booking = await this.refreshBookingPaymentAuthorization(booking);
@@ -540,6 +521,61 @@ export class BookingsService {
       currentLocationRecordedAt: input.currentLocationRecordedAt,
     });
     throw new BadRequestException(input.message);
+  }
+
+  private resolveBookingDistanceGate(input: {
+    attemptInput: {
+      currentLat?: number;
+      currentLng?: number;
+      currentLocationUpdatedAt?: string;
+    };
+    matchingPolicy: MatchingPolicy;
+    bookingLat: number;
+    bookingLng: number;
+    addressText: string;
+    preferredProvider: {
+      id: string;
+      currentLat?: unknown;
+      currentLng?: unknown;
+      currentLocationUpdatedAt?: Date | null;
+    } | null;
+  }) {
+    const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(
+      input.attemptInput,
+      input.matchingPolicy,
+    );
+    const customerToBookingDistanceMeters = customerCurrentLocation
+      ? calculateDistanceMeters(
+          customerCurrentLocation.lat,
+          customerCurrentLocation.lng,
+          input.bookingLat,
+          input.bookingLng,
+        )
+      : null;
+    const preferredProviderDistanceMeters = input.preferredProvider
+      ? calculateDistanceMeters(
+          input.bookingLat,
+          input.bookingLng,
+          input.preferredProvider.currentLat,
+          input.preferredProvider.currentLng,
+        )
+      : null;
+
+    return {
+      bookingGateSnapshot: bookingDistanceGateSnapshot({
+        matchingPolicy: input.matchingPolicy,
+        bookingLat: input.bookingLat,
+        bookingLng: input.bookingLng,
+        addressText: input.addressText,
+        customerCurrentLocation,
+        customerToBookingDistanceMeters,
+        preferredProvider: input.preferredProvider,
+        preferredProviderDistanceMeters,
+      }),
+      customerCurrentLocation,
+      customerToBookingDistanceMeters,
+      preferredProviderDistanceMeters,
+    };
   }
 
   private resolveBookingAddressInput(input: {
