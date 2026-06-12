@@ -147,6 +147,7 @@ import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-
 import { bookingMarketplaceOperatingQueueFact } from './booking-marketplace-operating-queue-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
+import { bookingMatchingEscalationRowInput } from './booking-matching-escalation-row-inputs';
 import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
@@ -1037,24 +1038,16 @@ function buildMatchingEscalationRows(
       const hasChatRoom = bookingMatchingChatReady(booking);
       const responseWindowExpired = bookingMatchingWindowExpired(booking, nowMs);
 
-      return {
-        booking,
+      return bookingMatchingEscalationRowInput(booking, {
         hasChatRoom,
-        hasPreferredPartner: Boolean(booking.preferredProvider),
         marketplaceCount: bookingMarketplaceParticipantCount(booking),
-        needsOps: bookingMatchingEscalationNeedsOps(booking, {
-          hasChatRoom,
-          responseWindowExpired,
-        }),
         preferredAwaitingDecision: bookingFirstPickPending(booking),
         responseWindowExpired,
         selectableCount: bookingCustomerSelectableCount(booking),
         selectionLabel: selectionLabel(booking),
         selectionPathLabel: selectionPathLabel(booking),
-        sortTimestamp: bookingTimestamp(booking),
-        status: booking.status,
         windowLabel: bookingMatchingWindowLabel(booking, nowMs),
-      };
+      });
     }),
   );
 }
