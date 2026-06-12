@@ -452,6 +452,7 @@ const pages = [
     path: '/notifications?review=failed',
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue'],
   },
+  { path: '/notifications?review=fcm', markers: ['Notifications', 'FCM', 'FCM route'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
     path: '/files',

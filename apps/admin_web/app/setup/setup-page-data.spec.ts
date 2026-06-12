@@ -4,6 +4,7 @@ import {
   setupOrder,
   verifiedBaseline,
 } from './setup-page-data';
+import { notificationFilterLinks } from '../notifications/notification-page-model';
 
 describe('setup page data', () => {
   it('keeps setup order ids unique and required operating groups visible', () => {
@@ -72,5 +73,19 @@ describe('setup page data', () => {
     expect(verifiedBaseline).toEqual(
       expect.arrayContaining(['API typecheck and build pass.', 'Secret leak guard passes.']),
     );
+  });
+
+  it('keeps notification setup review links backed by notification filters', () => {
+    const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
+    const supportedReviews = new Set<string>(
+      notificationFilterLinks.map((link) => link.review).filter(Boolean),
+    );
+    const linkedReviews =
+      notificationSetup?.commands
+        .map((command) => command.match(/\/notifications\?review=([^"'\s]+)/)?.[1])
+        .filter((review): review is string => Boolean(review)) ?? [];
+
+    expect(linkedReviews).toEqual(['fcm', 'failed', 'disabled-device', 'stale-device', 'pending']);
+    expect(linkedReviews.every((review) => supportedReviews.has(review))).toBe(true);
   });
 });
