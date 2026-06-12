@@ -4,12 +4,18 @@ services:
       context: .
       dockerfile: infra/docker/api.Dockerfile
     env_file:
-      - .env
+      - ${HANDS_ENV_FILE:-.env}
     environment:
       API_PORT: 3000
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for production}
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
+      GOOGLE_APPLICATION_CREDENTIALS: ${FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH:-/run/secrets/firebase-admin.json}
+    volumes:
+      - type: bind
+        source: ${FIREBASE_ADMIN_CREDENTIALS_HOST_PATH:-./infra/docker/firebase-admin.placeholder.json}
+        target: ${FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH:-/run/secrets/firebase-admin.json}
+        read_only: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -25,7 +31,7 @@ services:
       context: .
       dockerfile: infra/docker/admin_web.Dockerfile
     env_file:
-      - .env
+      - ${HANDS_ENV_FILE:-.env}
     environment:
       ADMIN_API_BASE_URL: http://api:3000/api
       PORT: 3000

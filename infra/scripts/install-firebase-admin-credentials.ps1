@@ -3,6 +3,7 @@ param(
   [string]$SourcePath,
   [string]$SecretRoot = "C:\dev\hands-secrets\firebase",
   [string]$DestinationFileName = "hands-vn-mvp-firebase-admin.json",
+  [string]$DockerContainerCredentialsPath = "/run/secrets/firebase-admin.json",
   [string]$EnvFile = ".env",
   [switch]$UpdateEnv,
   [switch]$Force
@@ -128,7 +129,8 @@ function Set-EnvValue {
 function Update-EnvFile {
   param(
     [string]$Path,
-    [string]$GoogleApplicationCredentials
+    [string]$GoogleApplicationCredentials,
+    [string]$DockerContainerCredentialsPath
   )
 
   $lines = @()
@@ -138,6 +140,8 @@ function Update-EnvFile {
 
   $lines = Set-EnvValue -Lines $lines -Key "PUSH_PROVIDER" -Value "fcm"
   $lines = Set-EnvValue -Lines $lines -Key "GOOGLE_APPLICATION_CREDENTIALS" -Value $GoogleApplicationCredentials
+  $lines = Set-EnvValue -Lines $lines -Key "FIREBASE_ADMIN_CREDENTIALS_HOST_PATH" -Value $GoogleApplicationCredentials
+  $lines = Set-EnvValue -Lines $lines -Key "FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH" -Value $DockerContainerCredentialsPath
   $directory = Split-Path -Parent $Path
   if ($directory -and -not (Test-Path -LiteralPath $directory)) {
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
@@ -179,7 +183,10 @@ Assert-ServiceAccountJson -Path $destinationFullPath
 $envFileFullPath = $null
 if ($UpdateEnv) {
   $envFileFullPath = Resolve-FullPath $EnvFile
-  Update-EnvFile -Path $envFileFullPath -GoogleApplicationCredentials $destinationFullPath
+  Update-EnvFile `
+    -Path $envFileFullPath `
+    -GoogleApplicationCredentials $destinationFullPath `
+    -DockerContainerCredentialsPath $DockerContainerCredentialsPath
 }
 
 $defaultEnvFilePath = Resolve-FullPath ".env"
@@ -195,6 +202,8 @@ $summary = [ordered]@{
   env = [ordered]@{
     PUSH_PROVIDER = "fcm"
     GOOGLE_APPLICATION_CREDENTIALS = $destinationFullPath
+    FIREBASE_ADMIN_CREDENTIALS_HOST_PATH = $destinationFullPath
+    FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH = $DockerContainerCredentialsPath
   }
   nextCommands = @(
     "npm.cmd run fcm:credentials-check$envCommandSuffix",

@@ -105,6 +105,7 @@ npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<fir
 ```
 
 `fcm:push-smoke -- --dry-run` is config-only. It does not contact the API or FCM; run `npm.cmd run fcm:push-smoke` without `--dry-run` only after Firebase Admin credentials and a real app FCM token are ready.
+For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `docker-compose.prod.yml` mounts that host file into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
 

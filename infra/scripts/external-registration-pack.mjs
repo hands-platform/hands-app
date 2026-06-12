@@ -277,6 +277,16 @@ const registrationItems = [
         '<existing-service-account-json-path>',
         firebaseApplicationCredentialsConfigured(env.GOOGLE_APPLICATION_CREDENTIALS),
       ),
+      envItem(
+        'FIREBASE_ADMIN_CREDENTIALS_HOST_PATH',
+        'C:\\dev\\hands-secrets\\firebase\\hands-vn-mvp-firebase-admin.json',
+        firebaseApplicationCredentialsConfigured(env.FIREBASE_ADMIN_CREDENTIALS_HOST_PATH),
+      ),
+      envItem(
+        'FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH',
+        '/run/secrets/firebase-admin.json',
+        hasValue(env.FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH),
+      ),
     ],
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
@@ -284,6 +294,7 @@ const registrationItems = [
       'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file available to the API process or Docker container.',
+      'For Docker, set FIREBASE_ADMIN_CREDENTIALS_HOST_PATH to the host JSON path and keep FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH as /run/secrets/firebase-admin.json unless the compose mount changes.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',
     ],
     verify: [

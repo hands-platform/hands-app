@@ -14,6 +14,8 @@ const fcmEnvKeys = [
   'FIREBASE_PRIVATE_KEY',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'FIREBASE_ADMIN_CREDENTIALS_HOST_PATH',
+  'FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH',
 ] as const;
 
 export const setupOrder = [
@@ -195,6 +197,7 @@ export const setupOrder = [
       'FIREBASE_SERVICE_ACCOUNT_JSON must be raw or base64 service account JSON with project_id, client_email, and private_key.',
       'google-services.json is mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'Firebase Admin service account values are server-side only and must not be copied into Flutter or browser code.',
+      'For Docker, the host JSON path is mounted into the API container at /run/secrets/firebase-admin.json.',
       'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
       'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
       'Live push smoke needs a real app FCM token from the current Android/iOS build.',
