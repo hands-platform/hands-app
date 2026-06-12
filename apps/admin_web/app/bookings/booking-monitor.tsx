@@ -118,6 +118,7 @@ import {
   bookingMonitorSummaryRows,
   type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
+import { bookingMonitorSummaryFactFromInputs } from './booking-monitor-summary-inputs';
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import {
   bookingCommandCenterFromFacts,
@@ -342,7 +343,7 @@ export function BookingMonitor({
     () =>
       bookingMonitorSummaryRows({
         blockedCreateAttemptCount: orderedBookingCreateRejections.length,
-        bookings: orderedBookings.map((booking) => bookingMonitorSummaryFact(booking, currentTimeMs)),
+        bookings: orderedBookings.map((booking) => buildBookingMonitorSummaryFact(booking, currentTimeMs)),
       }),
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
@@ -978,16 +979,16 @@ function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number)
   );
 }
 
-function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
-  return {
+function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
+  return bookingMonitorSummaryFactFromInputs({
     addressNeedsOps: bookingAddressNeedsOps(booking),
     backupSelected: bookingIsBackupSelected(booking),
+    checkSeverities: bookingCheckFlags(booking, nowMs).map((flag) => flag.severity),
     chatEvidenceNeedsOps: bookingChatEvidenceNeedsOps(booking, nowMs),
     chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
     closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
     decisionEvidenceMissing: bookingDecisionEvidenceMissing(booking, nowMs),
     firstPickPending: bookingFirstPickPending(booking),
-    highPriorityCheck: bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
     locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
     marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
     matchingChatReady: bookingMatchingChatReady(booking),
@@ -998,7 +999,7 @@ function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): Bookin
     refundReviewNeedsOps: bookingRefundReviewNeedsOps(booking),
     stageKey: bookingListStage(booking, nowMs).key,
     status: booking.status,
-  };
+  });
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
