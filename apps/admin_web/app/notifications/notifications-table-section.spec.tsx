@@ -7,7 +7,7 @@ describe('NotificationsTableSection', () => {
       rows: [buildRow()],
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizedText(section);
 
     expect(rendered).toContain('2026-06-09 10:00');
     expect(rendered).toContain('Updated just now');
@@ -40,6 +40,41 @@ describe('NotificationsTableSection', () => {
         '/notifications?confirm=retry&notificationId=notification-1',
       ]),
     );
+  });
+
+  it('summarizes multiple delivery attempts behind a compact disclosure', () => {
+    const row = buildRow();
+    const section = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      rows: [
+        {
+          ...row,
+          deliveryRows: [
+            {
+              ...row.deliveryRows[0],
+              attemptedAtLabel: '2026-06-09 10:03',
+              deviceStateLabel: 'Device enabled',
+              enableDeviceHref: null,
+              failureCodeLabel: '-',
+              failureReasonLabel: '-',
+              httpStatusLabel: '200',
+              id: 'delivery-2',
+              platformLabel: 'Android',
+              status: 'SENT',
+              statusClassName: 'pill pill-success',
+            },
+            row.deliveryRows[0],
+          ],
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('2 attempts');
+    expect(rendered).toContain('latest FCM / Android / 2026-06-09 10:03');
+    expect(elementTypesIn(section)).toContain('details');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'pill pill-warn']));
   });
 
   it('renders the empty state when there are no notification rows', () => {
@@ -116,6 +151,10 @@ function textContent(value: unknown): string {
   return textContent(props?.children);
 }
 
+function normalizedText(value: unknown): string {
+  return textContent(value).replace(/\s+/g, ' ').trim();
+}
+
 function hrefsIn(value: unknown): string[] {
   value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
@@ -144,6 +183,21 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function elementTypesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(elementTypesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const type = typeof record?.type === 'string' ? [record.type] : [];
+  return [...type, ...elementTypesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

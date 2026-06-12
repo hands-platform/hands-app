@@ -294,26 +294,28 @@ export function emptyNotificationMessage(
 }
 
 function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
-  return (notification.deliveries ?? []).map((delivery) => ({
-    attemptedAtLabel: formatDateTime(delivery.attemptedAt),
-    deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
-    deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
-      ? formatDateTime(delivery.pushDevice.lastSeenAt)
-      : '-',
-    deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
-    enableDeviceHref:
-      delivery.pushDevice?.enabled === false && delivery.pushDevice.id
-        ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
-        : null,
-    failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
-    failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
-    httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
-    id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
-    platformLabel: delivery.pushDevice?.platform ?? 'device',
-    provider: delivery.provider,
-    status: delivery.status,
-    statusClassName: deliveryStatusClassName(delivery.status),
-  }));
+  return [...(notification.deliveries ?? [])]
+    .sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left))
+    .map((delivery) => ({
+      attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+      deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
+      deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
+        ? formatDateTime(delivery.pushDevice.lastSeenAt)
+        : '-',
+      deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
+      enableDeviceHref:
+        delivery.pushDevice?.enabled === false && delivery.pushDevice.id
+          ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
+          : null,
+      failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
+      failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
+      httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
+      id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
+      platformLabel: delivery.pushDevice?.platform ?? 'device',
+      provider: delivery.provider,
+      status: delivery.status,
+      statusClassName: deliveryStatusClassName(delivery.status),
+    }));
 }
 
 function countDeliveries(notifications: readonly AdminNotification[], status: string) {
@@ -335,6 +337,11 @@ function deliveryStatusClassName(status: string) {
     return 'pill pill-info';
   }
   return 'pill pill-neutral';
+}
+
+function deliveryAttemptMs(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
+  const value = Date.parse(delivery.attemptedAt);
+  return Number.isFinite(value) ? value : 0;
 }
 
 function countDisabledDevices(notifications: readonly AdminNotification[]) {

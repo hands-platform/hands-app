@@ -264,6 +264,36 @@ describe('notification page model', () => {
     });
   });
 
+  it('orders delivery rows by newest attempt first for compact table summaries', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        data: { bookingId: 'booking-1' },
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-old',
+            provider: 'FCM',
+            status: 'FAILED',
+          },
+          {
+            attemptedAt: '2026-06-01T10:03:00.000Z',
+            id: 'delivery-new',
+            provider: 'FCM',
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-delivery-order',
+        type: 'booking.requested',
+      }),
+    ]);
+
+    expect(rows[0]?.deliveryRows.map((delivery) => delivery.id)).toEqual(['delivery-new', 'delivery-old']);
+    expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      status: 'SENT',
+      statusClassName: 'pill pill-success',
+    });
+  });
+
   it('marks stale push token deliveries as an operator warning even when FCM accepted the send', () => {
     const rows = buildNotificationTableRows([
       notification({
