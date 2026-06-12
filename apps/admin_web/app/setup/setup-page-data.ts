@@ -197,7 +197,7 @@ export const setupOrder = [
     commands: [
       'npm.cmd run external:check:production',
       'npm.cmd run fcm:env-contract',
-      '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; npm.cmd run fcm:push-smoke',
+      '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_PLATFORM="android"; npm.cmd run fcm:push-smoke',
     ],
   },
   {

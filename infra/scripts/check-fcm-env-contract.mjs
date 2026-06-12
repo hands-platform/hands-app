@@ -6,6 +6,7 @@ const apiSourcePaths = [
   resolve(repoRoot, 'apps/api/src/notifications/push-delivery.service.ts'),
   resolve(repoRoot, 'apps/api/src/notifications/firebase-admin-credentials.ts'),
 ];
+const smokeSourcePath = resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs');
 const requiredSources = [
   resolve(repoRoot, '.env.example'),
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
@@ -13,6 +14,10 @@ const requiredSources = [
   resolve(repoRoot, 'infra/scripts/check-external-setup.mjs'),
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
+];
+const smokeEnvRequiredSources = [
+  resolve(repoRoot, '.env.example'),
+  resolve(repoRoot, 'infra/env/hands-staging.env.example'),
 ];
 
 const apiSource = apiSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
@@ -26,20 +31,39 @@ const fcmEnvKeys = Array.from(
       ),
   ),
 ).sort();
+const smokeSource = readFileSync(smokeSourcePath, 'utf8');
+const fcmSmokeEnvKeys = Array.from(
+  new Set(
+    [...smokeSource.matchAll(/envValue\('([^']+)'\)/g)]
+      .map((match) => match[1])
+      .filter((key) => key.startsWith('FCM_SMOKE_')),
+  ),
+).sort();
 
 const missingBySource = {};
 for (const sourcePath of requiredSources) {
   const source = readFileSync(sourcePath, 'utf8');
   const missing = fcmEnvKeys.filter((key) => !source.includes(key));
   if (missing.length > 0) {
-    missingBySource[sourcePath.replace(`${repoRoot}\\`, '').replaceAll('\\', '/')] = missing;
+    missingBySource[relativePath(sourcePath)] = missing;
+  }
+}
+
+const missingSmokeBySource = {};
+for (const sourcePath of smokeEnvRequiredSources) {
+  const source = readFileSync(sourcePath, 'utf8');
+  const missing = fcmSmokeEnvKeys.filter((key) => !source.includes(key));
+  if (missing.length > 0) {
+    missingSmokeBySource[relativePath(sourcePath)] = missing;
   }
 }
 
 const result = {
-  ok: Object.keys(missingBySource).length === 0,
+  ok: Object.keys(missingBySource).length === 0 && Object.keys(missingSmokeBySource).length === 0,
   fcmEnvKeys,
+  fcmSmokeEnvKeys,
   missingBySource,
+  missingSmokeBySource,
 };
 
 if (!result.ok) {
@@ -48,3 +72,7 @@ if (!result.ok) {
 }
 
 console.log(JSON.stringify(result, null, 2));
+
+function relativePath(sourcePath) {
+  return sourcePath.replace(`${repoRoot}\\`, '').replaceAll('\\', '/');
+}
