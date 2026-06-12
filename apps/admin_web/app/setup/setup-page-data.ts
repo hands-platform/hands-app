@@ -196,7 +196,7 @@ export const setupOrder = [
       'After fcm:push-smoke, review the FCM route, failed sends, and stale device queues before enabling OS push broadly.',
     ],
     commands: [
-      'npm.cmd run external:check:production',
+      'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_PLATFORM="android"; npm.cmd run fcm:push-smoke',
       'Open http://localhost:3101/notifications?review=fcm',

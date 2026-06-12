@@ -28,6 +28,7 @@ const validPhases = new Set([
   'supabase-auth',
   'maps',
   'payments',
+  'push',
   'storage',
   'production',
 ]);
@@ -70,14 +71,14 @@ addPhaseRequired(
   'PUSH_PROVIDER=fcm for OS push',
   hasExpectedValue('PUSH_PROVIDER', 'fcm'),
   'Set PUSH_PROVIDER=fcm before production-like OS push E2E.',
-  ['production'],
+  ['push', 'production'],
 );
 addPhaseRequired(
   'push',
   'Firebase Admin credentials for OS push',
   firebaseAdminConfigured(),
   'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or GOOGLE_APPLICATION_CREDENTIALS before production-like OS push E2E.',
-  ['production'],
+  ['push', 'production'],
 );
 
 addRecommended(

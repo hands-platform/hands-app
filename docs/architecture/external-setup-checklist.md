@@ -89,6 +89,7 @@ VNPAY_HASH_SECRET=
 cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:check
+npm.cmd run external:check:push
 npm.cmd run external:check:maps
 npm.cmd run security:secrets
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices

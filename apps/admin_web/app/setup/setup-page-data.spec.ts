@@ -31,6 +31,7 @@ describe('setup page data', () => {
     );
     expect(notificationSetup?.commands).toEqual(
       expect.arrayContaining([
+        'npm.cmd run external:check:push',
         'Open http://localhost:3101/notifications?review=fcm',
         'Open http://localhost:3101/notifications?review=failed',
         'Open http://localhost:3101/notifications?review=stale-device',

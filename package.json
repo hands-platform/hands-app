@@ -15,6 +15,7 @@
     "external:check:supabase-auth": "node infra/scripts/check-external-setup.mjs --phase=supabase-auth",
     "external:check:maps": "node infra/scripts/check-external-setup.mjs --phase=maps && node infra/scripts/check-map-services.mjs",
     "external:check:payments": "node infra/scripts/check-external-setup.mjs --phase=payments",
+    "external:check:push": "node infra/scripts/check-external-setup.mjs --phase=push",
     "external:check:storage": "node infra/scripts/check-external-setup.mjs --phase=storage",
     "storage:smoke": "node infra/scripts/storage-smoke.mjs",
     "external:check:production": "node infra/scripts/check-external-setup.mjs --phase=production",
