@@ -263,10 +263,16 @@ const registrationItems = [
         '<service-account-json-or-base64-server-only>',
         hasValue(env.FIREBASE_SERVICE_ACCOUNT_JSON),
       ),
+      envItem(
+        'GOOGLE_APPLICATION_CREDENTIALS',
+        '<existing-service-account-json-path>',
+        hasValue(env.GOOGLE_APPLICATION_CREDENTIALS),
+      ),
     ],
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
       'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
+      'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file available to the API process or Docker container.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',
     ],
     verify: [
