@@ -67,6 +67,7 @@ const securitySecretsCommandRequiredSources = [
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
   resolve(repoRoot, 'apps/admin_web/app/setup/setup-readiness-order-section.tsx'),
   resolve(repoRoot, 'docs/architecture/e2e-smoke.md'),
+  resolve(repoRoot, 'docs/architecture/external-setup-checklist.md'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
   resolve(repoRoot, 'docs/architecture/operator-registration-plan.md'),
 ];

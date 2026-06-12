@@ -92,12 +92,12 @@ cd C:\dev\massage-on-demand-vn
 npm.cmd run setup:doctor
 npm.cmd run external:check
 npm.cmd run external:check:push
+npm.cmd run security:secrets
 npm.cmd run fcm:credentials-check
 npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --dry-run
 npm.cmd run external:check:maps
-npm.cmd run security:secrets
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices
 ```
 
