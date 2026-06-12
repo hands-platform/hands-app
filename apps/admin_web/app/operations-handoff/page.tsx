@@ -21,10 +21,11 @@ import {
   formatRelativeTime,
   shortDisplayId,
 } from '../../lib/admin-format';
-import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import { isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { addOperationsHandoffNote } from './actions';
+import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -178,30 +179,7 @@ export default async function OperationsHandoffPage({
         this before changing operators so open work keeps context.
       </p>
 
-      <section className="card admin-mt-16 admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Handoff date range</h2>
-            <p className="muted">
-              Live booking counters stay current. Operator notes and the unified activity stream are filtered
-              by the selected record window.
-            </p>
-          </div>
-          <span className="pill pill-info">{dateRangeLabel(filters.range)}</span>
-        </div>
-        <div className="actions">
-          {[
-            ['All dates', '/operations-handoff'],
-            ['Today', '/operations-handoff?range=today'],
-            ['Last 7 days', '/operations-handoff?range=7d'],
-            ['Last 30 days', '/operations-handoff?range=30d'],
-          ].map(([label, href]) => (
-            <Link className="text-link" href={href} key={href}>
-              {label}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <OperationsHandoffDateRangeSection range={filters.range} />
 
       <section className="grid admin-mt-16 admin-mb-16">
         <MetricCard
