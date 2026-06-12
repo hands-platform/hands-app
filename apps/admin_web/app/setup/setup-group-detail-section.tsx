@@ -178,8 +178,17 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
     },
     {
       title: 'API preflight',
-      detail: 'Check API readiness, notification availability, and registered device state without sending FCM.',
-      commands: commands.filter((command) => command.includes('--preflight')),
+      detail:
+        'Check API readiness, notification availability, registered device state, and partner-alert policy without sending FCM.',
+      commands: commands.filter(
+        (command) => command.includes('--preflight') && !command.includes('FCM_SMOKE_NOTIFICATION_ID'),
+      ),
+    },
+    {
+      title: 'Partner alert policy fallback',
+      detail:
+        'When provider partner-alert preflight is routed to in-app delivery, reuse the suggested non partner-alert notification id for an FCM-only smoke check.',
+      commands: commands.filter((command) => command.includes('FCM_SMOKE_NOTIFICATION_ID')),
     },
     {
       title: 'Live push send',
@@ -187,8 +196,8 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
         'Use a real app FCM token, or reuse an enabled device already registered by the selected role, phone, and platform.',
       commands: commands.filter(
         (command) =>
-          command.includes('FCM_SMOKE_DEVICE_TOKEN') ||
-          command.includes('FCM_SMOKE_USE_REGISTERED_DEVICE'),
+          !command.includes('--preflight') &&
+          (command.includes('FCM_SMOKE_DEVICE_TOKEN') || command.includes('FCM_SMOKE_USE_REGISTERED_DEVICE')),
       ),
     },
     {
