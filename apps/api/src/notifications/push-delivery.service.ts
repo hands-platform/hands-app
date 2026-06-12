@@ -8,12 +8,10 @@ import {
   readFirebaseCredentialConfig,
   type FirebaseCredentialConfig,
 } from './firebase-admin-credentials';
-import {
-  firebaseFailureCode,
-  isPermanentTokenFailure,
-  safeErrorMessage,
-} from './push-delivery-error';
+import { firebaseFailureCode, isPermanentTokenFailure, safeErrorMessage } from './push-delivery-error';
 import { resolvePushProvider, type PushProvider } from './push-provider';
+
+export const FCM_ANDROID_NOTIFICATION_CHANNEL_ID = 'hands_priority_alerts';
 
 export type PushMessage = {
   token: string;
@@ -90,6 +88,9 @@ export class PushDeliveryService {
         data: message.data ?? {},
         android: {
           priority: 'high',
+          notification: {
+            channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
+          },
         },
         apns: {
           payload: {
@@ -138,7 +139,8 @@ export class PushDeliveryService {
     }
 
     const { config } = this.fcmReadiness();
-    const app = getApps().find((candidate) => candidate.name === 'hands-fcm') ?? initializeFirebaseApp(config);
+    const app =
+      getApps().find((candidate) => candidate.name === 'hands-fcm') ?? initializeFirebaseApp(config);
     this.messaging = getMessaging(app);
     return this.messaging;
   }

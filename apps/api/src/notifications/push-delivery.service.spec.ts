@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { PushDeliveryService } from './push-delivery.service';
+import { FCM_ANDROID_NOTIFICATION_CHANNEL_ID, PushDeliveryService } from './push-delivery.service';
 
 const mockMessagingSend = jest.fn();
 
@@ -66,10 +66,37 @@ describe('PushDeliveryService', () => {
       disableDevice: true,
       failureCode: 'messaging/registration-token-not-registered',
       response: {
-        reason:
-          'Requested entity was not found: registration token [masked]. Raw token [masked] rejected.',
+        reason: 'Requested entity was not found: registration token [masked]. Raw token [masked] rejected.',
       },
     });
     expect(JSON.stringify(result.response)).not.toContain('fcm-demo-token');
+  });
+
+  it('sends Android FCM notifications through the HANDS priority channel', async () => {
+    mockMessagingSend.mockResolvedValueOnce('firebase-message-1');
+
+    await expect(
+      pushService({
+        PUSH_PROVIDER: 'fcm',
+        FIREBASE_PROJECT_ID: 'hands-demo',
+        FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+        FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
+      }).send(message),
+    ).resolves.toMatchObject({
+      provider: 'FCM',
+      status: 'SENT',
+      response: { messageId: 'firebase-message-1' },
+    });
+
+    expect(mockMessagingSend).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        android: expect.objectContaining({
+          priority: 'high',
+          notification: {
+            channelId: FCM_ANDROID_NOTIFICATION_CHANNEL_ID,
+          },
+        }),
+      }),
+    );
   });
 });
