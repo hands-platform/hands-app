@@ -31,6 +31,18 @@ $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run api:smoke
 ```
 
+For a smaller OS-push-only check after Firebase Admin credentials and a real device token are available:
+
+```powershell
+$env:API_BASE_URL='http://localhost:3000/api'
+$env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
+$env:FCM_SMOKE_EXPECT_PROVIDER='FCM'
+$env:FCM_SMOKE_EXPECT_STATUS='SENT'
+npm.cmd run fcm:push-smoke
+```
+
 ## Expected Result
 
 The script prints a JSON object with `ok: true` and IDs for the booking, chat room, review, payout batch, refund, and verification file.
+
+The FCM smoke prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.

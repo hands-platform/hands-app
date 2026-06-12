@@ -186,14 +186,19 @@ export const setupOrder = [
     phase: 'Messaging E2E',
     operatorAction: 'Keep in-app notifications locally; configure FCM only when native push E2E starts.',
     exitCriteria: 'FCM project, Firebase Admin credentials, and mobile device delivery are confirmed.',
-    purpose: 'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
+    purpose:
+      'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
     env: fcmEnvKeys,
     notes: [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
       'FCM is for push only; Firebase DB/Auth/Firestore are not part of HANDS MVP.',
       'Firebase Admin service account values are server-side only and must not be copied into Flutter or browser code.',
     ],
-    commands: ['npm.cmd run external:check:production', 'npm.cmd run verify:local'],
+    commands: [
+      'npm.cmd run external:check:production',
+      'npm.cmd run fcm:env-contract',
+      '$env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; npm.cmd run fcm:push-smoke',
+    ],
   },
   {
     id: 'storage',
@@ -388,7 +393,7 @@ export const verifiedBaseline = [
   'Admin typecheck, build, and 53-page smoke pass.',
   'Customer Flutter analyze/test pass.',
   'Partner Flutter analyze/test pass.',
-  'Firebase imports are removed from mobile apps.',
+  'Firebase mobile scope guard passes with FCM-only usage.',
   'MapTiler and Geoapify checks pass.',
   'Supabase schema guard passes.',
   'Secret leak guard passes.',

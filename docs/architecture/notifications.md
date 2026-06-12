@@ -56,6 +56,18 @@ Firebase Admin credentials are server-side only. Never send service account JSON
 
 When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. OS push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
 
+For a narrow Docker/API push check after credentials are configured, use:
+
+```powershell
+$env:API_BASE_URL='http://localhost:3000/api'
+$env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
+$env:FCM_SMOKE_EXPECT_PROVIDER='FCM'
+$env:FCM_SMOKE_EXPECT_STATUS='SENT'
+npm.cmd run fcm:push-smoke
+```
+
+The smoke registers the device token for a demo customer/provider, retries an existing notification, and verifies that a new delivery record is created. It never prints the raw FCM token. If the selected user has no notification yet, run a booking/chat flow first or set `FCM_SMOKE_NOTIFICATION_ID` to a known notification.
+
 ## Mobile Setup Notes
 
 Android uses `google-services.json` and the Google Services Gradle plugin when FCM client integration is added. iOS uses `GoogleService-Info.plist`, APNs key/cert configuration through Firebase, and the Flutter FCM client. These files are secrets/config artifacts and must stay outside Git.

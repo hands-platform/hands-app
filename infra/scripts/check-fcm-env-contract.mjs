@@ -11,7 +11,7 @@ const requiredSources = [
   resolve(repoRoot, 'infra/env/hands-staging.env.example'),
   resolve(repoRoot, 'infra/scripts/check-env.mjs'),
   resolve(repoRoot, 'infra/scripts/check-external-setup.mjs'),
-  resolve(repoRoot, 'apps/admin_web/app/setup/page.tsx'),
+  resolve(repoRoot, 'apps/admin_web/app/setup/setup-page-data.ts'),
   resolve(repoRoot, 'docs/architecture/notifications.md'),
 ];
 
@@ -22,9 +22,7 @@ const fcmEnvKeys = Array.from(
       .map((match) => match[1])
       .filter(
         (key) =>
-          key === 'PUSH_PROVIDER' ||
-          key.startsWith('FIREBASE_') ||
-          key === 'GOOGLE_APPLICATION_CREDENTIALS',
+          key === 'PUSH_PROVIDER' || key.startsWith('FIREBASE_') || key === 'GOOGLE_APPLICATION_CREDENTIALS',
       ),
   ),
 ).sort();
