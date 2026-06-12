@@ -59,7 +59,6 @@ import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
-import { bookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
 import {
   bookingPricingPolicySignalFromFacts,
   type BookingPricingPolicySignal,
@@ -154,6 +153,7 @@ import {
   bookingMonitorSelectionPathLabel,
   bookingMonitorSelectionToneClass,
 } from './booking-monitor-selection';
+import { bookingMonitorSelectionFactsFromBooking } from './booking-monitor-selection-inputs';
 import {
   bookingMonitorListCashDebtAmountLabel,
   bookingMonitorListFirstPickPhoneLabel,
@@ -1631,17 +1631,13 @@ function selectionToneClass(booking: AdminBooking) {
 
 function bookingSelectionFacts(booking: AdminBooking) {
   const hasPreferredProvider = Boolean(booking.preferredProvider);
-  return {
-    finalSelectionCopy: bookingFinalSelectionCopy(booking.matchingEvidence?.finalSelection),
-    firstPickPending:
-      hasPreferredProvider && booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking),
-    hasPreferredProvider,
-    isBackupSelected: hasPreferredProvider && isBackupSelected(booking),
-    isMatched: booking.status === 'MATCHED',
-    isSelectedProviderParticipant: hasPreferredProvider && isSelectedProviderParticipant(booking),
+  return bookingMonitorSelectionFactsFromBooking(booking, {
+    firstPickPending: bookingFirstPickPending(booking),
+    isBackupSelected: isBackupSelected(booking),
+    isSelectedProviderParticipant: isSelectedProviderParticipant(booking),
     marketplaceCount: bookingMarketplaceParticipantCount(booking),
     preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
-  };
+  });
 }
 
 function preferredParticipantState(booking: AdminBooking) {
