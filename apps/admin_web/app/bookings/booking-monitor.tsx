@@ -160,7 +160,10 @@ import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
 import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
 import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
-import { bookingMatchingFlowTimelineInput } from './booking-matching-flow-timeline-inputs';
+import {
+  bookingMatchingFlowTimelineBookingFact,
+  bookingMatchingFlowTimelineInput,
+} from './booking-matching-flow-timeline-inputs';
 import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
@@ -972,25 +975,13 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): rea
 
 function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number) {
   return bookingMatchingFlowTimelineInput(
-    bookings.map((booking) => {
-      const status = booking.status;
-      const open = status === 'OPEN_MATCHING';
-      const matched = status === 'MATCHED';
-      const liveHandoff = isHandoffBookingStatus(status);
-
-      return {
-        backupAlertNotifiedCount: open ? bookingBackupAlertTraceSummary(booking).totalNotified : 0,
-        booking,
-        customerSelectableCount: open ? bookingCustomerSelectableCount(booking) : 0,
-        firstPickPending: open ? bookingFirstPickPending(booking) : false,
-        hasChatRoom: matched ? bookingMatchingChatReady(booking) : false,
-        isLiveHandoff: liveHandoff,
-        locationNeedsOps: liveHandoff ? bookingLocationNeedsOps(booking, nowMs) : false,
-        marketplaceParticipantCount: open ? bookingMarketplaceParticipantCount(booking) : 0,
-        responseWindowExpired: open ? bookingMatchingWindowExpired(booking, nowMs) : false,
-        status,
-      };
-    }),
+    bookings.map((booking) =>
+      bookingMatchingFlowTimelineBookingFact(booking, nowMs, {
+        customerSelectableCount: bookingCustomerSelectableCount(booking),
+        firstPickPending: bookingFirstPickPending(booking),
+        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+      }),
+    ),
   );
 }
 
