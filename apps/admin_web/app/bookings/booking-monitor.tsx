@@ -1091,26 +1091,23 @@ function buildMatchingEscalationBoard(
   bookings: AdminBooking[],
   nowMs: number,
 ): readonly AdminBookingMatchingEscalationLane[] {
-  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const expiredWindow = open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
-  const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
-  const noMarketplaceSupply = open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
-  const marketplaceReady = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
-  const customerFinalSelection = open.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
-  const matchedWithoutChat = bookings.filter(
-    (booking) => booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
-  );
-  const chatReady = bookings.filter((booking) => bookingMatchingChatReady(booking));
+  return buildBookingMatchingEscalationBoard(buildMatchingEscalationFacts(bookings, nowMs));
+}
 
-  return buildBookingMatchingEscalationBoard({
-    chatReady,
-    customerFinalSelection,
-    expiredWindow,
-    firstPickWaiting,
-    marketplaceReady,
-    matchedWithoutChat,
-    noMarketplaceSupply,
-  });
+function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
+  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+
+  return {
+    chatReady: bookings.filter((booking) => bookingMatchingChatReady(booking)),
+    customerFinalSelection: open.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
+    expiredWindow: open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs)),
+    firstPickWaiting: open.filter((booking) => bookingFirstPickPending(booking)),
+    marketplaceReady: open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0),
+    matchedWithoutChat: bookings.filter(
+      (booking) => booking.status === 'MATCHED' && !bookingMatchingChatReady(booking),
+    ),
+    noMarketplaceSupply: open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
+  };
 }
 
 function buildBookingDispatchPartnerShortcuts(
@@ -1178,32 +1175,29 @@ function buildBookingDispatchPartnerShortcuts(
 }
 
 function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
+  return buildBookingMatchingFlowTimeline(buildMatchingFlowTimelineFacts(bookings, nowMs));
+}
+
+function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number) {
   const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const firstPickWaiting = open.filter((booking) => bookingFirstPickPending(booking));
-  const firstPickExpired = firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
-  const noSupply = open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
-  const marketplaceVisible = open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0);
-  const backupAlerted = open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0);
-  const customerChoice = open.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
   const matched = bookings.filter((booking) => booking.status === 'MATCHED');
-  const matchedWithoutChat = matched.filter((booking) => !bookingMatchingChatReady(booking));
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   );
-  const locationChecks = liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
-  return buildBookingMatchingFlowTimeline({
-    backupAlerted,
-    customerChoice,
-    firstPickExpired,
+  return {
+    backupAlerted: open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0),
+    customerChoice: open.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
+    firstPickExpired: firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs)),
     firstPickWaiting,
     liveHandoff,
-    locationChecks,
-    marketplaceVisible,
+    locationChecks: liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
+    marketplaceVisible: open.filter((booking) => bookingMarketplaceParticipantCount(booking) > 0),
     matched,
-    matchedWithoutChat,
-    noSupply,
-  });
+    matchedWithoutChat: matched.filter((booking) => !bookingMatchingChatReady(booking)),
+    noSupply: open.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
+  };
 }
 
 function bookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
