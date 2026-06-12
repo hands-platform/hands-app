@@ -146,6 +146,11 @@ import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
+import {
+  firstPickCoverageStateFromFacts,
+  marketplaceBookingNextActionFromFacts,
+  type MarketplaceCoveragePillState,
+} from './booking-marketplace-coverage-state';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import {
   bookingMonitorSelectionFromFacts,
@@ -194,7 +199,6 @@ import {
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
   type MarketplaceBookingCoverageRow,
-  type MarketplaceBookingCoverageTone,
 } from '../../lib/marketplace-booking-coverage';
 import {
   buildMarketplaceOperationsCardCounts,
@@ -273,11 +277,6 @@ type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 type AdminMarketplaceParticipantLedgerRow = MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>;
 
 type AdminMarketplaceBookingCoverageRow = MarketplaceBookingCoverageRow<AdminBooking>;
-
-type MarketplaceCoveragePillState = {
-  readonly label: string;
-  readonly tone: MarketplaceBookingCoverageTone;
-};
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
@@ -1545,50 +1544,28 @@ function buildMarketplaceBookingCoverageRows(
 }
 
 function firstPickCoverageState(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
-  if (!booking.preferredProvider) {
-    return { label: 'Open marketplace', tone: 'pill-neutral' };
-  }
-  if (isBackupSelected(booking)) {
-    return { label: 'Marketplace selected', tone: 'pill-success' };
-  }
-  if (booking.status === 'MATCHED') {
-    return { label: 'First-pick matched', tone: 'pill-success' };
-  }
-  if (preferredProviderStateLabel(booking) === 'declined') {
-    return { label: 'First-pick declined', tone: 'pill-info' };
-  }
-  if (bookingMatchingWindowExpired(booking, nowMs)) {
-    return { label: 'First-pick overdue', tone: 'pill-danger' };
-  }
-  if (bookingFirstPickPending(booking)) {
-    return { label: 'First-pick pending', tone: 'pill-warn' };
-  }
-  return { label: 'First-pick recorded', tone: 'pill-info' };
+  const hasPreferredProvider = Boolean(booking.preferredProvider);
+  return firstPickCoverageStateFromFacts({
+    backupSelected: hasPreferredProvider && isBackupSelected(booking),
+    firstPickPending: hasPreferredProvider && bookingFirstPickPending(booking),
+    hasPreferredProvider,
+    matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+    preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
+    status: booking.status,
+  });
 }
 
 function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
-  if (bookingCashDebtNeedsOps(booking)) {
-    return { label: 'Clear cash fee debt', tone: 'pill-danger' };
-  }
-  if (bookingChatRepairNeedsOps(booking)) {
-    return { label: 'Repair chat handoff', tone: 'pill-danger' };
-  }
-  if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
-    return { label: 'Review expired timer', tone: 'pill-danger' };
-  }
-  if (booking.status === 'OPEN_MATCHING' && bookingCustomerSelectableCount(booking) > 0) {
-    return { label: 'Customer final choice', tone: 'pill-warn' };
-  }
-  if (booking.status === 'OPEN_MATCHING' && bookingMarketplaceParticipantCount(booking) === 0) {
-    return { label: 'Nudge marketplace supply', tone: 'pill-warn' };
-  }
-  if (booking.status === 'OPEN_MATCHING' && bookingFirstPickPending(booking)) {
-    return { label: 'Wait for first-pick', tone: 'pill-warn' };
-  }
-  if (bookingHasFinalPartner(booking)) {
-    return { label: 'Monitor handoff', tone: 'pill-success' };
-  }
-  return { label: 'Monitor', tone: 'pill-info' };
+  return marketplaceBookingNextActionFromFacts({
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
+    customerSelectableCount: bookingCustomerSelectableCount(booking),
+    firstPickPending: bookingFirstPickPending(booking),
+    hasFinalPartner: bookingHasFinalPartner(booking),
+    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+    matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+    status: booking.status,
+  });
 }
 
 function buildMarketplaceParticipantLedgerRows(
