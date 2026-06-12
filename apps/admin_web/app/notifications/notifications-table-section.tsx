@@ -16,6 +16,7 @@ export type NotificationDeliveryRow = {
   readonly platformLabel: string;
   readonly provider: string;
   readonly status: string;
+  readonly statusClassName: string;
 };
 
 export type NotificationTableRow = {
@@ -76,27 +77,21 @@ export function NotificationsTableSection({ emptyMessage, rows }: NotificationsT
           </td>
           <td>
             <div>{row.title}</div>
-            <div className="muted admin-mt-6">
-              {row.body}
-            </div>
-            {row.bookingDataHint ? (
-              <div className="muted admin-mt-6">
-                {row.bookingDataHint}
-              </div>
-            ) : null}
+            <div className="muted admin-mt-6">{row.body}</div>
+            {row.bookingDataHint ? <div className="muted admin-mt-6">{row.bookingDataHint}</div> : null}
           </td>
           <td>
             <span className={row.signalClassName}>{row.opsSignal}</span>
-            <div className="muted admin-mt-6">
-              {row.opsHint}
-            </div>
+            <div className="muted admin-mt-6">{row.opsHint}</div>
           </td>
           <td>
             {row.deliveryRows.length > 0
               ? row.deliveryRows.map((delivery) => (
                   <div className="admin-mb-10" key={delivery.id}>
                     <div>
-                      <strong>{delivery.provider}</strong> - {delivery.status} - {delivery.platformLabel}
+                      <strong>{delivery.provider}</strong>{' '}
+                      <span className={delivery.statusClassName}>{delivery.status}</span>{' '}
+                      <span className="muted">/ {delivery.platformLabel}</span>
                     </div>
                     <div className="muted admin-mt-4">
                       {delivery.deviceStateLabel} - Attempted {delivery.attemptedAtLabel}
@@ -107,12 +102,8 @@ export function NotificationsTableSection({ emptyMessage, rows }: NotificationsT
                     <div className="muted admin-mt-4">
                       Failure {delivery.failureCodeLabel} / HTTP {delivery.httpStatusLabel}
                     </div>
-                    <div className="muted admin-mt-4">
-                      Reason {delivery.failureReasonLabel}
-                    </div>
-                    <div className="muted admin-mt-4">
-                      Token hidden
-                    </div>
+                    <div className="muted admin-mt-4">Reason {delivery.failureReasonLabel}</div>
+                    <div className="muted admin-mt-4">Token hidden</div>
                     {delivery.enableDeviceHref ? (
                       <Link className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
                         Re-enable device

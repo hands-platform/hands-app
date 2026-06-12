@@ -230,6 +230,7 @@ describe('notification page model', () => {
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
       httpStatusLabel: '400',
+      statusClassName: 'pill pill-warn',
     });
   });
 
@@ -259,6 +260,7 @@ describe('notification page model', () => {
       failureReasonLabel: 'registration token [masked]',
       provider: 'FCM',
       status: 'FAILED',
+      statusClassName: 'pill pill-warn',
     });
   });
 
@@ -294,6 +296,7 @@ describe('notification page model', () => {
       deviceFreshnessLabel: '30+ day token timestamp',
       deviceStateLabel: 'Device enabled',
       status: 'SENT',
+      statusClassName: 'pill pill-success',
     });
   });
 

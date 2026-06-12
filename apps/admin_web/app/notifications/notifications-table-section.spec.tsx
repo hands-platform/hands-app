@@ -32,6 +32,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Reason');
     expect(rendered).toContain('Token expired');
     expect(rendered).toContain('Re-enable device');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/partners/partner-1',
@@ -79,6 +80,7 @@ function buildRow(): NotificationTableRow {
         platformLabel: 'IOS',
         provider: 'FCM',
         status: 'FAILED',
+        statusClassName: 'pill pill-warn',
       },
     ],
     id: 'notification-1',
@@ -127,6 +129,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

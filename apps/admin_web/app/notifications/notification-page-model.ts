@@ -312,6 +312,7 @@ function buildNotificationDeliveryRows(notification: AdminNotification): Notific
     platformLabel: delivery.pushDevice?.platform ?? 'device',
     provider: delivery.provider,
     status: delivery.status,
+    statusClassName: deliveryStatusClassName(delivery.status),
   }));
 }
 
@@ -321,6 +322,19 @@ function countDeliveries(notifications: readonly AdminNotification[], status: st
       total + (notification.deliveries ?? []).filter((delivery) => delivery.status === status).length,
     0,
   );
+}
+
+function deliveryStatusClassName(status: string) {
+  if (status === 'FAILED') {
+    return 'pill pill-warn';
+  }
+  if (status === 'SENT') {
+    return 'pill pill-success';
+  }
+  if (status === 'SKIPPED') {
+    return 'pill pill-info';
+  }
+  return 'pill pill-neutral';
 }
 
 function countDisabledDevices(notifications: readonly AdminNotification[]) {
