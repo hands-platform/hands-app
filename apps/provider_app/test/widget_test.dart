@@ -5,6 +5,7 @@ import 'package:provider_app/provider_app.dart';
 import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
 import 'package:provider_app/src/features/chat/presentation/provider_chat_location_helpers.dart';
+import 'package:provider_app/src/features/earnings/presentation/provider_earnings_screen.dart';
 
 void main() {
   testWidgets('renders partner requests screen', (tester) async {
@@ -41,6 +42,40 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(providerWalletSettlementSteps(summary).first,
         'Settle 120.000 VND for unpaid HANDS fees.');
+  });
+
+  test('partner earning target sort moves push earning first', () {
+    final earnings = sortedProviderEarningsForTarget([
+      {
+        'id': 'earning-newer',
+        'bookingId': 'booking-newer',
+        'payoutBatchId': 'payout-newer',
+      },
+      {
+        'id': 'earning-target',
+        'bookingId': 'booking-target',
+        'payoutBatchId': 'payout-target',
+      },
+    ], earningId: 'earning-target');
+
+    expect(earnings.first['id'], 'earning-target');
+  });
+
+  test('partner earning target sort can match payout batch id', () {
+    final earnings = sortedProviderEarningsForTarget([
+      {
+        'id': 'earning-newer',
+        'bookingId': 'booking-newer',
+        'payoutBatchId': 'payout-newer',
+      },
+      {
+        'id': 'earning-payout-target',
+        'bookingId': 'booking-target',
+        'payoutBatchId': 'payout-target',
+      },
+    ], payoutBatchId: 'payout-target');
+
+    expect(earnings.first['id'], 'earning-payout-target');
   });
 
   testWidgets('shows marketplace-only wallet hold banner in request list',

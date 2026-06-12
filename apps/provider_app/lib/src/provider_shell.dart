@@ -27,8 +27,11 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   int index = 0;
   String? _notificationChatRoomId;
   String? _notificationBookingId;
+  String? _notificationEarningId;
+  String? _notificationPayoutBatchId;
   int _chatOpenVersion = 0;
   int _requestsOpenVersion = 0;
+  int _earningsOpenVersion = 0;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -52,7 +55,11 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
         initialBookingId: _notificationBookingId,
       ),
       const PartnerJobsScreen(),
-      const EarningsScreen(),
+      EarningsScreen(
+        key: ValueKey('provider-push-earnings-$_earningsOpenVersion'),
+        initialEarningId: _notificationEarningId,
+        initialPayoutBatchId: _notificationPayoutBatchId,
+      ),
       ChatScreen(
         key: ValueKey('provider-push-chat-$_chatOpenVersion'),
         initialChatRoomId: _notificationChatRoomId,
@@ -99,6 +106,16 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
         _notificationBookingId = intent.bookingId;
         _requestsOpenVersion += 1;
       }
+      if (intent.destination == PushNotificationOpenDestination.earnings) {
+        _notificationEarningId = intent.earningId;
+        _notificationPayoutBatchId = intent.payoutBatchId;
+        _earningsOpenVersion += 1;
+      }
+      if (intent.destination == PushNotificationOpenDestination.payment) {
+        _notificationEarningId = null;
+        _notificationPayoutBatchId = null;
+        _earningsOpenVersion += 1;
+      }
       index = nextIndex;
     });
   }
@@ -113,6 +130,11 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
       if (value == _requestsIndex) {
         _notificationBookingId = null;
         _requestsOpenVersion += 1;
+      }
+      if (value == _earningsIndex) {
+        _notificationEarningId = null;
+        _notificationPayoutBatchId = null;
+        _earningsOpenVersion += 1;
       }
       index = value;
     });

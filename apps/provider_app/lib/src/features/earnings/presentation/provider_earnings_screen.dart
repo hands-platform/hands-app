@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,11 +8,67 @@ import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_wallet_gate_helpers.dart';
 import 'provider_wallet_settlement_widgets.dart';
 
-class EarningsScreen extends ConsumerWidget {
-  const EarningsScreen({super.key});
+class EarningsScreen extends ConsumerStatefulWidget {
+  const EarningsScreen({
+    super.key,
+    this.initialEarningId,
+    this.initialPayoutBatchId,
+  });
+
+  final String? initialEarningId;
+  final String? initialPayoutBatchId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EarningsScreen> createState() => _EarningsScreenState();
+}
+
+class _EarningsScreenState extends ConsumerState<EarningsScreen> {
+  bool restoringSession = false;
+  String? restoreMessage;
+  String? restoreError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_hasInitialTarget) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(restoreSessionForTarget());
+      });
+    }
+  }
+
+  bool get _hasInitialTarget =>
+      widget.initialEarningId != null || widget.initialPayoutBatchId != null;
+
+  Future<void> restoreSessionForTarget() async {
+    setState(() {
+      restoringSession = true;
+      restoreMessage = null;
+      restoreError = null;
+    });
+    try {
+      final authController = ref.read(authControllerProvider.notifier);
+      final session = ref.read(authControllerProvider) ??
+          await authController.restoreSession();
+      if (!mounted) {
+        return;
+      }
+      if (session == null) {
+        setState(() => restoreMessage = 'Login to view this earnings update.');
+      }
+    } catch (exception) {
+      if (mounted) {
+        setState(() => restoreError = '$exception');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => restoringSession = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
 
     return SafeArea(
@@ -26,7 +84,13 @@ class EarningsScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
-          if (auth == null)
+          if (restoringSession)
+            const Center(child: CircularProgressIndicator())
+          else if (restoreMessage != null)
+            InfoCard(text: restoreMessage!)
+          else if (restoreError != null)
+            ProviderErrorCard(text: restoreError!)
+          else if (auth == null)
             const InfoCard(
                 text: 'Demo partner login is available on the Requests tab.')
           else
@@ -45,7 +109,13 @@ class EarningsScreen extends ConsumerWidget {
                     }
 
                     final summary = summarySnapshot.data ?? <String, dynamic>{};
-                    final earnings = earningsSnapshot.data ?? [];
+                    final earnings = sortedProviderEarningsForTarget(
+                      (earningsSnapshot.data ?? [])
+                          .whereType<Map<String, dynamic>>()
+                          .toList(),
+                      earningId: widget.initialEarningId,
+                      payoutBatchId: widget.initialPayoutBatchId,
+                    );
                     final currency = summary['currency'] ?? 'VND';
                     final settlementView =
                         ProviderWalletSettlementView.fromSummary(summary);
@@ -54,7 +124,13 @@ class EarningsScreen extends ConsumerWidget {
                       future:
                           ref.read(providerRepositoryProvider).payoutBatches(),
                       builder: (context, payoutSnapshot) {
-                        final batches = payoutSnapshot.data ?? [];
+                        final batches = (payoutSnapshot.data ?? [])
+                            .whereType<Map<String, dynamic>>()
+                            .toList();
+                        final targetPayoutBatch = providerTargetPayoutBatch(
+                          batches,
+                          payoutBatchId: widget.initialPayoutBatchId,
+                        );
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -154,12 +230,35 @@ class EarningsScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 12),
+                            if (targetPayoutBatch != null) ...[
+                              Card(
+                                shape: providerTargetEarningsCardShape(context),
+                                child: ListTile(
+                                  leading: const Icon(Icons.payments_outlined),
+                                  title: Text(
+                                      'Payout ${targetPayoutBatch['id'] ?? widget.initialPayoutBatchId}'),
+                                  subtitle: Text(
+                                      targetPayoutBatch['status']?.toString() ??
+                                          'Payout update'),
+                                  trailing: Text(
+                                      '${targetPayoutBatch['totalAmount'] ?? targetPayoutBatch['amount'] ?? 0} ${targetPayoutBatch['currency'] ?? currency}'),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             if (earnings.isEmpty)
                               const InfoCard(
                                   text: 'Completed jobs will appear here.')
                             else
                               for (final earning in earnings)
                                 Card(
+                                  shape: isProviderEarningTarget(
+                                    earning,
+                                    earningId: widget.initialEarningId,
+                                    payoutBatchId: widget.initialPayoutBatchId,
+                                  )
+                                      ? providerTargetEarningsCardShape(context)
+                                      : null,
                                   child: ListTile(
                                     title: Text(
                                         '${earning['netAmount']} ${earning['currency'] ?? currency}'),
@@ -181,4 +280,68 @@ class EarningsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+List<Map<String, dynamic>> sortedProviderEarningsForTarget(
+  List<Map<String, dynamic>> earnings, {
+  String? earningId,
+  String? payoutBatchId,
+}) {
+  return earnings
+    ..sort((left, right) {
+      final leftTarget = isProviderEarningTarget(
+        left,
+        earningId: earningId,
+        payoutBatchId: payoutBatchId,
+      );
+      final rightTarget = isProviderEarningTarget(
+        right,
+        earningId: earningId,
+        payoutBatchId: payoutBatchId,
+      );
+      if (leftTarget != rightTarget) {
+        return leftTarget ? -1 : 1;
+      }
+
+      return 0;
+    });
+}
+
+bool isProviderEarningTarget(
+  Map<String, dynamic> earning, {
+  String? earningId,
+  String? payoutBatchId,
+}) {
+  final matchesEarning =
+      earningId != null && earning['id']?.toString() == earningId;
+  final matchesPayout = payoutBatchId != null &&
+      earning['payoutBatchId']?.toString() == payoutBatchId;
+
+  return matchesEarning || matchesPayout;
+}
+
+Map<String, dynamic>? providerTargetPayoutBatch(
+  List<Map<String, dynamic>> batches, {
+  String? payoutBatchId,
+}) {
+  if (payoutBatchId == null) {
+    return null;
+  }
+
+  for (final batch in batches) {
+    if (batch['id']?.toString() == payoutBatchId) {
+      return batch;
+    }
+  }
+  return null;
+}
+
+ShapeBorder providerTargetEarningsCardShape(BuildContext context) {
+  return RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(8),
+    side: BorderSide(
+      color: Theme.of(context).colorScheme.primary,
+      width: 2,
+    ),
+  );
 }
