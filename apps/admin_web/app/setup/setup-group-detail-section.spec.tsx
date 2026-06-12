@@ -30,6 +30,10 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('Notification setup : Fill push credentials outside Git.');
     expect(rendered).toContain('PUSH_PROVIDER');
     expect(rendered).toContain('FIREBASE_PROJECT_ID');
+    expect(rendered).toContain('Readiness focus');
+    expect(rendered).toContain('Attention values');
+    expect(rendered).toContain('Fill or correct these values before expecting the group to pass.');
+    expect(rendered).toContain('Next command');
     expect(rendered).toContain('Exit criteria: Push readiness check passes.');
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
@@ -77,6 +81,33 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
     expect(rendered).toContain('Open http://localhost:3101/notifications?review=disabled-device');
     expect(rendered).toContain('npm.cmd run notifications:future-check');
+  });
+
+  it('shows a clear readiness focus when a setup group has no highlighted env blockers', () => {
+    const section = SetupGroupDetailSection({
+      groups: [
+        {
+          id: 'maps',
+          title: 'Map setup',
+          phase: 'Location E2E',
+          operatorAction: 'Verify map keys.',
+          purpose: 'Required for customer address search.',
+          status: 'Ready',
+          statusClass: 'signal signal-ok',
+          envPills: [{ name: 'MAPTILER_API_KEY', className: 'pill pill-success' }],
+          notes: ['Use MapTiler only for map tiles.'],
+          exitCriteria: 'Map checks pass.',
+          commands: ['npm.cmd run external:check:maps'],
+        },
+      ],
+    });
+
+    const rendered = textContent(section).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('No missing or invalid environment values are currently highlighted.');
+    expect(rendered).toContain('No env blockers shown');
+    expect(rendered).toContain('Next command');
+    expect(rendered).toContain('npm.cmd run external:check:maps');
   });
 });
 
