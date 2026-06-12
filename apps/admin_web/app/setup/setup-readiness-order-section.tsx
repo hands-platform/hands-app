@@ -58,7 +58,7 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
   const configured = check.configured.map(externalReadinessDisplayText);
   const missing = check.missing.map(externalReadinessDisplayText);
   const invalid = (check.invalid ?? []).map(externalReadinessDisplayText);
-  const commands = check.commands ?? [];
+  const commands = readinessCommands(check);
   const isCurrentStage = check.scope === 'CURRENT_STAGE';
 
   return (
@@ -88,11 +88,34 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
           </div>
         )}
       </div>
-      <span className={`pill ${check.status === 'READY' ? 'pill-success' : 'pill-warn'}`}>
-        {check.status}
-      </span>
+      <span className={`pill ${readinessStatusPillClass(check.status)}`}>{check.status}</span>
     </div>
   );
+}
+
+function readinessCommands(check: AdminExternalReadiness['checks'][number]) {
+  if (check.category !== 'push') {
+    return check.commands ?? [];
+  }
+
+  const commands = new Set(
+    (check.commands ?? []).filter((command) => command !== 'npm.cmd run external:check:production'),
+  );
+  commands.add('npm.cmd run external:check:push');
+  commands.add('npm.cmd run fcm:env-contract');
+  commands.add('npm.cmd run fcm:token-smoke -- --dry-run');
+  commands.add('npm.cmd run fcm:push-smoke -- --dry-run');
+  return Array.from(commands);
+}
+
+function readinessStatusPillClass(status: string) {
+  if (status === 'READY') {
+    return 'pill-success';
+  }
+  if (status === 'PARTIAL') {
+    return 'pill-info';
+  }
+  return 'pill-warn';
 }
 
 function externalReadinessDisplayText(value: string) {
