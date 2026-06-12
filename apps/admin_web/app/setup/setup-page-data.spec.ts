@@ -55,6 +55,13 @@ describe('setup page data', () => {
     expect(externalRegistrationPlan.map((item) => item.id)).toEqual(
       expect.arrayContaining(['github-org', 'operations-policy', 'fcm', 'payments-vn']),
     );
+    const fcmPlan = externalRegistrationPlan.find((item) => item.id === 'fcm');
+    expect(fcmPlan).toMatchObject({
+      groupId: 'notifications',
+      provider: 'Firebase Cloud Messaging',
+    });
+    expect(fcmPlan?.status).toBeUndefined();
+    expect(fcmPlan?.statusClass).toBeUndefined();
     expect(projectControlSequence.map((item) => item.phase)).toEqual([
       'Phase A',
       'Phase B',

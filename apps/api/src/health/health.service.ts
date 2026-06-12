@@ -614,7 +614,7 @@ function externalReadinessMetadata(category: string, name: string) {
   if (category === 'push') {
     return {
       operatorAction:
-        'Keep in-app notifications locally. Run push readiness, env contract, and config-only dry-run checks before Android/iOS OS push E2E.',
+        'Use in-app notifications as fallback, then run push readiness, env contract, credential, token, and live-device checks before broad OS push.',
       commands: [
         'npm.cmd run external:check:push',
         'npm.cmd run fcm:env-contract',

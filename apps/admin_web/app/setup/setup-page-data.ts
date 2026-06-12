@@ -186,7 +186,8 @@ export const setupOrder = [
     id: 'notifications',
     title: 'OS push notifications',
     phase: 'Messaging E2E',
-    operatorAction: 'Keep in-app notifications locally; configure FCM only when native push E2E starts.',
+    operatorAction:
+      'Keep in-app notifications as fallback, then verify FCM with current app tokens before broad OS push.',
     exitCriteria: 'FCM project, Firebase Admin credentials, and mobile device delivery are confirmed.',
     purpose:
       'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
@@ -329,10 +330,8 @@ export const externalRegistrationPlan = [
     title: 'Push notification service',
     provider: 'Firebase Cloud Messaging',
     owner: 'administration@hands.vn',
-    status: 'Deferred',
-    statusClass: 'pill-neutral',
     detail:
-      'Use in-app notifications locally until FCM app config and server-side Firebase Admin credentials are ready.',
+      'Track FCM app config, server-side Firebase Admin credentials, token registration, and real-device delivery without exposing secrets.',
     env: fcmEnvKeys,
   },
   {
