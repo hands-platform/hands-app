@@ -1002,89 +1002,89 @@ function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
 }
 
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
-  const cancelledUnresolved = bookings.filter(
-    (booking) =>
-      booking.status === 'CANCELLED' &&
-      Boolean(booking.payment) &&
-      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
-  );
-  const expiredUnresolved = bookings.filter(
-    (booking) =>
-      booking.status === 'EXPIRED' &&
-      Boolean(booking.payment) &&
-      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
-  );
-  const noShowUnresolved = bookings.filter(
-    (booking) =>
-      booking.status === 'NO_SHOW' &&
-      Boolean(booking.payment) &&
-      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
-  );
-  const completedCloseout = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
+  const facts = buildCustomerProtectionFacts(bookings);
 
   return [
     {
       title: 'Cancelled payment release',
-      status: cancelledUnresolved.length ? 'Release/refund' : 'Clear',
-      tone: cancelledUnresolved.length ? 'danger' : 'ok',
+      status: facts.cancelledUnresolved.length ? 'Release/refund' : 'Clear',
+      tone: facts.cancelledUnresolved.length ? 'danger' : 'ok',
       detail:
-        cancelledUnresolved.length > 0
+        facts.cancelledUnresolved.length > 0
           ? 'Customer cancelled, but the linked payment is not released or refunded yet.'
           : 'Cancelled bookings have no unresolved payment hold in the current snapshot.',
       operatorAction: 'Open payment queue and close customer money movement before support follow-up.',
       href: '/bookings?view=payment',
-      bookings: cancelledUnresolved,
+      bookings: facts.cancelledUnresolved,
     },
     {
       title: 'Expired matching closeout',
-      status: expiredUnresolved.length ? 'Timeout review' : 'Clear',
-      tone: expiredUnresolved.length ? 'danger' : 'ok',
+      status: facts.expiredUnresolved.length ? 'Timeout review' : 'Clear',
+      tone: facts.expiredUnresolved.length ? 'danger' : 'ok',
       detail:
-        expiredUnresolved.length > 0
+        facts.expiredUnresolved.length > 0
           ? 'Matching expired before final partner selection, but payment still needs an outcome.'
           : 'Expired bookings have payment release/refund state aligned.',
       operatorAction: 'Release the hold, confirm customer notification, and check retry/alert history.',
       href: '/bookings?view=expired',
-      bookings: expiredUnresolved,
+      bookings: facts.expiredUnresolved,
     },
     {
       title: 'No-show outcome',
-      status: noShowUnresolved.length ? 'Evidence needed' : 'Clear',
-      tone: noShowUnresolved.length ? 'warn' : 'ok',
+      status: facts.noShowUnresolved.length ? 'Evidence needed' : 'Clear',
+      tone: facts.noShowUnresolved.length ? 'warn' : 'ok',
       detail:
-        noShowUnresolved.length > 0
+        facts.noShowUnresolved.length > 0
           ? 'No-show bookings still need a payment, fee, or customer support decision.'
           : 'No-show bookings have no unresolved payment in the current snapshot.',
       operatorAction: 'Review chat, arrival/location evidence, customer response, then decide payment handling.',
       href: '/bookings?view=no-show',
-      bookings: noShowUnresolved,
+      bookings: facts.noShowUnresolved,
     },
     {
       title: 'Completed service reconciliation',
-      status: completedCloseout.length ? 'Closeout missing' : 'Clear',
-      tone: completedCloseout.length ? 'danger' : 'ok',
+      status: facts.completedCloseout.length ? 'Closeout missing' : 'Clear',
+      tone: facts.completedCloseout.length ? 'danger' : 'ok',
       detail:
-        completedCloseout.length > 0
+        facts.completedCloseout.length > 0
           ? 'Completed bookings are missing capture, earning, tax, platform fee, or wallet ledger records.'
           : 'Completed bookings are reconciled against payment and ledger requirements.',
       operatorAction: 'Run or inspect closeout before payout, tax, and review workflows continue.',
       href: '/bookings?view=closeout',
-      bookings: completedCloseout,
+      bookings: facts.completedCloseout,
     },
     {
       title: 'Cash fee debt',
-      status: cashDebt.length ? 'Partner blocked' : 'Clear',
-      tone: cashDebt.length ? 'danger' : 'ok',
+      status: facts.cashDebt.length ? 'Partner blocked' : 'Clear',
+      tone: facts.cashDebt.length ? 'danger' : 'ok',
       detail:
-        cashDebt.length > 0
+        facts.cashDebt.length > 0
           ? 'Cash bookings created negative wallet balances that require settlement before final acceptance, service start, or payout release.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
       operatorAction: 'Collect Partner fee deposit or settle from available earnings before final acceptance, service start, or payout release.',
       href: '/bookings?view=cash-debt',
-      bookings: cashDebt,
+      bookings: facts.cashDebt,
     },
   ];
+}
+
+function buildCustomerProtectionFacts(bookings: AdminBooking[]) {
+  return {
+    cancelledUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'CANCELLED'),
+    cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
+    completedCloseout: bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking)),
+    expiredUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'EXPIRED'),
+    noShowUnresolved: terminalBookingsWithUnresolvedPayment(bookings, 'NO_SHOW'),
+  };
+}
+
+function terminalBookingsWithUnresolvedPayment(bookings: AdminBooking[], status: string) {
+  return bookings.filter(
+    (booking) =>
+      booking.status === status &&
+      Boolean(booking.payment) &&
+      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
+  );
 }
 
 function buildMatchingEscalationBoard(
