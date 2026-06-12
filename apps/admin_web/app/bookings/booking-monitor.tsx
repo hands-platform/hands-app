@@ -140,6 +140,9 @@ import {
   isHandoffBookingStatus,
 } from './booking-chat-handoff-state';
 import {
+  bookingDispatchPartnerShortcutFacts as buildBookingDispatchPartnerShortcutFactsFromFacts,
+} from './booking-dispatch-partner-shortcut-facts';
+import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
@@ -929,16 +932,21 @@ function buildBookingDispatchPartnerShortcuts(
 }
 
 function buildBookingDispatchPartnerShortcutFacts(bookings: AdminBooking[], nowMs: number) {
-  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  return buildBookingDispatchPartnerShortcutFactsFromFacts(
+    bookings.map((booking) => {
+      const open = booking.status === 'OPEN_MATCHING';
 
-  return {
-    cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
-    customerSelection: openMatching.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
-    firstPickWaiting: openMatching.filter((booking) => bookingFirstPickPending(booking)),
-    locationChecks: bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
-    noPartnerSupply: openMatching.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
-    openMatching,
-  };
+      return {
+        booking,
+        cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+        customerSelectableCount: open ? bookingCustomerSelectableCount(booking) : 0,
+        firstPickPending: open ? bookingFirstPickPending(booking) : false,
+        locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
+        marketplaceParticipantCount: open ? bookingMarketplaceParticipantCount(booking) : 0,
+        status: booking.status,
+      };
+    }),
+  );
 }
 
 function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
