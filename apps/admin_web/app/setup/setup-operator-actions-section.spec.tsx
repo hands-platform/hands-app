@@ -31,7 +31,8 @@ describe('SetupOperatorActionsSection', () => {
     expect(rendered).toContain('Database credentials');
     expect(rendered).toContain('npm.cmd run external:check:supabase');
     expect(rendered).toContain('Deferred production setup');
-    expect(rendered).toContain('Payment gateway : Configure real payment gateway credentials.');
+    expect(rendered).toContain('Payment gateway: Configure real payment gateway credentials.');
+    expect(classNamesIn(section)).toContain('command-copy-row');
     expect(hrefsIn(section)).toContain('#supabase');
   });
 
@@ -49,6 +50,7 @@ describe('SetupOperatorActionsSection', () => {
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -65,6 +67,7 @@ function textContent(value: unknown): string {
 }
 
 function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -76,6 +79,29 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' && record.type.name === 'CommandCopyRow'
+    ? resolveElement(record.type(props))
+    : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

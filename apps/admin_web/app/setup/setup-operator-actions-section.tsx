@@ -1,3 +1,5 @@
+import { CommandCopyRow } from '../../components/command-copy-row';
+
 type SetupOperatorAction = {
   readonly groupId: string;
   readonly name: string;
@@ -60,14 +62,15 @@ export function SetupOperatorActionsSection({
           </p>
           <div className="setup-command-list">
             {deferredActions.slice(0, 6).map((item) => (
-              <code key={`${item.groupId}-${item.name}`}>
-                {item.name}: {item.action}
-                {item.commands.length > 0 ? ` Verify: ${item.commands[0]}` : ''}
-              </code>
+              <CommandCopyRow command={deferredActionCommand(item)} key={`${item.groupId}-${item.name}`} />
             ))}
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function deferredActionCommand(item: SetupOperatorAction) {
+  return `${item.name}: ${item.action}${item.commands.length > 0 ? ` Verify: ${item.commands[0]}` : ''}`;
 }

@@ -37,6 +37,7 @@ describe('SetupReadinessOrderSection', () => {
     expect(rendered).toContain('Secret-safe');
     expect(rendered).toContain('Recommended order');
     expect(rendered).toContain('Step 1');
+    expect(classNamesIn(section)).toContain('command-copy-row');
     expect(hrefsIn(section)).toContain('#notifications');
   });
 
@@ -110,6 +111,7 @@ describe('SetupReadinessOrderSection', () => {
 });
 
 function textContent(value: unknown): string {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value === 'boolean') {
     return '';
   }
@@ -121,15 +123,12 @@ function textContent(value: unknown): string {
   }
 
   const record = readRecord(value);
-  const expanded = renderKnownComponent(record);
-  if (expanded !== null) {
-    return textContent(expanded);
-  }
   const props = readRecord(record?.props);
   return textContent(props?.children);
 }
 
 function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -144,6 +143,7 @@ function hrefsIn(value: unknown): string[] {
 }
 
 function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
     return [];
   }
@@ -152,10 +152,6 @@ function classNamesIn(value: unknown): string[] {
   }
 
   const record = readRecord(value);
-  const expanded = renderKnownComponent(record);
-  if (expanded !== null) {
-    return classNamesIn(expanded);
-  }
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
@@ -165,10 +161,18 @@ type RenderableComponent = (props: Record<string, unknown>) => unknown;
 
 function renderKnownComponent(record: Record<string, unknown> | null) {
   const component = record?.type;
-  if (typeof component === 'function' && component.name === 'ReadinessRow') {
+  if (
+    typeof component === 'function' &&
+    (component.name === 'ReadinessRow' || component.name === 'CommandCopyRow')
+  ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});
   }
   return null;
+}
+
+function resolveElement(value: unknown): unknown {
+  const expanded = renderKnownComponent(readRecord(value));
+  return expanded !== null ? resolveElement(expanded) : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

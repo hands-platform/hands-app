@@ -1,3 +1,5 @@
+import { CommandCopyRow } from '../../components/command-copy-row';
+
 type SetupProgressStep = {
   readonly phase: string;
   readonly title: string;
@@ -52,7 +54,13 @@ export function SetupProgressControlSection({
         </div>
         <div className="setup-command-list">
           {verifiedBaseline.map((item) => (
-            <code key={item}>{item}</code>
+            <CommandCopyRow
+              command={item}
+              copiedLabel="Baseline check copied"
+              failedLabel="Copy baseline check failed"
+              key={item}
+              label="Copy baseline check"
+            />
           ))}
         </div>
         <div className="setup-command-block admin-mt-16">

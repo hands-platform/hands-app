@@ -1,4 +1,5 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
+import { CommandCopyRow } from '../../components/command-copy-row';
 
 type SetupRecommendedOrderItem = {
   readonly id: string;
@@ -83,7 +84,7 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
         {commands.length > 0 && (
           <div className="setup-command-list admin-mt-8">
             {commands.map((command) => (
-              <code key={`${check.category}-${command}`}>{command}</code>
+              <CommandCopyRow command={command} key={`${check.category}-${command}`} />
             ))}
           </div>
         )}
