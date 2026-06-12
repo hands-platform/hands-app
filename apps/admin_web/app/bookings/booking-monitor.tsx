@@ -112,6 +112,7 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
+import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import {
   activeBookingStatuses as activeStatuses,
   bookingMonitorSummaryRows,
@@ -1325,56 +1326,26 @@ function metric(label: string, value: number) {
 }
 
 function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: number) {
-  switch (view) {
-    case 'attention':
-      return bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high');
-    case 'matching':
-      return bookingMatchingEscalationNeedsOps(booking, nowMs);
-    case 'first-pick':
-      return bookingListStage(booking, nowMs).key === 'first-pick';
-    case 'marketplace':
-      return bookingListStage(booking, nowMs).key === 'marketplace';
-    case 'customer-choice':
-      return bookingListStage(booking, nowMs).key === 'customer-choice';
-    case 'handoff-repair':
-      return bookingListStage(booking, nowMs).key === 'handoff-repair';
-    case 'no-supply':
-      return booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0;
-    case 'address':
-      return bookingAddressNeedsOps(booking);
-    case 'manual-decision':
-      return bookingManualDecisionNeedsOps(booking);
-    case 'payment':
-      return bookingPaymentNeedsOps(booking);
-    case 'cash-debt':
-      return bookingCashDebtNeedsOps(booking);
-    case 'closeout':
-      return bookingCompletedCloseoutNeedsOps(booking);
-    case 'pricing':
-      return bookingPricingPolicyNeedsOps(booking);
-    case 'location':
-      return bookingLocationNeedsOps(booking, nowMs);
-    case 'chat':
-      return bookingMatchingChatReady(booking);
-    case 'chat-repair':
-      return bookingChatRepairNeedsOps(booking);
-    case 'chat-evidence':
-      return bookingChatEvidenceNeedsOps(booking, nowMs);
-    case 'evidence-missing':
-      return bookingDecisionEvidenceMissing(booking, nowMs);
-    case 'refund-review':
-      return bookingRefundReviewNeedsOps(booking);
-    case 'expired':
-      return booking.status === 'EXPIRED';
-    case 'no-show':
-      return booking.status === 'NO_SHOW';
-    case 'all':
-      return true;
-    case 'active':
-    case 'blocked-create':
-    default:
-      return activeStatuses.has(booking.status);
-  }
+  return bookingMatchesMonitorView(view, {
+    activeStatus: () => activeStatuses.has(booking.status),
+    addressNeedsOps: () => bookingAddressNeedsOps(booking),
+    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
+    chatEvidenceNeedsOps: () => bookingChatEvidenceNeedsOps(booking, nowMs),
+    chatLive: () => bookingMatchingChatReady(booking),
+    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
+    closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+    decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
+    highPriorityCheck: () => bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
+    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
+    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
+    matchingEscalationNeedsOps: () => bookingMatchingEscalationNeedsOps(booking, nowMs),
+    noSupply: () => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
+    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+    pricingPolicyNeedsOps: () => bookingPricingPolicyNeedsOps(booking),
+    refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
+    stageKey: () => bookingListStage(booking, nowMs).key,
+    status: () => booking.status,
+  });
 }
 
 function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string) {
