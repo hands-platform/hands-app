@@ -78,6 +78,7 @@ export type NotificationChannelSummary = {
 export type NotificationPartnerAlertSmokeFallback = {
   readonly partnerAlertNotificationId: string;
   readonly partnerAlertType: string;
+  readonly preflightCommand: string | null;
   readonly suggestedNotificationId: string | null;
   readonly suggestedType: string | null;
   readonly detail: string;
@@ -306,6 +307,9 @@ export function buildNotificationPartnerAlertSmokeFallback(
   return {
     partnerAlertNotificationId: partnerAlert.id,
     partnerAlertType: partnerAlert.type,
+    preflightCommand: suggestedNotification
+      ? smokeFallbackPreflightCommand(suggestedNotification, partnerAlert)
+      : null,
     suggestedNotificationId: suggestedNotification?.id ?? null,
     suggestedType: suggestedNotification?.type ?? null,
     detail: suggestedNotification
@@ -660,6 +664,30 @@ function isSameNotificationUser(left: AdminNotification, right: AdminNotificatio
 
 function newestNotifications(notifications: readonly AdminNotification[]) {
   return [...notifications].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+}
+
+function smokeFallbackPreflightCommand(
+  suggestedNotification: AdminNotification,
+  partnerAlert: AdminNotification,
+) {
+  const phone = suggestedNotification.user?.phone ?? partnerAlert.user?.phone ?? '<provider phone>';
+  const platform = latestDeliveryPlatform(suggestedNotification) ?? 'android';
+  return [
+    '$env:FCM_SMOKE_ROLE="PROVIDER"',
+    `$env:FCM_SMOKE_PHONE="${phone}"`,
+    `$env:FCM_SMOKE_PLATFORM="${platform}"`,
+    '$env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"',
+    '$env:FCM_SMOKE_EXPECT_PROVIDER="FCM"',
+    '$env:FCM_SMOKE_EXPECT_STATUS="SENT"',
+    `$env:FCM_SMOKE_NOTIFICATION_ID="${suggestedNotification.id}"`,
+    'npm.cmd run fcm:push-smoke -- --preflight',
+  ].join('; ');
+}
+
+function latestDeliveryPlatform(notification: AdminNotification) {
+  return [...(notification.deliveries ?? [])].sort(
+    (left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left),
+  )[0]?.pushDevice?.platform;
 }
 
 function policyRoutesPartnerAlertsToFcm(setting?: AdminOperationalPolicySetting) {

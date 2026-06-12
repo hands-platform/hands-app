@@ -129,6 +129,7 @@ describe('notification page model', () => {
               attemptedAt: '2026-06-01T10:02:00.000Z',
               id: 'delivery-fcm',
               provider: 'FCM',
+              pushDevice: { enabled: true, id: 'device-provider', platform: 'android' },
               status: 'SENT',
             },
           ],
@@ -152,6 +153,8 @@ describe('notification page model', () => {
       detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same role/phone smoke preflight.',
       partnerAlertNotificationId: 'notification-partner-alert',
       partnerAlertType: 'provider.payout_batch.updated',
+      preflightCommand:
+        '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-earning"; npm.cmd run fcm:push-smoke -- --preflight',
       suggestedNotificationId: 'notification-earning',
       suggestedType: 'earning.created',
     });
