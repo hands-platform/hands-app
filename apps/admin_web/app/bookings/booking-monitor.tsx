@@ -742,166 +742,185 @@ function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListR
 }
 
 function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): BookingCommandLane[] {
-  const active = bookings.filter((booking) => activeStatuses.has(booking.status));
-  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const noSupply = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
-  const preferredPending = open.filter((booking) => bookingFirstPickPending(booking));
-  const expiredMatching = open.filter(
-    (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
-  );
-  const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
-  const paymentChecks = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
-  const noShow = bookings.filter((booking) => booking.status === 'NO_SHOW');
-  const closeoutChecks = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-  const pricingChecks = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
-  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-  const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
-  const backupSelected = bookings.filter((booking) => isBackupSelected(booking));
-  const chatEvidence = bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, nowMs));
-  const evidenceMissing = bookings.filter((booking) => bookingDecisionEvidenceMissing(booking, nowMs));
-  const refundReview = bookings.filter((booking) => bookingRefundReviewNeedsOps(booking));
-  const quietChat = bookings.filter(
-    (booking) =>
-      booking.chatRoom &&
-      (booking.chatRoom.messages?.length ?? 0) === 0 &&
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
-  );
+  const facts = buildBookingCommandCenterFacts(bookings, nowMs);
 
   return [
     {
       title: 'Dispatch pressure',
-      status: noSupply.length > 0 || expiredMatching.length > 0 ? 'Action needed' : 'Stable',
-      tone: expiredMatching.length > 0 ? 'danger' : noSupply.length > 0 ? 'warn' : 'ok',
+      status: facts.noSupply.length > 0 || facts.expiredMatching.length > 0 ? 'Action needed' : 'Stable',
+      tone: facts.expiredMatching.length > 0 ? 'danger' : facts.noSupply.length > 0 ? 'warn' : 'ok',
       detail:
-        noSupply.length > 0
+        facts.noSupply.length > 0
           ? 'Open matching has customer demand without partner supply.'
           : 'Active booking demand has enough current operating data.',
       href:
-        noSupply.length > 0 || expiredMatching.length > 0
-          ? noSupply.length > 0
+        facts.noSupply.length > 0 || facts.expiredMatching.length > 0
+          ? facts.noSupply.length > 0
             ? '/bookings?view=no-supply'
             : '/bookings?view=attention'
           : '/bookings?view=active',
       metrics: [
-        metric('active', active.length),
-        metric('open', open.length),
-        metric('no supply', noSupply.length),
-        metric('preferred pending', preferredPending.length),
+        metric('active', facts.active.length),
+        metric('open', facts.open.length),
+        metric('no supply', facts.noSupply.length),
+        metric('preferred pending', facts.preferredPending.length),
       ],
     },
     {
       title: 'Customer protection',
-      status: expiredMatching.length > 0 || matchedWithoutChat.length > 0 ? 'Protect now' : 'Clear',
+      status:
+        facts.expiredMatching.length > 0 || facts.matchedWithoutChat.length > 0
+          ? 'Protect now'
+          : 'Clear',
       tone:
-        expiredMatching.length > 0 || matchedWithoutChat.length > 0
+        facts.expiredMatching.length > 0 || facts.matchedWithoutChat.length > 0
           ? 'danger'
-          : locationChecks.length > 0
+          : facts.locationChecks.length > 0
             ? 'warn'
             : 'ok',
       detail:
-        expiredMatching.length > 0
+        facts.expiredMatching.length > 0
           ? 'Matching window expired before a final partner was selected.'
           : 'Customer-facing booking handoff has no critical blocker.',
       href:
-        expiredMatching.length > 0 || matchedWithoutChat.length > 0
+        facts.expiredMatching.length > 0 || facts.matchedWithoutChat.length > 0
           ? '/bookings?view=attention'
           : '/bookings?view=location',
       metrics: [
-        metric('expired', expiredMatching.length),
-        metric('no chat', matchedWithoutChat.length),
-        metric('location checks', locationChecks.length),
-        metric('quiet chat', quietChat.length),
+        metric('expired', facts.expiredMatching.length),
+        metric('no chat', facts.matchedWithoutChat.length),
+        metric('location checks', facts.locationChecks.length),
+        metric('quiet chat', facts.quietChat.length),
       ],
     },
     {
       title: 'Evidence readiness',
       status:
-        evidenceMissing.length > 0 ? 'Needs records' : chatEvidence.length > 0 ? 'Review ready' : 'Clear',
-      tone: evidenceMissing.length > 0 ? 'warn' : chatEvidence.length > 0 ? 'info' : 'ok',
+        facts.evidenceMissing.length > 0
+          ? 'Needs records'
+          : facts.chatEvidence.length > 0
+            ? 'Review ready'
+            : 'Clear',
+      tone:
+        facts.evidenceMissing.length > 0 ? 'warn' : facts.chatEvidence.length > 0 ? 'info' : 'ok',
       detail:
-        evidenceMissing.length > 0
+        facts.evidenceMissing.length > 0
           ? 'Some manual outcome bookings need retained chat, alert, or location context before action.'
-          : chatEvidence.length > 0
+          : facts.chatEvidence.length > 0
             ? 'Communication evidence is available for bookings that may need operator review.'
             : 'No booking currently needs a chat evidence decision board review.',
       href:
-        evidenceMissing.length > 0
+        facts.evidenceMissing.length > 0
           ? '/bookings?view=evidence-missing'
-          : chatEvidence.length > 0
+          : facts.chatEvidence.length > 0
             ? '/bookings?view=chat-evidence'
             : '/bookings?view=manual-decision',
       metrics: [
-        metric('chat evidence', chatEvidence.length),
-        metric('evidence missing', evidenceMissing.length),
-        metric('refund review', refundReview.length),
-        metric('quiet chat', quietChat.length),
+        metric('chat evidence', facts.chatEvidence.length),
+        metric('evidence missing', facts.evidenceMissing.length),
+        metric('refund review', facts.refundReview.length),
+        metric('quiet chat', facts.quietChat.length),
       ],
     },
     {
       title: 'Payment closeout',
       status:
-        paymentChecks.length > 0 || closeoutChecks.length > 0 || noShow.length > 0 || pricingChecks.length > 0
+        facts.paymentChecks.length > 0 ||
+        facts.closeoutChecks.length > 0 ||
+        facts.noShow.length > 0 ||
+        facts.pricingChecks.length > 0
           ? 'Review'
           : 'Ready',
       tone:
-        closeoutChecks.length > 0
+        facts.closeoutChecks.length > 0
           ? 'danger'
-          : paymentChecks.length > 0
+          : facts.paymentChecks.length > 0
             ? 'danger'
-            : noShow.length > 0
+            : facts.noShow.length > 0
               ? 'warn'
-              : pricingChecks.length > 0
+              : facts.pricingChecks.length > 0
                 ? 'warn'
                 : 'ok',
       detail:
-        closeoutChecks.length > 0
+        facts.closeoutChecks.length > 0
           ? 'Completed bookings are missing earning, tax, platform fee, or wallet closeout records.'
-          : paymentChecks.length > 0
+          : facts.paymentChecks.length > 0
             ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
-            : noShow.length > 0
+            : facts.noShow.length > 0
               ? 'No-show bookings need a clear payment and customer communication outcome.'
               : 'Payment and service pricing policy records are aligned.',
       href:
-        closeoutChecks.length > 0
+        facts.closeoutChecks.length > 0
           ? '/bookings?view=closeout'
-          : paymentChecks.length > 0
-            ? cashDebt.length > 0
+          : facts.paymentChecks.length > 0
+            ? facts.cashDebt.length > 0
               ? '/bookings?view=cash-debt'
               : '/bookings?view=payment'
-            : noShow.length > 0
+            : facts.noShow.length > 0
               ? '/bookings?view=no-show'
               : '/bookings?view=pricing',
       metrics: [
-        metric('payment', paymentChecks.length),
-        metric('closeout', closeoutChecks.length),
-        metric('no-show', noShow.length),
-        metric('pricing', pricingChecks.length),
-        metric('cash debt', cashDebt.length),
-        metric(
-          'missing refs',
-          bookings.filter(
-            (booking) => booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
-          ).length,
-        ),
+        metric('payment', facts.paymentChecks.length),
+        metric('closeout', facts.closeoutChecks.length),
+        metric('no-show', facts.noShow.length),
+        metric('pricing', facts.pricingChecks.length),
+        metric('cash debt', facts.cashDebt.length),
+        metric('missing refs', facts.missingAuthorizedPaymentRefs.length),
       ],
     },
     {
       title: 'Handoff quality',
-      status: locationChecks.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Clear',
-      tone: locationChecks.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
+      status: facts.locationChecks.length > 0 || facts.quietChat.length > 0 ? 'Monitor' : 'Clear',
+      tone: facts.locationChecks.length > 0 ? 'warn' : facts.quietChat.length > 0 ? 'info' : 'ok',
       detail:
-        locationChecks.length > 0
+        facts.locationChecks.length > 0
           ? 'Live service state has missing or stale last-known partner location.'
           : 'Chat, marketplace selection, and location handoff look normal.',
-      href: locationChecks.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
+      href: facts.locationChecks.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
       metrics: [
-        metric('location', locationChecks.length),
-        metric('marketplace chosen', backupSelected.length),
-        metric('chat live', bookings.filter((booking) => bookingMatchingChatReady(booking)).length),
-        metric('quiet chat', quietChat.length),
+        metric('location', facts.locationChecks.length),
+        metric('marketplace chosen', facts.backupSelected.length),
+        metric('chat live', facts.chatReady.length),
+        metric('quiet chat', facts.quietChat.length),
       ],
     },
   ];
+}
+
+function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number) {
+  const active = bookings.filter((booking) => activeStatuses.has(booking.status));
+  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+
+  return {
+    active,
+    backupSelected: bookings.filter((booking) => isBackupSelected(booking)),
+    cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
+    chatEvidence: bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, nowMs)),
+    chatReady: bookings.filter((booking) => bookingMatchingChatReady(booking)),
+    closeoutChecks: bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking)),
+    evidenceMissing: bookings.filter((booking) => bookingDecisionEvidenceMissing(booking, nowMs)),
+    expiredMatching: open.filter(
+      (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
+    ),
+    locationChecks: bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
+    matchedWithoutChat: bookings.filter((booking) => bookingChatRepairNeedsOps(booking)),
+    missingAuthorizedPaymentRefs: bookings.filter(
+      (booking) => booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
+    ),
+    noShow: bookings.filter((booking) => booking.status === 'NO_SHOW'),
+    noSupply: open.filter((booking) => (booking.participants?.length ?? 0) === 0),
+    open,
+    paymentChecks: bookings.filter((booking) => bookingPaymentNeedsOps(booking)),
+    preferredPending: open.filter((booking) => bookingFirstPickPending(booking)),
+    pricingChecks: bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking)),
+    quietChat: bookings.filter(
+      (booking) =>
+        booking.chatRoom &&
+        (booking.chatRoom.messages?.length ?? 0) === 0 &&
+        ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+    ),
+    refundReview: bookings.filter((booking) => bookingRefundReviewNeedsOps(booking)),
+  };
 }
 
 function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
