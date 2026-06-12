@@ -64,7 +64,7 @@ addRecommended(
   'push',
   'Firebase Admin credentials',
   firebaseAdminConfigured(),
-  'Fill server-side Firebase Admin credentials before production Android/iOS push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file.',
+  'Fill server-side Firebase Admin credentials before production Android/iOS push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file.',
 );
 addPhaseRequired(
   'push',
@@ -77,7 +77,7 @@ addPhaseRequired(
   'push',
   'Firebase Admin credentials for OS push',
   firebaseAdminConfigured(),
-  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing GOOGLE_APPLICATION_CREDENTIALS file before production-like OS push E2E.',
+  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing valid GOOGLE_APPLICATION_CREDENTIALS service account JSON file before production-like OS push E2E.',
   ['push', 'production'],
 );
 
@@ -370,7 +370,7 @@ function allHaveExistingPath(keys) {
 }
 
 function firebaseAdminConfigured() {
-  return firebaseAdminCredentialsConfigured(env, pathValueExists);
+  return firebaseAdminCredentialsConfigured(env);
 }
 
 function storageConfigured() {

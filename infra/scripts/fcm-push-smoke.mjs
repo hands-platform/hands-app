@@ -1,9 +1,7 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { loadMergedEnv } from './lib/env-file.mjs';
 import {
   firebaseAdminCredentialsConfigured,
+  firebaseApplicationCredentialsConfigured,
   firebaseApplicationCredentialsEnvKey,
   firebaseServiceAccountJsonConfigured,
   firebaseServiceAccountJsonEnvKey,
@@ -300,16 +298,8 @@ function hasExpectedEnvValue(key, expected) {
   return (envValue(key) ?? '').toLowerCase() === expected.toLowerCase();
 }
 
-function pathExists(key) {
-  return pathValueExists(envValue(key));
-}
-
 function firebaseAdminConfigured() {
-  return firebaseAdminCredentialsConfigured(env, pathValueExists);
-}
-
-function pathValueExists(value) {
-  return Boolean(value) && existsSync(resolve(value));
+  return firebaseAdminCredentialsConfigured(env);
 }
 
 function dryRunNextActions() {
@@ -344,9 +334,9 @@ function firebaseAdminCredentialAction() {
 
   if (
     hasEnvValue(firebaseApplicationCredentialsEnvKey) &&
-    !pathExists(firebaseApplicationCredentialsEnvKey)
+    !firebaseApplicationCredentialsConfigured(envValue(firebaseApplicationCredentialsEnvKey))
   ) {
-    return 'Point GOOGLE_APPLICATION_CREDENTIALS to an existing service account JSON file.';
+    return 'Point GOOGLE_APPLICATION_CREDENTIALS to an existing valid service account JSON file.';
   }
 
   return 'Configure server-side Firebase Admin credentials for FCM.';

@@ -1,8 +1,14 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 export const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 export const firebaseApplicationCredentialsEnvKey = 'GOOGLE_APPLICATION_CREDENTIALS';
 export const firebaseServiceAccountJsonEnvKey = 'FIREBASE_SERVICE_ACCOUNT_JSON';
 
-export function firebaseAdminCredentialsConfigured(env, applicationCredentialsPathExists) {
+export function firebaseAdminCredentialsConfigured(
+  env,
+  applicationCredentialsConfigured = firebaseApplicationCredentialsConfigured,
+) {
   const serviceAccountJson = envValue(env, firebaseServiceAccountJsonEnvKey);
   if (serviceAccountJson) {
     return firebaseServiceAccountJsonConfigured(serviceAccountJson);
@@ -10,8 +16,21 @@ export function firebaseAdminCredentialsConfigured(env, applicationCredentialsPa
 
   return (
     firebaseAdminEnvKeys.every((key) => Boolean(envValue(env, key))) ||
-    applicationCredentialsPathExists(envValue(env, firebaseApplicationCredentialsEnvKey))
+    applicationCredentialsConfigured(envValue(env, firebaseApplicationCredentialsEnvKey))
   );
+}
+
+export function firebaseApplicationCredentialsConfigured(value) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized || !existsSync(resolve(normalized))) {
+    return false;
+  }
+
+  try {
+    return firebaseServiceAccountJsonConfigured(readFileSync(resolve(normalized), 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
 export function firebaseServiceAccountJsonConfigured(value) {

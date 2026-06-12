@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export const FCM_CREDENTIAL_REQUIREMENT =
@@ -59,7 +59,15 @@ export function configuredFirebaseCredentialKeys(config: FirebaseCredentialConfi
 }
 
 function existingApplicationDefaultCredentials(value?: string) {
-  return Boolean(value && existsSync(resolve(value)));
+  if (!value || !existsSync(resolve(value))) {
+    return false;
+  }
+
+  try {
+    return hasValidFirebaseServiceAccountJson(readFileSync(resolve(value), 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
 export function normalizePrivateKey(value?: string) {

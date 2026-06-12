@@ -1,9 +1,10 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 import {
+  firebaseApplicationCredentialsConfigured,
   firebaseServiceAccountJsonConfigured,
   firebaseServiceAccountJsonEnvKey,
 } from './lib/firebase-admin-credentials.mjs';
@@ -274,7 +275,7 @@ const registrationItems = [
       envItem(
         'GOOGLE_APPLICATION_CREDENTIALS',
         '<existing-service-account-json-path>',
-        pathExists(env.GOOGLE_APPLICATION_CREDENTIALS),
+        firebaseApplicationCredentialsConfigured(env.GOOGLE_APPLICATION_CREDENTIALS),
       ),
     ],
     setup: [
@@ -282,7 +283,7 @@ const registrationItems = [
       'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
       'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
-      'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file available to the API process or Docker container.',
+      'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file available to the API process or Docker container.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',
     ],
     verify: [
@@ -456,11 +457,6 @@ function envItem(name, example, configured) {
 
 function hasValue(value) {
   return String(value ?? '').trim().length > 0;
-}
-
-function pathExists(value) {
-  const normalized = String(value ?? '').trim();
-  return normalized.length > 0 && existsSync(resolve(repoRoot, normalized));
 }
 
 function isSecretLikeValue(value) {

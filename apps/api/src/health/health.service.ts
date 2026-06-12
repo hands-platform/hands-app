@@ -233,7 +233,7 @@ export class HealthService {
         : readiness.invalid.includes(FIREBASE_SERVICE_ACCOUNT_JSON_KEY)
           ? 'FCM push is selected, but FIREBASE_SERVICE_ACCOUNT_JSON is not a valid Firebase service account JSON payload.'
           : readiness.invalid.includes(GOOGLE_APPLICATION_CREDENTIALS_KEY)
-            ? 'FCM push is selected, but GOOGLE_APPLICATION_CREDENTIALS does not point to an existing service account JSON file.'
+            ? 'FCM push is selected, but GOOGLE_APPLICATION_CREDENTIALS does not point to an existing valid service account JSON file.'
             : 'FCM push is selected, but server-side Firebase Admin credentials are missing.',
     };
   }

@@ -53,7 +53,7 @@ GOOGLE_APPLICATION_CREDENTIALS=
 ```
 
 `FIREBASE_SERVICE_ACCOUNT_JSON` may be raw JSON or base64 JSON, but it must include `project_id`, `client_email`, and `private_key`.
-When using `GOOGLE_APPLICATION_CREDENTIALS`, point it to an existing service account JSON file that is available to the API process or Docker container.
+When using `GOOGLE_APPLICATION_CREDENTIALS`, point it to an existing valid service account JSON file that is available to the API process or Docker container.
 
 Firebase Admin credentials are server-side only. Never send service account JSON, private keys, APNs keys, or Admin SDK credentials to Flutter, Admin Web, browser JavaScript, or Git.
 

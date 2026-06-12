@@ -82,16 +82,31 @@ describe('Firebase Admin credential helpers', () => {
     });
   });
 
-  it('requires application default credentials to point to an existing file', () => {
+  it('requires application default credentials to point to a valid service account file', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'hands-fcm-'));
     const serviceAccountPath = join(tempDir, 'firebase-admin.json');
-    writeFileSync(serviceAccountPath, '{}');
+    writeFileSync(
+      serviceAccountPath,
+      JSON.stringify({
+        project_id: 'hands-demo',
+        client_email: 'firebase-admin@example.test',
+        private_key: 'private-key',
+      }),
+    );
 
     expect(firebaseCredentialReadiness({ googleApplicationCredentials: serviceAccountPath })).toEqual({
       ready: true,
       missing: [],
       invalid: [],
     });
+
+    writeFileSync(serviceAccountPath, '{}');
+    expect(firebaseCredentialReadiness({ googleApplicationCredentials: serviceAccountPath })).toEqual({
+      ready: false,
+      missing: [],
+      invalid: ['GOOGLE_APPLICATION_CREDENTIALS'],
+    });
+
     expect(
       firebaseCredentialReadiness({ googleApplicationCredentials: join(tempDir, 'missing.json') }),
     ).toEqual({
