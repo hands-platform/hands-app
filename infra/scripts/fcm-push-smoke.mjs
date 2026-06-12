@@ -56,6 +56,7 @@ if (dryRun) {
         phone,
         platform,
         hasDeviceToken: Boolean(deviceToken),
+        liveTokenRequirement: liveTokenRequirement(),
         pushReadiness: {
           hasPushProviderFcm: hasExpectedEnvValue('PUSH_PROVIDER', 'fcm'),
           hasFirebaseAdminCredentials: firebaseAdminConfigured(),
@@ -73,7 +74,9 @@ if (dryRun) {
 }
 
 if (!deviceToken) {
-  fail('FCM_SMOKE_DEVICE_TOKEN is required. Use a real Android/iOS FCM token from the app for OS push E2E.');
+  fail(
+    `FCM_SMOKE_DEVICE_TOKEN is required. Use a real ${role} ${platform} app token for ${phone}, or set FCM_SMOKE_ROLE/FCM_SMOKE_PHONE/FCM_SMOKE_PLATFORM to match the app session.`,
+  );
 }
 
 const health = await request('/health');
@@ -267,6 +270,21 @@ function firebaseAdminConfigured() {
   return firebaseAdminCredentialsConfigured(env);
 }
 
+function liveTokenRequirement() {
+  return {
+    tokenEnv: 'FCM_SMOKE_DEVICE_TOKEN',
+    roleEnv: 'FCM_SMOKE_ROLE',
+    phoneEnv: 'FCM_SMOKE_PHONE',
+    platformEnv: 'FCM_SMOKE_PLATFORM',
+    expectedRole: role,
+    expectedPhone: phone,
+    expectedPlatform: platform,
+    source: `current ${role.toLowerCase()} ${platform} app session`,
+    mustMatchAuthenticatedUser: true,
+    note: 'Use a token from the same role, phone, and platform selected for this smoke run.',
+  };
+}
+
 function dryRunNextActions() {
   const actions = [
     'This dry-run checks merged config only; it does not contact the API or FCM.',
@@ -285,7 +303,9 @@ function dryRunNextActions() {
   }
 
   if (!deviceToken) {
-    actions.push('Set FCM_SMOKE_DEVICE_TOKEN to a real Android/iOS app FCM token.');
+    actions.push(
+      `Set FCM_SMOKE_DEVICE_TOKEN to a real token from the current ${role} ${platform} app session for ${phone}. Change FCM_SMOKE_ROLE, FCM_SMOKE_PHONE, or FCM_SMOKE_PLATFORM if testing a different app session.`,
+    );
   }
 
   actions.push('Run npm.cmd run fcm:push-smoke without --dry-run when API/Docker are ready.');
