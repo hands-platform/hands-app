@@ -3,8 +3,8 @@ import { loadMergedEnv } from './lib/env-file.mjs';
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
-const apiBaseUrl = envValue('API_BASE_URL') ?? 'http://localhost:3000/api';
 const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
+const apiBaseUrl = normalizeApiBaseUrl(envValue('API_BASE_URL') ?? 'http://localhost:3000/api');
 const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
 const role = normalizeRole(envValue('FCM_SMOKE_ROLE') ?? 'CUSTOMER');
 const phone = envValue('FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
@@ -14,8 +14,8 @@ const adminOtp = envValue('FCM_SMOKE_ADMIN_OTP') ?? envValue('ADMIN_DEMO_OTP') ?
 const requestedNotificationId = envValue('FCM_SMOKE_NOTIFICATION_ID');
 const expectedStatus = (envValue('FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpperCase();
 const expectedProvider = (envValue('FCM_SMOKE_EXPECT_PROVIDER') ?? 'FCM').toUpperCase();
-const timeoutMs = Number(envValue('FCM_SMOKE_TIMEOUT_MS') ?? 30_000);
-const pollIntervalMs = Number(envValue('FCM_SMOKE_POLL_INTERVAL_MS') ?? 1_000);
+const timeoutMs = positiveIntegerEnv('FCM_SMOKE_TIMEOUT_MS', 30_000);
+const pollIntervalMs = positiveIntegerEnv('FCM_SMOKE_POLL_INTERVAL_MS', 1_000);
 const dryRun = process.argv.includes('--dry-run');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -243,6 +243,35 @@ function normalizePlatform(value) {
     fail(`Unsupported FCM_SMOKE_PLATFORM=${value}. Use android or ios.`);
   }
   return normalized;
+}
+
+function normalizeApiBaseUrl(value) {
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    fail(`Unsupported API_BASE_URL=${value}. Use an absolute http(s) URL such as http://localhost:3000/api.`);
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    fail(`Unsupported API_BASE_URL protocol=${url.protocol}. Use http or https.`);
+  }
+
+  return url.toString().replace(/\/$/, '');
+}
+
+function positiveIntegerEnv(key, fallback) {
+  const rawValue = envValue(key);
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    fail(`Unsupported ${key}=${rawValue}. Use a positive integer in milliseconds.`);
+  }
+
+  return value;
 }
 
 function envValue(key) {
