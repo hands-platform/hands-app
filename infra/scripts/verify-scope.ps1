@@ -165,6 +165,7 @@ function Invoke-Harness {
   Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\check-admin-visible-copy.mjs"
   Invoke-Check "script syntax: notification partner alert contract" "node --check infra\scripts\check-notification-partner-alert-contract.mjs"
   Invoke-Check "script syntax: fcm env contract" "node --check infra\scripts\check-fcm-env-contract.mjs"
+  Invoke-Check "script syntax: fcm credentials check" "node --check infra\scripts\check-firebase-admin-credentials.mjs"
   Invoke-Check "script syntax: vietnam scope" "node --check infra\scripts\check-vietnam-scope.mjs"
 }
 
