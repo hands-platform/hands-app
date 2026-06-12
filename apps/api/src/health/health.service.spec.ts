@@ -98,6 +98,7 @@ describe('HealthService external push readiness', () => {
     expect(check?.commands).toEqual([
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
+      'npm.cmd run fcm:credentials-check',
       'npm.cmd run fcm:token-smoke -- --dry-run',
       'npm.cmd run fcm:push-smoke -- --dry-run',
     ]);

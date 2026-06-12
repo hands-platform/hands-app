@@ -64,6 +64,7 @@ describe('SetupReadinessOrderSection', () => {
 
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('npm.cmd run fcm:env-contract');
+    expect(rendered).toContain('npm.cmd run fcm:credentials-check');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --dry-run');
     expect(rendered).not.toContain('npm.cmd run external:check:production');

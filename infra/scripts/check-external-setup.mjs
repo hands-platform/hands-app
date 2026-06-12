@@ -314,6 +314,7 @@ function checkIncludedInPhase(category) {
 function buildNextActions(requiredFailures, recommendedFailures) {
   const actions = [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix);
   if (phase === 'push') {
+    actions.push('Run npm.cmd run fcm:credentials-check to verify Firebase Admin credential file contents.');
     actions.push('Run npm.cmd run fcm:token-smoke -- --dry-run to verify token registration smoke inputs.');
     actions.push(
       'Run npm.cmd run fcm:push-smoke -- --dry-run for config-only readiness after Firebase Admin credentials are configured.',

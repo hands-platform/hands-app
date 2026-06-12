@@ -37,6 +37,7 @@
     "api:smoke": "node infra/scripts/api-smoke.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
     "fcm:env-contract": "node infra/scripts/check-fcm-env-contract.mjs",
+    "fcm:credentials-check": "node infra/scripts/check-firebase-admin-credentials.mjs",
     "fcm:token-smoke": "node infra/scripts/fcm-token-registration-smoke.mjs",
     "fcm:push-smoke": "node infra/scripts/fcm-push-smoke.mjs",
     "realtime:contract": "node infra/scripts/check-realtime-event-contract.mjs",

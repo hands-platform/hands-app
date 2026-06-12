@@ -164,7 +164,8 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
         (command) =>
           command.includes('--dry-run') ||
           command.includes('external:check:push') ||
-          command.includes('fcm:env-contract'),
+          command.includes('fcm:env-contract') ||
+          command.includes('fcm:credentials-check'),
       ),
     },
     {
