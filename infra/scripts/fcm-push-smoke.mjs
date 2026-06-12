@@ -2,18 +2,18 @@ import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
-const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
-const deviceToken = env.FCM_SMOKE_DEVICE_TOKEN?.trim();
-const role = normalizeRole(env.FCM_SMOKE_ROLE ?? 'CUSTOMER');
-const phone = env.FCM_SMOKE_PHONE ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
-const otp = env.FCM_SMOKE_OTP ?? env.DEV_OTP ?? '123456';
-const adminPhone = env.FCM_SMOKE_ADMIN_PHONE ?? env.ADMIN_DEMO_PHONE ?? '+84900000099';
-const adminOtp = env.FCM_SMOKE_ADMIN_OTP ?? env.ADMIN_DEMO_OTP ?? '123456';
-const requestedNotificationId = env.FCM_SMOKE_NOTIFICATION_ID?.trim();
-const expectedStatus = (env.FCM_SMOKE_EXPECT_STATUS ?? 'ANY').trim().toUpperCase();
-const expectedProvider = (env.FCM_SMOKE_EXPECT_PROVIDER ?? 'FCM').trim().toUpperCase();
-const timeoutMs = Number(env.FCM_SMOKE_TIMEOUT_MS ?? 30_000);
-const pollIntervalMs = Number(env.FCM_SMOKE_POLL_INTERVAL_MS ?? 1_000);
+const apiBaseUrl = envValue('API_BASE_URL') ?? 'http://localhost:3000/api';
+const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
+const role = normalizeRole(envValue('FCM_SMOKE_ROLE') ?? 'CUSTOMER');
+const phone = envValue('FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
+const otp = envValue('FCM_SMOKE_OTP') ?? envValue('DEV_OTP') ?? '123456';
+const adminPhone = envValue('FCM_SMOKE_ADMIN_PHONE') ?? envValue('ADMIN_DEMO_PHONE') ?? '+84900000099';
+const adminOtp = envValue('FCM_SMOKE_ADMIN_OTP') ?? envValue('ADMIN_DEMO_OTP') ?? '123456';
+const requestedNotificationId = envValue('FCM_SMOKE_NOTIFICATION_ID');
+const expectedStatus = (envValue('FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpperCase();
+const expectedProvider = (envValue('FCM_SMOKE_EXPECT_PROVIDER') ?? 'FCM').toUpperCase();
+const timeoutMs = Number(envValue('FCM_SMOKE_TIMEOUT_MS') ?? 30_000);
+const pollIntervalMs = Number(envValue('FCM_SMOKE_POLL_INTERVAL_MS') ?? 1_000);
 const dryRun = process.argv.includes('--dry-run');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -211,6 +211,11 @@ function normalizeRole(value) {
     fail(`Unsupported FCM_SMOKE_ROLE=${value}. Use CUSTOMER or PROVIDER.`);
   }
   return normalized;
+}
+
+function envValue(key) {
+  const value = env[key]?.trim();
+  return value ? value : undefined;
 }
 
 function maskDeviceToken(value) {
