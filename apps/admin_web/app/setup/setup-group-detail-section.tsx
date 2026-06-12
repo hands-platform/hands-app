@@ -178,8 +178,13 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
     },
     {
       title: 'Live push send',
-      detail: 'Use a real app FCM token from the selected role, phone, and platform, then expect FCM/SENT delivery.',
-      commands: commands.filter((command) => command.includes('FCM_SMOKE_DEVICE_TOKEN')),
+      detail:
+        'Use a real app FCM token, or reuse an enabled device already registered by the selected role, phone, and platform.',
+      commands: commands.filter(
+        (command) =>
+          command.includes('FCM_SMOKE_DEVICE_TOKEN') ||
+          command.includes('FCM_SMOKE_USE_REGISTERED_DEVICE'),
+      ),
     },
     {
       title: 'Review queues',

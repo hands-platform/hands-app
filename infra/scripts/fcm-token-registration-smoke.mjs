@@ -31,7 +31,7 @@ if (dryRun) {
         ],
         nextActions: [
           'Run npm.cmd run fcm:token-smoke when API/Docker are ready to verify customer/provider token registration.',
-          'Then set FCM_SMOKE_ROLE, FCM_SMOKE_PHONE, FCM_SMOKE_PLATFORM, and FCM_SMOKE_DEVICE_TOKEN for the same app session before live OS push.',
+          'Then either set FCM_SMOKE_DEVICE_TOKEN or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after the same app session registers an enabled device.',
         ],
       },
       null,

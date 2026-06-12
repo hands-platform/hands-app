@@ -28,6 +28,9 @@ const expectedStatus = (envValue(env, 'FCM_SMOKE_EXPECT_STATUS') ?? 'ANY').toUpp
 const expectedProvider = (envValue(env, 'FCM_SMOKE_EXPECT_PROVIDER') ?? 'FCM').toUpperCase();
 const timeoutMs = positiveIntegerEnv(env, 'FCM_SMOKE_TIMEOUT_MS', 30_000, fail);
 const pollIntervalMs = positiveIntegerEnv(env, 'FCM_SMOKE_POLL_INTERVAL_MS', 1_000, fail);
+const useRegisteredDevice =
+  process.argv.includes('--use-registered-device') ||
+  booleanEnv(envValue(env, 'FCM_SMOKE_USE_REGISTERED_DEVICE'), false, 'FCM_SMOKE_USE_REGISTERED_DEVICE');
 const dryRun = process.argv.includes('--dry-run');
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -56,6 +59,7 @@ if (dryRun) {
         phone,
         platform,
         hasDeviceToken: Boolean(deviceToken),
+        useRegisteredDevice,
         liveTokenRequirement: liveTokenRequirement(),
         pushReadiness: {
           hasPushProviderFcm: hasExpectedEnvValue('PUSH_PROVIDER', 'fcm'),
@@ -73,9 +77,9 @@ if (dryRun) {
   process.exit(0);
 }
 
-if (!deviceToken) {
+if (!deviceToken && !useRegisteredDevice) {
   fail(
-    `FCM_SMOKE_DEVICE_TOKEN is required. Use a real ${role} ${platform} app token for ${phone}, or set FCM_SMOKE_ROLE/FCM_SMOKE_PHONE/FCM_SMOKE_PLATFORM to match the app session.`,
+    `FCM_SMOKE_DEVICE_TOKEN is required unless FCM_SMOKE_USE_REGISTERED_DEVICE=true. Use a real ${role} ${platform} app token for ${phone}, or reuse an enabled device already registered by that same app session.`,
   );
 }
 
@@ -97,11 +101,13 @@ const adminAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: adminPhone, otp: adminOtp, role: 'ADMIN' }),
 });
 
-const registeredDevice = await request('/notifications/device-token/register', {
-  method: 'PATCH',
-  headers: { authorization: `Bearer ${auth.accessToken}` },
-  body: JSON.stringify({ token: deviceToken, platform }),
-});
+const registeredDevice = deviceToken
+  ? await request('/notifications/device-token/register', {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${auth.accessToken}` },
+      body: JSON.stringify({ token: deviceToken, platform }),
+    })
+  : null;
 
 const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
 if (!notificationId) {
@@ -136,8 +142,12 @@ if (deliveryCount <= beforeDeliveryCount) {
   fail(
     `Notification retry did not record a delivery within ${timeoutMs}ms: ${JSON.stringify({
       notificationId,
+      useRegisteredDevice,
       beforeDeliveryCount,
       deliveryCount,
+      hint: useRegisteredDevice
+        ? 'The selected user may not have an enabled push device registered by the current app session.'
+        : undefined,
     })}`,
   );
 }
@@ -191,11 +201,14 @@ console.log(
       role,
       phone,
       notificationId,
-      registeredDevice: {
-        id: registeredDevice.id,
-        platform: registeredDevice.platform,
-        enabled: registeredDevice.enabled,
-      },
+      registeredDevice: registeredDevice
+        ? {
+            id: registeredDevice.id,
+            platform: registeredDevice.platform,
+            enabled: registeredDevice.enabled,
+          }
+        : null,
+      reusedRegisteredDevice: !registeredDevice,
       pushReadiness: pushCheck
         ? {
             status: pushCheck.status,
@@ -258,6 +271,20 @@ function normalizeRole(value) {
   return normalized;
 }
 
+function booleanEnv(value, fallback, key) {
+  if (value === undefined) {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  fail(`Unsupported ${key}=${value}. Use true or false.`);
+}
+
 function hasEnvValue(key) {
   return Boolean(envValue(env, key));
 }
@@ -273,15 +300,19 @@ function firebaseAdminConfigured() {
 function liveTokenRequirement() {
   return {
     tokenEnv: 'FCM_SMOKE_DEVICE_TOKEN',
+    reuseRegisteredDeviceEnv: 'FCM_SMOKE_USE_REGISTERED_DEVICE',
     roleEnv: 'FCM_SMOKE_ROLE',
     phoneEnv: 'FCM_SMOKE_PHONE',
     platformEnv: 'FCM_SMOKE_PLATFORM',
     expectedRole: role,
     expectedPhone: phone,
     expectedPlatform: platform,
+    useRegisteredDevice,
     source: `current ${role.toLowerCase()} ${platform} app session`,
     mustMatchAuthenticatedUser: true,
-    note: 'Use a token from the same role, phone, and platform selected for this smoke run.',
+    note: useRegisteredDevice
+      ? 'The selected app session must already have an enabled PushDevice registered through the API.'
+      : 'Use a token from the same role, phone, and platform selected for this smoke run.',
   };
 }
 
@@ -302,9 +333,15 @@ function dryRunNextActions() {
     actions.push(firebaseAdminCredentialAction());
   }
 
-  if (!deviceToken) {
+  if (!deviceToken && useRegisteredDevice) {
     actions.push(
-      `Set FCM_SMOKE_DEVICE_TOKEN to a real token from the current ${role} ${platform} app session for ${phone}. Change FCM_SMOKE_ROLE, FCM_SMOKE_PHONE, or FCM_SMOKE_PLATFORM if testing a different app session.`,
+      `Confirm the current ${role} ${platform} app session for ${phone} has registered an enabled push device, then run live fcm:push-smoke.`,
+    );
+  }
+
+  if (!deviceToken && !useRegisteredDevice) {
+    actions.push(
+      `Set FCM_SMOKE_DEVICE_TOKEN to a real token from the current ${role} ${platform} app session for ${phone}, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers its token through the API. Change FCM_SMOKE_ROLE, FCM_SMOKE_PHONE, or FCM_SMOKE_PLATFORM if testing a different app session.`,
     );
   }
 

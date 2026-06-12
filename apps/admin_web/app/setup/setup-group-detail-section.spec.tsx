@@ -65,6 +65,7 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:push-smoke -- --dry-run',
             'npm.cmd run fcm:token-smoke',
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
+            '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
             'Open http://localhost:3101/notifications?review=fcm',
             'Open http://localhost:3101/notifications?review=disabled-device',
             'npm.cmd run notifications:future-check',
@@ -82,13 +83,14 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('npm.cmd run docker:contract');
     expect(rendered).toContain('Token registration');
     expect(rendered).toContain('Live push send');
-    expect(rendered).toContain('selected role, phone, and platform');
+    expect(rendered).toContain('reuse an enabled device already registered');
     expect(rendered).toContain('Review queues');
     expect(rendered).toContain('Additional checks');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke');
     expect(rendered).toContain('FCM_SMOKE_ROLE="CUSTOMER"');
     expect(rendered).toContain('FCM_SMOKE_PHONE="+84900000001"');
+    expect(rendered).toContain('FCM_SMOKE_USE_REGISTERED_DEVICE="true"');
     expect(rendered).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
     expect(rendered).toContain('Open http://localhost:3101/notifications?review=disabled-device');
     expect(rendered).toContain('npm.cmd run notifications:future-check');

@@ -52,9 +52,10 @@ npm.cmd run fcm:push-smoke
 Use `npm.cmd run fcm:token-smoke -- --dry-run` to check the token-registration smoke inputs before writing a synthetic device token.
 Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
 Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/phone/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
+When the selected app session has already registered an enabled push device, set `FCM_SMOKE_USE_REGISTERED_DEVICE=true` to run live push without copying the raw device token into the shell.
 
 ## Expected Result
 
 The script prints a JSON object with `ok: true` and IDs for the booking, chat room, review, payout batch, refund, and verification file.
 
-The FCM token smoke prints `ok: true` after synthetic customer/provider device tokens are registered and disabled. The live FCM smoke uses a real token from the selected role, phone, and platform, then prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.
+The FCM token smoke prints `ok: true` after synthetic customer/provider device tokens are registered and disabled. The live FCM smoke uses a real token or an already registered enabled device from the selected role, phone, and platform, then prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.
