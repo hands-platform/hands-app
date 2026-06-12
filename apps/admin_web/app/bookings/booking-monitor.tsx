@@ -113,6 +113,7 @@ import {
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
+import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -567,95 +568,33 @@ export function BookingMonitor({
         lanes={customerProtectionBoard}
       />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking operation filters</h2>
-            <p className="muted">
-              Active queue: <strong>{activeView.label}</strong> - {activeView.description}
-            </p>
-          </div>
-          <span className={`pill ${view === 'all' ? 'pill-success' : 'pill-warn'}`}>
-            Showing {visibleBookings.length} of {baseVisibleBookings.length}
-          </span>
-        </div>
-        <div className="ops-filter-grid admin-mb-14">
-          <label>
-            Search booking/customer/partner
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Booking ID, phone, partner, customer, service"
-            />
-          </label>
-          <label>
-            Booking status
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="all">All statuses</option>
-              {statusFilterOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Payment method
-            <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)}>
-              <option value="all">All methods</option>
-              {paymentFilterOptions.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Evidence filter
-            <select
-              value={evidenceFilter}
-              onChange={(event) => setEvidenceFilter(event.target.value as BookingEvidenceFilter)}
-            >
-              {bookingEvidenceFilterOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="actions" style={{ alignSelf: 'end' }}>
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-                setPaymentFilter('all');
-                setEvidenceFilter('all');
-                setGateFilter('all');
-              }}
-            >
-              Clear list filters
-            </button>
-          </div>
-        </div>
-        <div className="participant-list">
-          {bookingViewOptions.map((option) => (
-            <button
-              key={option.view}
-              type="button"
-              onClick={() => setView(option.view)}
-              disabled={view === option.view}
-              title={option.description}
-            >
-              {option.label} ({bookingViewCounts.get(option.view) ?? 0})
-            </button>
-          ))}
-        </div>
-        <p className="muted admin-mt-8">
-          {activeView.operatorHint}
-        </p>
-      </section>
+      <BookingMonitorFiltersSection
+        activeView={activeView}
+        baseVisibleBookingCount={baseVisibleBookings.length}
+        evidenceFilter={evidenceFilter}
+        evidenceFilterOptions={bookingEvidenceFilterOptions}
+        onClearFilters={() => {
+          setSearchQuery('');
+          setStatusFilter('all');
+          setPaymentFilter('all');
+          setEvidenceFilter('all');
+          setGateFilter('all');
+        }}
+        onEvidenceFilterChange={setEvidenceFilter}
+        onPaymentFilterChange={setPaymentFilter}
+        onSearchQueryChange={setSearchQuery}
+        onStatusFilterChange={setStatusFilter}
+        onViewChange={setView}
+        paymentFilter={paymentFilter}
+        paymentFilterOptions={paymentFilterOptions}
+        searchQuery={searchQuery}
+        statusFilter={statusFilter}
+        statusFilterOptions={statusFilterOptions}
+        view={view}
+        viewCounts={bookingViewCounts}
+        viewOptions={bookingViewOptions}
+        visibleBookingCount={visibleBookings.length}
+      />
 
       {view === 'blocked-create' && (
         <section className="card admin-mt-16">
