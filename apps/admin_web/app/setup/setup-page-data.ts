@@ -193,6 +193,7 @@ export const setupOrder = [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
       'FCM is for push only; Firebase DB/Auth/Firestore are not part of HANDS MVP.',
       'FIREBASE_SERVICE_ACCOUNT_JSON must be raw or base64 service account JSON with project_id, client_email, and private_key.',
+      'google-services.json is mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'Firebase Admin service account values are server-side only and must not be copied into Flutter or browser code.',
       'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
       'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',

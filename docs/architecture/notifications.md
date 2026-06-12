@@ -82,6 +82,8 @@ Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selecte
 
 Android uses `google-services.json` and the Google Services Gradle plugin when FCM client integration is added. iOS uses `GoogleService-Info.plist`, APNs key/cert configuration through Firebase, and the Flutter FCM client. These files are secrets/config artifacts and must stay outside Git.
 
+`google-services.json` is mobile client configuration only. It does not authorize backend sends; the NestJS API still needs server-side Firebase Admin credentials through `FIREBASE_SERVICE_ACCOUNT_JSON`, split Firebase service account env values, or `GOOGLE_APPLICATION_CREDENTIALS`.
+
 Mobile code must not replace Socket.IO booking/chat realtime behavior. Register the FCM token after login, refresh it when FCM rotates the token, and send it to the NestJS API.
 
 ## Notification Event Boundaries

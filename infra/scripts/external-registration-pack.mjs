@@ -280,6 +280,7 @@ const registrationItems = [
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
       'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
+      'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing service account JSON file available to the API process or Docker container.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',

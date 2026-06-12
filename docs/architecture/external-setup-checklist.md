@@ -99,6 +99,8 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 
 `fcm:push-smoke -- --dry-run` is config-only. It does not contact the API or FCM; run `npm.cmd run fcm:push-smoke` without `--dry-run` only after Firebase Admin credentials and a real app FCM token are ready.
 
+`google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
+
 ## Production Notes
 
 - `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
