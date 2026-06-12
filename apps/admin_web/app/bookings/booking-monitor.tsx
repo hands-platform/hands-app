@@ -65,11 +65,7 @@ import {
   type BookingPricingPolicySignal,
 } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
-import {
-  bookingBackupAlertTracePill,
-  bookingBackupAlertTraceSummary,
-  bookingBackupAlertTraceTone,
-} from './booking-alert-trace';
+import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import {
@@ -150,11 +146,7 @@ import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
-import {
-  bookingParticipantJoinedLabel,
-  bookingParticipantRespondedLabel,
-  bookingParticipantTimestamp,
-} from './booking-participant-time-labels';
+import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
@@ -233,7 +225,6 @@ import {
   bookingParticipantPartnerId,
   bookingPreferredPartnerIdForChoice,
   bookingSelectedPartnerIdForChoice,
-  isCustomerSelectableBookingParticipant,
 } from '../../lib/booking-participant-choice';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
@@ -1607,35 +1598,7 @@ function buildMarketplaceParticipantLedgerRows(
 ): readonly AdminMarketplaceParticipantLedgerRow[] {
   return bookings.flatMap((booking) =>
     buildMarketplaceParticipantLedgerRowsFromFacts(
-      (booking.participants ?? [])
-        .filter((participant) => Boolean(participant.providerProfile?.id))
-        .map((participant) => {
-        const distanceMeters = typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null;
-        const selectedPartnerId = bookingSelectedPartnerIdForChoice(booking);
-        const participantPartnerId = bookingParticipantPartnerId(participant);
-        const preferredPartnerId = bookingPreferredPartnerIdForChoice(booking);
-        return {
-          alertLabel: bookingBackupAlertTracePill(booking),
-          alertTone: bookingBackupAlertTraceTone(booking),
-          booking,
-          bookingStatus: booking.status,
-          customerSelectable: isCustomerSelectableBookingParticipant(participant, preferredPartnerId),
-          distanceMeters,
-          hasChatRoom: bookingMatchingChatReady(booking),
-          joinedLabel: bookingParticipantJoinedLabel(participant, nowMs),
-          marketplaceRadiusMeters,
-          participant,
-          participantPartnerId,
-          partnerLabel: partnerDisplayName(participant.providerProfile),
-          preferredPartnerId,
-          respondedLabel: bookingParticipantRespondedLabel(participant),
-          selectedPartnerId,
-          sortTimestamp: bookingParticipantTimestamp(participant),
-          status: participant.status ?? 'UNKNOWN',
-          ...bookingMarketplaceWalletSignal(booking),
-          windowLabel: bookingMatchingWindowLabel(booking, nowMs),
-        };
-      }),
+      bookingMarketplaceParticipantLedgerInputs(booking, nowMs, marketplaceRadiusMeters),
     ),
   );
 }
