@@ -117,6 +117,10 @@ import {
   bookingCheckFlagSeverityWeight,
   bookingNextActionPriorityFromFacts,
 } from './booking-next-action-priority';
+import {
+  bookingNextActionOwnerFromFacts,
+  type BookingNextActionOwner,
+} from './booking-next-action-owner';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
@@ -211,7 +215,7 @@ type BookingNextAction = {
   title: string;
   detail: string;
   operatorAction: string;
-  owner: 'Dispatch' | 'Finance' | 'Support' | 'Safety';
+  owner: BookingNextActionOwner;
   priority: BookingActionPriority;
   tone: BookingCommandTone;
   href: string;
@@ -254,7 +258,6 @@ type MarketplaceCoveragePillState = {
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const handoffBookingStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
-const financeActionFlagKeywords = ['payment', 'closeout', 'cash', 'payout'] as const;
 const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
   expired: 'Location too old',
   missing: 'No location',
@@ -1405,33 +1408,12 @@ function bookingActionPriority(
 }
 
 function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
-  const flagTitle = bookingCheckFlagSearchText(flag);
-  if (
-    bookingCheckFlagTitleHasAny(flagTitle, financeActionFlagKeywords) ||
-    bookingPaymentNeedsOps(booking) ||
-    bookingCompletedCloseoutNeedsOps(booking)
-  ) {
-    return 'Finance';
-  }
-  if (booking.status === 'NO_SHOW' || flagTitle.includes('no-show')) {
-    return 'Safety';
-  }
-  if (
-    booking.status === 'CANCELLED' ||
-    booking.status === 'EXPIRED' ||
-    flagTitle.includes('chat')
-  ) {
-    return 'Support';
-  }
-  return 'Dispatch';
-}
-
-function bookingCheckFlagSearchText(flag?: BookingCheckFlag) {
-  return flag?.title.toLowerCase() ?? '';
-}
-
-function bookingCheckFlagTitleHasAny(flagTitle: string, keywords: readonly string[]) {
-  return keywords.some((keyword) => flagTitle.includes(keyword));
+  return bookingNextActionOwnerFromFacts({
+    completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+    flagTitle: flag?.title,
+    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+    status: booking.status,
+  });
 }
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
