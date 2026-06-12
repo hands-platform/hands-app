@@ -83,7 +83,12 @@ function credentialStatus(configuredValue, valid) {
 
 function nextActions({ ok: ready, invalid: invalidKeys }) {
   if (ready) {
-    return ['Run npm.cmd run external:check:push when PUSH_PROVIDER=fcm is selected.'];
+    return [
+      'Run npm.cmd run security:secrets to confirm Firebase client/admin config files are not tracked.',
+      'Run npm.cmd run external:check:push when PUSH_PROVIDER=fcm is selected.',
+      'Run npm.cmd run docker:contract to confirm Docker credential mounts and internal service URLs.',
+      'Run npm.cmd run fcm:token-smoke -- --dry-run before live push smoke.',
+    ];
   }
 
   const actions = [];

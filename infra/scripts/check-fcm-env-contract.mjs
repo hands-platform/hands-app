@@ -45,6 +45,7 @@ const dockerEnvRequiredSources = [
 const dockerContractCommandRequiredSources = [
   resolve(repoRoot, 'infra/env/README.md'),
   resolve(repoRoot, 'infra/scripts/check-external-setup.mjs'),
+  resolve(repoRoot, 'infra/scripts/check-firebase-admin-credentials.mjs'),
   resolve(repoRoot, 'infra/scripts/external-registration-pack.mjs'),
   resolve(repoRoot, 'infra/scripts/fcm-push-smoke.mjs'),
   resolve(repoRoot, 'infra/scripts/install-firebase-admin-credentials.ps1'),
