@@ -269,7 +269,11 @@ const registrationItems = [
       'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
       'Keep Firebase Admin service account values server-side only and never send them to Flutter or browser JavaScript.',
     ],
-    verify: ['npm.cmd run external:check:production'],
+    verify: [
+      'npm.cmd run external:check:push',
+      'npm.cmd run fcm:env-contract',
+      'npm.cmd run fcm:push-smoke -- --dry-run',
+    ],
   },
   {
     order: 11,

@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const files = [
-  'apps/admin_web/app/setup/page.tsx',
+  'apps/admin_web/app/setup/setup-page-data.ts',
   'apps/admin_web/app/operations-policy/page.tsx',
   'docs/architecture/external-account-migration.md',
   'docs/architecture/external-setup-checklist.md',
@@ -15,13 +15,26 @@ const files = [
 
 const violations = [];
 const requiredVonageFiles = new Set([
-  'apps/admin_web/app/setup/page.tsx',
+  'apps/admin_web/app/setup/setup-page-data.ts',
   'apps/admin_web/app/operations-policy/page.tsx',
   'infra/scripts/external-registration-pack.mjs',
   'infra/setup/.generated/hands-external-registration-pack.md',
 ]);
 
 for (const file of files) {
+  if (!existsSync(file)) {
+    violations.push({
+      file,
+      label: 'missing setup copy source',
+      match: null,
+      fix:
+        file === 'infra/setup/.generated/hands-external-registration-pack.md'
+          ? 'Run npm.cmd run external:pack:write before checking generated external setup copy.'
+          : 'Restore the expected setup copy source file.',
+    });
+    continue;
+  }
+
   const source = readFileSync(file, 'utf8');
   const twilioMatch = source.match(/\bTwilio\b|\btwilio\b/);
   if (twilioMatch) {
