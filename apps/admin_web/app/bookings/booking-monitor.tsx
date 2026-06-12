@@ -1503,6 +1503,26 @@ function bookingCheckFlagTitleHasAny(flagTitle: string, keywords: readonly strin
 }
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
+  const paymentAction = bookingPaymentOperatorAction(booking);
+  if (paymentAction) {
+    return paymentAction;
+  }
+  const statusAction = bookingStatusOperatorAction(booking);
+  if (statusAction) {
+    return statusAction;
+  }
+  const locationAction = bookingLocationOperatorAction(booking, nowMs);
+  if (locationAction) {
+    return locationAction;
+  }
+  const serviceAction = bookingServiceOperatorAction(booking);
+  if (serviceAction) {
+    return serviceAction;
+  }
+  return bookingFallbackOperatorAction(flag);
+}
+
+function bookingPaymentOperatorAction(booking: AdminBooking) {
   if (bookingCashDebtNeedsOps(booking)) {
     return 'Confirm Partner wallet debt and request company fee settlement before final acceptance, service start, or payout release resumes.';
   }
@@ -1512,6 +1532,10 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
   if (bookingPaymentNeedsOps(booking)) {
     return 'Open the booking payment panel and decide capture, release, refund, cash debt, or missing reference handling.';
   }
+  return null;
+}
+
+function bookingStatusOperatorAction(booking: AdminBooking) {
   if (booking.status === 'NO_SHOW') {
     return 'Record customer and partner notes, then close payment and safety follow-up.';
   }
@@ -1530,12 +1554,24 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
   if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
     return 'Create or repair chat handoff before the service moves forward.';
   }
+  return null;
+}
+
+function bookingLocationOperatorAction(booking: AdminBooking, nowMs: number) {
   if (bookingLocationNeedsOps(booking, nowMs)) {
     return 'Ask the partner to refresh location once; use last-known location only, no live routing.';
   }
+  return null;
+}
+
+function bookingServiceOperatorAction(booking: AdminBooking) {
   if (booking.status === 'IN_SERVICE') {
     return 'Monitor completion timing and prepare payment capture or cash fee ledger closeout.';
   }
+  return null;
+}
+
+function bookingFallbackOperatorAction(flag?: BookingCheckFlag) {
   return flag
     ? `Review ${flag.title.toLowerCase()} and add an ops note before closing.`
     : 'Keep watching status, chat, and partner handoff.';
