@@ -103,6 +103,7 @@ function readinessCommands(check: AdminExternalReadiness['checks'][number]) {
   );
   commands.add('npm.cmd run external:check:push');
   commands.add('npm.cmd run fcm:env-contract');
+  commands.add('npm.cmd run security:secrets');
   commands.add('npm.cmd run fcm:credentials-check');
   commands.add('npm.cmd run docker:contract');
   commands.add('npm.cmd run fcm:token-smoke -- --dry-run');

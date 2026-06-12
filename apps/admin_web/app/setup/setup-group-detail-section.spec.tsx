@@ -58,6 +58,7 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run external:check:push',
             'npm.cmd run fcm:env-contract',
             'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
+            'npm.cmd run security:secrets',
             'npm.cmd run fcm:credentials-check',
             'npm.cmd run docker:contract',
             'npm.cmd run fcm:token-smoke -- --dry-run',
@@ -76,6 +77,7 @@ describe('SetupGroupDetailSection', () => {
 
     expect(rendered).toContain('Dry-run readiness');
     expect(rendered).toContain('npm.cmd run fcm:credentials:install');
+    expect(rendered).toContain('npm.cmd run security:secrets');
     expect(rendered).toContain('npm.cmd run fcm:credentials-check');
     expect(rendered).toContain('npm.cmd run docker:contract');
     expect(rendered).toContain('Token registration');

@@ -40,6 +40,7 @@ npm.cmd run external:check:supabase
 npm.cmd run external:check:supabase-auth
 npm.cmd run external:check:maps
 npm.cmd run external:check:push
+npm.cmd run security:secrets
 npm.cmd run fcm:credentials-check
 npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke -- --dry-run
