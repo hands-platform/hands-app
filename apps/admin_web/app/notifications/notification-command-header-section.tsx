@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function NotificationCommandHeaderSection() {
   return (
     <div className="toolbar">
@@ -10,6 +12,9 @@ export function NotificationCommandHeaderSection() {
         <span className="pill pill-success">Latest failures first</span>
         <span className="pill pill-info">Delivery signal</span>
         <span className="pill pill-warn">Retry readiness</span>
+        <Link className="pill pill-neutral" href="/setup#notifications">
+          FCM setup
+        </Link>
       </div>
     </div>
   );
