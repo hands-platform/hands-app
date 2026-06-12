@@ -61,6 +61,7 @@ For a narrow Docker/API push check after credentials are configured, use:
 ```powershell
 $env:API_BASE_URL='http://localhost:3000/api'
 $env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
+$env:FCM_SMOKE_PLATFORM='android'
 $env:FCM_SMOKE_EXPECT_PROVIDER='FCM'
 $env:FCM_SMOKE_EXPECT_STATUS='SENT'
 npm.cmd run fcm:push-smoke

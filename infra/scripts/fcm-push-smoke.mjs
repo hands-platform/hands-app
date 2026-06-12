@@ -4,6 +4,7 @@ const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--e
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const apiBaseUrl = envValue('API_BASE_URL') ?? 'http://localhost:3000/api';
 const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
+const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
 const role = normalizeRole(envValue('FCM_SMOKE_ROLE') ?? 'CUSTOMER');
 const phone = envValue('FCM_SMOKE_PHONE') ?? (role === 'PROVIDER' ? '+84900000002' : '+84900000001');
 const otp = envValue('FCM_SMOKE_OTP') ?? envValue('DEV_OTP') ?? '123456';
@@ -37,6 +38,7 @@ if (dryRun) {
         apiBaseUrl,
         role,
         phone,
+        platform,
         hasDeviceToken: Boolean(deviceToken),
         requestedNotificationId: requestedNotificationId || null,
         expectedProvider,
@@ -74,7 +76,7 @@ const adminAuth = await request('/auth/verify-otp', {
 const registeredDevice = await request('/notifications/device-token/register', {
   method: 'PATCH',
   headers: { authorization: `Bearer ${auth.accessToken}` },
-  body: JSON.stringify({ token: deviceToken, platform: 'android' }),
+  body: JSON.stringify({ token: deviceToken, platform }),
 });
 
 const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
@@ -225,6 +227,14 @@ function normalizeRole(value) {
   const normalized = value.trim().toUpperCase();
   if (normalized !== 'CUSTOMER' && normalized !== 'PROVIDER') {
     fail(`Unsupported FCM_SMOKE_ROLE=${value}. Use CUSTOMER or PROVIDER.`);
+  }
+  return normalized;
+}
+
+function normalizePlatform(value) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized !== 'android' && normalized !== 'ios') {
+    fail(`Unsupported FCM_SMOKE_PLATFORM=${value}. Use android or ios.`);
   }
   return normalized;
 }
