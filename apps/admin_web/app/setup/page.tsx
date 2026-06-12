@@ -1,5 +1,6 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
+import { SetupGroupDetailSection, type SetupGroupDetail } from './setup-group-detail-section';
 import { SetupMigrationRunwaySection } from './setup-migration-runway-section';
 import { SetupOverviewSection } from './setup-overview-section';
 import { SetupOperatorActionsSection } from './setup-operator-actions-section';
@@ -411,6 +412,7 @@ export default async function SetupPage() {
   const deferredActions = buildDeferredOperatorActions(readiness, readinessUnavailable);
   const currentStage = buildCurrentStageStatus(readiness, readinessUnavailable);
   const registrationPlan = buildExternalRegistrationPlan(readiness, readinessUnavailable);
+  const setupGroupDetails = buildSetupGroupDetails(readiness);
 
   return (
     <>
@@ -436,64 +438,7 @@ export default async function SetupPage() {
 
       <SetupExternalBacklogSection missingCount={summary.missing} backlog={externalBacklog} />
 
-      <section className="stack admin-mt-16">
-        {setupOrder.map((group) => {
-          const relatedChecks = readiness.checks.filter((check) =>
-            setupGroupMatches(group.id, check.category),
-          );
-          return (
-            <div className="card" id={group.id} key={group.id}>
-              <div className="ops-section-header">
-                <div>
-                  <h2>{group.title}</h2>
-                  <p className="muted">
-                    <strong>{group.phase}:</strong> {group.operatorAction}
-                  </p>
-                  <p className="muted">{group.purpose}</p>
-                </div>
-                <span className={setupGroupSignalClass(relatedChecks)}>
-                  {setupGroupStatus(relatedChecks)}
-                </span>
-              </div>
-              <div className="detail-grid admin-mt-12">
-                <div>
-                  <h3>Environment values</h3>
-                  <div className="participant-list">
-                    {group.env.map((name) => (
-                      <span className={envPillClass(name, relatedChecks)} key={name}>
-                        {name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3>Implementation notes</h3>
-                  <ul className="muted">
-                    {group.notes.map((note) => (
-                      <li key={note}>{note}</li>
-                    ))}
-                  </ul>
-                  <p className="muted">
-                    <strong>Exit criteria:</strong> {group.exitCriteria}
-                  </p>
-                </div>
-              </div>
-              <div className="setup-command-block">
-                <h3>Verification commands</h3>
-                <p className="muted">
-                  Run from <code>C:\dev\massage-vn-workspace\repo</code>. Values inside angle brackets must be
-                  replaced locally.
-                </p>
-                <div className="setup-command-list">
-                  {group.commands.map((command) => (
-                    <code key={command}>{command}</code>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </section>
+      <SetupGroupDetailSection groups={setupGroupDetails} />
     </>
   );
 }
@@ -551,6 +496,28 @@ function buildGroupStatuses(readiness: AdminExternalReadiness) {
       title: group.title,
       phase: group.phase,
       status: setupGroupStatus(relatedChecks),
+    };
+  });
+}
+
+function buildSetupGroupDetails(readiness: AdminExternalReadiness): SetupGroupDetail[] {
+  return setupOrder.map((group) => {
+    const relatedChecks = readiness.checks.filter((check) => setupGroupMatches(group.id, check.category));
+    return {
+      id: group.id,
+      title: group.title,
+      phase: group.phase,
+      operatorAction: group.operatorAction,
+      purpose: group.purpose,
+      status: setupGroupStatus(relatedChecks),
+      statusClass: setupGroupSignalClass(relatedChecks),
+      envPills: group.env.map((name) => ({
+        name,
+        className: envPillClass(name, relatedChecks),
+      })),
+      notes: group.notes,
+      exitCriteria: group.exitCriteria,
+      commands: group.commands,
     };
   });
 }
