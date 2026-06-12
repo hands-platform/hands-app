@@ -78,7 +78,6 @@ import {
 } from './booking-command-display';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
-  bookingCreatedTimestamp,
   bookingRecencyLabel as recencyLabel,
   bookingTimestamp,
   formatBookingClockTime as formatClockTime,
@@ -146,11 +145,7 @@ import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
-import {
-  firstPickCoverageStateFromFacts,
-  marketplaceBookingNextActionFromFacts,
-  type MarketplaceCoveragePillState,
-} from './booking-marketplace-coverage-state';
+import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import {
   bookingMonitorSelectionFromFacts,
@@ -170,7 +165,6 @@ import {
 } from './booking-monitor-list-marketplace';
 import {
   bookingHasPartnerWalletDebtSignal,
-  bookingMarketplaceWalletSignal,
 } from './booking-marketplace-wallet-signal';
 import {
   bookingLocationPillLabel,
@@ -1513,59 +1507,20 @@ function buildMarketplaceBookingCoverageRows(
 ): readonly AdminMarketplaceBookingCoverageRow[] {
   return buildMarketplaceBookingCoverageRowsFromFacts(
     bookings.map((booking) => {
-      const participants = booking.participants ?? [];
-      const trace = bookingBackupAlertTraceSummary(booking, nowMs);
-      const firstPick = firstPickCoverageState(booking, nowMs);
-      const wallet = bookingMarketplaceWalletSignal(booking);
-      const next = marketplaceBookingNextAction(booking, nowMs);
+      const hasPreferredProvider = Boolean(booking.preferredProvider);
 
-      return {
-        booking,
-        chatRepairNeeded: bookingChatRepairNeedsOps(booking),
-        firstPickLabel: firstPick.label,
-        firstPickTone: firstPick.tone,
+      return bookingMarketplaceCoverageInput(booking, nowMs, {
+        backupSelected: hasPreferredProvider && isBackupSelected(booking),
+        firstPickPending: hasPreferredProvider && bookingFirstPickPending(booking),
+        hasFinalPartner: bookingHasFinalPartner(booking),
         marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        nextActionLabel: next.label,
-        nextActionTone: next.tone,
-        participantCount: participants.length,
+        matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+        preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
         selectableCount: bookingCustomerSelectableCount(booking),
         selectedPartnerLabel: bookingFinalPartnerLabel(booking),
-        sortTimestamp: bookingCreatedTimestamp(booking),
-        status: booking.status,
-        traceBatchCount: trace.batchCount,
-        traceLastAge: trace.lastAge,
-        traceLastStage: trace.lastStage,
-        traceTotalNotified: trace.totalNotified,
-        walletLabel: wallet.walletLabel,
-        walletTone: wallet.walletTone,
-      };
+      });
     }),
   );
-}
-
-function firstPickCoverageState(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
-  const hasPreferredProvider = Boolean(booking.preferredProvider);
-  return firstPickCoverageStateFromFacts({
-    backupSelected: hasPreferredProvider && isBackupSelected(booking),
-    firstPickPending: hasPreferredProvider && bookingFirstPickPending(booking),
-    hasPreferredProvider,
-    matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-    preferredProviderState: hasPreferredProvider ? preferredProviderStateLabel(booking) : null,
-    status: booking.status,
-  });
-}
-
-function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number): MarketplaceCoveragePillState {
-  return marketplaceBookingNextActionFromFacts({
-    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-    chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
-    customerSelectableCount: bookingCustomerSelectableCount(booking),
-    firstPickPending: bookingFirstPickPending(booking),
-    hasFinalPartner: bookingHasFinalPartner(booking),
-    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    matchingWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-    status: booking.status,
-  });
 }
 
 function buildMarketplaceParticipantLedgerRows(
