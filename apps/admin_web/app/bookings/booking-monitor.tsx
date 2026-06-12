@@ -112,6 +112,7 @@ import {
   type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
+import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { bookingMatchesSearch } from './booking-search';
 import {
@@ -532,19 +533,12 @@ export function BookingMonitor({
         primaryCommandQueue={primaryCommandQueue}
       />
 
-      <section className="grid">
-        {summary.map(([label, value]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{value}</h2>
-          </div>
-        ))}
-      </section>
-
-      <div className="monitor-meta">
-        <span>{isPending ? 'Refreshing...' : 'Ready'}</span>
-        <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
-      </div>
+      <BookingMonitorLiveStatusSection
+        hasMounted={hasMounted}
+        isPending={isPending}
+        lastRefreshLabel={lastRefreshLabel}
+        summary={summary}
+      />
 
       <section className="card admin-mt-16">
         <div className="ops-section-header">
