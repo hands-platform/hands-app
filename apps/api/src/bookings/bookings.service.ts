@@ -422,7 +422,7 @@ export class BookingsService {
       eligibleBackupProviderCount: eligibleBackupProviders.length,
       timeoutAt: booking.expiresAt ?? timing.expiresAt,
     });
-    await this.announceOpenBooking({
+    await this.announceInitialOpenMatchingBooking({
       userId: customerUserId,
       bookingId: booking.id,
       customerProfileId: customer.id,
@@ -430,15 +430,8 @@ export class BookingsService {
       couponCode: coupon?.code,
       customerDiscountAmount: priceSummary.discountAmount,
       matchingPayload: result,
-    });
-    await this.notifyBackupProvidersAndRecordTrace({
-      stage: 'initial_open',
-      bookingId: booking.id,
-      providers: eligibleBackupProviders,
-      backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-      backupOpenMode: matchingPolicy.backupOpenMode,
-      backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
-      matchingPayload: result,
+      matchingPolicy,
+      eligibleBackupProviders,
     });
     return result;
   }
@@ -570,6 +563,29 @@ export class BookingsService {
     await this.matching.registerActiveBooking(input.booking.id, result);
     await this.matching.scheduleBookingTimeout(input.booking.id, input.timeoutAt);
     return result;
+  }
+
+  private async announceInitialOpenMatchingBooking(input: {
+    userId: string;
+    bookingId: string;
+    customerProfileId: string;
+    preferredProvider?: { id: string; userId: string; displayName: string } | null;
+    couponCode?: string;
+    customerDiscountAmount: number;
+    matchingPayload: ReturnType<MatchingService['openBooking']>;
+    matchingPolicy: MatchingPolicy;
+    eligibleBackupProviders: BackupProviderNotificationInput['providers'];
+  }) {
+    await this.announceOpenBooking(input);
+    await this.notifyBackupProvidersAndRecordTrace({
+      stage: 'initial_open',
+      bookingId: input.bookingId,
+      providers: input.eligibleBackupProviders,
+      backupProviderRadiusMeters: input.matchingPolicy.backupProviderRadiusMeters,
+      backupOpenMode: input.matchingPolicy.backupOpenMode,
+      backupProviderInvitationLimit: input.matchingPolicy.backupProviderInvitationLimit,
+      matchingPayload: input.matchingPayload,
+    });
   }
 
   private async refreshBookingPaymentAuthorization(booking: OpenBookingForClientResponse) {
