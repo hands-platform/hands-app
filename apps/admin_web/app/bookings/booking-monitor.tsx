@@ -23,7 +23,6 @@ import {
 } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import {
-  bookingListStageFromFacts,
   type BookingListStage,
 } from '../../lib/booking-list-stage';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
@@ -211,6 +210,7 @@ import {
 } from './booking-payment-ops-inputs';
 import { bookingPricingPolicySignalInput } from './booking-pricing-policy-inputs';
 import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
+import { bookingListStage as bookingListStageFromBooking } from './booking-list-stage-inputs';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
@@ -1018,19 +1018,9 @@ function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): B
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
-  return bookingListStageFromFacts({
-    bookingId: booking.id,
-    hasChatRoom: bookingMatchingChatReady(booking),
-    isHandoffStatus: isHandoffBookingStatus(booking.status),
-    isTerminalStatus: terminalBookingStatuses.has(booking.status),
-    locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
-    matchingEvidence: booking.matchingEvidence,
-    marketplaceAlertNotifiedCount: bookingBackupAlertTraceSummary(booking).totalNotified,
+  return bookingListStageFromBooking(booking, nowMs, {
     marketplaceCount: bookingMarketplaceParticipantCount(booking),
-    responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
     selectableCount: bookingCustomerSelectableCount(booking),
-    selectedPartnerPresent: bookingHasFinalPartner(booking),
-    status: booking.status,
   });
 }
 
