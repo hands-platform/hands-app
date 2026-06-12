@@ -156,6 +156,12 @@ import {
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
 import { bookingMarketplaceCoverageInputFromBooking } from './booking-marketplace-coverage-inputs';
+import {
+  bookingCustomerSelectableCount,
+  bookingMarketplaceCountFacts,
+  bookingMarketplaceParticipantCount,
+  bookingMarketplaceParticipants,
+} from './booking-marketplace-count-facts';
 import { bookingMarketplaceOperatingQueueFactFromBooking } from './booking-marketplace-operating-queue-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
@@ -255,10 +261,6 @@ import {
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
 import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
-import {
-  bookingCustomerSelectableParticipantsForBooking as buildBookingCustomerSelectableParticipants,
-  bookingMarketplaceParticipantsForBooking as buildBookingMarketplaceParticipants,
-} from '../../lib/booking-participant-choice';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
@@ -698,7 +700,7 @@ function buildBookingMonitorListRow(
 ): BookingMonitorListRow {
   const flags = bookingCheckFlags(booking, currentTimeMs);
   const matchingPolicy = bookingMatchingPolicySnapshot(booking);
-  const marketplaceParticipantRows = marketplaceParticipants(booking);
+  const marketplaceParticipantRows = bookingMarketplaceParticipants(booking);
   const cashDebtNeedsOps = bookingCashDebtNeedsOps(booking);
 
   return {
@@ -1345,7 +1347,7 @@ function bookingProviderLabel(booking: AdminBooking) {
   const provider =
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
-    marketplaceParticipants(booking)[0]?.providerProfile?.displayName;
+    bookingMarketplaceParticipants(booking)[0]?.providerProfile?.displayName;
   return provider ? `Partner ${partnerDisplayName({ displayName: provider })}` : 'Partner pending';
 }
 
@@ -1353,21 +1355,18 @@ function partnerDisplayName(provider?: { displayName?: string | null } | null, f
   return displayMarketplaceText(provider?.displayName ?? fallback);
 }
 
-function marketplaceParticipants(booking: AdminBooking) {
-  return buildBookingMarketplaceParticipants(booking);
-}
-
 function buildMarketplaceBookingCoverageRows(
   bookings: AdminBooking[],
   nowMs: number,
 ): readonly AdminMarketplaceBookingCoverageRow[] {
   return buildMarketplaceBookingCoverageRowsFromFacts(
-    bookings.map((booking) =>
-      bookingMarketplaceCoverageInputFromBooking(booking, nowMs, {
-        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        selectableCount: bookingCustomerSelectableCount(booking),
-      }),
-    ),
+    bookings.map((booking) => {
+      const counts = bookingMarketplaceCountFacts(booking);
+      return bookingMarketplaceCoverageInputFromBooking(booking, nowMs, {
+        marketplaceParticipantCount: counts.marketplaceParticipantCount,
+        selectableCount: counts.customerSelectableCount,
+      });
+    }),
   );
 }
 
@@ -1391,10 +1390,11 @@ function buildMarketplaceOperationsCards(
   return buildMarketplaceOperationsCardItems(
     buildMarketplaceOperationsCardCounts({
       bookings: bookings.map((booking) =>
-        bookingMarketplaceOperationsBookingFactFromBooking(booking, nowMs, {
-          customerSelectableCount: bookingCustomerSelectableCount(booking),
-          marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        }),
+        bookingMarketplaceOperationsBookingFactFromBooking(
+          booking,
+          nowMs,
+          bookingMarketplaceCountFacts(booking),
+        ),
       ),
       ledgerRows,
     }),
@@ -1407,27 +1407,16 @@ function buildMarketplaceOperatingQueue(
 ): MarketplaceOperatingQueueItem<AdminBooking>[] {
   return buildMarketplaceOperatingQueueItems(
     buildMarketplaceOperatingQueueBuckets(
-      bookings.map((booking) =>
-        bookingMarketplaceOperatingQueueFactFromBooking(booking, nowMs, {
-          customerSelectableCount: bookingCustomerSelectableCount(booking),
-          marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+      bookings.map((booking) => {
+        const counts = bookingMarketplaceCountFacts(booking);
+        return bookingMarketplaceOperatingQueueFactFromBooking(booking, nowMs, {
+          customerSelectableCount: counts.customerSelectableCount,
+          marketplaceParticipantCount: counts.marketplaceParticipantCount,
           preferredAwaitingDecision: bookingFirstPickPending(booking),
-        }),
-      ),
+        });
+      }),
     ),
   );
-}
-
-function customerSelectableParticipants(booking: AdminBooking) {
-  return buildBookingCustomerSelectableParticipants(booking);
-}
-
-function bookingMarketplaceParticipantCount(booking: AdminBooking) {
-  return booking.matchingEvidence?.marketplaceParticipantCount ?? marketplaceParticipants(booking).length;
-}
-
-function bookingCustomerSelectableCount(booking: AdminBooking) {
-  return booking.matchingEvidence?.selectableParticipantCount ?? customerSelectableParticipants(booking).length;
 }
 
 function bookingFirstPickPending(booking: AdminBooking) {
