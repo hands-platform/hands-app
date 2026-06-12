@@ -1114,12 +1114,7 @@ function buildBookingDispatchPartnerShortcuts(
   bookings: AdminBooking[],
   nowMs: number,
 ): BookingDispatchPartnerShortcut[] {
-  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
-  const noPartnerSupply = openMatching.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0);
-  const firstPickWaiting = openMatching.filter((booking) => bookingFirstPickPending(booking));
-  const customerSelection = openMatching.filter((booking) => bookingCustomerSelectableCount(booking) > 0);
-  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-  const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+  const facts = buildBookingDispatchPartnerShortcutFacts(bookings, nowMs);
 
   return [
     {
@@ -1127,42 +1122,42 @@ function buildBookingDispatchPartnerShortcuts(
       value: 'Open',
       detail: 'Full partner command view with direct, marketplace, KYC, wallet, location, and alert lanes.',
       href: '/partners',
-      tone: openMatching.length ? 'info' : 'ok',
+      tone: facts.openMatching.length ? 'info' : 'ok',
     },
     {
       title: 'Direct-ready partners',
-      value: firstPickWaiting.length.toString(),
+      value: facts.firstPickWaiting.length.toString(),
       detail: 'Use when preferred partners must answer inside the response window.',
       href: '/partners?review=direct-ready',
-      tone: firstPickWaiting.length ? 'warn' : 'ok',
+      tone: facts.firstPickWaiting.length ? 'warn' : 'ok',
     },
     {
       title: 'Marketplace-ready',
-      value: noPartnerSupply.length.toString(),
+      value: facts.noPartnerSupply.length.toString(),
       detail: 'Use when open matching has no marketplace supply or customer options.',
       href: '/partners?review=marketplace-ready',
-      tone: noPartnerSupply.length ? 'warn' : 'ok',
+      tone: facts.noPartnerSupply.length ? 'warn' : 'ok',
     },
     {
       title: 'Acceptance blockers',
-      value: customerSelection.length.toString(),
+      value: facts.customerSelection.length.toString(),
       detail: 'Repair KYC, bank, wallet, location, push, or control gates before dispatch pressure rises.',
       href: '/partners?review=acceptance-blocked',
-      tone: customerSelection.length ? 'info' : 'ok',
+      tone: facts.customerSelection.length ? 'info' : 'ok',
     },
     {
       title: 'Cash fee debt',
-      value: cashDebt.length.toString(),
+      value: facts.cashDebt.length.toString(),
       detail: 'Cash bookings can create negative Partner wallets that block final acceptance, service start, and payout release.',
       href: '/cash-settlements',
-      tone: cashDebt.length ? 'danger' : 'ok',
+      tone: facts.cashDebt.length ? 'danger' : 'ok',
     },
     {
       title: 'Location refresh',
-      value: locationChecks.length.toString(),
+      value: facts.locationChecks.length.toString(),
       detail: 'Live booking location checks should send operators to partner location freshness review.',
       href: '/partners?review=location',
-      tone: locationChecks.length ? 'warn' : 'ok',
+      tone: facts.locationChecks.length ? 'warn' : 'ok',
     },
     {
       title: 'Policy controls',
@@ -1172,6 +1167,19 @@ function buildBookingDispatchPartnerShortcuts(
       tone: 'info',
     },
   ];
+}
+
+function buildBookingDispatchPartnerShortcutFacts(bookings: AdminBooking[], nowMs: number) {
+  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+
+  return {
+    cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
+    customerSelection: openMatching.filter((booking) => bookingCustomerSelectableCount(booking) > 0),
+    firstPickWaiting: openMatching.filter((booking) => bookingFirstPickPending(booking)),
+    locationChecks: bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
+    noPartnerSupply: openMatching.filter((booking) => bookingMarketplaceParticipantCount(booking) === 0),
+    openMatching,
+  };
 }
 
 function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
