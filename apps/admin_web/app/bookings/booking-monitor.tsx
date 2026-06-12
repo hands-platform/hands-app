@@ -195,7 +195,6 @@ import {
 import { bookingMarketplaceOperationsBookingFactFromBooking } from './booking-marketplace-operations-card-inputs';
 import {
   bookingIsBackupSelected,
-  bookingIsSelectedProviderParticipant,
   bookingPreferredAwaitingDecision as bookingFirstPickPending,
   bookingPreferredProviderStateLabel,
 } from './booking-preferred-provider-state';
@@ -1435,13 +1434,6 @@ function selectionToneClass(booking: AdminBooking) {
 }
 
 function bookingSelectionFacts(booking: AdminBooking) {
-  const hasPreferredProvider = Boolean(booking.preferredProvider);
-  return bookingMonitorSelectionFactsFromBooking(booking, {
-    firstPickPending: bookingFirstPickPending(booking),
-    isBackupSelected: bookingIsBackupSelected(booking),
-    isSelectedProviderParticipant: bookingIsSelectedProviderParticipant(booking),
-    marketplaceCount: bookingMarketplaceParticipantCount(booking),
-    preferredProviderState: hasPreferredProvider ? bookingPreferredProviderStateLabel(booking) : null,
-  });
+  return bookingMonitorSelectionFactsFromBooking(booking);
 }
 

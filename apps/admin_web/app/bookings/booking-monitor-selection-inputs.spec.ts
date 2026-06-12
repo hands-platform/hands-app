@@ -1,8 +1,17 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { bookingMonitorSelectionFactsFromBooking } from './booking-monitor-selection-inputs';
+import {
+  bookingMonitorSelectionFactsFromBooking,
+  bookingMonitorSelectionInputFactsFromBooking,
+} from './booking-monitor-selection-inputs';
+
+type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 
 function booking(input: Partial<AdminBooking>): AdminBooking {
   return input as AdminBooking;
+}
+
+function participant(input: Partial<BookingParticipant>): BookingParticipant {
+  return input as BookingParticipant;
 }
 
 describe('bookingMonitorSelectionFactsFromBooking', () => {
@@ -63,6 +72,44 @@ describe('bookingMonitorSelectionFactsFromBooking', () => {
       isSelectedProviderParticipant: false,
       marketplaceCount: 0,
       preferredProviderState: null,
+    });
+  });
+
+  it('builds selection input facts directly from booking state', () => {
+    const item = booking({
+      id: 'booking-3',
+      matchingEvidence: {
+        marketplaceParticipantCount: 3,
+      } as AdminBooking['matchingEvidence'],
+      participants: [
+        participant({
+          providerProfile: { id: 'preferred' },
+          status: 'JOINED',
+        }),
+        participant({
+          providerProfile: { id: 'selected' },
+          status: 'SELECTED',
+        }),
+      ],
+      preferredProvider: { id: 'preferred', displayName: 'First Pick' } as AdminBooking['preferredProvider'],
+      selectedProvider: { id: 'selected', displayName: 'Selected Partner' } as AdminBooking['selectedProvider'],
+      status: 'OPEN_MATCHING',
+    });
+
+    expect(bookingMonitorSelectionInputFactsFromBooking(item)).toEqual({
+      firstPickPending: true,
+      isBackupSelected: true,
+      isSelectedProviderParticipant: true,
+      marketplaceCount: 3,
+      preferredProviderState: 'not final',
+    });
+
+    expect(bookingMonitorSelectionFactsFromBooking(item)).toMatchObject({
+      firstPickPending: true,
+      isBackupSelected: true,
+      isSelectedProviderParticipant: true,
+      marketplaceCount: 3,
+      preferredProviderState: 'not final',
     });
   });
 });
