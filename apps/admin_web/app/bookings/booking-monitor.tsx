@@ -111,6 +111,7 @@ import {
 import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
+import { bookingMonitorCheckFlagsInput } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import {
@@ -1223,25 +1224,26 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   const providerLocationAvailable = hasProviderLocation(booking);
   const hasChatRoom = bookingMatchingChatReady(booking);
 
-  return bookingMonitorCheckFlagsFromFacts({
-    status: booking.status,
-    hasPayment: Boolean(booking.payment),
-    paymentStatus: booking.payment?.status,
-    paymentProviderRef: booking.payment?.providerRef,
-    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-    pricingPolicy: bookingPricingPolicySignal(booking),
-    matchingWindowExpired: isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
-    firstPickPending: isOpenMatching && bookingFirstPickPending(booking),
-    participantCount: bookingMarketplaceParticipantCount(booking),
-    matchingChatReady: booking.status === 'MATCHED' ? hasChatRoom : true,
-    hasProviderLocation: providerLocationAvailable,
-    providerLocationFreshness: providerLocationAvailable
-      ? providerLocationFreshness(booking, nowMs)
-      : 'missing',
-    hasChatRoom,
-    chatMessageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
+  return bookingMonitorCheckFlagsFromFacts(
+    bookingMonitorCheckFlagsInput({
+      status: booking.status,
+      hasPayment: Boolean(booking.payment),
+      paymentStatus: booking.payment?.status,
+      paymentProviderRef: booking.payment?.providerRef,
+      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+      pricingPolicy: bookingPricingPolicySignal(booking),
+      responseWindowExpired: isOpenMatching && bookingMatchingWindowExpired(booking, nowMs),
+      firstPickAwaitingDecision: isOpenMatching && bookingFirstPickPending(booking),
+      participantCount: bookingMarketplaceParticipantCount(booking),
+      hasProviderLocation: providerLocationAvailable,
+      providerLocationFreshness: providerLocationAvailable
+        ? providerLocationFreshness(booking, nowMs)
+        : 'missing',
+      hasChatRoom,
+      chatMessageCount: booking.chatRoom?.messages?.length ?? 0,
+    }),
+  );
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
