@@ -55,9 +55,17 @@ npm.cmd run external:check:maps
    - Do not enable Supabase Phone Auth for normal app testing until delivery is verified.
 
 6. Push
-   - Current: in-app notification records.
-   - Future: FCM backend adapter with Firebase Admin credentials.
-   - Keep REST API keys server-side only.
+   - Current: in-app notification records plus server-side FCM delivery path.
+   - Next: confirm live Android/iOS device delivery with a real app FCM token.
+   - Keep Firebase Admin credentials server-side only.
+   - Verify:
+
+```powershell
+npm.cmd run external:check:push
+npm.cmd run fcm:credentials-check
+npm.cmd run fcm:token-smoke -- --dry-run
+npm.cmd run fcm:push-smoke -- --dry-run
+```
 
 7. Payments
    - Current: Cash plus MoMo/VNPay placeholder adapters.

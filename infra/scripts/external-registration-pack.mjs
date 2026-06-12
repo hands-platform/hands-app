@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 import {
+  firebaseAdminCredentialsConfigured,
   firebaseApplicationCredentialsConfigured,
   firebaseServiceAccountJsonConfigured,
   firebaseServiceAccountJsonEnvKey,
@@ -15,6 +16,7 @@ const format =
 const outFile = process.argv.find((arg) => arg.startsWith('--out='))?.slice('--out='.length);
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const { env } = loadMergedEnv(envFile);
+const firebaseAdminReady = firebaseAdminCredentialsConfigured(env);
 
 const registrationItems = [
   {
@@ -290,7 +292,7 @@ const registrationItems = [
     ],
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
-      'Keep PUSH_PROVIDER=in_app_only locally until provider credentials and mobile SDK setup are ready.',
+      'Use PUSH_PROVIDER=in_app_only for inbox-only local work; use PUSH_PROVIDER=fcm for intentional OS push E2E or staging rollout.',
       'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file available to the API process or Docker container.',
@@ -300,10 +302,15 @@ const registrationItems = [
     verify: [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
-      'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
+      ...(firebaseAdminReady
+        ? []
+        : [
+            'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
+          ]),
       'npm.cmd run fcm:credentials-check',
       'npm.cmd run fcm:token-smoke -- --dry-run',
       'npm.cmd run fcm:push-smoke -- --dry-run',
+      'Set FCM_SMOKE_DEVICE_TOKEN to a real app token, then run npm.cmd run fcm:push-smoke.',
     ],
   },
   {
