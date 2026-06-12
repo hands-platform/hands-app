@@ -1,5 +1,6 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { SetupOverviewSection } from './setup-overview-section';
+import { SetupOperatorActionsSection } from './setup-operator-actions-section';
 import { SetupProgressControlSection } from './setup-progress-control-section';
 import { SetupRegistrationHandoffSection } from './setup-registration-handoff-section';
 
@@ -423,59 +424,7 @@ export default async function SetupPage() {
       <SetupRegistrationHandoffSection registrationPlan={registrationPlan} />
 
       <section className="detail-grid admin-mb-16">
-        <div className="card" id="live-readiness">
-          <div className="ops-section-header">
-            <div>
-              <h2>Next operator actions</h2>
-              <p className="muted">
-                These are the highest-priority human setup steps. Code checks can keep passing while these
-                external values are pending.
-              </p>
-            </div>
-            <span className={`signal ${nextActions.length === 0 ? 'signal-ok' : 'signal-warn'}`}>
-              {nextActions.length === 0 ? 'No pending actions' : `${nextActions.length} pending`}
-            </span>
-          </div>
-          <div className="setup-action-list">
-            {nextActions.slice(0, 6).map((item) => (
-              <a className="setup-action-item" href={`#${item.groupId}`} key={`${item.groupId}-${item.name}`}>
-                <span>{item.phase}</span>
-                <strong>{item.name}</strong>
-                <p className="muted">{item.action}</p>
-                {item.commands.length > 0 && (
-                  <div className="setup-command-list admin-mt-8">
-                    {item.commands.slice(0, 2).map((command) => (
-                      <code key={`${item.groupId}-${item.name}-${command}`}>{command}</code>
-                    ))}
-                  </div>
-                )}
-              </a>
-            ))}
-            {nextActions.length === 0 && (
-              <p className="muted">
-                All current-stage setup actions are clear. Deferred production integrations stay tracked
-                separately.
-              </p>
-            )}
-          </div>
-          {deferredActions.length > 0 && (
-            <div className="setup-command-block admin-mt-16">
-              <h3>Deferred production setup</h3>
-              <p className="muted">
-                These are intentionally parked until the right E2E pass, so they should not interrupt current
-                product development.
-              </p>
-              <div className="setup-command-list">
-                {deferredActions.slice(0, 6).map((item) => (
-                  <code key={`${item.groupId}-${item.name}`}>
-                    {item.name}: {item.action}
-                    {item.commands.length > 0 ? ` Verify: ${item.commands[0]}` : ''}
-                  </code>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <SetupOperatorActionsSection nextActions={nextActions} deferredActions={deferredActions} />
 
         <div className="card">
           <h2>Migration runway</h2>
