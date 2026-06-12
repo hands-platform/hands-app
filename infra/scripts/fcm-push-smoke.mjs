@@ -307,6 +307,7 @@ function dryRunNextActions() {
   const actions = [
     'This dry-run checks merged config only; it does not contact the API or FCM.',
     'Run npm.cmd run fcm:credentials-check to verify Firebase Admin credential file contents.',
+    'Run npm.cmd run docker:contract to verify Docker service URLs and Firebase Admin credential mount paths.',
     'Run npm.cmd run external:check:push before the live FCM smoke.',
   ];
 
