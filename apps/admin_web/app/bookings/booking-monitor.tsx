@@ -146,6 +146,7 @@ import {
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
 import { bookingMarketplaceCoverageInput } from './booking-marketplace-coverage-inputs';
+import { bookingMarketplaceOperatingQueueFact } from './booking-marketplace-operating-queue-inputs';
 import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import {
   bookingMonitorSelectionFromFacts,
@@ -1558,17 +1559,14 @@ function buildMarketplaceOperatingQueue(
 ): MarketplaceOperatingQueueItem<AdminBooking>[] {
   return buildMarketplaceOperatingQueueItems(
     buildMarketplaceOperatingQueueBuckets(
-      bookings.map((booking) => ({
-        booking,
-        cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-        chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
-        hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
-        hasPreferredPartner: Boolean(booking.preferredProvider),
-        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-        preferredAwaitingDecision: bookingFirstPickPending(booking),
-        responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-        status: booking.status,
-      })),
+      bookings.map((booking) =>
+        bookingMarketplaceOperatingQueueFact(booking, {
+          hasCustomerSelectablePartner: bookingCustomerSelectableCount(booking) > 0,
+          marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+          preferredAwaitingDecision: bookingFirstPickPending(booking),
+          responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+        }),
+      ),
     ),
   );
 }
