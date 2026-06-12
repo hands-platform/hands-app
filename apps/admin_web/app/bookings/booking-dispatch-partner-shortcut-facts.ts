@@ -1,4 +1,7 @@
 import type { AdminBooking } from '../../lib/admin-api';
+import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
+import { bookingLocationNeedsOpsInput } from './booking-location-ops-inputs';
+import { bookingCashDebtNeedsOps } from './booking-payment-closeout-facts';
 
 export type BookingDispatchPartnerShortcutFacts = {
   readonly cashDebt: readonly AdminBooking[];
@@ -18,6 +21,30 @@ export type BookingDispatchPartnerShortcutBookingFact = {
   readonly marketplaceParticipantCount: number;
   readonly status: string;
 };
+
+export type BookingDispatchPartnerShortcutBookingFactInput = {
+  readonly customerSelectableCount: number;
+  readonly firstPickPending: boolean;
+  readonly marketplaceParticipantCount: number;
+};
+
+export function bookingDispatchPartnerShortcutBookingFact(
+  booking: AdminBooking,
+  nowMs: number,
+  input: BookingDispatchPartnerShortcutBookingFactInput,
+): BookingDispatchPartnerShortcutBookingFact {
+  const open = booking.status === 'OPEN_MATCHING';
+
+  return {
+    booking,
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    customerSelectableCount: open ? input.customerSelectableCount : 0,
+    firstPickPending: open ? input.firstPickPending : false,
+    locationNeedsOps: bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs)),
+    marketplaceParticipantCount: open ? input.marketplaceParticipantCount : 0,
+    status: booking.status,
+  };
+}
 
 export function bookingDispatchPartnerShortcutFacts(
   facts: readonly BookingDispatchPartnerShortcutBookingFact[],

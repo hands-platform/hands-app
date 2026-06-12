@@ -148,6 +148,7 @@ import {
   terminalBookingStatuses,
 } from './booking-closure-list-signal';
 import {
+  bookingDispatchPartnerShortcutBookingFact,
   bookingDispatchPartnerShortcutFacts as buildBookingDispatchPartnerShortcutFactsFromFacts,
 } from './booking-dispatch-partner-shortcut-facts';
 import {
@@ -953,19 +954,13 @@ function buildBookingDispatchPartnerShortcuts(
 
 function buildBookingDispatchPartnerShortcutFacts(bookings: AdminBooking[], nowMs: number) {
   return buildBookingDispatchPartnerShortcutFactsFromFacts(
-    bookings.map((booking) => {
-      const open = booking.status === 'OPEN_MATCHING';
-
-      return {
-        booking,
-        cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-        customerSelectableCount: open ? bookingCustomerSelectableCount(booking) : 0,
-        firstPickPending: open ? bookingFirstPickPending(booking) : false,
-        locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
-        marketplaceParticipantCount: open ? bookingMarketplaceParticipantCount(booking) : 0,
-        status: booking.status,
-      };
-    }),
+    bookings.map((booking) =>
+      bookingDispatchPartnerShortcutBookingFact(booking, nowMs, {
+        customerSelectableCount: bookingCustomerSelectableCount(booking),
+        firstPickPending: bookingFirstPickPending(booking),
+        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+      }),
+    ),
   );
 }
 
