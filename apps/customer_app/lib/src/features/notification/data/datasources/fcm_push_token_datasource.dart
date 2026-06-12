@@ -10,6 +10,18 @@ class FcmPushTokenDataSource implements PushTokenDataSource {
   final FirebaseMessaging _messaging;
 
   @override
+  Stream<DevicePushToken> get tokenRefreshes {
+    final platform = nativeFcmPushPlatformName;
+    if (platform == null) {
+      return const Stream.empty();
+    }
+
+    return _messaging.onTokenRefresh
+        .where((token) => token.isNotEmpty)
+        .map((token) => DevicePushToken(token: token, platform: platform));
+  }
+
+  @override
   Future<DevicePushToken?> getCurrentDeviceToken() async {
     final platform = nativeFcmPushPlatformName;
     if (platform == null) {

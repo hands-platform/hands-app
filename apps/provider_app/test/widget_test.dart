@@ -71,7 +71,7 @@ void main() {
 
     expect(
       find.text(
-        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review only. Direct first-pick requests are handled separately.',
+        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible, but participation is locked until settlement is cleared. Direct first-pick requests are handled separately.',
       ),
       findsOneWidget,
     );
@@ -137,7 +137,8 @@ void main() {
     expect(providerChatCustomerLongitude(booking), 106.7009);
   });
 
-  test('partner chat location prefers address snapshot over stale root coordinate',
+  test(
+      'partner chat location prefers address snapshot over stale root coordinate',
       () {
     final booking = {
       'id': 'booking-stale-root-chat-location',
@@ -213,8 +214,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Cannot participate until fees are settled'),
-        findsOneWidget);
+    expect(
+        find.text('Cannot participate until fees are settled'), findsOneWidget);
     expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
     expect(
         find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
@@ -277,8 +278,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Cannot participate until fees are settled'),
-        findsNothing);
+    expect(
+        find.text('Cannot participate until fees are settled'), findsNothing);
     expect(find.text('Accept request'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Accept request'));
@@ -340,8 +341,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Cannot participate until fees are settled'),
-        findsNothing);
+    expect(
+        find.text('Cannot participate until fees are settled'), findsNothing);
     expect(find.text('Start service'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Start service'));
@@ -402,8 +403,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Cannot participate until fees are settled'),
-        findsOneWidget);
+    expect(
+        find.text('Cannot participate until fees are settled'), findsOneWidget);
     expect(
       find.text(
           'You are visible to the customer now. Wait for the final selection.'),

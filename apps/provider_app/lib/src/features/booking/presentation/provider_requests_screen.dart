@@ -61,8 +61,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       if (!mounted) {
         return;
       }
-      setState(
-          () => statusMessage = 'A new booking request just arrived.');
+      setState(() => statusMessage = 'A new booking request just arrived.');
       unawaited(loadOpenBookings(showLoading: false));
     });
 
@@ -106,6 +105,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       final session =
           await ref.read(authControllerProvider.notifier).restoreSession();
       if (session != null) {
+        ref.read(pushTokenRefreshRegistrationProvider);
+        await ref.read(registerCurrentDevicePushTokenProvider).call();
         attachRealtimeListeners();
         await goOnline();
         await startLocationHeartbeatAfterOnline();
@@ -130,6 +131,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     });
     try {
       await ref.read(authControllerProvider.notifier).signInDemoProvider();
+      ref.read(pushTokenRefreshRegistrationProvider);
       final pushResult =
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       attachRealtimeListeners();
@@ -184,6 +186,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             phone: loginPhoneController.text.trim(),
             otp: loginOtpController.text.trim(),
           );
+      ref.read(pushTokenRefreshRegistrationProvider);
       final pushResult =
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       attachRealtimeListeners();

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers.dart';
 import '../../../../core/push_messaging_platform.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/datasources/fcm_push_token_datasource.dart';
 import '../../data/datasources/in_app_notification_token_datasource.dart';
 import '../../data/datasources/notification_remote_datasource.dart';
@@ -35,4 +38,29 @@ final registerCurrentDevicePushTokenProvider =
     Provider<RegisterCurrentDevicePushToken>((ref) {
   return RegisterCurrentDevicePushToken(
       ref.read(pushNotificationRepositoryProvider));
+});
+
+final pushTokenRefreshRegistrationProvider = Provider<void>((ref) {
+  final pushTokenDataSource = ref.read(pushTokenDataSourceProvider);
+  final repository = ref.read(pushNotificationRepositoryProvider);
+  final subscription = pushTokenDataSource.tokenRefreshes.listen(
+    (deviceToken) {
+      if (ref.read(authControllerProvider) == null ||
+          !deviceToken.remoteRegistrationRequired) {
+        return;
+      }
+
+      unawaited(repository
+          .registerDeviceToken(
+            token: deviceToken.token,
+            platform: deviceToken.platform,
+          )
+          .catchError((_) {}));
+    },
+    onError: (_) {},
+  );
+
+  ref.onDispose(() {
+    unawaited(subscription.cancel());
+  });
 });

@@ -1,5 +1,7 @@
 abstract class PushTokenDataSource {
   Future<DevicePushToken?> getCurrentDeviceToken();
+
+  Stream<DevicePushToken> get tokenRefreshes;
 }
 
 class DevicePushToken {

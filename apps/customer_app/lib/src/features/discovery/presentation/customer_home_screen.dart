@@ -54,6 +54,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final session =
           await ref.read(authControllerProvider.notifier).restoreSession();
       if (session != null) {
+        ref.read(pushTokenRefreshRegistrationProvider);
+        await ref.read(registerCurrentDevicePushTokenProvider).call();
         await loadHome();
       }
     } catch (exception) {
@@ -103,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             phone: loginPhoneController.text.trim(),
             otp: loginOtpController.text.trim(),
           );
+      ref.read(pushTokenRefreshRegistrationProvider);
       final pushResult =
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       await loadHome();
@@ -165,6 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
     try {
       await ref.read(authControllerProvider.notifier).signInDemoCustomer();
+      ref.read(pushTokenRefreshRegistrationProvider);
       final pushResult =
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       await loadHome();

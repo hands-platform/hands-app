@@ -4,6 +4,9 @@ import 'push_token_datasource.dart';
 
 class InAppNotificationTokenDataSource implements PushTokenDataSource {
   @override
+  Stream<DevicePushToken> get tokenRefreshes => const Stream.empty();
+
+  @override
   Future<DevicePushToken?> getCurrentDeviceToken() async {
     return DevicePushToken(
       token: 'in_app_notifications',
