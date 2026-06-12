@@ -68,7 +68,6 @@ import {
 } from '../../lib/booking-pricing-policy-signal';
 import { customerVisibleStateLabelFromFacts } from '../../lib/customer-visible-state-label';
 import {
-  bookingBackupAlertTraceLabel,
   bookingBackupAlertTracePill,
   bookingBackupAlertTraceSummary,
   bookingBackupAlertTraceTone,
@@ -163,6 +162,7 @@ import {
   bookingMonitorListCashDebtAmountLabel,
   bookingMonitorListFirstPickPhoneLabel,
 } from './booking-monitor-list-labels';
+import { bookingMonitorListBackupAlert } from './booking-monitor-list-backup-alert';
 import {
   bookingMonitorListMarketplaceParticipantOverflowCount,
   bookingMonitorListMarketplaceParticipants,
@@ -722,17 +722,6 @@ function buildBookingMonitorListRow(
     servicePayoutLabel: bookingServicePayoutRuleLabel(booking) ?? null,
     servicePriceLabel: bookingServicePriceLabel(booking),
     stage: bookingListStage(booking, currentTimeMs),
-  };
-}
-
-function bookingMonitorListBackupAlert(
-  booking: AdminBooking,
-  currentTimeMs: number,
-): BookingMonitorListRow['backupAlert'] {
-  return {
-    label: bookingBackupAlertTraceLabel(booking, currentTimeMs),
-    pill: bookingBackupAlertTracePill(booking),
-    tone: bookingBackupAlertTraceTone(booking),
   };
 }
 
