@@ -273,23 +273,17 @@ export class BookingsService {
     if (matchingPolicy.bookingServiceAreaRequired) {
       const serviceAreaError = vietnamBookingCoordinateGateError(bookingLat, bookingLng);
       if (serviceAreaError) {
-        await this.recordBookingGateRejection({
+        await this.rejectBookingOutsideServiceArea({
           actorId: customerUserId,
           customerProfileId: customer.id,
           serviceId: service.id,
           preferredProviderId: preferredProvider?.id,
-          reasonCode: 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
-          reason: serviceAreaError.message,
           bookingLat,
           bookingLng,
           addressText: addressTextForAudit,
-          customerDistanceMeters: null,
-          preferredProviderDistanceMeters: null,
-          customerDistanceLimitMeters: distanceGateLimits.customerDistanceLimitMeters,
-          preferredProviderDistanceLimitMeters: distanceGateLimits.preferredProviderDistanceLimitMeters,
-          currentLocationRecordedAt: null,
+          distanceGateLimits,
+          message: serviceAreaError.message,
         });
-        throw new BadRequestException(serviceAreaError.message);
       }
     } else {
       assertWorldBookingCoordinate(bookingLat, bookingLng);
@@ -484,6 +478,36 @@ export class BookingsService {
         coupon,
       }),
     };
+  }
+
+  private async rejectBookingOutsideServiceArea(input: {
+    actorId: string;
+    customerProfileId: string;
+    serviceId: string;
+    preferredProviderId?: string | null;
+    bookingLat: number;
+    bookingLng: number;
+    addressText: string;
+    distanceGateLimits: ReturnType<typeof bookingDistanceGateLimits>;
+    message: string;
+  }): Promise<never> {
+    await this.recordBookingGateRejection({
+      actorId: input.actorId,
+      customerProfileId: input.customerProfileId,
+      serviceId: input.serviceId,
+      preferredProviderId: input.preferredProviderId,
+      reasonCode: 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+      reason: input.message,
+      bookingLat: input.bookingLat,
+      bookingLng: input.bookingLng,
+      addressText: input.addressText,
+      customerDistanceMeters: null,
+      preferredProviderDistanceMeters: null,
+      customerDistanceLimitMeters: input.distanceGateLimits.customerDistanceLimitMeters,
+      preferredProviderDistanceLimitMeters: input.distanceGateLimits.preferredProviderDistanceLimitMeters,
+      currentLocationRecordedAt: null,
+    });
+    throw new BadRequestException(input.message);
   }
 
   private resolveBookingAddressInput(input: {
