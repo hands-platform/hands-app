@@ -635,15 +635,9 @@ function buildBookingMonitorListRow(
   return {
     actionChips: bookingListActionChips(booking, currentTimeMs),
     addressState: bookingAddressSnapshotState(booking),
-    backupAlert: {
-      label: bookingBackupAlertTraceLabel(booking, currentTimeMs),
-      pill: bookingBackupAlertTracePill(booking),
-      tone: bookingBackupAlertTraceTone(booking),
-    },
+    backupAlert: bookingMonitorListBackupAlert(booking, currentTimeMs),
     booking,
-    cashDebtAmountLabel: cashDebtNeedsOps
-      ? money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)
-      : null,
+    cashDebtAmountLabel: bookingMonitorListCashDebtAmountLabel(booking, cashDebtNeedsOps),
     cashDebtNeedsOps,
     chatState: bookingChatListState(booking),
     checkSignal: bookingCheckLevel(flags),
@@ -654,23 +648,14 @@ function buildBookingMonitorListRow(
     finalGateReason: bookingFinalGateReason(booking),
     finalPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
     firstCheckTitle: flags[0]?.title ?? null,
-    firstPickPhoneLabel: booking.preferredProvider?.user?.phone
-      ? `First-pick phone ${booking.preferredProvider.user.phone}`
-      : 'First-pick partner not set',
+    firstPickPhoneLabel: bookingMonitorListFirstPickPhoneLabel(booking),
     hasMatchingPolicySnapshot: Boolean(matchingPolicy),
-    location: {
-      pillLabel: bookingLocationPillLabel(booking, currentTimeMs),
-      signalLabel: bookingLocationSignalLabel(booking, currentTimeMs),
-      toneClass: bookingLocationToneClass(booking, currentTimeMs),
-    },
+    location: bookingMonitorListLocation(booking, currentTimeMs),
     matchingPolicySummaryLabel: matchingPolicySummaryLabel(matchingPolicy),
     matchingRuleSnapshot: bookingMatchingRuleSnapshot(booking, currentTimeMs),
-    marketplaceParticipantOverflowCount: Math.max(0, marketplaceParticipantRows.length - 4),
-    marketplaceParticipants: marketplaceParticipantRows.slice(0, 4).map((participant) => ({
-      id: participant.id,
-      partnerLabel: partnerDisplayName(participant.providerProfile),
-      status: participant.status,
-    })),
+    marketplaceParticipantOverflowCount:
+      bookingMonitorListMarketplaceParticipantOverflowCount(marketplaceParticipantRows),
+    marketplaceParticipants: bookingMonitorListMarketplaceParticipants(marketplaceParticipantRows),
     nextActionLabel: nextAction(booking),
     openedDateLabel: formatDate(bookingRequestOpenedAt(booking)),
     opsSignal: opsSignal(booking),
@@ -678,20 +663,81 @@ function buildBookingMonitorListRow(
     preferredProviderStateLabel: booking.preferredProvider ? preferredProviderStateLabel(booking) : null,
     pricingPolicy: bookingPricingPolicySignal(booking),
     recencyLabel: recencyLabel(booking, nowMs),
-    selectedFinalPartnerPillLabel:
-      booking.selectedProvider &&
-      bookingSelectedPartnerIdForChoice(booking) !== bookingPreferredPartnerIdForChoice(booking)
-        ? partnerDisplayName(booking.selectedProvider)
-        : null,
-    selection: {
-      label: selectionLabel(booking),
-      pathLabel: selectionPathLabel(booking),
-      toneClass: selectionToneClass(booking),
-    },
+    selectedFinalPartnerPillLabel: bookingMonitorListSelectedFinalPartnerPillLabel(booking),
+    selection: bookingMonitorListSelection(booking),
     serviceOptionLabel: bookingServiceOptionLabel(booking),
     servicePayoutLabel: bookingServicePayoutRuleLabel(booking) ?? null,
     servicePriceLabel: bookingServicePriceLabel(booking),
     stage: bookingListStage(booking, currentTimeMs),
+  };
+}
+
+function bookingMonitorListBackupAlert(
+  booking: AdminBooking,
+  currentTimeMs: number,
+): BookingMonitorListRow['backupAlert'] {
+  return {
+    label: bookingBackupAlertTraceLabel(booking, currentTimeMs),
+    pill: bookingBackupAlertTracePill(booking),
+    tone: bookingBackupAlertTraceTone(booking),
+  };
+}
+
+function bookingMonitorListCashDebtAmountLabel(booking: AdminBooking, cashDebtNeedsOps: boolean) {
+  if (!cashDebtNeedsOps) {
+    return null;
+  }
+  return money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency);
+}
+
+function bookingMonitorListFirstPickPhoneLabel(booking: AdminBooking) {
+  return booking.preferredProvider?.user?.phone
+    ? `First-pick phone ${booking.preferredProvider.user.phone}`
+    : 'First-pick partner not set';
+}
+
+function bookingMonitorListLocation(
+  booking: AdminBooking,
+  currentTimeMs: number,
+): BookingMonitorListRow['location'] {
+  return {
+    pillLabel: bookingLocationPillLabel(booking, currentTimeMs),
+    signalLabel: bookingLocationSignalLabel(booking, currentTimeMs),
+    toneClass: bookingLocationToneClass(booking, currentTimeMs),
+  };
+}
+
+function bookingMonitorListMarketplaceParticipantOverflowCount(
+  participants: readonly BookingParticipant[],
+) {
+  return Math.max(0, participants.length - 4);
+}
+
+function bookingMonitorListMarketplaceParticipants(
+  participants: readonly BookingParticipant[],
+): BookingMonitorListRow['marketplaceParticipants'] {
+  return participants.slice(0, 4).map((participant) => ({
+    id: participant.id,
+    partnerLabel: partnerDisplayName(participant.providerProfile),
+    status: participant.status,
+  }));
+}
+
+function bookingMonitorListSelectedFinalPartnerPillLabel(booking: AdminBooking) {
+  if (
+    !booking.selectedProvider ||
+    bookingSelectedPartnerIdForChoice(booking) === bookingPreferredPartnerIdForChoice(booking)
+  ) {
+    return null;
+  }
+  return partnerDisplayName(booking.selectedProvider);
+}
+
+function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
+  return {
+    label: selectionLabel(booking),
+    pathLabel: selectionPathLabel(booking),
+    toneClass: selectionToneClass(booking),
   };
 }
 
