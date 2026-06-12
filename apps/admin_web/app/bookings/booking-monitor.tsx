@@ -121,6 +121,7 @@ import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filte
 import { bookingMonitorCheckFlagsInput } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
+import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
 import {
   activeBookingStatuses as activeStatuses,
   bookingMonitorSummaryRows,
@@ -239,7 +240,6 @@ import {
 } from '../../lib/marketplace-operating-queue';
 import {
   bookingManualDecisionNeedsOpsFromFacts,
-  bookingPaymentOutcomeNeedsReview,
   bookingPaymentNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
@@ -1182,50 +1182,20 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
 }
 
 function opsSignal(booking: AdminBooking) {
-  const participantCount = bookingMarketplaceParticipantCount(booking);
-  if (booking.status === 'NO_SHOW') {
-    return booking.payment && bookingPaymentOutcomeNeedsReview(booking.payment.status)
-      ? bookingOpsSignal('warn', 'No-show, check payment')
-      : bookingOpsSignal('ok', 'No-show closed');
-  }
-  if (booking.status === 'EXPIRED') {
-    return booking.payment?.status === 'RELEASED'
-      ? bookingOpsSignal('ok', 'Expired and released')
-      : bookingOpsSignal('warn', 'Expired, check payment');
-  }
-  if (booking.status === 'CANCELLED') {
-    return booking.payment?.status === 'RELEASED'
-      ? bookingOpsSignal('ok', 'Cancelled and released')
-      : bookingOpsSignal('warn', 'Cancelled, check payment');
-  }
-  if (booking.status === 'REFUNDED') {
-    return bookingOpsSignal('warn', 'Refunded');
-  }
-  if (bookingCashDebtNeedsOps(booking)) {
-    return bookingOpsSignal('warn', 'Cash fee debt');
-  }
-  if (
-    booking.status === 'OPEN_MATCHING' &&
-    bookingFirstPickPending(booking)
-  ) {
-    return bookingOpsSignal('warn', 'First-pick partner pending');
-  }
-  if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return bookingOpsSignal('warn', 'No marketplace partners yet');
-  }
-  if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return bookingOpsSignal('info', 'Marketplace options ready');
-  }
-  if (booking.status === 'MATCHED' && bookingIsBackupSelected(booking)) {
-    return bookingOpsSignal('info', 'Marketplace partner selected');
-  }
-  if (booking.status === 'MATCHED' && !bookingMatchingChatReady(booking)) {
-    return bookingOpsSignal('warn', 'Chat missing');
-  }
-  return bookingOpsSignal('ok', 'Normal');
+  const state = bookingOpsSignalState({
+    backupSelected: () => bookingIsBackupSelected(booking),
+    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
+    firstPickPending: () => bookingFirstPickPending(booking),
+    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+    matchingChatReady: () => bookingMatchingChatReady(booking),
+    payment: booking.payment,
+    status: booking.status,
+  });
+
+  return bookingOpsSignal(state.tone, state.label);
 }
 
-function bookingOpsSignal(tone: 'info' | 'ok' | 'warn', label: string) {
+function bookingOpsSignal(tone: BookingOpsSignalTone, label: string) {
   return <span className={`signal signal-${tone}`}>{label}</span>;
 }
 
