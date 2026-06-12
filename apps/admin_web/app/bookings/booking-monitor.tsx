@@ -112,6 +112,7 @@ import {
 } from './booking-monitor-summary';
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
+import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -561,49 +562,10 @@ export function BookingMonitor({
         nowMs={currentTimeMs}
       />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer protection closeout board</h2>
-            <p className="muted">
-              Focused closeout lanes for cancelled, expired, no-show, completed, and cash-fee debt bookings.
-              Use this before ending a shift so customer payment and partner wallet outcomes are not left
-              open.
-            </p>
-          </div>
-          <span
-            className={`pill ${
-              customerProtectionBoard.some((lane) => lane.bookings.length > 0) ? 'pill-warn' : 'pill-success'
-            }`}
-          >
-            {customerProtectionBoard.reduce((sum, lane) => sum + lane.bookings.length, 0)} open closeout
-          </span>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {customerProtectionBoard.map((lane) => (
-            <Link className="ops-task-card" href={lane.href} key={lane.title}>
-              <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-              <h3>{lane.title}</h3>
-              <p>{lane.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{lane.status}</span>
-                <span className="pill">{lane.bookings.length} booking(s)</span>
-              </div>
-              {lane.bookings.length > 0 ? (
-                <div className="stack">
-                  {lane.bookings.slice(0, 3).map((booking) => (
-                    <span className="muted" key={`${lane.title}-${booking.id}`}>
-                      {shortId(booking.id)} / {bookingCustomerLabel(booking)} /{' '}
-                      {booking.payment?.status ?? 'no payment'}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <small>{lane.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <BookingMonitorCustomerProtectionSection
+        getCustomerLabel={bookingCustomerLabel}
+        lanes={customerProtectionBoard}
+      />
 
       <section className="card admin-mt-16">
         <div className="ops-section-header">
