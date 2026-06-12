@@ -190,7 +190,8 @@ console.log(
       pushReadiness: pushCheck
         ? {
             status: pushCheck.status,
-            message: pushCheck.message,
+            detail: pushCheck.detail,
+            operatorAction: pushCheck.operatorAction ?? null,
           }
         : null,
       beforeDeliveryCount,
