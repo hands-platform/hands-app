@@ -258,7 +258,7 @@ const result = {
   envFile: envFileExists ? envPath : null,
   phase,
   checks: scopedChecks,
-  nextActions: [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix),
+  nextActions: buildNextActions(requiredFailures, recommendedFailures),
 };
 
 console.log(JSON.stringify(result, null, 2));
@@ -309,6 +309,17 @@ function checkIncludedInPhase(category) {
   };
 
   return (phaseCategories[phase] ?? new Set(['workspace'])).has(category);
+}
+
+function buildNextActions(requiredFailures, recommendedFailures) {
+  const actions = [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix);
+  if (phase === 'push') {
+    actions.push('Run npm.cmd run fcm:token-smoke -- --dry-run to verify token registration smoke inputs.');
+    actions.push(
+      'Run npm.cmd run fcm:push-smoke -- --dry-run after Firebase Admin credentials are configured.',
+    );
+  }
+  return [...new Set(actions)];
 }
 
 function hasValue(key) {
