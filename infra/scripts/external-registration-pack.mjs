@@ -289,7 +289,7 @@ const registrationItems = [
     verify: [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
-      'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json',
+      'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
       'npm.cmd run fcm:credentials-check',
       'npm.cmd run fcm:token-smoke -- --dry-run',
       'npm.cmd run fcm:push-smoke -- --dry-run',
