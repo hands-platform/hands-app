@@ -16,7 +16,7 @@ const serviceAccountJsonStatus = credentialStatus(
   firebaseServiceAccountJsonConfigured(envValue(firebaseServiceAccountJsonEnvKey)),
 );
 const splitEnvStatus = splitCredentialStatus();
-const applicationDefaultStatus = credentialStatus(
+const googleApplicationCredentialsStatus = credentialStatus(
   hasEnvValue(firebaseApplicationCredentialsEnvKey),
   firebaseApplicationCredentialsConfigured(envValue(firebaseApplicationCredentialsEnvKey)),
 );
@@ -36,7 +36,7 @@ const result = {
   credentialSources: {
     serviceAccountJson: serviceAccountJsonStatus,
     splitEnv: splitEnvStatus,
-    applicationDefault: applicationDefaultStatus,
+    googleApplicationCredentials: googleApplicationCredentialsStatus,
   },
   nextActions: nextActions({ ok, invalid }),
 };
@@ -60,7 +60,7 @@ function invalidCredentialKeys() {
     hasEnvValue(firebaseServiceAccountJsonEnvKey) && serviceAccountJsonStatus === 'invalid'
       ? firebaseServiceAccountJsonEnvKey
       : null,
-    hasEnvValue(firebaseApplicationCredentialsEnvKey) && applicationDefaultStatus === 'invalid'
+    hasEnvValue(firebaseApplicationCredentialsEnvKey) && googleApplicationCredentialsStatus === 'invalid'
       ? firebaseApplicationCredentialsEnvKey
       : null,
   ].filter(Boolean);
