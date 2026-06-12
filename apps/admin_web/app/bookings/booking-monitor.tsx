@@ -51,8 +51,6 @@ import {
   bookingLocationNeedsOpsFromFacts,
   hasProviderCoordinate,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
-  providerLocationFreshnessFromTimestamp,
-  type ProviderLocationFreshness,
 } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
@@ -169,6 +167,12 @@ import {
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
 import {
+  bookingLocationPillLabel,
+  bookingLocationSignalLabel,
+  bookingLocationToneClass,
+  providerLocationFreshness,
+} from './booking-location-display';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -276,20 +280,6 @@ type MarketplaceCoveragePillState = {
 };
 
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
-const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
-  expired: 'Location too old',
-  missing: 'No location',
-  recent: 'Location recent',
-  stale: 'Location stale',
-};
-const bookingLocationToneClasses: Record<ProviderLocationFreshness, string> = {
-  expired: 'pill-info',
-  missing: 'pill-neutral',
-  recent: 'pill-success',
-  stale: 'pill-warn',
-};
-const STALE_LOCATION_MINUTES = 30;
-const EXPIRED_LOCATION_HOURS = 24;
 
 export function BookingMonitor({
   bookings,
@@ -1842,64 +1832,3 @@ function preferredPartnerDecisionLabel(status: string) {
   return 'pending';
 }
 
-function bookingLocationSignalLabel(booking: AdminBooking, nowMs: number) {
-  const provider = providerWithLocation(booking);
-  if (!provider) {
-    return 'Partner location: not shared yet';
-  }
-
-  const updatedAt = provider.currentLocationUpdatedAt;
-  if (!updatedAt) {
-    return 'Partner location: saved pin without timestamp';
-  }
-
-  const age = locationAgeLabel(updatedAt, nowMs);
-  return `Partner location: ${age}`;
-}
-
-function bookingLocationPillLabel(booking: AdminBooking, nowMs: number) {
-  return bookingLocationPillLabels[providerLocationFreshness(booking, nowMs)];
-}
-
-function bookingLocationToneClass(booking: AdminBooking, nowMs: number) {
-  return bookingLocationToneClasses[providerLocationFreshness(booking, nowMs)];
-}
-
-function providerLocationFreshness(booking: AdminBooking, nowMs: number): ProviderLocationFreshness {
-  const provider = providerWithLocation(booking);
-  return providerLocationFreshnessFromTimestamp(
-    provider?.currentLocationUpdatedAt,
-    nowMs,
-    STALE_LOCATION_MINUTES,
-    EXPIRED_LOCATION_HOURS,
-  );
-}
-
-function providerWithLocation(booking: AdminBooking) {
-  if (hasProviderCoordinate(booking.selectedProvider)) {
-    return booking.selectedProvider;
-  }
-
-  return (booking.participants ?? [])
-    .map((participant) => participant.providerProfile)
-    .find((provider) => hasProviderCoordinate(provider));
-}
-
-function locationAgeLabel(value: string, nowMs: number) {
-  const updatedAt = new Date(value).getTime();
-  if (!Number.isFinite(updatedAt)) {
-    return 'invalid timestamp';
-  }
-
-  const reference = nowMs > 0 ? nowMs : Date.now();
-  const ageMinutes = Math.max(0, Math.round((reference - updatedAt) / 60_000));
-  if (ageMinutes < 1) {
-    return 'updated just now';
-  }
-  if (ageMinutes < 60) {
-    return `updated ${ageMinutes}m ago`;
-  }
-
-  const ageHours = Math.round(ageMinutes / 60);
-  return `updated ${ageHours}h ago`;
-}
