@@ -167,6 +167,10 @@ import {
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
 import {
+  bookingHasPartnerWalletDebtSignal,
+  bookingMarketplaceWalletSignal,
+} from './booking-marketplace-wallet-signal';
+import {
   bookingLocationPillLabel,
   bookingLocationSignalLabel,
   bookingLocationToneClass,
@@ -1683,32 +1687,6 @@ function bookingParticipantTimestamp(participant: BookingParticipant) {
   }
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
-}
-
-function bookingMarketplaceWalletSignal(booking: AdminBooking): {
-  readonly walletLabel: string;
-  readonly walletTone: MarketplaceBookingCoverageTone;
-} {
-  if (bookingHasPartnerWalletDebtSignal(booking)) {
-    return {
-      walletLabel: `Cash fee debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`,
-      walletTone: 'pill-warn',
-    };
-  }
-  if (booking.earning) {
-    return {
-      walletLabel: `Wallet ${money(booking.earning.netAmount ?? 0, booking.earning.currency)}`,
-      walletTone: booking.earning.status === 'PAID' ? 'pill-success' : 'pill-info',
-    };
-  }
-  if (booking.payment?.method === 'CASH') {
-    return { walletLabel: 'Cash closeout pending', walletTone: 'pill-warn' };
-  }
-  return { walletLabel: 'Wallet pending', walletTone: 'pill-neutral' };
-}
-
-function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
-  return bookingCashDebtNeedsOps(booking);
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
