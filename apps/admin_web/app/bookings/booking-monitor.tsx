@@ -163,6 +163,10 @@ import {
   bookingMonitorListMarketplaceParticipants,
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
+import {
+  bookingFinalPartnerLabel,
+  bookingHasFinalPartner,
+} from './booking-final-partner-state';
 import { bookingMarketplaceOperationsBookingFact } from './booking-marketplace-operations-card-inputs';
 import {
   bookingIsBackupSelected,
@@ -1573,26 +1577,6 @@ function bookingCustomerSelectableCount(booking: AdminBooking) {
 
 function bookingFirstPickPending(booking: AdminBooking) {
   return bookingPreferredAwaitingDecision(booking);
-}
-
-function bookingHasFinalPartner(booking: AdminBooking) {
-  if (booking.selectedProvider) {
-    return true;
-  }
-  return (
-    booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' ||
-    booking.matchingEvidence?.finalSelection === 'CUSTOMER_SELECTED_PARTNER'
-  );
-}
-
-function bookingFinalPartnerLabel(booking: AdminBooking) {
-  if (booking.selectedProvider) {
-    return partnerDisplayName(booking.selectedProvider, 'selected');
-  }
-  if (booking.matchingEvidence?.finalSelection === 'FIRST_PICK_ACCEPTED' && booking.preferredProvider) {
-    return partnerDisplayName(booking.preferredProvider, 'selected');
-  }
-  return null;
 }
 
 function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {
