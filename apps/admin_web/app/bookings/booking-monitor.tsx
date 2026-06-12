@@ -111,6 +111,7 @@ import { bookingMonitorCheckFlagsInputFromBooking } from './booking-monitor-chec
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
+import { bookingMonitorViewMatchReadersFromBooking } from './booking-monitor-view-match-readers';
 import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
 import {
   activeBookingStatuses as activeStatuses,
@@ -1057,30 +1058,28 @@ function buildMatchingEscalationRows(
 }
 
 function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: number) {
-  return bookingMatchesMonitorView(view, {
-    activeStatus: () => activeStatuses.has(booking.status),
-    addressNeedsOps: () => bookingAddressNeedsOps(booking),
-    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-    chatEvidenceNeedsOps: () => bookingChatEvidenceNeedsOps(booking, nowMs),
-    chatLive: () => bookingMatchingChatReady(booking),
-    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
-    closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-    decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
-    highPriorityCheck: () => bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
-    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
-    matchingEscalationNeedsOps: () =>
-      bookingMatchingEscalationNeedsOps(booking, {
-        hasChatRoom: bookingMatchingChatReady(booking),
-        responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-      }),
-    noSupply: () => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
-    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-    pricingPolicyNeedsOps: () => bookingPricingPolicyNeedsOps(booking),
-    refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
-    stageKey: () => bookingListStage(booking, nowMs).key,
-    status: () => booking.status,
-  });
+  return bookingMatchesMonitorView(
+    view,
+    bookingMonitorViewMatchReadersFromBooking(booking, {
+      addressNeedsOps: () => bookingAddressNeedsOps(booking),
+      cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
+      chatEvidenceNeedsOps: () => bookingChatEvidenceNeedsOps(booking, nowMs),
+      closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
+      decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
+      highPriorityCheck: () => bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
+      locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
+      manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
+      matchingEscalationNeedsOps: () =>
+        bookingMatchingEscalationNeedsOps(booking, {
+          hasChatRoom: bookingMatchingChatReady(booking),
+          responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
+        }),
+      paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+      pricingPolicyNeedsOps: () => bookingPricingPolicyNeedsOps(booking),
+      refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
+      stageKey: () => bookingListStage(booking, nowMs).key,
+    }),
+  );
 }
 
 function bookingMatchesEvidenceFilter(
