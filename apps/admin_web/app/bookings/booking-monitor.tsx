@@ -160,6 +160,10 @@ import {
   bookingMonitorSelectionToneClass,
 } from './booking-monitor-selection';
 import {
+  bookingMonitorListCashDebtAmountLabel,
+  bookingMonitorListFirstPickPhoneLabel,
+} from './booking-monitor-list-labels';
+import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
@@ -725,19 +729,6 @@ function bookingMonitorListBackupAlert(
     pill: bookingBackupAlertTracePill(booking),
     tone: bookingBackupAlertTraceTone(booking),
   };
-}
-
-function bookingMonitorListCashDebtAmountLabel(booking: AdminBooking, cashDebtNeedsOps: boolean) {
-  if (!cashDebtNeedsOps) {
-    return null;
-  }
-  return money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency);
-}
-
-function bookingMonitorListFirstPickPhoneLabel(booking: AdminBooking) {
-  return booking.preferredProvider?.user?.phone
-    ? `First-pick phone ${booking.preferredProvider.user.phone}`
-    : 'First-pick partner not set';
 }
 
 function bookingMonitorListLocation(
