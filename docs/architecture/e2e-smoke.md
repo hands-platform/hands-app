@@ -35,13 +35,16 @@ For a smaller OS-push-only check after Firebase Admin credentials and a real dev
 
 ```powershell
 $env:API_BASE_URL='http://localhost:3000/api'
+npm.cmd run external:check:push
 $env:FCM_SMOKE_DEVICE_TOKEN='<real app FCM token>'
+$env:FCM_SMOKE_PLATFORM='android'
 $env:FCM_SMOKE_EXPECT_PROVIDER='FCM'
 $env:FCM_SMOKE_EXPECT_STATUS='SENT'
 npm.cmd run fcm:push-smoke
 ```
 
 Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
+Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/platform, credential readiness, and next push-smoke actions before sending a live retry.
 
 ## Expected Result
 

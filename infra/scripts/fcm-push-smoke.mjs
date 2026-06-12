@@ -2,6 +2,7 @@ import { loadMergedEnv } from './lib/env-file.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
+const firebaseAdminEnvKeys = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 const apiBaseUrl = envValue('API_BASE_URL') ?? 'http://localhost:3000/api';
 const deviceToken = envValue('FCM_SMOKE_DEVICE_TOKEN');
 const platform = normalizePlatform(envValue('FCM_SMOKE_PLATFORM') ?? 'android');
@@ -40,9 +41,14 @@ if (dryRun) {
         phone,
         platform,
         hasDeviceToken: Boolean(deviceToken),
+        pushReadiness: {
+          hasPushProviderFcm: hasExpectedEnvValue('PUSH_PROVIDER', 'fcm'),
+          hasFirebaseAdminCredentials: firebaseAdminConfigured(),
+        },
         requestedNotificationId: requestedNotificationId || null,
         expectedProvider,
         expectedStatus,
+        nextActions: dryRunNextActions(),
       },
       null,
       2,
@@ -242,6 +248,45 @@ function normalizePlatform(value) {
 function envValue(key) {
   const value = env[key]?.trim();
   return value ? value : undefined;
+}
+
+function hasEnvValue(key) {
+  return Boolean(envValue(key));
+}
+
+function hasExpectedEnvValue(key, expected) {
+  return (envValue(key) ?? '').toLowerCase() === expected.toLowerCase();
+}
+
+function allHaveEnvValues(keys) {
+  return keys.every(hasEnvValue);
+}
+
+function firebaseAdminConfigured() {
+  return (
+    hasEnvValue('FIREBASE_SERVICE_ACCOUNT_JSON') ||
+    allHaveEnvValues(firebaseAdminEnvKeys) ||
+    hasEnvValue('GOOGLE_APPLICATION_CREDENTIALS')
+  );
+}
+
+function dryRunNextActions() {
+  const actions = ['Run npm.cmd run external:check:push before the live FCM smoke.'];
+
+  if (!hasExpectedEnvValue('PUSH_PROVIDER', 'fcm')) {
+    actions.push('Set PUSH_PROVIDER=fcm for OS push E2E.');
+  }
+
+  if (!firebaseAdminConfigured()) {
+    actions.push('Configure server-side Firebase Admin credentials for FCM.');
+  }
+
+  if (!deviceToken) {
+    actions.push('Set FCM_SMOKE_DEVICE_TOKEN to a real Android/iOS app FCM token.');
+  }
+
+  actions.push('Run npm.cmd run fcm:push-smoke when API/Docker are ready.');
+  return actions;
 }
 
 function maskDeviceToken(value) {
