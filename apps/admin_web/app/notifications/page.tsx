@@ -93,7 +93,7 @@ export default async function NotificationsPage({
         />
       ) : null}
 
-      <div className="card">
+      <div className="stack">
         <NotificationCommandHeaderSection />
 
         <NotificationChannelPolicySection
