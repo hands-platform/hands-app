@@ -234,9 +234,23 @@ type MarketplaceCoveragePillState = {
   readonly tone: MarketplaceBookingCoverageTone;
 };
 
+type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
+
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const resolvedPaymentOutcomeStatuses = new Set(['RELEASED', 'REFUNDED']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const bookingLocationPillLabels: Record<ProviderLocationFreshness, string> = {
+  expired: 'Location too old',
+  missing: 'No location',
+  recent: 'Location recent',
+  stale: 'Location stale',
+};
+const bookingLocationToneClasses: Record<ProviderLocationFreshness, string> = {
+  expired: 'pill-info',
+  missing: 'pill-neutral',
+  recent: 'pill-success',
+  stale: 'pill-warn',
+};
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 
@@ -2478,37 +2492,14 @@ function bookingLocationSignalLabel(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingLocationPillLabel(booking: AdminBooking, nowMs: number) {
-  const freshness = providerLocationFreshness(booking, nowMs);
-  if (freshness === 'recent') {
-    return 'Location recent';
-  }
-  if (freshness === 'stale') {
-    return 'Location stale';
-  }
-  if (freshness === 'expired') {
-    return 'Location too old';
-  }
-  return 'No location';
+  return bookingLocationPillLabels[providerLocationFreshness(booking, nowMs)];
 }
 
 function bookingLocationToneClass(booking: AdminBooking, nowMs: number) {
-  const freshness = providerLocationFreshness(booking, nowMs);
-  if (freshness === 'recent') {
-    return 'pill-success';
-  }
-  if (freshness === 'stale') {
-    return 'pill-warn';
-  }
-  if (freshness === 'expired') {
-    return 'pill-info';
-  }
-  return 'pill-neutral';
+  return bookingLocationToneClasses[providerLocationFreshness(booking, nowMs)];
 }
 
-function providerLocationFreshness(
-  booking: AdminBooking,
-  nowMs: number,
-): 'recent' | 'stale' | 'expired' | 'missing' {
+function providerLocationFreshness(booking: AdminBooking, nowMs: number): ProviderLocationFreshness {
   const provider = providerWithLocation(booking);
   return providerLocationFreshnessFromTimestamp(
     provider?.currentLocationUpdatedAt,
