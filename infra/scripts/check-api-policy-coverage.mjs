@@ -301,6 +301,11 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   const bookingSource = readFileSync(resolve(root, 'apps/api/src/bookings/bookings.service.ts'), 'utf8');
   const joinBooking = sliceBetween(bookingSource, 'async joinBooking(', 'async selectProvider(');
   const selectProvider = sliceBetween(bookingSource, 'async selectProvider(', 'async updateParticipant(');
+  const assertCustomerCanSelectProvider = sliceBetween(
+    bookingSource,
+    'private async assertCustomerCanSelectProvider(',
+    'async updateParticipant(',
+  );
   const updateParticipant = sliceBetween(bookingSource, 'async updateParticipant(', 'private async notifyBackupProviders(');
   const lifecycleStatus = sliceBetween(bookingSource, 'async updateProviderBookingStatus(', 'private async requireSelectedProvider(');
 
@@ -308,12 +313,13 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (joinBooking.includes('ensureProviderWalletCanJoinMarketplace')) {
     missingMarkers.push('joinBooking must allow negative-wallet marketplace visibility and join before final acceptance');
   }
-  if (!selectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(providerId);')) {
+  if (!assertCustomerCanSelectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(input.providerId);')) {
     missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
   }
   if (
-    !selectProvider.includes('if (providerId !== ownedBooking.preferredProviderId)') &&
-    !selectProvider.includes('if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId))')
+    !assertCustomerCanSelectProvider.includes(
+      'if (isMarketplacePartnerAction(input.providerId, input.preferredProviderId))',
+    )
   ) {
     missingMarkers.push('selectProvider must not block direct first-pick final selection for negative wallet');
   }
@@ -326,9 +332,8 @@ function checkNegativeWalletBookingFunctionBoundaries() {
     'await this.ensureProviderWalletCanJoinMarketplace(provider.id);',
   );
   if (
-    !updateParticipant.includes(
-      'bookingParticipantResponseRoute(booking.preferredProviderId, provider.id, status)',
-    ) ||
+    !updateParticipant.includes('bookingParticipantResponseRoute(') ||
+    !updateParticipant.includes('booking.preferredProviderId') ||
     firstPickAcceptedBranch === -1 ||
     firstPickRejectedBranch === -1 ||
     marketplaceWalletGate === -1 ||

@@ -148,7 +148,11 @@ function checkOnDemandBookingContract() {
   }
   requireMarkers('apps/api/src/bookings/bookings.service.ts', service, [
     'HANDS MVP is on-demand only',
-    'const scheduledStartAt = new Date();',
+    'const timing = openBookingRequestTiming({',
+  ]);
+  requireMarkers('apps/api/src/bookings/bookings.lifecycle.ts', read('apps/api/src/bookings/bookings.lifecycle.ts'), [
+    'const openedAt = input.openedAt ?? new Date();',
+    'scheduledStartAt: openedAt',
   ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
     'Customer-supplied scheduledStartAt should not create scheduled booking',
@@ -174,7 +178,7 @@ function checkAddressBasedBookingContract() {
 
   rejectMarker('apps/customer_app/lib/main.dart', customerApp, 'Please refresh your current GPS before booking');
   requireMarkers('apps/api/src/bookings/bookings.service.ts', service, [
-    'const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);',
+    'const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(',
     'preferredProviderBookingDistanceGateError',
     'bookingDistanceGateSnapshot',
   ]);
@@ -189,6 +193,8 @@ function checkAddressBasedBookingContract() {
 function checkCustomerFinalSelectionContract() {
   const policy = read('apps/api/src/matching/matching.policy.ts');
   const bookings = read('apps/api/src/bookings/bookings.service.ts');
+  const participants = read('apps/api/src/bookings/bookings.participants.ts');
+  const notifications = read('apps/api/src/bookings/bookings.notifications.ts');
   const smoke = read('infra/scripts/api-smoke.mjs');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
@@ -199,10 +205,16 @@ function checkCustomerFinalSelectionContract() {
     'First-pick partner acceptance can match first under API rules',
   ]);
   requireMarkers('apps/api/src/bookings/bookings.service.ts', bookings, [
-    "type: 'booking.matched'",
     'FIRST_PICK_ACCEPTED_FIRST',
-    'selectedProviderId: provider.id',
     'Booking is already matched or no longer open for first-pick acceptance',
+    'matchCustomerSelectedProvider',
+    'announceCustomerSelectedPartnerMatched',
+  ]);
+  requireMarkers('apps/api/src/bookings/bookings.participants.ts', participants, [
+    'selectedProviderId: input.providerProfileId',
+  ]);
+  requireMarkers('apps/api/src/bookings/bookings.notifications.ts', notifications, [
+    "type: 'booking.matched'",
     'The customer selected you for this booking.',
   ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
@@ -478,8 +490,10 @@ function checkAdminPeopleManagementIsFactual() {
     'completed work',
     'last work',
   ]);
-  requireMarkers('apps/admin_web/app/partners/[id]/page.tsx', partnerDetail, [
+  requireMarkers('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx', read('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx'), [
     'Partner operating ledger',
+  ]);
+  requireMarkers('apps/admin_web/app/partners/[id]/page.tsx', partnerDetail, [
     'Partner chat retention ledger',
     'Customer final selection creates the partner chat',
     'Mobile apps can hide completed-service chats',
