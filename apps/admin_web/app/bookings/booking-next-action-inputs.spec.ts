@@ -1,9 +1,15 @@
+import type { AdminBooking } from '../../lib/admin-api';
 import {
+  bookingNextActionCopyInputFromBooking,
   bookingNextActionOwnerInput,
   bookingNextActionPriorityInput,
   bookingNextOperatorActionInput,
   type BookingNextActionInputReaders,
 } from './booking-next-action-inputs';
+
+function booking(input: Partial<AdminBooking>): AdminBooking {
+  return input as AdminBooking;
+}
 
 function readers(): BookingNextActionInputReaders {
   return {
@@ -59,5 +65,33 @@ describe('booking next action input helpers', () => {
       status: 'MATCHED',
     });
     expect(input.cashDebtNeedsOps).not.toHaveBeenCalled();
+  });
+
+  it('builds copy input facts from booking status, payment, and marketplace state', () => {
+    const item = booking({
+      id: 'booking-1',
+      matchingEvidence: {
+        marketplaceParticipantCount: 2,
+      } as AdminBooking['matchingEvidence'],
+      payment: {
+        status: 'AUTHORIZED',
+      } as AdminBooking['payment'],
+      preferredProvider: {
+        id: 'preferred',
+      } as AdminBooking['preferredProvider'],
+      status: 'OPEN_MATCHING',
+    });
+
+    expect(bookingNextActionCopyInputFromBooking(item)).toEqual({
+      backupSelected: false,
+      cashDebtNeedsOps: false,
+      completedCloseoutNeedsOps: false,
+      hasPayment: true,
+      hasPreferredPartner: true,
+      marketplaceParticipantCount: 2,
+      paymentStatus: 'AUTHORIZED',
+      preferredAwaitingDecision: true,
+      status: 'OPEN_MATCHING',
+    });
   });
 });

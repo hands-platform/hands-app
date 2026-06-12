@@ -1,7 +1,18 @@
 import type { BookingCheckLevelFlag } from '../../lib/booking-check-level';
+import type { AdminBooking } from '../../lib/admin-api';
+import type { BookingNextActionCopyInput } from '../../lib/booking-next-action-copy';
 import type { BookingNextActionOwnerInput } from './booking-next-action-owner';
 import type { BookingNextOperatorActionInput } from './booking-next-operator-action';
 import type { BookingNextActionPriorityInput } from './booking-next-action-priority';
+import { bookingMarketplaceParticipantCount } from './booking-marketplace-count-facts';
+import {
+  bookingCashDebtNeedsOps,
+  bookingCompletedCloseoutNeedsOps,
+} from './booking-payment-closeout-facts';
+import {
+  bookingIsBackupSelected,
+  bookingPreferredAwaitingDecision,
+} from './booking-preferred-provider-state';
 
 export type BookingNextActionInputReaders = {
   readonly cashDebtNeedsOps: () => boolean;
@@ -50,5 +61,21 @@ export function bookingNextOperatorActionInput(
     matchingChatReady: readers.matchingChatReady,
     paymentNeedsOps: readers.paymentNeedsOps,
     status: readers.status,
+  };
+}
+
+export function bookingNextActionCopyInputFromBooking(
+  booking: AdminBooking,
+): BookingNextActionCopyInput {
+  return {
+    backupSelected: bookingIsBackupSelected(booking),
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+    hasPayment: Boolean(booking.payment),
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
+    paymentStatus: booking.payment?.status ?? null,
+    preferredAwaitingDecision: bookingPreferredAwaitingDecision(booking),
+    status: booking.status,
   };
 }

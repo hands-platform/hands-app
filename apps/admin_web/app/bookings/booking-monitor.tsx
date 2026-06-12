@@ -95,6 +95,7 @@ import {
 } from './booking-next-action-priority';
 import {
   bookingNextActionOwnerInput,
+  bookingNextActionCopyInputFromBooking,
   bookingNextActionPriorityInput,
   bookingNextOperatorActionInput,
   type BookingNextActionInputReaders,
@@ -1297,17 +1298,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
 }
 
 function nextAction(booking: AdminBooking) {
-  return bookingNextActionCopy({
-    status: booking.status,
-    hasPayment: Boolean(booking.payment),
-    paymentStatus: booking.payment?.status ?? null,
-    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: bookingFirstPickPending(booking),
-    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    backupSelected: bookingIsBackupSelected(booking),
-    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-  });
+  return bookingNextActionCopy(bookingNextActionCopyInputFromBooking(booking));
 }
 
 function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
