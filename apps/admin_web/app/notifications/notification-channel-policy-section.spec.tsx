@@ -116,7 +116,12 @@ function classNamesIn(value: unknown): string[] {
 }
 
 function resolveElement(value: unknown): unknown {
-  return value;
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  if (typeof record?.type !== 'function' || record.type.name === 'CommandCopyButton') {
+    return value;
+  }
+  return resolveElement(record.type(props));
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

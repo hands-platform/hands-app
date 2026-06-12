@@ -37,6 +37,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('Exit criteria: Push readiness check passes.');
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('C:\\dev\\massage-on-demand-vn');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['command-copy-row']));
     expect(section.props.children[0].props.id).toBe('notifications');
   });
 
@@ -151,7 +152,10 @@ function textContent(value: unknown): string {
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+  if (typeof record?.type !== 'function' || record.type.name === 'CommandCopyButton') {
+    return value;
+  }
+  return resolveElement(record.type(props));
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
@@ -159,4 +163,19 @@ function readRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }

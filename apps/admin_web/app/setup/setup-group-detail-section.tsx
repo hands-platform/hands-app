@@ -1,3 +1,5 @@
+import { CommandCopyRow } from '../../components/command-copy-row';
+
 export type SetupGroupDetail = {
   readonly id: string;
   readonly title: string;
@@ -86,7 +88,7 @@ export function SetupGroupDetailSection({ groups }: SetupGroupDetailSectionProps
                 <div>
                   <h4>Next command</h4>
                   <p className="muted">Run this first, then continue through the grouped command list.</p>
-                  <code>{nextCommand}</code>
+                  <CommandCopyRow command={nextCommand} />
                 </div>
               </div>
             </div>
@@ -122,7 +124,7 @@ function SetupCommandList({
           <p className="muted">{group.detail}</p>
           <div className="setup-command-list">
             {group.commands.map((command) => (
-              <code key={command}>{command}</code>
+              <CommandCopyRow command={command} key={command} />
             ))}
           </div>
         </div>

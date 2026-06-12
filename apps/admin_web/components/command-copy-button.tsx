@@ -5,11 +5,19 @@ import { useEffect, useState } from 'react';
 
 const COPY_STATE_RESET_MS = 1600;
 
-type NotificationPreflightCopyButtonProps = {
-  readonly command: string;
+type CommandCopyButtonProps = {
+  readonly copiedLabel?: string;
+  readonly failedLabel?: string;
+  readonly label?: string;
+  readonly value: string;
 };
 
-export function NotificationPreflightCopyButton({ command }: NotificationPreflightCopyButtonProps) {
+export function CommandCopyButton({
+  copiedLabel = 'Command copied',
+  failedLabel = 'Copy command failed',
+  label = 'Copy command',
+  value,
+}: CommandCopyButtonProps) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
@@ -20,9 +28,9 @@ export function NotificationPreflightCopyButton({ command }: NotificationPreflig
     return () => window.clearTimeout(timeout);
   }, [copyState]);
 
-  async function copyCommand() {
+  async function copyValue() {
     try {
-      await navigator.clipboard.writeText(command);
+      await navigator.clipboard.writeText(value);
       setCopyState('copied');
     } catch {
       setCopyState('failed');
@@ -30,21 +38,16 @@ export function NotificationPreflightCopyButton({ command }: NotificationPreflig
   }
 
   const Icon = copyState === 'copied' ? Check : Copy;
-  const label =
-    copyState === 'copied'
-      ? 'Preflight command copied'
-      : copyState === 'failed'
-        ? 'Copy preflight command failed'
-        : 'Copy preflight command';
+  const accessibleLabel = copyState === 'copied' ? copiedLabel : copyState === 'failed' ? failedLabel : label;
 
   return (
     <button
-      aria-label={label}
+      aria-label={accessibleLabel}
       className={`command-copy-button${copyState === 'copied' ? ' is-copied' : ''}${
         copyState === 'failed' ? ' is-failed' : ''
       }`}
-      onClick={copyCommand}
-      title={label}
+      onClick={copyValue}
+      title={accessibleLabel}
       type="button"
     >
       <Icon aria-hidden="true" size={16} strokeWidth={2.4} />
