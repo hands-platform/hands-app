@@ -27,7 +27,6 @@ import {
   type BookingCheckLevelFlag as BookingCheckFlag,
 } from '../../lib/booking-check-level';
 import { bookingMonitorCheckFlagsFromFacts } from '../../lib/booking-monitor-check-flags';
-import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
@@ -212,6 +211,11 @@ import { BookingMonitorMatchingEscalationSection } from './booking-monitor-match
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
+import {
+  bookingCustomerLabel,
+  bookingProviderLabel,
+  partnerDisplayName,
+} from './booking-monitor-labels';
 import {
   buildBookingMonitorMarketplaceCoverageRows,
   buildBookingMonitorMarketplaceOperatingQueue,
@@ -1141,22 +1145,6 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplacePartnerCount: marketplaceCount,
   });
-}
-
-function bookingCustomerLabel(booking: AdminBooking) {
-  return booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
-}
-
-function bookingProviderLabel(booking: AdminBooking) {
-  const provider =
-    booking.selectedProvider?.displayName ??
-    booking.preferredProvider?.displayName ??
-    bookingMarketplaceParticipants(booking)[0]?.providerProfile?.displayName;
-  return provider ? `Partner ${partnerDisplayName({ displayName: provider })}` : 'Partner pending';
-}
-
-function partnerDisplayName(provider?: { displayName?: string | null } | null, fallback = 'Partner') {
-  return displayMarketplaceText(provider?.displayName ?? fallback);
 }
 
 function selectionLabel(booking: AdminBooking) {
