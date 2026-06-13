@@ -9,6 +9,11 @@ import {
 } from '../../lib/admin-notification-push-device';
 import { readSearchParam } from '../../lib/date-range';
 import {
+  ADMIN_PARTNER_ALERT_LEGACY_OS_PUSH_FOR_ALL_BOOKINGS,
+  OPERATIONAL_POLICY_KEYS,
+  adminPartnerAlertChannelRoutesToFcm,
+} from '../../lib/operations-policy';
+import {
   enablePushDeviceConfirmHref,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
@@ -29,8 +34,6 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
-const PARTNER_ALERT_FCM_VALUE = 'FCM_FOR_ALL_BOOKINGS';
-const PARTNER_ALERT_LEGACY_OS_PUSH_VALUE = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
   failed: 'delivery attempts that returned a push provider failure.',
@@ -259,9 +262,7 @@ export function buildNotificationChannelSummary(
   notifications: readonly AdminNotification[],
   operationalPolicies: readonly AdminOperationalPolicySetting[],
 ): NotificationChannelSummary {
-  const partnerAlertPolicy = operationalPolicies.find(
-    (setting) => setting.key === 'notification.partner_alert_channel',
-  );
+  const partnerAlertPolicy = findPartnerAlertPolicy(operationalPolicies);
   const partnerAlerts = notifications.filter((notification) => isPartnerAlertType(notification.type));
   const deliveries = notifications.flatMap(notificationDeliveries);
   return {
@@ -276,10 +277,8 @@ export function buildNotificationPartnerAlertSmokeFallback(
   notifications: readonly AdminNotification[],
   operationalPolicies: readonly AdminOperationalPolicySetting[],
 ): NotificationPartnerAlertSmokeFallback | null {
-  const partnerAlertPolicy = operationalPolicies.find(
-    (setting) => setting.key === 'notification.partner_alert_channel',
-  );
-  if (policyRoutesPartnerAlertsToFcm(partnerAlertPolicy)) {
+  const partnerAlertPolicy = findPartnerAlertPolicy(operationalPolicies);
+  if (adminPartnerAlertChannelRoutesToFcm(partnerAlertPolicy?.value)) {
     return null;
   }
 
@@ -693,9 +692,8 @@ function latestDeliveryPlatform(notification: AdminNotification) {
   return newestDeliveries(notificationDeliveries(notification))[0]?.pushDevice?.platform;
 }
 
-function policyRoutesPartnerAlertsToFcm(setting?: AdminOperationalPolicySetting) {
-  const value = String(setting?.value ?? '');
-  return value === PARTNER_ALERT_FCM_VALUE || value === PARTNER_ALERT_LEGACY_OS_PUSH_VALUE;
+function findPartnerAlertPolicy(operationalPolicies: readonly AdminOperationalPolicySetting[]) {
+  return operationalPolicies.find((setting) => setting.key === OPERATIONAL_POLICY_KEYS.partnerAlertChannel);
 }
 
 function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
@@ -703,7 +701,7 @@ function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
     return 'Not configured';
   }
   const value = String(setting.value);
-  if (value === PARTNER_ALERT_LEGACY_OS_PUSH_VALUE) {
+  if (value === ADMIN_PARTNER_ALERT_LEGACY_OS_PUSH_FOR_ALL_BOOKINGS) {
     return 'FCM for all bookings (legacy saved value)';
   }
   return setting.options?.find((option) => option.value === value)?.label ?? value;
