@@ -160,6 +160,7 @@ const notificationId = defaultNotificationSelection.selectedNotificationId;
 const notificationPreflight = defaultNotificationSelection.notificationPreflight;
 const partnerAlertPolicyPreflight = defaultNotificationSelection.partnerAlertPolicyPreflight;
 const alternativeNotificationPreflights = defaultNotificationSelection.alternativeNotificationPreflights;
+const warnings = registeredDevicePreflight.warnings ?? [];
 
 if (preflight) {
   const blockers = preflightBlockers({
@@ -194,6 +195,8 @@ if (preflight) {
         partnerAlertPolicyPreflight,
         alternativeNotificationPreflights: blockedAlternativeNotificationPreflights,
         liveReady: blockers.length === 0,
+        warnings,
+        warningLabels: warnings.map((warning) => warning.label),
         blockers,
         blockerLabels: blockers.map(fcmSmokeBlockerLabel),
         nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights),
@@ -519,6 +522,8 @@ async function findRegisteredDevicePreflight(accessToken) {
     (device) => device.platform === platform && deviceRoleMatches(device, role),
   );
   const enabledDevices = matchingDevices.filter((device) => device.enabled);
+  const latestDevice = matchingDevices[0];
+  const latestEnabledDevice = enabledDevices[0];
 
   return {
     userId: smokeUser?.id ?? null,
@@ -529,8 +534,9 @@ async function findRegisteredDevicePreflight(accessToken) {
     deviceSource,
     matchingCount: matchingDevices.length,
     enabledCount: enabledDevices.length,
-    latestDevice: summarizePushDevice(matchingDevices[0]),
-    latestEnabledDevice: summarizePushDevice(enabledDevices[0]),
+    latestDevice: summarizePushDevice(latestDevice),
+    latestEnabledDevice: summarizePushDevice(latestEnabledDevice),
+    warnings: registeredDeviceWarnings(latestDevice, latestEnabledDevice),
   };
 }
 
@@ -586,6 +592,39 @@ function summarizePushDevice(device) {
     lastSeenAt: device.lastSeenAt ?? null,
     updatedAt: device.updatedAt ?? null,
   };
+}
+
+function registeredDeviceWarnings(latestDevice, latestEnabledDevice) {
+  if (
+    !latestDevice ||
+    !latestEnabledDevice ||
+    latestDevice.enabled ||
+    latestDevice.id === latestEnabledDevice.id ||
+    pushDeviceTimestampMs(latestDevice) <= pushDeviceTimestampMs(latestEnabledDevice)
+  ) {
+    return [];
+  }
+
+  return [
+    {
+      code: 'NEWER_DISABLED_DEVICE',
+      label: 'The newest matching push device is disabled while preflight will reuse an older enabled device.',
+      operatorAction:
+        'Ask the same app session to refresh its FCM token or confirm the older enabled device before live FCM retry.',
+      latestDeviceId: latestDevice.id ?? null,
+      latestEnabledDeviceId: latestEnabledDevice.id ?? null,
+    },
+  ];
+}
+
+function pushDeviceTimestampMs(device) {
+  const updatedAt = Date.parse(device.updatedAt ?? '');
+  if (Number.isFinite(updatedAt)) {
+    return updatedAt;
+  }
+
+  const lastSeenAt = Date.parse(device.lastSeenAt ?? '');
+  return Number.isFinite(lastSeenAt) ? lastSeenAt : 0;
 }
 
 function summarizeNotification(notification) {
