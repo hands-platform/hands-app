@@ -3,6 +3,7 @@ import {
   buildBookingMonitorMarketplaceCoverageRows,
   buildBookingMonitorMarketplaceOperatingQueue,
   buildBookingMonitorMarketplaceOperationsCards,
+  buildBookingMonitorMarketplacePanelModel,
   buildBookingMonitorMarketplaceParticipantLedgerRows,
 } from './booking-monitor-marketplace-model';
 
@@ -57,5 +58,26 @@ describe('booking monitor marketplace model', () => {
       value: '0 with participant records',
     });
     expect(queue[1].bookings.map((booking) => booking.id)).toEqual(['open-no-supply']);
+  });
+
+  it('builds the marketplace panel model from visible and ordered booking sets', () => {
+    const model = buildBookingMonitorMarketplacePanelModel({
+      marketplaceRadiusMeters: 10_000,
+      nowMs,
+      orderedBookings: [],
+      visibleBookings: [],
+    });
+
+    expect(model.marketplaceBookingCoverageRows).toEqual([]);
+    expect(model.marketplaceLedgerRows).toEqual([]);
+    expect(model.marketplaceBookingCoverageSummary).toMatchObject({ total: 0 });
+    expect(model.marketplaceLedgerSummary).toMatchObject({ total: 0 });
+    expect(model.marketplaceOperatingQueue.map((item) => item.value)).toEqual([
+      '0 waiting',
+      '0 with participant records',
+      '0 waiting',
+      '0 repair',
+      '0 blocked',
+    ]);
   });
 });

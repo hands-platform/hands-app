@@ -1,6 +1,8 @@
 import type { AdminBooking } from '../../lib/admin-api';
 import {
+  buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
+  buildMarketplaceBookingCoverageSummary,
   type MarketplaceBookingCoverageRow,
 } from '../../lib/marketplace-booking-coverage';
 import {
@@ -14,7 +16,9 @@ import {
   type MarketplaceOperatingQueueItem,
 } from '../../lib/marketplace-operating-queue';
 import {
+  buildMarketplaceParticipantLedgerPills,
   buildMarketplaceParticipantLedgerRows as buildMarketplaceParticipantLedgerRowsFromFacts,
+  buildMarketplaceParticipantLedgerSummary,
   type MarketplaceParticipantLedgerRow,
 } from '../../lib/marketplace-participant-ledger';
 import { bookingMarketplaceCoverageInputFromBooking } from './booking-marketplace-coverage-inputs';
@@ -95,4 +99,47 @@ export function buildBookingMonitorMarketplaceOperatingQueue(
       }),
     ),
   );
+}
+
+export function buildBookingMonitorMarketplacePanelModel({
+  marketplaceRadiusMeters,
+  nowMs,
+  orderedBookings,
+  visibleBookings,
+}: {
+  readonly marketplaceRadiusMeters: number;
+  readonly nowMs: number;
+  readonly orderedBookings: readonly AdminBooking[];
+  readonly visibleBookings: readonly AdminBooking[];
+}) {
+  const marketplaceLedgerRows = buildBookingMonitorMarketplaceParticipantLedgerRows(
+    visibleBookings,
+    nowMs,
+    marketplaceRadiusMeters,
+  );
+  const marketplaceBookingCoverageRows = buildBookingMonitorMarketplaceCoverageRows(
+    visibleBookings,
+    nowMs,
+  );
+  const marketplaceBookingCoverageSummary = buildMarketplaceBookingCoverageSummary(
+    marketplaceBookingCoverageRows,
+  );
+  const marketplaceLedgerSummary = buildMarketplaceParticipantLedgerSummary(marketplaceLedgerRows);
+
+  return {
+    marketplaceBookingCoveragePills: buildMarketplaceBookingCoveragePills(
+      marketplaceBookingCoverageSummary,
+    ),
+    marketplaceBookingCoverageRows,
+    marketplaceBookingCoverageSummary,
+    marketplaceLedgerPills: buildMarketplaceParticipantLedgerPills(marketplaceLedgerSummary),
+    marketplaceLedgerRows,
+    marketplaceLedgerSummary,
+    marketplaceOperatingQueue: buildBookingMonitorMarketplaceOperatingQueue(orderedBookings, nowMs),
+    marketplaceOperationsCards: buildBookingMonitorMarketplaceOperationsCards(
+      visibleBookings,
+      marketplaceLedgerRows,
+      nowMs,
+    ),
+  };
 }

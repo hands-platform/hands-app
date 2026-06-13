@@ -56,24 +56,11 @@ import {
   bookingProviderLabel,
 } from './booking-monitor-labels';
 import { bookingMonitorMatchesView } from './booking-monitor-view-model';
-import {
-  buildBookingMonitorMarketplaceCoverageRows,
-  buildBookingMonitorMarketplaceOperatingQueue,
-  buildBookingMonitorMarketplaceOperationsCards,
-  buildBookingMonitorMarketplaceParticipantLedgerRows,
-} from './booking-monitor-marketplace-model';
+import { buildBookingMonitorMarketplacePanelModel } from './booking-monitor-marketplace-model';
 import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
-import {
-  buildMarketplaceBookingCoveragePills,
-  buildMarketplaceBookingCoverageSummary,
-} from '../../lib/marketplace-booking-coverage';
-import {
-  buildMarketplaceParticipantLedgerPills,
-  buildMarketplaceParticipantLedgerSummary,
-} from '../../lib/marketplace-participant-ledger';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
@@ -225,47 +212,15 @@ export function BookingMonitor({
     () => visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
     [currentTimeMs, nowMs, visibleBookings],
   );
-  const marketplaceLedgerRows = useMemo(
+  const marketplacePanel = useMemo(
     () =>
-      buildBookingMonitorMarketplaceParticipantLedgerRows(
+      buildBookingMonitorMarketplacePanelModel({
+        marketplaceRadiusMeters: liveOperationsPolicy.marketplaceRadiusMeters,
+        nowMs: currentTimeMs,
+        orderedBookings,
         visibleBookings,
-        currentTimeMs,
-        liveOperationsPolicy.marketplaceRadiusMeters,
-      ),
-    [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, visibleBookings],
-  );
-  const marketplaceBookingCoverageRows = useMemo(
-    () => buildBookingMonitorMarketplaceCoverageRows(visibleBookings, currentTimeMs),
-    [currentTimeMs, visibleBookings],
-  );
-  const marketplaceBookingCoverageSummary = useMemo(
-    () => buildMarketplaceBookingCoverageSummary(marketplaceBookingCoverageRows),
-    [marketplaceBookingCoverageRows],
-  );
-  const marketplaceBookingCoveragePills = useMemo(
-    () => buildMarketplaceBookingCoveragePills(marketplaceBookingCoverageSummary),
-    [marketplaceBookingCoverageSummary],
-  );
-  const marketplaceLedgerSummary = useMemo(
-    () => buildMarketplaceParticipantLedgerSummary(marketplaceLedgerRows),
-    [marketplaceLedgerRows],
-  );
-  const marketplaceLedgerPills = useMemo(
-    () => buildMarketplaceParticipantLedgerPills(marketplaceLedgerSummary),
-    [marketplaceLedgerSummary],
-  );
-  const marketplaceOperationsCards = useMemo(
-    () =>
-      buildBookingMonitorMarketplaceOperationsCards(
-        visibleBookings,
-        marketplaceLedgerRows,
-        currentTimeMs,
-      ),
-    [currentTimeMs, marketplaceLedgerRows, visibleBookings],
-  );
-  const marketplaceOperatingQueue = useMemo(
-    () => buildBookingMonitorMarketplaceOperatingQueue(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
+      }),
+    [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, orderedBookings, visibleBookings],
   );
 
   const statusFilterOptions = useMemo(
@@ -417,14 +372,14 @@ export function BookingMonitor({
       <BookingMonitorMarketplaceSection
         getCustomerLabel={bookingCustomerLabel}
         getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
-        marketplaceBookingCoveragePills={marketplaceBookingCoveragePills}
-        marketplaceBookingCoverageRows={marketplaceBookingCoverageRows}
-        marketplaceBookingCoverageSummary={marketplaceBookingCoverageSummary}
-        marketplaceLedgerPills={marketplaceLedgerPills}
-        marketplaceLedgerRows={marketplaceLedgerRows}
-        marketplaceLedgerSummary={marketplaceLedgerSummary}
-        marketplaceOperatingQueue={marketplaceOperatingQueue}
-        marketplaceOperationsCards={marketplaceOperationsCards}
+        marketplaceBookingCoveragePills={marketplacePanel.marketplaceBookingCoveragePills}
+        marketplaceBookingCoverageRows={marketplacePanel.marketplaceBookingCoverageRows}
+        marketplaceBookingCoverageSummary={marketplacePanel.marketplaceBookingCoverageSummary}
+        marketplaceLedgerPills={marketplacePanel.marketplaceLedgerPills}
+        marketplaceLedgerRows={marketplacePanel.marketplaceLedgerRows}
+        marketplaceLedgerSummary={marketplacePanel.marketplaceLedgerSummary}
+        marketplaceOperatingQueue={marketplacePanel.marketplaceOperatingQueue}
+        marketplaceOperationsCards={marketplacePanel.marketplaceOperationsCards}
       />
 
       <BookingMonitorListSection emptyMessage={emptyBookingMessage(view)} rows={bookingListRows} />
