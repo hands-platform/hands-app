@@ -579,7 +579,7 @@ describe('notification page model', () => {
       review: 'stale-device',
     });
     expect(notificationFilterDescription('failed')).toBe(
-      'delivery attempts that returned a push provider failure.',
+      'delivery attempts that returned an FCM push failure.',
     );
     expect(notificationFilterDescription('partner-alerts')).toBe(
       'booking and payout alerts sent to partners.',
@@ -592,7 +592,7 @@ describe('notification page model', () => {
       'No notifications loaded.',
     );
     expect(emptyNotificationMessage('failed', undefined, (value) => `short-${value}`)).toBe(
-      'No notifications currently match this queue. delivery attempts that returned a push provider failure.',
+      'No notifications currently match this queue. delivery attempts that returned an FCM push failure.',
     );
     expect(emptyNotificationMessage('failed', 'booking-1', (value) => `short-${value}`)).toBe(
       'No notifications currently match booking short-booking-1. Confirm the booking created an alert row before retrying delivery.',

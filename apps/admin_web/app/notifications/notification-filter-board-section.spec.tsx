@@ -8,7 +8,7 @@ describe('NotificationFilterBoardSection', () => {
   it('renders active queue, booking trace, and quick filter links', () => {
     const section = NotificationFilterBoardSection({
       activeBookingLabel: 'book-1234',
-      activeFilterDescription: 'delivery attempts that returned a push provider failure.',
+      activeFilterDescription: 'delivery attempts that returned an FCM push failure.',
       activeFilterLabel: 'Failed sends',
       activeReview: 'failed',
       filteredCount: 2,
@@ -20,7 +20,7 @@ describe('NotificationFilterBoardSection', () => {
 
     expect(rendered).toContain('Notification operation filters');
     expect(rendered).toContain('Active queue: Failed sends');
-    expect(rendered).toContain('delivery attempts that returned a push provider failure.');
+    expect(rendered).toContain('delivery attempts that returned an FCM push failure.');
     expect(rendered).toContain('Active booking trace: book-1234');
     expect(rendered).toContain('Showing 2 of 10');
     expect(rendered).toContain('Clear filter');

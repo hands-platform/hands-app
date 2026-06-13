@@ -2342,9 +2342,9 @@ function externalReadinessDisplayText(value: string) {
     .replace(/\bcustomer and provider\b/g, 'customer and partner')
     .replace(/\bprovider Android\b/g, 'partner Android')
     .replace(/\bProvider Android\b/g, 'Partner Android')
-    .replace(/\bOS push provider\b/g, 'OS push service')
+    .replace(/\bOS push provider\b/g, 'FCM push service')
     .replace(/\bSMS provider\b/g, 'SMS service')
-    .replace(/\bprovider credentials\b/g, 'SMS backend credentials');
+    .replace(/\bprovider credentials\b/g, 'service credentials');
 }
 
 function externalSetupHref(category: string) {
@@ -3342,8 +3342,8 @@ function buildShiftOperatingRoute(input: {
       title: 'Track deferred external integrations',
       value: currentStageSetupBlocked ? 'blocked' : 'ready',
       checkpoint: currentStageSetupBlocked
-        ? 'Current-stage setup has blocking categories. Deferred SMS, push, and payment providers stay visible in Setup.'
-        : 'Current-stage setup is usable; deferred production providers remain tracked for launch preparation.',
+        ? 'Current-stage setup has blocking categories. Deferred SMS, FCM push, and payment services stay visible in Setup.'
+        : 'Current-stage setup is usable; deferred production services remain tracked for launch preparation.',
       href: '/setup',
       tone: currentStageSetupBlocked ? 'danger' : 'ok',
     },
@@ -3509,7 +3509,7 @@ function buildOperationsCommandBoard(input: {
       value: `${setupOpen} setup`,
       detail: setupOpen
         ? 'Current-stage external setup still has blocking categories to complete before production use.'
-        : 'Current-stage external setup is usable; deferred production providers stay tracked in Setup.',
+        : 'Current-stage external setup is usable; deferred production services stay tracked in Setup.',
       href: '/setup',
       tone: setupOpen ? 'warn' : 'ok',
       checks: ['Supabase infra', 'MapTiler/Geoapify', 'NestJS authority'],
@@ -3948,7 +3948,7 @@ function buildLiveOperationsRadar(input: {
       tone: input.failedNotifications.length ? 'warn' : input.activePayoutBatches.length ? 'info' : 'ok',
       checks: [
         `${input.activePayoutBatches.length} active payout batch(es)`,
-        'Deferred push provider tracked',
+        'Deferred FCM push tracked',
         'Finance audit retained',
       ],
     },
@@ -3959,8 +3959,8 @@ function buildLiveOperationsRadar(input: {
       value: currentStageSetupBlocked ? 'blocked' : 'ready',
       status: currentStageSetupBlocked ? 'Setup' : 'Ready',
       detail: currentStageSetupBlocked
-        ? 'Current-stage external readiness has blocking categories. Keep production providers tracked without hiding the issue.'
-        : 'Current-stage setup is usable; deferred SMS, push, payment, and map providers remain tracked for launch.',
+        ? 'Current-stage external readiness has blocking categories. Keep production services tracked without hiding the issue.'
+        : 'Current-stage setup is usable; deferred SMS, FCM push, payment, and map services remain tracked for launch.',
       href: '/setup',
       tone: currentStageSetupBlocked ? 'danger' : 'ok',
       checks: [
@@ -5717,7 +5717,7 @@ function buildOperatorStartChecklist(input: {
       status: externalSetupNeedsReview ? 'Setup pending' : 'Ready enough',
       detail: externalSetupNeedsReview
         ? 'One or more required external integration checks still need account values or console work.'
-        : 'Current-stage external checks are clear; deferred production providers stay tracked in Setup.',
+        : 'Current-stage external checks are clear; deferred production services stay tracked in Setup.',
       action: 'Open setup',
       href: '/setup',
       className: externalSetupNeedsReview ? 'ops-task-pending' : 'ops-task-done',

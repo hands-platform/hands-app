@@ -48,7 +48,7 @@ const PARTNER_ALERT_TYPES = [
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
-  failed: 'delivery attempts that returned a push provider failure.',
+  failed: 'delivery attempts that returned an FCM push failure.',
   fcm: 'notifications that attempted FCM push delivery.',
   'in-app-route': 'notifications intentionally kept in the app inbox route.',
   'needs-retry': 'notifications whose delivery path should be reviewed before retry.',

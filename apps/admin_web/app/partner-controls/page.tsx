@@ -1491,7 +1491,7 @@ function buildAcceptanceUnblockPlaybook(
       status: card('device-contact')?.status ?? 'UNKNOWN',
       pillClass: card('device-contact')?.blockingCount ? 'pill-danger' : 'pill-warn',
       detail:
-        'In-app alerts are active now and OS push is deferred, so recent app sessions and enabled devices matter.',
+        'In-app alerts are active now and FCM push is deferred, so recent app sessions and enabled devices matter.',
       bookingImpact:
         'Does not always hard-block acceptance, but weakens response rate and marketplace participation.',
       payoutImpact: 'No direct payout impact.',
