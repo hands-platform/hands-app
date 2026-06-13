@@ -155,24 +155,76 @@ describe('NotificationsService retry queue', () => {
   it('re-enqueues an existing notification with the standard retry policy', async () => {
     const prisma = {
       notification: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'notification-1' }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'notification-1', deliveries: [] }),
       },
     };
     const queue = { add: jest.fn() };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(service.retry('notification-1')).resolves.toEqual({
+      latestDelivery: null,
       ok: true,
       notificationId: 'notification-1',
     });
 
     expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith({
       where: { id: 'notification-1' },
+      select: {
+        id: true,
+        deliveries: {
+          orderBy: { attemptedAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            attemptedAt: true,
+            pushDeviceId: true,
+            pushDevice: { select: { enabled: true, platform: true } },
+          },
+        },
+      },
     });
     expect(queue.add).toHaveBeenCalledWith(
       'notification-send',
       { notificationId: 'notification-1' },
       standardQueueOptions,
     );
+  });
+
+  it('returns latest delivery evidence when retrying a recovered notification', async () => {
+    const prisma = {
+      notification: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          deliveries: [
+            {
+              id: 'delivery-1',
+              provider: 'FCM',
+              status: 'SENT',
+              attemptedAt: new Date('2026-06-13T10:23:00.000Z'),
+              pushDeviceId: 'push-device-1',
+              pushDevice: { enabled: true, platform: 'android' },
+            },
+          ],
+        }),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.retry('notification-1')).resolves.toEqual({
+      latestDelivery: {
+        attemptedAt: '2026-06-13T10:23:00.000Z',
+        id: 'delivery-1',
+        provider: 'FCM',
+        pushDeviceEnabled: true,
+        pushDeviceId: 'push-device-1',
+        pushDevicePlatform: 'android',
+        status: 'SENT',
+      },
+      ok: true,
+      notificationId: 'notification-1',
+    });
   });
 });

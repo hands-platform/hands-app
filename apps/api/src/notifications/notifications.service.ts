@@ -26,6 +26,16 @@ type CreateNotificationInput = {
   data?: unknown;
 };
 
+type RetryNotificationLatestDelivery = {
+  id: string;
+  provider: string;
+  status: string;
+  attemptedAt: string;
+  pushDeviceId: string | null;
+  pushDeviceEnabled: boolean | null;
+  pushDevicePlatform: string | null;
+};
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -51,9 +61,27 @@ export class NotificationsService {
   }
 
   async retry(notificationId: string) {
-    const notification = await this.prisma.notification.findUniqueOrThrow({ where: { id: notificationId } });
+    const notification = await this.prisma.notification.findUniqueOrThrow({
+      where: { id: notificationId },
+      select: {
+        id: true,
+        deliveries: {
+          orderBy: { attemptedAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            attemptedAt: true,
+            pushDeviceId: true,
+            pushDevice: { select: { enabled: true, platform: true } },
+          },
+        },
+      },
+    });
+    const latestDelivery = summarizeRetryLatestDelivery(notification.deliveries[0]);
     await this.enqueueNotificationSend(notification.id);
-    return { ok: true, notificationId: notification.id };
+    return { ok: true, notificationId: notification.id, latestDelivery };
   }
 
   listForUser(userId: string) {
@@ -85,4 +113,31 @@ export class NotificationsService {
     const job = notificationSendJob(notificationId);
     await this.notificationQueue.add(job.name, job.data, job.options);
   }
+}
+
+function summarizeRetryLatestDelivery(
+  delivery:
+    | {
+        id: string;
+        provider: string;
+        status: string;
+        attemptedAt: Date;
+        pushDeviceId: string | null;
+        pushDevice: { enabled: boolean; platform: string } | null;
+      }
+    | undefined,
+): RetryNotificationLatestDelivery | null {
+  if (!delivery) {
+    return null;
+  }
+
+  return {
+    id: delivery.id,
+    provider: delivery.provider,
+    status: delivery.status,
+    attemptedAt: delivery.attemptedAt.toISOString(),
+    pushDeviceId: delivery.pushDeviceId,
+    pushDeviceEnabled: delivery.pushDevice?.enabled ?? null,
+    pushDevicePlatform: delivery.pushDevice?.platform ?? null,
+  };
 }

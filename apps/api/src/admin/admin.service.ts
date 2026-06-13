@@ -2160,6 +2160,8 @@ export class AdminService {
     const result = await this.notifications.retry(notificationId);
     await this.writeAudit(actorId, 'notification.retry', `notification:${notificationId}`, {
       notificationId,
+      latestDelivery: result.latestDelivery,
+      retryAlreadyDelivered: result.latestDelivery?.status === 'SENT',
     });
     return result;
   }

@@ -293,11 +293,32 @@ describe('AdminService query orchestration', () => {
       },
     };
     const notifications = {
-      retry: jest.fn().mockResolvedValue({ ok: true, notificationId: 'notification-1' }),
+      retry: jest.fn().mockResolvedValue({
+        latestDelivery: {
+          attemptedAt: '2026-06-13T10:23:00.000Z',
+          id: 'delivery-1',
+          provider: 'FCM',
+          pushDeviceEnabled: true,
+          pushDeviceId: 'push-device-1',
+          pushDevicePlatform: 'android',
+          status: 'SENT',
+        },
+        ok: true,
+        notificationId: 'notification-1',
+      }),
     };
     const service = createAdminService(prisma, { notifications });
 
     await expect(service.retryNotification('admin-1', 'notification-1')).resolves.toEqual({
+      latestDelivery: {
+        attemptedAt: '2026-06-13T10:23:00.000Z',
+        id: 'delivery-1',
+        provider: 'FCM',
+        pushDeviceEnabled: true,
+        pushDeviceId: 'push-device-1',
+        pushDevicePlatform: 'android',
+        status: 'SENT',
+      },
       ok: true,
       notificationId: 'notification-1',
     });
@@ -308,7 +329,19 @@ describe('AdminService query orchestration', () => {
         actorId: 'admin-1',
         action: 'notification.retry',
         target: 'notification:notification-1',
-        metadata: { notificationId: 'notification-1' },
+        metadata: {
+          latestDelivery: {
+            attemptedAt: '2026-06-13T10:23:00.000Z',
+            id: 'delivery-1',
+            provider: 'FCM',
+            pushDeviceEnabled: true,
+            pushDeviceId: 'push-device-1',
+            pushDevicePlatform: 'android',
+            status: 'SENT',
+          },
+          notificationId: 'notification-1',
+          retryAlreadyDelivered: true,
+        },
       },
     });
   });
