@@ -54,7 +54,7 @@ Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live i
 Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/phone/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
 Use `npm.cmd run fcm:push-smoke -- --preflight` to check API readiness, selected notification availability, and device readiness without sending FCM.
 When the selected app session has already registered an enabled push device, set `FCM_SMOKE_USE_REGISTERED_DEVICE=true` to run live push without copying the raw device token into the shell.
-Partner-alert notifications follow the `notification.partner_alert_channel` operational policy. If that policy currently routes Partner alerts to `IN_APP_ONLY`, preflight suggests a recent standard-notification `FCM_SMOKE_NOTIFICATION_ID` for the same role/phone when the expected provider is `FCM`.
+Partner-alert notifications follow the `notification.partner_alert_channel` operational policy. If that policy currently routes Partner alerts to `IN_APP_ONLY` and no explicit `FCM_SMOKE_NOTIFICATION_ID` is set, the smoke auto-selects a recent standard notification for the same role/phone when the expected provider is `FCM`; otherwise preflight reports the blocker and suggests a standard-notification id when one exists.
 
 ## Expected Result
 

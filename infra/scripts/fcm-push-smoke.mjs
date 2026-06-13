@@ -111,18 +111,16 @@ const adminAuth = await request('/auth/verify-otp', {
 
 const registeredDevicePreflight = await findRegisteredDevicePreflight(adminAuth.accessToken);
 const adminNotifications = await listAdminNotifications(adminAuth.accessToken);
-const notificationId = requestedNotificationId ?? (await findLatestUserNotificationId(auth.accessToken));
-const notificationPreflight = notificationId
-  ? summarizeNotification(findNotification(adminNotifications, notificationId))
-  : null;
-const partnerAlertPolicyPreflight = await findPartnerAlertPolicyPreflight(
-  adminAuth.accessToken,
-  notificationPreflight,
-);
-const alternativeNotificationPreflights = findAlternativeNotificationPreflights(
-  adminNotifications,
-  notificationId,
-);
+const latestUserNotificationId = await findLatestUserNotificationId(auth.accessToken);
+const defaultNotificationSelection = await selectDefaultNotification({
+  accessToken: adminAuth.accessToken,
+  notifications: adminNotifications,
+  latestUserNotificationId,
+});
+const notificationId = defaultNotificationSelection.selectedNotificationId;
+const notificationPreflight = defaultNotificationSelection.notificationPreflight;
+const partnerAlertPolicyPreflight = defaultNotificationSelection.partnerAlertPolicyPreflight;
+const alternativeNotificationPreflights = defaultNotificationSelection.alternativeNotificationPreflights;
 
 if (preflight) {
   const blockers = preflightBlockers({
@@ -150,6 +148,7 @@ if (preflight) {
         useRegisteredDevice,
         pushReadiness: pushReadinessOutput(pushCheck),
         registeredDevicePreflight,
+        notificationSelection: summarizeNotificationSelection(defaultNotificationSelection),
         notificationPreflight,
         partnerAlertPolicyPreflight,
         alternativeNotificationPreflights: blockedAlternativeNotificationPreflights,
@@ -300,6 +299,7 @@ console.log(
       role,
       phone,
       notificationId,
+      notificationSelection: summarizeNotificationSelection(defaultNotificationSelection),
       registeredDevice: registeredDevice
         ? {
             id: registeredDevice.id,
@@ -333,6 +333,53 @@ async function findLatestUserNotificationId(accessToken) {
     headers: { authorization: `Bearer ${accessToken}` },
   });
   return Array.isArray(notifications) ? notifications[0]?.id : null;
+}
+
+async function selectDefaultNotification({ accessToken, notifications, latestUserNotificationId }) {
+  let selectedNotificationId = requestedNotificationId ?? latestUserNotificationId ?? null;
+  let notificationPreflight = selectedNotificationId
+    ? summarizeNotification(findNotification(notifications, selectedNotificationId))
+    : null;
+  let partnerAlertPolicyPreflight = await findPartnerAlertPolicyPreflight(accessToken, notificationPreflight);
+  let alternativeNotificationPreflights = findAlternativeNotificationPreflights(
+    notifications,
+    selectedNotificationId,
+  );
+  let autoSelectedAlternative = false;
+
+  if (
+    !requestedNotificationId &&
+    expectedProviderBlocker(partnerAlertPolicyPreflight) &&
+    alternativeNotificationPreflights[0]?.id
+  ) {
+    selectedNotificationId = alternativeNotificationPreflights[0].id;
+    notificationPreflight = summarizeNotification(findNotification(notifications, selectedNotificationId));
+    partnerAlertPolicyPreflight = await findPartnerAlertPolicyPreflight(accessToken, notificationPreflight);
+    alternativeNotificationPreflights = findAlternativeNotificationPreflights(
+      notifications,
+      selectedNotificationId,
+    );
+    autoSelectedAlternative = true;
+  }
+
+  return {
+    requestedNotificationId: requestedNotificationId ?? null,
+    latestUserNotificationId: latestUserNotificationId ?? null,
+    selectedNotificationId,
+    autoSelectedAlternative,
+    notificationPreflight,
+    partnerAlertPolicyPreflight,
+    alternativeNotificationPreflights,
+  };
+}
+
+function summarizeNotificationSelection(selection) {
+  return {
+    requestedNotificationId: selection.requestedNotificationId,
+    latestUserNotificationId: selection.latestUserNotificationId,
+    selectedNotificationId: selection.selectedNotificationId,
+    autoSelectedAlternative: selection.autoSelectedAlternative,
+  };
 }
 
 async function findAdminNotification(accessToken, notificationId) {

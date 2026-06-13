@@ -203,7 +203,7 @@ export const setupOrder = [
       'Run fcm:token-smoke before live push smoke; it verifies customer/Partner token registration without contacting FCM.',
       'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
       'Run fcm:push-smoke -- --preflight to check API readiness, notification availability, and registered device readiness without sending FCM.',
-      'If Partner alert preflight is blocked by notification.partner_alert_channel, use the suggested standard-notification FCM_SMOKE_NOTIFICATION_ID for the smoke retry instead of changing policy just for testing.',
+      'If the latest Partner alert is blocked by notification.partner_alert_channel, FCM smoke auto-selects or suggests a standard-notification id instead of changing policy just for testing.',
       'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
       'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling FCM push broadly.',
     ],
