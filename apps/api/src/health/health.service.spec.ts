@@ -92,6 +92,7 @@ describe('HealthService external push readiness', () => {
     const check = pushCheck({ PUSH_PROVIDER: 'fcm' });
 
     expect(check?.status).toBe('BLOCKED');
+    expect(check?.name).toBe('FCM push service');
     expect(check?.missing).toEqual([
       'FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY or GOOGLE_APPLICATION_CREDENTIALS',
     ]);

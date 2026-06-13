@@ -32,9 +32,9 @@ describe('SetupReadinessOrderSection', () => {
 
     expect(section.type).toBe('section');
     expect(rendered).toContain('Live readiness');
-    expect(rendered).toContain('OS push service');
+    expect(rendered).toContain('FCM push service');
     expect(rendered).toContain('Customer and partner push credentials are required.');
-    expect(rendered).toContain('Invalid: SMS backend credentials');
+    expect(rendered).toContain('Invalid: service credentials');
     expect(rendered).toContain('Secret-safe');
     expect(rendered).toContain('Recommended order');
     expect(rendered).toContain('Step 1');
@@ -47,14 +47,14 @@ describe('SetupReadinessOrderSection', () => {
       readinessChecks: [
         {
           category: 'push',
-          name: 'OS push provider',
+          name: 'FCM push service',
           status: 'BLOCKED',
           configured: ['PUSH_PROVIDER'],
           missing: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
           invalid: [],
           detail: 'Current delivery is in-app only.',
           scope: 'DEFERRED',
-          operatorAction: 'Add FCM credentials later for Android/iOS OS push E2E.',
+          operatorAction: 'Add FCM credentials later for Android/iOS FCM push E2E.',
           commands: ['npm.cmd run external:check:production'],
           secretSafe: true,
         },

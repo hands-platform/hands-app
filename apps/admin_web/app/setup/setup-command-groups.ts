@@ -42,7 +42,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     },
     {
       title: 'Token registration',
-      detail: 'Verify customer/Partner FCM token registration through the API without sending OS push.',
+      detail: 'Verify customer/Partner FCM token registration through the API without sending FCM push.',
       commands: commands.filter((command) => command === 'npm.cmd run fcm:token-smoke'),
     },
     {

@@ -47,10 +47,10 @@ describe('SetupGroupDetailSection', () => {
       groups: [
         {
           id: 'notifications',
-          title: 'OS push notifications',
+          title: 'FCM push notifications',
           phase: 'Messaging E2E',
           operatorAction: 'Configure FCM only when native push E2E starts.',
-          purpose: 'Required before native OS push notifications.',
+          purpose: 'Required before native FCM push notifications.',
           status: 'Partial',
           statusClass: 'signal signal-info',
           envPills: [],
@@ -87,6 +87,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('npm.cmd run docker:contract');
     expect(rendered).toContain('Token registration');
     expect(rendered).toContain('customer/Partner FCM token registration');
+    expect(rendered).toContain('without sending FCM push');
     expect(rendered).toContain('API preflight');
     expect(rendered).toContain('without sending FCM');
     expect(rendered).toContain('Partner alert policy fallback');

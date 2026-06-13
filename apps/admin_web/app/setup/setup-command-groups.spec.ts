@@ -24,6 +24,7 @@ describe('setup command groups', () => {
     const groups = setupCommandGroups('notifications', [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:push-smoke -- --preflight',
+      'npm.cmd run fcm:token-smoke',
       '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_NOTIFICATION_ID="<id>"; npm.cmd run fcm:push-smoke -- --preflight',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<token>"; npm.cmd run fcm:push-smoke',
       'Open http://localhost:3101/notifications?review=fcm',
@@ -32,11 +33,15 @@ describe('setup command groups', () => {
 
     expect(groups.map((group) => group.title)).toEqual([
       'Dry-run readiness',
+      'Token registration',
       'API preflight',
       'Partner alert policy fallback',
       'Live push send',
       'Review queues',
       'Additional checks',
     ]);
+    expect(groups.find((group) => group.title === 'Token registration')?.detail).toContain(
+      'without sending FCM push',
+    );
   });
 });

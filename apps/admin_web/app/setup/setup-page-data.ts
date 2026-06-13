@@ -184,13 +184,13 @@ export const setupOrder = [
   },
   {
     id: 'notifications',
-    title: 'OS push notifications',
+    title: 'FCM push notifications',
     phase: 'Messaging E2E',
     operatorAction:
-      'Keep in-app notifications as fallback, then verify FCM with current app tokens before broad OS push.',
+      'Keep in-app notifications as fallback, then verify FCM with current app tokens before broad FCM push.',
     exitCriteria: 'FCM project, Firebase Admin credentials, and mobile device delivery are confirmed.',
     purpose:
-      'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
+      'Required before native FCM push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
     env: fcmEnvKeys,
     notes: [
       'OTP SMS belongs to the deferred Supabase Phone Auth step.',
@@ -205,7 +205,7 @@ export const setupOrder = [
       'Run fcm:push-smoke -- --preflight to check API readiness, notification availability, and registered device readiness without sending FCM.',
       'If Partner alert preflight is blocked by notification.partner_alert_channel, use the suggested non partner-alert FCM_SMOKE_NOTIFICATION_ID for the smoke retry instead of changing policy just for testing.',
       'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
-      'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling OS push broadly.',
+      'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling FCM push broadly.',
     ],
     commands: [
       'npm.cmd run external:check:push',

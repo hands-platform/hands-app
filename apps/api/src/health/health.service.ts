@@ -194,20 +194,20 @@ export class HealthService {
 
     if (pushProvider === 'in_app_only') {
       return {
-        name: 'OS push provider',
+        name: 'FCM push service',
         category: 'push',
         status: 'BLOCKED',
         missing: [FCM_CREDENTIAL_REQUIREMENT],
         configured: ['PUSH_PROVIDER'],
         invalid: [],
         detail:
-          'Current delivery is in-app only. Set PUSH_PROVIDER=fcm and server-side Firebase Admin credentials before OS push E2E.',
+          'Current delivery is in-app only. Set PUSH_PROVIDER=fcm and server-side Firebase Admin credentials before FCM push E2E.',
       };
     }
 
     if (pushProvider !== 'fcm') {
       return {
-        name: 'OS push provider',
+        name: 'FCM push service',
         category: 'push',
         status: 'BLOCKED',
         missing: [],
@@ -222,7 +222,7 @@ export class HealthService {
     const configured = ['PUSH_PROVIDER', ...configuredFirebaseCredentialKeys(firebaseConfig)];
 
     return {
-      name: 'OS push provider',
+      name: 'FCM push service',
       category: 'push',
       status: readiness.ready ? 'READY' : 'BLOCKED',
       missing: readiness.missing,
@@ -614,7 +614,7 @@ function externalReadinessMetadata(category: string, name: string) {
   if (category === 'push') {
     return {
       operatorAction:
-        'Use in-app notifications as fallback, then run push readiness, env contract, credential, token, and live-device checks before broad OS push.',
+        'Use in-app notifications as fallback, then run push readiness, env contract, credential, token, and live-device checks before broad FCM push.',
       commands: [
         'npm.cmd run external:check:push',
         'npm.cmd run fcm:env-contract',

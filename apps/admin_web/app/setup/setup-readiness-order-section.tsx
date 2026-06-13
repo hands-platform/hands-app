@@ -129,7 +129,7 @@ function externalReadinessDisplayText(value: string) {
     .replace(/\bcustomer and provider\b/g, 'customer and partner')
     .replace(/\bprovider Android\b/g, 'partner Android')
     .replace(/\bProvider Android\b/g, 'Partner Android')
-    .replace(/\bOS push provider\b/g, 'OS push service')
+    .replace(/\bOS push provider\b/g, 'FCM push service')
     .replace(/\bSMS provider\b/g, 'SMS service')
-    .replace(/\bprovider credentials\b/g, 'SMS backend credentials');
+    .replace(/\bprovider credentials\b/g, 'service credentials');
 }

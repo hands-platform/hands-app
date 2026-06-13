@@ -34,7 +34,7 @@ describe('setup page data', () => {
         'Run fcm:push-smoke -- --preflight to check API readiness, notification availability, and registered device readiness without sending FCM.',
         'If Partner alert preflight is blocked by notification.partner_alert_channel, use the suggested non partner-alert FCM_SMOKE_NOTIFICATION_ID for the smoke retry instead of changing policy just for testing.',
         'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
-        'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling OS push broadly.',
+        'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling FCM push broadly.',
       ]),
     );
     expect(notificationSetup?.commands).toEqual(
