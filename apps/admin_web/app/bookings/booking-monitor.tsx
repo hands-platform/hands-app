@@ -45,10 +45,7 @@ import { BookingMonitorCommandCenterSection } from './booking-monitor-command-ce
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
-import {
-  bookingCustomerProtectionBoardFromFacts,
-  type BookingCustomerProtectionLane,
-} from './booking-customer-protection-board';
+import { buildBookingMonitorCustomerProtectionBoard } from './booking-monitor-customer-protection-model';
 import { bookingMatchingChatReady } from './booking-chat-handoff-state';
 import {
   bookingClosureListSignal,
@@ -80,7 +77,6 @@ import {
 import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
-  bookingCustomerProtectionFactsFromBookings,
 } from './booking-payment-closeout-facts';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
@@ -151,8 +147,6 @@ type Props = {
 };
 
 type BookingView = BookingPageView;
-
-type BookingProtectionLane = BookingCustomerProtectionLane<AdminBooking>;
 
 export function BookingMonitor({
   bookings,
@@ -245,7 +239,7 @@ export function BookingMonitor({
     [currentTimeMs, orderedBookings],
   );
   const customerProtectionBoard = useMemo(
-    () => buildCustomerProtectionBoard(orderedBookings),
+    () => buildBookingMonitorCustomerProtectionBoard(orderedBookings),
     [orderedBookings],
   );
   const matchingEscalationBoard = useMemo(
@@ -561,8 +555,4 @@ function buildBookingMonitorListRow(
 }
 function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
   return bookingMonitorSelectionCopy(booking);
-}
-
-function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
-  return bookingCustomerProtectionBoardFromFacts(bookingCustomerProtectionFactsFromBookings(bookings));
 }
