@@ -253,7 +253,7 @@ export function buildAuditCommandBoard(
       detail: 'Send, retry, and device recovery actions should line up with notification delivery outcomes.',
       status: 'Alerts',
       operatorAction:
-        'Open Notifications, then confirm failed, stale, and disabled-device rows were handled.',
+        'Open Notifications, then confirm failed, FCM sent, stale, and disabled-device rows were handled.',
       href: withAuditRange('/audit-log?bucket=Notification', range),
       tone: notificationLogs.length > 0 ? 'info' : 'ok',
       logs: buildAuditCommandLogPreviews(notificationLogs),
@@ -609,10 +609,14 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const platform = readString(latestDelivery.pushDevicePlatform);
   const failureCode = readString(latestDelivery.failureCode);
   const jobName = readString(retryJob.jobName);
+  const fcmOutcome = notificationFcmOutcomeHighlight(provider, status);
   const retryRisk = notificationRetryRiskHighlight(readString(metadata.retryRisk));
 
   if (retryRisk) {
     highlights.push(retryRisk);
+  }
+  if (fcmOutcome) {
+    highlights.push(fcmOutcome);
   }
   if (metadata.retryAlreadyDelivered === true) {
     highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
@@ -650,6 +654,25 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 7);
+}
+
+function notificationFcmOutcomeHighlight(
+  provider: string | null,
+  status: string | null,
+): MetadataHighlight | null {
+  if (provider !== 'FCM' || !status) {
+    return null;
+  }
+  if (status === 'SENT') {
+    return { label: 'FCM sent evidence', className: 'pill pill-success' };
+  }
+  if (status === 'FAILED') {
+    return { label: 'FCM failure evidence', className: 'pill pill-warn' };
+  }
+  if (status === 'SKIPPED') {
+    return { label: 'FCM skipped evidence', className: 'pill pill-info' };
+  }
+  return null;
 }
 
 function notificationStatusHighlightClass(status: string) {
