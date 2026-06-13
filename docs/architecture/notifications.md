@@ -91,6 +91,8 @@ Partner-alert notifications are also gated by the `notification.partner_alert_ch
 
 Use `npm.cmd run notifications:role-audit` to read the local database and summarize recent notification deliveries whose target role does not match the recorded `PushDevice.role`. The audit is read-only and does not print raw push tokens. Add `-- --strict` when you want the command to fail on mismatches during a release gate.
 
+Use `npm.cmd run notifications:role-repair` for a dry-run list of enabled push devices whose stored role is not present on the owning user. Add `-- --apply` to disable those mismatched devices without deleting records or exposing raw push tokens.
+
 ## Mobile Setup Notes
 
 Android uses `google-services.json` and the Google Services Gradle plugin when FCM client integration is added. iOS uses `GoogleService-Info.plist`, APNs key/cert configuration through Firebase, and the Flutter FCM client. These files are secrets/config artifacts and must stay outside Git.
