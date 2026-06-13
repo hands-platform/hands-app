@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/fcm_message_handling_service.dart';
+import 'features/auth/presentation/providers/auth_providers.dart';
 import 'features/booking/presentation/partner_jobs_screen.dart';
 import 'features/booking/presentation/provider_requests_screen.dart';
 import 'features/chat/presentation/provider_chat_screen.dart';
 import 'features/earnings/presentation/provider_earnings_screen.dart';
 import 'features/notification/domain/entities/push_notification_open_intent.dart';
+import 'features/notification/presentation/providers/notification_providers.dart';
 import 'features/provider_profile/presentation/provider_profile_screen.dart';
 
 class ProviderShell extends ConsumerStatefulWidget {
@@ -32,6 +34,7 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   int _chatOpenVersion = 0;
   int _requestsOpenVersion = 0;
   int _earningsOpenVersion = 0;
+  bool _pushRegistrationStarted = false;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -49,6 +52,14 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (_, next) {
+      if (next == null) {
+        _pushRegistrationStarted = false;
+        return;
+      }
+      _startPushRegistration();
+    });
+
     final screens = [
       RequestsScreen(
         key: ValueKey('provider-push-requests-$_requestsOpenVersion'),
@@ -138,6 +149,15 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
       }
       index = value;
     });
+  }
+
+  void _startPushRegistration() {
+    if (_pushRegistrationStarted) {
+      return;
+    }
+    _pushRegistrationStarted = true;
+    ref.read(pushTokenRefreshRegistrationProvider);
+    unawaited(ref.read(registerCurrentDevicePushTokenProvider).call());
   }
 
   int _tabIndexForNotificationDestination(

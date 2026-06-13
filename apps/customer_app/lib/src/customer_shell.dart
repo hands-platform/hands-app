@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/fcm_message_handling_service.dart';
+import 'features/auth/presentation/providers/auth_providers.dart';
 import 'features/booking/presentation/customer_bookings_screen.dart';
 import 'features/chat/presentation/customer_chat_screen.dart';
 import 'features/discovery/presentation/customer_home_screen.dart';
 import 'features/discovery/presentation/customer_providers_screen.dart';
 import 'features/notification/domain/entities/push_notification_open_intent.dart';
+import 'features/notification/presentation/providers/notification_providers.dart';
 import 'features/profile/presentation/customer_profile_screen.dart';
 
 class CustomerShell extends ConsumerStatefulWidget {
@@ -30,6 +32,7 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
   String? _notificationPaymentId;
   int _chatOpenVersion = 0;
   int _bookingOpenVersion = 0;
+  bool _pushRegistrationStarted = false;
   StreamSubscription<FcmNotificationOpen>? _notificationOpenSubscription;
 
   @override
@@ -47,6 +50,14 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(authControllerProvider, (_, next) {
+      if (next == null) {
+        _pushRegistrationStarted = false;
+        return;
+      }
+      _startPushRegistration();
+    });
+
     final screens = [
       const HomeScreen(),
       const ProvidersScreen(),
@@ -122,6 +133,15 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
       }
       index = value;
     });
+  }
+
+  void _startPushRegistration() {
+    if (_pushRegistrationStarted) {
+      return;
+    }
+    _pushRegistrationStarted = true;
+    ref.read(pushTokenRefreshRegistrationProvider);
+    unawaited(ref.read(registerCurrentDevicePushTokenProvider).call());
   }
 
   int _tabIndexForNotificationDestination(
