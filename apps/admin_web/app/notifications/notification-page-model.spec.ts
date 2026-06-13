@@ -323,6 +323,20 @@ describe('notification page model', () => {
 
     expect(model.activeFilter?.label).toBe('Failed sends');
     expect(model.confirmation?.action).toBe('retry');
+    expect(model.metrics.map((metric) => [metric.label, metric.value])).toEqual([
+      ['Total', 2],
+      ['Needs retry', 1],
+      ['Sent', 1],
+      ['Skipped', 0],
+      ['Pending', 0],
+      ['Failed', 1],
+      ['Disabled devices', 0],
+      ['Stale devices', 0],
+      ['Payout setup', 0],
+      ['Partner alerts', 2],
+      ['No-show alerts', 0],
+      ['FCM route', 2],
+    ]);
     expect(model.notifications.map((item) => item.id)).toEqual(['notification-failed']);
     expect(model.notificationRows.map((row) => row.id)).toEqual(['notification-failed']);
     expect(model.summary).toMatchObject({ failed: 1, sent: 1 });

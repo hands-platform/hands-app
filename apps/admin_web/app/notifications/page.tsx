@@ -37,36 +37,7 @@ export default async function NotificationsPage({
   return (
     <AdminPageTemplate
       description="Delivery board for push retries, disabled devices, and last-mile alert confidence."
-      metrics={[
-        { label: 'Total', value: model.allNotifications.length, helper: 'Notification rows loaded.' },
-        {
-          label: 'Needs retry',
-          value: model.summary.needsRetry,
-          helper: 'Failed or disabled delivery paths.',
-        },
-        { label: 'Sent', value: model.summary.sent, helper: 'Successful push delivery attempts.' },
-        {
-          label: 'Skipped',
-          value: model.summary.skipped,
-          helper: 'Intentionally skipped delivery attempts.',
-        },
-        { label: 'Pending', value: model.summary.pending, helper: 'Rows without delivery attempts.' },
-        { label: 'Failed', value: model.summary.failed, helper: 'Push failures needing review.' },
-        { label: 'Disabled devices', value: model.summary.disabledDevices, helper: 'Push devices disabled.' },
-        {
-          label: 'Stale devices',
-          value: model.summary.staleDevices,
-          helper: 'Old token timestamps at send.',
-        },
-        { label: 'Payout setup', value: model.summary.payoutSetup, helper: 'Partner payout setup alerts.' },
-        {
-          label: 'Partner alerts',
-          value: model.channelSummary.partnerAlertCount,
-          helper: 'Partner-facing alerts.',
-        },
-        { label: 'No-show alerts', value: model.summary.noShow, helper: 'No-show support review alerts.' },
-        { label: 'FCM route', value: model.channelSummary.fcmDeliveries, helper: 'OS push attempts.' },
-      ]}
+      metrics={model.metrics}
       title="Notifications"
     >
       {model.confirmation ? (
