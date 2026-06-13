@@ -39,7 +39,9 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Reason');
     expect(rendered).toContain('Token expired');
     expect(rendered).toContain('Re-enable device');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'notification-delivery-attempt admin-mb-10', 'pill pill-warn']),
+    );
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/partners/partner-1',
@@ -81,7 +83,14 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('2 attempts');
     expect(rendered).toContain('latest FCM / Android / 2026-06-09 10:03');
     expect(elementTypesIn(section)).toContain('details');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'notification-delivery-disclosure',
+        'notification-delivery-summary',
+        'pill pill-success',
+        'pill pill-warn',
+      ]),
+    );
   });
 
   it('keeps failure evidence visible inside multi-attempt delivery disclosures', () => {

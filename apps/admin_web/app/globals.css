@@ -1212,6 +1212,27 @@ textarea:focus-visible {
   outline-offset: -2px;
 }
 
+.notification-delivery-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.notification-delivery-disclosure[open] .notification-delivery-summary {
+  margin-bottom: 8px;
+}
+
+.notification-delivery-attempt {
+  max-width: 380px;
+}
+
+.notification-delivery-attempt:last-child {
+  margin-bottom: 0;
+}
+
 .service-matrix {
   min-width: 980px;
   margin-top: 14px;

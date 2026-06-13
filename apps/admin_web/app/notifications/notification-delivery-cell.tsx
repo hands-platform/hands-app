@@ -22,7 +22,7 @@ type NotificationDeliveryCellProps = {
 
 export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryCellProps) {
   if (deliveryRows.length === 0) {
-    return <>No devices / not attempted</>;
+    return <span className="muted">No devices / not attempted</span>;
   }
 
   if (deliveryRows.length === 1) {
@@ -32,8 +32,8 @@ export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryC
   const latest = deliveryRows[0];
 
   return (
-    <details>
-      <summary>
+    <details className="notification-delivery-disclosure">
+      <summary className="notification-delivery-summary">
         <span className={latest.statusClassName}>{latest.status}</span>{' '}
         <strong>{deliveryRows.length} attempts</strong>{' '}
         <span className="muted">
@@ -51,7 +51,7 @@ export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryC
 
 function NotificationDeliveryAttempt({ delivery }: { readonly delivery: NotificationDeliveryRow }) {
   return (
-    <div className="admin-mb-10">
+    <div className="notification-delivery-attempt admin-mb-10">
       <div>
         <strong>{delivery.provider}</strong>{' '}
         <span className={delivery.statusClassName}>{delivery.status}</span>{' '}

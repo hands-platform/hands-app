@@ -1,4 +1,4 @@
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { NotificationTableRowItem, type NotificationTableRow } from './notification-table-row';
 
 export type { NotificationTableRow } from './notification-table-row';
@@ -10,14 +10,16 @@ type NotificationsTableSectionProps = {
 
 export function NotificationsTableSection({ emptyMessage, rows }: NotificationsTableSectionProps) {
   return (
-    <AdminDataTable
-      emptyMessage={emptyMessage}
-      headers={['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action']}
-      rowCount={rows.length}
-    >
-      {rows.map((row) => (
-        <NotificationTableRowItem key={row.id} row={row} />
-      ))}
-    </AdminDataTable>
+    <AdminTableScroll>
+      <AdminDataTable
+        emptyMessage={emptyMessage}
+        headers={['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action']}
+        rowCount={rows.length}
+      >
+        {rows.map((row) => (
+          <NotificationTableRowItem key={row.id} row={row} />
+        ))}
+      </AdminDataTable>
+    </AdminTableScroll>
   );
 }
