@@ -973,6 +973,16 @@ export type AdminOperationalPolicySetting = {
   updatedBy?: { phone?: string | null; fullName?: string | null } | null;
 };
 
+type AdminNotificationPushDevice = {
+  id?: string;
+  role?: string;
+  platform?: string;
+  enabled?: boolean;
+  lastSeenAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type AdminNotification = {
   id: string;
   type: string;
@@ -988,6 +998,7 @@ export type AdminNotification = {
     roles?: string[];
     customerProfile?: { id: string } | null;
     providerProfile?: { id: string; displayName?: string | null; status?: string | null } | null;
+    pushDevices?: AdminNotificationPushDevice[];
   };
   deliveries?: Array<{
     id?: string;
@@ -1001,7 +1012,7 @@ export type AdminNotification = {
       statusCode?: number;
       body?: unknown;
     } | null;
-    pushDevice?: { id?: string; role?: string; platform?: string; enabled?: boolean; lastSeenAt?: string };
+    pushDevice?: AdminNotificationPushDevice;
   }>;
 };
 

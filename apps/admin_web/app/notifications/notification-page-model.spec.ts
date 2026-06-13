@@ -307,6 +307,63 @@ describe('notification page model', () => {
     expect(readiness.preflightCommand).toContain('npm.cmd run fcm:push-smoke -- --preflight');
   });
 
+  it('warns when registered-device preflight would reuse an older enabled device', () => {
+    const readiness = buildNotificationFcmSmokeReadiness([
+      notification({
+        createdAt: '2026-06-13T18:45:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-13T18:45:24.000Z',
+            id: 'delivery-enabled-old',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'device-enabled-old',
+              platform: 'android',
+              role: 'CUSTOMER',
+              updatedAt: '2026-05-21T11:11:22.000Z',
+            },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-live-smoke',
+        type: 'payment.updated',
+        user: {
+          id: 'customer-user-1',
+          phone: '+84900000001',
+          pushDevices: [
+            {
+              enabled: false,
+              id: 'device-disabled-new',
+              platform: 'android',
+              role: 'CUSTOMER',
+              updatedAt: '2026-06-13T13:29:19.000Z',
+            },
+            {
+              enabled: true,
+              id: 'device-enabled-old',
+              platform: 'android',
+              role: 'CUSTOMER',
+              updatedAt: '2026-05-21T11:11:22.000Z',
+            },
+          ],
+          roles: ['CUSTOMER'],
+        },
+      }),
+    ]);
+
+    expect(readiness).toMatchObject({
+      selectedNotificationId: 'notification-live-smoke',
+      status: 'ready',
+      statusLabel: 'Live preflight ready',
+    });
+    expect(readiness.deviceWarningLabel).toContain('Newer Customer android device');
+    expect(readiness.deviceWarningLabel).toContain(
+      'is disabled; preflight reuses older enabled device',
+    );
+    expect(readiness.deviceWarningLabel).toContain('Refresh the app FCM token before broad push.');
+  });
+
   it('marks FCM preflight as blocked when no enabled device can be reused', () => {
     const readiness = buildNotificationFcmSmokeReadiness([
       notification({

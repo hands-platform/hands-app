@@ -31,6 +31,9 @@ import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-o
 import type { NotificationTableRow } from './notification-table-row';
 
 type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
+type AdminNotificationPushDevice = NonNullable<
+  NonNullable<AdminNotification['user']>['pushDevices']
+>[number];
 
 type NotificationPageParams = Record<string, string | string[] | undefined>;
 
@@ -119,6 +122,7 @@ export type NotificationPartnerAlertSmokeFallback = {
 
 export type NotificationFcmSmokeReadiness = {
   readonly detail: string;
+  readonly deviceWarningLabel: string | null;
   readonly latestAttemptLabel: string | null;
   readonly preflightCommand: string | null;
   readonly pushDeviceLabel: string | null;
@@ -450,6 +454,7 @@ export function buildNotificationFcmSmokeReadiness(
 
     return {
       detail: `${role === 'PROVIDER' ? 'Partner' : 'Customer'} ${phone} can reuse the enabled ${platform} device for preflight without sending FCM.`,
+      deviceWarningLabel: fcmSmokeReadinessDeviceWarning(notification, delivery, role, platform),
       latestAttemptLabel: formatDateTime(delivery.attemptedAt),
       preflightCommand: command,
       pushDeviceLabel: `${platform} ${shortId(delivery.pushDevice?.id ?? '')}`,
@@ -466,6 +471,7 @@ export function buildNotificationFcmSmokeReadiness(
     return {
       detail:
         'FCM delivery attempts exist, but no enabled push device with a phone number is available for registered-device preflight.',
+      deviceWarningLabel: null,
       latestAttemptLabel: null,
       preflightCommand: null,
       pushDeviceLabel: null,
@@ -478,6 +484,7 @@ export function buildNotificationFcmSmokeReadiness(
 
   return {
     detail: 'No FCM delivery attempt is available yet. Create or select an FCM-routed notification first.',
+    deviceWarningLabel: null,
     latestAttemptLabel: null,
     preflightCommand: null,
     pushDeviceLabel: null,
@@ -899,6 +906,54 @@ function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
 
 function isReusableFcmDelivery(delivery: AdminNotificationDelivery) {
   return isDeliveryProvider(delivery, 'FCM') && delivery.pushDevice?.enabled === true;
+}
+
+function fcmSmokeReadinessDeviceWarning(
+  notification: AdminNotification,
+  delivery: AdminNotificationDelivery,
+  role: 'CUSTOMER' | 'PROVIDER',
+  platform: string,
+) {
+  const selectedDevice = delivery.pushDevice;
+  const newestMatchingDevice = newestPushDevices(notification.user?.pushDevices ?? []).find(
+    (device) =>
+      device.platform === platform &&
+      (!device.role || device.role.toUpperCase() === role) &&
+      device.id !== selectedDevice?.id,
+  );
+
+  if (
+    !selectedDevice?.id ||
+    !newestMatchingDevice?.id ||
+    newestMatchingDevice.enabled !== false ||
+    pushDeviceTimestampMs(newestMatchingDevice) <= pushDeviceTimestampMs(selectedDevice)
+  ) {
+    return null;
+  }
+
+  const actorLabel = role === 'PROVIDER' ? 'Partner' : 'Customer';
+  return `Newer ${actorLabel} ${platform} device ${shortId(
+    newestMatchingDevice.id,
+  )} is disabled; preflight reuses older enabled device ${shortId(
+    selectedDevice.id,
+  )}. Refresh the app FCM token before broad push.`;
+}
+
+function newestPushDevices(devices: readonly AdminNotificationPushDevice[]) {
+  return [...devices].sort((left, right) => pushDeviceTimestampMs(right) - pushDeviceTimestampMs(left));
+}
+
+function pushDeviceTimestampMs(device: AdminNotificationPushDevice) {
+  const updatedAt = Date.parse(device.updatedAt ?? '');
+  if (Number.isFinite(updatedAt)) {
+    return updatedAt;
+  }
+  const lastSeenAt = Date.parse(device.lastSeenAt ?? '');
+  if (Number.isFinite(lastSeenAt)) {
+    return lastSeenAt;
+  }
+  const createdAt = Date.parse(device.createdAt ?? '');
+  return Number.isFinite(createdAt) ? createdAt : 0;
 }
 
 function notificationSmokeRole(

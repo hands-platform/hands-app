@@ -406,6 +406,18 @@ describe('AdminService query orchestration', () => {
           }),
           user: {
             select: expect.objectContaining({
+              pushDevices: expect.objectContaining({
+                orderBy: { updatedAt: 'desc' },
+                take: 3,
+                select: expect.objectContaining({
+                  enabled: true,
+                  id: true,
+                  lastSeenAt: true,
+                  platform: true,
+                  role: true,
+                  updatedAt: true,
+                }),
+              }),
               providerProfile: { select: { id: true, displayName: true, status: true } },
             }),
           },

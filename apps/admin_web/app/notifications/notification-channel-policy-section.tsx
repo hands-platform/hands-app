@@ -72,6 +72,9 @@ export function NotificationChannelPolicySection({
           {fcmSmokeReadiness.pushDeviceLabel ? (
             <p className="muted admin-mt-6">Enabled device: {fcmSmokeReadiness.pushDeviceLabel}</p>
           ) : null}
+          {fcmSmokeReadiness.deviceWarningLabel ? (
+            <p className="muted admin-mt-6">Device warning: {fcmSmokeReadiness.deviceWarningLabel}</p>
+          ) : null}
           {fcmSmokeReadiness.latestAttemptLabel ? (
             <p className="muted admin-mt-6">Latest FCM attempt: {fcmSmokeReadiness.latestAttemptLabel}</p>
           ) : null}

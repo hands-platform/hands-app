@@ -79,6 +79,25 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).not.toContain('provider.payout_batch.updated');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['command-copy-row']));
   });
+
+  it('renders an FCM device warning when the reusable device is not the newest app device', () => {
+    const section = NotificationChannelPolicySection({
+      inAppDeliveries: 1,
+      fcmDeliveries: 4,
+      fcmSmokeReadiness: fcmSmokeReadiness({
+        deviceWarningLabel:
+          'Newer Customer android device device-new is disabled; preflight reuses older enabled device device-old. Refresh the app FCM token before broad push.',
+      }),
+      partnerAlertCount: 1,
+      partnerAlertSmokeFallback: null,
+      policyLabel: 'FCM for all bookings',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Device warning');
+    expect(rendered).toContain('Newer Customer android device device-new is disabled');
+  });
 });
 
 function fcmSmokeReadiness(
@@ -86,6 +105,7 @@ function fcmSmokeReadiness(
 ): Parameters<typeof NotificationChannelPolicySection>[0]['fcmSmokeReadiness'] {
   return {
     detail: 'Customer +84900000001 can reuse the enabled android device for preflight without sending FCM.',
+    deviceWarningLabel: null,
     latestAttemptLabel: '13 Jun 2026, 17:09',
     preflightCommand:
       '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"; npm.cmd run fcm:push-smoke -- --preflight',

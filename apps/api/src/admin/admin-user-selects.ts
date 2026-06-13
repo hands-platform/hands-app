@@ -124,6 +124,11 @@ export const adminNotificationUserSelect = {
   roles: true,
   customerProfile: { select: { id: true } },
   providerProfile: { select: { id: true, displayName: true, status: true } },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: 3,
+    select: adminUserListPushDeviceSelect,
+  },
 } satisfies Prisma.UserSelect;
 
 export const adminNotificationListSelect = {
