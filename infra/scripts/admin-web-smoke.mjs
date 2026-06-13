@@ -471,7 +471,7 @@ const pages = [
   },
   {
     path: '/notifications?review=fcm',
-    markers: ['Notifications', 'FCM', 'FCM route', 'npm.cmd run fcm:token-recovery-smoke'],
+    markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {

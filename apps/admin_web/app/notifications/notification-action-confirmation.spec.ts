@@ -279,4 +279,26 @@ describe('notification action confirmation', () => {
       ]),
     );
   });
+
+  it('adds FCM route runbook guidance before retrying from the FCM queue', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      notificationId: notification.id,
+      pushDeviceId: '',
+      review: 'fcm',
+    });
+
+    expect(confirmation?.cancelHref).toBe('/notifications?review=fcm');
+    expect(confirmation?.description).toContain(
+      'Runbook: FCM route gate. Check the live preflight candidate, run token recovery smoke when app devices changed, then retry only after the notification and device path are valid.',
+    );
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+          href: '/setup#notifications',
+          label: 'FCM setup',
+        },
+      ]),
+    );
+  });
 });

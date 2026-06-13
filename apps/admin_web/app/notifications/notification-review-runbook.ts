@@ -19,6 +19,13 @@ const notificationReviewRunbooks: Readonly<Record<string, NotificationReviewRunb
       'Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
     title: 'Retry gate',
   },
+  fcm: {
+    detail:
+      'These rows already attempted FCM delivery. Use this queue to confirm route readiness, token freshness, and Firebase project alignment before broad push.',
+    primaryAction:
+      'Check the live preflight candidate, run token recovery smoke when app devices changed, then retry only after the notification and device path are valid.',
+    title: 'FCM route gate',
+  },
   'needs-retry': {
     detail:
       'This queue combines current failed sends and disabled device paths, so every row needs a recovery decision before resend.',

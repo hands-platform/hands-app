@@ -194,7 +194,7 @@ function notificationConfirmationReviewGuidance(review: string | undefined) {
 }
 
 function notificationReviewSupportingLinks(review: string | undefined) {
-  if (!review || !['disabled-device', 'failed', 'needs-retry', 'stale-device'].includes(review)) {
+  if (!review || !['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device'].includes(review)) {
     return [];
   }
   return [

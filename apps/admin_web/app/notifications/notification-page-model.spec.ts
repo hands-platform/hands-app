@@ -577,6 +577,47 @@ describe('notification page model', () => {
     expect(model.summary).toMatchObject({ failed: 1, sent: 1 });
   });
 
+  it('builds the FCM route model with retry confirmation guidance', () => {
+    const model = buildNotificationPageModel({
+      notifications: [
+        notification({
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-fcm-failed',
+              provider: 'FCM',
+              status: 'FAILED',
+            },
+          ],
+          id: 'notification-fcm-failed',
+          type: 'payment.updated',
+          user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+        }),
+      ],
+      operationalPolicies: [],
+      params: {
+        confirm: 'retry',
+        notificationId: 'notification-fcm-failed',
+        review: 'fcm',
+      },
+    });
+
+    expect(model.activeFilter?.label).toBe('FCM');
+    expect(model.notifications.map((item) => item.id)).toEqual(['notification-fcm-failed']);
+    expect(model.reviewRunbook).toMatchObject({ title: 'FCM route gate' });
+    expect(model.confirmation?.cancelHref).toBe('/notifications?review=fcm');
+    expect(model.confirmation?.description).toContain('Runbook: FCM route gate.');
+    expect(model.confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+          href: '/setup#notifications',
+          label: 'FCM setup',
+        },
+      ]),
+    );
+  });
+
   it('builds table rows with action links, partner labels, and delivery evidence', () => {
     const rows = buildNotificationTableRows([
       notification({
@@ -834,6 +875,9 @@ describe('notification page model', () => {
       primaryAction:
         'Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
       title: 'Retry gate',
+    });
+    expect(notificationReviewRunbook('fcm')).toMatchObject({
+      title: 'FCM route gate',
     });
     expect(notificationReviewRunbook('disabled-device')).toMatchObject({
       title: 'Device recovery gate',
