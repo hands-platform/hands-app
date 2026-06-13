@@ -108,7 +108,6 @@ import {
   bookingCustomerProtectionBoardFromFacts,
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
-import { bookingCustomerVisibleStateLabel } from './booking-customer-visible-state';
 import {
   bookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps,
@@ -154,10 +153,7 @@ import {
   bookingMonitorListMarketplaceParticipants,
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
-import {
-  bookingFinalPartnerLabel,
-  bookingHasFinalPartner,
-} from './booking-final-partner-state';
+import { bookingHasFinalPartner } from './booking-final-partner-state';
 import {
   bookingIsBackupSelected,
   bookingPreferredAwaitingDecision as bookingFirstPickPending,
@@ -193,6 +189,7 @@ import {
   buildBookingMonitorChatState,
   buildBookingMonitorListLocation,
 } from './booking-monitor-list-state-model';
+import { buildBookingMonitorCustomerVisibleStateLabel } from './booking-monitor-customer-visible-model';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -637,7 +634,7 @@ function buildBookingMonitorListRow(
     checkSignal: bookingCheckLevel(flags),
     closureState: bookingClosureListSignal(booking, { formatDate }),
     commandDecisionStrip: bookingListCommandDecisionStrip(booking),
-    customerVisibleStateLabel: customerVisibleStateLabel(booking),
+    customerVisibleStateLabel: buildBookingMonitorCustomerVisibleStateLabel(booking),
     expiresAtLabel: booking.expiresAt ? formatDate(booking.expiresAt) : null,
     finalGateReason: buildBookingMonitorFinalGateReason(booking),
     finalPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
@@ -1039,17 +1036,5 @@ function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
 
 function nextAction(booking: AdminBooking) {
   return bookingNextActionCopy(bookingNextActionCopyInputFromBooking(booking));
-}
-
-function customerVisibleStateLabel(booking: AdminBooking) {
-  const selectableCount = bookingCustomerSelectableCount(booking);
-  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
-  return bookingCustomerVisibleStateLabel(booking, {
-    selectedPartnerLabel: bookingFinalPartnerLabel(booking),
-    hasChatRoom: bookingMatchingChatReady(booking),
-    customerSelectablePartnerCount: selectableCount,
-    preferredAwaitingDecision: bookingFirstPickPending(booking),
-    marketplacePartnerCount: marketplaceCount,
-  });
 }
 
