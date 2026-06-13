@@ -137,22 +137,17 @@ import {
   bookingClosureListSignal,
   terminalBookingStatuses,
 } from './booking-closure-list-signal';
-import {
-  buildBookingDispatchPartnerShortcuts,
-} from './booking-dispatch-partner-shortcuts';
+import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
 import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
-import { bookingMarketplaceCoverageInputFromBooking } from './booking-marketplace-coverage-inputs';
 import {
   bookingCustomerSelectableCount,
   bookingMarketplaceCountFacts,
   bookingMarketplaceParticipantCount,
   bookingMarketplaceParticipants,
 } from './booking-marketplace-count-facts';
-import { bookingMarketplaceOperatingQueueFactFromBooking } from './booking-marketplace-operating-queue-inputs';
-import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace-participant-ledger-inputs';
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
 import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
 import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
@@ -178,7 +173,6 @@ import {
   bookingFinalPartnerLabel,
   bookingHasFinalPartner,
 } from './booking-final-partner-state';
-import { bookingMarketplaceOperationsBookingFactFromBooking } from './booking-marketplace-operations-card-inputs';
 import {
   bookingIsBackupSelected,
   bookingPreferredAwaitingDecision as bookingFirstPickPending,
@@ -218,29 +212,21 @@ import { BookingMonitorMatchingEscalationSection } from './booking-monitor-match
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
+import {
+  buildBookingMonitorMarketplaceCoverageRows,
+  buildBookingMonitorMarketplaceOperatingQueue,
+  buildBookingMonitorMarketplaceOperationsCards,
+  buildBookingMonitorMarketplaceParticipantLedgerRows,
+} from './booking-monitor-marketplace-model';
 import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import {
-  buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
-  type MarketplaceBookingCoverageRow,
 } from '../../lib/marketplace-booking-coverage';
 import {
-  buildMarketplaceOperationsCardCounts,
-  buildMarketplaceOperationsCards as buildMarketplaceOperationsCardItems,
-  type MarketplaceOperationsCard,
-} from '../../lib/marketplace-operations-cards';
-import {
-  buildMarketplaceParticipantLedgerRows as buildMarketplaceParticipantLedgerRowsFromFacts,
   buildMarketplaceParticipantLedgerPills,
   buildMarketplaceParticipantLedgerSummary,
-  type MarketplaceParticipantLedgerRow,
 } from '../../lib/marketplace-participant-ledger';
-import {
-  buildMarketplaceOperatingQueueBuckets,
-  buildMarketplaceOperatingQueueItems,
-  type MarketplaceOperatingQueueItem,
-} from '../../lib/marketplace-operating-queue';
 import {
   bookingManualDecisionNeedsOpsFromFacts,
   bookingPaymentNeedsOpsFromFacts,
@@ -278,12 +264,6 @@ type BookingProtectionLane = BookingCustomerProtectionLane<AdminBooking>;
 
 type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBooking>;
 type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooking>;
-
-type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
-
-type AdminMarketplaceParticipantLedgerRow = MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>;
-
-type AdminMarketplaceBookingCoverageRow = MarketplaceBookingCoverageRow<AdminBooking>;
 
 export function BookingMonitor({
   bookings,
@@ -434,7 +414,7 @@ export function BookingMonitor({
   );
   const marketplaceLedgerRows = useMemo(
     () =>
-      buildMarketplaceParticipantLedgerRows(
+      buildBookingMonitorMarketplaceParticipantLedgerRows(
         visibleBookings,
         currentTimeMs,
         liveOperationsPolicy.marketplaceRadiusMeters,
@@ -442,7 +422,7 @@ export function BookingMonitor({
     [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, visibleBookings],
   );
   const marketplaceBookingCoverageRows = useMemo(
-    () => buildMarketplaceBookingCoverageRows(visibleBookings, currentTimeMs),
+    () => buildBookingMonitorMarketplaceCoverageRows(visibleBookings, currentTimeMs),
     [currentTimeMs, visibleBookings],
   );
   const marketplaceBookingCoverageSummary = useMemo(
@@ -462,11 +442,16 @@ export function BookingMonitor({
     [marketplaceLedgerSummary],
   );
   const marketplaceOperationsCards = useMemo(
-    () => buildMarketplaceOperationsCards(visibleBookings, marketplaceLedgerRows, currentTimeMs),
+    () =>
+      buildBookingMonitorMarketplaceOperationsCards(
+        visibleBookings,
+        marketplaceLedgerRows,
+        currentTimeMs,
+      ),
     [currentTimeMs, marketplaceLedgerRows, visibleBookings],
   );
   const marketplaceOperatingQueue = useMemo(
-    () => buildMarketplaceOperatingQueue(orderedBookings, currentTimeMs),
+    () => buildBookingMonitorMarketplaceOperatingQueue(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
 
@@ -1172,70 +1157,6 @@ function bookingProviderLabel(booking: AdminBooking) {
 
 function partnerDisplayName(provider?: { displayName?: string | null } | null, fallback = 'Partner') {
   return displayMarketplaceText(provider?.displayName ?? fallback);
-}
-
-function buildMarketplaceBookingCoverageRows(
-  bookings: AdminBooking[],
-  nowMs: number,
-): readonly AdminMarketplaceBookingCoverageRow[] {
-  return buildMarketplaceBookingCoverageRowsFromFacts(
-    bookings.map((booking) => {
-      const counts = bookingMarketplaceCountFacts(booking);
-      return bookingMarketplaceCoverageInputFromBooking(booking, nowMs, {
-        marketplaceParticipantCount: counts.marketplaceParticipantCount,
-        selectableCount: counts.customerSelectableCount,
-      });
-    }),
-  );
-}
-
-function buildMarketplaceParticipantLedgerRows(
-  bookings: AdminBooking[],
-  nowMs: number,
-  marketplaceRadiusMeters: number,
-): readonly AdminMarketplaceParticipantLedgerRow[] {
-  return bookings.flatMap((booking) =>
-    buildMarketplaceParticipantLedgerRowsFromFacts(
-      bookingMarketplaceParticipantLedgerInputs(booking, nowMs, marketplaceRadiusMeters),
-    ),
-  );
-}
-
-function buildMarketplaceOperationsCards(
-  bookings: AdminBooking[],
-  ledgerRows: readonly AdminMarketplaceParticipantLedgerRow[],
-  nowMs: number,
-): MarketplaceOperationsCard[] {
-  return buildMarketplaceOperationsCardItems(
-    buildMarketplaceOperationsCardCounts({
-      bookings: bookings.map((booking) =>
-        bookingMarketplaceOperationsBookingFactFromBooking(
-          booking,
-          nowMs,
-          bookingMarketplaceCountFacts(booking),
-        ),
-      ),
-      ledgerRows,
-    }),
-  );
-}
-
-function buildMarketplaceOperatingQueue(
-  bookings: AdminBooking[],
-  nowMs: number,
-): MarketplaceOperatingQueueItem<AdminBooking>[] {
-  return buildMarketplaceOperatingQueueItems(
-    buildMarketplaceOperatingQueueBuckets(
-      bookings.map((booking) => {
-        const counts = bookingMarketplaceCountFacts(booking);
-        return bookingMarketplaceOperatingQueueFactFromBooking(booking, nowMs, {
-          customerSelectableCount: counts.customerSelectableCount,
-          marketplaceParticipantCount: counts.marketplaceParticipantCount,
-          preferredAwaitingDecision: bookingFirstPickPending(booking),
-        });
-      }),
-    ),
-  );
 }
 
 function selectionLabel(booking: AdminBooking) {
