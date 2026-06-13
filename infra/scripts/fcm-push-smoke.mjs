@@ -577,7 +577,7 @@ function dryRunNextActions() {
     'Run npm.cmd run fcm:credentials-check to verify Firebase Admin credential file contents.',
     'Run npm.cmd run docker:contract to verify Docker service URLs and Firebase Admin credential mount paths.',
     'Run npm.cmd run external:check:push before the live FCM smoke.',
-    'Run npm.cmd run fcm:token-smoke before live push to verify customer/Partner token registration.',
+    'Run npm.cmd run fcm:token-smoke before live FCM push to verify customer/Partner token registration.',
   ];
 
   if (!hasExpectedEnvValue('PUSH_PROVIDER', 'fcm')) {
