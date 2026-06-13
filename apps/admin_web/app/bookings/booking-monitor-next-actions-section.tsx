@@ -5,23 +5,10 @@ import {
   actionOrderLabel,
   commandToneClass,
   commandToneLabel,
-  type BookingActionPriority,
-  type BookingCommandTone,
 } from './booking-command-display';
 import { bookingAgeLabel } from './booking-list-time';
+import type { BookingMonitorNextActionItem } from './booking-monitor-next-actions-model';
 import { bookingServiceOptionLabel } from './booking-service-labels';
-
-export type BookingMonitorNextActionItem = {
-  readonly booking: AdminBooking;
-  readonly detail: string;
-  readonly href: string;
-  readonly operatorAction: string;
-  readonly owner: string;
-  readonly priority: BookingActionPriority;
-  readonly tags: readonly string[];
-  readonly title: string;
-  readonly tone: BookingCommandTone;
-};
 
 type BookingMonitorNextActionsSectionProps = {
   readonly getCustomerLabel: (booking: AdminBooking) => string;

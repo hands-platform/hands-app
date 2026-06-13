@@ -15,10 +15,7 @@ import {
 import { matchingPolicySummaryLabel } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
-import {
-  bookingCheckLevel,
-  type BookingCheckLevelFlag as BookingCheckFlag,
-} from '../../lib/booking-check-level';
+import { bookingCheckLevel } from '../../lib/booking-check-level';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
@@ -26,13 +23,6 @@ import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingMonitorAlertEvidenceNeedsOps } from './booking-monitor-alert-evidence-model';
-import {
-  bookingDashboardTone,
-  commandToneClass,
-  commandToneLabel,
-  type BookingActionPriority,
-  type BookingCommandTone,
-} from './booking-command-display';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
   bookingRecencyLabel as recencyLabel,
@@ -61,22 +51,6 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
-import {
-  bookingCheckFlagSeverityWeight,
-  bookingNextActionPriorityFromFacts,
-} from './booking-next-action-priority';
-import {
-  bookingNextActionOwnerInput,
-  bookingNextActionPriorityInput,
-  bookingNextOperatorActionInput,
-  type BookingNextActionInputReaders,
-} from './booking-next-action-inputs';
-import {
-  bookingNextActionOwnerFromFacts,
-  type BookingNextActionOwner,
-} from './booking-next-action-owner';
-import { orderedBookingNextActions } from './booking-next-action-order';
-import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
@@ -150,9 +124,6 @@ import {
   bookingPreferredProviderStateLabel,
 } from './booking-preferred-provider-state';
 import {
-  bookingLocationPillLabel,
-} from './booking-location-display';
-import {
   bookingHasProviderLocation as hasProviderLocation,
   bookingLocationNeedsOpsInput,
 } from './booking-location-ops-inputs';
@@ -183,6 +154,7 @@ import { bookingMonitorCheckFlags } from './booking-monitor-check-flags-model';
 import { buildBookingMonitorCommandDecisionStrip } from './booking-monitor-command-decision-model';
 import { buildBookingMonitorListStage } from './booking-monitor-list-stage-model';
 import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
+import { buildBookingMonitorNextActions } from './booking-monitor-next-actions-model';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -234,18 +206,6 @@ type Props = {
 type BookingView = BookingPageView;
 
 type BookingCommandLane = BookingCommandCenterLane;
-
-type BookingNextAction = {
-  booking: AdminBooking;
-  title: string;
-  detail: string;
-  operatorAction: string;
-  owner: BookingNextActionOwner;
-  priority: BookingActionPriority;
-  tone: BookingCommandTone;
-  href: string;
-  tags: string[];
-};
 
 type BookingProtectionLane = BookingCustomerProtectionLane<AdminBooking>;
 
@@ -339,7 +299,7 @@ export function BookingMonitor({
     [orderedBookings],
   );
   const nextActions = useMemo(
-    () => buildBookingNextActions(orderedBookings, currentTimeMs),
+    () => buildBookingMonitorNextActions(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
   const customerProtectionBoard = useMemo(
@@ -697,81 +657,6 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
   };
 }
 
-function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
-  return orderedBookingNextActions(
-    bookings
-      .map((booking) => bookingNextActionCandidate(booking, nowMs))
-      .filter((item): item is BookingNextAction => Boolean(item)),
-    (action) => bookingTimestamp(action.booking),
-  );
-}
-
-function bookingNextActionCandidate(booking: AdminBooking, nowMs: number): BookingNextAction | null {
-  const highestFlag = highestBookingCheckFlag(booking, nowMs);
-  if (highestFlag) {
-    return bookingFlagNextAction(booking, nowMs, highestFlag);
-  }
-  if (activeStatuses.has(booking.status)) {
-    return bookingActiveNextAction(booking, nowMs);
-  }
-  return null;
-}
-
-function highestBookingCheckFlag(booking: AdminBooking, nowMs: number) {
-  return [...bookingMonitorCheckFlags(booking, nowMs)].sort(
-    (left, right) =>
-      bookingCheckFlagSeverityWeight(right.severity) -
-      bookingCheckFlagSeverityWeight(left.severity),
-  )[0];
-}
-
-function bookingFlagNextAction(
-  booking: AdminBooking,
-  nowMs: number,
-  highestFlag: BookingCheckFlag,
-): BookingNextAction {
-  return {
-    booking,
-    title: highestFlag.title,
-    detail: bookingMonitorNextActionLabel(booking),
-    operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
-    owner: bookingActionOwner(booking, nowMs, highestFlag),
-    priority: bookingActionPriority(booking, nowMs, highestFlag),
-    tone: highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
-    href: `/bookings/${booking.id}`,
-    tags: bookingFlagNextActionTags(booking),
-  };
-}
-
-function bookingActiveNextAction(booking: AdminBooking, nowMs: number): BookingNextAction {
-  return {
-    booking,
-    title: 'Monitor active booking',
-    detail: bookingMonitorNextActionLabel(booking),
-    operatorAction: bookingOperatorAction(booking, nowMs),
-    owner: bookingActionOwner(booking, nowMs),
-    priority: bookingActionPriority(booking, nowMs),
-    tone: 'info',
-    href: `/bookings/${booking.id}`,
-    tags: bookingActiveNextActionTags(booking, nowMs),
-  };
-}
-
-function bookingFlagNextActionTags(booking: AdminBooking) {
-  return [
-    booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
-    booking.chatRoom ? 'chat ready' : 'chat pending',
-    bookingMonitorSelectionLabelForBooking(booking),
-  ];
-}
-
-function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
-  return [
-    booking.payment?.status ? `payment ${booking.payment.status}` : 'payment pending',
-    bookingLocationPillLabel(booking, nowMs),
-  ];
-}
-
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
   return bookingCustomerProtectionBoardFromFacts(bookingCustomerProtectionFactsFromBookings(bookings));
 }
@@ -880,50 +765,6 @@ function bookingMatchesEvidenceFilter(
       paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
     }),
   );
-}
-
-function bookingActionPriority(
-  booking: AdminBooking,
-  nowMs: number,
-  flag?: BookingCheckFlag,
-): BookingNextAction['priority'] {
-  return bookingNextActionPriorityFromFacts(
-    bookingNextActionPriorityInput(bookingNextActionReaders(booking, nowMs, flag)),
-  );
-}
-
-function bookingActionOwner(
-  booking: AdminBooking,
-  nowMs: number,
-  flag?: BookingCheckFlag,
-): BookingNextAction['owner'] {
-  return bookingNextActionOwnerFromFacts(
-    bookingNextActionOwnerInput(bookingNextActionReaders(booking, nowMs, flag)),
-  );
-}
-
-function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
-  return bookingNextOperatorActionFromFacts(
-    bookingNextOperatorActionInput(bookingNextActionReaders(booking, nowMs, flag)),
-  );
-}
-
-function bookingNextActionReaders(
-  booking: AdminBooking,
-  nowMs: number,
-  flag?: BookingCheckFlag,
-): BookingNextActionInputReaders {
-  return {
-    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-    completedCloseoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-    firstPickPending: () => bookingFirstPickPending(booking),
-    flagSeverity: flag?.severity,
-    flagTitle: flag?.title,
-    locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-    matchingChatReady: () => bookingMatchingChatReady(booking),
-    paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-    status: booking.status,
-  };
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
