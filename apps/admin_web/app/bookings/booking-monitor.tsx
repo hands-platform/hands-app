@@ -32,10 +32,6 @@ import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
-import {
-  bookingPricingPolicySignalFromFacts,
-  type BookingPricingPolicySignal,
-} from '../../lib/booking-pricing-policy-signal';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import {
@@ -188,7 +184,6 @@ import {
   bookingPaymentNeedsOpsInput,
   bookingRefundReviewNeedsOpsInput,
 } from './booking-payment-ops-inputs';
-import { bookingPricingPolicySignalInput } from './booking-pricing-policy-inputs';
 import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
 import { bookingListStage as bookingListStageFromBooking } from './booking-list-stage-inputs';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
@@ -211,6 +206,10 @@ import {
 import { buildBookingMonitorFinalGateReason } from './booking-monitor-final-gate-model';
 import { buildBookingMonitorMatchingRuleSnapshot } from './booking-monitor-matching-rule-model';
 import { bookingMonitorOpsSignal } from './booking-monitor-ops-signal';
+import {
+  bookingMonitorPricingPolicyNeedsOps,
+  buildBookingMonitorPricingPolicySignal,
+} from './booking-monitor-pricing-policy-model';
 import {
   buildBookingMonitorMarketplaceCoverageRows,
   buildBookingMonitorMarketplaceOperatingQueue,
@@ -658,7 +657,7 @@ function buildBookingMonitorListRow(
     preferredProviderStateLabel: booking.preferredProvider
       ? bookingPreferredProviderStateLabel(booking)
       : null,
-    pricingPolicy: bookingPricingPolicySignal(booking),
+    pricingPolicy: buildBookingMonitorPricingPolicySignal(booking),
     recencyLabel: recencyLabel(booking, nowMs),
     selectedFinalPartnerPillLabel: bookingMonitorListSelectedFinalPartnerPillLabel(booking),
     selection: bookingMonitorListSelection(booking),
@@ -713,7 +712,7 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
     open,
     paymentChecks: bookings.filter((booking) => bookingPaymentNeedsOps(booking)),
     preferredPending: open.filter((booking) => bookingFirstPickPending(booking)),
-    pricingChecks: bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking)),
+    pricingChecks: bookings.filter((booking) => bookingMonitorPricingPolicyNeedsOps(booking)),
     quietChat: bookings.filter((booking) => bookingHasQuietHandoffChat(booking)),
     refundReview: bookings.filter((booking) => bookingRefundReviewNeedsOps(booking)),
   };
@@ -835,7 +834,7 @@ function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): B
     participantCount: booking.participants?.length ?? 0,
     paymentNeedsOps: bookingPaymentNeedsOps(booking),
     policySnapshotPresent: Boolean(bookingMatchingPolicySnapshot(booking)),
-    pricingPolicyNeedsOps: bookingPricingPolicyNeedsOps(booking),
+    pricingPolicyNeedsOps: bookingMonitorPricingPolicyNeedsOps(booking),
     refundReviewNeedsOps: bookingRefundReviewNeedsOps(booking),
     stageKey: bookingListStage(booking, nowMs).key,
     status: booking.status,
@@ -887,7 +886,7 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
           responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
         }),
       paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
-      pricingPolicyNeedsOps: () => bookingPricingPolicyNeedsOps(booking),
+      pricingPolicyNeedsOps: () => bookingMonitorPricingPolicyNeedsOps(booking),
       refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
       stageKey: () => bookingListStage(booking, nowMs).key,
     }),
@@ -971,7 +970,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     bookingMonitorCheckFlagsInputFromBooking(booking, nowMs, {
       completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
       cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-      pricingPolicy: bookingPricingPolicySignal(booking),
+      pricingPolicy: buildBookingMonitorPricingPolicySignal(booking),
       responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
       firstPickPending: bookingFirstPickPending(booking),
       marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
@@ -1022,14 +1021,6 @@ function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
 
 function bookingRefundReviewNeedsOps(booking: AdminBooking) {
   return bookingRefundReviewNeedsOpsFromFacts(bookingRefundReviewNeedsOpsInput(booking));
-}
-
-function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
-  return bookingPricingPolicySignal(booking).status !== 'ready';
-}
-
-function bookingPricingPolicySignal(booking: AdminBooking): BookingPricingPolicySignal {
-  return bookingPricingPolicySignalFromFacts(bookingPricingPolicySignalInput(booking));
 }
 
 function bookingListCommandDecisionStrip(booking: AdminBooking) {
