@@ -25,6 +25,8 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('Live preflight ready');
     expect(rendered).toContain('Payment Updated notifica');
     expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"');
+    expect(rendered).toContain('Verify disabled or reinstalled app tokens before broad FCM push.');
+    expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['command-copy-row', 'ops-task-card', 'pill pill-warn']),

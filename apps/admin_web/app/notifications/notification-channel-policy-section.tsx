@@ -81,6 +81,11 @@ export function NotificationChannelPolicySection({
           {fcmSmokeReadiness.preflightCommand ? (
             <CommandCopyRow command={fcmSmokeReadiness.preflightCommand} label="Copy FCM preflight command" />
           ) : null}
+          <p className="muted admin-mt-6">Verify disabled or reinstalled app tokens before broad FCM push.</p>
+          <CommandCopyRow
+            command="npm.cmd run fcm:token-recovery-smoke"
+            label="Copy token recovery smoke command"
+          />
         </div>
         {partnerAlertSmokeFallback ? (
           <div className="ops-task-card">

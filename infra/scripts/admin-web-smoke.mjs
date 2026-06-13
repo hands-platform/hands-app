@@ -410,7 +410,12 @@ const pages = [
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   {
     path: '/earnings',
-    markers: ['Partner Earnings', 'Earnings date range', 'Money flow command center', 'Earning batch state filters'],
+    markers: [
+      'Partner Earnings',
+      'Earnings date range',
+      'Money flow command center',
+      'Earning batch state filters',
+    ],
   },
   {
     path: '/earnings?range=7d',
@@ -464,7 +469,10 @@ const pages = [
     path: '/notifications?review=pending',
     markers: ['Notifications', 'Pending', 'Notification operation filters'],
   },
-  { path: '/notifications?review=fcm', markers: ['Notifications', 'FCM', 'FCM route'] },
+  {
+    path: '/notifications?review=fcm',
+    markers: ['Notifications', 'FCM', 'FCM route', 'npm.cmd run fcm:token-recovery-smoke'],
+  },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
     path: '/files',
@@ -674,7 +682,12 @@ const pages = [
   },
   {
     path: '/setup#notifications',
-    markers: ['External setup', 'FCM push notifications', 'npm.cmd run notifications:push-data-contract'],
+    markers: [
+      'External setup',
+      'FCM push notifications',
+      'npm.cmd run notifications:push-data-contract',
+      'npm.cmd run fcm:token-recovery-smoke',
+    ],
   },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
@@ -811,7 +824,9 @@ if (providerLinkMatch) {
     const overviewMarkers = ['Fast operations overview', 'Open full dossier'];
     const missingOverviewMarkers = overviewMarkers.filter((marker) => !providerBody.includes(marker));
     if (missingOverviewMarkers.length > 0) {
-      throw new Error(`${providerPath} is missing expected overview markers: ${missingOverviewMarkers.join(', ')}`);
+      throw new Error(
+        `${providerPath} is missing expected overview markers: ${missingOverviewMarkers.join(', ')}`,
+      );
     }
     assertNoLegacyVisibleLanguage(providerPath, providerBody);
     console.log(`PASS ${providerPath}`);
