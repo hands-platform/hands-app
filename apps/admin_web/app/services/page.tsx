@@ -25,6 +25,7 @@ import { serviceTypeCoverageRows as buildServiceTypeCoverageRows } from '../../l
 import { serviceTypeCoverageSummary as buildServiceTypeCoverageSummary } from '../../lib/service-type-coverage-summary';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
+import { ServiceBookingReadinessQueueSection } from './service-booking-readiness-queue-section';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 import { ServiceGroupEditCard } from './service-group-edit-card';
@@ -246,44 +247,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </div>
       </section>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking readiness queue</h2>
-            <p className="muted">
-              Shows services that can block customer booking or create a negative finance result before
-              partners start using those prices.
-            </p>
-          </div>
-          <div className="actions">
-            <span className={blockedReadinessItems.length ? 'pill pill-danger' : 'pill pill-success'}>
-              {blockedReadinessItems.length} blocked
-            </span>
-            <span className={warningReadinessItems.length ? 'pill pill-warn' : 'pill pill-success'}>
-              {warningReadinessItems.length} warning
-            </span>
-          </div>
-        </div>
-        {readinessItems.length ? (
-          <div className="setup-stage-list">
-            {readinessItems.slice(0, 12).map((item) => (
-              <div className="setup-stage-item" key={`${item.serviceId}-${item.title}-${item.detail}`}>
-                <span>{item.status}</span>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p className="muted">{item.detail}</p>
-                  <p className="muted">{item.action}</p>
-                </div>
-                <small>{item.serviceId.slice(0, 8)}</small>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">
-            All active service rows have a base payout rule and a positive projected company commission.
-          </p>
-        )}
-      </section>
+      <ServiceBookingReadinessQueueSection
+        blockedCount={blockedReadinessItems.length}
+        items={readinessItems}
+        warningCount={warningReadinessItems.length}
+      />
 
       <ServiceDurationPricingMatrixSection
         activeTaxPolicy={activeTaxPolicy}
