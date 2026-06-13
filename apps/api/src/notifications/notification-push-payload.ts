@@ -10,6 +10,8 @@ const PARTNER_ALERT_TYPES = new Set([
 ]);
 
 const PUSH_DATA_KEYS = new Set([
+  'type',
+  'notificationType',
   'bookingId',
   'chatRoomId',
   'providerProfileId',
@@ -60,9 +62,10 @@ export function toPushData(value: unknown) {
   return Object.fromEntries(entries.map(([key, entry]) => [key, String(entry)]));
 }
 
-export function notificationPushData(notification: { id: string; data?: unknown }) {
+export function notificationPushData(notification: { id: string; type?: string; data?: unknown }) {
   return {
     ...(toPushData(notification.data) ?? {}),
+    ...(notification.type ? { type: notification.type } : {}),
     notificationId: notification.id,
   };
 }

@@ -19,6 +19,8 @@ class PushNotificationOpenIntent {
   });
 
   factory PushNotificationOpenIntent.fromData(Map<String, Object?> data) {
+    final notificationType =
+        _stringValue(data, 'type') ?? _stringValue(data, 'notificationType');
     final chatRoomId = _stringValue(data, 'chatRoomId');
     final paymentId = _stringValue(data, 'paymentId');
     final earningId = _stringValue(data, 'earningId');
@@ -35,7 +37,7 @@ class PushNotificationOpenIntent {
       );
     }
 
-    if (paymentId != null) {
+    if (paymentId != null || _isPaymentNotification(notificationType)) {
       return PushNotificationOpenIntent._(
         destination: PushNotificationOpenDestination.payment,
         bookingId: bookingId,
@@ -44,7 +46,9 @@ class PushNotificationOpenIntent {
       );
     }
 
-    if (earningId != null || payoutBatchId != null) {
+    if (earningId != null ||
+        payoutBatchId != null ||
+        _isEarningsNotification(notificationType)) {
       return PushNotificationOpenIntent._(
         destination: PushNotificationOpenDestination.earnings,
         bookingId: bookingId,
@@ -83,6 +87,14 @@ class PushNotificationOpenIntent {
   final String? providerProfileId;
 
   bool get hasBooking => bookingId != null;
+}
+
+bool _isPaymentNotification(String? type) {
+  return type == 'payment.updated' || type == 'payment.failed';
+}
+
+bool _isEarningsNotification(String? type) {
+  return type == 'earning.created' || type == 'provider.payout_batch.updated';
 }
 
 String? _stringValue(Map<String, Object?> data, String key) {

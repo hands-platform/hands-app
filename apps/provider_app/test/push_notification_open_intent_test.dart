@@ -25,6 +25,16 @@ void main() {
     expect(intent.providerProfileId, 'provider-1');
   });
 
+  test('provider notification uses earning type before booking fallback', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'bookingId': 'booking-1',
+      'type': 'earning.created',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.earnings);
+    expect(intent.bookingId, 'booking-1');
+  });
+
   test('provider notification opens booking from booking payload', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',

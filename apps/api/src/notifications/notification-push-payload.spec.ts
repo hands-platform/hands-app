@@ -53,6 +53,7 @@ describe('notification push payload helpers', () => {
     expect(
       notificationPushData({
         id: 'notification-1',
+        type: 'payment.updated',
         data: {
           bookingId: 'booking-1',
           notificationId: 'stale-client-value',
@@ -61,6 +62,23 @@ describe('notification push payload helpers', () => {
       }),
     ).toEqual({
       bookingId: 'booking-1',
+      type: 'payment.updated',
+      notificationId: 'notification-1',
+    });
+  });
+
+  it('adds the stored notification type for client routing', () => {
+    expect(
+      notificationPushData({
+        id: 'notification-1',
+        type: 'earning.created',
+        data: {
+          bookingId: 'booking-1',
+        },
+      }),
+    ).toEqual({
+      bookingId: 'booking-1',
+      type: 'earning.created',
       notificationId: 'notification-1',
     });
   });
@@ -69,6 +87,7 @@ describe('notification push payload helpers', () => {
     expect(
       notificationPushData({
         id: 'notification-1',
+        type: 'booking.matched',
         data: {
           bookingId: 'booking-1',
           targetRole: 'PROVIDER',
@@ -76,6 +95,7 @@ describe('notification push payload helpers', () => {
       }),
     ).toEqual({
       bookingId: 'booking-1',
+      type: 'booking.matched',
       notificationId: 'notification-1',
     });
   });

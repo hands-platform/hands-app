@@ -26,6 +26,16 @@ void main() {
     expect(intent.paymentId, 'payment-1');
   });
 
+  test('customer notification uses payment type before booking fallback', () {
+    final intent = PushNotificationOpenIntent.fromData({
+      'bookingId': 'booking-1',
+      'type': 'payment.updated',
+    });
+
+    expect(intent.destination, PushNotificationOpenDestination.payment);
+    expect(intent.bookingId, 'booking-1');
+  });
+
   test('customer notification opens booking from booking payload', () {
     final intent = PushNotificationOpenIntent.fromData({
       'bookingId': 'booking-1',
