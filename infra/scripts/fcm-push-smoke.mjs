@@ -199,7 +199,7 @@ if (preflight) {
         warningLabels: warnings.map((warning) => warning.label),
         blockers,
         blockerLabels: blockers.map(fcmSmokeBlockerLabel),
-        nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights),
+        nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights, warnings),
       },
       null,
       2,
@@ -837,12 +837,22 @@ function expectedProviderBlocker(partnerAlertPolicyPreflight) {
   return 'PARTNER_ALERT_POLICY_PROVIDER_MISMATCH';
 }
 
-function preflightNextActions(blockers, alternativeNotificationPreflights = []) {
+function preflightNextActions(blockers, alternativeNotificationPreflights = [], warnings = []) {
+  const warningActions = warnings
+    .map((warning) => warning.operatorAction)
+    .filter((action) => typeof action === 'string' && action.length > 0);
+
   if (blockers.length === 0) {
-    return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live FCM retry.'];
+    return [
+      ...warningActions,
+      'Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live FCM retry.',
+    ];
   }
 
-  return blockers.flatMap((blocker) => fcmSmokeBlockerAction(blocker, { alternativeNotificationPreflights }));
+  return [
+    ...blockers.flatMap((blocker) => fcmSmokeBlockerAction(blocker, { alternativeNotificationPreflights })),
+    ...warningActions,
+  ];
 }
 
 function pushReadinessOutput(pushCheck) {
