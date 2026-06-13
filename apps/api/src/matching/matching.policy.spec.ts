@@ -15,6 +15,7 @@ import {
   MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
   MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER,
   MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST,
+  NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
   OPERATIONAL_POLICY_DEFINITIONS,
   PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
   PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
@@ -70,7 +71,17 @@ describe('matching policy', () => {
     expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
   });
 
-  it('treats only FCM and deprecated saved push values as OS push partner alert channels', () => {
+  it('labels partner alert routing with FCM-ready Admin copy', () => {
+    const definition = OPERATIONAL_POLICY_DEFINITIONS.find(
+      (item) => item.key === NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
+    );
+
+    expect(definition?.label).toBe('Partner alert routing');
+    expect(definition?.options?.[0]?.label).toBe('In-app now, FCM push later');
+    expect(JSON.stringify(definition)).not.toContain('OS push');
+  });
+
+  it('treats only FCM and deprecated saved push values as FCM partner alert routes', () => {
     expect(isFcmPartnerAlertChannel(PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS)).toBe(true);
     expect(isFcmPartnerAlertChannel(PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS)).toBe(true);
     expect(isFcmPartnerAlertChannel(PARTNER_ALERT_IN_APP_WITH_PUSH_LATER)).toBe(false);

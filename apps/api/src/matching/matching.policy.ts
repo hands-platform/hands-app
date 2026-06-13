@@ -480,15 +480,15 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
     category: 'Decision',
-    label: 'Partner alert channel',
+    label: 'Partner alert routing',
     description: 'Choose how partners should receive urgent booking and marketplace participation alerts.',
     value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     recommendedValue: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     options: [
       {
         value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
-        label: 'In-app now, push later',
-        tradeoff: 'Keeps MVP stable until FCM credentials and mobile app config are ready for OS push E2E.',
+        label: 'In-app now, FCM push later',
+        tradeoff: 'Keeps MVP stable until FCM credentials and mobile app config are ready for FCM push E2E.',
       },
       {
         value: PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS,
