@@ -88,6 +88,9 @@ describe('NotificationsTableSection', () => {
 
     expect(rendered).toContain('2 attempts');
     expect(rendered).toContain('latest FCM / Android / 2026-06-09 10:03');
+    expect(rendered).toContain('previous FAILED at 2026-06-09 10:01');
+    expect(rendered).toContain('Latest attempt / FCM SENT / Android');
+    expect(rendered).toContain('Previous attempt / FCM FAILED / IOS');
     expect(elementTypesIn(section)).toContain('details');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -137,7 +140,11 @@ describe('NotificationsTableSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04');
+    expect(rendered).toContain(
+      'FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04 / previous SENT at 2026-06-09 10:03',
+    );
+    expect(rendered).toContain('Latest attempt / FCM FAILED / Android');
+    expect(rendered).toContain('Previous attempt / FCM SENT / Android');
     expect(rendered).toContain('Failure messaging/internal-error');
     expect(rendered).toContain('Reason temporary provider error for [masked]');
     expect(rendered).toContain(

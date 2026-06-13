@@ -31,6 +31,7 @@ export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryC
   }
 
   const latest = deliveryRows[0];
+  const previous = deliveryRows[1];
 
   return (
     <details className="notification-delivery-disclosure">
@@ -39,21 +40,33 @@ export function NotificationDeliveryCell({ deliveryRows }: NotificationDeliveryC
         <strong>{deliveryRows.length} attempts</strong>{' '}
         <span className="muted">
           / latest {latest.provider} / {latest.platformLabel} / {latest.attemptedAtLabel}
+          {previous ? ` / previous ${previous.status} at ${previous.attemptedAtLabel}` : ''}
         </span>
       </summary>
       <div className="admin-mt-6">
-        {deliveryRows.map((delivery) => (
-          <NotificationDeliveryAttempt delivery={delivery} key={delivery.id} />
+        {deliveryRows.map((delivery, index) => (
+          <NotificationDeliveryAttempt
+            delivery={delivery}
+            key={delivery.id}
+            sequenceLabel={deliverySequenceLabel(index)}
+          />
         ))}
       </div>
     </details>
   );
 }
 
-function NotificationDeliveryAttempt({ delivery }: { readonly delivery: NotificationDeliveryRow }) {
+function NotificationDeliveryAttempt({
+  delivery,
+  sequenceLabel,
+}: {
+  readonly delivery: NotificationDeliveryRow;
+  readonly sequenceLabel?: string;
+}) {
   return (
     <div className="notification-delivery-attempt admin-mb-10">
       <div>
+        {sequenceLabel ? <strong>{sequenceLabel} / </strong> : null}
         <strong>{delivery.provider}</strong>{' '}
         <span className={delivery.statusClassName}>{delivery.status}</span>{' '}
         <span className="muted">/ {delivery.platformLabel}</span>
@@ -79,4 +92,14 @@ function NotificationDeliveryAttempt({ delivery }: { readonly delivery: Notifica
       ) : null}
     </div>
   );
+}
+
+function deliverySequenceLabel(index: number) {
+  if (index === 0) {
+    return 'Latest attempt';
+  }
+  if (index === 1) {
+    return 'Previous attempt';
+  }
+  return 'Earlier attempt';
 }
