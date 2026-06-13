@@ -14,9 +14,6 @@ import {
 } from '../../lib/booking-matching-escalation-rows';
 import { matchingPolicySummaryLabel } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
-import {
-  type BookingListStage,
-} from '../../lib/booking-list-stage';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import {
   bookingCheckLevel,
@@ -171,7 +168,6 @@ import {
   bookingPaymentNeedsOpsInput,
   bookingRefundReviewNeedsOpsInput,
 } from './booking-payment-ops-inputs';
-import { bookingListStage as bookingListStageFromBooking } from './booking-list-stage-inputs';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
@@ -186,6 +182,7 @@ import {
 } from './booking-monitor-list-state-model';
 import { buildBookingMonitorCustomerVisibleStateLabel } from './booking-monitor-customer-visible-model';
 import { buildBookingMonitorCommandDecisionStrip } from './booking-monitor-command-decision-model';
+import { buildBookingMonitorListStage } from './booking-monitor-list-stage-model';
 import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
@@ -658,7 +655,7 @@ function buildBookingMonitorListRow(
     serviceOptionLabel: bookingServiceOptionLabel(booking),
     servicePayoutLabel: bookingServicePayoutRuleLabel(booking) ?? null,
     servicePriceLabel: bookingServicePriceLabel(booking),
-    stage: bookingListStage(booking, currentTimeMs),
+    stage: buildBookingMonitorListStage(booking, currentTimeMs),
   };
 }
 
@@ -819,17 +816,8 @@ function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): B
     policySnapshotPresent: Boolean(bookingMatchingPolicySnapshot(booking)),
     pricingPolicyNeedsOps: bookingMonitorPricingPolicyNeedsOps(booking),
     refundReviewNeedsOps: bookingRefundReviewNeedsOps(booking),
-    stageKey: bookingListStage(booking, nowMs).key,
+    stageKey: buildBookingMonitorListStage(booking, nowMs).key,
     status: booking.status,
-  });
-}
-
-function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
-  const counts = bookingMarketplaceCountFacts(booking);
-
-  return bookingListStageFromBooking(booking, nowMs, {
-    marketplaceCount: counts.marketplaceParticipantCount,
-    selectableCount: counts.customerSelectableCount,
   });
 }
 
@@ -871,7 +859,7 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
       paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
       pricingPolicyNeedsOps: () => bookingMonitorPricingPolicyNeedsOps(booking),
       refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
-      stageKey: () => bookingListStage(booking, nowMs).key,
+      stageKey: () => buildBookingMonitorListStage(booking, nowMs).key,
     }),
   );
 }
@@ -899,7 +887,7 @@ function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
   return bookingAlertEvidenceNeedsOpsFromFacts({
     alertBatchCount: summary.batchCount,
     participantCount: booking.participants?.length,
-    stageKey: () => bookingListStage(booking, nowMs).key,
+    stageKey: () => buildBookingMonitorListStage(booking, nowMs).key,
     status: booking.status,
   });
 }
