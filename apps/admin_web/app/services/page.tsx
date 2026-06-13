@@ -14,7 +14,6 @@ import {
   readSingleParam,
   selectActiveTaxPolicy,
 } from '../../lib/service-catalog-filters';
-import { serviceDurationMatrix } from '../../lib/service-duration-matrix';
 import { formatDurationList, missingStandardDurations } from '../../lib/service-group-display';
 import { servicePayoutLedgerRows } from '../../lib/service-payout-ledger-rows';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
@@ -27,6 +26,7 @@ import { serviceTypeCoverageSummary as buildServiceTypeCoverageSummary } from '.
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
+import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 import { ServiceGroupEditCard } from './service-group-edit-card';
 import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
 import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
@@ -285,123 +285,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         )}
       </section>
 
-      <section className="card admin-card-scroll admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Duration pricing matrix</h2>
-            <p className="muted">
-              One row is one service name. Each duration cell shows customer minimum, partner payout, and
-              projected company commission after VAT, withholding, and other configured costs.
-            </p>
-          </div>
-          <span className="pill pill-info">60 / 90 / 120 min</span>
-        </div>
-        <table className="table service-matrix">
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>60 min</th>
-              <th>90 min</th>
-              <th>120 min</th>
-              <th>Policy state</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleGroupedServices.map((group) => {
-              const matrix = serviceDurationMatrix({
-                activeTaxPolicy,
-                basePayoutRule,
-                items: group.items,
-                servicePayoutFinance,
-              });
-              return (
-                <tr key={group.key}>
-                  <td>
-                    <strong>{group.label}</strong>
-                    <p className="muted">{group.key}</p>
-                  </td>
-                  {[60, 90, 120].map((duration) => {
-                    const cell = matrix.byDuration.get(duration);
-                    const cellCurrency = cell?.baseRule?.currency ?? 'VND';
-                    const cellTaxAndCost = cell?.baseRule
-                      ? cell.finance.vatAmount +
-                        cell.finance.withholdingAmount +
-                        cell.baseRule.otherCostAmount
-                      : 0;
-                    return (
-                      <td key={`${group.key}-${duration}`}>
-                        {cell ? (
-                          <div className="service-matrix-cell">
-                            <strong>Customer {formatMoney(cell.service.basePrice, cellCurrency)}</strong>
-                            <span className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}>
-                              {cell.baseRule ? 'Payout ready' : 'Payout missing'}
-                            </span>
-                            <small>
-                              Partner{' '}
-                              {cell.baseRule
-                                ? formatMoney(cell.baseRule.providerPayoutAmount, cell.baseRule.currency)
-                                : 'not set'}
-                            </small>
-                            <small>
-                              Gross HANDS fee{' '}
-                              {cell.baseRule ? formatMoney(cell.finance.fee, cellCurrency) : '-'}
-                            </small>
-                            <small>
-                              VAT / withholding / cost{' '}
-                              {cell.baseRule ? formatMoney(cellTaxAndCost, cellCurrency) : '-'}
-                            </small>
-                            <small>
-                              Net company fee{' '}
-                              {cell.baseRule
-                                ? formatMoney(cell.finance.actualCompanyCommission, cellCurrency)
-                                : '-'}
-                            </small>
-                          </div>
-                        ) : (
-                          <span className="pill pill-neutral">Not configured</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td>
-                    <div className="service-matrix-cell">
-                      <span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>
-                        {matrix.blockedCount ? `${matrix.blockedCount} blocked` : 'Bookable'}
-                      </span>
-                      <small>{matrix.activeCount} active duration option(s)</small>
-                      <small>{matrix.payoutRuleCount} payout rule(s)</small>
-                      <small>
-                        Customer minimum total{' '}
-                        {formatMoney(matrix.totals.customerMinimum, matrix.totals.currency)}
-                      </small>
-                      <small>
-                        Partner payout total{' '}
-                        {formatMoney(matrix.totals.providerPayout, matrix.totals.currency)}
-                      </small>
-                      <small>
-                        Gross HANDS fee total {formatMoney(matrix.totals.grossFee, matrix.totals.currency)}
-                      </small>
-                      <small>
-                        Tax / cost total {formatMoney(matrix.totals.taxAndCost, matrix.totals.currency)}
-                      </small>
-                      <small>
-                        Net company fee total{' '}
-                        {formatMoney(matrix.totals.netCompanyFee, matrix.totals.currency)}
-                      </small>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {hiddenServiceGroupCount ? (
-          <p className="muted">
-            Showing first {visibleGroupedServices.length} of {groupedServices.length} service type(s) to keep
-            the operations page responsive. Full totals above still use the complete catalog.
-          </p>
-        ) : null}
-      </section>
+      <ServiceDurationPricingMatrixSection
+        activeTaxPolicy={activeTaxPolicy}
+        hiddenGroupCount={hiddenServiceGroupCount}
+        totalGroupCount={groupedServices.length}
+        visibleGroups={visibleGroupedServices}
+      />
 
       <ServicePayoutLedgerSection
         activeServiceCount={activeServices.length}
