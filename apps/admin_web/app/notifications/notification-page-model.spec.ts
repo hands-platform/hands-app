@@ -4,6 +4,7 @@ import {
   buildNotificationDeliveryStats,
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
+  buildNotificationFcmSmokeReadiness,
   buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
   buildNotificationSummary,
@@ -255,6 +256,80 @@ describe('notification page model', () => {
         'Create or select a standard notification for the same Partner before expecting FCM smoke to pass.',
       preflightCommand: null,
       suggestedNotificationId: null,
+    });
+  });
+
+  it('builds an FCM registered-device preflight candidate from the newest enabled delivery', () => {
+    const readiness = buildNotificationFcmSmokeReadiness([
+      notification({
+        createdAt: '2026-06-01T10:00:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-old',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-old', platform: 'ios', role: 'CUSTOMER' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-old',
+        type: 'payment.updated',
+        user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+      }),
+      notification({
+        createdAt: '2026-06-01T10:04:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:05:00.000Z',
+            id: 'delivery-new',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-new', platform: 'android', role: 'PROVIDER' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-new',
+        type: 'earning.created',
+        user: providerUser('provider-user-1'),
+      }),
+    ]);
+
+    expect(readiness).toMatchObject({
+      detail: 'Partner +84900000002 can reuse the enabled android device for preflight without sending FCM.',
+      latestAttemptLabel: '1 Jun 2026, 17:05',
+      pushDeviceLabel: 'android device-n',
+      selectedNotificationId: 'notification-new',
+      selectedNotificationLabel: 'Earning Created notifica',
+      status: 'ready',
+      statusLabel: 'Live preflight ready',
+    });
+    expect(readiness.preflightCommand).toContain('FCM_SMOKE_ROLE="PROVIDER"');
+    expect(readiness.preflightCommand).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-new"');
+    expect(readiness.preflightCommand).toContain('npm.cmd run fcm:push-smoke -- --preflight');
+  });
+
+  it('marks FCM preflight as blocked when no enabled device can be reused', () => {
+    const readiness = buildNotificationFcmSmokeReadiness([
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-disabled',
+            provider: 'FCM',
+            pushDevice: { enabled: false, id: 'device-disabled', platform: 'android' },
+            status: 'FAILED',
+          },
+        ],
+        id: 'notification-disabled',
+        type: 'payment.updated',
+        user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+      }),
+    ]);
+
+    expect(readiness).toMatchObject({
+      preflightCommand: null,
+      selectedNotificationId: null,
+      status: 'needs-device',
+      statusLabel: 'Needs enabled device',
     });
   });
 

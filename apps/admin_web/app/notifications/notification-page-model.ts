@@ -117,6 +117,17 @@ export type NotificationPartnerAlertSmokeFallback = {
   readonly detail: string;
 };
 
+export type NotificationFcmSmokeReadiness = {
+  readonly detail: string;
+  readonly latestAttemptLabel: string | null;
+  readonly preflightCommand: string | null;
+  readonly pushDeviceLabel: string | null;
+  readonly selectedNotificationId: string | null;
+  readonly selectedNotificationLabel: string | null;
+  readonly status: 'needs-device' | 'needs-notification' | 'ready';
+  readonly statusLabel: string;
+};
+
 export const notificationFilterLinks = [
   { label: 'All notifications', href: '/notifications', review: '' },
   { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
@@ -170,6 +181,7 @@ export function buildNotificationPageModel({
     allNotifications,
     operationalPolicies,
   );
+  const fcmSmokeReadiness = buildNotificationFcmSmokeReadiness(allNotifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
 
   return {
@@ -188,6 +200,7 @@ export function buildNotificationPageModel({
       },
     ),
     filters,
+    fcmSmokeReadiness,
     metrics: buildNotificationMetrics(allNotifications.length, summary, channelSummary),
     notificationRows: buildNotificationTableRows(notifications, filters),
     notifications,
@@ -412,6 +425,66 @@ export function buildNotificationPartnerAlertSmokeFallback(
     detail: suggestedNotification
       ? `Use FCM_SMOKE_NOTIFICATION_ID=${suggestedNotification.id} for the same Partner/phone FCM smoke preflight.`
       : 'Create or select a standard notification for the same Partner before expecting FCM smoke to pass.',
+  };
+}
+
+export function buildNotificationFcmSmokeReadiness(
+  notifications: readonly AdminNotification[],
+): NotificationFcmSmokeReadiness {
+  const candidate = newestFcmSmokeCandidates(notifications)[0];
+  if (candidate) {
+    const { delivery, notification } = candidate;
+    const role = notificationSmokeRole(notification, delivery);
+    const phone = notification.user?.phone ?? '';
+    const platform = delivery.pushDevice?.platform ?? 'android';
+    const command = [
+      `$env:FCM_SMOKE_ROLE="${role}"`,
+      `$env:FCM_SMOKE_PHONE="${phone}"`,
+      `$env:FCM_SMOKE_PLATFORM="${platform}"`,
+      '$env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"',
+      '$env:FCM_SMOKE_EXPECT_PROVIDER="FCM"',
+      '$env:FCM_SMOKE_EXPECT_STATUS="SENT"',
+      `$env:FCM_SMOKE_NOTIFICATION_ID="${notification.id}"`,
+      'npm.cmd run fcm:push-smoke -- --preflight',
+    ].join('; ');
+
+    return {
+      detail: `${role === 'PROVIDER' ? 'Partner' : 'Customer'} ${phone} can reuse the enabled ${platform} device for preflight without sending FCM.`,
+      latestAttemptLabel: formatDateTime(delivery.attemptedAt),
+      preflightCommand: command,
+      pushDeviceLabel: `${platform} ${shortId(delivery.pushDevice?.id ?? '')}`,
+      selectedNotificationId: notification.id,
+      selectedNotificationLabel: `${marketplaceDisplayText(humanizeType(notification.type))} ${shortId(
+        notification.id,
+      )}`,
+      status: 'ready',
+      statusLabel: 'Live preflight ready',
+    };
+  }
+
+  if (notifications.some((notification) => hasDeliveryProvider(notification, 'FCM'))) {
+    return {
+      detail:
+        'FCM delivery attempts exist, but no enabled push device with a phone number is available for registered-device preflight.',
+      latestAttemptLabel: null,
+      preflightCommand: null,
+      pushDeviceLabel: null,
+      selectedNotificationId: null,
+      selectedNotificationLabel: null,
+      status: 'needs-device',
+      statusLabel: 'Needs enabled device',
+    };
+  }
+
+  return {
+    detail: 'No FCM delivery attempt is available yet. Create or select an FCM-routed notification first.',
+    latestAttemptLabel: null,
+    preflightCommand: null,
+    pushDeviceLabel: null,
+    selectedNotificationId: null,
+    selectedNotificationLabel: null,
+    status: 'needs-notification',
+    statusLabel: 'Needs FCM delivery',
   };
 }
 
@@ -811,6 +884,35 @@ function smokeFallbackPreflightCommand(
     `$env:FCM_SMOKE_NOTIFICATION_ID="${suggestedNotification.id}"`,
     'npm.cmd run fcm:push-smoke -- --preflight',
   ].join('; ');
+}
+
+function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
+  return notifications
+    .flatMap((notification) =>
+      notificationDeliveries(notification)
+        .filter(isReusableFcmDelivery)
+        .filter(() => Boolean(notification.user?.phone))
+        .map((delivery) => ({ delivery, notification })),
+    )
+    .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery));
+}
+
+function isReusableFcmDelivery(delivery: AdminNotificationDelivery) {
+  return isDeliveryProvider(delivery, 'FCM') && delivery.pushDevice?.enabled === true;
+}
+
+function notificationSmokeRole(
+  notification: AdminNotification,
+  delivery: AdminNotificationDelivery,
+): 'CUSTOMER' | 'PROVIDER' {
+  const deliveryRole = delivery.pushDevice?.role?.toUpperCase();
+  if (deliveryRole === 'PROVIDER') {
+    return 'PROVIDER';
+  }
+  if (deliveryRole === 'CUSTOMER') {
+    return 'CUSTOMER';
+  }
+  return isProviderNotification(notification) ? 'PROVIDER' : 'CUSTOMER';
 }
 
 function latestDeliveryPlatform(notification: AdminNotification) {

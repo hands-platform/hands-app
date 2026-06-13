@@ -60,6 +60,7 @@ export default async function NotificationsPage({
         <NotificationChannelPolicySection
           inAppDeliveries={model.channelSummary.inAppDeliveries}
           fcmDeliveries={model.channelSummary.fcmDeliveries}
+          fcmSmokeReadiness={model.fcmSmokeReadiness}
           partnerAlertSmokeFallback={model.partnerAlertSmokeFallback}
           partnerAlertCount={model.channelSummary.partnerAlertCount}
           policyLabel={model.channelSummary.policyLabel}

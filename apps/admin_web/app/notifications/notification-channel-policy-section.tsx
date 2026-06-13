@@ -1,11 +1,15 @@
 import Link from 'next/link';
 
 import { CommandCopyRow } from '../../components/command-copy-row';
-import type { NotificationPartnerAlertSmokeFallback } from './notification-page-model';
+import type {
+  NotificationFcmSmokeReadiness,
+  NotificationPartnerAlertSmokeFallback,
+} from './notification-page-model';
 
 type NotificationChannelPolicySectionProps = {
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
+  readonly fcmSmokeReadiness: NotificationFcmSmokeReadiness;
   readonly partnerAlertCount: number;
   readonly partnerAlertSmokeFallback: NotificationPartnerAlertSmokeFallback | null;
   readonly policyLabel: string;
@@ -14,6 +18,7 @@ type NotificationChannelPolicySectionProps = {
 export function NotificationChannelPolicySection({
   inAppDeliveries,
   fcmDeliveries,
+  fcmSmokeReadiness,
   partnerAlertCount,
   partnerAlertSmokeFallback,
   policyLabel,
@@ -50,6 +55,30 @@ export function NotificationChannelPolicySection({
           <h3 className="admin-mt-10">{fcmDeliveries}</h3>
           <p className="muted">FCM push delivery attempts created by the active policy.</p>
         </div>
+        <div className="ops-task-card">
+          <span
+            className={
+              fcmSmokeReadiness.status === 'ready'
+                ? 'pill pill-success'
+                : fcmSmokeReadiness.status === 'needs-device'
+                  ? 'pill pill-warn'
+                  : 'pill pill-neutral'
+            }
+          >
+            {fcmSmokeReadiness.statusLabel}
+          </span>
+          <h3 className="admin-mt-10">{fcmSmokeReadiness.selectedNotificationLabel ?? 'No candidate'}</h3>
+          <p className="muted">{fcmSmokeReadiness.detail}</p>
+          {fcmSmokeReadiness.pushDeviceLabel ? (
+            <p className="muted admin-mt-6">Enabled device: {fcmSmokeReadiness.pushDeviceLabel}</p>
+          ) : null}
+          {fcmSmokeReadiness.latestAttemptLabel ? (
+            <p className="muted admin-mt-6">Latest FCM attempt: {fcmSmokeReadiness.latestAttemptLabel}</p>
+          ) : null}
+          {fcmSmokeReadiness.preflightCommand ? (
+            <CommandCopyRow command={fcmSmokeReadiness.preflightCommand} label="Copy FCM preflight command" />
+          ) : null}
+        </div>
         {partnerAlertSmokeFallback ? (
           <div className="ops-task-card">
             <span className="pill pill-warn">FCM smoke fallback</span>
@@ -64,7 +93,10 @@ export function NotificationChannelPolicySection({
               route.
             </p>
             {partnerAlertSmokeFallback.preflightCommand ? (
-              <CommandCopyRow command={partnerAlertSmokeFallback.preflightCommand} label="Copy preflight command" />
+              <CommandCopyRow
+                command={partnerAlertSmokeFallback.preflightCommand}
+                label="Copy preflight command"
+              />
             ) : null}
           </div>
         ) : null}

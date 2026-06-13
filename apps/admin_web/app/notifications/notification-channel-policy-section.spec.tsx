@@ -6,6 +6,7 @@ describe('NotificationChannelPolicySection', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 7,
       fcmDeliveries: 2,
+      fcmSmokeReadiness: fcmSmokeReadiness(),
       partnerAlertCount: 5,
       partnerAlertSmokeFallback: null,
       policyLabel: 'In-app first',
@@ -21,14 +22,25 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('7');
     expect(rendered).toContain('FCM route');
     expect(rendered).toContain('2');
+    expect(rendered).toContain('Live preflight ready');
+    expect(rendered).toContain('Payment Updated notifica');
+    expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['command-copy-row', 'ops-task-card', 'pill pill-warn']),
+    );
   });
 
   it('uses a neutral FCM badge when no FCM push deliveries exist', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 3,
       fcmDeliveries: 0,
+      fcmSmokeReadiness: fcmSmokeReadiness({
+        preflightCommand: null,
+        selectedNotificationLabel: null,
+        status: 'needs-notification',
+        statusLabel: 'Needs FCM delivery',
+      }),
       partnerAlertCount: 3,
       partnerAlertSmokeFallback: null,
       policyLabel: 'In-app only',
@@ -41,9 +53,11 @@ describe('NotificationChannelPolicySection', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 4,
       fcmDeliveries: 3,
+      fcmSmokeReadiness: fcmSmokeReadiness(),
       partnerAlertCount: 2,
       partnerAlertSmokeFallback: {
-        detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same Partner/phone FCM smoke preflight.',
+        detail:
+          'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same Partner/phone FCM smoke preflight.',
         partnerAlertNotificationId: 'notification-payout',
         partnerAlertType: 'provider.payout_batch.updated',
         partnerAlertTypeLabel: 'Partner Payout Batch Updated',
@@ -66,3 +80,20 @@ describe('NotificationChannelPolicySection', () => {
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['command-copy-row']));
   });
 });
+
+function fcmSmokeReadiness(
+  overrides: Partial<Parameters<typeof NotificationChannelPolicySection>[0]['fcmSmokeReadiness']> = {},
+): Parameters<typeof NotificationChannelPolicySection>[0]['fcmSmokeReadiness'] {
+  return {
+    detail: 'Customer +84900000001 can reuse the enabled android device for preflight without sending FCM.',
+    latestAttemptLabel: '13 Jun 2026, 17:09',
+    preflightCommand:
+      '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"; npm.cmd run fcm:push-smoke -- --preflight',
+    pushDeviceLabel: 'android push-dev',
+    selectedNotificationId: 'notification-row-123456',
+    selectedNotificationLabel: 'Payment Updated notifica',
+    status: 'ready',
+    statusLabel: 'Live preflight ready',
+    ...overrides,
+  };
+}
