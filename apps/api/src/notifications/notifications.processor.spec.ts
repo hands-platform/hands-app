@@ -1,6 +1,56 @@
 import { NotificationRetryProcessor } from './notifications.processor';
 
 describe('NotificationRetryProcessor', () => {
+  it('skips missing notifications without sending push delivery', async () => {
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const pushDelivery = { send: jest.fn() };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(processor.process({ data: { notificationId: 'missing' } } as never)).resolves.toEqual({
+      skipped: true,
+    });
+
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+  });
+
+  it('skips notifications without enabled push devices before resolving partner-alert policy', async () => {
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking available',
+          body: 'A booking is available.',
+          type: 'booking.backup_available',
+          data: { bookingId: 'booking-1' },
+          user: {
+            pushDevices: [],
+          },
+        }),
+      },
+      operationalPolicySetting: {
+        findUnique: jest.fn(),
+      },
+    };
+    const pushDelivery = { send: jest.fn() };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toEqual({
+      skipped: true,
+      reason: 'NO_ENABLED_DEVICES',
+      notificationId: 'notification-1',
+    });
+
+    expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
+    expect(pushDelivery.send).not.toHaveBeenCalled();
+  });
+
   it('routes partner alert notifications through FCM only when policy selects FCM push', async () => {
     const prisma = {
       notification: {
@@ -41,6 +91,50 @@ describe('NotificationRetryProcessor', () => {
     expect(pushDelivery.send).toHaveBeenCalledWith(
       expect.objectContaining({
         providerOverride: 'fcm',
+      }),
+    );
+  });
+
+  it('routes partner alert notifications to in-app delivery when policy has not enabled FCM', async () => {
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking available',
+          body: 'A booking is available.',
+          type: 'booking.backup_available',
+          data: { bookingId: 'booking-1' },
+          user: {
+            pushDevices: [{ id: 'device-1', token: 'fcm-token-1' }],
+          },
+        }),
+      },
+      operationalPolicySetting: {
+        findUnique: jest.fn().mockResolvedValue({ value: 'IN_APP_WITH_PUSH_LATER' }),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
+        callback({
+          notificationDelivery: { create: jest.fn() },
+          pushDevice: { update: jest.fn() },
+        }),
+      ),
+    };
+    const pushDelivery = {
+      send: jest.fn().mockResolvedValue({
+        provider: 'IN_APP_ONLY',
+        status: 'SKIPPED',
+        disableDevice: false,
+        response: { reason: 'OS push not enabled for partner alerts.' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await processor.process({ data: { notificationId: 'notification-1' } } as never);
+
+    expect(pushDelivery.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOverride: 'in_app_only',
       }),
     );
   });
