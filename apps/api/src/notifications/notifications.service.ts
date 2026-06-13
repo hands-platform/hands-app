@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
+import { notificationDeliveryFailureCode } from './notification-delivery-failure';
 import { pushDeviceDisableInput, pushDeviceRegistrationInput } from './notification-device-token';
 import { NOTIFICATION_SEND_QUEUE_NAME, notificationSendJob } from './notification-send.queue';
 import { toJson } from './notification-push-payload';
@@ -135,27 +136,4 @@ function summarizeRetryLatestDelivery(
     pushDeviceEnabled: delivery.pushDevice?.enabled ?? null,
     pushDevicePlatform: delivery.pushDevice?.platform ?? null,
   };
-}
-
-function notificationDeliveryFailureCode(response: unknown) {
-  const body = readRecord(readRecord(response)?.body);
-  const error = readRecord(body?.error);
-  const details = Array.isArray(error?.details) ? error.details : [];
-  const firstDetail = readRecord(details[0]);
-  return (
-    readString(readRecord(response)?.failureCode) ??
-    readString(firstDetail?.errorCode) ??
-    readString(body?.code) ??
-    readString(error?.code)
-  );
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function readString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
