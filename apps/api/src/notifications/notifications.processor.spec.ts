@@ -139,6 +139,95 @@ describe('NotificationRetryProcessor', () => {
     );
   });
 
+  it('records one delivery result per enabled push device without disabling transient failures', async () => {
+    const tx = {
+      notificationDelivery: {
+        create: jest.fn(),
+      },
+      pushDevice: {
+        update: jest.fn(),
+      },
+    };
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1' },
+          user: {
+            pushDevices: [
+              { id: 'device-1', token: 'fcm-token-1' },
+              { id: 'device-2', token: 'fcm-token-2' },
+            ],
+          },
+        }),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = {
+      send: jest
+        .fn()
+        .mockResolvedValueOnce({
+          provider: 'FCM',
+          status: 'SENT',
+          disableDevice: false,
+          response: { messageId: 'fcm-message-1' },
+        })
+        .mockResolvedValueOnce({
+          provider: 'FCM',
+          status: 'FAILED',
+          disableDevice: false,
+          failureCode: 'messaging/internal-error',
+          response: { reason: 'temporary provider error for fcm-token-2' },
+        }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toEqual({
+      notificationId: 'notification-1',
+      userId: 'user-1',
+      results: [
+        {
+          deviceId: 'device-1',
+          provider: 'FCM',
+          status: 'SENT',
+          disableDevice: false,
+          failureCode: undefined,
+        },
+        {
+          deviceId: 'device-2',
+          provider: 'FCM',
+          status: 'FAILED',
+          disableDevice: false,
+          failureCode: 'messaging/internal-error',
+        },
+      ],
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledTimes(2);
+    expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(2);
+    expect(tx.notificationDelivery.create).toHaveBeenNthCalledWith(2, {
+      data: {
+        notificationId: 'notification-1',
+        pushDeviceId: 'device-2',
+        provider: 'FCM',
+        status: 'FAILED',
+        response: {
+          reason: 'temporary provider error for [masked]',
+          failureCode: 'messaging/internal-error',
+        },
+      },
+    });
+    expect(tx.pushDevice.update).not.toHaveBeenCalled();
+  });
+
   it('disables a push device after a permanent FCM token failure', async () => {
     const tx = {
       notificationDelivery: {
