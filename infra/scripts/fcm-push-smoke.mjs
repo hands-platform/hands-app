@@ -234,11 +234,19 @@ if (deliveryCount <= beforeDeliveryCount) {
   );
 }
 
-const latestDelivery = newDelivery(after.deliveries ?? [], {
+const newDeliveries = newDeliveryBatch(after.deliveries ?? [], {
   beforeDeliveryCount,
   beforeDeliveryIds,
   beforeLatestAttemptedAt,
 });
+const latestDelivery =
+  selectDeliveryForExpectation(newDeliveries, { expectedProvider, expectedStatus }) ??
+  newestDelivery(newDeliveries) ??
+  newDelivery(after.deliveries ?? [], {
+    beforeDeliveryCount,
+    beforeDeliveryIds,
+    beforeLatestAttemptedAt,
+  });
 if (!latestDelivery) {
   fail(
     `Notification retry recorded a delivery count increase but no delivery details were returned: ${JSON.stringify(
@@ -253,23 +261,32 @@ if (!latestDelivery) {
 const provider = String(latestDelivery.provider ?? '').toUpperCase();
 const status = String(latestDelivery.status ?? '').toUpperCase();
 const failureCode = latestDelivery.failureCode ?? latestDelivery.response?.failureCode ?? null;
-if (expectedProvider !== 'ANY' && provider !== expectedProvider) {
+if (
+  expectedProvider !== 'ANY' &&
+  !newDeliveries.some((delivery) => deliveryProvider(delivery) === expectedProvider)
+) {
   fail(
     `Unexpected delivery provider: ${JSON.stringify({
       expectedProvider,
-      provider,
-      status,
+      providers: deliveryCountsBy(newDeliveries, deliveryProvider),
       notificationId,
     })}`,
   );
 }
-if (expectedStatus !== 'ANY' && status !== expectedStatus) {
+if (
+  expectedStatus !== 'ANY' &&
+  !newDeliveries.some(
+    (delivery) =>
+      (expectedProvider === 'ANY' || deliveryProvider(delivery) === expectedProvider) &&
+      deliveryStatus(delivery) === expectedStatus,
+  )
+) {
   fail(
     `Unexpected delivery status: ${JSON.stringify({
       expectedStatus,
-      provider,
-      status,
-      failureCode,
+      expectedProvider,
+      statuses: deliveryCountsBy(newDeliveries, deliveryStatus),
+      failureCodes: deliveryCountsBy(newDeliveries, deliveryFailureCode),
       notificationId,
     })}`,
   );
@@ -296,6 +313,8 @@ console.log(
       pushReadiness: pushReadinessOutput(pushCheck),
       beforeDeliveryCount,
       deliveryCount,
+      newDeliveryCount: newDeliveries.length,
+      newDeliveries: newDeliveries.map(summarizeSmokeDelivery),
       latestDelivery: {
         id: latestDelivery.id,
         provider,
@@ -746,6 +765,20 @@ function maskDeviceToken(value) {
   return deviceToken ? value.replaceAll(deviceToken, '<FCM_SMOKE_DEVICE_TOKEN>') : value;
 }
 
+function newDeliveryBatch(deliveries, { beforeDeliveryCount, beforeDeliveryIds, beforeLatestAttemptedAt }) {
+  const byId = deliveries.filter((delivery) => delivery.id && !beforeDeliveryIds.has(delivery.id));
+  if (byId.length > 0) {
+    return sortDeliveries(byId);
+  }
+
+  const byTime = deliveries.filter((delivery) => deliveryTime(delivery) > beforeLatestAttemptedAt);
+  if (byTime.length > 0) {
+    return sortDeliveries(byTime);
+  }
+
+  return sortDeliveries(deliveries.slice(0, Math.max(0, deliveries.length - beforeDeliveryCount)));
+}
+
 function newDelivery(deliveries, { beforeDeliveryCount, beforeDeliveryIds, beforeLatestAttemptedAt }) {
   return (
     deliveries.find((delivery) => delivery.id && !beforeDeliveryIds.has(delivery.id)) ??
@@ -756,10 +789,55 @@ function newDelivery(deliveries, { beforeDeliveryCount, beforeDeliveryIds, befor
 }
 
 function newestDelivery(deliveries) {
+  return sortDeliveries(deliveries)[0];
+}
+
+function sortDeliveries(deliveries) {
   return deliveries
     .filter(Boolean)
     .slice()
-    .sort((left, right) => deliveryTime(right) - deliveryTime(left))[0];
+    .sort((left, right) => deliveryTime(right) - deliveryTime(left));
+}
+
+function selectDeliveryForExpectation(deliveries, { expectedProvider, expectedStatus }) {
+  return (
+    deliveries.find(
+      (delivery) =>
+        (expectedProvider === 'ANY' || deliveryProvider(delivery) === expectedProvider) &&
+        (expectedStatus === 'ANY' || deliveryStatus(delivery) === expectedStatus),
+    ) ?? null
+  );
+}
+
+function summarizeSmokeDelivery(delivery) {
+  return {
+    id: delivery.id ?? null,
+    provider: deliveryProvider(delivery),
+    status: deliveryStatus(delivery),
+    failureCode: deliveryFailureCode(delivery),
+    pushDeviceId: delivery.pushDeviceId ?? null,
+    attemptedAt: delivery.attemptedAt ?? null,
+  };
+}
+
+function deliveryProvider(delivery) {
+  return String(delivery?.provider ?? '').toUpperCase();
+}
+
+function deliveryStatus(delivery) {
+  return String(delivery?.status ?? '').toUpperCase();
+}
+
+function deliveryFailureCode(delivery) {
+  return delivery?.failureCode ?? delivery?.response?.failureCode ?? null;
+}
+
+function deliveryCountsBy(deliveries, keyFn) {
+  return deliveries.reduce((counts, delivery) => {
+    const key = keyFn(delivery) ?? 'NONE';
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
 }
 
 function latestDeliveryTime(deliveries) {
