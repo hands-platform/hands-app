@@ -491,6 +491,25 @@ const pages = [
     ],
   },
   {
+    path: '/notifications?review=needs-retry',
+    markers: ['Notifications', 'Needs retry', 'Notification operation filters', 'Recovery decision gate'],
+    followUps: [
+      {
+        hrefPattern: /href="([^"]*\/notifications\?review=needs-retry(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
+        label: 'needs-retry retry confirmation',
+        markers: ['Retry notification', 'Recovery decision gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+      {
+        hrefPattern:
+          /href="([^"]*\/notifications\?review=needs-retry(?:&amp;|&)[^"]*confirm=enable-device[^"]*)"/,
+        label: 'needs-retry device confirmation',
+        markers: ['Re-enable device', 'Recovery decision gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+    ],
+  },
+  {
     path: '/notifications?review=pending',
     markers: ['Notifications', 'Pending', 'Notification operation filters', 'Worker path gate'],
   },
