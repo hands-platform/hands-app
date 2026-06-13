@@ -16,6 +16,10 @@ import {
   type AuditCommandLogPreview,
 } from './audit-log-command-board-section';
 import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-section';
+import {
+  notificationFailureCodeClassName,
+  notificationFailureCodeLabel,
+} from '../notifications/notification-failure-copy';
 
 type AuditLogFilters = {
   q: string;
@@ -614,7 +618,7 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   if (failureCode) {
     highlights.push({
       label: notificationFailureCodeLabel(failureCode),
-      className: notificationFailureCodeClass(failureCode),
+      className: notificationFailureCodeClassName(failureCode),
     });
   }
   if (latestDelivery.pushDeviceEnabled === true) {
@@ -625,35 +629,6 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 6);
-}
-
-function notificationFailureCodeLabel(failureCode: string) {
-  if (failureCode === 'messaging/mismatched-credential') {
-    return 'Firebase project mismatch';
-  }
-  if (
-    failureCode === 'messaging/registration-token-not-registered' ||
-    failureCode === 'messaging/invalid-registration-token'
-  ) {
-    return 'FCM token needs refresh';
-  }
-  if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
-    return 'FCM credentials missing';
-  }
-  return `Failure ${failureCode}`;
-}
-
-function notificationFailureCodeClass(failureCode: string) {
-  if (failureCode === 'messaging/mismatched-credential' || failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
-    return 'pill pill-warn';
-  }
-  if (
-    failureCode === 'messaging/registration-token-not-registered' ||
-    failureCode === 'messaging/invalid-registration-token'
-  ) {
-    return 'pill pill-warn';
-  }
-  return 'pill pill-info';
 }
 
 function notificationStatusHighlightClass(status: string) {
