@@ -24,8 +24,9 @@ import {
   notificationDeliveryFailureCode,
   notificationDeliveryFailureReason,
 } from './notification-delivery-response';
+import type { NotificationDeliveryRow } from './notification-delivery-cell';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
-import type { NotificationDeliveryRow, NotificationTableRow } from './notifications-table-section';
+import type { NotificationTableRow } from './notifications-table-section';
 
 type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
 
