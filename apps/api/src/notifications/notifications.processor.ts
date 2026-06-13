@@ -25,8 +25,20 @@ import {
 import { PushDeliveryService, type PushSendResult } from './push-delivery.service';
 import type { PushProvider } from './push-provider';
 
+export const notificationSendPushDeviceOrder = [
+  { updatedAt: 'asc' },
+  { createdAt: 'asc' },
+] satisfies Prisma.PushDeviceOrderByWithRelationInput[];
+
 const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
-  user: { include: { pushDevices: { where: { enabled: true } } } },
+  user: {
+    include: {
+      pushDevices: {
+        where: { enabled: true },
+        orderBy: notificationSendPushDeviceOrder,
+      },
+    },
+  },
 });
 
 type NotificationForSend = Prisma.NotificationGetPayload<{ include: typeof notificationSendInclude }>;

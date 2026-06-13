@@ -1,5 +1,8 @@
 import { Role } from '@prisma/client';
-import { NotificationRetryProcessor } from './notifications.processor';
+import {
+  NotificationRetryProcessor,
+  notificationSendPushDeviceOrder,
+} from './notifications.processor';
 
 describe('NotificationRetryProcessor', () => {
   it('skips missing notifications without sending push delivery', async () => {
@@ -51,6 +54,20 @@ describe('NotificationRetryProcessor', () => {
 
     expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
     expect(pushDelivery.send).not.toHaveBeenCalled();
+    expect(prisma.notification.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: {
+          user: {
+            include: {
+              pushDevices: expect.objectContaining({
+                orderBy: notificationSendPushDeviceOrder,
+                where: { enabled: true },
+              }),
+            },
+          },
+        },
+      }),
+    );
   });
 
   it('routes partner alert notifications through FCM only when policy selects FCM push', async () => {
