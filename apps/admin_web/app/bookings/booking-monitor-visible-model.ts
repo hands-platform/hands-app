@@ -1,7 +1,9 @@
 import type { AdminBooking } from '../../lib/admin-api';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
+import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import { bookingViewOptions } from './booking-monitor-options';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
+import { bookingMonitorMatchesView } from './booking-monitor-view-model';
 import { bookingMatchesSearch } from './booking-search';
 
 type BookingMonitorVisibleMatchers = {
@@ -57,6 +59,32 @@ export function buildBookingMonitorVisibleModel({
         matchers.matchesEvidenceFilter(booking, evidenceFilter),
     ),
   };
+}
+
+export function buildAdminBookingMonitorVisibleModel({
+  blockedCreateCount,
+  bookings,
+  evidenceFilter,
+  nowMs,
+  paymentFilter,
+  searchQuery,
+  statusFilter,
+  view,
+}: Omit<BuildBookingMonitorVisibleModelInput, 'matchers'> & { readonly nowMs: number }) {
+  return buildBookingMonitorVisibleModel({
+    blockedCreateCount,
+    bookings,
+    evidenceFilter,
+    matchers: {
+      matchesEvidenceFilter: (booking, filter) =>
+        bookingMonitorMatchesEvidenceFilter(booking, filter, nowMs),
+      matchesView: (booking, bookingView) => bookingMonitorMatchesView(booking, bookingView, nowMs),
+    },
+    paymentFilter,
+    searchQuery,
+    statusFilter,
+    view,
+  });
 }
 
 function buildBookingMonitorViewCounts(

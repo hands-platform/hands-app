@@ -49,10 +49,8 @@ import {
   bookingCustomerLabel,
   bookingProviderLabel,
 } from './booking-monitor-labels';
-import { bookingMonitorMatchesView } from './booking-monitor-view-model';
 import { buildBookingMonitorMarketplacePanelModel } from './booking-monitor-marketplace-model';
-import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
-import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
+import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
@@ -169,16 +167,11 @@ export function BookingMonitor({
 
   const visibleBookingModel = useMemo(
     () =>
-      buildBookingMonitorVisibleModel({
+      buildAdminBookingMonitorVisibleModel({
         blockedCreateCount: orderedBookingCreateRejections.length,
         bookings: orderedBookings,
         evidenceFilter,
-        matchers: {
-          matchesEvidenceFilter: (booking, filter) =>
-            bookingMonitorMatchesEvidenceFilter(booking, filter, currentTimeMs),
-          matchesView: (booking, bookingView) =>
-            bookingMonitorMatchesView(booking, bookingView, currentTimeMs),
-        },
+        nowMs: currentTimeMs,
         paymentFilter,
         searchQuery,
         statusFilter,

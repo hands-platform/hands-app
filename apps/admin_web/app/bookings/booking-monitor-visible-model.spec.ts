@@ -1,5 +1,8 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
+import {
+  buildAdminBookingMonitorVisibleModel,
+  buildBookingMonitorVisibleModel,
+} from './booking-monitor-visible-model';
 
 function booking(
   id: string,
@@ -74,5 +77,21 @@ describe('buildBookingMonitorVisibleModel', () => {
     expect(model.baseVisibleBookingCount).toBe(0);
     expect(model.bookingViewCounts.get('blocked-create')).toBe(3);
     expect(model.bookingViewCounts.get('active')).toBe(2);
+  });
+
+  it('builds the admin booking visible model with the default view and evidence matchers', () => {
+    const model = buildAdminBookingMonitorVisibleModel({
+      blockedCreateCount: 2,
+      bookings: [booking('kept', { customerName: 'Linh Nguyen', status: 'MATCHED' })],
+      evidenceFilter: 'all',
+      nowMs: new Date('2026-06-07T10:00:00.000Z').getTime(),
+      paymentFilter: 'all',
+      searchQuery: 'linh',
+      statusFilter: 'all',
+      view: 'active',
+    });
+
+    expect(model.visibleBookings.map((item) => item.id)).toEqual(['kept']);
+    expect(model.bookingViewCounts.get('blocked-create')).toBe(2);
   });
 });
