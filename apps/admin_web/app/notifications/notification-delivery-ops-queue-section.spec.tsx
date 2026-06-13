@@ -20,7 +20,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(rendered).toContain('Delivery operations queue');
     expect(rendered).toContain('1 issue(s)');
     expect(rendered).toContain('Failed sends');
-    expect(rendered).toContain('Push provider returned an error');
+    expect(rendered).toContain('Latest push attempt returned an error');
     expect(rendered).toContain('Open queue');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
@@ -42,7 +42,7 @@ function buildItems(): NotificationDeliveryOpsQueueItem[] {
   return [
     {
       count: 2,
-      detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
+      detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',

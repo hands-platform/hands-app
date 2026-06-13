@@ -20,7 +20,7 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
         <div>
           <h3>Delivery operations queue</h3>
           <p className="muted">
-            Fix disabled tokens and push delivery setup before retrying, so failed alerts do not loop.
+            Fix current delivery blockers before retrying, so alert sends do not loop.
           </p>
         </div>
         <span className={`pill ${items.length ? 'pill-warn' : 'pill-success'}`}>
