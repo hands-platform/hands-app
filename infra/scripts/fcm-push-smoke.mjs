@@ -51,6 +51,33 @@ const fcmProjectAlignmentBlockerCodes = new Set([
   ...Object.values(firebaseProjectAlignmentInvalidKeys),
   'FIREBASE_PROJECT_ALIGNMENT_NOT_CHECKED',
 ]);
+const fcmSmokePreflightBlockerCopy = {
+  NO_NOTIFICATION: {
+    label: 'No notification is available for the selected smoke user',
+    action:
+      'Create a notification for the selected smoke user through a booking/chat flow, or set FCM_SMOKE_NOTIFICATION_ID to an existing notification.',
+  },
+  NOTIFICATION_NOT_FOUND: {
+    label: 'Selected notification is not visible in the Admin notifications queue',
+    action:
+      'Set FCM_SMOKE_NOTIFICATION_ID to a notification that is visible in the Admin notifications queue.',
+  },
+  NO_DEVICE_TOKEN_OR_REUSE_MODE: {
+    label: 'No live device token or registered-device reuse mode selected',
+    action:
+      'Set FCM_SMOKE_DEVICE_TOKEN to a real token from the selected role/phone/platform, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled FCM device.',
+  },
+  NO_ENABLED_REGISTERED_DEVICE: {
+    label: 'No enabled registered FCM device for the selected app session',
+    action: () =>
+      `Open the current ${role} ${platform} app session for ${phone} and let it register an enabled FCM token through the API.`,
+  },
+  PARTNER_ALERT_POLICY_PROVIDER_MISMATCH: {
+    label: 'Partner alert policy does not match the expected delivery channel',
+    action: ({ alternativeNotificationPreflights }) =>
+      alternativeNotificationHint(alternativeNotificationPreflights),
+  },
+};
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
   fail(`Unsupported FCM_SMOKE_EXPECT_STATUS=${expectedStatus}. Use ANY, SENT, FAILED, or SKIPPED.`);
@@ -731,11 +758,26 @@ function fcmProjectAlignmentBlocker(projectAlignment) {
 }
 
 function fcmSmokeBlockerLabel(blocker) {
-  return isFcmProjectAlignmentBlockerCode(blocker) ? firebaseProjectAlignmentIssueLabel(blocker) : blocker;
+  if (isFcmProjectAlignmentBlockerCode(blocker)) {
+    return firebaseProjectAlignmentIssueLabel(blocker);
+  }
+  return fcmSmokePreflightBlockerCopy[blocker]?.label ?? blocker;
 }
 
 function isFcmProjectAlignmentBlockerCode(blocker) {
   return fcmProjectAlignmentBlockerCodes.has(blocker);
+}
+
+function fcmSmokeBlockerAction(blocker, options) {
+  if (isFcmProjectAlignmentBlockerCode(blocker)) {
+    return firebaseProjectAlignmentActions([blocker]);
+  }
+
+  const action = fcmSmokePreflightBlockerCopy[blocker]?.action;
+  if (!action) {
+    return [];
+  }
+  return [typeof action === 'function' ? action(options) : action];
 }
 
 function requiresFcmDeliveryCredentials() {
@@ -759,32 +801,7 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = []) 
     return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live FCM retry.'];
   }
 
-  const actions = [];
-  if (blockers.includes('NO_NOTIFICATION')) {
-    actions.push(
-      'Create a notification for the selected smoke user through a booking/chat flow, or set FCM_SMOKE_NOTIFICATION_ID to an existing notification.',
-    );
-  }
-  if (blockers.includes('NOTIFICATION_NOT_FOUND')) {
-    actions.push(
-      'Set FCM_SMOKE_NOTIFICATION_ID to a notification that is visible in the Admin notifications queue.',
-    );
-  }
-  if (blockers.includes('NO_DEVICE_TOKEN_OR_REUSE_MODE')) {
-    actions.push(
-      'Set FCM_SMOKE_DEVICE_TOKEN to a real token from the selected role/phone/platform, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled FCM device.',
-    );
-  }
-  if (blockers.includes('NO_ENABLED_REGISTERED_DEVICE')) {
-    actions.push(
-      `Open the current ${role} ${platform} app session for ${phone} and let it register an enabled FCM token through the API.`,
-    );
-  }
-  if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
-    actions.push(alternativeNotificationHint(alternativeNotificationPreflights));
-  }
-  actions.push(...firebaseProjectAlignmentActions(blockers.filter(isFcmProjectAlignmentBlockerCode)));
-  return actions;
+  return blockers.flatMap((blocker) => fcmSmokeBlockerAction(blocker, { alternativeNotificationPreflights }));
 }
 
 function pushReadinessOutput(pushCheck) {
