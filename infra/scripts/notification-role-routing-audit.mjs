@@ -45,7 +45,7 @@ try {
     auditEnabledDevices(),
   ]);
   const strictOk =
-    deliveryAudit.targetRoleMismatchCount === 0 && deviceAudit.roleOutsideUserRolesCount === 0;
+    deliveryAudit.currentTargetRoleMismatchCount === 0 && deviceAudit.roleOutsideUserRolesCount === 0;
 
   const result = {
     ok: true,
@@ -116,12 +116,14 @@ async function auditDeliveries() {
         pushDeviceId: delivery.pushDevice.id,
         pushDeviceUserId: delivery.pushDevice.userId,
         pushDeviceRole: delivery.pushDevice.role,
+        pushDeviceEnabled: delivery.pushDevice.enabled,
         platform: delivery.pushDevice.platform,
         provider: delivery.provider,
         status: delivery.status,
       };
     })
     .filter(Boolean);
+  const currentTargetRoleMismatches = targetRoleMismatches.filter((delivery) => delivery.pushDeviceEnabled);
 
   const knownTargetRoleCount = deliveries.filter((delivery) =>
     Boolean(notificationTargetRole(delivery.notification)),
@@ -133,7 +135,9 @@ async function auditDeliveries() {
     knownTargetRoleCount,
     ambiguousTargetRoleCount: deliveries.length - knownTargetRoleCount,
     targetRoleMismatchCount: targetRoleMismatches.length,
+    currentTargetRoleMismatchCount: currentTargetRoleMismatches.length,
     targetRoleMismatches: targetRoleMismatches.slice(0, 25),
+    currentTargetRoleMismatches: currentTargetRoleMismatches.slice(0, 25),
   };
 }
 

@@ -89,7 +89,7 @@ Partner-alert notifications are also gated by the `notification.partner_alert_ch
 
 `fcm:token-smoke` registers and disables synthetic customer/Partner device tokens without contacting FCM. The live FCM smoke either registers the real device token from the same role, phone, and platform selected for the smoke run or reuses an already registered enabled device, retries an existing notification, and verifies that a new delivery record is created. It never prints the raw FCM token. If the selected user has no notification yet, run a booking/chat flow first or set `FCM_SMOKE_NOTIFICATION_ID` to a known notification.
 
-Use `npm.cmd run notifications:role-audit` to read the local database and summarize recent notification deliveries whose target role does not match the recorded `PushDevice.role`. The audit is read-only and does not print raw push tokens. Add `-- --strict` when you want the command to fail on mismatches during a release gate.
+Use `npm.cmd run notifications:role-audit` to read the local database and summarize recent notification deliveries whose target role does not match the recorded `PushDevice.role`. The audit is read-only and does not print raw push tokens. Add `-- --strict` when you want the command to fail on current enabled-device mismatches during a release gate while still reporting older delivery history as audit evidence.
 
 Use `npm.cmd run notifications:role-repair` for a dry-run list of enabled push devices whose stored role is not present on the owning user. Add `-- --apply` to disable those mismatched devices without deleting records or exposing raw push tokens.
 
