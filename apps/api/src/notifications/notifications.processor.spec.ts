@@ -125,7 +125,7 @@ describe('NotificationRetryProcessor', () => {
         provider: 'IN_APP_ONLY',
         status: 'SKIPPED',
         disableDevice: false,
-        response: { reason: 'OS push not enabled for partner alerts.' },
+        response: { reason: 'FCM push not enabled for partner alerts.' },
       }),
     };
     const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);

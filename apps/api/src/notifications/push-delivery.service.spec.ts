@@ -43,6 +43,9 @@ describe('PushDeliveryService', () => {
       provider: 'IN_APP_ONLY',
       status: 'SKIPPED',
       disableDevice: false,
+      response: {
+        reason: 'FCM push delivery is disabled. Notification is available in the in-app inbox.',
+      },
     });
   });
 

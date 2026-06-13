@@ -8,7 +8,7 @@ import {
 } from './notification-push-payload';
 
 describe('notification push payload helpers', () => {
-  it('keeps OS push data limited to routing identifiers', () => {
+  it('keeps FCM push data limited to routing identifiers', () => {
     expect(
       toPushData({
         bookingId: 'booking-1',
@@ -32,7 +32,7 @@ describe('notification push payload helpers', () => {
     expect(toPushData(null)).toBeUndefined();
   });
 
-  it('keeps payout setup detail objects out of OS push data', () => {
+  it('keeps payout setup detail objects out of FCM push data', () => {
     expect(
       toPushData({
         bookingId: 'booking-1',
@@ -49,7 +49,7 @@ describe('notification push payload helpers', () => {
     });
   });
 
-  it('adds the stored notification id to safe OS push data', () => {
+  it('adds the stored notification id to safe FCM push data', () => {
     expect(
       notificationPushData({
         id: 'notification-1',

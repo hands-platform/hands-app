@@ -47,7 +47,7 @@ export class PushDeliveryService {
       status: 'SKIPPED',
       disableDevice: false,
       response: {
-        reason: 'OS push delivery is disabled. Notification is available in the in-app inbox.',
+        reason: 'FCM push delivery is disabled. Notification is available in the in-app inbox.',
         title: message.title,
       },
     };
