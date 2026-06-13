@@ -119,6 +119,50 @@ describe('notification action confirmation', () => {
     expect(confirmation?.description).toContain('failure messaging/internal-error');
   });
 
+  it('makes retry copy explicit when the latest delivery already succeeded', () => {
+    const confirmation = buildNotificationActionConfirmation(
+      [
+        {
+          ...notification,
+          deliveries: [
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:01:00.000Z',
+              id: 'delivery-old-failed',
+              provider: 'FCM',
+              status: 'FAILED',
+            },
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:04:00.000Z',
+              id: 'delivery-new-sent',
+              provider: 'FCM',
+              status: 'SENT',
+              pushDevice: {
+                id: 'push-device-123456',
+                platform: 'android',
+                enabled: true,
+              },
+            },
+          ],
+        },
+      ],
+      'retry',
+      {
+        notificationId: notification.id,
+        pushDeviceId: '',
+      },
+    );
+
+    expect(confirmation).toMatchObject({
+      confirmLabel: 'Retry anyway',
+      tone: 'info',
+    });
+    expect(confirmation?.description).toBe(
+      'Notification notifica already has a successful latest delivery. Retry only if support confirmed the user still missed it. Latest evidence: FCM SENT; platform android; attempted 1 Jun 2026, 07:04; device enabled; token timestamp unknown.',
+    );
+  });
+
   it('returns null when the requested notification or device is not loaded', () => {
     expect(
       buildNotificationActionConfirmation([notification], 'retry', {

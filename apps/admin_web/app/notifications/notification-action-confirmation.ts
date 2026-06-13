@@ -85,21 +85,27 @@ function buildRetryConfirmation(
   }
 
   const evidence = notificationRetryEvidence(notification);
+  const latestDelivery = latestNotificationDelivery(notification);
+  const retryAlreadySent = latestDelivery?.status === 'SENT';
 
   return {
     action: 'retry',
     cancelHref: notificationReturnHref(values),
-    confirmLabel: 'Retry notification',
-    description: `Retry notification ${shortId(
-      notification.id,
-    )} after reviewing duplicate-send risk. ${evidence}`,
+    confirmLabel: retryAlreadySent ? 'Retry anyway' : 'Retry notification',
+    description: retryAlreadySent
+      ? `Notification ${shortId(
+          notification.id,
+        )} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}`
+      : `Retry notification ${shortId(
+          notification.id,
+        )} after reviewing duplicate-send risk. ${evidence}`,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
       { name: 'returnHref', value: notificationReturnHref(values) },
     ],
     id: notification.id,
     title: `Retry notification ${shortId(notification.id)}?`,
-    tone: 'warning',
+    tone: retryAlreadySent ? 'info' : 'warning',
   };
 }
 
