@@ -1,3 +1,4 @@
+import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 import { SetupReadinessOrderSection } from './setup-readiness-order-section';
 
 describe('SetupReadinessOrderSection', () => {
@@ -109,75 +110,3 @@ describe('SetupReadinessOrderSection', () => {
     expect(rendered).toContain('BLOCKED');
   });
 });
-
-function textContent(value: unknown): string {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
-}
-
-function hrefsIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(hrefsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const href = typeof props?.href === 'string' ? [props.href] : [];
-  return [...href, ...hrefsIn(props?.children)];
-}
-
-function classNamesIn(value: unknown): string[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(classNamesIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const className = typeof props?.className === 'string' ? [props.className] : [];
-  return [...className, ...classNamesIn(props?.children)];
-}
-
-type RenderableComponent = (props: Record<string, unknown>) => unknown;
-
-function renderKnownComponent(record: Record<string, unknown> | null) {
-  const component = record?.type;
-  if (
-    typeof component === 'function' &&
-    (component.name === 'ReadinessRow' || component.name === 'CommandCopyRow')
-  ) {
-    return (component as RenderableComponent)(readRecord(record?.props) ?? {});
-  }
-  return null;
-}
-
-function resolveElement(value: unknown): unknown {
-  const expanded = renderKnownComponent(readRecord(value));
-  return expanded !== null ? resolveElement(expanded) : value;
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-}
