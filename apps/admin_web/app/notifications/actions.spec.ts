@@ -1,9 +1,18 @@
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { adminPost } from '../../lib/admin-api';
 import { enablePushDevice, retryNotification } from './actions';
+import {
+  notificationActionReturnHref,
+  sanitizeNotificationReturnHref,
+} from './notification-action-return-href';
 
 jest.mock('next/cache', () => ({
   revalidatePath: jest.fn(),
+}));
+
+jest.mock('next/navigation', () => ({
+  redirect: jest.fn(),
 }));
 
 jest.mock('../../lib/admin-api', () => ({
@@ -11,6 +20,7 @@ jest.mock('../../lib/admin-api', () => ({
 }));
 
 const mockedAdminPost = jest.mocked(adminPost);
+const mockedRedirect = jest.mocked(redirect);
 const mockedRevalidatePath = jest.mocked(revalidatePath);
 
 describe('notification server actions', () => {
@@ -18,9 +28,10 @@ describe('notification server actions', () => {
     mockedAdminPost.mockResolvedValue(undefined);
   });
 
-  it('retries a notification and refreshes notification-dependent admin views', async () => {
+  it('retries a notification, refreshes admin views, and returns to the active queue', async () => {
     const formData = new FormData();
     formData.set('notificationId', 'notification-1');
+    formData.set('returnHref', '/notifications?review=failed');
 
     await retryNotification(formData);
 
@@ -31,15 +42,17 @@ describe('notification server actions', () => {
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
       '/notifications',
-      '/partner-controls',
       '/partners',
+      '/partner-controls',
       '/audit-log',
     ]);
+    expect(mockedRedirect).toHaveBeenCalledWith('/notifications?review=failed');
   });
 
-  it('re-enables a push device and refreshes push health views', async () => {
+  it('re-enables a push device, refreshes push health views, and returns to the active queue', async () => {
     const formData = new FormData();
     formData.set('pushDeviceId', 'push-device-1');
+    formData.set('returnHref', '/notifications?review=disabled-device');
 
     await enablePushDevice(formData);
 
@@ -50,6 +63,7 @@ describe('notification server actions', () => {
       '/partner-controls',
       '/audit-log',
     ]);
+    expect(mockedRedirect).toHaveBeenCalledWith('/notifications?review=disabled-device');
   });
 
   it('requires form identifiers before calling admin APIs', async () => {
@@ -58,6 +72,7 @@ describe('notification server actions', () => {
 
     expect(mockedAdminPost).not.toHaveBeenCalled();
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
+    expect(mockedRedirect).not.toHaveBeenCalled();
   });
 
   it('trims form identifiers before posting admin actions', async () => {
@@ -81,5 +96,23 @@ describe('notification server actions', () => {
       {},
       null,
     );
+    expect(mockedRedirect).toHaveBeenNthCalledWith(1, '/notifications');
+    expect(mockedRedirect).toHaveBeenNthCalledWith(2, '/notifications');
+  });
+
+  it('reads a safe notifications return href from form data', () => {
+    const formData = new FormData();
+    formData.set('returnHref', '/notifications?review=failed&booking=booking-1');
+
+    expect(notificationActionReturnHref(formData)).toBe(
+      '/notifications?review=failed&booking=booking-1',
+    );
+  });
+
+  it('falls back to notifications for unsafe return hrefs', () => {
+    expect(sanitizeNotificationReturnHref(null)).toBe('/notifications');
+    expect(sanitizeNotificationReturnHref('https://example.com/notifications')).toBe('/notifications');
+    expect(sanitizeNotificationReturnHref('/partners')).toBe('/notifications');
+    expect(sanitizeNotificationReturnHref('/notifications/../partners')).toBe('/notifications');
   });
 });

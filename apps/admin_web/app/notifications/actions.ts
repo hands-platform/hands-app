@@ -1,20 +1,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { adminPost } from '../../lib/admin-api';
+import { notificationActionReturnHref } from './notification-action-return-href';
 
 export async function retryNotification(formData: FormData) {
   const notificationId = readRequiredFormString(formData, 'notificationId');
   await adminPost(`/admin/notifications/${notificationId}/retry`, {}, null);
-  revalidatePath('/notifications');
-  revalidatePath('/partner-controls');
-  revalidatePath('/partners');
-  revalidatePath('/audit-log');
+  revalidateNotificationActionPaths();
+  redirect(notificationActionReturnHref(formData));
 }
 
 export async function enablePushDevice(formData: FormData) {
   const pushDeviceId = readRequiredFormString(formData, 'pushDeviceId');
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
+  revalidateNotificationActionPaths();
+  redirect(notificationActionReturnHref(formData));
+}
+
+function revalidateNotificationActionPaths() {
   revalidatePath('/notifications');
   revalidatePath('/partners');
   revalidatePath('/partner-controls');

@@ -40,7 +40,10 @@ describe('notification action confirmation', () => {
       confirmLabel: 'Retry notification',
       description:
         'Retry notification notifica after reviewing duplicate-send risk. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
-      hiddenInputs: [{ name: 'notificationId', value: notification.id }],
+      hiddenInputs: [
+        { name: 'notificationId', value: notification.id },
+        { name: 'returnHref', value: '/notifications' },
+      ],
       id: notification.id,
       title: 'Retry notification notifica?',
       tone: 'warning',
@@ -59,7 +62,10 @@ describe('notification action confirmation', () => {
       confirmLabel: 'Re-enable device',
       description:
         'Re-enable ios push device push-dev only after a fresh token or operator confirmation exists. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
-      hiddenInputs: [{ name: 'pushDeviceId', value: 'push-device-123456' }],
+      hiddenInputs: [
+        { name: 'pushDeviceId', value: 'push-device-123456' },
+        { name: 'returnHref', value: '/notifications' },
+      ],
       id: 'push-device-123456',
       title: 'Re-enable device push-dev?',
       tone: 'danger',
@@ -169,5 +175,9 @@ describe('notification action confirmation', () => {
     });
 
     expect(confirmation?.cancelHref).toBe('/notifications?review=failed&booking=booking%201');
+    expect(confirmation?.hiddenInputs).toContainEqual({
+      name: 'returnHref',
+      value: '/notifications?review=failed&booking=booking%201',
+    });
   });
 });

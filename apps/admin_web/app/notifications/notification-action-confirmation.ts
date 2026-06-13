@@ -93,7 +93,10 @@ function buildRetryConfirmation(
     description: `Retry notification ${shortId(
       notification.id,
     )} after reviewing duplicate-send risk. ${evidence}`,
-    hiddenInputs: [{ name: 'notificationId', value: notification.id }],
+    hiddenInputs: [
+      { name: 'notificationId', value: notification.id },
+      { name: 'returnHref', value: notificationReturnHref(values) },
+    ],
     id: notification.id,
     title: `Retry notification ${shortId(notification.id)}?`,
     tone: 'warning',
@@ -119,7 +122,10 @@ function buildEnableDeviceConfirmation(
     )} only after a fresh token or operator confirmation exists. Latest evidence: ${deliveryEvidenceSummary(
       match.delivery,
     )}.`,
-    hiddenInputs: [{ name: 'pushDeviceId', value: match.pushDeviceId }],
+    hiddenInputs: [
+      { name: 'pushDeviceId', value: match.pushDeviceId },
+      { name: 'returnHref', value: notificationReturnHref(values) },
+    ],
     id: match.pushDeviceId,
     title: `Re-enable device ${shortId(match.pushDeviceId)}?`,
     tone: 'danger',
