@@ -609,7 +609,11 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const platform = readString(latestDelivery.pushDevicePlatform);
   const failureCode = readString(latestDelivery.failureCode);
   const jobName = readString(retryJob.jobName);
+  const retryRisk = notificationRetryRiskHighlight(readString(metadata.retryRisk));
 
+  if (retryRisk) {
+    highlights.push(retryRisk);
+  }
   if (metadata.retryAlreadyDelivered === true) {
     highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
   }
@@ -645,7 +649,7 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
     highlights.push({ label: 'Device disabled', className: 'pill pill-warn' });
   }
 
-  return highlights.slice(0, 6);
+  return highlights.slice(0, 7);
 }
 
 function notificationStatusHighlightClass(status: string) {
@@ -656,6 +660,25 @@ function notificationStatusHighlightClass(status: string) {
     return 'pill pill-warn';
   }
   return 'pill pill-info';
+}
+
+function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight | null {
+  if (risk === 'DUPLICATE_SEND_RISK') {
+    return { label: 'Duplicate send risk', className: 'pill pill-warn' };
+  }
+  if (risk === 'DEVICE_DISABLED') {
+    return { label: 'Device recovery needed', className: 'pill pill-warn' };
+  }
+  if (risk === 'FAILED_DELIVERY_RETRY') {
+    return { label: 'Failed delivery retry', className: 'pill pill-warn' };
+  }
+  if (risk === 'NO_DELIVERY_EVIDENCE') {
+    return { label: 'No delivery evidence', className: 'pill pill-info' };
+  }
+  if (risk === 'SKIPPED_DELIVERY_RETRY') {
+    return { label: 'Skipped delivery retry', className: 'pill pill-info' };
+  }
+  return null;
 }
 
 function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {

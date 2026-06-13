@@ -18,6 +18,7 @@ describe('audit log page model', () => {
           notificationId: 'notification-123456',
           retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
           retryAlreadyDelivered: true,
+          retryRisk: 'DUPLICATE_SEND_RISK',
         },
         target: 'notification:notification-123456',
       },
@@ -32,6 +33,7 @@ describe('audit log page model', () => {
       targetLabel: 'notification:notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-warn', label: 'Duplicate send risk' },
       { className: 'pill pill-info', label: 'Already delivered before retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },
@@ -57,6 +59,7 @@ describe('audit log page model', () => {
           },
           notificationId: 'notification-123456',
           retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
+          retryRisk: 'FAILED_DELIVERY_RETRY',
         },
         target: 'notification:notification-123456',
       },
@@ -66,12 +69,36 @@ describe('audit log page model', () => {
       relatedBoardHref: '/notifications?review=failed#notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-warn', label: 'Failed delivery retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-warn', label: 'Firebase project mismatch' },
       { className: 'pill pill-warn', label: 'Next install matching Firebase Admin JSON' },
       { className: 'pill pill-success', label: 'Device enabled' },
+    ]);
+  });
+
+  it('highlights retry rows with no delivery evidence for worker review', () => {
+    const rows = buildAuditLogTableRows([
+      {
+        action: 'notification.retry',
+        actor: { fullName: 'Operator One', phone: '+8490' },
+        createdAt: '2026-06-11T09:00:00.000Z',
+        id: 'audit-1',
+        metadata: {
+          latestDelivery: null,
+          notificationId: 'notification-123456',
+          retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
+          retryRisk: 'NO_DELIVERY_EVIDENCE',
+        },
+        target: 'notification:notification-123456',
+      },
+    ]);
+
+    expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-info', label: 'No delivery evidence' },
+      { className: 'pill pill-info', label: 'Queued notification-send' },
     ]);
   });
 
