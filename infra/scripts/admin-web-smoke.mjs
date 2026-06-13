@@ -452,6 +452,18 @@ const pages = [
     path: '/notifications?review=failed',
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue'],
   },
+  {
+    path: '/notifications?review=disabled-device',
+    markers: ['Notifications', 'Disabled devices', 'Delivery operations queue'],
+  },
+  {
+    path: '/notifications?review=stale-device',
+    markers: ['Notifications', 'Stale devices', 'Delivery operations queue'],
+  },
+  {
+    path: '/notifications?review=pending',
+    markers: ['Notifications', 'Pending', 'Notification operation filters'],
+  },
   { path: '/notifications?review=fcm', markers: ['Notifications', 'FCM', 'FCM route'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
