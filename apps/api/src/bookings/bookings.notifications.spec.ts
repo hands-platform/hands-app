@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import {
   backupBookingAvailableNotification,
   bookingOpenedNotification,
@@ -24,6 +25,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'customer-user-1',
+      targetRole: Role.CUSTOMER,
       type: 'booking.opened',
       title: 'Booking request sent',
       body: 'Mai received your booking request.',
@@ -56,6 +58,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      targetRole: Role.PROVIDER,
       type: 'booking.requested',
       title: 'New direct booking request',
       body: 'A customer requested one of your services.',
@@ -106,6 +109,7 @@ describe('booking notification payloads', () => {
   it('builds matched and service lifecycle payloads', () => {
     expect(selectedPartnerMatchedProviderNotification('provider-user-1', 'booking-1')).toEqual({
       userId: 'provider-user-1',
+      targetRole: Role.PROVIDER,
       type: 'booking.matched',
       title: 'You were selected',
       body: 'The customer selected you for this booking.',
@@ -149,6 +153,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      targetRole: Role.PROVIDER,
       type: 'booking.backup_available',
       title: 'Nearby booking available',
       body: 'A customer request within 10km is open for marketplace participation.',
@@ -169,6 +174,7 @@ describe('booking notification payloads', () => {
       }),
     ).toEqual({
       userId: 'provider-user-1',
+      targetRole: Role.PROVIDER,
       type: 'provider.payout_setup_required',
       title: 'Payout setup required',
       body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',

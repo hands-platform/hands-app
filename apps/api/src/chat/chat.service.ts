@@ -122,15 +122,18 @@ export class ChatService {
       return;
     }
 
-    const recipientIds = new Set(
-      [chatRoom.booking.customerProfile.userId, chatRoom.booking.selectedProvider?.userId].filter(
-        (userId): userId is string => Boolean(userId) && userId !== senderUserId,
-      ),
+    const recipients = [
+      { userId: chatRoom.booking.customerProfile.userId, targetRole: Role.CUSTOMER },
+      { userId: chatRoom.booking.selectedProvider?.userId, targetRole: Role.PROVIDER },
+    ].filter(
+      (recipient): recipient is { userId: string; targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'> } =>
+        Boolean(recipient.userId) && recipient.userId !== senderUserId,
     );
 
-    for (const userId of recipientIds) {
+    for (const recipient of recipients) {
       await this.notifications.create({
-        userId,
+        userId: recipient.userId,
+        targetRole: recipient.targetRole,
         type: 'chat.message.created',
         title: 'New chat message',
         body: 'A new message is available in your booking chat.',

@@ -65,6 +65,21 @@ describe('notification push payload helpers', () => {
     });
   });
 
+  it('keeps internal targetRole out of FCM push data', () => {
+    expect(
+      notificationPushData({
+        id: 'notification-1',
+        data: {
+          bookingId: 'booking-1',
+          targetRole: 'PROVIDER',
+        },
+      }),
+    ).toEqual({
+      bookingId: 'booking-1',
+      notificationId: 'notification-1',
+    });
+  });
+
   it('classifies partner alert notification types', () => {
     expect(isPartnerAlert('provider.payout_setup_required')).toBe(true);
     expect(isPartnerAlert('provider.payout_batch.updated')).toBe(true);

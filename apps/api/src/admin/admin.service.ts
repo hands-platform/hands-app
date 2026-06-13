@@ -776,6 +776,7 @@ export class AdminService {
     if (provider) {
       await this.notifications.create({
         userId: provider.userId,
+        targetRole: Role.PROVIDER,
         type: `provider.verification.${status.toLowerCase()}`,
         title:
           status === VerificationStatus.APPROVED ? 'Verification approved' : 'Verification needs updates',
@@ -884,6 +885,7 @@ export class AdminService {
     if (file.ownerUserId) {
       await this.notifications.create({
         userId: file.ownerUserId,
+        targetRole: Role.PROVIDER,
         type: `provider.media.${status.toLowerCase()}`,
         title:
           status === FileReviewStatus.APPROVED ? 'Profile media approved' : 'Profile media needs changes',
@@ -1116,6 +1118,7 @@ export class AdminService {
 
     await this.notifications.create({
       userId: updated.customerProfile.userId,
+      targetRole: Role.CUSTOMER,
       type: 'booking.no_show',
       title: 'No-show under review',
       body: 'HANDS operations marked this booking as no-show. Payment and support review is pending.',
@@ -1139,6 +1142,7 @@ export class AdminService {
       [...partnerUserIds].map((userId) =>
         this.notifications.create({
           userId,
+          targetRole: Role.PROVIDER,
           type: 'booking.no_show',
           title: 'Booking marked no-show',
           body: 'HANDS operations marked this booking as no-show. Check the booking note before fee or payout follow-up.',

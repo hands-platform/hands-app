@@ -6,6 +6,7 @@ import {
   PayoutBatchStatus,
   Prisma,
   ProviderWalletLedgerType,
+  Role,
   ProviderBankAccountStatus,
   ProviderSanctionStatus,
   ProviderSanctionType,
@@ -629,6 +630,7 @@ export class EarningsService {
 
     await this.notifications.create({
       userId,
+      targetRole: Role.PROVIDER,
       type: 'provider.payout_batch.updated',
       title: 'Payout batch updated',
       body: payoutBatchNotificationBody(batch.status),

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  Role,
   ProviderReportSeverity,
   ProviderReportSource,
   ProviderReportStatus,
@@ -160,6 +161,7 @@ export function providerAccountUnblockAuditMetadata(providerProfileId: string) {
 
 export function providerAccountBlockedNotification(providerProfileId: string, reason: string) {
   return {
+    targetRole: Role.PROVIDER,
     type: 'provider.account.blocked',
     title: 'Partner account blocked',
     body: 'Your HANDS partner account is under admin review. Open the app for details.',
@@ -169,6 +171,7 @@ export function providerAccountBlockedNotification(providerProfileId: string, re
 
 export function providerAccountUnblockedNotification(providerProfileId: string, sanctionId?: string) {
   return {
+    targetRole: Role.PROVIDER,
     type: 'provider.account.unblocked',
     title: 'Partner account unblocked',
     body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',

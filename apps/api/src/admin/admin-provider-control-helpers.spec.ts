@@ -4,6 +4,7 @@ import {
   ProviderReportSource,
   ProviderReportStatus,
   ProviderSanctionType,
+  Role,
 } from '@prisma/client';
 import {
   assertProviderReportSeverity,
@@ -153,12 +154,14 @@ describe('admin provider control helpers', () => {
 
   it('builds account control notification payloads', () => {
     expect(providerAccountBlockedNotification('provider-1', 'manual review')).toEqual({
+      targetRole: Role.PROVIDER,
       type: 'provider.account.blocked',
       title: 'Partner account blocked',
       body: 'Your HANDS partner account is under admin review. Open the app for details.',
       data: { providerProfileId: 'provider-1', reason: 'manual review' },
     });
     expect(providerAccountUnblockedNotification('provider-1')).toEqual({
+      targetRole: Role.PROVIDER,
       type: 'provider.account.unblocked',
       title: 'Partner account unblocked',
       body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',

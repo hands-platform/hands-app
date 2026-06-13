@@ -29,6 +29,8 @@ Content-Type: application/json
 
 `PushDevice` stores the user, actor role, platform, token, enabled state, last seen time, and created/updated timestamps. Admin views must never expose raw token values.
 
+New notification rows should include internal `data.targetRole` metadata (`CUSTOMER` or `PROVIDER`) whenever the recipient surface is known. The retry worker uses that metadata to send push only to enabled devices registered for the matching app role. `targetRole` is an internal routing hint and must stay out of FCM data payloads.
+
 ## Delivery Adapter
 
 Local development should keep:

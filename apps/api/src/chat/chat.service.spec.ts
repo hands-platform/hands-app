@@ -152,6 +152,7 @@ describe('ChatService message validation', () => {
 
     expect(notifications.create).toHaveBeenCalledWith({
       userId: 'partner-user',
+      targetRole: Role.PROVIDER,
       type: 'chat.message.created',
       title: 'New chat message',
       body: 'A new message is available in your booking chat.',

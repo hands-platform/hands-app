@@ -12,9 +12,14 @@ import {
   notificationSendJob,
 } from './notification-send.queue';
 import { toJson } from './notification-push-payload';
+import {
+  notificationDataWithTargetRole,
+  type NotificationTargetRole,
+} from './notification-target-role';
 
 type CreateNotificationInput = {
   userId: string;
+  targetRole?: NotificationTargetRole;
   type: string;
   title: string;
   body: string;
@@ -29,13 +34,14 @@ export class NotificationsService {
   ) {}
 
   async create(input: CreateNotificationInput) {
+    const data = notificationDataWithTargetRole(input.data, input.targetRole);
     const notification = await this.prisma.notification.create({
       data: {
         userId: input.userId,
         type: input.type,
         title: input.title,
         body: input.body,
-        data: input.data === undefined ? undefined : toJson(input.data),
+        data: data === undefined ? undefined : toJson(data),
       },
     });
 

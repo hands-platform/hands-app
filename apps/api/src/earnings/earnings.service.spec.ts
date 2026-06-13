@@ -1,4 +1,4 @@
-import { EarningStatus, PayoutBatchStatus, ProviderWalletLedgerType } from '@prisma/client';
+import { EarningStatus, PayoutBatchStatus, ProviderWalletLedgerType, Role } from '@prisma/client';
 import { EarningsService } from './earnings.service';
 
 describe('EarningsService payout batches', () => {
@@ -39,6 +39,7 @@ describe('EarningsService payout batches', () => {
 
     expect(notifications.create).toHaveBeenCalledWith({
       userId: 'partner-user',
+      targetRole: Role.PROVIDER,
       type: 'provider.payout_batch.updated',
       title: 'Payout batch updated',
       body: 'Your payout batch needs follow-up. Check the payout screen for details.',

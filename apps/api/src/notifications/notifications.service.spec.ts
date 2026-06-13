@@ -126,6 +126,32 @@ describe('NotificationsService retry queue', () => {
     );
   });
 
+  it('stores target role metadata for role-scoped push delivery', async () => {
+    const notification = { id: 'notification-1' };
+    const prisma = {
+      notification: {
+        create: jest.fn().mockResolvedValue(notification),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await service.create({
+      userId: 'user-1',
+      targetRole: Role.PROVIDER,
+      type: 'booking.requested',
+      title: 'Booking request',
+      body: 'A booking request is available.',
+      data: { bookingId: 'booking-1' },
+    });
+
+    expect(prisma.notification.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        data: { bookingId: 'booking-1', targetRole: Role.PROVIDER },
+      }),
+    });
+  });
+
   it('re-enqueues an existing notification with the standard retry policy', async () => {
     const prisma = {
       notification: {

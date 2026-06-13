@@ -1,3 +1,4 @@
+import { Role } from '@prisma/client';
 import { NotificationRetryProcessor } from './notifications.processor';
 
 describe('NotificationRetryProcessor', () => {
@@ -182,6 +183,62 @@ describe('NotificationRetryProcessor', () => {
         providerOverride: undefined,
       }),
     );
+  });
+
+  it('sends only target-role push devices when notification data carries targetRole', async () => {
+    const tx = {
+      notificationDelivery: {
+        create: jest.fn(),
+      },
+      pushDevice: {
+        update: jest.fn(),
+      },
+    };
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Earning created',
+          body: 'A completed service was added to earnings.',
+          type: 'earning.created',
+          data: { bookingId: 'booking-1', targetRole: Role.PROVIDER },
+          user: {
+            pushDevices: [
+              { id: 'device-customer', role: Role.CUSTOMER, token: 'fcm-token-customer' },
+              { id: 'device-provider', role: Role.PROVIDER, token: 'fcm-token-provider' },
+            ],
+          },
+        }),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = {
+      send: jest.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
+        response: { messageId: 'fcm-message-1' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      notificationId: 'notification-1',
+      userId: 'user-1',
+      results: [{ deviceId: 'device-provider', status: 'SENT' }],
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledTimes(1);
+    expect(pushDelivery.send).toHaveBeenCalledWith(
+      expect.objectContaining({ token: 'fcm-token-provider' }),
+    );
+    expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-customer');
+    expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
   });
 
   it('records one delivery result per enabled push device without disabling transient failures', async () => {

@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod, PaymentStatus, Role } from '@prisma/client';
 
 import { PaymentsService } from './payments.service';
 
@@ -82,6 +82,7 @@ describe('PaymentsService callbacks', () => {
 
     expect(notifications.create).toHaveBeenCalledWith({
       userId: 'customer-user',
+      targetRole: Role.CUSTOMER,
       type: 'payment.updated',
       title: 'Payment updated',
       body: 'Your booking payment status was updated.',

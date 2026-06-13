@@ -1,5 +1,8 @@
+import { Role } from '@prisma/client';
+
 export type BookingNotificationPayload = {
   userId: string;
+  targetRole: Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
   type: string;
   title: string;
   body: string;
@@ -20,6 +23,7 @@ export function bookingOpenedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'booking.opened',
     title: input.preferredProvider ? 'Booking request sent' : 'Booking opened',
     body: input.preferredProvider
@@ -41,6 +45,7 @@ export function preferredProviderRequestedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.PROVIDER,
     type: 'booking.requested',
     title: 'New direct booking request',
     body: 'A customer requested one of your services.',
@@ -51,6 +56,7 @@ export function preferredProviderRequestedNotification(input: {
 export function providerBookingCancelledNotification(userId: string, bookingId: string): BookingNotificationPayload {
   return {
     userId,
+    targetRole: Role.PROVIDER,
     type: 'booking.cancelled',
     title: 'Booking cancelled',
     body: 'The customer cancelled this booking request before partner commitment.',
@@ -65,6 +71,7 @@ export function customerBookingCancelledNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'booking.cancelled',
     title: 'Booking cancelled',
     body: input.releasedPayment
@@ -81,6 +88,7 @@ export function customerProviderJoinedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'provider.joined',
     title: 'A partner joined',
     body: `${input.provider.displayName} joined your booking.`,
@@ -94,6 +102,7 @@ export function selectedPartnerMatchedProviderNotification(
 ): BookingNotificationPayload {
   return {
     userId,
+    targetRole: Role.PROVIDER,
     type: 'booking.matched',
     title: 'You were selected',
     body: 'The customer selected you for this booking.',
@@ -108,6 +117,7 @@ export function selectedPartnerMatchedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'booking.matched',
     title: 'Partner selected',
     body: 'Your chat room is ready.',
@@ -118,6 +128,7 @@ export function selectedPartnerMatchedCustomerNotification(input: {
 export function firstPickMatchedProviderNotification(userId: string, bookingId: string): BookingNotificationPayload {
   return {
     userId,
+    targetRole: Role.PROVIDER,
     type: 'booking.matched',
     title: 'You were matched',
     body: 'Your first-pick request was accepted and matched.',
@@ -133,6 +144,7 @@ export function firstPickMatchedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'booking.matched',
     title: 'Partner matched',
     body: `${input.provider.displayName} accepted your request. Your chat room is ready.`,
@@ -151,6 +163,7 @@ export function customerFirstPickRejectedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'booking.rejected',
     title: 'Partner declined your booking',
     body: 'We are still looking for another available partner.',
@@ -165,6 +178,7 @@ export function customerMarketplaceProviderAcceptedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'provider.accepted',
     title: 'Marketplace partner is ready',
     body: `${input.provider.displayName} can take this booking. Select this partner if you want to switch.`,
@@ -179,6 +193,7 @@ export function customerMarketplaceProviderRejectedNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'provider.rejected',
     title: 'Partner declined',
     body: `${input.provider.displayName} cannot take this booking.`,
@@ -193,6 +208,7 @@ export function serviceStartedCustomerNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.CUSTOMER,
     type: 'service.started',
     title: 'Service started',
     body: 'Your partner started the service. Continue in the matched chat if needed.',
@@ -207,6 +223,7 @@ export function serviceStartedProviderNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.PROVIDER,
     type: 'service.started',
     title: 'Service started',
     body: 'Continue with the customer in the matched chat if needed.',
@@ -217,6 +234,7 @@ export function serviceStartedProviderNotification(input: {
 export function customerServiceCompletedNotification(userId: string, bookingId: string): BookingNotificationPayload {
   return {
     userId,
+    targetRole: Role.CUSTOMER,
     type: 'service.completed',
     title: 'Service completed',
     body: 'Please leave a review when you are ready.',
@@ -227,6 +245,7 @@ export function customerServiceCompletedNotification(userId: string, bookingId: 
 export function providerEarningCreatedNotification(userId: string, bookingId: string): BookingNotificationPayload {
   return {
     userId,
+    targetRole: Role.PROVIDER,
     type: 'earning.created',
     title: 'Earning created',
     body: 'Your completed service has been added to earnings.',
@@ -244,6 +263,7 @@ export function backupBookingAvailableNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.PROVIDER,
     type: 'booking.backup_available',
     title: 'Nearby booking available',
     body: `A customer request within ${Math.round(
@@ -266,6 +286,7 @@ export function providerPayoutSetupRequiredNotification(input: {
 }): BookingNotificationPayload {
   return {
     userId: input.userId,
+    targetRole: Role.PROVIDER,
     type: 'provider.payout_setup_required',
     title: 'Payout setup required',
     body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',

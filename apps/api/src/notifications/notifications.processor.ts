@@ -18,6 +18,10 @@ import {
   notificationDeliveryCreateInput,
   notificationDeliveryJobResult,
 } from './notification-delivery-record';
+import {
+  notificationTargetRole,
+  pushDeviceMatchesTargetRole,
+} from './notification-target-role';
 import { PushDeliveryService, type PushSendResult } from './push-delivery.service';
 import type { PushProvider } from './push-provider';
 
@@ -44,9 +48,17 @@ export class NotificationRetryProcessor extends WorkerHost {
       return { skipped: true };
     }
 
-    const devices = notification.user.pushDevices;
+    const targetRole = notificationTargetRole(notification);
+    const devices = notification.user.pushDevices.filter((device) =>
+      pushDeviceMatchesTargetRole(device, targetRole),
+    );
     if (devices.length === 0) {
-      return { skipped: true, reason: 'NO_ENABLED_DEVICES', notificationId: notification.id };
+      return {
+        skipped: true,
+        reason: targetRole ? 'NO_ENABLED_TARGET_ROLE_DEVICES' : 'NO_ENABLED_DEVICES',
+        notificationId: notification.id,
+        ...(targetRole ? { targetRole } : {}),
+      };
     }
 
     const results = [];
