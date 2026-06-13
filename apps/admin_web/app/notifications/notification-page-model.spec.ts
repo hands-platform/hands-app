@@ -82,6 +82,10 @@ describe('notification page model', () => {
     ]);
   });
 
+  it('keeps the delivery operations queue empty when there are no blockers', () => {
+    expect(buildNotificationDeliveryOpsQueue([])).toEqual([]);
+  });
+
   it('builds partner alert channel summary from policy and delivery providers', () => {
     const summary = buildNotificationChannelSummary(buildNotifications(), [
       {

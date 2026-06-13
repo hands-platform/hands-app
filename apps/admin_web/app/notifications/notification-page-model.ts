@@ -277,40 +277,32 @@ export function buildNotificationDeliveryOpsQueue(
   const staleDevices = countStalePushDeviceDeliveries(notifications);
   const skipped = countNotificationsWithDeliveryStatus(notifications, 'SKIPPED');
   const pending = countPendingNotifications(notifications);
-  const items: NotificationDeliveryOpsQueueItem[] = [];
-
-  if (failed) {
-    items.push({
+  const queueItems: NotificationDeliveryOpsQueueItem[] = [
+    {
       count: failed,
       detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',
       tone: 'pill-warn',
-    });
-  }
-  if (disabledDevices) {
-    items.push({
+    },
+    {
       count: disabledDevices,
       detail: 'Re-enable only when the app has registered a fresh token or the operator confirms the device.',
       href: '/notifications?review=disabled-device',
       key: 'disabled-devices',
       label: 'Disabled devices',
       tone: 'pill-warn',
-    });
-  }
-  if (staleDevices) {
-    items.push({
+    },
+    {
       count: staleDevices,
       detail: `Push token timestamp is ${STALE_PUSH_DEVICE_AGE_DAYS}+ days old at delivery attempt. Confirm the app has refreshed its FCM token before retrying.`,
       href: '/notifications?review=stale-device',
       key: 'stale-devices',
       label: 'Stale devices',
       tone: 'pill-warn',
-    });
-  }
-  if (skipped) {
-    items.push({
+    },
+    {
       count: skipped,
       detail:
         'Usually means push is intentionally inactive, no enabled device exists, or credentials are pending.',
@@ -318,20 +310,18 @@ export function buildNotificationDeliveryOpsQueue(
       key: 'skipped',
       label: 'Skipped',
       tone: 'pill-info',
-    });
-  }
-  if (pending) {
-    items.push({
+    },
+    {
       count: pending,
       detail: 'Notification rows exist without delivery attempts. Confirm workers and queue processing.',
       href: '/notifications?review=pending',
       key: 'pending',
       label: 'Pending',
       tone: 'pill-neutral',
-    });
-  }
+    },
+  ];
 
-  return items;
+  return queueItems.filter((item) => item.count > 0);
 }
 
 export function buildNotificationChannelSummary(
