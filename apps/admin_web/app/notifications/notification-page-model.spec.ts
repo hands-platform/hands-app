@@ -227,6 +227,34 @@ describe('notification page model', () => {
     ).toBeNull();
   });
 
+  it('keeps Partner-facing fallback copy when no non partner-alert smoke candidate exists', () => {
+    const fallback = buildNotificationPartnerAlertSmokeFallback(
+      [
+        notification({
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-in-app',
+              provider: 'IN_APP_ONLY',
+              status: 'SKIPPED',
+            },
+          ],
+          id: 'notification-partner-alert',
+          type: 'provider.payout_batch.updated',
+          user: providerUser('provider-user-1'),
+        }),
+      ],
+      [],
+    );
+
+    expect(fallback).toMatchObject({
+      detail:
+        'Create or select a non partner-alert notification for the same Partner before expecting FCM smoke to pass.',
+      preflightCommand: null,
+      suggestedNotificationId: null,
+    });
+  });
+
   it('filters notifications by review queue and booking id', () => {
     const notifications = [
       notification({

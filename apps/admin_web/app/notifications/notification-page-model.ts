@@ -403,7 +403,7 @@ export function buildNotificationPartnerAlertSmokeFallback(
     suggestedType: suggestedNotification?.type ?? null,
     detail: suggestedNotification
       ? `Use FCM_SMOKE_NOTIFICATION_ID=${suggestedNotification.id} for the same role/phone smoke preflight.`
-      : 'Create or select a non partner-alert notification for the same provider before expecting FCM smoke to pass.',
+      : 'Create or select a non partner-alert notification for the same Partner before expecting FCM smoke to pass.',
   };
 }
 
