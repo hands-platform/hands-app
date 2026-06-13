@@ -41,7 +41,7 @@
     "fcm:credentials:install": "powershell -ExecutionPolicy Bypass -File infra/scripts/install-firebase-admin-credentials.ps1",
     "fcm:token-smoke": "node infra/scripts/fcm-token-registration-smoke.mjs",
     "fcm:push-smoke": "node infra/scripts/fcm-push-smoke.mjs",
-    "realtime:contract": "node infra/scripts/check-realtime-event-contract.mjs",
+    "realtime:contract": "npm run shared:source-only-check && node infra/scripts/check-realtime-event-contract.mjs",
     "shared:source-only-check": "node infra/scripts/check-shared-types-runtime-imports.mjs",
     "notifications:partner-alert-contract": "npm run shared:source-only-check && node infra/scripts/check-notification-partner-alert-contract.mjs",
     "api:test": "npm run test --workspace @massage-vn/api",
