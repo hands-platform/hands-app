@@ -84,6 +84,48 @@ describe('NotificationsTableSection', () => {
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'pill pill-warn']));
   });
 
+  it('keeps failure evidence visible inside multi-attempt delivery disclosures', () => {
+    const row = buildRow();
+    const section = NotificationsTableSection({
+      emptyMessage: 'No notifications loaded.',
+      rows: [
+        {
+          ...row,
+          deliveryRows: [
+            {
+              ...row.deliveryRows[0],
+              attemptedAtLabel: '2026-06-09 10:04',
+              failureCodeLabel: 'messaging/internal-error',
+              failureReasonLabel: 'temporary provider error for [masked]',
+              id: 'delivery-2',
+              platformLabel: 'Android',
+            },
+            {
+              ...row.deliveryRows[0],
+              attemptedAtLabel: '2026-06-09 10:03',
+              deviceStateLabel: 'Device enabled',
+              enableDeviceHref: null,
+              failureCodeLabel: '-',
+              failureReasonLabel: '-',
+              httpStatusLabel: '200',
+              id: 'delivery-1',
+              platformLabel: 'Android',
+              status: 'SENT',
+              statusClassName: 'pill pill-success',
+            },
+          ],
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04');
+    expect(rendered).toContain('Failure messaging/internal-error');
+    expect(rendered).toContain('Reason temporary provider error for [masked]');
+    expect(rendered.match(/Token hidden/g)).toHaveLength(2);
+  });
+
   it('renders the empty state when there are no notification rows', () => {
     const section = NotificationsTableSection({
       emptyMessage: 'No notifications currently match this queue.',
