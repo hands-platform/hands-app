@@ -245,5 +245,38 @@ describe('notification action confirmation', () => {
       name: 'returnHref',
       value: '/notifications?review=failed&booking=booking%201',
     });
+    expect(confirmation?.description).toContain(
+      'Runbook: Retry gate. Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
+    );
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+          href: '/setup#notifications',
+          label: 'FCM setup',
+        },
+      ]),
+    );
+  });
+
+  it('adds disabled-device runbook guidance before re-enabling a push device', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'enable-device', {
+      notificationId: '',
+      pushDeviceId: 'push-device-123456',
+      review: 'disabled-device',
+    });
+
+    expect(confirmation?.description).toContain(
+      'Runbook: Device recovery gate. Ask the customer or Partner to reopen the app, run token recovery smoke when needed, then re-enable only after the token path is current.',
+    );
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+          href: '/setup#notifications',
+          label: 'FCM setup',
+        },
+      ]),
+    );
   });
 });

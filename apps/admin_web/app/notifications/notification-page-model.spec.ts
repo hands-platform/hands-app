@@ -359,9 +359,7 @@ describe('notification page model', () => {
       statusLabel: 'Live preflight ready',
     });
     expect(readiness.deviceWarningLabel).toContain('Newer Customer android device');
-    expect(readiness.deviceWarningLabel).toContain(
-      'is disabled; preflight reuses older enabled device',
-    );
+    expect(readiness.deviceWarningLabel).toContain('is disabled; preflight reuses older enabled device');
     expect(readiness.deviceWarningLabel).toContain('Refresh the app FCM token before broad push.');
   });
 

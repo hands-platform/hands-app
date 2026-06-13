@@ -6,6 +6,7 @@ import {
   notificationDeliveryFailureCode,
   notificationDeliveryRecoveryHint,
 } from './notification-delivery-response';
+import { notificationReviewRunbook } from './notification-review-runbook';
 
 export type NotificationConfirmationAction = 'enable-device' | 'retry';
 
@@ -95,6 +96,7 @@ function buildRetryConfirmation(
   const evidence = notificationRetryEvidence(notification);
   const latestDelivery = latestNotificationDelivery(notification);
   const retryAlreadySent = latestDelivery?.status === 'SENT';
+  const reviewGuidance = notificationConfirmationReviewGuidance(values.review);
 
   return {
     action: 'retry',
@@ -103,8 +105,10 @@ function buildRetryConfirmation(
     description: retryAlreadySent
       ? `Notification ${shortId(
           notification.id,
-        )} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}`
-      : `Retry notification ${shortId(notification.id)} after reviewing duplicate-send risk. ${evidence}`,
+        )} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}${reviewGuidance}`
+      : `Retry notification ${shortId(
+          notification.id,
+        )} after reviewing duplicate-send risk. ${evidence}${reviewGuidance}`,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
       { name: 'returnHref', value: notificationReturnHref(values) },
@@ -116,6 +120,7 @@ function buildRetryConfirmation(
         href: notificationAuditTrailHref(notification.id),
         label: 'Audit trail',
       },
+      ...notificationReviewSupportingLinks(values.review),
     ],
     title: `Retry notification ${shortId(notification.id)}?`,
     tone: retryAlreadySent ? 'info' : 'warning',
@@ -131,6 +136,7 @@ function buildEnableDeviceConfirmation(
   if (!match) {
     return null;
   }
+  const reviewGuidance = notificationConfirmationReviewGuidance(values.review);
 
   return {
     action: 'enable-device',
@@ -140,7 +146,7 @@ function buildEnableDeviceConfirmation(
       match.pushDeviceId,
     )} only after a fresh token or operator confirmation exists. Latest evidence: ${deliveryEvidenceSummary(
       match.delivery,
-    )}.`,
+    )}.${reviewGuidance}`,
     hiddenInputs: [
       { name: 'pushDeviceId', value: match.pushDeviceId },
       { name: 'returnHref', value: notificationReturnHref(values) },
@@ -152,6 +158,7 @@ function buildEnableDeviceConfirmation(
         href: notificationAuditTrailHref(match.pushDeviceId),
         label: 'Audit trail',
       },
+      ...notificationReviewSupportingLinks(values.review),
     ],
     title: `Re-enable device ${shortId(match.pushDeviceId)}?`,
     tone: 'danger',
@@ -179,6 +186,24 @@ function notificationHref(entries: readonly (readonly [string, string | undefine
 
 function notificationAuditTrailHref(notificationId: string) {
   return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
+}
+
+function notificationConfirmationReviewGuidance(review: string | undefined) {
+  const runbook = notificationReviewRunbook(review ?? '');
+  return runbook ? ` Runbook: ${runbook.title}. ${runbook.primaryAction}` : '';
+}
+
+function notificationReviewSupportingLinks(review: string | undefined) {
+  if (!review || !['disabled-device', 'failed', 'needs-retry', 'stale-device'].includes(review)) {
+    return [];
+  }
+  return [
+    {
+      description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+      href: '/setup#notifications',
+      label: 'FCM setup',
+    },
+  ];
 }
 
 function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {
