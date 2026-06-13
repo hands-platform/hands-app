@@ -38,13 +38,28 @@ describe('setup page model', () => {
           scope: 'DEFERRED',
           commands: ['npm.cmd run external:check:payments'],
         },
+        {
+          category: 'push',
+          name: 'Firebase Admin project matches mobile apps',
+          status: 'BLOCKED',
+          configured: ['PUSH_PROVIDER'],
+          missing: [],
+          invalid: ['FIREBASE_PROJECT_ID_MISMATCH'],
+          detail:
+            'Keep Firebase Admin credentials and mobile google-services.json files in the same Firebase project before live FCM push.',
+          scope: 'DEFERRED',
+          operatorAction:
+            'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
+          commands: ['npm.cmd run external:check:push'],
+        },
       ],
     });
 
-    expect(buildSummary(readiness)).toEqual({ ready: 0, partial: 1, blocked: 1, missing: 2 });
+    expect(buildSummary(readiness)).toEqual({ ready: 0, partial: 1, blocked: 2, missing: 3 });
     expect(buildGroupStatuses(readiness, setupOrderFixture)).toEqual([
       expect.objectContaining({ id: 'operations-policy', status: 'Blocked' }),
       expect.objectContaining({ id: 'payments', status: 'Partial' }),
+      expect.objectContaining({ id: 'notifications', status: 'Blocked' }),
     ]);
     expect(buildExternalBacklog(readiness, setupOrderFixture)).toEqual(
       expect.arrayContaining([
@@ -52,6 +67,13 @@ describe('setup page model', () => {
           groupId: 'operations-policy',
           groupTitle: 'Runtime operations policy',
           name: 'MATCHING_BACKUP_OPEN_MODE',
+        }),
+        expect.objectContaining({
+          groupId: 'notifications',
+          groupTitle: 'FCM push',
+          name: 'Firebase Admin project does not match mobile app project',
+          reason:
+            'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
         }),
       ]),
     );
@@ -66,6 +88,13 @@ describe('setup page model', () => {
       expect.objectContaining({
         groupId: 'payments',
         action: 'Add sandbox credentials before real payment testing.',
+      }),
+      expect.objectContaining({
+        groupId: 'notifications',
+        name: 'Firebase Admin project does not match mobile app project',
+        action: 'Install matching Firebase Admin credentials before live push testing.',
+        reason:
+          'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
       }),
     ]);
     expect(buildCurrentStageStatus(readiness, setupOrderFixture)).toMatchObject({
@@ -126,6 +155,17 @@ const setupOrderFixture: SetupOrderItem[] = [
     env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY'],
     notes: ['Use sandbox credentials first.'],
     commands: ['npm.cmd run external:check:payments'],
+  },
+  {
+    id: 'notifications',
+    title: 'FCM push',
+    phase: 'Deferred push E2E',
+    operatorAction: 'Install matching Firebase Admin credentials before live push testing.',
+    exitCriteria: 'FCM preflight passes.',
+    purpose: 'Required before live FCM push smoke.',
+    env: ['PUSH_PROVIDER', 'FIREBASE_SERVICE_ACCOUNT_JSON'],
+    notes: ['Keep Firebase Admin credentials server-side only.'],
+    commands: ['npm.cmd run external:check:push'],
   },
 ];
 

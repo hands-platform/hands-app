@@ -1,5 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { setupReadinessDisplayText } from './setup-readiness-copy';
 
 type SetupRecommendedOrderItem = {
   readonly id: string;
@@ -56,17 +57,17 @@ export function SetupReadinessOrderSection({
 }
 
 function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
-  const configured = check.configured.map(externalReadinessDisplayText);
-  const missing = check.missing.map(externalReadinessDisplayText);
-  const invalid = (check.invalid ?? []).map(externalReadinessDisplayText);
+  const configured = check.configured.map(setupReadinessDisplayText);
+  const missing = check.missing.map(setupReadinessDisplayText);
+  const invalid = (check.invalid ?? []).map(setupReadinessDisplayText);
   const commands = readinessCommands(check);
   const isCurrentStage = check.scope === 'CURRENT_STAGE';
 
   return (
     <div className="ops-row">
       <div>
-        <strong>{externalReadinessDisplayText(check.name)}</strong>
-        <p className="muted">{externalReadinessDisplayText(check.detail)}</p>
+        <strong>{setupReadinessDisplayText(check.name)}</strong>
+        <p className="muted">{setupReadinessDisplayText(check.detail)}</p>
         <div className="participant-list admin-mb-8">
           <span className={`pill ${isCurrentStage ? 'pill-info' : 'pill-neutral'}`}>
             {isCurrentStage ? 'Current stage' : 'Deferred'}
@@ -75,7 +76,7 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
         </div>
         {check.operatorAction && (
           <p className="muted">
-            <strong>Operator action:</strong> {externalReadinessDisplayText(check.operatorAction)}
+            <strong>Operator action:</strong> {setupReadinessDisplayText(check.operatorAction)}
           </p>
         )}
         {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
@@ -122,15 +123,4 @@ function readinessStatusPillClass(status: string) {
     return 'pill-info';
   }
   return 'pill-warn';
-}
-
-function externalReadinessDisplayText(value: string) {
-  return value
-    .replace(/\bCustomer and provider\b/g, 'Customer and partner')
-    .replace(/\bcustomer and provider\b/g, 'customer and partner')
-    .replace(/\bprovider Android\b/g, 'partner Android')
-    .replace(/\bProvider Android\b/g, 'Partner Android')
-    .replace(/\bOS push provider\b/g, 'FCM push service')
-    .replace(/\bSMS provider\b/g, 'SMS service')
-    .replace(/\bprovider credentials\b/g, 'service credentials');
 }

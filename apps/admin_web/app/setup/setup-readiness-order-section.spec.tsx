@@ -11,7 +11,7 @@ describe('SetupReadinessOrderSection', () => {
           status: 'BLOCKED',
           configured: ['PUSH_PROVIDER'],
           missing: ['FIREBASE_PROJECT_ID'],
-          invalid: ['provider credentials'],
+          invalid: ['provider credentials', 'FIREBASE_PROJECT_ID_MISMATCH'],
           detail: 'Customer and provider push credentials are required.',
           scope: 'CURRENT_STAGE',
           operatorAction: 'Fill provider credentials outside Git.',
@@ -35,6 +35,7 @@ describe('SetupReadinessOrderSection', () => {
     expect(rendered).toContain('FCM push service');
     expect(rendered).toContain('Customer and partner push credentials are required.');
     expect(rendered).toContain('Invalid: service credentials');
+    expect(rendered).toContain('Firebase Admin project does not match mobile app project');
     expect(rendered).toContain('Secret-safe');
     expect(rendered).toContain('Recommended order');
     expect(rendered).toContain('Step 1');

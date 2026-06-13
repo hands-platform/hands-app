@@ -1,5 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import type { SetupGroupDetail } from './setup-group-detail-section';
+import { setupReadinessDisplayText } from './setup-readiness-copy';
 
 export type SetupOrderItem = {
   readonly id: string;
@@ -74,8 +75,8 @@ export function buildExternalBacklog(
     return missing.map((name) => ({
       groupId,
       groupTitle,
-      name,
-      reason: check.operatorAction ?? check.detail,
+      name: setupReadinessDisplayText(name),
+      reason: setupReadinessDisplayText(check.operatorAction ?? check.detail),
       commands: check.commands ?? [],
     }));
   });
