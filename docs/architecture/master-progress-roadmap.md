@@ -154,7 +154,7 @@ Configured or locally usable:
 Deferred for production-like E2E:
 
 - Supabase Phone Auth switch with `AUTH_BACKEND=supabase`
-- Vonage SMS provider credentials
+- Vonage SMS service credentials
 - FCM project config and Firebase Admin server credentials
 - MoMo merchant sandbox credentials
 - VNPay merchant sandbox credentials

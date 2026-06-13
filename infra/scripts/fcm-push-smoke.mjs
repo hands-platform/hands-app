@@ -581,7 +581,7 @@ function dryRunNextActions() {
   ];
 
   if (!hasExpectedEnvValue('PUSH_PROVIDER', 'fcm')) {
-    actions.push('Set PUSH_PROVIDER=fcm for OS push E2E.');
+    actions.push('Set PUSH_PROVIDER=fcm for FCM push E2E.');
   }
 
   if (!firebaseAdminConfigured()) {

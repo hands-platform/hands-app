@@ -20,7 +20,7 @@ Do not commit real `.env` files or secrets.
 2. MapTiler and Geoapify keys
 3. Storage/CDN credentials
 4. MoMo and VNPay sandbox credentials
-5. Firebase Cloud Messaging for Android/iOS push
+5. Firebase Cloud Messaging for Android/iOS FCM push
 6. Vonage SMS credentials for Supabase Phone Auth after the deferred Phone Auth E2E pass starts
 
 ## Verification

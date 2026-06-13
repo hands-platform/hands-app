@@ -258,7 +258,7 @@ const registrationItems = [
     order: 10,
     category: 'Push',
     account: 'Firebase Cloud Messaging',
-    purpose: 'Android/iOS OS push. Firebase DB/Auth/Firestore are not part of HANDS MVP.',
+    purpose: 'Android/iOS FCM push. Firebase DB/Auth/Firestore are not part of HANDS MVP.',
     consolePath: 'Firebase Console > Project settings > Service accounts and Cloud Messaging',
     env: [
       envItem('PUSH_PROVIDER', 'fcm', env.PUSH_PROVIDER === 'fcm'),
@@ -292,7 +292,7 @@ const registrationItems = [
     ],
     setup: [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
-      'Use PUSH_PROVIDER=in_app_only for inbox-only local work; use PUSH_PROVIDER=fcm for intentional OS push E2E or staging rollout.',
+      'Use PUSH_PROVIDER=in_app_only for inbox-only local work; use PUSH_PROVIDER=fcm for intentional FCM push E2E or staging rollout.',
       'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file available to the API process or Docker container.',
@@ -329,7 +329,7 @@ const registrationItems = [
       envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
     ],
     setup: [
-      'Create SMS provider credentials under administration@hands.vn when SMS E2E starts.',
+      'Create SMS service credentials under administration@hands.vn when SMS E2E starts.',
       'Confirm Vietnam delivery rates and sender ID rules.',
       'Define OTP resend and abuse limits.',
     ],

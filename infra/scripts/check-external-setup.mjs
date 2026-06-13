@@ -64,20 +64,20 @@ addRecommended(
   'push',
   'Firebase Admin credentials',
   firebaseAdminConfigured(),
-  'Fill server-side Firebase Admin credentials before production Android/iOS push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file.',
+  'Fill server-side Firebase Admin credentials before production Android/iOS FCM push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file.',
 );
 addPhaseRequired(
   'push',
-  'PUSH_PROVIDER=fcm for OS push',
+  'PUSH_PROVIDER=fcm for FCM push',
   hasExpectedValue('PUSH_PROVIDER', 'fcm'),
-  'Set PUSH_PROVIDER=fcm before production-like OS push E2E.',
+  'Set PUSH_PROVIDER=fcm before production-like FCM push E2E.',
   ['push', 'production'],
 );
 addPhaseRequired(
   'push',
-  'Firebase Admin credentials for OS push',
+  'Firebase Admin credentials for FCM push',
   firebaseAdminConfigured(),
-  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing valid GOOGLE_APPLICATION_CREDENTIALS service account JSON file before production-like OS push E2E.',
+  'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing valid GOOGLE_APPLICATION_CREDENTIALS service account JSON file before production-like FCM push E2E.',
   ['push', 'production'],
 );
 
