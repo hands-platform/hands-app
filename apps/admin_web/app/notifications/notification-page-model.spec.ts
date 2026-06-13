@@ -186,9 +186,10 @@ describe('notification page model', () => {
     );
 
     expect(fallback).toEqual({
-      detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same role/phone smoke preflight.',
+      detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same Partner/phone FCM smoke preflight.',
       partnerAlertNotificationId: 'notification-partner-alert',
       partnerAlertType: 'provider.payout_batch.updated',
+      partnerAlertTypeLabel: 'Partner Payout Batch Updated',
       preflightCommand:
         '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-earning"; npm.cmd run fcm:push-smoke -- --preflight',
       suggestedNotificationId: 'notification-earning',
@@ -249,7 +250,7 @@ describe('notification page model', () => {
 
     expect(fallback).toMatchObject({
       detail:
-        'Create or select a non partner-alert notification for the same Partner before expecting FCM smoke to pass.',
+        'Create or select a standard notification for the same Partner before expecting FCM smoke to pass.',
       preflightCommand: null,
       suggestedNotificationId: null,
     });

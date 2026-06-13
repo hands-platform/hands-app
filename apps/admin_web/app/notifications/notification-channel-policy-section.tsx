@@ -60,7 +60,8 @@ export function NotificationChannelPolicySection({
             </h3>
             <p className="muted">{partnerAlertSmokeFallback.detail}</p>
             <p className="muted admin-mt-6">
-              Partner alert {partnerAlertSmokeFallback.partnerAlertType} is currently routed by policy.
+              {partnerAlertSmokeFallback.partnerAlertTypeLabel} remains on the current Partner alert policy
+              route.
             </p>
             {partnerAlertSmokeFallback.preflightCommand ? (
               <CommandCopyRow command={partnerAlertSmokeFallback.preflightCommand} label="Copy preflight command" />

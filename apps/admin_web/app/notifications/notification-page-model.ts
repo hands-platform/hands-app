@@ -108,6 +108,7 @@ export type NotificationDeliveryStats = {
 export type NotificationPartnerAlertSmokeFallback = {
   readonly partnerAlertNotificationId: string;
   readonly partnerAlertType: string;
+  readonly partnerAlertTypeLabel: string;
   readonly preflightCommand: string | null;
   readonly suggestedNotificationId: string | null;
   readonly suggestedType: string | null;
@@ -396,14 +397,15 @@ export function buildNotificationPartnerAlertSmokeFallback(
   return {
     partnerAlertNotificationId: partnerAlert.id,
     partnerAlertType: partnerAlert.type,
+    partnerAlertTypeLabel: marketplaceDisplayText(humanizeType(partnerAlert.type)),
     preflightCommand: suggestedNotification
       ? smokeFallbackPreflightCommand(suggestedNotification, partnerAlert)
       : null,
     suggestedNotificationId: suggestedNotification?.id ?? null,
     suggestedType: suggestedNotification?.type ?? null,
     detail: suggestedNotification
-      ? `Use FCM_SMOKE_NOTIFICATION_ID=${suggestedNotification.id} for the same role/phone smoke preflight.`
-      : 'Create or select a non partner-alert notification for the same Partner before expecting FCM smoke to pass.',
+      ? `Use FCM_SMOKE_NOTIFICATION_ID=${suggestedNotification.id} for the same Partner/phone FCM smoke preflight.`
+      : 'Create or select a standard notification for the same Partner before expecting FCM smoke to pass.',
   };
 }
 
