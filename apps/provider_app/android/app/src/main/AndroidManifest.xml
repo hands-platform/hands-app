@@ -12,7 +12,7 @@
             android:value="hands_priority_alerts" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_hands_notification" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

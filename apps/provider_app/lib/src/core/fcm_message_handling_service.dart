@@ -11,6 +11,7 @@ const handsFcmNotificationChannelId = 'hands_priority_alerts';
 const handsFcmNotificationChannelName = 'HANDS priority alerts';
 const handsFcmNotificationChannelDescription =
     'Booking, payment, and account alerts from HANDS.';
+const handsFcmNotificationIcon = 'ic_stat_hands_notification';
 
 FcmMessageHandlingService? _handsFcmMessageHandlingService;
 
@@ -148,7 +149,7 @@ class FcmMessageHandlingService {
 
   Future<void> _setupLocalNotifications() async {
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('ic_launcher'),
+      android: AndroidInitializationSettings(handsFcmNotificationIcon),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
@@ -196,7 +197,7 @@ class FcmMessageHandlingService {
             channelDescription: handsFcmNotificationChannelDescription,
             importance: Importance.high,
             priority: Priority.high,
-            icon: 'ic_launcher',
+            icon: handsFcmNotificationIcon,
           ),
           iOS: DarwinNotificationDetails(
             presentAlert: true,
