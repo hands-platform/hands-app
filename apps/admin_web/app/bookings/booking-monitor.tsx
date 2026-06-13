@@ -143,9 +143,8 @@ import {
   terminalBookingStatuses,
 } from './booking-closure-list-signal';
 import {
-  bookingDispatchPartnerShortcutBookingFact,
-  bookingDispatchPartnerShortcutFacts as buildBookingDispatchPartnerShortcutFactsFromFacts,
-} from './booking-dispatch-partner-shortcut-facts';
+  buildBookingDispatchPartnerShortcuts,
+} from './booking-dispatch-partner-shortcuts';
 import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
@@ -289,14 +288,6 @@ type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBoo
 type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooking>;
 
 type AdminBookingMatchingFlowStep = BookingMatchingFlowStep<AdminBooking>;
-
-type BookingDispatchPartnerShortcut = {
-  title: string;
-  value: string;
-  detail: string;
-  href: string;
-  tone: BookingCommandLane['tone'];
-};
 
 type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 
@@ -852,77 +843,6 @@ function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
       responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
       status: booking.status,
     })),
-  );
-}
-
-function buildBookingDispatchPartnerShortcuts(
-  bookings: AdminBooking[],
-  nowMs: number,
-): BookingDispatchPartnerShortcut[] {
-  const facts = buildBookingDispatchPartnerShortcutFacts(bookings, nowMs);
-
-  return [
-    {
-      title: 'Partner handoff',
-      value: 'Open',
-      detail: 'Full partner command view with direct, marketplace, KYC, wallet, location, and alert lanes.',
-      href: '/partners',
-      tone: facts.openMatching.length ? 'info' : 'ok',
-    },
-    {
-      title: 'Direct-ready partners',
-      value: facts.firstPickWaiting.length.toString(),
-      detail: 'Use when preferred partners must answer inside the response window.',
-      href: '/partners?review=direct-ready',
-      tone: facts.firstPickWaiting.length ? 'warn' : 'ok',
-    },
-    {
-      title: 'Marketplace-ready',
-      value: facts.noPartnerSupply.length.toString(),
-      detail: 'Use when open matching has no marketplace supply or customer options.',
-      href: '/partners?review=marketplace-ready',
-      tone: facts.noPartnerSupply.length ? 'warn' : 'ok',
-    },
-    {
-      title: 'Acceptance blockers',
-      value: facts.customerSelection.length.toString(),
-      detail: 'Repair KYC, bank, wallet, location, push, or control gates before dispatch pressure rises.',
-      href: '/partners?review=acceptance-blocked',
-      tone: facts.customerSelection.length ? 'info' : 'ok',
-    },
-    {
-      title: 'Cash fee debt',
-      value: facts.cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative Partner wallets that block final acceptance, service start, and payout release.',
-      href: '/cash-settlements',
-      tone: facts.cashDebt.length ? 'danger' : 'ok',
-    },
-    {
-      title: 'Location refresh',
-      value: facts.locationChecks.length.toString(),
-      detail: 'Live booking location checks should send operators to partner location freshness review.',
-      href: '/partners?review=location',
-      tone: facts.locationChecks.length ? 'warn' : 'ok',
-    },
-    {
-      title: 'Policy controls',
-      value: 'Edit',
-      detail: 'Tune response window, marketplace radius, invitation limits, and stale location rules.',
-      href: '/operations-policy',
-      tone: 'info',
-    },
-  ];
-}
-
-function buildBookingDispatchPartnerShortcutFacts(bookings: AdminBooking[], nowMs: number) {
-  return buildBookingDispatchPartnerShortcutFactsFromFacts(
-    bookings.map((booking) =>
-      bookingDispatchPartnerShortcutBookingFact(booking, nowMs, {
-        customerSelectableCount: bookingCustomerSelectableCount(booking),
-        firstPickPending: bookingFirstPickPending(booking),
-        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-      }),
-    ),
   );
 }
 
