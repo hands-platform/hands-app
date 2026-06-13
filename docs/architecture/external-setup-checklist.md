@@ -120,6 +120,6 @@ For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `d
 - If using `FIREBASE_SERVICE_ACCOUNT_JSON`, provide raw or base64 Firebase service account JSON with `project_id`, `client_email`, and `private_key`.
 - If using `GOOGLE_APPLICATION_CREDENTIALS` for FCM, point it to an existing valid service account JSON file available to the API process or Docker container.
 - Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
-- Use `PUSH_PROVIDER=in_app_only` for inbox-only local work; use `PUSH_PROVIDER=fcm` only during intentional OS push E2E or staging rollout.
+- Use `PUSH_PROVIDER=in_app_only` for inbox-only local work; use `PUSH_PROVIDER=fcm` only during intentional FCM push E2E or staging rollout.
 - Customers never carry negative wallet balances in MVP.
 - Partner cash-fee debt can create a negative wallet and block final acceptance, service start, and payout release until settlement.

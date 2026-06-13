@@ -63,7 +63,7 @@ Run this before deployment:
 node infra/scripts/check-env.mjs .env
 ```
 
-The script fails on missing required runtime values and warns about recommended integrations such as storage, OS push, MoMo, and VNPay.
+The script fails on missing required runtime values and warns about recommended integrations such as storage, FCM push, MoMo, and VNPay.
 
 ## Minimum Production Checklist
 

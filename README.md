@@ -164,7 +164,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 -App provider
 ```
 
-HANDS uses Firebase Cloud Messaging for Android/iOS OS push only. Firebase Realtime Database, Firestore, Firebase Auth, and Firebase Storage are not part of the MVP.
+HANDS uses Firebase Cloud Messaging for Android/iOS FCM push only. Firebase Realtime Database, Firestore, Firebase Auth, and Firebase Storage are not part of the MVP.
 
 If Git, Docker, or Flutter are missing, open PowerShell as Administrator and run:
 

@@ -10,8 +10,8 @@ The Flutter apps may use Firebase only for FCM push. Firebase Auth, Firestore, R
 
 | App      | File                                                                                                         | Current responsibility                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Customer | `apps/customer_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an OS push token. |
-| Provider | `apps/provider_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an OS push token. |
+| Customer | `apps/customer_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an FCM push token. |
+| Partner  | `apps/provider_app/lib/src/features/notification/data/datasources/in_app_notification_token_datasource.dart` | Keeps notification setup behind the existing repository boundary without registering an FCM push token. |
 | API      | `apps/api/src/notifications/push-delivery.service.ts`                                                        | Sends through Firebase Admin when FCM is configured, otherwise records safe in-app/local delivery decisions. |
 
 No Flutter or API code should call Firebase Auth, Firestore, Firebase Storage, Realtime Database, or Cloud Functions. FCM is the only allowed Firebase surface.
@@ -132,7 +132,7 @@ Use RLS as a second guardrail, but keep critical booking/payment/matching decisi
 
 ## Biggest Risks
 
-- Push notification replacement: Supabase Realtime is not a full replacement for OS-level push when the app is closed.
+- Push notification replacement: Supabase Realtime is not a full replacement for FCM push when the app is closed.
 - Auth migration: Supabase Auth JWT and current NestJS JWT must not diverge.
 - Booking and payment security: never let mobile clients directly decide match/payment final state.
 - Chat realtime migration: Socket.IO events and Supabase Realtime subscriptions have different delivery semantics.

@@ -2,11 +2,11 @@
 
 ## Current MVP
 
-The API creates persistent `Notification` rows for booking lifecycle and operations events before any OS push attempt. Each notification schedules a `notification-retry` BullMQ job. The worker records one `NotificationDelivery` attempt per enabled `PushDevice`.
+The API creates persistent `Notification` rows for booking lifecycle and operations events before any FCM push attempt. Each notification schedules a `notification-retry` BullMQ job. The worker records one `NotificationDelivery` attempt per enabled `PushDevice`.
 
-HANDS uses Firebase Cloud Messaging for Android/iOS push notifications only. Firebase Realtime Database, Firestore, and Firebase Auth are not part of the MVP architecture.
+HANDS uses Firebase Cloud Messaging for Android/iOS FCM push notifications only. Firebase Realtime Database, Firestore, and Firebase Auth are not part of the MVP architecture.
 
-Socket.IO remains the realtime channel while the app is open. FCM is only for background, killed-app, and OS-level notification delivery.
+Socket.IO remains the realtime channel while the app is open. FCM is only for background, killed-app, and Android/iOS notification delivery.
 
 ## Device Tokens
 
@@ -39,7 +39,7 @@ PUSH_PROVIDER=in_app_only
 
 This records skipped delivery attempts and keeps the in-app inbox/audit path visible without requiring Firebase credentials.
 
-Staging or production OS push should be enabled explicitly:
+Staging or production FCM push should be enabled explicitly:
 
 ```dotenv
 PUSH_PROVIDER=fcm
@@ -58,7 +58,7 @@ When using `GOOGLE_APPLICATION_CREDENTIALS`, point it to an existing valid servi
 Firebase Admin credentials are server-side only. Never send service account JSON, private keys, APNs keys, or Admin SDK credentials to Flutter, Admin Web, browser JavaScript, or Git.
 Use `npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-service-account.json> -UpdateEnv` to copy a downloaded Firebase Admin JSON into the ignored `C:\dev\hands-secrets\firebase` folder and write the local `.env` pointers. In Docker, `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH` is bind-mounted into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
-When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. OS push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids, and the backend always adds the stored `notificationId` for open/read tracking. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
+When FCM credentials are absent, `PushDeliveryService` fails safely by recording a failed `NotificationDelivery`; the API process and booking/matching flows must not crash. FCM push data is filtered to routing identifiers such as `bookingId`, `chatRoomId`, and profile or payment record ids, and the backend always adds the stored `notificationId` for open/read tracking. Do not place sensitive customer address details, operator notes, or free-form reasons in push bodies or FCM data payloads.
 
 For a narrow Docker/API push check after credentials are configured, use:
 

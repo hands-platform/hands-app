@@ -1,7 +1,7 @@
 # HANDS Supabase Setup
 
 This folder contains the Supabase staging schema for the HANDS Firebase DB/Auth-free migration.
-FCM remains the only allowed Firebase surface, and only for Android/iOS OS push. Firebase Realtime Database, Firestore, Firebase Auth, and Firebase Storage are not part of the MVP.
+FCM remains the only allowed Firebase surface, and only for Android/iOS FCM push. Firebase Realtime Database, Firestore, Firebase Auth, and Firebase Storage are not part of the MVP.
 
 Use the generated bundle for staging setup instead of pasting individual SQL files one by one.
 

@@ -50,7 +50,7 @@ Additional targeted checks also passed: `npm.cmd audit --audit-level=moderate`, 
 - Real marketplace participants remain stored for admin visibility.
 - Marketplace accept/reject responses now require an existing participant record, so partners must participate before responding unless they are the first-pick invitee.
 - Payment callbacks are public by necessity. MoMo/VNPay signature verification now runs when gateway secrets are configured, and production rejects missing callback secrets.
-- FCM is the official OS push provider for Android/iOS. Notifications still create in-app rows first, and Firebase DB/Auth/Firestore remain outside MVP.
+- FCM is the official Android/iOS FCM push service. Notifications still create in-app rows first, and Firebase DB/Auth/Firestore remain outside MVP.
 - Admin currently favors operator visibility over compact code. The largest files are booking detail, partner detail, dashboard, partner list, and booking monitor pages; they should be split into feature widgets and shared formatting helpers before adding another large Admin surface.
 - The heaviest Prisma reads are intentionally on Admin pages, but several `include` trees should be converted to explicit `select` payloads as data grows.
 

@@ -19,7 +19,7 @@ Storage can be in `placeholder` mode for local MVP flows. Readiness only fails f
 `GET /api/health/external` is secret-safe. It only returns configured key names, missing key names, setup scope, and next verification commands.
 
 - `CURRENT_STAGE`: blocks current local/staging E2E when not ready. Today this mainly covers Supabase core and MapTiler/Geoapify map setup.
-- `DEFERRED`: tracked for production readiness, but intentionally parked until the right phase. Examples: Supabase Phone Auth, SMS, payments, OS push, Android release signing, and production storage/CDN.
+- `DEFERRED`: tracked for production readiness, but intentionally parked until the right phase. Examples: Supabase Phone Auth, SMS, payments, FCM push, Android release signing, and production storage/CDN.
 
 Each external check can include:
 
