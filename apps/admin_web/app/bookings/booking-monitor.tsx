@@ -20,7 +20,6 @@ import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
-import { bookingMonitorAlertEvidenceNeedsOps } from './booking-monitor-alert-evidence-model';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
   bookingRecencyLabel as recencyLabel,
@@ -49,8 +48,6 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
-import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
-import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import {
   activeBookingStatuses as activeStatuses,
   bookingMonitorSummaryRows,
@@ -168,6 +165,7 @@ import {
   buildBookingMonitorMarketplaceParticipantLedgerRows,
 } from './booking-monitor-marketplace-model';
 import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
+import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import {
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
@@ -319,7 +317,7 @@ export function BookingMonitor({
         evidenceFilter,
         matchers: {
           matchesEvidenceFilter: (booking, filter) =>
-            bookingMatchesEvidenceFilter(booking, filter, currentTimeMs),
+            bookingMonitorMatchesEvidenceFilter(booking, filter, currentTimeMs),
           matchesView: (booking, bookingView) =>
             bookingMonitorMatchesView(booking, bookingView, currentTimeMs),
         },
@@ -702,24 +700,6 @@ function buildMatchingEscalationRows(
         selectionLabel: bookingMonitorSelectionLabelForBooking(booking),
         selectionPathLabel: bookingMonitorSelectionPathLabelForBooking(booking),
       });
-    }),
-  );
-}
-
-function bookingMatchesEvidenceFilter(
-  booking: AdminBooking,
-  evidenceFilter: BookingEvidenceFilter,
-  nowMs: number,
-) {
-  return bookingMatchesMonitorEvidenceFilter(
-    evidenceFilter,
-    bookingMonitorEvidenceMatchReadersFromBooking(booking, {
-      addressNeedsOps: () => bookingMonitorAddressNeedsOps(booking),
-      alertEvidenceNeedsOps: () => bookingMonitorAlertEvidenceNeedsOps(booking, nowMs),
-      cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-      closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-      locationNeedsOps: () => bookingMonitorLocationNeedsOps(booking, nowMs),
-      paymentNeedsOps: () => bookingMonitorPaymentNeedsOps(booking),
     }),
   );
 }
