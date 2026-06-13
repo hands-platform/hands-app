@@ -52,7 +52,7 @@ describe('notification page model', () => {
     expect(queue).toEqual([
       {
         count: 1,
-        detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
+        detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
         href: '/notifications?review=failed',
         key: 'failed',
         label: 'Failed sends',
@@ -289,6 +289,59 @@ describe('notification page model', () => {
     const filtered = filterNotifications(notifications, { booking: 'booking-1', review: 'failed' });
 
     expect(filtered.map((item) => item.id)).toEqual(['notification-booking-1']);
+  });
+
+  it('uses the latest delivery status for failed and sent review queues', () => {
+    const notifications = [
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:00:00.000Z',
+            id: 'delivery-old-failed',
+            provider: 'FCM',
+            status: 'FAILED',
+          },
+          {
+            attemptedAt: '2026-06-01T10:05:00.000Z',
+            id: 'delivery-new-sent',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-recovered', platform: 'android' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-recovered',
+        type: 'booking.requested',
+      }),
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:06:00.000Z',
+            id: 'delivery-current-failed',
+            provider: 'FCM',
+            status: 'FAILED',
+          },
+        ],
+        id: 'notification-current-failed',
+        type: 'booking.requested',
+      }),
+    ];
+
+    expect(filterNotifications(notifications, { booking: '', review: 'failed' }).map((item) => item.id)).toEqual([
+      'notification-current-failed',
+    ]);
+    expect(filterNotifications(notifications, { booking: '', review: 'sent' }).map((item) => item.id)).toEqual([
+      'notification-recovered',
+    ]);
+    expect(buildNotificationDeliveryStats(notifications)).toMatchObject({
+      failedDeliveries: 2,
+      failedNotifications: 1,
+      sentDeliveries: 1,
+    });
+    expect(buildNotificationSummary(notifications).failed).toBe(1);
+    expect(buildNotificationTableRows(notifications.slice(0, 1))[0]).toMatchObject({
+      opsSignal: 'Delivered',
+      signalClassName: 'signal signal-ok',
+    });
   });
 
   it('sorts notification rows by delivery urgency before recency', () => {
@@ -613,7 +666,7 @@ describe('notification page model', () => {
       review: 'stale-device',
     });
     expect(notificationFilterDescription('failed')).toBe(
-      'delivery attempts that returned an FCM push failure.',
+      'latest delivery attempts that returned an FCM push failure.',
     );
     expect(notificationFilterDescription('partner-alerts')).toBe(
       'booking and payout alerts sent to partners.',
@@ -626,7 +679,7 @@ describe('notification page model', () => {
       'No notifications loaded.',
     );
     expect(emptyNotificationMessage('failed', undefined, (value) => `short-${value}`)).toBe(
-      'No notifications currently match this queue. delivery attempts that returned an FCM push failure.',
+      'No notifications currently match this queue. latest delivery attempts that returned an FCM push failure.',
     );
     expect(emptyNotificationMessage('failed', 'booking-1', (value) => `short-${value}`)).toBe(
       'No notifications currently match booking short-booking-1. Confirm the booking created an alert row before retrying delivery.',

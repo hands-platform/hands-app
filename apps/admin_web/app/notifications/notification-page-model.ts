@@ -49,7 +49,7 @@ const PARTNER_ALERT_TYPES = [
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
-  failed: 'delivery attempts that returned an FCM push failure.',
+  failed: 'latest delivery attempts that returned an FCM push failure.',
   fcm: 'notifications that attempted FCM push delivery.',
   'in-app-route': 'notifications intentionally kept in the app inbox route.',
   'needs-retry': 'notifications whose delivery path should be reviewed before retry.',
@@ -57,13 +57,13 @@ const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'partner-alerts': 'booking and payout alerts sent to partners.',
   'payout-setup': 'partners who earned revenue and now need tax/address/agreement setup before payout.',
   pending: 'notifications without a captured delivery attempt yet.',
-  sent: 'successfully delivered push notifications.',
-  skipped: 'alerts that were intentionally skipped or had no available send path.',
+  sent: 'notifications whose latest push attempt was delivered successfully.',
+  skipped: 'notifications whose latest push attempt was intentionally skipped or had no available send path.',
   'stale-device': 'delivery attempts made with old push token timestamps.',
 };
 const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNotification) => boolean>> = {
   'disabled-device': hasDisabledPushDevice,
-  failed: (notification) => hasDeliveryStatus(notification, 'FAILED'),
+  failed: (notification) => hasLatestDeliveryStatus(notification, 'FAILED'),
   fcm: (notification) => hasDeliveryProvider(notification, 'FCM'),
   'in-app-route': (notification) => hasDeliveryProvider(notification, 'IN_APP_ONLY'),
   'needs-retry': hasRetrySignal,
@@ -71,8 +71,8 @@ const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNo
   'partner-alerts': (notification) => isPartnerAlertType(notification.type),
   'payout-setup': (notification) => notification.type === 'provider.payout_setup_required',
   pending: hasNoDeliveryAttempts,
-  sent: (notification) => hasDeliveryStatus(notification, 'SENT'),
-  skipped: (notification) => hasDeliveryStatus(notification, 'SKIPPED'),
+  sent: (notification) => hasLatestDeliveryStatus(notification, 'SENT'),
+  skipped: (notification) => hasLatestDeliveryStatus(notification, 'SKIPPED'),
   'stale-device': hasStalePushDeviceDelivery,
 };
 
@@ -207,7 +207,7 @@ export function buildNotificationMetrics(
     { label: 'Sent', value: summary.sent, helper: 'Successful push delivery attempts.' },
     { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
     { label: 'Pending', value: summary.pending, helper: 'Rows without delivery attempts.' },
-    { label: 'Failed', value: summary.failed, helper: 'Push failures needing review.' },
+    { label: 'Failed', value: summary.failed, helper: 'Current push failures needing review.' },
     { label: 'Disabled devices', value: summary.disabledDevices, helper: 'Push devices disabled.' },
     { label: 'Stale devices', value: summary.staleDevices, helper: 'Old token timestamps at send.' },
     { label: 'Payout setup', value: summary.payoutSetup, helper: 'Partner payout setup alerts.' },
@@ -274,7 +274,7 @@ export function buildNotificationSummary(notifications: readonly AdminNotificati
 
   return {
     disabledDevices: deliveryStats.disabledDevices,
-    failed: deliveryStats.failedDeliveries,
+    failed: deliveryStats.failedNotifications,
     needsRetry: notifications.filter((notification) => hasRetrySignal(notification)).length,
     noShow: notifications.filter((notification) => notification.type === 'booking.no_show').length,
     payoutSetup: notifications.filter(
@@ -309,7 +309,7 @@ export function buildNotificationDeliveryOpsQueue(
   const queueItems: NotificationDeliveryOpsQueueItem[] = [
     {
       count: deliveryStats.failedNotifications,
-      detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
+      detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',
@@ -478,7 +478,7 @@ function countDeliveries(notifications: readonly AdminNotification[], status: st
 }
 
 function countNotificationsWithDeliveryStatus(notifications: readonly AdminNotification[], status: string) {
-  return notifications.filter((notification) => hasDeliveryStatus(notification, status)).length;
+  return notifications.filter((notification) => hasLatestDeliveryStatus(notification, status)).length;
 }
 
 function deliveryStatusClassName(status: string) {
@@ -530,20 +530,20 @@ function hasStalePushDeviceDelivery(notification: AdminNotification) {
 export { isStaleNotificationPushDeviceDelivery as isStalePushDeviceDelivery };
 
 function hasRetrySignal(notification: AdminNotification) {
-  return hasDeliveryStatus(notification, 'FAILED') || hasDisabledPushDevice(notification);
+  return hasLatestDeliveryStatus(notification, 'FAILED') || hasCurrentDisabledPushDevice(notification);
 }
 
 function notificationPriority(notification: AdminNotification) {
-  if (hasDeliveryStatus(notification, 'FAILED')) {
+  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return 4;
   }
-  if (hasDisabledPushDevice(notification)) {
+  if (hasCurrentDisabledPushDevice(notification)) {
     return 3;
   }
-  if (hasDeliveryStatus(notification, 'SKIPPED')) {
+  if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
     return 2;
   }
-  if (hasDeliveryStatus(notification, 'SENT')) {
+  if (hasLatestDeliveryStatus(notification, 'SENT')) {
     return 1;
   }
   return 0;
@@ -694,54 +694,54 @@ function notificationBookingId(notification: AdminNotification) {
 }
 
 function signalClass(notification: AdminNotification) {
-  if (hasDeliveryStatus(notification, 'FAILED')) {
+  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return 'signal signal-warn';
   }
-  if (hasDisabledPushDevice(notification)) {
+  if (hasCurrentDisabledPushDevice(notification)) {
     return 'signal signal-warn';
   }
   if (hasStalePushDeviceDelivery(notification)) {
     return 'signal signal-warn';
   }
-  if (hasDeliveryStatus(notification, 'SENT')) {
+  if (hasLatestDeliveryStatus(notification, 'SENT')) {
     return 'signal signal-ok';
   }
   return 'signal signal-info';
 }
 
 function opsSignal(notification: AdminNotification) {
-  if (hasDeliveryStatus(notification, 'FAILED')) {
+  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return 'Retry needed';
   }
-  if (hasDisabledPushDevice(notification)) {
+  if (hasCurrentDisabledPushDevice(notification)) {
     return 'Device disabled';
   }
   if (hasStalePushDeviceDelivery(notification)) {
     return 'Stale device';
   }
-  if (hasDeliveryStatus(notification, 'SKIPPED')) {
+  if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped delivery';
   }
-  if (hasDeliveryStatus(notification, 'SENT')) {
+  if (hasLatestDeliveryStatus(notification, 'SENT')) {
     return 'Delivered';
   }
   return 'Pending';
 }
 
 function opsHint(notification: AdminNotification) {
-  if (hasDeliveryStatus(notification, 'FAILED')) {
+  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return 'Review failure code, confirm token health, then retry only after the device path makes sense.';
   }
-  if (hasDisabledPushDevice(notification)) {
+  if (hasCurrentDisabledPushDevice(notification)) {
     return 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.';
   }
   if (hasStalePushDeviceDelivery(notification)) {
     return 'Push token timestamp is old. Ask the user to open the app so FCM can refresh before relying on retry.';
   }
-  if (hasDeliveryStatus(notification, 'SKIPPED')) {
+  if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
     return 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.';
   }
-  if (hasDeliveryStatus(notification, 'SENT')) {
+  if (hasLatestDeliveryStatus(notification, 'SENT')) {
     return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
   }
   return 'Notification exists, but no delivery attempt was captured yet.';
@@ -818,8 +818,16 @@ function hasDeliveryStatus(notification: AdminNotification, status: string) {
   return notificationDeliveries(notification).some((delivery) => delivery.status === status);
 }
 
+function hasLatestDeliveryStatus(notification: AdminNotification, status: string) {
+  return latestDelivery(notification)?.status === status;
+}
+
 function hasDisabledPushDevice(notification: AdminNotification) {
   return notificationDeliveries(notification).some((delivery) => delivery.pushDevice?.enabled === false);
+}
+
+function hasCurrentDisabledPushDevice(notification: AdminNotification) {
+  return latestDelivery(notification)?.pushDevice?.enabled === false;
 }
 
 function hasDeliveryProvider(notification: AdminNotification, provider: string) {
@@ -836,6 +844,10 @@ function notificationDeliveries(notification: AdminNotification): readonly Admin
 
 function newestDeliveries(deliveries: readonly AdminNotificationDelivery[]) {
   return [...deliveries].sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left));
+}
+
+function latestDelivery(notification: AdminNotification) {
+  return newestDeliveries(notificationDeliveries(notification))[0];
 }
 
 function isDeliveryProvider(delivery: AdminNotificationDelivery, provider: string) {

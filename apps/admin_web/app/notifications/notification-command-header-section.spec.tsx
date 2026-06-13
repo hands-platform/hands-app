@@ -7,7 +7,7 @@ describe('NotificationCommandHeaderSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Delivery board for push retries, disabled devices, and last-mile alert confidence.');
-    expect(rendered).toContain('Latest failures first');
+    expect(rendered).toContain('Current failures first');
     expect(rendered).toContain('Delivery signal');
     expect(rendered).toContain('Retry readiness');
     expect(rendered).toContain('FCM setup');
