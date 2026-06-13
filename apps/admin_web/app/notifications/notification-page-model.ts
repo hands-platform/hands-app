@@ -94,6 +94,17 @@ export type NotificationChannelSummary = {
   readonly policyLabel: string;
 };
 
+export type NotificationDeliveryStats = {
+  readonly disabledDevices: number;
+  readonly failedDeliveries: number;
+  readonly failedNotifications: number;
+  readonly pendingNotifications: number;
+  readonly sentDeliveries: number;
+  readonly skippedDeliveries: number;
+  readonly skippedNotifications: number;
+  readonly stalePushDeviceDeliveries: number;
+};
+
 export type NotificationPartnerAlertSmokeFallback = {
   readonly partnerAlertNotificationId: string;
   readonly partnerAlertType: string;
@@ -254,32 +265,45 @@ export function buildNotificationTableRows(
 }
 
 export function buildNotificationSummary(notifications: readonly AdminNotification[]): NotificationSummary {
+  const deliveryStats = buildNotificationDeliveryStats(notifications);
+
   return {
-    disabledDevices: countDisabledDevices(notifications),
-    failed: countDeliveries(notifications, 'FAILED'),
+    disabledDevices: deliveryStats.disabledDevices,
+    failed: deliveryStats.failedDeliveries,
     needsRetry: notifications.filter((notification) => hasRetrySignal(notification)).length,
     noShow: notifications.filter((notification) => notification.type === 'booking.no_show').length,
     payoutSetup: notifications.filter(
       (notification) => notification.type === 'provider.payout_setup_required',
     ).length,
-    pending: countPendingNotifications(notifications),
-    sent: countDeliveries(notifications, 'SENT'),
-    skipped: countDeliveries(notifications, 'SKIPPED'),
-    staleDevices: countStalePushDeviceDeliveries(notifications),
+    pending: deliveryStats.pendingNotifications,
+    sent: deliveryStats.sentDeliveries,
+    skipped: deliveryStats.skippedDeliveries,
+    staleDevices: deliveryStats.stalePushDeviceDeliveries,
+  };
+}
+
+export function buildNotificationDeliveryStats(
+  notifications: readonly AdminNotification[],
+): NotificationDeliveryStats {
+  return {
+    disabledDevices: countDisabledDevices(notifications),
+    failedDeliveries: countDeliveries(notifications, 'FAILED'),
+    failedNotifications: countNotificationsWithDeliveryStatus(notifications, 'FAILED'),
+    pendingNotifications: countPendingNotifications(notifications),
+    sentDeliveries: countDeliveries(notifications, 'SENT'),
+    skippedDeliveries: countDeliveries(notifications, 'SKIPPED'),
+    skippedNotifications: countNotificationsWithDeliveryStatus(notifications, 'SKIPPED'),
+    stalePushDeviceDeliveries: countStalePushDeviceDeliveries(notifications),
   };
 }
 
 export function buildNotificationDeliveryOpsQueue(
   notifications: readonly AdminNotification[],
 ): NotificationDeliveryOpsQueueItem[] {
-  const failed = countNotificationsWithDeliveryStatus(notifications, 'FAILED');
-  const disabledDevices = countDisabledDevices(notifications);
-  const staleDevices = countStalePushDeviceDeliveries(notifications);
-  const skipped = countNotificationsWithDeliveryStatus(notifications, 'SKIPPED');
-  const pending = countPendingNotifications(notifications);
+  const deliveryStats = buildNotificationDeliveryStats(notifications);
   const queueItems: NotificationDeliveryOpsQueueItem[] = [
     {
-      count: failed,
+      count: deliveryStats.failedNotifications,
       detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
       href: '/notifications?review=failed',
       key: 'failed',
@@ -287,7 +311,7 @@ export function buildNotificationDeliveryOpsQueue(
       tone: 'pill-warn',
     },
     {
-      count: disabledDevices,
+      count: deliveryStats.disabledDevices,
       detail: 'Re-enable only when the app has registered a fresh token or the operator confirms the device.',
       href: '/notifications?review=disabled-device',
       key: 'disabled-devices',
@@ -295,7 +319,7 @@ export function buildNotificationDeliveryOpsQueue(
       tone: 'pill-warn',
     },
     {
-      count: staleDevices,
+      count: deliveryStats.stalePushDeviceDeliveries,
       detail: `Push token timestamp is ${STALE_PUSH_DEVICE_AGE_DAYS}+ days old at delivery attempt. Confirm the app has refreshed its FCM token before retrying.`,
       href: '/notifications?review=stale-device',
       key: 'stale-devices',
@@ -303,7 +327,7 @@ export function buildNotificationDeliveryOpsQueue(
       tone: 'pill-warn',
     },
     {
-      count: skipped,
+      count: deliveryStats.skippedNotifications,
       detail:
         'Usually means push is intentionally inactive, no enabled device exists, or credentials are pending.',
       href: '/notifications?review=skipped',
@@ -312,7 +336,7 @@ export function buildNotificationDeliveryOpsQueue(
       tone: 'pill-info',
     },
     {
-      count: pending,
+      count: deliveryStats.pendingNotifications,
       detail: 'Notification rows exist without delivery attempts. Confirm workers and queue processing.',
       href: '/notifications?review=pending',
       key: 'pending',

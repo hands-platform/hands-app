@@ -1,6 +1,7 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import {
   buildNotificationChannelSummary,
+  buildNotificationDeliveryStats,
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
   buildNotificationPageModel,
@@ -29,6 +30,19 @@ describe('notification page model', () => {
       sent: 2,
       skipped: 1,
       staleDevices: 1,
+    });
+  });
+
+  it('builds reusable delivery stats for summary and operations queue models', () => {
+    expect(buildNotificationDeliveryStats(buildNotifications())).toEqual({
+      disabledDevices: 1,
+      failedDeliveries: 1,
+      failedNotifications: 1,
+      pendingNotifications: 1,
+      sentDeliveries: 2,
+      skippedDeliveries: 1,
+      skippedNotifications: 1,
+      stalePushDeviceDeliveries: 1,
     });
   });
 
