@@ -51,9 +51,7 @@ import {
 import {
   activeBookingStatuses as activeStatuses,
   bookingMonitorSummaryRows,
-  type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
-import { bookingMonitorSummaryFactFromInputs } from './booking-monitor-summary-inputs';
 import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import {
   bookingCommandCenterFromFacts,
@@ -138,13 +136,13 @@ import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
 import {
-  bookingMonitorAddressNeedsOps,
   bookingMonitorChatEvidenceNeedsOps,
   bookingMonitorDecisionEvidenceMissing,
   bookingMonitorLocationNeedsOps,
   bookingMonitorPaymentNeedsOps,
   bookingMonitorRefundReviewNeedsOps,
 } from './booking-monitor-ops-state-model';
+import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
   bookingCustomerLabel,
   bookingProviderLabel,
@@ -661,29 +659,6 @@ function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
       status: booking.status,
     })),
   );
-}
-
-function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
-  return bookingMonitorSummaryFactFromInputs({
-    addressNeedsOps: bookingMonitorAddressNeedsOps(booking),
-    backupSelected: bookingIsBackupSelected(booking),
-    checkSeverities: bookingMonitorCheckFlags(booking, nowMs).map((flag) => flag.severity),
-    chatEvidenceNeedsOps: bookingMonitorChatEvidenceNeedsOps(booking, nowMs),
-    chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
-    closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-    decisionEvidenceMissing: bookingMonitorDecisionEvidenceMissing(booking, nowMs),
-    firstPickPending: bookingFirstPickPending(booking),
-    locationNeedsOps: bookingMonitorLocationNeedsOps(booking, nowMs),
-    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    matchingChatReady: bookingMatchingChatReady(booking),
-    participantCount: booking.participants?.length ?? 0,
-    paymentNeedsOps: bookingMonitorPaymentNeedsOps(booking),
-    policySnapshotPresent: Boolean(bookingMatchingPolicySnapshot(booking)),
-    pricingPolicyNeedsOps: bookingMonitorPricingPolicyNeedsOps(booking),
-    refundReviewNeedsOps: bookingMonitorRefundReviewNeedsOps(booking),
-    stageKey: buildBookingMonitorListStage(booking, nowMs).key,
-    status: booking.status,
-  });
 }
 
 function buildMatchingEscalationRows(
