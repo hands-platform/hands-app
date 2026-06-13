@@ -7,12 +7,24 @@ export function sanitizeNotificationReturnHref(value: string | null) {
     return '/notifications';
   }
 
-  const normalized = new URL(value, 'http://admin.local');
+  const normalized = parseNotificationReturnUrl(value);
+  if (!normalized) {
+    return '/notifications';
+  }
+
   if (normalized.origin !== 'http://admin.local' || normalized.pathname !== '/notifications') {
     return '/notifications';
   }
 
   return `${normalized.pathname}${normalized.search}`;
+}
+
+function parseNotificationReturnUrl(value: string) {
+  try {
+    return new URL(value, 'http://admin.local');
+  } catch {
+    return null;
+  }
 }
 
 function readOptionalFormString(formData: FormData, key: string) {

@@ -114,5 +114,6 @@ describe('notification server actions', () => {
     expect(sanitizeNotificationReturnHref('https://example.com/notifications')).toBe('/notifications');
     expect(sanitizeNotificationReturnHref('/partners')).toBe('/notifications');
     expect(sanitizeNotificationReturnHref('/notifications/../partners')).toBe('/notifications');
+    expect(sanitizeNotificationReturnHref('http://[')).toBe('/notifications');
   });
 });
