@@ -12,11 +12,7 @@ import {
   buildBookingMatchingEscalationRows as buildBookingMatchingEscalationRowsFromFacts,
   type BookingMatchingEscalationRow,
 } from '../../lib/booking-matching-escalation-rows';
-import {
-  buildBookingMatchingRuleSnapshot,
-  matchingPolicySummaryLabel,
-  type BookingMatchingRuleSnapshot,
-} from '../../lib/booking-matching-rule-snapshot';
+import { matchingPolicySummaryLabel } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import {
   type BookingListStage,
@@ -213,6 +209,7 @@ import {
   bookingProviderLabel,
   partnerDisplayName,
 } from './booking-monitor-labels';
+import { buildBookingMonitorMatchingRuleSnapshot } from './booking-monitor-matching-rule-model';
 import { bookingMonitorOpsSignal } from './booking-monitor-ops-signal';
 import {
   buildBookingMonitorMarketplaceCoverageRows,
@@ -651,7 +648,7 @@ function buildBookingMonitorListRow(
     hasMatchingPolicySnapshot: Boolean(matchingPolicy),
     location: bookingMonitorListLocation(booking, currentTimeMs),
     matchingPolicySummaryLabel: matchingPolicySummaryLabel(matchingPolicy),
-    matchingRuleSnapshot: bookingMatchingRuleSnapshot(booking, currentTimeMs),
+    matchingRuleSnapshot: buildBookingMonitorMatchingRuleSnapshot(booking, currentTimeMs),
     marketplaceParticipantOverflowCount:
       bookingMonitorListMarketplaceParticipantOverflowCount(marketplaceParticipantRows),
     marketplaceParticipants: bookingMonitorListMarketplaceParticipants(marketplaceParticipantRows),
@@ -1094,25 +1091,6 @@ function bookingFinalGateReason(booking: AdminBooking) {
 
 function nextAction(booking: AdminBooking) {
   return bookingNextActionCopy(bookingNextActionCopyInputFromBooking(booking));
-}
-
-function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
-  const policy = bookingMatchingPolicySnapshot(booking);
-  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
-  const selectableCount = bookingCustomerSelectableCount(booking);
-  const alertSummary = bookingBackupAlertTraceSummary(booking, nowMs);
-
-  return buildBookingMatchingRuleSnapshot({
-    hasChatRoom: bookingMatchingChatReady(booking),
-    isTerminalStatus: terminalBookingStatuses.has(booking.status),
-    marketplaceCount,
-    openMatchingWindowLabel: bookingMatchingWindowLabel(booking, nowMs),
-    policy,
-    selectableCount,
-    selectedPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
-    status: booking.status,
-    totalNotified: alertSummary.totalNotified,
-  });
 }
 
 function customerVisibleStateLabel(booking: AdminBooking) {
