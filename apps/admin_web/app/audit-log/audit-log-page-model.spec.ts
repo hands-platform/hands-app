@@ -8,7 +8,16 @@ describe('audit log page model', () => {
         actor: { fullName: 'Operator One', phone: '+8490' },
         createdAt: '2026-06-11T09:00:00.000Z',
         id: 'audit-1',
-        metadata: { notificationId: 'notification-123456' },
+        metadata: {
+          latestDelivery: {
+            provider: 'FCM',
+            pushDeviceEnabled: true,
+            pushDevicePlatform: 'android',
+            status: 'SENT',
+          },
+          notificationId: 'notification-123456',
+          retryAlreadyDelivered: true,
+        },
         target: 'notification:notification-123456',
       },
     ]);
@@ -20,6 +29,12 @@ describe('audit log page model', () => {
       relatedBoardLabel: 'notification board',
       targetLabel: 'notification:notification-123456',
     });
+    expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-info', label: 'Already delivered before retry' },
+      { className: 'pill pill-success', label: 'Latest FCM SENT' },
+      { className: 'pill pill-info', label: 'Device android' },
+      { className: 'pill pill-success', label: 'Device enabled' },
+    ]);
   });
 
   it('adds notification audit records to the command board', () => {

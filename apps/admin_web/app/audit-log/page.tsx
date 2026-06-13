@@ -483,6 +483,10 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
     return bookingGateRejectionHighlights(log);
   }
 
+  if (log.action === 'notification.retry') {
+    return notificationRetryHighlights(log);
+  }
+
   const matchHighlights = bookingMatchAuditHighlights(log);
   if (matchHighlights.length > 0) {
     return matchHighlights;
@@ -564,6 +568,46 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 6);
+}
+
+function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
+  const metadata = readMetadataObject(log.metadata);
+  const latestDelivery = readRecord(metadata.latestDelivery);
+  const highlights: MetadataHighlight[] = [];
+  const provider = readString(latestDelivery.provider);
+  const status = readString(latestDelivery.status);
+  const platform = readString(latestDelivery.pushDevicePlatform);
+
+  if (metadata.retryAlreadyDelivered === true) {
+    highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
+  }
+  if (provider && status) {
+    highlights.push({
+      label: `Latest ${provider} ${status}`,
+      className: notificationStatusHighlightClass(status),
+    });
+  }
+  if (platform) {
+    highlights.push({ label: `Device ${platform}`, className: 'pill pill-info' });
+  }
+  if (latestDelivery.pushDeviceEnabled === true) {
+    highlights.push({ label: 'Device enabled', className: 'pill pill-success' });
+  }
+  if (latestDelivery.pushDeviceEnabled === false) {
+    highlights.push({ label: 'Device disabled', className: 'pill pill-warn' });
+  }
+
+  return highlights.slice(0, 6);
+}
+
+function notificationStatusHighlightClass(status: string) {
+  if (status === 'SENT') {
+    return 'pill pill-success';
+  }
+  if (status === 'FAILED') {
+    return 'pill pill-warn';
+  }
+  return 'pill pill-info';
 }
 
 function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
