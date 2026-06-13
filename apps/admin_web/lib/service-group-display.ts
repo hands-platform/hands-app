@@ -14,6 +14,16 @@ export function missingStandardDurations(items: readonly AdminServiceCatalogItem
   return [60, 90, 120].filter((duration) => !configured.has(duration));
 }
 
+export function standardDurationCoverage(items: readonly AdminServiceCatalogItem[]) {
+  const missingDurations = missingStandardDurations(items);
+
+  return {
+    label: missingDurations.length === 0 ? '60/90/120 ready' : `Missing ${missingDurations.join('/')}`,
+    missingDurations,
+    tone: missingDurations.length === 0 ? 'pill-success' : 'pill-warn',
+  };
+}
+
 export function formatGroupPriceRange(items: readonly AdminServiceCatalogItem[]) {
   const prices = items.filter((item) => item.active).map((item) => item.basePrice);
   if (prices.length === 0) {

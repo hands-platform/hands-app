@@ -1,5 +1,10 @@
 import type { AdminServiceCatalogItem } from './admin-api';
-import { formatDurationList, formatGroupPriceRange, missingStandardDurations } from './service-group-display';
+import {
+  formatDurationList,
+  formatGroupPriceRange,
+  missingStandardDurations,
+  standardDurationCoverage,
+} from './service-group-display';
 
 describe('service group display', () => {
   it('formats durations in ascending order', () => {
@@ -22,6 +27,25 @@ describe('service group display', () => {
     ).toEqual([90]);
   });
 
+  it('builds standard duration coverage labels and tones', () => {
+    expect(
+      standardDurationCoverage([
+        serviceFixture({ active: true, durationMin: 60 }),
+        serviceFixture({ active: true, durationMin: 90 }),
+        serviceFixture({ active: true, durationMin: 120 }),
+      ]),
+    ).toEqual({
+      label: '60/90/120 ready',
+      missingDurations: [],
+      tone: 'pill-success',
+    });
+    expect(standardDurationCoverage([serviceFixture({ active: true, durationMin: 60 })])).toEqual({
+      label: 'Missing 90/120',
+      missingDurations: [90, 120],
+      tone: 'pill-warn',
+    });
+  });
+
   it('formats active group price ranges and handles groups without active prices', () => {
     expect(
       formatGroupPriceRange([
@@ -33,9 +57,7 @@ describe('service group display', () => {
     expect(formatGroupPriceRange([serviceFixture({ active: false, basePrice: 200000 })])).toBe(
       'no active price',
     );
-    expect(formatGroupPriceRange([serviceFixture({ active: true, basePrice: 400000 })])).toBe(
-      '400.000 VND',
-    );
+    expect(formatGroupPriceRange([serviceFixture({ active: true, basePrice: 400000 })])).toBe('400.000 VND');
   });
 });
 
