@@ -105,6 +105,20 @@ describe('notification page model', () => {
     expect(buildNotificationChannelSummary([], []).policyLabel).toBe('Not configured');
   });
 
+  it('maps the deprecated partner alert OS push value to FCM-facing Admin copy', () => {
+    const summary = buildNotificationChannelSummary([], [
+      {
+        category: 'notifications',
+        enforced: true,
+        key: 'notification.partner_alert_channel',
+        label: 'Partner alert channel',
+        value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
+      },
+    ]);
+
+    expect(summary.policyLabel).toBe('FCM for all bookings (legacy saved value)');
+  });
+
   it('suggests a same-provider non partner-alert notification for FCM smoke fallback', () => {
     const fallback = buildNotificationPartnerAlertSmokeFallback(
       [

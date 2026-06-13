@@ -27,6 +27,8 @@ const PARTNER_ALERT_TYPES = [
   'provider.payout_batch.updated',
 ] as const;
 const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES);
+const PARTNER_ALERT_FCM_VALUE = 'FCM_FOR_ALL_BOOKINGS';
+const PARTNER_ALERT_LEGACY_OS_PUSH_VALUE = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
   failed: 'delivery attempts that returned a push provider failure.',
@@ -692,7 +694,7 @@ function latestDeliveryPlatform(notification: AdminNotification) {
 
 function policyRoutesPartnerAlertsToFcm(setting?: AdminOperationalPolicySetting) {
   const value = String(setting?.value ?? '');
-  return value === 'FCM_FOR_ALL_BOOKINGS' || value === 'ONESIGNAL_FOR_ALL_BOOKINGS';
+  return value === PARTNER_ALERT_FCM_VALUE || value === PARTNER_ALERT_LEGACY_OS_PUSH_VALUE;
 }
 
 function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
@@ -700,6 +702,9 @@ function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
     return 'Not configured';
   }
   const value = String(setting.value);
+  if (value === PARTNER_ALERT_LEGACY_OS_PUSH_VALUE) {
+    return 'FCM for all bookings (legacy saved value)';
+  }
   return setting.options?.find((option) => option.value === value)?.label ?? value;
 }
 
