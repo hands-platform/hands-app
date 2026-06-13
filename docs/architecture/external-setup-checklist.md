@@ -23,18 +23,18 @@ Canonical operator order:
 
 ## Current Status
 
-| Area            | Status                                  | Next action                                    |
-| --------------- | --------------------------------------- | ---------------------------------------------- |
-| GitHub          | Connected to HANDS org repo             | Keep pushing `develop`                         |
-| Supabase        | Staging project created and SQL applied | Phone Auth/SMS E2E deferred                    |
-| MapTiler        | Local/staging key configured            | Keep key out of Git                            |
-| Geoapify        | Local/staging key configured            | Keep key out of Git                            |
-| Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore          |
+| Area            | Status                                  | Next action                                            |
+| --------------- | --------------------------------------- | ------------------------------------------------------ |
+| GitHub          | Connected to HANDS org repo             | Keep pushing `develop`                                 |
+| Supabase        | Staging project created and SQL applied | Phone Auth/SMS E2E deferred                            |
+| MapTiler        | Local/staging key configured            | Keep key out of Git                                    |
+| Geoapify        | Local/staging key configured            | Keep key out of Git                                    |
+| Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore                  |
 | Push            | Server-side FCM path testable           | Confirm same-session app token delivery before rollout |
-| SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                |
-| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials later             |
-| Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later |
-| Android signing | Local helper ready                      | Production keystores stay in secrets folder    |
+| SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                        |
+| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials later                     |
+| Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later         |
+| Android signing | Local helper ready                      | Production keystores stay in secrets folder            |
 
 ## Required Env Groups
 
@@ -102,7 +102,7 @@ npm.cmd run external:check:maps
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices
 ```
 
-After downloading the Firebase Admin private key JSON, install it outside Git with:
+After downloading the Firebase Admin private key JSON from the same Firebase project as the customer and Partner `google-services.json` files, install it outside Git with:
 
 ```powershell
 npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json -UpdateEnv

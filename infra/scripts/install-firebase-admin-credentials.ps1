@@ -60,6 +60,61 @@ function Assert-ServiceAccountJson {
       throw "Source JSON is missing required Firebase Admin field: $key."
     }
   }
+
+  return $json
+}
+
+function Get-MobileFirebaseProjectIds {
+  param([string]$RepoRoot)
+
+  $configPaths = @(
+    "apps\customer_app\android\app\google-services.json",
+    "apps\provider_app\android\app\google-services.json"
+  )
+  $projectIds = New-Object System.Collections.Generic.List[string]
+
+  foreach ($relativePath in $configPaths) {
+    $configPath = Join-Path $RepoRoot $relativePath
+    if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+      continue
+    }
+
+    try {
+      $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+      throw "Mobile Firebase config is not valid JSON: $relativePath"
+    }
+
+    $projectId = [string]$config.project_info.project_id
+    if (-not [string]::IsNullOrWhiteSpace($projectId) -and -not $projectIds.Contains($projectId)) {
+      $projectIds.Add($projectId)
+    }
+  }
+
+  return $projectIds.ToArray()
+}
+
+function Assert-FirebaseProjectAlignment {
+  param(
+    [object]$ServiceAccountJson,
+    [string]$RepoRoot
+  )
+
+  $mobileProjectIds = @(Get-MobileFirebaseProjectIds -RepoRoot $RepoRoot)
+  if ($mobileProjectIds.Count -eq 0) {
+    return $null
+  }
+  if ($mobileProjectIds.Count -gt 1) {
+    throw "Mobile google-services.json files point to multiple Firebase projects: $($mobileProjectIds -join ', '). Use customer and Partner configs from the same project before installing Admin credentials."
+  }
+
+  $expectedProjectId = $mobileProjectIds[0]
+  $adminProjectId = [string]$ServiceAccountJson.project_id
+  if ($adminProjectId -ne $expectedProjectId) {
+    throw "Firebase Admin service account project_id '$adminProjectId' does not match mobile Firebase project '$expectedProjectId'. Download the Admin SDK JSON from the same Firebase project as the customer and Partner google-services.json files."
+  }
+
+  return $expectedProjectId
 }
 
 function ConvertTo-EnvValue {
@@ -156,7 +211,8 @@ if (-not (Test-Path -LiteralPath $sourceFullPath -PathType Leaf)) {
   throw "SourcePath does not point to an existing file: $sourceFullPath"
 }
 
-Assert-ServiceAccountJson -Path $sourceFullPath
+$sourceJson = Assert-ServiceAccountJson -Path $sourceFullPath
+$expectedMobileProjectId = Assert-FirebaseProjectAlignment -ServiceAccountJson $sourceJson -RepoRoot $repoRoot
 
 $secretRootFullPath = Resolve-FullPath $SecretRoot
 $destinationPath = Join-Path $secretRootFullPath $DestinationFileName
@@ -178,7 +234,8 @@ if ($sourceFullPath -ne $destinationFullPath) {
   Copy-Item -LiteralPath $sourceFullPath -Destination $destinationFullPath -Force:$Force
 }
 
-Assert-ServiceAccountJson -Path $destinationFullPath
+$destinationJson = Assert-ServiceAccountJson -Path $destinationFullPath
+$expectedMobileProjectId = Assert-FirebaseProjectAlignment -ServiceAccountJson $destinationJson -RepoRoot $repoRoot
 
 $envFileFullPath = $null
 if ($UpdateEnv) {
@@ -199,6 +256,10 @@ $summary = [ordered]@{
   ok = $true
   destination = $destinationFullPath
   envFile = $envFileFullPath
+  firebaseProject = [ordered]@{
+    adminCredentialProjectId = [string]$destinationJson.project_id
+    expectedMobileProjectId = $expectedMobileProjectId
+  }
   env = [ordered]@{
     PUSH_PROVIDER = "fcm"
     GOOGLE_APPLICATION_CREDENTIALS = $destinationFullPath
