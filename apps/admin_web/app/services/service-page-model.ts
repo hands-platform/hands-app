@@ -83,10 +83,10 @@ export function buildServicePageModel({
     servicePayoutFinance,
   });
   const serviceTypeCoverageSummary = buildServiceTypeCoverageSummary(serviceTypeCoverageRows);
-  const visibleServiceTypeCoverageRows = serviceTypeCoverageRows.slice(0, SERVICE_GROUP_RENDER_LIMIT);
-  const visibleGroupedServices = filteredGroupedServices.slice(0, SERVICE_GROUP_RENDER_LIMIT);
-  const visiblePayoutLedgerRows = payoutLedgerRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
-  const visiblePricePolicyPreviewRows = pricePolicyPreviewRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
+  const serviceTypeCoverageVisibility = visibleSlice(serviceTypeCoverageRows, SERVICE_GROUP_RENDER_LIMIT);
+  const groupedServiceVisibility = visibleSlice(filteredGroupedServices, SERVICE_GROUP_RENDER_LIMIT);
+  const payoutLedgerVisibility = visibleSlice(payoutLedgerRows, SERVICE_ROW_RENDER_LIMIT);
+  const pricePolicyPreviewVisibility = visibleSlice(pricePolicyPreviewRows, SERVICE_ROW_RENDER_LIMIT);
 
   return {
     actionNotice: serviceActionNotice(params),
@@ -99,10 +99,10 @@ export function buildServicePageModel({
     filteredGroupedServices,
     groupedServices,
     healthItems,
-    hiddenPayoutLedgerRowCount: hiddenCount(payoutLedgerRows, visiblePayoutLedgerRows),
-    hiddenPricePolicyPreviewRowCount: hiddenCount(pricePolicyPreviewRows, visiblePricePolicyPreviewRows),
-    hiddenServiceGroupCount: hiddenCount(filteredGroupedServices, visibleGroupedServices),
-    hiddenServiceTypeCoverageRowCount: hiddenCount(serviceTypeCoverageRows, visibleServiceTypeCoverageRows),
+    hiddenPayoutLedgerRowCount: payoutLedgerVisibility.hiddenCount,
+    hiddenPricePolicyPreviewRowCount: pricePolicyPreviewVisibility.hiddenCount,
+    hiddenServiceGroupCount: groupedServiceVisibility.hiddenCount,
+    hiddenServiceTypeCoverageRowCount: serviceTypeCoverageVisibility.hiddenCount,
     payoutLedgerRows,
     payoutRuleCount,
     pricePolicyPreviewRows,
@@ -112,10 +112,10 @@ export function buildServicePageModel({
     serviceSearchQuery,
     serviceTypeCoverageRows,
     serviceTypeCoverageSummary,
-    visibleGroupedServices,
-    visiblePayoutLedgerRows,
-    visiblePricePolicyPreviewRows,
-    visibleServiceTypeCoverageRows,
+    visibleGroupedServices: groupedServiceVisibility.visibleItems,
+    visiblePayoutLedgerRows: payoutLedgerVisibility.visibleItems,
+    visiblePricePolicyPreviewRows: pricePolicyPreviewVisibility.visibleItems,
+    visibleServiceTypeCoverageRows: serviceTypeCoverageVisibility.visibleItems,
     warningReadinessItems,
   };
 }
@@ -144,4 +144,13 @@ function providerPriceImpact(
 
 function hiddenCount<T>(allItems: readonly T[], visibleItems: readonly T[]) {
   return Math.max(allItems.length - visibleItems.length, 0);
+}
+
+function visibleSlice<T>(items: readonly T[], limit: number) {
+  const visibleItems = items.slice(0, limit);
+
+  return {
+    hiddenCount: hiddenCount(items, visibleItems),
+    visibleItems,
+  };
 }

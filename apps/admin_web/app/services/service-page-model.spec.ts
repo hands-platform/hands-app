@@ -41,6 +41,28 @@ describe('buildServicePageModel', () => {
     expect(model.visibleServiceTypeCoverageRows).toHaveLength(40);
     expect(model.hiddenServiceTypeCoverageRowCount).toBe(1);
   });
+
+  it('caps visible finance rows independently from service group rows', () => {
+    const services = Array.from({ length: 81 }, (_, index) =>
+      serviceFixture({
+        id: `option-${index + 1}`,
+        name: `Option ${index + 1}`,
+        serviceGroupKey: `group_${index + 1}`,
+      }),
+    );
+
+    const model = buildServicePageModel({
+      auditLogs: [],
+      params: {},
+      services,
+      taxPolicies: [],
+    });
+
+    expect(model.visiblePayoutLedgerRows).toHaveLength(80);
+    expect(model.hiddenPayoutLedgerRowCount).toBe(1);
+    expect(model.visiblePricePolicyPreviewRows).toHaveLength(80);
+    expect(model.hiddenPricePolicyPreviewRowCount).toBe(1);
+  });
 });
 
 function serviceFixture(input: {
