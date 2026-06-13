@@ -13,10 +13,6 @@ import {
   type BookingMatchingEscalationRow,
 } from '../../lib/booking-matching-escalation-rows';
 import {
-  buildBookingMatchingFlowTimeline,
-  type BookingMatchingFlowStep,
-} from '../../lib/booking-matching-flow-timeline';
-import {
   buildBookingMatchingRuleSnapshot,
   matchingPolicySummaryLabel,
   type BookingMatchingRuleSnapshot,
@@ -161,10 +157,7 @@ import { bookingMarketplaceParticipantLedgerInputs } from './booking-marketplace
 import { bookingMatchingEscalationNeedsOps } from './booking-matching-escalation-needs-ops';
 import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
 import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
-import {
-  bookingMatchingFlowTimelineBookingFact,
-  bookingMatchingFlowTimelineInput,
-} from './booking-matching-flow-timeline-inputs';
+import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
 import {
   bookingMonitorSelectionFromFacts,
   bookingMonitorSelectionLabel,
@@ -287,8 +280,6 @@ type BookingProtectionLane = BookingCustomerProtectionLane<AdminBooking>;
 type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBooking>;
 type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooking>;
 
-type AdminBookingMatchingFlowStep = BookingMatchingFlowStep<AdminBooking>;
-
 type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
 
 type AdminMarketplaceParticipantLedgerRow = MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>;
@@ -402,7 +393,7 @@ export function BookingMonitor({
     [currentTimeMs, orderedBookings],
   );
   const matchingFlowTimeline = useMemo(
-    () => buildMatchingFlowTimeline(orderedBookings, currentTimeMs),
+    () => buildBookingMonitorMatchingFlowTimeline(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
   const dispatchPartnerShortcuts = useMemo(
@@ -843,22 +834,6 @@ function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
       responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
       status: booking.status,
     })),
-  );
-}
-
-function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): readonly AdminBookingMatchingFlowStep[] {
-  return buildBookingMatchingFlowTimeline(buildMatchingFlowTimelineFacts(bookings, nowMs));
-}
-
-function buildMatchingFlowTimelineFacts(bookings: AdminBooking[], nowMs: number) {
-  return bookingMatchingFlowTimelineInput(
-    bookings.map((booking) =>
-      bookingMatchingFlowTimelineBookingFact(booking, nowMs, {
-        customerSelectableCount: bookingCustomerSelectableCount(booking),
-        firstPickPending: bookingFirstPickPending(booking),
-        marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-      }),
-    ),
   );
 }
 
