@@ -142,6 +142,33 @@ describe('PushDeliveryService', () => {
     expect(JSON.stringify(result.response)).not.toContain('fcm-demo-token');
   });
 
+  it('disables invalid FCM registration tokens returned as invalid-argument', async () => {
+    mockMessagingSend.mockRejectedValueOnce(
+      Object.assign(
+        new Error('The registration token fcm-demo-token not a valid FCM registration token'),
+        { code: 'messaging/invalid-argument' },
+      ),
+    );
+
+    const result = await pushService({
+      PUSH_PROVIDER: 'fcm',
+      FIREBASE_PROJECT_ID: 'hands-demo',
+      FIREBASE_CLIENT_EMAIL: 'firebase-admin@example.test',
+      FIREBASE_PRIVATE_KEY: 'placeholder-firebase-admin-private-key',
+    }).send(message);
+
+    expect(result).toMatchObject({
+      provider: 'FCM',
+      status: 'FAILED',
+      disableDevice: true,
+      failureCode: 'messaging/invalid-argument',
+      response: {
+        reason: 'The registration token [masked] not a valid FCM registration token',
+      },
+    });
+    expect(JSON.stringify(result.response)).not.toContain('fcm-demo-token');
+  });
+
   it('sends Android FCM notifications through the HANDS priority channel', async () => {
     mockMessagingSend.mockResolvedValueOnce('firebase-message-1');
 

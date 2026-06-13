@@ -19,6 +19,17 @@ export function isPermanentTokenFailure(failureCode: string) {
   );
 }
 
+export function isPermanentTokenError(failureCode: string, reason?: string) {
+  if (isPermanentTokenFailure(failureCode)) {
+    return true;
+  }
+
+  return (
+    ['messaging/invalid-argument', 'INVALID_ARGUMENT'].includes(failureCode) &&
+    Boolean(reason?.match(/registration token .*not a valid FCM registration token/i))
+  );
+}
+
 export function safeErrorMessage(error: unknown, token?: string) {
   if (error instanceof Error) {
     return maskSensitivePushToken(

@@ -1,5 +1,6 @@
 import {
   firebaseFailureCode,
+  isPermanentTokenError,
   isPermanentTokenFailure,
   maskSensitivePushToken,
   safeErrorMessage,
@@ -19,6 +20,22 @@ describe('push delivery error helpers', () => {
     expect(isPermanentTokenFailure('UNREGISTERED')).toBe(true);
     expect(isPermanentTokenFailure('INVALID_ARGUMENT')).toBe(false);
     expect(isPermanentTokenFailure('messaging/internal-error')).toBe(false);
+  });
+
+  it('classifies invalid-argument token format errors without treating payload errors as permanent', () => {
+    expect(
+      isPermanentTokenError(
+        'messaging/invalid-argument',
+        'The registration token [masked] not a valid FCM registration token',
+      ),
+    ).toBe(true);
+    expect(
+      isPermanentTokenError(
+        'INVALID_ARGUMENT',
+        'The registration token [masked] not a valid FCM registration token',
+      ),
+    ).toBe(true);
+    expect(isPermanentTokenError('messaging/invalid-argument', 'Invalid JSON payload received.')).toBe(false);
   });
 
   it('masks raw push tokens from error messages', () => {

@@ -8,7 +8,7 @@ import {
   readFirebaseCredentialConfig,
   type FirebaseCredentialConfig,
 } from './firebase-admin-credentials';
-import { firebaseFailureCode, isPermanentTokenFailure, safeErrorMessage } from './push-delivery-error';
+import { firebaseFailureCode, isPermanentTokenError, safeErrorMessage } from './push-delivery-error';
 import { resolvePushProvider, type PushProvider } from './push-provider';
 
 export const FCM_ANDROID_NOTIFICATION_CHANNEL_ID = 'hands_priority_alerts';
@@ -113,13 +113,14 @@ export class PushDeliveryService {
       };
     } catch (error) {
       const failureCode = firebaseFailureCode(error);
+      const reason = safeErrorMessage(error, message.token);
       return {
         provider: 'FCM',
         status: 'FAILED',
-        disableDevice: isPermanentTokenFailure(failureCode),
+        disableDevice: isPermanentTokenError(failureCode, reason),
         failureCode,
         response: {
-          reason: safeErrorMessage(error, message.token),
+          reason,
         },
       };
     }
