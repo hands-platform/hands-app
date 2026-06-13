@@ -1,16 +1,11 @@
 import type { AdminServiceCatalogItem } from './admin-api';
+import type { ProviderPriceImpact } from './provider-price-impact';
 import { serviceTypeCoverageStatus } from './service-type-coverage-status';
 
 type ServicePayoutRule = NonNullable<AdminServiceCatalogItem['payoutRules']>[number];
 
 type ServicePayoutFinance = {
   readonly actualCompanyCommission: number;
-};
-
-type ProviderPriceImpact = {
-  readonly rows: readonly {
-    readonly state: string;
-  }[];
 };
 
 type ServiceTypeCoverageGroup = {
@@ -74,12 +69,12 @@ export function serviceTypeCoverageRows<TPolicy>({
       const missingDurations = missingStandardDurations(group.items);
       const missingBasePayoutCount = activeItems.filter((service) => !basePayoutRule(service)).length;
       const payoutRuleCount = group.items.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
-      const providerImpactRows = activeItems.flatMap((service) => providerPriceImpact(service, activeTaxPolicy).rows);
-      const visiblePartnerPriceCount = providerImpactRows.filter((row) => row.state === 'bookable').length;
-      const belowMinimumCount = providerImpactRows.filter((row) => row.state === 'below_minimum').length;
-      const missingPayoutPriceCount = providerImpactRows.filter((row) => row.state === 'missing_payout').length;
-      const inactivePartnerPriceCount = providerImpactRows.filter((row) => row.state === 'inactive').length;
-      const hiddenPartnerPriceCount = belowMinimumCount + missingPayoutPriceCount + inactivePartnerPriceCount;
+      const providerImpacts = activeItems.map((service) => providerPriceImpact(service, activeTaxPolicy));
+      const visiblePartnerPriceCount = sumProviderImpact(providerImpacts, 'visibleCount');
+      const belowMinimumCount = sumProviderImpact(providerImpacts, 'belowMinimumCount');
+      const missingPayoutPriceCount = sumProviderImpact(providerImpacts, 'unsupportedCount');
+      const inactivePartnerPriceCount = sumProviderImpact(providerImpacts, 'inactiveOrBlockedCount');
+      const hiddenPartnerPriceCount = sumProviderImpact(providerImpacts, 'hiddenCount');
       const financeRows = activeItems
         .map((service) => {
           const rule = basePayoutRule(service);
@@ -149,4 +144,18 @@ export function serviceTypeCoverageRows<TPolicy>({
 
       return priority(left) - priority(right) || left.label.localeCompare(right.label);
     });
+}
+
+function sumProviderImpact(
+  impacts: readonly ProviderPriceImpact[],
+  key: keyof Pick<
+    ProviderPriceImpact,
+    | 'belowMinimumCount'
+    | 'hiddenCount'
+    | 'inactiveOrBlockedCount'
+    | 'unsupportedCount'
+    | 'visibleCount'
+  >,
+) {
+  return impacts.reduce((sum, impact) => sum + impact[key], 0);
 }

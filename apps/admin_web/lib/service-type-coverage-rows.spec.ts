@@ -25,10 +25,12 @@ describe('service type coverage rows', () => {
       missingStandardDurations: (items) =>
         [60, 90, 120].filter((duration) => !items.some((item) => item.active && item.durationMin === duration)),
       providerPriceImpact: (service) => ({
-        rows:
-          service.name === 'Foot massage'
-            ? [{ state: 'bookable' }, { state: 'missing_payout' }]
-            : [],
+        belowMinimumCount: 0,
+        hiddenCount: service.name === 'Foot massage' ? 1 : 0,
+        inactiveOrBlockedCount: 0,
+        rows: [],
+        unsupportedCount: service.name === 'Foot massage' ? 1 : 0,
+        visibleCount: service.name === 'Foot massage' ? 1 : 0,
       }),
       servicePayoutFinance: (_service, rule) => ({
         actualCompanyCommission: rule.customerPrice - rule.providerPayoutAmount,
