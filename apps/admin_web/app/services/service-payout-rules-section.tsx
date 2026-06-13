@@ -128,7 +128,7 @@ export function ServicePayoutRulesSection({ activeTaxPolicy, service }: ServiceP
 
       <h3>Bulk payout ladder import</h3>
       <p className="muted">
-        Paste one row per customer price as <code>customerPrice,providerPayout</code>. This is saved
+        Paste one row per customer price as <code>customerPrice,partnerPayout</code>. This is saved
         atomically so partial payout ladders do not leak into booking.
       </p>
       <form action={bulkUpsertPayoutRules} className="form-grid compact-form">
