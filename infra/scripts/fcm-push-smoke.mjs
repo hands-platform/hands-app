@@ -148,13 +148,7 @@ if (preflight) {
         platform,
         hasDeviceToken: Boolean(deviceToken),
         useRegisteredDevice,
-        pushReadiness: pushCheck
-          ? {
-              status: pushCheck.status,
-              detail: pushCheck.detail,
-              operatorAction: pushCheck.operatorAction ?? null,
-            }
-          : null,
+        pushReadiness: pushReadinessOutput(pushCheck),
         registeredDevicePreflight,
         notificationPreflight,
         partnerAlertPolicyPreflight,
@@ -298,13 +292,7 @@ console.log(
         : null,
       reusedRegisteredDevice: !registeredDevice,
       registeredDevicePreflight,
-      pushReadiness: pushCheck
-        ? {
-            status: pushCheck.status,
-            detail: pushCheck.detail,
-            operatorAction: pushCheck.operatorAction ?? null,
-          }
-        : null,
+      pushReadiness: pushReadinessOutput(pushCheck),
       beforeDeliveryCount,
       deliveryCount,
       latestDelivery: {
@@ -649,7 +637,7 @@ function expectedProviderBlocker(partnerAlertPolicyPreflight) {
 
 function preflightNextActions(blockers, alternativeNotificationPreflights = []) {
   if (blockers.length === 0) {
-    return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live retry.'];
+    return ['Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live FCM retry.'];
   }
 
   const actions = [];
@@ -665,12 +653,12 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = []) 
   }
   if (blockers.includes('NO_DEVICE_TOKEN_OR_REUSE_MODE')) {
     actions.push(
-      'Set FCM_SMOKE_DEVICE_TOKEN, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after the selected app session registers an enabled device.',
+      'Set FCM_SMOKE_DEVICE_TOKEN to a real token from the selected role/phone/platform, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled FCM device.',
     );
   }
   if (blockers.includes('NO_ENABLED_REGISTERED_DEVICE')) {
     actions.push(
-      `Open the current ${role} ${platform} app session for ${phone} and let it register a push token through the API.`,
+      `Open the current ${role} ${platform} app session for ${phone} and let it register an enabled FCM token through the API.`,
     );
   }
   if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
@@ -679,15 +667,36 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = []) 
   return actions;
 }
 
-function alternativeNotificationHint(alternativeNotificationPreflights) {
-  const fallback =
-    'Set FCM_SMOKE_NOTIFICATION_ID to a non partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live retry.';
-  const [firstAlternative] = alternativeNotificationPreflights;
-  if (!firstAlternative?.id) {
-    return `The selected notification is a partner alert controlled by ${partnerAlertPolicyKey}. ${fallback}`;
+function pushReadinessOutput(pushCheck) {
+  if (!pushCheck) {
+    return null;
   }
 
-  return `The selected notification is a partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest non partner-alert ${firstAlternative.type} notification for this same role/phone, or intentionally update the policy before live retry.`;
+  return {
+    status: pushCheck.status,
+    detail: fcmSmokeDisplayText(pushCheck.detail),
+    operatorAction: pushCheck.operatorAction ? fcmSmokeDisplayText(pushCheck.operatorAction) : null,
+  };
+}
+
+function fcmSmokeDisplayText(value) {
+  return String(value)
+    .replace(/\bAndroid\/iOS OS push\b/g, 'Android/iOS FCM push')
+    .replace(/\bOS push\b/g, 'FCM push')
+    .replace(/\bpush readiness\b/g, 'FCM push readiness')
+    .replace(/\bcustomer\/provider\b/g, 'customer/Partner')
+    .replace(/\bCustomer\/provider\b/g, 'Customer/Partner');
+}
+
+function alternativeNotificationHint(alternativeNotificationPreflights) {
+  const fallback =
+    'Set FCM_SMOKE_NOTIFICATION_ID to a non-Partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live FCM retry.';
+  const [firstAlternative] = alternativeNotificationPreflights;
+  if (!firstAlternative?.id) {
+    return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. ${fallback}`;
+  }
+
+  return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest non-Partner-alert ${firstAlternative.type} notification for this same role/phone, or intentionally update the policy before live FCM retry.`;
 }
 
 function firebaseAdminCredentialAction() {
