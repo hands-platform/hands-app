@@ -26,7 +26,7 @@ import {
 } from './notification-delivery-response';
 import type { NotificationDeliveryRow } from './notification-delivery-cell';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
-import type { NotificationTableRow } from './notifications-table-section';
+import type { NotificationTableRow } from './notification-table-row';
 
 type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
 
