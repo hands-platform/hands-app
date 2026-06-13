@@ -69,10 +69,7 @@ describe('NotificationsService device tokens', () => {
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(
-      service.disableDeviceToken(
-        { id: 'user-1', roles: [Role.CUSTOMER] },
-        { token: 'fcm-token-1' },
-      ),
+      service.disableDeviceToken({ id: 'user-1', roles: [Role.CUSTOMER] }, { token: 'fcm-token-1' }),
     ).resolves.toEqual({ ok: true, disabled: 1 });
 
     expect(prisma.pushDevice.updateMany).toHaveBeenCalledWith({
@@ -179,6 +176,7 @@ describe('NotificationsService retry queue', () => {
             provider: true,
             status: true,
             attemptedAt: true,
+            response: true,
             pushDeviceId: true,
             pushDevice: { select: { enabled: true, platform: true } },
           },
@@ -203,6 +201,7 @@ describe('NotificationsService retry queue', () => {
               provider: 'FCM',
               status: 'SENT',
               attemptedAt: new Date('2026-06-13T10:23:00.000Z'),
+              response: { name: 'projects/hands/messages/message-1' },
               pushDeviceId: 'push-device-1',
               pushDevice: { enabled: true, platform: 'android' },
             },
@@ -216,12 +215,45 @@ describe('NotificationsService retry queue', () => {
     await expect(service.retry('notification-1')).resolves.toEqual({
       latestDelivery: {
         attemptedAt: '2026-06-13T10:23:00.000Z',
+        failureCode: null,
         id: 'delivery-1',
         provider: 'FCM',
         pushDeviceEnabled: true,
         pushDeviceId: 'push-device-1',
         pushDevicePlatform: 'android',
         status: 'SENT',
+      },
+      ok: true,
+      notificationId: 'notification-1',
+    });
+  });
+
+  it('returns latest delivery failure code when retrying a failed notification', async () => {
+    const prisma = {
+      notification: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          deliveries: [
+            {
+              id: 'delivery-1',
+              provider: 'FCM',
+              status: 'FAILED',
+              attemptedAt: new Date('2026-06-13T10:23:00.000Z'),
+              response: { failureCode: 'messaging/mismatched-credential' },
+              pushDeviceId: 'push-device-1',
+              pushDevice: { enabled: true, platform: 'android' },
+            },
+          ],
+        }),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await expect(service.retry('notification-1')).resolves.toMatchObject({
+      latestDelivery: {
+        failureCode: 'messaging/mismatched-credential',
+        status: 'FAILED',
       },
       ok: true,
       notificationId: 'notification-1',

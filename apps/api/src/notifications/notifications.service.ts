@@ -3,19 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  pushDeviceDisableInput,
-  pushDeviceRegistrationInput,
-} from './notification-device-token';
-import {
-  NOTIFICATION_SEND_QUEUE_NAME,
-  notificationSendJob,
-} from './notification-send.queue';
+import { pushDeviceDisableInput, pushDeviceRegistrationInput } from './notification-device-token';
+import { NOTIFICATION_SEND_QUEUE_NAME, notificationSendJob } from './notification-send.queue';
 import { toJson } from './notification-push-payload';
-import {
-  notificationDataWithTargetRole,
-  type NotificationTargetRole,
-} from './notification-target-role';
+import { notificationDataWithTargetRole, type NotificationTargetRole } from './notification-target-role';
 
 type CreateNotificationInput = {
   userId: string;
@@ -31,6 +22,7 @@ type RetryNotificationLatestDelivery = {
   provider: string;
   status: string;
   attemptedAt: string;
+  failureCode: string | null;
   pushDeviceId: string | null;
   pushDeviceEnabled: boolean | null;
   pushDevicePlatform: string | null;
@@ -73,6 +65,7 @@ export class NotificationsService {
             provider: true,
             status: true,
             attemptedAt: true,
+            response: true,
             pushDeviceId: true,
             pushDevice: { select: { enabled: true, platform: true } },
           },
@@ -122,6 +115,7 @@ function summarizeRetryLatestDelivery(
         provider: string;
         status: string;
         attemptedAt: Date;
+        response: unknown;
         pushDeviceId: string | null;
         pushDevice: { enabled: boolean; platform: string } | null;
       }
@@ -136,8 +130,32 @@ function summarizeRetryLatestDelivery(
     provider: delivery.provider,
     status: delivery.status,
     attemptedAt: delivery.attemptedAt.toISOString(),
+    failureCode: notificationDeliveryFailureCode(delivery.response),
     pushDeviceId: delivery.pushDeviceId,
     pushDeviceEnabled: delivery.pushDevice?.enabled ?? null,
     pushDevicePlatform: delivery.pushDevice?.platform ?? null,
   };
+}
+
+function notificationDeliveryFailureCode(response: unknown) {
+  const body = readRecord(readRecord(response)?.body);
+  const error = readRecord(body?.error);
+  const details = Array.isArray(error?.details) ? error.details : [];
+  const firstDetail = readRecord(details[0]);
+  return (
+    readString(readRecord(response)?.failureCode) ??
+    readString(firstDetail?.errorCode) ??
+    readString(body?.code) ??
+    readString(error?.code)
+  );
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

@@ -296,12 +296,13 @@ describe('AdminService query orchestration', () => {
       retry: jest.fn().mockResolvedValue({
         latestDelivery: {
           attemptedAt: '2026-06-13T10:23:00.000Z',
+          failureCode: 'messaging/mismatched-credential',
           id: 'delivery-1',
           provider: 'FCM',
           pushDeviceEnabled: true,
           pushDeviceId: 'push-device-1',
           pushDevicePlatform: 'android',
-          status: 'SENT',
+          status: 'FAILED',
         },
         ok: true,
         notificationId: 'notification-1',
@@ -312,12 +313,13 @@ describe('AdminService query orchestration', () => {
     await expect(service.retryNotification('admin-1', 'notification-1')).resolves.toEqual({
       latestDelivery: {
         attemptedAt: '2026-06-13T10:23:00.000Z',
+        failureCode: 'messaging/mismatched-credential',
         id: 'delivery-1',
         provider: 'FCM',
         pushDeviceEnabled: true,
         pushDeviceId: 'push-device-1',
         pushDevicePlatform: 'android',
-        status: 'SENT',
+        status: 'FAILED',
       },
       ok: true,
       notificationId: 'notification-1',
@@ -332,15 +334,16 @@ describe('AdminService query orchestration', () => {
         metadata: {
           latestDelivery: {
             attemptedAt: '2026-06-13T10:23:00.000Z',
+            failureCode: 'messaging/mismatched-credential',
             id: 'delivery-1',
             provider: 'FCM',
             pushDeviceEnabled: true,
             pushDeviceId: 'push-device-1',
             pushDevicePlatform: 'android',
-            status: 'SENT',
+            status: 'FAILED',
           },
           notificationId: 'notification-1',
-          retryAlreadyDelivered: true,
+          retryAlreadyDelivered: false,
         },
       },
     });

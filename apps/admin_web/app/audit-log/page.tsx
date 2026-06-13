@@ -39,11 +39,27 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
       description="Operational history for bookings, payments, refunds, partner review, alerts, and policy changes."
       metrics={[
         { label: 'Total events', value: summary.total, helper: 'Events after the active filters.' },
-        { label: 'Dispatch actions', value: summary.dispatch, helper: 'Booking, matching, and Partner events.' },
+        {
+          label: 'Dispatch actions',
+          value: summary.dispatch,
+          helper: 'Booking, matching, and Partner events.',
+        },
         { label: 'Payment actions', value: summary.payments, helper: 'Payment and refund audit records.' },
-        { label: 'Finance closeout', value: summary.financeCloseout, helper: 'Money movement and closeout records.' },
-        { label: 'Service pricing', value: summary.servicePricing, helper: 'Service, payout, tax, and pricing edits.' },
-        { label: 'Notification actions', value: summary.notifications, helper: 'Notification send and retry events.' },
+        {
+          label: 'Finance closeout',
+          value: summary.financeCloseout,
+          helper: 'Money movement and closeout records.',
+        },
+        {
+          label: 'Service pricing',
+          value: summary.servicePricing,
+          helper: 'Service, payout, tax, and pricing edits.',
+        },
+        {
+          label: 'Notification actions',
+          value: summary.notifications,
+          helper: 'Notification send and retry events.',
+        },
         { label: 'Needs review', value: summary.needsReview, helper: 'High-priority events for operators.' },
         { label: 'Recent hour', value: summary.recentHour, helper: 'Events created within the last hour.' },
       ]}
@@ -170,7 +186,10 @@ function buildSummary(logs: AdminAuditLog[]) {
   };
 }
 
-export function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandBoardItem[] {
+export function buildAuditCommandBoard(
+  logs: AdminAuditLog[],
+  range: AuditLogFilters['range'],
+): AuditCommandBoardItem[] {
   const now = Date.now();
   const servicePolicyLogs = logs.filter(
     (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
@@ -228,7 +247,8 @@ export function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFil
       title: 'Notification delivery trail',
       detail: 'Send, retry, and device recovery actions should line up with notification delivery outcomes.',
       status: 'Alerts',
-      operatorAction: 'Open Notifications, then confirm failed, stale, and disabled-device rows were handled.',
+      operatorAction:
+        'Open Notifications, then confirm failed, stale, and disabled-device rows were handled.',
       href: withAuditRange('/audit-log?bucket=Notification', range),
       tone: notificationLogs.length > 0 ? 'info' : 'ok',
       logs: buildAuditCommandLogPreviews(notificationLogs),
@@ -577,6 +597,7 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const provider = readString(latestDelivery.provider);
   const status = readString(latestDelivery.status);
   const platform = readString(latestDelivery.pushDevicePlatform);
+  const failureCode = readString(latestDelivery.failureCode);
 
   if (metadata.retryAlreadyDelivered === true) {
     highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
@@ -590,6 +611,12 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   if (platform) {
     highlights.push({ label: `Device ${platform}`, className: 'pill pill-info' });
   }
+  if (failureCode) {
+    highlights.push({
+      label: notificationFailureCodeLabel(failureCode),
+      className: notificationFailureCodeClass(failureCode),
+    });
+  }
   if (latestDelivery.pushDeviceEnabled === true) {
     highlights.push({ label: 'Device enabled', className: 'pill pill-success' });
   }
@@ -598,6 +625,35 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 6);
+}
+
+function notificationFailureCodeLabel(failureCode: string) {
+  if (failureCode === 'messaging/mismatched-credential') {
+    return 'Firebase project mismatch';
+  }
+  if (
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return 'FCM token needs refresh';
+  }
+  if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
+    return 'FCM credentials missing';
+  }
+  return `Failure ${failureCode}`;
+}
+
+function notificationFailureCodeClass(failureCode: string) {
+  if (failureCode === 'messaging/mismatched-credential' || failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
+    return 'pill pill-warn';
+  }
+  if (
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return 'pill pill-warn';
+  }
+  return 'pill pill-info';
 }
 
 function notificationStatusHighlightClass(status: string) {

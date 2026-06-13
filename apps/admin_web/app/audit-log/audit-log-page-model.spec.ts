@@ -37,6 +37,35 @@ describe('audit log page model', () => {
     ]);
   });
 
+  it('highlights notification retry failure codes for audit review', () => {
+    const rows = buildAuditLogTableRows([
+      {
+        action: 'notification.retry',
+        actor: { fullName: 'Operator One', phone: '+8490' },
+        createdAt: '2026-06-11T09:00:00.000Z',
+        id: 'audit-1',
+        metadata: {
+          latestDelivery: {
+            failureCode: 'messaging/mismatched-credential',
+            provider: 'FCM',
+            pushDeviceEnabled: true,
+            pushDevicePlatform: 'android',
+            status: 'FAILED',
+          },
+          notificationId: 'notification-123456',
+        },
+        target: 'notification:notification-123456',
+      },
+    ]);
+
+    expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
+      { className: 'pill pill-info', label: 'Device android' },
+      { className: 'pill pill-warn', label: 'Firebase project mismatch' },
+      { className: 'pill pill-success', label: 'Device enabled' },
+    ]);
+  });
+
   it('adds notification audit records to the command board', () => {
     const board = buildAuditCommandBoard(
       [
