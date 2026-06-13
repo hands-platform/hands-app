@@ -1,6 +1,8 @@
+import { PrismaClient } from '@prisma/client';
 import { loadMergedEnv } from './lib/env-file.mjs';
 import { envValue, normalizeApiBaseUrl, normalizePlatform } from './lib/fcm-smoke-config.mjs';
 
+const syntheticTokenPrefix = 'hands-fcm-token-smoke-';
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
 const apiBaseUrl = normalizeApiBaseUrl(envValue(env, 'API_BASE_URL') ?? 'http://localhost:3000/api', fail);
@@ -33,6 +35,10 @@ if (dryRun) {
           'Run npm.cmd run fcm:token-smoke when API/Docker are ready to verify customer/Partner token registration.',
           'Then either set FCM_SMOKE_DEVICE_TOKEN or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after the same app session registers an enabled device.',
         ],
+        syntheticTokenCleanup: {
+          deletesDisabledSyntheticRowsWithoutDeliveries: true,
+          tokenPrefix: syntheticTokenPrefix,
+        },
       },
       null,
       2,
@@ -61,7 +67,7 @@ for (const actor of [
     method: 'POST',
     body: JSON.stringify({ refreshToken: auth.refreshToken }),
   });
-  const token = `hands-fcm-token-smoke-${actor.role.toLowerCase()}-${startedAt}`;
+  const token = `${syntheticTokenPrefix}${actor.role.toLowerCase()}-${startedAt}`;
   const registeredDevice = await request('/notifications/device-token/register', {
     method: actor.role === 'CUSTOMER' ? 'PATCH' : 'POST',
     headers: { authorization: `Bearer ${refreshedAuth.accessToken}` },
@@ -100,6 +106,8 @@ for (const actor of [
   });
 }
 
+const syntheticCleanup = await cleanupSyntheticSmokeDevices();
+
 console.log(
   JSON.stringify(
     {
@@ -107,6 +115,7 @@ console.log(
       apiBaseUrl,
       platform,
       results,
+      syntheticCleanup,
     },
     null,
     2,
@@ -127,6 +136,26 @@ async function request(path, options = {}) {
 
 function maskTokenFields(value, token) {
   return JSON.parse(JSON.stringify(value).replaceAll(token, '<TOKEN_REGISTRATION_SMOKE_TOKEN>'));
+}
+
+async function cleanupSyntheticSmokeDevices() {
+  const prisma = new PrismaClient();
+  try {
+    const result = await prisma.pushDevice.deleteMany({
+      where: {
+        token: { startsWith: syntheticTokenPrefix },
+        enabled: false,
+        deliveries: { none: {} },
+      },
+    });
+    return {
+      deleted: result.count,
+      tokenPrefix: syntheticTokenPrefix,
+      safety: 'disabled synthetic smoke devices without delivery records only',
+    };
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 function fail(message) {

@@ -17,7 +17,9 @@ describe('push delivery error helpers', () => {
   it('classifies permanent token failures', () => {
     expect(isPermanentTokenFailure('messaging/registration-token-not-registered')).toBe(true);
     expect(isPermanentTokenFailure('messaging/invalid-registration-token')).toBe(true);
+    expect(isPermanentTokenFailure('messaging/mismatched-credential')).toBe(true);
     expect(isPermanentTokenFailure('UNREGISTERED')).toBe(true);
+    expect(isPermanentTokenFailure('SENDER_ID_MISMATCH')).toBe(true);
     expect(isPermanentTokenFailure('INVALID_ARGUMENT')).toBe(false);
     expect(isPermanentTokenFailure('messaging/internal-error')).toBe(false);
   });

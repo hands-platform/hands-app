@@ -1,7 +1,9 @@
 const PERMANENT_TOKEN_FAILURE_CODES = new Set([
   'messaging/registration-token-not-registered',
   'messaging/invalid-registration-token',
+  'messaging/mismatched-credential',
   'UNREGISTERED',
+  'SENDER_ID_MISMATCH',
 ]);
 
 export function firebaseFailureCode(error: unknown) {
