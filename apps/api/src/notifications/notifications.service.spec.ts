@@ -155,13 +155,20 @@ describe('NotificationsService retry queue', () => {
         findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'notification-1', deliveries: [] }),
       },
     };
-    const queue = { add: jest.fn() };
+    const queue = { add: jest.fn().mockResolvedValue({ id: 'queued-retry-job-1' }) };
     const service = new NotificationsService(prisma as never, queue as never);
 
     await expect(service.retry('notification-1')).resolves.toEqual({
       latestDelivery: null,
       ok: true,
       notificationId: 'notification-1',
+      retryJob: {
+        attempts: 3,
+        backoffMs: 5000,
+        jobName: 'notification-send',
+        queueName: 'notification-retry',
+        queuedJobId: 'queued-retry-job-1',
+      },
     });
 
     expect(prisma.notification.findUniqueOrThrow).toHaveBeenCalledWith({
@@ -225,6 +232,13 @@ describe('NotificationsService retry queue', () => {
       },
       ok: true,
       notificationId: 'notification-1',
+      retryJob: {
+        attempts: 3,
+        backoffMs: 5000,
+        jobName: 'notification-send',
+        queueName: 'notification-retry',
+        queuedJobId: null,
+      },
     });
   });
 
@@ -257,6 +271,13 @@ describe('NotificationsService retry queue', () => {
       },
       ok: true,
       notificationId: 'notification-1',
+      retryJob: {
+        attempts: 3,
+        backoffMs: 5000,
+        jobName: 'notification-send',
+        queueName: 'notification-retry',
+        queuedJobId: null,
+      },
     });
   });
 });

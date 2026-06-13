@@ -16,6 +16,7 @@ describe('audit log page model', () => {
             status: 'SENT',
           },
           notificationId: 'notification-123456',
+          retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
           retryAlreadyDelivered: true,
         },
         target: 'notification:notification-123456',
@@ -32,6 +33,7 @@ describe('audit log page model', () => {
     });
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-info', label: 'Already delivered before retry' },
+      { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-success', label: 'Device enabled' },
@@ -54,12 +56,14 @@ describe('audit log page model', () => {
             status: 'FAILED',
           },
           notificationId: 'notification-123456',
+          retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
         },
         target: 'notification:notification-123456',
       },
     ]);
 
     expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-warn', label: 'Firebase project mismatch' },

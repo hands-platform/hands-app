@@ -306,6 +306,13 @@ describe('AdminService query orchestration', () => {
         },
         ok: true,
         notificationId: 'notification-1',
+        retryJob: {
+          attempts: 3,
+          backoffMs: 5000,
+          jobName: 'notification-send',
+          queueName: 'notification-retry',
+          queuedJobId: 'queued-retry-job-1',
+        },
       }),
     };
     const service = createAdminService(prisma, { notifications });
@@ -323,6 +330,13 @@ describe('AdminService query orchestration', () => {
       },
       ok: true,
       notificationId: 'notification-1',
+      retryJob: {
+        attempts: 3,
+        backoffMs: 5000,
+        jobName: 'notification-send',
+        queueName: 'notification-retry',
+        queuedJobId: 'queued-retry-job-1',
+      },
     });
 
     expect(notifications.retry).toHaveBeenCalledWith('notification-1');
@@ -343,6 +357,13 @@ describe('AdminService query orchestration', () => {
             status: 'FAILED',
           },
           notificationId: 'notification-1',
+          retryJob: {
+            attempts: 3,
+            backoffMs: 5000,
+            jobName: 'notification-send',
+            queueName: 'notification-retry',
+            queuedJobId: 'queued-retry-job-1',
+          },
           retryAlreadyDelivered: false,
         },
       },

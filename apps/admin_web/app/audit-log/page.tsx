@@ -598,14 +598,19 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
 function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const metadata = readMetadataObject(log.metadata);
   const latestDelivery = readRecord(metadata.latestDelivery);
+  const retryJob = readRecord(metadata.retryJob);
   const highlights: MetadataHighlight[] = [];
   const provider = readString(latestDelivery.provider);
   const status = readString(latestDelivery.status);
   const platform = readString(latestDelivery.pushDevicePlatform);
   const failureCode = readString(latestDelivery.failureCode);
+  const jobName = readString(retryJob.jobName);
 
   if (metadata.retryAlreadyDelivered === true) {
     highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
+  }
+  if (jobName) {
+    highlights.push({ label: `Queued ${jobName}`, className: 'pill pill-info' });
   }
   if (provider && status) {
     highlights.push({

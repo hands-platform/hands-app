@@ -29,6 +29,14 @@ type RetryNotificationLatestDelivery = {
   pushDevicePlatform: string | null;
 };
 
+type RetryNotificationJobSummary = {
+  queueName: string;
+  jobName: string;
+  attempts: number;
+  backoffMs: number | null;
+  queuedJobId: string | null;
+};
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -74,8 +82,8 @@ export class NotificationsService {
       },
     });
     const latestDelivery = summarizeRetryLatestDelivery(notification.deliveries[0]);
-    await this.enqueueNotificationSend(notification.id);
-    return { ok: true, notificationId: notification.id, latestDelivery };
+    const retryJob = await this.enqueueNotificationSend(notification.id);
+    return { ok: true, notificationId: notification.id, latestDelivery, retryJob };
   }
 
   listForUser(userId: string) {
@@ -103,10 +111,22 @@ export class NotificationsService {
     return { ok: result.count > 0, disabled: result.count };
   }
 
-  private async enqueueNotificationSend(notificationId: string) {
+  private async enqueueNotificationSend(notificationId: string): Promise<RetryNotificationJobSummary> {
     const job = notificationSendJob(notificationId);
-    await this.notificationQueue.add(job.name, job.data, job.options);
+    const queuedJob = await this.notificationQueue.add(job.name, job.data, job.options);
+
+    return {
+      queueName: NOTIFICATION_SEND_QUEUE_NAME,
+      jobName: job.name,
+      attempts: job.options.attempts,
+      backoffMs: retryJobBackoffMs(job.options.backoff),
+      queuedJobId: queuedJob?.id ? String(queuedJob.id) : null,
+    };
   }
+}
+
+function retryJobBackoffMs(backoff: ReturnType<typeof notificationSendJob>['options']['backoff']) {
+  return typeof backoff === 'object' && backoff ? backoff.delay : null;
 }
 
 function summarizeRetryLatestDelivery(

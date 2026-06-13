@@ -2161,6 +2161,7 @@ export class AdminService {
     await this.writeAudit(actorId, 'notification.retry', `notification:${notificationId}`, {
       notificationId,
       latestDelivery: result.latestDelivery,
+      retryJob: result.retryJob,
       retryAlreadyDelivered: result.latestDelivery?.status === 'SENT',
     });
     return result;
