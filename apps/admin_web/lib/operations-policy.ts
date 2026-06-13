@@ -71,6 +71,8 @@ export const ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WH
 export const ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 export const ADMIN_MARKETPLACE_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
 export const ADMIN_MARKETPLACE_OPEN_LEGACY_DELAYED = 'AFTER_FIRST_PICK_DELAY';
+export const ADMIN_PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS = 'FCM_FOR_ALL_BOOKINGS';
+export const ADMIN_PARTNER_ALERT_LEGACY_OS_PUSH_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 
 export type AdminPartnerMarketplaceReadinessProvider = {
   status?: string | null;
@@ -284,6 +286,13 @@ export function adminWalletGateBlocksMarketplaceParticipation(value: string | nu
     value === ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION ||
     value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE ||
     value === ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING
+  );
+}
+
+export function adminPartnerAlertChannelRoutesToFcm(value: unknown) {
+  return (
+    value === ADMIN_PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS ||
+    value === ADMIN_PARTNER_ALERT_LEGACY_OS_PUSH_FOR_ALL_BOOKINGS
   );
 }
 

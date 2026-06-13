@@ -5,6 +5,7 @@ import {
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import {
   OPERATIONAL_POLICY_KEYS,
+  adminPartnerAlertChannelRoutesToFcm,
   adminOperationalPolicySettingByKey,
 } from '../../../lib/operations-policy';
 
@@ -146,7 +147,7 @@ export function bookingOperationalPolicySnapshot(
         key: 'notification.partner_alert_channel',
         label: 'Partner alert route',
         helper:
-          String(partnerAlertPolicy?.value) === 'FCM_FOR_ALL_BOOKINGS'
+          adminPartnerAlertChannelRoutesToFcm(partnerAlertPolicy?.value)
             ? 'Booking and marketplace alerts should create FCM delivery logs.'
             : 'Partner alerts are kept in the app inbox until production push is ready.',
         enforced: false,

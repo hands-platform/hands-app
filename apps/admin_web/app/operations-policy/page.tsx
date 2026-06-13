@@ -21,6 +21,7 @@ import {
   adminPartnerFinalGateHeld,
   adminPartnerHasEnabledPush,
   adminPartnerIdentityReady,
+  adminPartnerAlertChannelRoutesToFcm,
   adminPartnerLocationFresh,
   adminPartnerMarketplaceBlocked,
   adminPartnerWalletBalance,
@@ -1467,7 +1468,7 @@ function buildPolicySimulation(
         label: 'Partner alert',
         value: policyDisplayByKey(settings, 'notification.partner_alert_channel'),
         helper: `${
-          alertChannel === 'FCM_FOR_ALL_BOOKINGS'
+          adminPartnerAlertChannelRoutesToFcm(alertChannel)
             ? 'OS push plus in-app listing'
             : 'In-app listing now, OS push later'
         } for eligible partners.`,
@@ -1979,7 +1980,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
 
   const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const immediateBackup = marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
-  const pushReady = alertChannel === 'FCM_FOR_ALL_BOOKINGS';
+  const pushReady = adminPartnerAlertChannelRoutesToFcm(alertChannel);
   const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
   const baselineRadius = backupRadiusMeters === 10000;
   const baselineTimer = responseWindowMinutes === 10;
