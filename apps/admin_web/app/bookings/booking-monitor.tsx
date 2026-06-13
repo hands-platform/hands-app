@@ -19,7 +19,6 @@ import {
   bookingCheckLevel,
   type BookingCheckLevelFlag as BookingCheckFlag,
 } from '../../lib/booking-check-level';
-import { bookingMonitorCheckFlagsFromFacts } from '../../lib/booking-monitor-check-flags';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
@@ -78,7 +77,6 @@ import {
 } from './booking-next-action-owner';
 import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
-import { bookingMonitorCheckFlagsInputFromBooking } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
@@ -181,6 +179,7 @@ import {
   buildBookingMonitorListLocation,
 } from './booking-monitor-list-state-model';
 import { buildBookingMonitorCustomerVisibleStateLabel } from './booking-monitor-customer-visible-model';
+import { bookingMonitorCheckFlags } from './booking-monitor-check-flags-model';
 import { buildBookingMonitorCommandDecisionStrip } from './booking-monitor-command-decision-model';
 import { buildBookingMonitorListStage } from './booking-monitor-list-stage-model';
 import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
@@ -612,7 +611,7 @@ function buildBookingMonitorListRow(
   currentTimeMs: number,
   nowMs: number | null,
 ): BookingMonitorListRow {
-  const flags = bookingCheckFlags(booking, currentTimeMs);
+  const flags = bookingMonitorCheckFlags(booking, currentTimeMs);
   const matchingPolicy = bookingMatchingPolicySnapshot(booking);
   const marketplaceParticipantRows = bookingMarketplaceParticipants(booking);
   const cashDebtNeedsOps = bookingCashDebtNeedsOps(booking);
@@ -719,7 +718,7 @@ function bookingNextActionCandidate(booking: AdminBooking, nowMs: number): Booki
 }
 
 function highestBookingCheckFlag(booking: AdminBooking, nowMs: number) {
-  return [...bookingCheckFlags(booking, nowMs)].sort(
+  return [...bookingMonitorCheckFlags(booking, nowMs)].sort(
     (left, right) =>
       bookingCheckFlagSeverityWeight(right.severity) -
       bookingCheckFlagSeverityWeight(left.severity),
@@ -802,7 +801,7 @@ function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): B
   return bookingMonitorSummaryFactFromInputs({
     addressNeedsOps: bookingAddressNeedsOps(booking),
     backupSelected: bookingIsBackupSelected(booking),
-    checkSeverities: bookingCheckFlags(booking, nowMs).map((flag) => flag.severity),
+    checkSeverities: bookingMonitorCheckFlags(booking, nowMs).map((flag) => flag.severity),
     chatEvidenceNeedsOps: bookingChatEvidenceNeedsOps(booking, nowMs),
     chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
     closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
@@ -848,7 +847,8 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
       chatEvidenceNeedsOps: () => bookingChatEvidenceNeedsOps(booking, nowMs),
       closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
       decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
-      highPriorityCheck: () => bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
+      highPriorityCheck: () =>
+        bookingMonitorCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
       locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
       manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
       matchingEscalationNeedsOps: () =>
@@ -924,19 +924,6 @@ function bookingNextActionReaders(
     paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
     status: booking.status,
   };
-}
-
-function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
-  return bookingMonitorCheckFlagsFromFacts(
-    bookingMonitorCheckFlagsInputFromBooking(booking, nowMs, {
-      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-      pricingPolicy: buildBookingMonitorPricingPolicySignal(booking),
-      responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-      firstPickPending: bookingFirstPickPending(booking),
-      marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    }),
-  );
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
