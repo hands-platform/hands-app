@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
+const fcmSmokeCommandsSourcePath = resolve(
+  repoRoot,
+  'apps/admin_web/app/notifications/fcm-smoke-commands.ts',
+);
 const apiSourcePaths = [
   resolve(repoRoot, 'apps/api/src/notifications/push-delivery.service.ts'),
   resolve(repoRoot, 'apps/api/src/notifications/firebase-admin-credentials.ts'),
@@ -72,6 +76,7 @@ const securitySecretsCommandRequiredSources = [
   resolve(repoRoot, 'docs/architecture/operator-registration-plan.md'),
 ];
 
+const fcmSmokeCommandsSource = readFileSync(fcmSmokeCommandsSourcePath, 'utf8');
 const apiSource = apiSourcePaths.map((sourcePath) => readFileSync(sourcePath, 'utf8')).join('\n');
 const fcmEnvKeys = Array.from(
   new Set(
@@ -117,7 +122,7 @@ for (const sourcePath of dockerEnvRequiredSources) {
 
 const missingDockerContractCommandBySource = {};
 for (const sourcePath of dockerContractCommandRequiredSources) {
-  const source = readFileSync(sourcePath, 'utf8');
+  const source = commandContractSource(sourcePath);
   if (!source.includes(dockerContractCommand)) {
     missingDockerContractCommandBySource[relativePath(sourcePath)] = dockerContractCommand;
   }
@@ -125,7 +130,7 @@ for (const sourcePath of dockerContractCommandRequiredSources) {
 
 const missingSecuritySecretsCommandBySource = {};
 for (const sourcePath of securitySecretsCommandRequiredSources) {
-  const source = readFileSync(sourcePath, 'utf8');
+  const source = commandContractSource(sourcePath);
   if (!source.includes(securitySecretsCommand)) {
     missingSecuritySecretsCommandBySource[relativePath(sourcePath)] = securitySecretsCommand;
   }
@@ -159,4 +164,9 @@ console.log(JSON.stringify(result, null, 2));
 
 function relativePath(sourcePath) {
   return sourcePath.replace(`${repoRoot}\\`, '').replaceAll('\\', '/');
+}
+
+function commandContractSource(sourcePath) {
+  const source = readFileSync(sourcePath, 'utf8');
+  return source.includes('fcm-smoke-commands') ? `${source}\n${fcmSmokeCommandsSource}` : source;
 }
