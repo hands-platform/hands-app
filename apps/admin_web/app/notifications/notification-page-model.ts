@@ -8,6 +8,17 @@ import {
   notificationPushDeviceFreshnessLabel,
   STALE_PUSH_DEVICE_AGE_DAYS,
 } from '../../lib/admin-notification-push-device';
+import {
+  deliveryAttemptMs,
+  formatFcmSentDeliveryDetail as fcmSentDeliveryDetail,
+  humanizeNotificationType as humanizeType,
+  isNotificationDeliveryProvider as isDeliveryProvider,
+  latestFcmSentNotificationDelivery as latestFcmSentDelivery,
+  newestNotificationDeliveries as newestDeliveries,
+  notificationDeliveries,
+  type AdminNotificationDelivery,
+  type AdminNotificationPushDevice,
+} from '../../lib/admin-notification-delivery';
 import { readSearchParam } from '../../lib/date-range';
 import {
   ADMIN_PARTNER_ALERT_LEGACY_OS_PUSH_FOR_ALL_BOOKINGS,
@@ -30,9 +41,6 @@ import {
 import type { NotificationDeliveryRow } from './notification-delivery-cell';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
 import type { NotificationTableRow } from './notification-table-row';
-
-type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
-type AdminNotificationPushDevice = NonNullable<NonNullable<AdminNotification['user']>['pushDevices']>[number];
 
 type NotificationPageParams = Record<string, string | string[] | undefined>;
 
@@ -588,11 +596,6 @@ function deliveryStatusClassName(status: string) {
   return 'pill pill-neutral';
 }
 
-function deliveryAttemptMs(delivery: AdminNotificationDelivery) {
-  const value = Date.parse(delivery.attemptedAt);
-  return Number.isFinite(value) ? value : 0;
-}
-
 function countDisabledDevices(notifications: readonly AdminNotification[]) {
   const ids = new Set<string>();
   for (const notification of notifications) {
@@ -692,14 +695,6 @@ function notificationActionMenuItems(
 
 function notificationAuditTrailHref(notificationId: string) {
   return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
-}
-
-function humanizeType(type: string) {
-  return type
-    .toLowerCase()
-    .split(/[_\-.]/g)
-    .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
-    .join(' ');
 }
 
 function notificationUserLabel(notification: AdminNotification) {
@@ -915,31 +910,6 @@ function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
     .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery));
 }
 
-function latestFcmSentDelivery(notifications: readonly AdminNotification[]) {
-  return notifications
-    .flatMap((notification) =>
-      notificationDeliveries(notification)
-        .filter((delivery) => isDeliveryProvider(delivery, 'FCM') && delivery.status === 'SENT')
-        .map((delivery) => ({ delivery, notification })),
-    )
-    .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery))[0];
-}
-
-function fcmSentDeliveryDetail(notification: AdminNotification, delivery: AdminNotificationDelivery) {
-  const role = notificationSmokeRole(notification, delivery);
-  const actorLabel = role === 'PROVIDER' ? 'Partner' : 'Customer';
-  const phone = notification.user?.phone ?? 'No phone on file';
-  const platform = delivery.pushDevice?.platform ?? 'device';
-  const deviceLabel = delivery.pushDevice?.id
-    ? `device ${shortId(delivery.pushDevice.id)}`
-    : 'device unknown';
-  const notificationLabel = `${marketplaceDisplayText(humanizeType(notification.type))} ${shortId(
-    notification.id,
-  )}`;
-
-  return `${actorLabel} ${phone} / ${platform} / ${notificationLabel} / ${deviceLabel}`;
-}
-
 function isReusableFcmDelivery(delivery: AdminNotificationDelivery) {
   return isDeliveryProvider(delivery, 'FCM') && delivery.pushDevice?.enabled === true;
 }
@@ -1057,18 +1027,6 @@ function hasNoDeliveryAttempts(notification: AdminNotification) {
   return notificationDeliveries(notification).length === 0;
 }
 
-function notificationDeliveries(notification: AdminNotification): readonly AdminNotificationDelivery[] {
-  return notification.deliveries ?? [];
-}
-
-function newestDeliveries(deliveries: readonly AdminNotificationDelivery[]) {
-  return [...deliveries].sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left));
-}
-
 function latestDelivery(notification: AdminNotification) {
   return newestDeliveries(notificationDeliveries(notification))[0];
-}
-
-function isDeliveryProvider(delivery: AdminNotificationDelivery, provider: string) {
-  return delivery.provider === provider;
 }

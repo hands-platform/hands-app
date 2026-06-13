@@ -33,6 +33,10 @@ describe('OperationsHandoffMetricGridSection', () => {
         recentMessageCount: 10,
       },
       failedNotificationCount: 11,
+      latestFcmSent: {
+        helper: 'Partner +84900000002 / android / Booking Matched notifica / device push-dev',
+        value: '13 Jun 2026, 17:09',
+      },
     });
 
     const rendered = textContent(section);
@@ -43,6 +47,9 @@ describe('OperationsHandoffMetricGridSection', () => {
     expect(rendered).toContain('Cash fee debt');
     expect(rendered).toContain('125.000 VND across partner wallet gates');
     expect(rendered).toContain('11');
+    expect(rendered).toContain('Recent FCM sent');
+    expect(rendered).toContain('13 Jun 2026, 17:09');
+    expect(rendered).toContain('Partner +84900000002 / android / Booking Matched notifica / device push-dev');
     expect(hrefs).toEqual(
       expect.arrayContaining([
         '/bookings?view=attention',
@@ -50,8 +57,51 @@ describe('OperationsHandoffMetricGridSection', () => {
         '/bookings?view=closeout',
         '/cash-settlements',
         '/notifications?review=failed',
+        '/notifications?review=fcm',
       ]),
     );
+  });
+
+  it('renders the FCM empty state when no sent delivery is available', () => {
+    const section = OperationsHandoffMetricGridSection({
+      activeBookingCount: 0,
+      matchingBookingCount: 0,
+      inServiceBookingCount: 0,
+      cashSummary: {
+        generatedAt: new Date(0).toISOString(),
+        currency: 'VND',
+        rowCount: 0,
+        providerCount: 0,
+        totalDebtAmount: 0,
+        totalPlatformFee: 0,
+        totalTaxAmount: 0,
+        oldestOpenAt: null,
+        oldestOpenAgeMinutes: 0,
+        staleDebtRowCount: 0,
+        highDebtProviderCount: 0,
+        missingPaymentEvidenceCount: 0,
+        cashPaymentRowCount: 0,
+        topProviderGroups: [],
+      },
+      presence: {
+        customerLive: 0,
+        customerRecent: 0,
+        partnerLive: 0,
+        partnerRecent: 0,
+      },
+      chatSignals: {
+        roomCount: 0,
+        recentMessageCount: 0,
+      },
+      failedNotificationCount: 0,
+      latestFcmSent: null,
+    });
+
+    const rendered = textContent(section);
+
+    expect(rendered).toContain('Recent FCM sent');
+    expect(rendered).toContain('No send');
+    expect(rendered).toContain('No FCM SENT delivery recorded yet');
   });
 });
 

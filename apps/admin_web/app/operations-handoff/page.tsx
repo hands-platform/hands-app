@@ -14,12 +14,11 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { formatDateTime, formatMoney, formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import {
-  formatDateTime,
-  formatMoney,
-  formatRelativeTime,
-  shortDisplayId,
-} from '../../lib/admin-format';
+  formatFcmSentDeliveryDetail,
+  latestFcmSentNotificationDelivery,
+} from '../../lib/admin-notification-delivery';
 import { isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
@@ -127,6 +126,13 @@ export default async function OperationsHandoffPage({
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+  const latestFcmSent = latestFcmSentNotificationDelivery(notifications);
+  const latestFcmSentSummary = latestFcmSent
+    ? {
+        helper: formatFcmSentDeliveryDetail(latestFcmSent.notification, latestFcmSent.delivery),
+        value: formatDateTime(latestFcmSent.delivery.attemptedAt),
+      }
+    : null;
   const immediateActions = buildImmediateActionQueue({
     bookings,
     matchingBookings,
@@ -189,6 +195,7 @@ export default async function OperationsHandoffPage({
         presence={presence}
         chatSignals={chatSignals}
         failedNotificationCount={failedNotifications.length}
+        latestFcmSent={latestFcmSentSummary}
       />
 
       <section className="card admin-mb-16">
@@ -847,7 +854,8 @@ function buildImmediateActionQueue(input: {
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
       status: input.cashSummary.providerCount ? 'Collect/offset' : 'Clear',
-      nextAction: 'Open cash settlements and record deposit or offset before future marketplace participation.',
+      nextAction:
+        'Open cash settlements and record deposit or offset before future marketplace participation.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },
@@ -868,7 +876,8 @@ function buildImmediateActionQueue(input: {
       id: 'partner-admin-facts',
       owner: 'Partner Ops',
       title: 'Partner factual follow-up',
-      detail: 'Partner list groups KYC, bank, wallet, location, app session, marketplace, and payout gate facts.',
+      detail:
+        'Partner list groups KYC, bank, wallet, location, app session, marketplace, and payout gate facts.',
       href: '/partners',
       count: input.partnerSignals.attentionCount,
       countLabel: `${input.partnerSignals.attentionCount} partner fact(s)`,
@@ -988,7 +997,8 @@ function buildFinanceHandoffActionMap(input: {
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
-      nextAction: 'Record deposit reference or approved offset before marketplace alerts, participation, or payout release reopens.',
+      nextAction:
+        'Record deposit reference or approved offset before marketplace alerts, participation, or payout release reopens.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },

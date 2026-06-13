@@ -18,6 +18,10 @@ type OperationsHandoffMetricGridSectionProps = {
     readonly recentMessageCount: number;
   };
   readonly failedNotificationCount: number;
+  readonly latestFcmSent: {
+    readonly helper: string;
+    readonly value: string;
+  } | null;
 };
 
 export function OperationsHandoffMetricGridSection({
@@ -28,6 +32,7 @@ export function OperationsHandoffMetricGridSection({
   presence,
   chatSignals,
   failedNotificationCount,
+  latestFcmSent,
 }: OperationsHandoffMetricGridSectionProps) {
   return (
     <section className="grid admin-mt-16 admin-mb-16">
@@ -78,6 +83,12 @@ export function OperationsHandoffMetricGridSection({
         value={failedNotificationCount}
         helper="Push/SMS/app delivery rows needing retry or device check"
         href="/notifications?review=failed"
+      />
+      <MetricCard
+        label="Recent FCM sent"
+        value={latestFcmSent?.value ?? 'No send'}
+        helper={latestFcmSent?.helper ?? 'No FCM SENT delivery recorded yet'}
+        href="/notifications?review=fcm"
       />
     </section>
   );
