@@ -12,7 +12,7 @@ const firebaseProjectAlignmentIssueCopy = {
   [firebaseProjectAlignmentInvalidKeys.projectMismatch]: {
     label: 'Firebase Admin project does not match mobile app project',
     action:
-      'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files: npm.cmd run fcm:credentials:install -- -SourcePath <service-account-json> -UpdateEnv.',
+      'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files: npm.cmd run fcm:credentials:install -- -SourcePath <service-account-json> -CheckOnly, then install with -UpdateEnv.',
   },
   [firebaseProjectAlignmentInvalidKeys.mobileConfigInvalid]: {
     label: 'Mobile Firebase config file is invalid',

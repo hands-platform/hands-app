@@ -106,6 +106,9 @@ function readinessCommands(check: AdminExternalReadiness['checks'][number]) {
   commands.add('npm.cmd run external:check:push');
   commands.add('npm.cmd run fcm:env-contract');
   commands.add('npm.cmd run notifications:push-data-contract');
+  commands.add(
+    'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -CheckOnly',
+  );
   commands.add('npm.cmd run security:secrets');
   commands.add('npm.cmd run fcm:credentials-check');
   commands.add('npm.cmd run docker:contract');

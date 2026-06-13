@@ -49,7 +49,7 @@ describe('setup page model', () => {
             'Keep Firebase Admin credentials and mobile google-services.json files in the same Firebase project before live FCM push.',
           scope: 'DEFERRED',
           operatorAction:
-            'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
+            'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
           commands: ['npm.cmd run external:check:push'],
         },
       ],
@@ -73,7 +73,7 @@ describe('setup page model', () => {
           groupTitle: 'FCM push',
           name: 'Firebase Admin project does not match mobile app project',
           reason:
-            'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
+            'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
         }),
       ]),
     );
@@ -94,7 +94,7 @@ describe('setup page model', () => {
         name: 'Firebase Admin project does not match mobile app project',
         action: 'Install matching Firebase Admin credentials before live push testing.',
         reason:
-          'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files.',
+          'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
       }),
     ]);
     expect(buildCurrentStageStatus(readiness, setupOrderFixture)).toMatchObject({
