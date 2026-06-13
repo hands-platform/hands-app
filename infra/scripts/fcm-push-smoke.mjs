@@ -542,12 +542,12 @@ function firebaseAdminConfigured() {
 
 function readPartnerAlertTypes() {
   const source = readFileSync(
-    resolve(repoRoot, 'apps/api/src/notifications/notification-push-payload.ts'),
+    resolve(repoRoot, 'packages/shared-types/src/index.ts'),
     'utf8',
   );
-  const match = source.match(/const\s+PARTNER_ALERT_TYPES\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
+  const match = source.match(/const\s+PARTNER_ALERT_EVENTS\s*=\s*\[([\s\S]*?)\]\s*as\s+const/);
   if (!match) {
-    throw new Error('Unable to read partner alert notification types from the API source.');
+    throw new Error('Unable to read partner alert notification types from shared-types.');
   }
   return new Set(Array.from(match[1].matchAll(/'([^']+)'/g)).map((item) => item[1]));
 }

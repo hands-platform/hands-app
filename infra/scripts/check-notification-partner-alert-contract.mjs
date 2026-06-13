@@ -10,6 +10,10 @@ const adminPartnerAlerts = readStringCollection(
   resolve(repoRoot, 'apps/admin_web/app/notifications/notification-page-model.ts'),
   'PARTNER_ALERT_TYPES',
 );
+const sharedPartnerAlerts = readStringCollection(
+  resolve(repoRoot, 'packages/shared-types/src/index.ts'),
+  'PARTNER_ALERT_EVENTS',
+);
 const sharedEvents = readStringCollection(
   resolve(repoRoot, 'packages/shared-types/src/index.ts'),
   'REALTIME_EVENTS',
@@ -17,30 +21,45 @@ const sharedEvents = readStringCollection(
 
 const apiPartnerAlertSet = new Set(apiPartnerAlerts);
 const adminPartnerAlertSet = new Set(adminPartnerAlerts);
+const sharedPartnerAlertSet = new Set(sharedPartnerAlerts);
 const sharedEventSet = new Set(sharedEvents);
 
 const missingFromAdmin = apiPartnerAlerts.filter((event) => !adminPartnerAlertSet.has(event));
 const missingFromApi = adminPartnerAlerts.filter((event) => !apiPartnerAlertSet.has(event));
-const missingFromShared = union(apiPartnerAlerts, adminPartnerAlerts).filter(
+const missingFromSharedPartnerAlerts = union(apiPartnerAlerts, adminPartnerAlerts).filter(
+  (event) => !sharedPartnerAlertSet.has(event),
+);
+const missingFromApiOrAdmin = sharedPartnerAlerts.filter(
+  (event) => !apiPartnerAlertSet.has(event) || !adminPartnerAlertSet.has(event),
+);
+const missingFromSharedEvents = union(sharedPartnerAlerts, union(apiPartnerAlerts, adminPartnerAlerts)).filter(
   (event) => !sharedEventSet.has(event),
 );
 const duplicateApiPartnerAlerts = duplicates(apiPartnerAlerts);
 const duplicateAdminPartnerAlerts = duplicates(adminPartnerAlerts);
+const duplicateSharedPartnerAlerts = duplicates(sharedPartnerAlerts);
 
 const result = {
   ok:
     missingFromAdmin.length === 0 &&
     missingFromApi.length === 0 &&
-    missingFromShared.length === 0 &&
+    missingFromSharedPartnerAlerts.length === 0 &&
+    missingFromApiOrAdmin.length === 0 &&
+    missingFromSharedEvents.length === 0 &&
     duplicateApiPartnerAlerts.length === 0 &&
-    duplicateAdminPartnerAlerts.length === 0,
+    duplicateAdminPartnerAlerts.length === 0 &&
+    duplicateSharedPartnerAlerts.length === 0,
   apiPartnerAlertCount: apiPartnerAlerts.length,
   adminPartnerAlertCount: adminPartnerAlerts.length,
+  sharedPartnerAlertCount: sharedPartnerAlerts.length,
   missingFromAdmin,
   missingFromApi,
-  missingFromShared,
+  missingFromSharedPartnerAlerts,
+  missingFromApiOrAdmin,
+  missingFromSharedEvents,
   duplicateApiPartnerAlerts,
   duplicateAdminPartnerAlerts,
+  duplicateSharedPartnerAlerts,
 };
 
 if (!result.ok) {
