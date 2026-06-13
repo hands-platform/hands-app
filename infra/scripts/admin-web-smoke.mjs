@@ -472,6 +472,14 @@ const pages = [
   {
     path: '/notifications?review=fcm',
     markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
+    followUps: [
+      {
+        hrefPattern: /href="([^"]*\/notifications\?review=fcm(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
+        label: 'FCM retry confirmation',
+        markers: ['Retry notification', 'FCM route gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+    ],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
@@ -760,6 +768,15 @@ function visibleTextFromHtml(body) {
     .trim();
 }
 
+function decodeHtmlAttribute(value) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
 function assertNoLegacyVisibleLanguage(path, body) {
   const visibleText = visibleTextFromHtml(body);
   const bannedPatterns = [
@@ -810,6 +827,33 @@ for (const page of smokePages) {
   }
   assertNoLegacyVisibleLanguage(page.path, body);
   console.log(`PASS ${page.path}`);
+  await runPageFollowUps(page, body);
+}
+
+async function runPageFollowUps(page, body) {
+  for (const followUp of page.followUps ?? []) {
+    const match = body.match(followUp.hrefPattern);
+    if (!match?.[1]) {
+      if (followUp.optional) {
+        console.log(`SKIP ${page.path} ${followUp.label}: no matching link`);
+        continue;
+      }
+      throw new Error(`${page.path} is missing follow-up link for ${followUp.label}`);
+    }
+
+    const followUpPath = decodeHtmlAttribute(match[1]);
+    if (!followUpPath.startsWith('/')) {
+      throw new Error(`${page.path} follow-up ${followUp.label} must stay in the admin app: ${followUpPath}`);
+    }
+
+    const followUpBody = await fetchPage(followUpPath);
+    const missing = followUp.markers.filter((marker) => !followUpBody.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${followUpPath} is missing expected markers: ${missing.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(followUpPath, followUpBody);
+    console.log(`PASS ${followUpPath}`);
+  }
 }
 
 const providersBody =
