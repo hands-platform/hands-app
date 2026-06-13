@@ -97,7 +97,7 @@ Use `npm.cmd run notifications:role-repair` for a dry-run list of enabled push d
 
 Android uses `google-services.json` and the Google Services Gradle plugin when FCM client integration is added. iOS uses `GoogleService-Info.plist`, APNs key/cert configuration through Firebase, and the Flutter FCM client. These files are secrets/config artifacts and must stay outside Git.
 
-`google-services.json` is mobile client configuration only. It does not authorize backend sends; the NestJS API still needs server-side Firebase Admin credentials through `FIREBASE_SERVICE_ACCOUNT_JSON`, split Firebase service account env values, or `GOOGLE_APPLICATION_CREDENTIALS`.
+`google-services.json` is mobile client configuration only. It does not authorize backend sends; the NestJS API still needs server-side Firebase Admin credentials through `FIREBASE_SERVICE_ACCOUNT_JSON`, split Firebase service account env values, or `GOOGLE_APPLICATION_CREDENTIALS`. When local Android client configs are present, `npm.cmd run fcm:credentials-check` also verifies that the server credential project id matches the mobile Firebase project id before live smoke.
 
 Mobile code must not replace Socket.IO booking/chat realtime behavior. Register the FCM token after login, refresh it when FCM rotates the token, and send it to the NestJS API.
 
