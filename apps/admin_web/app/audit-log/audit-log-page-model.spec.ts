@@ -75,6 +75,33 @@ describe('audit log page model', () => {
     ]);
   });
 
+  it('classifies push device recovery audit rows with notification delivery trail links', () => {
+    const rows = buildAuditLogTableRows([
+      {
+        action: 'push_device.enable',
+        actor: { fullName: 'Operator One', phone: '+8490' },
+        createdAt: '2026-06-11T09:00:00.000Z',
+        id: 'audit-1',
+        metadata: {
+          platform: 'android',
+          pushDeviceId: 'push-device-123456',
+          userId: 'user-1',
+        },
+        target: 'push_device:push-device-123456',
+      },
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      actionLabel: 'Push device / Enable',
+      bucketLabel: 'Notification',
+      opsDetail:
+        'Device recovery events should line up with a fresh token or operator-confirmed delivery recovery.',
+      opsHint: 'Check push token freshness and delivery health before re-enabling alerts.',
+      relatedBoardHref: '/notifications?review=disabled-device',
+      relatedBoardLabel: 'notification board',
+    });
+  });
+
   it('adds notification audit records to the command board', () => {
     const board = buildAuditCommandBoard(
       [
@@ -98,6 +125,39 @@ describe('audit log page model', () => {
             expect.objectContaining({
               actionLabel: 'Notification / Retry',
               shortTargetLabel: 'notification:notifica',
+            }),
+          ],
+          status: 'Alerts',
+          title: 'Notification delivery trail',
+          tone: 'info',
+        }),
+      ]),
+    );
+  });
+
+  it('adds push device recovery records to the notification command board', () => {
+    const board = buildAuditCommandBoard(
+      [
+        {
+          action: 'push_device.enable',
+          actor: { fullName: 'Operator One', phone: '+8490' },
+          createdAt: new Date().toISOString(),
+          id: 'audit-1',
+          metadata: { pushDeviceId: 'push-device-123456' },
+          target: 'push_device:push-device-123456',
+        },
+      ],
+      '7d',
+    );
+
+    expect(board).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          href: '/audit-log?bucket=Notification&range=7d',
+          logs: [
+            expect.objectContaining({
+              actionLabel: 'Push device / Enable',
+              shortTargetLabel: 'push_device:push-dev',
             }),
           ],
           status: 'Alerts',

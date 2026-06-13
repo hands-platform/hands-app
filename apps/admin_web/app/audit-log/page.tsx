@@ -381,7 +381,11 @@ function isFinanceCloseoutAction(action: string) {
 }
 
 function isNotificationAction(action: string) {
-  return action.startsWith('notification.');
+  return action.startsWith('notification.') || isPushDeviceAction(action);
+}
+
+function isPushDeviceAction(action: string) {
+  return action.startsWith('push_device.');
 }
 
 function isServicePricingAction(action: string) {
@@ -788,6 +792,9 @@ function relatedBoardHref(log: AdminAuditLog) {
   if (log.action.startsWith('notification.')) {
     return notificationBoardHref(metadata, targetId);
   }
+  if (isPushDeviceAction(log.action)) {
+    return '/notifications?review=disabled-device';
+  }
   if (log.action.startsWith('operational_policy.')) {
     return '/operations-policy';
   }
@@ -971,6 +978,9 @@ function opsHint(action: string, target: string) {
   if (action.startsWith('notification.')) {
     return 'Check retry or delivery health if the customer or partner missed an alert.';
   }
+  if (isPushDeviceAction(action)) {
+    return 'Check push token freshness and delivery health before re-enabling alerts.';
+  }
   if (action.startsWith('operational_policy.')) {
     return 'Confirm the policy change matches the current owner decision and active booking controls.';
   }
@@ -1004,6 +1014,9 @@ function opsDetail(action: string) {
   }
   if (action === 'notification.retry') {
     return 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.';
+  }
+  if (isPushDeviceAction(action)) {
+    return 'Device recovery events should line up with a fresh token or operator-confirmed delivery recovery.';
   }
   if (action.endsWith('.retry')) {
     return 'Retry events are useful when a delivery or operation needed another pass.';

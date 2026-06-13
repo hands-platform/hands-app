@@ -74,6 +74,13 @@ describe('notification action confirmation', () => {
         { name: 'returnHref', value: '/notifications' },
       ],
       id: 'push-device-123456',
+      supportingLinks: [
+        {
+          description: 'Open device recovery audit events before re-enabling push delivery.',
+          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
+          label: 'Audit trail',
+        },
+      ],
       title: 'Re-enable device push-dev?',
       tone: 'danger',
     });

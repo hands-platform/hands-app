@@ -146,6 +146,13 @@ function buildEnableDeviceConfirmation(
       { name: 'returnHref', value: notificationReturnHref(values) },
     ],
     id: match.pushDeviceId,
+    supportingLinks: [
+      {
+        description: 'Open device recovery audit events before re-enabling push delivery.',
+        href: notificationAuditTrailHref(match.pushDeviceId),
+        label: 'Audit trail',
+      },
+    ],
     title: `Re-enable device ${shortId(match.pushDeviceId)}?`,
     tone: 'danger',
   };
