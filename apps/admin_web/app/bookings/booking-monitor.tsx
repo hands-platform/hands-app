@@ -26,7 +26,6 @@ import { bookingMonitorCheckFlagsFromFacts } from '../../lib/booking-monitor-che
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
-import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
@@ -98,7 +97,6 @@ import {
   bookingCommandCenterFromFacts,
   type BookingCommandCenterLane,
 } from './booking-command-center-board';
-import { bookingCommandDecisionStripInput } from './booking-command-decision-strip-inputs';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
@@ -151,7 +149,6 @@ import {
   bookingMonitorListMarketplaceParticipants,
   bookingMonitorListSelectedFinalPartnerPillLabel,
 } from './booking-monitor-list-marketplace';
-import { bookingHasFinalPartner } from './booking-final-partner-state';
 import {
   bookingIsBackupSelected,
   bookingPreferredAwaitingDecision as bookingFirstPickPending,
@@ -188,6 +185,7 @@ import {
   buildBookingMonitorListLocation,
 } from './booking-monitor-list-state-model';
 import { buildBookingMonitorCustomerVisibleStateLabel } from './booking-monitor-customer-visible-model';
+import { buildBookingMonitorCommandDecisionStrip } from './booking-monitor-command-decision-model';
 import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
@@ -334,7 +332,7 @@ export function BookingMonitor({
     () =>
       bookingPrimaryCommandSummary(
         orderedBookings.map((booking) => {
-          const strip = bookingListCommandDecisionStrip(booking);
+          const strip = buildBookingMonitorCommandDecisionStrip(booking);
           return {
             bookingId: booking.id,
             href: bookingPrimaryCommandHref(strip.status),
@@ -632,7 +630,7 @@ function buildBookingMonitorListRow(
     chatState: buildBookingMonitorChatState(booking),
     checkSignal: bookingCheckLevel(flags),
     closureState: bookingClosureListSignal(booking, { formatDate }),
-    commandDecisionStrip: bookingListCommandDecisionStrip(booking),
+    commandDecisionStrip: buildBookingMonitorCommandDecisionStrip(booking),
     customerVisibleStateLabel: buildBookingMonitorCustomerVisibleStateLabel(booking),
     expiresAtLabel: booking.expiresAt ? formatDate(booking.expiresAt) : null,
     finalGateReason: buildBookingMonitorFinalGateReason(booking),
@@ -1006,23 +1004,6 @@ function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
 
 function bookingRefundReviewNeedsOps(booking: AdminBooking) {
   return bookingRefundReviewNeedsOpsFromFacts(bookingRefundReviewNeedsOpsInput(booking));
-}
-
-function bookingListCommandDecisionStrip(booking: AdminBooking) {
-  const addressState = buildBookingMonitorAddressState(booking);
-  const marketplaceCount = bookingMarketplaceParticipantCount(booking);
-
-  return bookingCommandDecisionStrip(
-    bookingCommandDecisionStripInput(booking, {
-      addressLabel: addressState.detail,
-      cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
-      closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-      customerChoiceCandidateCount: bookingCustomerSelectableCount(booking),
-      marketplaceEligibleCount: marketplaceCount,
-      hasFinalPartner: bookingHasFinalPartner(booking),
-      hasChatRoom: bookingMatchingChatReady(booking),
-    }),
-  );
 }
 
 function bookingAddressNeedsOps(booking: AdminBooking) {
