@@ -7,10 +7,10 @@ import {
   formatGroupPriceRange,
   standardDurationCoverage,
 } from '../../lib/service-group-display';
-import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
-import { servicePriceLadderCoverage } from '../../lib/service-price-ladder-coverage';
-import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
+import { servicePayoutFinance } from '../../lib/service-payout-finance';
 import { bulkUpsertPayoutRules, updatePayoutRule, updateService, upsertPayoutRule } from './actions';
+import { ServicePriceLadderCoverageSection } from './service-price-ladder-coverage-section';
+import { ServiceProviderPriceImpact } from './service-provider-price-impact';
 
 type ServiceGroupEditCardProps = {
   readonly activeTaxPolicy: AdminTaxPolicyVersion | undefined;
@@ -48,7 +48,7 @@ export function ServiceGroupEditCard({ activeTaxPolicy, group }: ServiceGroupEdi
                 {service._count?.providers ?? 0} partner price row(s), {service._count?.bookings ?? 0} booking
                 row(s)
               </p>
-              <ProviderPriceImpact service={service} activeTaxPolicy={activeTaxPolicy} />
+              <ServiceProviderPriceImpact service={service} activeTaxPolicy={activeTaxPolicy} />
 
               <form action={updateService} className="form-grid compact-form">
                 <input type="hidden" name="serviceId" value={service.id} />
@@ -99,24 +99,7 @@ export function ServiceGroupEditCard({ activeTaxPolicy, group }: ServiceGroupEdi
                 <button type="submit">Update service</button>
               </form>
 
-              <h3>Price ladder coverage</h3>
-              <p className="muted">
-                Partners may set prices at these increments. Booking stays blocked for any exact customer
-                price without an active payout rule.
-              </p>
-              <div className="participant-list admin-mb-12">
-                {servicePriceLadderCoverage(service).map((item) => (
-                  <span
-                    className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}
-                    key={`${service.id}-${item.price}`}
-                  >
-                    {formatMoney(item.price, 'VND')}
-                    {item.rule
-                      ? ` -> ${formatMoney(item.rule.providerPayoutAmount, item.rule.currency)}`
-                      : ' missing'}
-                  </span>
-                ))}
-              </div>
+              <ServicePriceLadderCoverageSection service={service} />
 
               <h3>Payout matrix</h3>
               <div className="setup-stage-list admin-mb-12">
@@ -279,77 +262,6 @@ export function ServiceGroupEditCard({ activeTaxPolicy, group }: ServiceGroupEdi
         ))}
       </div>
     </article>
-  );
-}
-
-function ProviderPriceImpact({
-  service,
-  activeTaxPolicy,
-}: {
-  readonly service: AdminServiceCatalogItem;
-  readonly activeTaxPolicy: AdminTaxPolicyVersion | undefined;
-}) {
-  const impact = buildProviderPriceImpact({
-    activeTaxPolicy,
-    actualCompanyCommission,
-    service,
-  });
-
-  return (
-    <div className="service-impact-card">
-      <div className="ops-section-header">
-        <div>
-          <h3>Partner price impact</h3>
-          <p className="muted">
-            Shows which partner prices are visible in the customer app for this exact duration option.
-          </p>
-        </div>
-        <span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>
-          {impact.visibleCount} visible / {impact.hiddenCount} hidden
-        </span>
-      </div>
-      <div className="participant-list">
-        <span className="pill pill-info">{impact.rows.length} loaded row(s)</span>
-        <span className={impact.unsupportedCount ? 'pill pill-warn' : 'pill pill-success'}>
-          {impact.unsupportedCount} missing payout
-        </span>
-        <span className={impact.belowMinimumCount ? 'pill pill-danger' : 'pill pill-success'}>
-          {impact.belowMinimumCount} below minimum
-        </span>
-        <span className={impact.inactiveOrBlockedCount ? 'pill pill-neutral' : 'pill pill-success'}>
-          {impact.inactiveOrBlockedCount} inactive/blocked
-        </span>
-      </div>
-      {impact.rows.length ? (
-        <div className="setup-stage-list">
-          {impact.rows.slice(0, 6).map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span>{row.state === 'bookable' ? 'SHOW' : 'HIDE'}</span>
-              <div>
-                <strong>{row.providerName}</strong>
-                <p className="muted">
-                  Customer {formatMoney(row.price, row.currency)} / partner{' '}
-                  {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
-                </p>
-                <p className="muted">{row.reason}</p>
-                {row.rule ? (
-                  <p className="muted">
-                    Commission projection:{' '}
-                    {formatMoney(
-                      servicePayoutFinance(service, row.rule, activeTaxPolicy).actualCompanyCommission,
-                      row.currency,
-                    )}
-                  </p>
-                ) : null}
-              </div>
-              <small>{row.providerStatus}</small>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="muted">No partner has configured a price for this duration yet.</p>
-      )}
-    </div>
   );
 }
 
