@@ -18,7 +18,9 @@ describe('ConfirmDialog', () => {
       disabled: true,
       label: 'Confirm',
     });
-    expect(confirmDialogButtonState({ confirmLabel: 'Confirm', loading: true, loadingLabel: 'Saving...' })).toEqual({
+    expect(
+      confirmDialogButtonState({ confirmLabel: 'Confirm', loading: true, loadingLabel: 'Saving...' }),
+    ).toEqual({
       disabled: true,
       label: 'Saving...',
     });
@@ -32,6 +34,13 @@ describe('ConfirmDialog', () => {
       description: 'The API will validate whether this booking can be cancelled.',
       hiddenInputs: [{ name: 'bookingId', value: 'booking-1' }],
       id: 'booking-cancel',
+      supportingLinks: [
+        {
+          description: 'Open the audit trail before confirming.',
+          href: '/audit-log?q=booking-1',
+          label: 'Audit trail',
+        },
+      ],
       title: 'Cancel booking?',
       tone: 'warning',
     });
@@ -44,6 +53,10 @@ describe('ConfirmDialog', () => {
       role: 'alertdialog',
     });
     expect(dialog.props.children).toHaveLength(2);
+    expect(dialog.props.children[1].props.children[2][0].props).toMatchObject({
+      href: '/audit-log?q=booking-1',
+      title: 'Open the audit trail before confirming.',
+    });
   });
 
   it('disables the confirm action while loading without changing the form action', () => {

@@ -21,6 +21,12 @@ type ConfirmDialogTextInput = {
   readonly required?: boolean;
 };
 
+type ConfirmDialogSupportingLink = {
+  readonly description?: string;
+  readonly href: string;
+  readonly label: string;
+};
+
 type ConfirmDialogProps = {
   readonly action: FormAction;
   readonly cancelHref: string;
@@ -32,6 +38,7 @@ type ConfirmDialogProps = {
   readonly id: string;
   readonly loading?: boolean;
   readonly loadingLabel?: string;
+  readonly supportingLinks?: readonly ConfirmDialogSupportingLink[];
   readonly textInputs?: readonly ConfirmDialogTextInput[];
   readonly title: string;
   readonly tone?: StatusBadgeTone;
@@ -42,7 +49,10 @@ type ConfirmDialogButtonState = {
   readonly loading?: boolean;
 };
 
-export function confirmDialogButtonClassName(tone: StatusBadgeTone = 'danger', state: ConfirmDialogButtonState = {}) {
+export function confirmDialogButtonClassName(
+  tone: StatusBadgeTone = 'danger',
+  state: ConfirmDialogButtonState = {},
+) {
   if (state.disabled || state.loading) {
     return statusBadgeClassName('neutral');
   }
@@ -73,6 +83,7 @@ export function ConfirmDialog({
   id,
   loading = false,
   loadingLabel = 'Working...',
+  supportingLinks = [],
   textInputs = [],
   title,
   tone = 'danger',
@@ -116,13 +127,27 @@ export function ConfirmDialog({
               />
             </label>
           ))}
-          <button className={confirmDialogButtonClassName(tone, { disabled, loading })} disabled={confirmState.disabled} type="submit">
+          <button
+            className={confirmDialogButtonClassName(tone, { disabled, loading })}
+            disabled={confirmState.disabled}
+            type="submit"
+          >
             {confirmState.label}
           </button>
         </form>
         <Link className={statusBadgeClassName('neutral')} href={cancelHref}>
           {cancelLabel}
         </Link>
+        {supportingLinks.map((link) => (
+          <Link
+            className={statusBadgeClassName('info')}
+            href={link.href}
+            key={link.href}
+            title={link.description}
+          >
+            {link.label}
+          </Link>
+        ))}
       </div>
     </section>
   );

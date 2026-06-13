@@ -16,6 +16,11 @@ export type NotificationActionConfirmation = {
   readonly description: string;
   readonly hiddenInputs: readonly { readonly name: string; readonly value: string }[];
   readonly id: string;
+  readonly supportingLinks?: readonly {
+    readonly description?: string;
+    readonly href: string;
+    readonly label: string;
+  }[];
   readonly title: string;
   readonly tone: StatusBadgeTone;
 };
@@ -105,6 +110,13 @@ function buildRetryConfirmation(
       { name: 'returnHref', value: notificationReturnHref(values) },
     ],
     id: notification.id,
+    supportingLinks: [
+      {
+        description: 'Open retry, delivery, and device recovery audit events before resending.',
+        href: notificationAuditTrailHref(notification.id),
+        label: 'Audit trail',
+      },
+    ],
     title: `Retry notification ${shortId(notification.id)}?`,
     tone: retryAlreadySent ? 'info' : 'warning',
   };
@@ -156,6 +168,10 @@ function notificationHref(entries: readonly (readonly [string, string | undefine
     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
     .join('&');
   return query ? `/notifications?${query}` : '/notifications';
+}
+
+function notificationAuditTrailHref(notificationId: string) {
+  return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
 }
 
 function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {

@@ -48,6 +48,7 @@ export default async function NotificationsPage({
           description={model.confirmation.description}
           hiddenInputs={model.confirmation.hiddenInputs}
           id={`notification-action-${model.confirmation.action}-${model.confirmation.id}`}
+          supportingLinks={model.confirmation.supportingLinks}
           title={model.confirmation.title}
           tone={model.confirmation.tone}
         />

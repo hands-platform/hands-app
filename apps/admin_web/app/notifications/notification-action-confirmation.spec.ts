@@ -45,6 +45,13 @@ describe('notification action confirmation', () => {
         { name: 'returnHref', value: '/notifications' },
       ],
       id: notification.id,
+      supportingLinks: [
+        {
+          description: 'Open retry, delivery, and device recovery audit events before resending.',
+          href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
+          label: 'Audit trail',
+        },
+      ],
       title: 'Retry notification notifica?',
       tone: 'warning',
     });
@@ -159,6 +166,13 @@ describe('notification action confirmation', () => {
 
     expect(confirmation).toMatchObject({
       confirmLabel: 'Retry anyway',
+      supportingLinks: [
+        {
+          description: 'Open retry, delivery, and device recovery audit events before resending.',
+          href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
+          label: 'Audit trail',
+        },
+      ],
       tone: 'info',
     });
     expect(confirmation?.description).toBe(
