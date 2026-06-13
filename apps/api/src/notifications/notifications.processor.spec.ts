@@ -139,6 +139,51 @@ describe('NotificationRetryProcessor', () => {
     );
   });
 
+  it('sends non partner alerts without reading partner alert policy', async () => {
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Payment update',
+          body: 'Your payment status changed.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1', paymentId: 'payment-1' },
+          user: {
+            pushDevices: [{ id: 'device-1', token: 'fcm-token-1' }],
+          },
+        }),
+      },
+      operationalPolicySetting: {
+        findUnique: jest.fn(),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: unknown) => Promise<void>) =>
+        callback({
+          notificationDelivery: { create: jest.fn() },
+          pushDevice: { update: jest.fn() },
+        }),
+      ),
+    };
+    const pushDelivery = {
+      send: jest.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
+        response: { messageId: 'fcm-message-1' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await processor.process({ data: { notificationId: 'notification-1' } } as never);
+
+    expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
+    expect(pushDelivery.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOverride: undefined,
+      }),
+    );
+  });
+
   it('records one delivery result per enabled push device without disabling transient failures', async () => {
     const tx = {
       notificationDelivery: {
