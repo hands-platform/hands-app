@@ -27,7 +27,7 @@ describe('audit log page model', () => {
       actionLabel: 'Notification / Retry',
       bucketLabel: 'Notification',
       opsDetail: 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.',
-      relatedBoardHref: '/notifications#notification-123456',
+      relatedBoardHref: '/notifications?review=fcm#notification-123456',
       relatedBoardLabel: 'notification board',
       targetLabel: 'notification:notification-123456',
     });
@@ -62,6 +62,9 @@ describe('audit log page model', () => {
       },
     ]);
 
+    expect(rows[0]).toMatchObject({
+      relatedBoardHref: '/notifications?review=failed#notification-123456',
+    });
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-warn', label: 'Latest FCM FAILED' },

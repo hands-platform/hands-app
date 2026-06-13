@@ -786,7 +786,7 @@ function relatedBoardHref(log: AdminAuditLog) {
     return '/finance-closeout';
   }
   if (log.action.startsWith('notification.')) {
-    return targetId ? `/notifications#${targetId}` : '/notifications';
+    return notificationBoardHref(metadata, targetId);
   }
   if (log.action.startsWith('operational_policy.')) {
     return '/operations-policy';
@@ -810,6 +810,37 @@ function relatedBoardHref(log: AdminAuditLog) {
     return '/tax-policy';
   }
   return '/audit-log';
+}
+
+function notificationBoardHref(metadata: Record<string, unknown>, targetId?: string) {
+  const notificationId = readString(metadata.notificationId) ?? targetId;
+  if (!notificationId) {
+    return '/notifications';
+  }
+
+  const review = notificationAuditReview(metadata);
+  const query = review ? `?review=${review}` : '';
+  return `/notifications${query}#${encodeURIComponent(notificationId)}`;
+}
+
+function notificationAuditReview(metadata: Record<string, unknown>) {
+  const latestDelivery = readRecord(metadata.latestDelivery);
+  const provider = readString(latestDelivery.provider);
+  const status = readString(latestDelivery.status);
+
+  if (status === 'FAILED') {
+    return 'failed';
+  }
+  if (status === 'SKIPPED') {
+    return 'skipped';
+  }
+  if (provider === 'FCM') {
+    return 'fcm';
+  }
+  if (status === 'SENT') {
+    return 'sent';
+  }
+  return '';
 }
 
 function relatedBoardLabel(log: AdminAuditLog) {
