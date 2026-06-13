@@ -57,6 +57,7 @@ npm.cmd run external:check:maps
 6. Push
    - Current: in-app notification records plus server-side FCM delivery path.
    - Next: confirm live Android/iOS device delivery with a real app FCM token from the selected role, phone, and platform.
+   - Firebase Admin SDK JSON must come from the same Firebase project as the customer and Partner `google-services.json` files.
    - Keep Firebase Admin credentials server-side only.
    - Verify:
 

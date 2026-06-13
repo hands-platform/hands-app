@@ -23,6 +23,8 @@ Do not commit real `.env` files or secrets.
 5. Firebase Cloud Messaging for Android/iOS FCM push
 6. Vonage SMS credentials for Supabase Phone Auth after the deferred Phone Auth E2E pass starts
 
+For FCM, the Firebase Admin SDK JSON must come from the same Firebase project as the customer and Partner `google-services.json` files.
+
 ## Verification
 
 ```powershell

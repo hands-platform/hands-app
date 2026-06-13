@@ -9,6 +9,7 @@ import {
   firebaseServiceAccountJsonConfigured,
   firebaseServiceAccountJsonEnvKey,
 } from './lib/firebase-admin-credentials.mjs';
+import { firebaseProjectAlignment } from './lib/firebase-project-alignment.mjs';
 
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const format =
@@ -17,6 +18,8 @@ const outFile = process.argv.find((arg) => arg.startsWith('--out='))?.slice('--o
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const { env } = loadMergedEnv(envFile);
 const firebaseAdminReady = firebaseAdminCredentialsConfigured(env);
+const firebaseAlignment = firebaseProjectAlignment(env, { repoRoot });
+const firebasePushReady = firebaseAdminReady && firebaseAlignment.ok;
 
 const registrationItems = [
   {
@@ -294,6 +297,7 @@ const registrationItems = [
       'Use FCM only for push notifications. Do not use Firebase Realtime Database, Firestore, or Firebase Auth.',
       'Use PUSH_PROVIDER=in_app_only for inbox-only local work; use PUSH_PROVIDER=fcm for intentional FCM push E2E or staging rollout.',
       'Treat google-services.json as mobile client config only; it does not replace server-side Firebase Admin credentials.',
+      'Download Firebase Admin SDK JSON from the same Firebase project as the customer and Partner google-services.json files.',
       'If using FIREBASE_SERVICE_ACCOUNT_JSON, provide raw or base64 service account JSON with project_id, client_email, and private_key.',
       'If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file available to the API process or Docker container.',
       'For Docker, set FIREBASE_ADMIN_CREDENTIALS_HOST_PATH to the host JSON path and keep FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH as /run/secrets/firebase-admin.json unless the compose mount changes.',
@@ -302,7 +306,7 @@ const registrationItems = [
     verify: [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
-      ...(firebaseAdminReady
+      ...(firebasePushReady
         ? []
         : [
             'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',

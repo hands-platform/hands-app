@@ -31,7 +31,7 @@ $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run api:smoke
 ```
 
-For a smaller OS-push-only check after Firebase Admin credentials and a real device token are available:
+For a smaller FCM-push-only check after Firebase Admin credentials and a real device token are available:
 
 ```powershell
 $env:API_BASE_URL='http://localhost:3000/api'
@@ -50,9 +50,10 @@ npm.cmd run fcm:push-smoke
 ```
 
 Use `npm.cmd run fcm:token-smoke -- --dry-run` to check the token-registration smoke inputs before writing a synthetic device token.
+`external:check:push` and `fcm:credentials-check` also verify that the Firebase Admin SDK JSON comes from the same Firebase project as the customer and Partner `google-services.json` files before any live FCM send is attempted.
 Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live in an env file. The script merges that file with the current shell environment and masks the raw device token in errors.
 Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/phone/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
-Use `npm.cmd run fcm:push-smoke -- --preflight` to check API readiness, selected notification availability, and device readiness without sending FCM.
+Use `npm.cmd run fcm:push-smoke -- --preflight` to check API readiness, Firebase project alignment, selected notification availability, and device readiness without sending FCM.
 When the selected app session has already registered an enabled push device, set `FCM_SMOKE_USE_REGISTERED_DEVICE=true` to run live push without copying the raw device token into the shell.
 Partner-alert notifications follow the `notification.partner_alert_channel` operational policy. If that policy currently routes Partner alerts to `IN_APP_ONLY` and no explicit `FCM_SMOKE_NOTIFICATION_ID` is set, the smoke auto-selects a recent standard notification for the same role/phone when the expected provider is `FCM`; otherwise preflight reports the blocker and suggests a standard-notification id when one exists.
 
