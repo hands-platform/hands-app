@@ -732,6 +732,12 @@ function opsSignal(notification: AdminNotification) {
 }
 
 function opsHint(notification: AdminNotification) {
+  const baseHint = opsHintBase(notification);
+  const latestAttemptLabel = latestDeliveryAttemptLabel(notification);
+  return latestAttemptLabel ? `${baseHint} Latest attempt ${latestAttemptLabel}.` : baseHint;
+}
+
+function opsHintBase(notification: AdminNotification) {
   if (hasLatestDeliveryStatus(notification, 'FAILED')) {
     return 'Review failure code, confirm token health, then retry only after the device path makes sense.';
   }
@@ -748,6 +754,11 @@ function opsHint(notification: AdminNotification) {
     return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
   }
   return 'Notification exists, but no delivery attempt was captured yet.';
+}
+
+function latestDeliveryAttemptLabel(notification: AdminNotification) {
+  const delivery = latestDelivery(notification);
+  return delivery ? formatDateTime(delivery.attemptedAt) : null;
 }
 
 function isPartnerAlertType(type: string) {

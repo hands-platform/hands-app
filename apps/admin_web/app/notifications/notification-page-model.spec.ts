@@ -341,6 +341,7 @@ describe('notification page model', () => {
     });
     expect(buildNotificationSummary(notifications).failed).toBe(1);
     expect(buildNotificationTableRows(notifications.slice(0, 1))[0]).toMatchObject({
+      opsHint: expect.stringContaining('Latest attempt 1 Jun 2026, 17:05'),
       opsSignal: 'Delivered',
       signalClassName: 'signal signal-ok',
     });
