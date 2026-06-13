@@ -28,7 +28,8 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
   const groups = [
     {
       title: 'Dry-run readiness',
-      detail: 'Confirm push credentials, env contracts, and smoke inputs before writing test records.',
+      detail:
+        'Confirm push credentials, Firebase project alignment, env contracts, and smoke inputs before writing test records.',
       commands: commands.filter(
         (command) =>
           command.includes('--dry-run') ||
@@ -49,7 +50,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     {
       title: 'API preflight',
       detail:
-        'Check API readiness, notification availability, registered device state, and partner-alert policy without sending FCM.',
+        'Check API readiness, Firebase project alignment, notification availability, registered device state, and partner-alert policy without sending FCM.',
       commands: commands.filter(
         (command) => command.includes('--preflight') && !command.includes('FCM_SMOKE_NOTIFICATION_ID'),
       ),
