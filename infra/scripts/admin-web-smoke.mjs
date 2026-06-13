@@ -88,6 +88,20 @@ const notificationFcmSupportFollowUps = [
   },
 ];
 
+function notificationFcmRetryFollowUp(review, gateMarker, label = `${review} retry confirmation`) {
+  return notificationRetryFollowUp(review, gateMarker, label, ['FCM setup'], notificationFcmSupportFollowUps);
+}
+
+function notificationFcmDeviceFollowUp(review, gateMarker, label = `${review} device confirmation`) {
+  return notificationDeviceFollowUp(
+    review,
+    gateMarker,
+    label,
+    ['FCM setup'],
+    notificationFcmSupportFollowUps,
+  );
+}
+
 const pages = [
   {
     path: '/',
@@ -525,7 +539,7 @@ const pages = [
   {
     path: '/notifications?review=failed',
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue', 'Retry gate'],
-    followUps: [notificationRetryFollowUp('failed', 'Retry gate')],
+    followUps: [notificationFcmRetryFollowUp('failed', 'Retry gate')],
   },
   {
     path: '/notifications?review=disabled-device',
@@ -541,8 +555,8 @@ const pages = [
     path: '/notifications?review=needs-retry',
     markers: ['Notifications', 'Needs retry', 'Notification operation filters', 'Recovery decision gate'],
     followUps: [
-      notificationRetryFollowUp('needs-retry', 'Recovery decision gate'),
-      notificationDeviceFollowUp('needs-retry', 'Recovery decision gate'),
+      notificationFcmRetryFollowUp('needs-retry', 'Recovery decision gate'),
+      notificationFcmDeviceFollowUp('needs-retry', 'Recovery decision gate'),
     ],
   },
   {
@@ -553,15 +567,7 @@ const pages = [
   {
     path: '/notifications?review=fcm',
     markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
-    followUps: [
-      notificationRetryFollowUp(
-        'fcm',
-        'FCM route gate',
-        'FCM retry confirmation',
-        ['FCM setup'],
-        notificationFcmSupportFollowUps,
-      ),
-    ],
+    followUps: [notificationFcmRetryFollowUp('fcm', 'FCM route gate', 'FCM retry confirmation')],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
