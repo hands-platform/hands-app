@@ -22,9 +22,9 @@ export async function enablePushDevice(formData: FormData) {
 }
 
 function readRequiredFormString(formData: FormData, key: string) {
-  const value = String(formData.get(key) ?? '').trim();
-  if (!value) {
+  const value = formData.get(key);
+  if (typeof value !== 'string' || !value.trim()) {
     throw new Error(`${key} is required`);
   }
-  return value;
+  return value.trim();
 }

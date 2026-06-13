@@ -59,4 +59,27 @@ describe('notification server actions', () => {
     expect(mockedAdminPost).not.toHaveBeenCalled();
     expect(mockedRevalidatePath).not.toHaveBeenCalled();
   });
+
+  it('trims form identifiers before posting admin actions', async () => {
+    const retryFormData = new FormData();
+    retryFormData.set('notificationId', ' notification-1 ');
+    const enableFormData = new FormData();
+    enableFormData.set('pushDeviceId', ' push-device-1 ');
+
+    await retryNotification(retryFormData);
+    await enablePushDevice(enableFormData);
+
+    expect(mockedAdminPost).toHaveBeenNthCalledWith(
+      1,
+      '/admin/notifications/notification-1/retry',
+      {},
+      null,
+    );
+    expect(mockedAdminPost).toHaveBeenNthCalledWith(
+      2,
+      '/admin/push-devices/push-device-1/enable',
+      {},
+      null,
+    );
+  });
 });

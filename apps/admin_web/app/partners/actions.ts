@@ -53,7 +53,7 @@ export async function addProviderOpsNote(formData: FormData) {
 }
 
 export async function enablePushDevice(formData: FormData) {
-  const pushDeviceId = String(formData.get('pushDeviceId'));
+  const pushDeviceId = readRequiredFormString(formData, 'pushDeviceId');
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
   revalidatePath('/partners');
   revalidatePath('/partner-controls');
