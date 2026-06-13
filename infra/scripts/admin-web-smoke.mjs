@@ -19,6 +19,37 @@ const requestedSmokeArgs = process.argv
   .map((path) => path.trim())
   .filter(Boolean);
 
+function notificationRetryFollowUp(review, gateMarker, label = `${review} retry confirmation`) {
+  return notificationConfirmationFollowUp({
+    action: 'retry',
+    actionMarker: 'Retry notification',
+    gateMarker,
+    label,
+    review,
+  });
+}
+
+function notificationDeviceFollowUp(review, gateMarker, label = `${review} device confirmation`) {
+  return notificationConfirmationFollowUp({
+    action: 'enable-device',
+    actionMarker: 'Re-enable device',
+    gateMarker,
+    label,
+    review,
+  });
+}
+
+function notificationConfirmationFollowUp({ action, actionMarker, gateMarker, label, review }) {
+  return {
+    hrefPattern: new RegExp(
+      `href="([^"]*\\/notifications\\?review=${review}(?:&amp;|&)[^"]*confirm=${action}[^"]*)"`,
+    ),
+    label,
+    markers: [actionMarker, gateMarker, 'FCM setup', 'Audit trail'],
+    optional: true,
+  };
+}
+
 const pages = [
   {
     path: '/',
@@ -456,57 +487,24 @@ const pages = [
   {
     path: '/notifications?review=failed',
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue', 'Retry gate'],
-    followUps: [
-      {
-        hrefPattern: /href="([^"]*\/notifications\?review=failed(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
-        label: 'failed retry confirmation',
-        markers: ['Retry notification', 'Retry gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
-    ],
+    followUps: [notificationRetryFollowUp('failed', 'Retry gate')],
   },
   {
     path: '/notifications?review=disabled-device',
     markers: ['Notifications', 'Disabled devices', 'Delivery operations queue', 'Device recovery gate'],
-    followUps: [
-      {
-        hrefPattern:
-          /href="([^"]*\/notifications\?review=disabled-device(?:&amp;|&)[^"]*confirm=enable-device[^"]*)"/,
-        label: 'disabled-device confirmation',
-        markers: ['Re-enable device', 'Device recovery gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
-    ],
+    followUps: [notificationDeviceFollowUp('disabled-device', 'Device recovery gate')],
   },
   {
     path: '/notifications?review=stale-device',
     markers: ['Notifications', 'Stale devices', 'Delivery operations queue', 'Token freshness gate'],
-    followUps: [
-      {
-        hrefPattern: /href="([^"]*\/notifications\?review=stale-device(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
-        label: 'stale-device retry confirmation',
-        markers: ['Retry notification', 'Token freshness gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
-    ],
+    followUps: [notificationRetryFollowUp('stale-device', 'Token freshness gate')],
   },
   {
     path: '/notifications?review=needs-retry',
     markers: ['Notifications', 'Needs retry', 'Notification operation filters', 'Recovery decision gate'],
     followUps: [
-      {
-        hrefPattern: /href="([^"]*\/notifications\?review=needs-retry(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
-        label: 'needs-retry retry confirmation',
-        markers: ['Retry notification', 'Recovery decision gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
-      {
-        hrefPattern:
-          /href="([^"]*\/notifications\?review=needs-retry(?:&amp;|&)[^"]*confirm=enable-device[^"]*)"/,
-        label: 'needs-retry device confirmation',
-        markers: ['Re-enable device', 'Recovery decision gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
+      notificationRetryFollowUp('needs-retry', 'Recovery decision gate'),
+      notificationDeviceFollowUp('needs-retry', 'Recovery decision gate'),
     ],
   },
   {
@@ -516,14 +514,7 @@ const pages = [
   {
     path: '/notifications?review=fcm',
     markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
-    followUps: [
-      {
-        hrefPattern: /href="([^"]*\/notifications\?review=fcm(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
-        label: 'FCM retry confirmation',
-        markers: ['Retry notification', 'FCM route gate', 'FCM setup', 'Audit trail'],
-        optional: true,
-      },
-    ],
+    followUps: [notificationRetryFollowUp('fcm', 'FCM route gate', 'FCM retry confirmation')],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
