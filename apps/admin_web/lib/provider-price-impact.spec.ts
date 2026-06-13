@@ -49,6 +49,8 @@ describe('provider price impact', () => {
     expect(impact.unsupportedCount).toBe(2);
     expect(impact.belowMinimumCount).toBe(1);
     expect(impact.inactiveOrBlockedCount).toBe(2);
+    expect(impact.visibleCount).toBe(1);
+    expect(impact.hiddenCount).toBe(5);
     expect(Object.fromEntries(impact.rows.map((row) => [row.id, row.state]))).toEqual({
       below: 'below_minimum',
       blocked: 'inactive',

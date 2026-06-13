@@ -843,8 +843,6 @@ function ProviderPriceImpact({
   activeTaxPolicy: AdminTaxPolicyVersion | undefined;
 }) {
   const impact = providerPriceImpact(service, activeTaxPolicy);
-  const visibleRows = impact.rows.filter((row) => row.state === 'bookable').length;
-  const hiddenRows = impact.rows.length - visibleRows;
 
   return (
     <div className="service-impact-card">
@@ -855,8 +853,8 @@ function ProviderPriceImpact({
             Shows which partner prices are visible in the customer app for this exact duration option.
           </p>
         </div>
-        <span className={`pill ${hiddenRows ? 'pill-warn' : 'pill-success'}`}>
-          {visibleRows} visible / {hiddenRows} hidden
+        <span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>
+          {impact.visibleCount} visible / {impact.hiddenCount} hidden
         </span>
       </div>
       <div className="participant-list">

@@ -25,6 +25,7 @@ describe('service booking readiness queue', () => {
       formatMoney: (amount, currency) => `${currency} ${amount}`,
       providerPriceImpact: () => ({
         belowMinimumCount: 1,
+        hiddenCount: 2,
         inactiveOrBlockedCount: 0,
         rows: [
           {
@@ -49,6 +50,7 @@ describe('service booking readiness queue', () => {
           },
         ],
         unsupportedCount: 1,
+        visibleCount: 0,
       }),
       services: [
         serviceFixture({
@@ -84,9 +86,11 @@ describe('service booking readiness queue', () => {
       formatMoney: (amount, currency) => `${currency} ${amount}`,
       providerPriceImpact: () => ({
         belowMinimumCount: 0,
+        hiddenCount: 0,
         inactiveOrBlockedCount: 0,
         rows: [],
         unsupportedCount: 0,
+        visibleCount: 0,
       }),
       services: [
         {

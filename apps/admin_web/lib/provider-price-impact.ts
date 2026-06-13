@@ -25,6 +25,8 @@ export type ProviderPriceImpactRow = {
 
 export type ProviderPriceImpact = {
   readonly rows: readonly ProviderPriceImpactRow[];
+  readonly visibleCount: number;
+  readonly hiddenCount: number;
   readonly unsupportedCount: number;
   readonly belowMinimumCount: number;
   readonly inactiveOrBlockedCount: number;
@@ -84,11 +86,24 @@ export function providerPriceImpact<TPolicy>({
         state,
       };
     });
+  const visibleCount = countRowsByState(rows, 'bookable');
+  const belowMinimumCount = countRowsByState(rows, 'below_minimum');
+  const unsupportedCount = countRowsByState(rows, 'missing_payout');
+  const inactiveOrBlockedCount = countRowsByState(rows, 'inactive');
 
   return {
-    belowMinimumCount: rows.filter((row) => row.state === 'below_minimum').length,
-    inactiveOrBlockedCount: rows.filter((row) => row.state === 'inactive').length,
+    belowMinimumCount,
+    hiddenCount: belowMinimumCount + unsupportedCount + inactiveOrBlockedCount,
+    inactiveOrBlockedCount,
     rows,
-    unsupportedCount: rows.filter((row) => row.state === 'missing_payout').length,
+    unsupportedCount,
+    visibleCount,
   };
+}
+
+function countRowsByState(
+  rows: readonly ProviderPriceImpactRow[],
+  state: ProviderPriceImpactState,
+) {
+  return rows.filter((row) => row.state === state).length;
 }
