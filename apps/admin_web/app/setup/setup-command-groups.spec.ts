@@ -30,6 +30,8 @@ describe('setup command groups', () => {
       '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_NOTIFICATION_ID="<id>"; npm.cmd run fcm:push-smoke -- --preflight',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<token>"; npm.cmd run fcm:push-smoke',
       'Open http://localhost:3101/notifications?review=fcm',
+      'Open http://localhost:3101/operations-handoff',
+      'Open http://localhost:3101/audit-log?bucket=Notification',
       'npm.cmd run custom:check',
     ]);
 
@@ -39,8 +41,16 @@ describe('setup command groups', () => {
       'API preflight',
       'Partner alert policy fallback',
       'Live push send',
-      'Review queues',
+      'Review queues and evidence',
       'Additional checks',
+    ]);
+    expect(groups.find((group) => group.title === 'Review queues and evidence')?.detail).toContain(
+      'latest FCM sent result',
+    );
+    expect(groups.find((group) => group.title === 'Review queues and evidence')?.commands).toEqual([
+      'Open http://localhost:3101/notifications?review=fcm',
+      'Open http://localhost:3101/operations-handoff',
+      'Open http://localhost:3101/audit-log?bucket=Notification',
     ]);
     expect(groups.find((group) => group.title === 'Token registration')?.detail).toContain(
       'without sending FCM push',

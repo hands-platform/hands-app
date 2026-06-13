@@ -75,6 +75,8 @@ describe('SetupGroupDetailSection', () => {
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
             'Open http://localhost:3101/notifications?review=fcm',
             'Open http://localhost:3101/notifications?review=disabled-device',
+            'Open http://localhost:3101/operations-handoff',
+            'Open http://localhost:3101/audit-log?bucket=Notification',
             'npm.cmd run notifications:future-check',
           ],
         },
@@ -100,7 +102,8 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('preflight suggested standard notification id');
     expect(rendered).toContain('Live push send');
     expect(rendered).toContain('reuse an enabled device already registered');
-    expect(rendered).toContain('Review queues');
+    expect(rendered).toContain('Review queues and evidence');
+    expect(rendered).toContain('latest FCM sent result');
     expect(rendered).toContain('Additional checks');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight');
@@ -111,6 +114,8 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('FCM_SMOKE_USE_REGISTERED_DEVICE="true"');
     expect(rendered).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
     expect(rendered).toContain('Open http://localhost:3101/notifications?review=disabled-device');
+    expect(rendered).toContain('Open http://localhost:3101/operations-handoff');
+    expect(rendered).toContain('Open http://localhost:3101/audit-log?bucket=Notification');
     expect(rendered).toContain('npm.cmd run notifications:future-check');
   });
 

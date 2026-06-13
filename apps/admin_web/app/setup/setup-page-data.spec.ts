@@ -39,7 +39,7 @@ describe('setup page data', () => {
         'Run fcm:push-smoke -- --preflight to check API readiness, Firebase project alignment, notification availability, and registered device readiness without sending FCM.',
         'If the latest Partner alert is blocked by notification.partner_alert_channel, FCM smoke auto-selects or suggests a standard-notification id instead of changing policy just for testing.',
         'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
-        'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling FCM push broadly.',
+        'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, pending queue, operations handoff, and Notification audit evidence before enabling FCM push broadly.',
       ]),
     );
     expect(notificationSetup?.commands).toEqual(
@@ -64,6 +64,8 @@ describe('setup page data', () => {
         'Open http://localhost:3101/notifications?review=disabled-device',
         'Open http://localhost:3101/notifications?review=stale-device',
         'Open http://localhost:3101/notifications?review=pending',
+        'Open http://localhost:3101/operations-handoff',
+        'Open http://localhost:3101/audit-log?bucket=Notification',
       ]),
     );
   });

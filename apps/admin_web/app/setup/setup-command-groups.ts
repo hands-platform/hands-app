@@ -80,10 +80,10 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
       ),
     },
     {
-      title: 'Review queues',
+      title: 'Review queues and evidence',
       detail:
-        'Open the operational queues that confirm route, failures, disabled devices, stale tokens, and pending attempts.',
-      commands: commands.filter((command) => command.startsWith('Open http://localhost:3101/notifications')),
+        'Open the operational queues and handoff/audit evidence that confirm route, failures, disabled devices, stale tokens, pending attempts, and the latest FCM sent result.',
+      commands: commands.filter(isFcmReviewCommand),
     },
   ].filter((group) => group.commands.length > 0);
   const groupedCommands = new Set(groups.flatMap((group) => group.commands));
@@ -99,4 +99,12 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
         },
       ]
     : groups;
+}
+
+function isFcmReviewCommand(command: string) {
+  return (
+    command.startsWith('Open http://localhost:3101/notifications') ||
+    command === 'Open http://localhost:3101/operations-handoff' ||
+    command === 'Open http://localhost:3101/audit-log?bucket=Notification'
+  );
 }
