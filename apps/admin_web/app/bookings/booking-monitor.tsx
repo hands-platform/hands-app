@@ -4,14 +4,6 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
-import {
-  buildBookingMatchingEscalationBoard,
-  type BookingMatchingEscalationLane,
-} from '../../lib/booking-matching-escalation-board';
-import {
-  buildBookingMatchingEscalationRows as buildBookingMatchingEscalationRowsFromFacts,
-  type BookingMatchingEscalationRow,
-} from '../../lib/booking-matching-escalation-rows';
 import { matchingPolicySummaryLabel } from '../../lib/booking-matching-rule-snapshot';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
@@ -57,9 +49,7 @@ import {
   bookingCustomerProtectionBoardFromFacts,
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
-import {
-  bookingMatchingChatReady,
-} from './booking-chat-handoff-state';
+import { bookingMatchingChatReady } from './booking-chat-handoff-state';
 import {
   bookingClosureListSignal,
   terminalBookingStatuses,
@@ -69,20 +59,9 @@ import {
   bookingMatchingWindowExpired,
   bookingMatchingWindowLabel,
 } from './booking-matching-window';
-import {
-  bookingCustomerSelectableCount,
-  bookingMarketplaceCountFacts,
-  bookingMarketplaceParticipantCount,
-  bookingMarketplaceParticipants,
-} from './booking-marketplace-count-facts';
-import { bookingMatchingEscalationBoardInput } from './booking-matching-escalation-board-inputs';
-import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
+import { bookingMarketplaceParticipants } from './booking-marketplace-count-facts';
 import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
-import {
-  bookingMonitorSelectionCopy,
-  bookingMonitorSelectionLabelForBooking,
-  bookingMonitorSelectionPathLabelForBooking,
-} from './booking-monitor-selection-model';
+import { bookingMonitorSelectionCopy } from './booking-monitor-selection-model';
 import {
   bookingMonitorListCashDebtAmountLabel,
   bookingMonitorListFirstPickPhoneLabel,
@@ -129,6 +108,10 @@ import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-
 import { buildBookingMonitorCommandCenter } from './booking-monitor-command-center-model';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
+  buildBookingMonitorMatchingEscalationBoard,
+  buildBookingMonitorMatchingEscalationRows,
+} from './booking-monitor-matching-escalation-model';
+import {
   bookingCustomerLabel,
   bookingProviderLabel,
   partnerDisplayName,
@@ -170,9 +153,6 @@ type Props = {
 type BookingView = BookingPageView;
 
 type BookingProtectionLane = BookingCustomerProtectionLane<AdminBooking>;
-
-type AdminBookingMatchingEscalationLane = BookingMatchingEscalationLane<AdminBooking>;
-type AdminBookingMatchingEscalationRow = BookingMatchingEscalationRow<AdminBooking>;
 
 export function BookingMonitor({
   bookings,
@@ -269,7 +249,7 @@ export function BookingMonitor({
     [orderedBookings],
   );
   const matchingEscalationBoard = useMemo(
-    () => buildMatchingEscalationBoard(orderedBookings, currentTimeMs),
+    () => buildBookingMonitorMatchingEscalationBoard(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
   const livePolicyCards = useMemo(
@@ -277,7 +257,7 @@ export function BookingMonitor({
     [liveOperationsPolicy],
   );
   const matchingEscalationRows = useMemo(
-    () => buildMatchingEscalationRows(orderedBookings, currentTimeMs),
+    () => buildBookingMonitorMatchingEscalationRows(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
   const matchingFlowTimeline = useMemo(
@@ -585,43 +565,4 @@ function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListR
 
 function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
   return bookingCustomerProtectionBoardFromFacts(bookingCustomerProtectionFactsFromBookings(bookings));
-}
-
-function buildMatchingEscalationBoard(
-  bookings: AdminBooking[],
-  nowMs: number,
-): readonly AdminBookingMatchingEscalationLane[] {
-  return buildBookingMatchingEscalationBoard(buildMatchingEscalationFacts(bookings, nowMs));
-}
-
-function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
-  return bookingMatchingEscalationBoardInput(
-    bookings.map((booking) => ({
-      booking,
-      customerSelectableCount: bookingCustomerSelectableCount(booking),
-      firstPickPending: bookingFirstPickPending(booking),
-      hasChatRoom: bookingMatchingChatReady(booking),
-      marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-      responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
-      status: booking.status,
-    })),
-  );
-}
-
-function buildMatchingEscalationRows(
-  bookings: AdminBooking[],
-  nowMs: number,
-): readonly AdminBookingMatchingEscalationRow[] {
-  return buildBookingMatchingEscalationRowsFromFacts(
-    bookings.map((booking) => {
-      const counts = bookingMarketplaceCountFacts(booking);
-      return bookingMatchingEscalationRowInputFromBooking(booking, nowMs, {
-        marketplaceCount: counts.marketplaceParticipantCount,
-        preferredAwaitingDecision: bookingFirstPickPending(booking),
-        selectableCount: counts.customerSelectableCount,
-        selectionLabel: bookingMonitorSelectionLabelForBooking(booking),
-        selectionPathLabel: bookingMonitorSelectionPathLabelForBooking(booking),
-      });
-    }),
-  );
 }
