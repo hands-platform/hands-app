@@ -29,7 +29,6 @@ import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-locat
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
 import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state';
-import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
@@ -209,6 +208,7 @@ import {
   bookingProviderLabel,
   partnerDisplayName,
 } from './booking-monitor-labels';
+import { buildBookingMonitorFinalGateReason } from './booking-monitor-final-gate-model';
 import { buildBookingMonitorMatchingRuleSnapshot } from './booking-monitor-matching-rule-model';
 import { bookingMonitorOpsSignal } from './booking-monitor-ops-signal';
 import {
@@ -231,7 +231,6 @@ import {
   bookingPaymentNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
-import { bookingFinalGateReasonPresentation } from '../../lib/booking-final-gate-reason';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
@@ -641,7 +640,7 @@ function buildBookingMonitorListRow(
     commandDecisionStrip: bookingListCommandDecisionStrip(booking),
     customerVisibleStateLabel: customerVisibleStateLabel(booking),
     expiresAtLabel: booking.expiresAt ? formatDate(booking.expiresAt) : null,
-    finalGateReason: bookingFinalGateReason(booking),
+    finalGateReason: buildBookingMonitorFinalGateReason(booking),
     finalPartnerLabel: booking.selectedProvider ? partnerDisplayName(booking.selectedProvider) : null,
     firstCheckTitle: flags[0]?.title ?? null,
     firstPickPhoneLabel: bookingMonitorListFirstPickPhoneLabel(booking),
@@ -1067,25 +1066,6 @@ function bookingChatListState(booking: AdminBooking) {
     status: booking.status,
     hasChatRoom: bookingMatchingChatReady(booking),
     messageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
-}
-
-function bookingFinalGateReason(booking: AdminBooking) {
-  const reason = buildBookingFinalGateReasonFromFacts({
-    cashDebt: bookingCashDebtNeedsOps(booking),
-    walletLedgerLabel: 'Cash fee settlement required',
-    hasAddressSnapshot: !bookingAddressNeedsOps(booking),
-    bookingStatus: booking.status,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: bookingFirstPickPending(booking),
-    customerChoiceCandidates: bookingCustomerSelectableCount(booking),
-    marketplaceParticipants: bookingMarketplaceParticipantCount(booking),
-    selected: bookingHasFinalPartner(booking),
-    hasChatRoom: bookingMatchingChatReady(booking),
-  });
-  return bookingFinalGateReasonPresentation({
-    bookingId: booking.id,
-    reason,
   });
 }
 
