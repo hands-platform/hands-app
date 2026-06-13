@@ -7,8 +7,6 @@ import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matc
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
-import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
-import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
   bookingTimestamp,
@@ -41,7 +39,6 @@ import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-match
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorListSection } from './booking-monitor-list-section';
-import { buildBookingMonitorCommandDecisionStrip } from './booking-monitor-command-decision-model';
 import { buildBookingMonitorNextActions } from './booking-monitor-next-actions-model';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
@@ -68,6 +65,7 @@ import {
 import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
+import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
 import {
   buildMarketplaceBookingCoveragePills,
   buildMarketplaceBookingCoverageSummary,
@@ -162,17 +160,7 @@ export function BookingMonitor({
     [bookingGateRejectionLane, commandCenter],
   );
   const primaryCommandQueue = useMemo(
-    () =>
-      bookingPrimaryCommandSummary(
-        orderedBookings.map((booking) => {
-          const strip = buildBookingMonitorCommandDecisionStrip(booking);
-          return {
-            bookingId: booking.id,
-            href: bookingPrimaryCommandHref(strip.status),
-            strip,
-          };
-        }),
-      ),
+    () => buildBookingMonitorPrimaryCommandQueue(orderedBookings),
     [orderedBookings],
   );
   const nextActions = useMemo(
