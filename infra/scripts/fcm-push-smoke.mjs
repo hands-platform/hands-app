@@ -290,7 +290,8 @@ console.log(
             enabled: registeredDevice.enabled,
           }
         : null,
-      reusedRegisteredDevice: !registeredDevice,
+      reusedRegisteredDevice: useRegisteredDevice && !registeredDevice,
+      selectedRegisteredDevice: selectedRegisteredDeviceOutput(registeredDevice, registeredDevicePreflight),
       registeredDevicePreflight,
       pushReadiness: pushReadinessOutput(pushCheck),
       beforeDeliveryCount,
@@ -676,6 +677,30 @@ function pushReadinessOutput(pushCheck) {
     status: pushCheck.status,
     detail: fcmSmokeDisplayText(pushCheck.detail),
     operatorAction: pushCheck.operatorAction ? fcmSmokeDisplayText(pushCheck.operatorAction) : null,
+  };
+}
+
+function selectedRegisteredDeviceOutput(registeredDevice, registeredDevicePreflight) {
+  if (registeredDevice) {
+    return summarizeSmokeDevice(registeredDevice);
+  }
+  if (useRegisteredDevice) {
+    return registeredDevicePreflight.latestEnabledDevice ?? null;
+  }
+  return null;
+}
+
+function summarizeSmokeDevice(device) {
+  if (!device) {
+    return null;
+  }
+  return {
+    id: device.id ?? null,
+    role: device.role ?? null,
+    platform: device.platform ?? null,
+    enabled: typeof device.enabled === 'boolean' ? device.enabled : null,
+    lastSeenAt: device.lastSeenAt ?? null,
+    updatedAt: device.updatedAt ?? null,
   };
 }
 
