@@ -29,7 +29,7 @@ import { ServiceBookingReadinessQueueSection } from './service-booking-readiness
 import { ServiceCatalogSearchSection } from './service-catalog-search-section';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
-import { ServiceGroupEditCard } from './service-group-edit-card';
+import { ServiceGroupEditGridSection } from './service-group-edit-grid-section';
 import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
 import { ServicePricingHealthSection } from './service-pricing-health-section';
 import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
@@ -180,21 +180,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       <ServiceBookingFinanceTraceSection rows={bookingTraceRows} summary={bookingTraceSummary} />
       <ServiceCreateFormsSection />
 
-      <section className="grid">
-        {hiddenServiceGroupCount ? (
-          <article className="card">
-            <h2>Large catalog mode</h2>
-            <p className="muted">
-              Editing is capped to the first {visibleGroupedServices.length} service type(s) on this page so
-              admin operations stay fast. The full catalog remains included in health, booking readiness, and
-              finance summaries.
-            </p>
-          </article>
-        ) : null}
-        {visibleGroupedServices.map((group) => (
-          <ServiceGroupEditCard activeTaxPolicy={activeTaxPolicy} group={group} key={group.key} />
-        ))}
-      </section>
+      <ServiceGroupEditGridSection
+        activeTaxPolicy={activeTaxPolicy}
+        hiddenGroupCount={hiddenServiceGroupCount}
+        visibleGroups={visibleGroupedServices}
+      />
     </AdminPageTemplate>
   );
 }
