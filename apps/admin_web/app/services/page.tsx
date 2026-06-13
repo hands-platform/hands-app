@@ -5,6 +5,7 @@ import { serviceActionNotice } from '../../lib/service-action-notice';
 import { serviceBookingReadinessQueue as buildBookingReadinessQueue } from '../../lib/service-booking-readiness-queue';
 import { serviceBookingTraceRows } from '../../lib/service-booking-trace-rows';
 import { serviceBookingTraceSummary } from '../../lib/service-booking-trace-summary';
+import { serviceBasePayoutRule as basePayoutRule } from '../../lib/service-base-payout-rule';
 import {
   filterServiceGroups,
   filterServices,
@@ -198,13 +199,6 @@ function servicePricePolicyPreviewRows(
     servicePayoutFinance,
     services,
   });
-}
-
-function basePayoutRule(service: AdminServiceCatalogItem) {
-  return (
-    (service.payoutRules ?? []).find((rule) => rule.active && rule.customerPrice === service.basePrice) ??
-    null
-  );
 }
 
 function providerPriceImpact(

@@ -1,5 +1,6 @@
 import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
+import { serviceBasePayoutRule as basePayoutRule } from '../../lib/service-base-payout-rule';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import { serviceDurationMatrix } from '../../lib/service-duration-matrix';
 import { servicePayoutFinance } from '../../lib/service-payout-finance';
@@ -153,12 +154,5 @@ function ServiceDurationCell({ cell }: { readonly cell: DurationMatrixCell }) {
         </small>
       </div>
     </td>
-  );
-}
-
-function basePayoutRule(service: AdminServiceCatalogItem): ServicePayoutRule | null {
-  return (
-    (service.payoutRules ?? []).find((rule) => rule.active && rule.customerPrice === service.basePrice) ??
-    null
   );
 }

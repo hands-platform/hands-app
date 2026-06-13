@@ -1,4 +1,5 @@
 import type { AdminServiceCatalogItem, AdminServicePayoutRule } from './admin-api';
+import { serviceBasePayoutRule } from './service-base-payout-rule';
 
 export type ServicePricePolicyFinance = {
   readonly actualCompanyCommission: number;
@@ -61,7 +62,7 @@ export function servicePricePolicyPreviewRows<TPolicy>({
         left.durationMin - right.durationMin,
     )
     .map((service) => {
-      const baseRule = basePayoutRule(service);
+      const baseRule = serviceBasePayoutRule(service);
       const priceStep = Math.max(100000, service.priceStep || 100000);
       const currentFinance = baseRule
         ? servicePayoutFinance(service, baseRule, activeTaxPolicy)
@@ -157,15 +158,6 @@ function emptyFinancePreview(): ServicePricePolicyFinance {
   };
 }
 
-function basePayoutRule(service: AdminServiceCatalogItem) {
-  return (
-    (service.payoutRules ?? []).find((rule) => rule.active && rule.customerPrice === service.basePrice) ??
-    null
-  );
-}
-
-function isScenario(
-  scenario: ServicePricePolicyScenario | null,
-): scenario is ServicePricePolicyScenario {
+function isScenario(scenario: ServicePricePolicyScenario | null): scenario is ServicePricePolicyScenario {
   return scenario !== null;
 }
