@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
@@ -24,12 +22,14 @@ import { servicePricingHealth as buildPricingHealth } from '../../lib/service-pr
 import { serviceTypeCoverageRows as buildServiceTypeCoverageRows } from '../../lib/service-type-coverage-rows';
 import { serviceTypeCoverageSummary as buildServiceTypeCoverageSummary } from '../../lib/service-type-coverage-summary';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
+import { ServiceBookingExposureGuardSection } from './service-booking-exposure-guard-section';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
 import { ServiceBookingReadinessQueueSection } from './service-booking-readiness-queue-section';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 import { ServiceGroupEditCard } from './service-group-edit-card';
 import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
+import { ServicePricingHealthSection } from './service-pricing-health-section';
 import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
 import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
 import { ServiceTypeCoverageBoardSection } from './service-type-coverage-board-section';
@@ -165,51 +165,14 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </section>
       ) : null}
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer booking exposure guard</h2>
-            <p className="muted">
-              Customer and partner apps only expose service options backed by an active payout rule. Use this
-              guard before opening a new service type or changing partner prices.
-            </p>
-          </div>
-          <div className="actions">
-            <span className={blockedReadinessItems.length ? 'pill pill-danger' : 'pill pill-success'}>
-              {blockedReadinessItems.length} blocked
-            </span>
-            <span className={warningReadinessItems.length ? 'pill pill-warn' : 'pill pill-success'}>
-              {warningReadinessItems.length} warning
-            </span>
-          </div>
-        </div>
-        <div className="service-trace-summary">
-          <div>
-            <span>Active duration options</span>
-            <strong>{activeServices.length}</strong>
-          </div>
-          <div>
-            <span>Rules configured</span>
-            <strong>{payoutRuleCount}</strong>
-          </div>
-          <div>
-            <span>Trace gaps</span>
-            <strong>{bookingTraceSummary.missingTraceCount}</strong>
-          </div>
-          <div>
-            <span>Projected policy checks</span>
-            <strong>{pricePolicyPreviewSummary.policyCheckCount}</strong>
-          </div>
-        </div>
-        <div className="actions admin-mt-12">
-          <Link className="text-link" href="/bookings?view=pricing">
-            Open pricing-check bookings
-          </Link>
-          <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
-            Review service pricing audit
-          </a>
-        </div>
-      </section>
+      <ServiceBookingExposureGuardSection
+        activeServiceCount={activeServices.length}
+        blockedCount={blockedReadinessItems.length}
+        payoutRuleCount={payoutRuleCount}
+        policyCheckCount={pricePolicyPreviewSummary.policyCheckCount}
+        traceGapCount={bookingTraceSummary.missingTraceCount}
+        warningCount={warningReadinessItems.length}
+      />
 
       <ServiceTypeCoverageBoardSection
         hiddenRowCount={hiddenServiceTypeCoverageRowCount}
@@ -220,32 +183,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
       <ServicePricingAuditTrailSection rows={pricingAuditRows} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Pricing health</h2>
-            <p className="muted">
-              Partners can charge the minimum price or higher, but every configured customer price should have
-              a payout rule so finance can separate partner payout, VAT, withholding, and actual commission.
-            </p>
-          </div>
-          <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
-            {healthItems.every((item) => item.ok) ? 'Ready' : 'Review'}
-          </span>
-        </div>
-        <div className="setup-stage-list">
-          {healthItems.map((item) => (
-            <div className="setup-stage-item" key={item.label}>
-              <span>{item.ok ? 'OK' : 'CHECK'}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.value}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ServicePricingHealthSection items={healthItems} />
 
       <ServiceBookingReadinessQueueSection
         blockedCount={blockedReadinessItems.length}
