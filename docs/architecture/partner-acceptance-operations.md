@@ -108,7 +108,7 @@ When a partner cannot join marketplace bookings or receive payout release, opera
 
 5. Confirm device and alert reachability.
    - Owner: Ops.
-   - Why: partner response rate depends on recent app sessions and enabled devices while OS push is deferred.
+   - Why: partner response rate depends on recent app sessions, enabled devices, and FCM delivery health.
    - Booking impact: weak device state does not always hard-block acceptance, but it reduces response reliability.
    - Payout impact: no direct payout impact.
 

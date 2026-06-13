@@ -13,7 +13,7 @@ flowchart LR
   API --> R["Redis"]
   API --> S["S3/R2 Storage"]
   API --> Pay["MoMo/VNPay/Cash"]
-  API --> Push["In-app notifications / future push adapter"]
+  API --> Push["In-app notifications + FCM OS push"]
   API <--> WS["Socket.IO Rooms"]
 ```
 
