@@ -16,6 +16,11 @@ describe('NotificationFilterBoardSection', () => {
       activeFilterDescription: 'latest delivery attempts that returned an FCM push failure.',
       activeFilterLabel: 'Failed sends',
       activeReview: 'failed',
+      activeReviewRunbook: {
+        detail: 'The latest send attempt failed.',
+        primaryAction: 'Open delivery evidence before retry.',
+        title: 'Retry gate',
+      },
       filteredCount: 2,
       links: buildLinks(),
       totalCount: 10,
@@ -26,11 +31,16 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('Notification operation filters');
     expect(rendered).toContain('Active queue: Failed sends');
     expect(rendered).toContain('latest delivery attempts that returned an FCM push failure.');
+    expect(rendered).toContain('Retry gate');
+    expect(rendered).toContain('The latest send attempt failed.');
+    expect(rendered).toContain('Next action: Open delivery evidence before retry.');
     expect(rendered).toContain('Active booking trace: book-1234');
     expect(rendered).toContain('Showing 2 of 10');
     expect(rendered).toContain('Clear filter');
     expect(rendered).toContain('Booking book-1234');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications', '/notifications?review=failed']));
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/notifications', '/notifications?review=failed']),
+    );
     expect(ariaCurrentValuesIn(section)).toEqual(['page']);
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
   });
@@ -41,6 +51,7 @@ describe('NotificationFilterBoardSection', () => {
       activeFilterDescription: null,
       activeFilterLabel: null,
       activeReview: '',
+      activeReviewRunbook: null,
       filteredCount: 10,
       links: buildLinks(),
       totalCount: 10,

@@ -6,11 +6,18 @@ export type NotificationFilterLink = {
   readonly review: string;
 };
 
+export type NotificationReviewRunbookView = {
+  readonly detail: string;
+  readonly primaryAction: string;
+  readonly title: string;
+};
+
 type NotificationFilterBoardSectionProps = {
   readonly activeBookingLabel: string | null;
   readonly activeFilterDescription: string | null;
   readonly activeFilterLabel: string | null;
   readonly activeReview: string;
+  readonly activeReviewRunbook: NotificationReviewRunbookView | null;
   readonly filteredCount: number;
   readonly links: readonly NotificationFilterLink[];
   readonly totalCount: number;
@@ -21,6 +28,7 @@ export function NotificationFilterBoardSection({
   activeFilterDescription,
   activeFilterLabel,
   activeReview,
+  activeReviewRunbook,
   filteredCount,
   links,
   totalCount,
@@ -32,7 +40,9 @@ export function NotificationFilterBoardSection({
       <div className="toolbar">
         <div>
           <h3>Notification operation filters</h3>
-          <p className="muted">Open each queue directly from the command dashboard without hunting through rows.</p>
+          <p className="muted">
+            Open each queue directly from the command dashboard without hunting through rows.
+          </p>
           {activeFilterLabel && activeFilterDescription ? (
             <p className="muted">
               Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
@@ -43,6 +53,15 @@ export function NotificationFilterBoardSection({
               Active booking trace: <strong>{activeBookingLabel}</strong>. Showing only notifications tied to
               this booking id.
             </p>
+          ) : null}
+          {activeReviewRunbook ? (
+            <div className="admin-mt-10">
+              <span className="pill pill-info">{activeReviewRunbook.title}</span>
+              <p className="muted admin-mt-6">{activeReviewRunbook.detail}</p>
+              <p className="muted admin-mt-6">
+                <strong>Next action:</strong> {activeReviewRunbook.primaryAction}
+              </p>
+            </div>
           ) : null}
         </div>
         <span className={`pill ${isFiltered ? 'pill-warn' : 'pill-success'}`}>

@@ -75,6 +75,7 @@ export default async function NotificationsPage({
           }
           activeFilterLabel={model.activeFilter?.review ? model.activeFilter.label : null}
           activeReview={model.filters.review}
+          activeReviewRunbook={model.reviewRunbook}
           filteredCount={model.notifications.length}
           links={notificationFilterLinks}
           totalCount={model.allNotifications.length}

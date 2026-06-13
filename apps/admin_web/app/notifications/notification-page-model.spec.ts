@@ -14,6 +14,7 @@ import {
   isStalePushDeviceDelivery,
   notificationFilterDescription,
   notificationFilterLinks,
+  notificationReviewRunbook,
   sortNotifications,
 } from './notification-page-model';
 
@@ -574,6 +575,7 @@ describe('notification page model', () => {
     ]);
     expect(model.notifications.map((item) => item.id)).toEqual(['notification-failed']);
     expect(model.notificationRows.map((row) => row.id)).toEqual(['notification-failed']);
+    expect(model.reviewRunbook).toMatchObject({ title: 'Retry gate' });
     expect(model.summary).toMatchObject({ failed: 1, sent: 1 });
   });
 
@@ -815,7 +817,7 @@ describe('notification page model', () => {
       'latest delivery attempts that returned an FCM push failure.',
     );
     expect(notificationFilterDescription('partner-alerts')).toBe(
-      'booking and payout alerts sent to partners.',
+      'booking and payout alerts sent to Partners.',
     );
     expect(notificationFilterDescription('stale-device')).toBe(
       'delivery attempts made with old push token timestamps.',
@@ -830,6 +832,21 @@ describe('notification page model', () => {
     expect(emptyNotificationMessage('failed', 'booking-1', (value) => `short-${value}`)).toBe(
       'No notifications currently match booking short-booking-1. Confirm the booking created an alert row before retrying delivery.',
     );
+    expect(notificationReviewRunbook('failed')).toMatchObject({
+      primaryAction:
+        'Open the row delivery evidence and audit trail, fix the blocker, then use Retry only after the delivery path is valid.',
+      title: 'Retry gate',
+    });
+    expect(notificationReviewRunbook('disabled-device')).toMatchObject({
+      title: 'Device recovery gate',
+    });
+    expect(notificationReviewRunbook('stale-device')).toMatchObject({
+      title: 'Token freshness gate',
+    });
+    expect(notificationReviewRunbook('pending')).toMatchObject({
+      title: 'Worker path gate',
+    });
+    expect(notificationReviewRunbook('unknown')).toBeNull();
   });
 
   it('detects stale push token timestamps without double-counting disabled devices', () => {
