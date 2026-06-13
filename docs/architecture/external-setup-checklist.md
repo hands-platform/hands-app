@@ -105,6 +105,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 After downloading the Firebase Admin private key JSON from the same Firebase project as the customer and Partner `google-services.json` files, install it outside Git with:
 
 ```powershell
+npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json -CheckOnly
 npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json -UpdateEnv
 ```
 

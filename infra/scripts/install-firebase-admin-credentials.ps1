@@ -6,6 +6,7 @@ param(
   [string]$DockerContainerCredentialsPath = "/run/secrets/firebase-admin.json",
   [string]$EnvFile = ".env",
   [switch]$UpdateEnv,
+  [switch]$CheckOnly,
   [switch]$Force
 )
 
@@ -220,6 +221,31 @@ $destinationFullPath = [System.IO.Path]::GetFullPath($destinationPath)
 
 if (Test-IsSubPath -ParentPath $repoRoot -ChildPath $destinationFullPath) {
   throw "Destination must stay outside the Git workspace. Use a path under C:\dev\hands-secrets or another private folder."
+}
+
+if ($CheckOnly) {
+  $sourceArg = ConvertTo-CommandArgument -Value $sourceFullPath
+  $summary = [ordered]@{
+    ok = $true
+    mode = "check-only"
+    source = $sourceFullPath
+    plannedDestination = $destinationFullPath
+    plannedEnvFile = if ($UpdateEnv) { Resolve-FullPath $EnvFile } else { $null }
+    firebaseProject = [ordered]@{
+      adminCredentialProjectId = [string]$sourceJson.project_id
+      expectedMobileProjectId = $expectedMobileProjectId
+    }
+    nextCommands = @(
+      "npm.cmd run fcm:credentials:install -- -SourcePath $sourceArg -UpdateEnv",
+      "npm.cmd run security:secrets",
+      "npm.cmd run fcm:credentials-check",
+      "npm.cmd run docker:contract",
+      "npm.cmd run external:check:push"
+    )
+  }
+
+  $summary | ConvertTo-Json -Depth 4
+  exit 0
 }
 
 if (-not (Test-Path -LiteralPath $secretRootFullPath)) {

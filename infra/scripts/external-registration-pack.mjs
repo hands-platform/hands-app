@@ -309,6 +309,7 @@ const registrationItems = [
       ...(firebasePushReady
         ? []
         : [
+            'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -CheckOnly',
             'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
           ]),
       'npm.cmd run security:secrets',

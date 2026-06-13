@@ -163,7 +163,7 @@ function nextSetupSteps({ firebasePushReady }) {
         'Set FCM_SMOKE_DEVICE_TOKEN for the same app session, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers an enabled device, before running live fcm:push-smoke.',
       ]
     : [
-        'After downloading a Firebase service account JSON from the same project as the mobile google-services.json files, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -UpdateEnv, then npm.cmd run security:secrets, npm.cmd run fcm:credentials-check, and npm.cmd run docker:contract.',
+        'After downloading a Firebase service account JSON from the same project as the mobile google-services.json files, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -CheckOnly, then install with -UpdateEnv, run npm.cmd run security:secrets, npm.cmd run fcm:credentials-check, and npm.cmd run docker:contract.',
       ];
 
   return [...preparationSteps, ...fcmSteps, ...followUpSteps];
