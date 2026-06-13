@@ -152,12 +152,10 @@ import { bookingMatchingEscalationBoardInput } from './booking-matching-escalati
 import { bookingMatchingEscalationRowInputFromBooking } from './booking-matching-escalation-row-inputs';
 import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
 import {
-  bookingMonitorSelectionFromFacts,
-  bookingMonitorSelectionLabel,
-  bookingMonitorSelectionPathLabel,
-  bookingMonitorSelectionToneClass,
-} from './booking-monitor-selection';
-import { bookingMonitorSelectionFactsFromBooking } from './booking-monitor-selection-inputs';
+  bookingMonitorSelectionCopy,
+  bookingMonitorSelectionLabelForBooking,
+  bookingMonitorSelectionPathLabelForBooking,
+} from './booking-monitor-selection-model';
 import {
   bookingMonitorListCashDebtAmountLabel,
   bookingMonitorListFirstPickPhoneLabel,
@@ -687,7 +685,7 @@ function bookingMonitorListLocation(
 }
 
 function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
-  return bookingMonitorSelectionFromFacts(bookingSelectionFacts(booking));
+  return bookingMonitorSelectionCopy(booking);
 }
 
 function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): BookingCommandLane[] {
@@ -789,7 +787,7 @@ function bookingFlagNextActionTags(booking: AdminBooking) {
   return [
     booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
     booking.chatRoom ? 'chat ready' : 'chat pending',
-    selectionLabel(booking),
+    bookingMonitorSelectionLabelForBooking(booking),
   ];
 }
 
@@ -868,8 +866,8 @@ function buildMatchingEscalationRows(
         marketplaceCount: counts.marketplaceParticipantCount,
         preferredAwaitingDecision: bookingFirstPickPending(booking),
         selectableCount: counts.customerSelectableCount,
-        selectionLabel: selectionLabel(booking),
-        selectionPathLabel: selectionPathLabel(booking),
+        selectionLabel: bookingMonitorSelectionLabelForBooking(booking),
+        selectionPathLabel: bookingMonitorSelectionPathLabelForBooking(booking),
       });
     }),
   );
@@ -1145,21 +1143,5 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     preferredAwaitingDecision: bookingFirstPickPending(booking),
     marketplacePartnerCount: marketplaceCount,
   });
-}
-
-function selectionLabel(booking: AdminBooking) {
-  return bookingMonitorSelectionLabel(bookingSelectionFacts(booking));
-}
-
-function selectionPathLabel(booking: AdminBooking) {
-  return bookingMonitorSelectionPathLabel(bookingSelectionFacts(booking));
-}
-
-function selectionToneClass(booking: AdminBooking) {
-  return bookingMonitorSelectionToneClass(bookingSelectionFacts(booking));
-}
-
-function bookingSelectionFacts(booking: AdminBooking) {
-  return bookingMonitorSelectionFactsFromBooking(booking);
 }
 
