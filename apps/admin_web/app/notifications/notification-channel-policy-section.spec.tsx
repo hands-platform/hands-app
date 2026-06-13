@@ -37,7 +37,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
   });
 
-  it('shows the suggested non partner-alert smoke id when partner-alert policy blocks FCM', () => {
+  it('shows the suggested standard notification smoke id when partner-alert policy blocks FCM', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 4,
       fcmDeliveries: 3,

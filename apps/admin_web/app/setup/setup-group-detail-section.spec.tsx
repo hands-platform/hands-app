@@ -66,7 +66,7 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:token-smoke -- --dry-run',
             'npm.cmd run fcm:push-smoke -- --dry-run',
             'npm.cmd run fcm:push-smoke -- --preflight',
-            '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested non partner-alert id>"; npm.cmd run fcm:push-smoke -- --preflight',
+            '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested standard notification id>"; npm.cmd run fcm:push-smoke -- --preflight',
             'npm.cmd run fcm:token-smoke',
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
@@ -92,7 +92,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('without sending FCM');
     expect(rendered).toContain('Partner alert policy fallback');
     expect(rendered).toContain('When Partner alert preflight is routed to in-app delivery');
-    expect(rendered).toContain('preflight suggested non partner-alert id');
+    expect(rendered).toContain('preflight suggested standard notification id');
     expect(rendered).toContain('Live push send');
     expect(rendered).toContain('reuse an enabled device already registered');
     expect(rendered).toContain('Review queues');

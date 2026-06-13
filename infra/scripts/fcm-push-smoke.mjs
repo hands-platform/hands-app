@@ -715,13 +715,13 @@ function fcmSmokeDisplayText(value) {
 
 function alternativeNotificationHint(alternativeNotificationPreflights) {
   const fallback =
-    'Set FCM_SMOKE_NOTIFICATION_ID to a non-Partner-alert notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live FCM retry.';
+    'Set FCM_SMOKE_NOTIFICATION_ID to a standard notification, set FCM_SMOKE_EXPECT_PROVIDER to the policy-routed provider, or intentionally update the policy before live FCM retry.';
   const [firstAlternative] = alternativeNotificationPreflights;
   if (!firstAlternative?.id) {
     return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. ${fallback}`;
   }
 
-  return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest non-Partner-alert ${firstAlternative.type} notification for this same role/phone, or intentionally update the policy before live FCM retry.`;
+  return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest standard notification for this same role/phone, or intentionally update the policy before live FCM retry.`;
 }
 
 function firebaseAdminCredentialAction() {

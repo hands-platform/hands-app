@@ -141,7 +141,7 @@ describe('notification page model', () => {
     expect(summary.policyLabel).toBe('FCM for all bookings (legacy saved value)');
   });
 
-  it('suggests a same-provider non partner-alert notification for FCM smoke fallback', () => {
+  it('suggests a same-provider standard notification for FCM smoke fallback', () => {
     const fallback = buildNotificationPartnerAlertSmokeFallback(
       [
         notification({
@@ -228,7 +228,7 @@ describe('notification page model', () => {
     ).toBeNull();
   });
 
-  it('keeps Partner-facing fallback copy when no non partner-alert smoke candidate exists', () => {
+  it('keeps Partner-facing fallback copy when no standard smoke candidate exists', () => {
     const fallback = buildNotificationPartnerAlertSmokeFallback(
       [
         notification({

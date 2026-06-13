@@ -56,7 +56,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     {
       title: 'Partner alert policy fallback',
       detail:
-        'When Partner alert preflight is routed to in-app delivery, reuse the suggested non partner-alert notification id for an FCM-only smoke check.',
+        'When Partner alert preflight is routed to in-app delivery, reuse the suggested standard notification id for an FCM-only smoke check.',
       commands: commands.filter((command) => command.includes('FCM_SMOKE_NOTIFICATION_ID')),
     },
     {
