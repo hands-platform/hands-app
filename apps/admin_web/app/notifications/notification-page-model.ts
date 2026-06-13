@@ -49,7 +49,7 @@ const PARTNER_ALERT_TYPE_SET: ReadonlySet<string> = new Set(PARTNER_ALERT_TYPES)
 const notificationReviewDescriptions: Readonly<Record<string, string>> = {
   'disabled-device': 'users or partners with disabled push devices.',
   failed: 'delivery attempts that returned a push provider failure.',
-  fcm: 'notifications that attempted OS push delivery through FCM.',
+  fcm: 'notifications that attempted FCM push delivery.',
   'in-app-route': 'notifications intentionally kept in the app inbox route.',
   'needs-retry': 'notifications whose delivery path should be reviewed before retry.',
   'no-show': 'customer and partner alerts created when operations marks a booking as no-show.',
@@ -213,7 +213,7 @@ export function buildNotificationMetrics(
       helper: 'Partner-facing alerts.',
     },
     { label: 'No-show alerts', value: summary.noShow, helper: 'No-show support review alerts.' },
-    { label: 'FCM route', value: channelSummary.fcmDeliveries, helper: 'OS push attempts.' },
+    { label: 'FCM route', value: channelSummary.fcmDeliveries, helper: 'FCM push attempts.' },
   ];
 }
 

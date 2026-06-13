@@ -100,14 +100,14 @@ describe('notification page model', () => {
     expect(buildNotificationDeliveryOpsQueue([])).toEqual([]);
   });
 
-  it('builds partner alert channel summary from policy and delivery providers', () => {
+  it('builds partner alert routing summary from policy and delivery providers', () => {
     const summary = buildNotificationChannelSummary(buildNotifications(), [
       {
         category: 'notifications',
         enforced: true,
         key: 'notification.partner_alert_channel',
-        label: 'Partner alert channel',
-        options: [{ label: 'In-app first', tradeoff: 'No OS push by default.', value: 'in_app_first' }],
+        label: 'Partner alert routing',
+        options: [{ label: 'In-app first', tradeoff: 'No FCM push by default.', value: 'in_app_first' }],
         value: 'in_app_first',
       },
     ]);
@@ -124,7 +124,7 @@ describe('notification page model', () => {
     expect(buildNotificationChannelSummary([], []).policyLabel).toBe('Not configured');
   });
 
-  it('maps the deprecated partner alert OS push value to FCM-facing Admin copy', () => {
+  it('maps the deprecated partner alert push value to FCM-facing Admin copy', () => {
     const summary = buildNotificationChannelSummary(
       [],
       [
@@ -132,7 +132,7 @@ describe('notification page model', () => {
           category: 'notifications',
           enforced: true,
           key: 'notification.partner_alert_channel',
-          label: 'Partner alert channel',
+          label: 'Partner alert routing',
           value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
         },
       ],
@@ -179,7 +179,7 @@ describe('notification page model', () => {
           category: 'notifications',
           enforced: true,
           key: 'notification.partner_alert_channel',
-          label: 'Partner alert channel',
+          label: 'Partner alert routing',
           value: 'IN_APP_WITH_PUSH_LATER',
         },
       ],
@@ -219,7 +219,7 @@ describe('notification page model', () => {
             category: 'notifications',
             enforced: true,
             key: 'notification.partner_alert_channel',
-            label: 'Partner alert channel',
+            label: 'Partner alert routing',
             value: 'FCM_FOR_ALL_BOOKINGS',
           },
         ],

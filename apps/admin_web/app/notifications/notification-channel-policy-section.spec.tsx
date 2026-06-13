@@ -25,7 +25,7 @@ describe('NotificationChannelPolicySection', () => {
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
   });
 
-  it('uses a neutral FCM badge when no OS push deliveries exist', () => {
+  it('uses a neutral FCM badge when no FCM push deliveries exist', () => {
     const section = NotificationChannelPolicySection({
       inAppDeliveries: 3,
       fcmDeliveries: 0,
