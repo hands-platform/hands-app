@@ -460,6 +460,15 @@ const pages = [
   {
     path: '/notifications?review=disabled-device',
     markers: ['Notifications', 'Disabled devices', 'Delivery operations queue', 'Device recovery gate'],
+    followUps: [
+      {
+        hrefPattern:
+          /href="([^"]*\/notifications\?review=disabled-device(?:&amp;|&)[^"]*confirm=enable-device[^"]*)"/,
+        label: 'disabled-device confirmation',
+        markers: ['Re-enable device', 'Device recovery gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+    ],
   },
   {
     path: '/notifications?review=stale-device',
