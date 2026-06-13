@@ -8,8 +8,25 @@ import {
 describe('notification device token helpers', () => {
   it('resolves the stored push device role from authenticated roles', () => {
     expect(resolvePushDeviceRole([Role.CUSTOMER, Role.PROVIDER])).toBe(Role.CUSTOMER);
+    expect(resolvePushDeviceRole([Role.CUSTOMER, Role.PROVIDER], Role.PROVIDER)).toBe(Role.PROVIDER);
+    expect(resolvePushDeviceRole([Role.CUSTOMER], Role.PROVIDER)).toBe(Role.CUSTOMER);
     expect(resolvePushDeviceRole([Role.PROVIDER])).toBe(Role.PROVIDER);
     expect(resolvePushDeviceRole([Role.ADMIN])).toBeNull();
+  });
+
+  it('uses the active authenticated role for multi-role token registration', () => {
+    const lastSeenAt = new Date('2026-06-11T00:00:00.000Z');
+
+    expect(
+      pushDeviceRegistrationInput(
+        { id: 'user-1', activeRole: Role.PROVIDER, roles: [Role.CUSTOMER, Role.PROVIDER] },
+        { token: 'fcm-token-1', platform: 'android' },
+        lastSeenAt,
+      ),
+    ).toMatchObject({
+      update: { role: Role.PROVIDER },
+      create: { role: Role.PROVIDER },
+    });
   });
 
   it('builds authenticated token registration upsert input', () => {

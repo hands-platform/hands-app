@@ -7,6 +7,8 @@ import { AuthenticatedUser } from './auth.types';
 import { jwtAccessSecretFromConfig } from './jwt-secrets';
 
 type NestJwtPayload = {
+  activeRole?: Role;
+  role?: Role;
   sub?: string;
   roles?: Role[];
 };
@@ -71,6 +73,7 @@ export class AuthTokenService {
 
       return {
         id: payload.sub,
+        activeRole: payload.activeRole ?? payload.role,
         roles: payload.roles ?? [],
         authProvider: 'nest',
       };
@@ -109,6 +112,7 @@ export class AuthTokenService {
 
     return {
       id: user.id,
+      activeRole: requestedRoles[0],
       roles: effectiveRoles,
       authProvider: 'supabase',
       externalUserId: payload.sub,

@@ -1,6 +1,7 @@
 import { Role } from '@prisma/client';
 
 export type NotificationDeviceTokenUser = {
+  activeRole?: Role;
   id: string;
   roles: readonly Role[];
 };
@@ -10,7 +11,11 @@ export type RegisterDeviceTokenInput = {
   platform: string;
 };
 
-export function resolvePushDeviceRole(roles: readonly Role[]) {
+export function resolvePushDeviceRole(roles: readonly Role[], activeRole?: Role) {
+  if (activeRole && isPushDeviceRole(activeRole) && roles.includes(activeRole)) {
+    return activeRole;
+  }
+
   if (roles.includes(Role.CUSTOMER)) {
     return Role.CUSTOMER;
   }
@@ -22,12 +27,16 @@ export function resolvePushDeviceRole(roles: readonly Role[]) {
   return null;
 }
 
+function isPushDeviceRole(role: Role) {
+  return role === Role.CUSTOMER || role === Role.PROVIDER;
+}
+
 export function pushDeviceRegistrationInput(
   user: NotificationDeviceTokenUser,
   input: RegisterDeviceTokenInput,
   lastSeenAt = new Date(),
 ) {
-  const role = requirePushDeviceRole(user.roles);
+  const role = requirePushDeviceRole(user.roles, user.activeRole);
 
   return {
     where: { token: input.token },
@@ -48,8 +57,8 @@ export function pushDeviceRegistrationInput(
   };
 }
 
-function requirePushDeviceRole(roles: readonly Role[]) {
-  const role = resolvePushDeviceRole(roles);
+function requirePushDeviceRole(roles: readonly Role[], activeRole?: Role) {
+  const role = resolvePushDeviceRole(roles, activeRole);
   if (!role) {
     throw new Error('Push device registration requires a customer or provider role');
   }

@@ -57,15 +57,20 @@ for (const actor of [
     method: 'POST',
     body: JSON.stringify({ phone: actor.phone, otp, role: actor.role }),
   });
+  const refreshedAuth = await request('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: auth.refreshToken }),
+  });
   const token = `hands-fcm-token-smoke-${actor.role.toLowerCase()}-${startedAt}`;
   const registeredDevice = await request('/notifications/device-token/register', {
     method: actor.role === 'CUSTOMER' ? 'PATCH' : 'POST',
-    headers: { authorization: `Bearer ${auth.accessToken}` },
+    headers: { authorization: `Bearer ${refreshedAuth.accessToken}` },
     body: JSON.stringify({ token, platform }),
   });
 
   if (
     registeredDevice.userId !== auth.user.id ||
+    registeredDevice.role !== actor.role ||
     registeredDevice.platform !== platform ||
     registeredDevice.enabled !== true
   ) {
@@ -78,7 +83,7 @@ for (const actor of [
 
   const disabled = await request('/notifications/device-token', {
     method: 'DELETE',
-    headers: { authorization: `Bearer ${auth.accessToken}` },
+    headers: { authorization: `Bearer ${refreshedAuth.accessToken}` },
     body: JSON.stringify({ token }),
   });
   if (!disabled.ok || disabled.disabled < 1) {
@@ -88,7 +93,9 @@ for (const actor of [
   results.push({
     role: actor.role,
     platform: registeredDevice.platform,
+    registeredRole: registeredDevice.role,
     registered: true,
+    refreshed: true,
     disabled: disabled.disabled,
   });
 }

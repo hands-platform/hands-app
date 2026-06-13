@@ -37,6 +37,28 @@ describe('NotificationsService device tokens', () => {
     });
   });
 
+  it('keeps provider app token registration on the active provider role for multi-role users', async () => {
+    const prisma = {
+      pushDevice: {
+        upsert: jest.fn().mockResolvedValue({ id: 'device-1' }),
+      },
+    };
+    const queue = { add: jest.fn() };
+    const service = new NotificationsService(prisma as never, queue as never);
+
+    await service.registerDeviceToken(
+      { id: 'user-1', activeRole: Role.PROVIDER, roles: [Role.CUSTOMER, Role.PROVIDER] },
+      { token: 'fcm-token-1', platform: 'android' },
+    );
+
+    expect(prisma.pushDevice.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({ role: Role.PROVIDER }),
+        create: expect.objectContaining({ role: Role.PROVIDER }),
+      }),
+    );
+  });
+
   it('disables only the authenticated user device token', async () => {
     const prisma = {
       pushDevice: {

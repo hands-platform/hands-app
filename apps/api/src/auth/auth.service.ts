@@ -9,6 +9,9 @@ import { jwtRefreshSecretFromConfig } from './jwt-secrets';
 import { OtpDeliveryService } from './otp-delivery.service';
 
 type RefreshPayload = {
+  activeRole?: Role;
+  authProvider?: 'supabase';
+  role?: Role;
   sub?: string;
   tokenType?: string;
 };
@@ -86,11 +89,7 @@ export class AuthService {
       include: { customerProfile: true, providerProfile: true },
     });
 
-    const accessToken = this.jwt.sign({ sub: user.id, roles: user.roles });
-    const refreshToken = this.jwt.sign(
-      { sub: user.id, tokenType: 'refresh' },
-      { secret: this.refreshSecret(), expiresIn: '30d' },
-    );
+    const { accessToken, refreshToken } = this.signSessionTokens(user, role);
 
     return {
       user,
@@ -117,9 +116,17 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token subject no longer exists');
     }
 
+    const activeRole = this.resolveRefreshActiveRole(payload, user.roles);
+
     return {
       refreshToken,
-      accessToken: this.jwt.sign({ sub: user.id, roles: user.roles, refreshed: true }),
+      accessToken: this.jwt.sign({
+        sub: user.id,
+        roles: user.roles,
+        refreshed: true,
+        ...(activeRole ? { activeRole } : {}),
+        ...(payload.authProvider ? { authProvider: payload.authProvider } : {}),
+      }),
     };
   }
 
@@ -133,11 +140,9 @@ export class AuthService {
       include: { customerProfile: true, providerProfile: true },
     });
 
-    const accessToken = this.jwt.sign({ sub: user.id, roles: user.roles, authProvider: 'supabase' });
-    const refreshToken = this.jwt.sign(
-      { sub: user.id, tokenType: 'refresh', authProvider: 'supabase' },
-      { secret: this.refreshSecret(), expiresIn: '30d' },
-    );
+    const { accessToken, refreshToken } = this.signSessionTokens(user, role, {
+      authProvider: 'supabase',
+    });
 
     return {
       user,
@@ -152,6 +157,38 @@ export class AuthService {
       throw new UnauthorizedException('Supabase mobile exchange only supports CUSTOMER or PROVIDER roles');
     }
     return role as MobileExchangeRole;
+  }
+
+  private signSessionTokens(
+    user: { id: string; roles: Role[] },
+    activeRole: Role,
+    extraPayload: { authProvider?: 'supabase' } = {},
+  ) {
+    const sessionPayload = { sub: user.id, activeRole, roles: user.roles, ...extraPayload };
+
+    return {
+      accessToken: this.jwt.sign(sessionPayload),
+      refreshToken: this.jwt.sign(
+        { sub: user.id, tokenType: 'refresh', activeRole, ...extraPayload },
+        { secret: this.refreshSecret(), expiresIn: '30d' },
+      ),
+    };
+  }
+
+  private resolveRefreshActiveRole(payload: RefreshPayload, userRoles: Role[]) {
+    const payloadRole = payload.activeRole ?? payload.role;
+    if (payloadRole && this.isMobileExchangeRole(payloadRole) && userRoles.includes(payloadRole)) {
+      return payloadRole;
+    }
+
+    const mobileRoles = userRoles.filter((role): role is MobileExchangeRole =>
+      this.isMobileExchangeRole(role),
+    );
+    return mobileRoles.length === 1 ? mobileRoles[0] : undefined;
+  }
+
+  private isMobileExchangeRole(role: Role): role is MobileExchangeRole {
+    return MOBILE_EXCHANGE_ROLES.includes(role as MobileExchangeRole);
   }
 
   private async assertValidOtp(phone: string, otp: string) {
