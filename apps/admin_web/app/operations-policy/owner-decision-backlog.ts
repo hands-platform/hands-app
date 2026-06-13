@@ -208,7 +208,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
     },
     {
       owner: 'Growth',
-      title: 'Partner alert channel',
+      title: 'Partner alert routing',
       question:
         'When should time-sensitive booking alerts move from in-app only to mandatory FCM push delivery?',
       evidence:

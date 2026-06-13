@@ -79,7 +79,7 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
     {
       step: '6',
       title: 'Matched chat and service execution',
-      detail: `After final partner selection, matched chat and operational follow-up continue in-app. Alerts currently follow "${alertChannel}".`,
+      detail: `After final partner selection, matched chat and operational follow-up continue in-app. Partner alert routing currently follows "${alertChannel}".`,
       className: 'timeline-done',
       tags: [
         { label: 'Matched chat opens', tone: 'pill-success' },

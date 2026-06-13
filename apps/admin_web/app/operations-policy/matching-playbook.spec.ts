@@ -28,6 +28,7 @@ describe('operations policy matching playbook', () => {
       label: 'Block marketplace participation while negative',
       tone: 'pill-danger',
     });
+    expect(playbook[5].detail).toContain('Partner alert routing currently follows "In-app first"');
     expect(JSON.stringify(playbook)).not.toContain('missing:');
   });
 });

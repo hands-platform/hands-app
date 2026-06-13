@@ -378,7 +378,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Alert routing',
       title: 'Controls partner booking alert delivery route',
       detail:
-        'In-app mode records inbox notifications only. FCM mode routes partner booking alerts through OS push delivery and logs delivery results.',
+        'In-app mode records inbox notifications only. FCM mode routes partner booking alerts through FCM push delivery and logs delivery results.',
       saveChecks: [
         {
           label: 'Delivery operations queue',

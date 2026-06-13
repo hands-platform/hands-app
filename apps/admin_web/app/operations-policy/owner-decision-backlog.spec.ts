@@ -11,6 +11,7 @@ describe('operations owner decision backlog', () => {
     expect(titles).toContain('Negative wallet direct-request boundary');
     expect(titles).toContain('Payout batch cycle');
     expect(titles).toContain('No-show evidence');
+    expect(titles).toContain('Partner alert routing');
 
     for (const item of backlog) {
       expect(item.owner).toBeTruthy();

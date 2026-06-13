@@ -110,7 +110,7 @@ describe('admin live operations policy helpers', () => {
     expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(true);
   });
 
-  it('maps current and legacy partner alert OS push values to FCM readiness', () => {
+  it('maps current and legacy partner alert push values to FCM readiness', () => {
     expect(adminPartnerAlertChannelRoutesToFcm('FCM_FOR_ALL_BOOKINGS')).toBe(true);
     expect(adminPartnerAlertChannelRoutesToFcm('ONESIGNAL_FOR_ALL_BOOKINGS')).toBe(true);
     expect(adminPartnerAlertChannelRoutesToFcm('IN_APP_WITH_PUSH_LATER')).toBe(false);

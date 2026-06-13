@@ -1043,7 +1043,7 @@ export default async function OperationsPolicyPage({
             detail="No-show is an operational closeout state in MVP, not a person judgment. Operators should review evidence before payment or support action."
           />
           <DecisionHint
-            title="Partner alert channel"
+            title="Partner alert routing"
             recommendation="Keep in-app notifications first, then promote FCM after production credentials are stable."
             detail="The system can record notifications now; push delivery should become mandatory only after monitoring is ready."
           />
@@ -1465,12 +1465,12 @@ function buildPolicySimulation(
         helper: `${invitedPartners.length} partner(s) would be invited now after distance sorting.`,
       },
       {
-        label: 'Partner alert',
+        label: 'Partner alert routing',
         value: policyDisplayByKey(settings, 'notification.partner_alert_channel'),
         helper: `${
           adminPartnerAlertChannelRoutesToFcm(alertChannel)
-            ? 'OS push plus in-app listing'
-            : 'In-app listing now, OS push later'
+            ? 'FCM push plus in-app listing'
+            : 'In-app listing now, FCM push later'
         } for eligible partners.`,
       },
     ],
@@ -3163,7 +3163,7 @@ function buildOwnerDecisionPressure(
       pillClass: finalGatePressure ? 'pill-danger' : 'pill-success',
     },
     {
-      title: 'Partner push readiness',
+      title: 'Partner FCM readiness',
       status: pushGap ? 'Push gap' : 'Ready',
       detail: `${enabledPushPartners}/${onlinePartners} online partner(s) have enabled push devices in the current snapshot.`,
       operatorAction: pushGap
