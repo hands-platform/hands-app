@@ -11,14 +11,8 @@ import { emptyBookingMessage } from './booking-empty-message';
 import {
   bookingTimestamp,
   formatBookingClockTime as formatClockTime,
-  relativeTimeLabel,
 } from './booking-list-time';
-import {
-  bookingGateMatchesFilter,
-  buildBookingGateTriage,
-  type BookingGateFilter,
-} from './booking-gate-filters';
-import { buildBookingGateRejectionLane } from './booking-gate-rejection-lane';
+import type { BookingGateFilter } from './booking-gate-filters';
 import {
   bookingPaymentFilterOptions,
   bookingStatusFilterOptions,
@@ -61,6 +55,7 @@ import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model
 import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
+import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
@@ -106,24 +101,21 @@ export function BookingMonitor({
       ),
     [bookings],
   );
-  const orderedBookingCreateRejections = useMemo(
+  const gateModel = useMemo(
     () =>
-      [...bookingCreateRejections].sort(
-        (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-      ),
-    [bookingCreateRejections],
+      buildBookingMonitorGateModel({
+        activeFilter: gateFilter,
+        logs: bookingCreateRejections,
+        nowMs: currentTimeMs,
+      }),
+    [bookingCreateRejections, currentTimeMs, gateFilter],
   );
-  const visibleBookingCreateRejections = useMemo(
-    () => orderedBookingCreateRejections.filter((log) => bookingGateMatchesFilter(log, gateFilter)),
-    [gateFilter, orderedBookingCreateRejections],
-  );
-  const bookingGateTriage = useMemo(
-    () =>
-      buildBookingGateTriage(orderedBookingCreateRejections, gateFilter, (log) =>
-        relativeTimeLabel(log.createdAt, currentTimeMs),
-      ),
-    [currentTimeMs, gateFilter, orderedBookingCreateRejections],
-  );
+  const {
+    bookingGateRejectionLane,
+    bookingGateTriage,
+    orderedBookingCreateRejections,
+    visibleBookingCreateRejections,
+  } = gateModel;
 
   const summary = useMemo(
     () =>
@@ -137,10 +129,6 @@ export function BookingMonitor({
   const commandCenter = useMemo(
     () => buildBookingMonitorCommandCenter(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
-  );
-  const bookingGateRejectionLane = useMemo(
-    () => buildBookingGateRejectionLane(orderedBookingCreateRejections, currentTimeMs),
-    [currentTimeMs, orderedBookingCreateRejections],
   );
   const commandCenterWithGate = useMemo(
     () => [bookingGateRejectionLane, ...commandCenter],
