@@ -5,6 +5,7 @@ import { ServiceBookingExposureGuardSection } from './service-booking-exposure-g
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
 import { ServiceBookingReadinessQueueSection } from './service-booking-readiness-queue-section';
 import { ServiceCatalogSearchSection } from './service-catalog-search-section';
+import { ServiceCatalogStatusPills } from './service-catalog-status-pills';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 import { ServiceGroupEditGridSection } from './service-group-edit-grid-section';
@@ -34,14 +35,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   return (
     <AdminPageTemplate
       actions={
-        <>
-          <span className="pill pill-success">{model.groupedServices.length} service type(s)</span>
-          <span className="pill pill-info">{model.activeServices.length} active duration option(s)</span>
-          <span className="pill pill-info">{model.payoutRuleCount} payout rule(s)</span>
-          <span className={`pill ${model.activeTaxPolicy ? 'pill-success' : 'pill-warn'}`}>
-            {model.activeTaxPolicy ? `Tax: ${model.activeTaxPolicy.name}` : 'No active tax policy'}
-          </span>
-        </>
+        <ServiceCatalogStatusPills
+          activeServiceCount={model.activeServices.length}
+          activeTaxPolicy={model.activeTaxPolicy}
+          payoutRuleCount={model.payoutRuleCount}
+          serviceTypeCount={model.groupedServices.length}
+        />
       }
       description="Create a service name once, then manage duration options such as 60, 90, and 120 minutes with separate minimum prices and payout policies."
       title="Service catalog"
