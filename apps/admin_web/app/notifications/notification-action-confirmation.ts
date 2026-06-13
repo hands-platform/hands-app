@@ -102,7 +102,7 @@ function buildEnableDeviceConfirmation(
 
 function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {
   for (const notification of notifications) {
-    for (const delivery of notification.deliveries ?? []) {
+    for (const delivery of notificationDeliveries(notification)) {
       if (delivery.pushDevice?.id === pushDeviceId) {
         return {
           delivery,
@@ -124,9 +124,7 @@ function notificationRetryEvidence(notification: AdminNotification) {
 }
 
 function latestNotificationDelivery(notification: AdminNotification) {
-  return [...(notification.deliveries ?? [])].sort(
-    (left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left),
-  )[0];
+  return newestNotificationDeliveries(notification)[0];
 }
 
 function deliveryEvidenceSummary(delivery: NotificationDelivery) {
@@ -147,4 +145,14 @@ function deliveryEvidenceSummary(delivery: NotificationDelivery) {
 function deliveryAttemptMs(delivery: NotificationDelivery) {
   const value = Date.parse(delivery.attemptedAt);
   return Number.isFinite(value) ? value : 0;
+}
+
+function newestNotificationDeliveries(notification: AdminNotification) {
+  return [...notificationDeliveries(notification)].sort(
+    (left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left),
+  );
+}
+
+function notificationDeliveries(notification: AdminNotification): readonly NotificationDelivery[] {
+  return notification.deliveries ?? [];
 }

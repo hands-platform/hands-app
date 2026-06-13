@@ -78,6 +78,41 @@ describe('notification action confirmation', () => {
     );
   });
 
+  it('uses the newest delivery attempt as retry evidence', () => {
+    const confirmation = buildNotificationActionConfirmation(
+      [
+        {
+          ...notification,
+          deliveries: [
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:01:00.000Z',
+              id: 'delivery-old',
+              provider: 'FCM',
+              status: 'FAILED',
+            },
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:04:00.000Z',
+              id: 'delivery-new',
+              provider: 'FCM',
+              response: { failureCode: 'messaging/internal-error' },
+              status: 'FAILED',
+            },
+          ],
+        },
+      ],
+      'retry',
+      {
+        notificationId: notification.id,
+        pushDeviceId: '',
+      },
+    );
+
+    expect(confirmation?.description).toContain('attempted 1 Jun 2026, 07:04');
+    expect(confirmation?.description).toContain('failure messaging/internal-error');
+  });
+
   it('returns null when the requested notification or device is not loaded', () => {
     expect(
       buildNotificationActionConfirmation([notification], 'retry', {
