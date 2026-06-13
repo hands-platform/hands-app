@@ -24,22 +24,31 @@ describe('service booking readiness queue', () => {
       actualCompanyCommission: (_service, rule) => (rule.id === lowFeeRule.id ? 0 : 200),
       formatMoney: (amount, currency) => `${currency} ${amount}`,
       providerPriceImpact: () => ({
+        belowMinimumCount: 1,
+        inactiveOrBlockedCount: 0,
         rows: [
           {
             currency: 'VND',
+            id: 'partner-a-price',
             price: 900,
             providerName: 'Partner A',
+            providerStatus: 'APPROVED',
             reason: 'Partner price is below the admin minimum.',
+            rule: null,
             state: 'below_minimum',
           },
           {
             currency: 'VND',
+            id: 'partner-b-price',
             price: 1300,
             providerName: 'Partner B',
+            providerStatus: 'APPROVED',
             reason: 'No payout rule exists.',
+            rule: null,
             state: 'missing_payout',
           },
         ],
+        unsupportedCount: 1,
       }),
       services: [
         serviceFixture({
@@ -73,7 +82,12 @@ describe('service booking readiness queue', () => {
       activeTaxPolicy: undefined,
       actualCompanyCommission: () => 0,
       formatMoney: (amount, currency) => `${currency} ${amount}`,
-      providerPriceImpact: () => ({ rows: [] }),
+      providerPriceImpact: () => ({
+        belowMinimumCount: 0,
+        inactiveOrBlockedCount: 0,
+        rows: [],
+        unsupportedCount: 0,
+      }),
       services: [
         {
           ...serviceFixture({
