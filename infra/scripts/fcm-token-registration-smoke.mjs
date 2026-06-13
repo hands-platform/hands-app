@@ -30,7 +30,7 @@ if (dryRun) {
           { role: 'PROVIDER', phone: providerPhone },
         ],
         nextActions: [
-          'Run npm.cmd run fcm:token-smoke when API/Docker are ready to verify customer/provider token registration.',
+          'Run npm.cmd run fcm:token-smoke when API/Docker are ready to verify customer/Partner token registration.',
           'Then either set FCM_SMOKE_DEVICE_TOKEN or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after the same app session registers an enabled device.',
         ],
       },

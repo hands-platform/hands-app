@@ -58,7 +58,7 @@ addRecommended(
   'push',
   'PUSH_PROVIDER',
   hasValue('PUSH_PROVIDER'),
-  'Use PUSH_PROVIDER=in_app_only locally; set PUSH_PROVIDER=fcm before production push E2E.',
+  'Use PUSH_PROVIDER=in_app_only locally; set PUSH_PROVIDER=fcm before production FCM push E2E.',
 );
 addRecommended(
   'push',

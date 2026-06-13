@@ -54,10 +54,10 @@ Use `npm.cmd run fcm:push-smoke -- --env=.env` when the smoke-only values live i
 Use `npm.cmd run fcm:push-smoke -- --dry-run` to confirm the merged env, selected role/phone/platform, credential readiness, and next push-smoke actions before sending a live retry. This mode is config-only and does not contact the API or FCM.
 Use `npm.cmd run fcm:push-smoke -- --preflight` to check API readiness, selected notification availability, and device readiness without sending FCM.
 When the selected app session has already registered an enabled push device, set `FCM_SMOKE_USE_REGISTERED_DEVICE=true` to run live push without copying the raw device token into the shell.
-Provider partner-alert notifications follow the `notification.partner_alert_channel` operational policy. If that policy currently routes partner alerts to `IN_APP_ONLY`, preflight suggests a recent non partner-alert `FCM_SMOKE_NOTIFICATION_ID` for the same role/phone when the expected provider is `FCM`.
+Partner-alert notifications follow the `notification.partner_alert_channel` operational policy. If that policy currently routes Partner alerts to `IN_APP_ONLY`, preflight suggests a recent non partner-alert `FCM_SMOKE_NOTIFICATION_ID` for the same role/phone when the expected provider is `FCM`.
 
 ## Expected Result
 
 The script prints a JSON object with `ok: true` and IDs for the booking, chat room, review, payout batch, refund, and verification file.
 
-The FCM token smoke prints `ok: true` after synthetic customer/provider device tokens are registered and disabled. The live FCM smoke uses a real token or an already registered enabled device from the selected role, phone, and platform, then prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.
+The FCM token smoke prints `ok: true` after synthetic customer/Partner device tokens are registered and disabled. The live FCM smoke uses a real token or an already registered enabled device from the selected role, phone, and platform, then prints `ok: true`, the notification id, and the latest delivery provider/status without printing the raw device token.
