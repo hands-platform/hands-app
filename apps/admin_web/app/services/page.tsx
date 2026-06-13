@@ -7,7 +7,6 @@ import { serviceActionNotice } from '../../lib/service-action-notice';
 import { serviceBookingReadinessQueue as buildBookingReadinessQueue } from '../../lib/service-booking-readiness-queue';
 import { serviceBookingTraceRows } from '../../lib/service-booking-trace-rows';
 import { serviceBookingTraceSummary } from '../../lib/service-booking-trace-summary';
-import { serviceBulkPayoutRuleExample } from '../../lib/service-bulk-payout-rule-example';
 import {
   filterServiceGroups,
   filterServices,
@@ -16,31 +15,19 @@ import {
   selectActiveTaxPolicy,
 } from '../../lib/service-catalog-filters';
 import { serviceDurationMatrix } from '../../lib/service-duration-matrix';
-import {
-  formatDurationList,
-  formatGroupPriceRange,
-  missingStandardDurations,
-  standardDurationCoverage,
-} from '../../lib/service-group-display';
+import { formatDurationList, missingStandardDurations } from '../../lib/service-group-display';
 import { servicePayoutLedgerRows } from '../../lib/service-payout-ledger-rows';
 import { actualCompanyCommission, servicePayoutFinance } from '../../lib/service-payout-finance';
 import { servicePricePolicyPreviewRows as buildServicePricePolicyPreviewRows } from '../../lib/service-price-policy-preview-rows';
 import { servicePricePolicyPreviewSummary } from '../../lib/service-price-policy-preview-summary';
-import { servicePriceLadderCoverage } from '../../lib/service-price-ladder-coverage';
 import { servicePricingAuditRows } from '../../lib/service-pricing-audit-rows';
 import { servicePricingHealth as buildPricingHealth } from '../../lib/service-pricing-health';
 import { serviceTypeCoverageRows as buildServiceTypeCoverageRows } from '../../lib/service-type-coverage-rows';
 import { serviceTypeCoverageSummary as buildServiceTypeCoverageSummary } from '../../lib/service-type-coverage-summary';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
-import {
-  bulkUpsertPayoutRules,
-  createService,
-  createServiceDurationSet,
-  updatePayoutRule,
-  updateService,
-  upsertPayoutRule,
-} from './actions';
+import { createService, createServiceDurationSet } from './actions';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
+import { ServiceGroupEditCard } from './service-group-edit-card';
 import { ServicePayoutLedgerSection } from './service-payout-ledger-section';
 import { ServicePricePolicyPreviewSection } from './service-price-policy-preview-section';
 import { ServicePricingAuditTrailSection } from './service-pricing-audit-trail-section';
@@ -558,351 +545,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             </p>
           </article>
         ) : null}
-        {visibleGroupedServices.map((group) => {
-          const durationCoverage = standardDurationCoverage(group.items);
-
-          return (
-            <article className="card" key={group.key}>
-              <div className="toolbar admin-mb-12">
-                <div>
-                  <h2>{group.label}</h2>
-                  <p className="muted">
-                    {formatDurationList(group.items)} option(s) / {formatGroupPriceRange(group.items)}
-                  </p>
-                </div>
-                <div className="actions">
-                  <span className="pill pill-info">{group.key}</span>
-                  <span className={`pill ${durationCoverage.tone}`}>{durationCoverage.label}</span>
-                </div>
-              </div>
-
-              <div className="setup-stage-list">
-                {group.items.map((service) => (
-                  <div className="setup-stage-item" key={service.id}>
-                    <span>{service.active ? 'ON' : 'OFF'}</span>
-                    <div>
-                      <strong>{service.durationMin} min option</strong>
-                      <p className="muted">
-                        Minimum {formatMoney(service.basePrice, 'VND')} / step{' '}
-                        {formatMoney(service.priceStep, 'VND')}
-                      </p>
-                      <p className="muted">
-                        {service._count?.providers ?? 0} partner price row(s), {service._count?.bookings ?? 0}{' '}
-                        booking row(s)
-                      </p>
-                      <ProviderPriceImpact service={service} activeTaxPolicy={activeTaxPolicy} />
-
-                      <form action={updateService} className="form-grid compact-form">
-                        <input type="hidden" name="serviceId" value={service.id} />
-                        <label>
-                          Group key
-                          <input name="serviceGroupKey" defaultValue={service.serviceGroupKey ?? ''} />
-                        </label>
-                        <label>
-                          Name
-                          <input name="name" defaultValue={service.name} />
-                        </label>
-                        <label>
-                          Duration
-                          <input
-                            name="durationMin"
-                            type="number"
-                            min="1"
-                            defaultValue={service.durationMin}
-                          />
-                        </label>
-                        <label>
-                          Minimum price
-                          <input
-                            name="basePrice"
-                            type="number"
-                            min="100000"
-                            step={service.priceStep}
-                            defaultValue={service.basePrice}
-                          />
-                        </label>
-                        <label>
-                          Price step
-                          <input
-                            name="priceStep"
-                            type="number"
-                            min="100000"
-                            step="100000"
-                            defaultValue={service.priceStep}
-                          />
-                        </label>
-                        <label>
-                          Display order
-                          <input name="displayOrder" type="number" defaultValue={service.displayOrder} />
-                        </label>
-                        <label className="full-span">
-                          Description
-                          <input name="description" defaultValue={service.description ?? ''} />
-                        </label>
-                        <label>
-                          Active
-                          <input name="active" type="checkbox" defaultChecked={service.active} />
-                        </label>
-                        <button type="submit">Update service</button>
-                      </form>
-
-                      <h3>Price ladder coverage</h3>
-                      <p className="muted">
-                        Partners may set prices at these increments. Booking stays blocked for any exact
-                        customer price without an active payout rule.
-                      </p>
-                      <div className="participant-list admin-mb-12">
-                        {priceLadderCoverage(service).map((item) => (
-                          <span
-                            className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}
-                            key={`${service.id}-${item.price}`}
-                          >
-                            {formatMoney(item.price, 'VND')}
-                            {item.rule
-                              ? ` -> ${formatMoney(item.rule.providerPayoutAmount, item.rule.currency)}`
-                              : ' missing'}
-                          </span>
-                        ))}
-                      </div>
-
-                      <h3>Payout matrix</h3>
-                      <div className="setup-stage-list admin-mb-12">
-                        {(service.payoutRules ?? []).map((rule) => {
-                          const finance = servicePayoutFinance(service, rule, activeTaxPolicy);
-                          return (
-                            <div className="setup-stage-item" key={rule.id}>
-                              <span>{rule.active ? 'ON' : 'OFF'}</span>
-                              <div>
-                                <strong>
-                                  Customer {formatMoney(rule.customerPrice, rule.currency)} / partner{' '}
-                                  {formatMoney(rule.providerPayoutAmount, rule.currency)}
-                                </strong>
-                                <p className="muted">
-                                  Fee {formatMoney(finance.fee, rule.currency)} / VAT {formatBps(rule.vatBps)}{' '}
-                                  = {formatMoney(finance.vatAmount, rule.currency)} / other cost{' '}
-                                  {formatMoney(rule.otherCostAmount, rule.currency)}
-                                </p>
-                                <p className="muted">
-                                  Withholding projection{' '}
-                                  {formatMoney(finance.withholdingAmount, rule.currency)}
-                                  {finance.taxRuleLabel
-                                    ? ` via ${finance.taxRuleLabel}`
-                                    : ' (no active rule)'}
-                                </p>
-                                <p className="muted">
-                                  Actual company commission after VAT/withholding/other:{' '}
-                                  {formatMoney(finance.actualCompanyCommission, rule.currency)}
-                                </p>
-                                <form action={updatePayoutRule} className="form-grid compact-form">
-                                  <input type="hidden" name="ruleId" value={rule.id} />
-                                  <label>
-                                    Customer price
-                                    <input
-                                      name="customerPrice"
-                                      type="number"
-                                      min={service.basePrice}
-                                      step={service.priceStep}
-                                      defaultValue={rule.customerPrice}
-                                    />
-                                  </label>
-                                  <label>
-                                    Partner payout
-                                    <input
-                                      name="providerPayoutAmount"
-                                      type="number"
-                                      min="0"
-                                      step="1000"
-                                      defaultValue={rule.providerPayoutAmount}
-                                    />
-                                  </label>
-                                  <label>
-                                    VAT bps
-                                    <input
-                                      name="vatBps"
-                                      type="number"
-                                      min="0"
-                                      max="10000"
-                                      defaultValue={rule.vatBps}
-                                    />
-                                  </label>
-                                  <label>
-                                    Other cost
-                                    <input
-                                      name="otherCostAmount"
-                                      type="number"
-                                      min="0"
-                                      defaultValue={rule.otherCostAmount}
-                                    />
-                                  </label>
-                                  <label>
-                                    Notes
-                                    <input name="notes" defaultValue={rule.notes ?? ''} />
-                                  </label>
-                                  <label>
-                                    Active
-                                    <input name="active" type="checkbox" defaultChecked={rule.active} />
-                                  </label>
-                                  <button type="submit">Update payout</button>
-                                </form>
-                              </div>
-                              <small>{rule.id.slice(0, 8)}</small>
-                            </div>
-                          );
-                        })}
-                        {(service.payoutRules ?? []).length === 0 ? (
-                          <span className="muted">
-                            No payout rule yet. Bookings are blocked until a base payout rule is configured.
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <form action={upsertPayoutRule} className="form-grid compact-form">
-                        <input type="hidden" name="serviceId" value={service.id} />
-                        <label>
-                          Customer price
-                          <input
-                            name="customerPrice"
-                            type="number"
-                            min={service.basePrice}
-                            step={service.priceStep}
-                            defaultValue={service.basePrice}
-                          />
-                        </label>
-                        <label>
-                          Partner payout
-                          <input
-                            name="providerPayoutAmount"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            defaultValue={Math.max(
-                              0,
-                              service.basePrice - Math.round(service.basePrice * 0.2),
-                            )}
-                          />
-                        </label>
-                        <label>
-                          VAT bps
-                          <input name="vatBps" type="number" min="0" max="10000" defaultValue="0" />
-                        </label>
-                        <label>
-                          Other cost
-                          <input name="otherCostAmount" type="number" min="0" defaultValue="0" />
-                        </label>
-                        <label className="full-span">
-                          Notes
-                          <input name="notes" placeholder="Internal finance memo" />
-                        </label>
-                        <button type="submit">Upsert payout rule</button>
-                      </form>
-
-                      <h3>Bulk payout ladder import</h3>
-                      <p className="muted">
-                        Paste one row per customer price as <code>customerPrice,providerPayout</code>. This is
-                        saved atomically so partial payout ladders do not leak into booking.
-                      </p>
-                      <form action={bulkUpsertPayoutRules} className="form-grid compact-form">
-                        <input type="hidden" name="serviceId" value={service.id} />
-                        <label className="full-span">
-                          Price ladder rows
-                          <textarea
-                            name="rules"
-                            rows={4}
-                            defaultValue={bulkPayoutRuleExample(service)}
-                            spellCheck={false}
-                          />
-                        </label>
-                        <label>
-                          VAT bps
-                          <input name="vatBps" type="number" min="0" max="10000" defaultValue="0" />
-                        </label>
-                        <label>
-                          Other cost
-                          <input name="otherCostAmount" type="number" min="0" defaultValue="0" />
-                        </label>
-                        <label className="full-span">
-                          Notes
-                          <input name="notes" placeholder="Internal finance memo for this ladder import" />
-                        </label>
-                        <button type="submit">Import payout ladder</button>
-                      </form>
-                    </div>
-                    <small>{service.id.slice(0, 8)}</small>
-                  </div>
-                ))}
-              </div>
-            </article>
-          );
-        })}
+        {visibleGroupedServices.map((group) => (
+          <ServiceGroupEditCard activeTaxPolicy={activeTaxPolicy} group={group} key={group.key} />
+        ))}
       </section>
     </AdminPageTemplate>
-  );
-}
-
-function ProviderPriceImpact({
-  service,
-  activeTaxPolicy,
-}: {
-  service: AdminServiceCatalogItem;
-  activeTaxPolicy: AdminTaxPolicyVersion | undefined;
-}) {
-  const impact = providerPriceImpact(service, activeTaxPolicy);
-
-  return (
-    <div className="service-impact-card">
-      <div className="ops-section-header">
-        <div>
-          <h3>Partner price impact</h3>
-          <p className="muted">
-            Shows which partner prices are visible in the customer app for this exact duration option.
-          </p>
-        </div>
-        <span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>
-          {impact.visibleCount} visible / {impact.hiddenCount} hidden
-        </span>
-      </div>
-      <div className="participant-list">
-        <span className="pill pill-info">{impact.rows.length} loaded row(s)</span>
-        <span className={impact.unsupportedCount ? 'pill pill-warn' : 'pill pill-success'}>
-          {impact.unsupportedCount} missing payout
-        </span>
-        <span className={impact.belowMinimumCount ? 'pill pill-danger' : 'pill pill-success'}>
-          {impact.belowMinimumCount} below minimum
-        </span>
-        <span className={impact.inactiveOrBlockedCount ? 'pill pill-neutral' : 'pill pill-success'}>
-          {impact.inactiveOrBlockedCount} inactive/blocked
-        </span>
-      </div>
-      {impact.rows.length ? (
-        <div className="setup-stage-list">
-          {impact.rows.slice(0, 6).map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span>{row.state === 'bookable' ? 'SHOW' : 'HIDE'}</span>
-              <div>
-                <strong>{row.providerName}</strong>
-                <p className="muted">
-                  Customer {formatMoney(row.price, row.currency)} / partner{' '}
-                  {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
-                </p>
-                <p className="muted">{row.reason}</p>
-                {row.rule ? (
-                  <p className="muted">
-                    Commission projection:{' '}
-                    {formatMoney(
-                      servicePayoutFinance(service, row.rule, activeTaxPolicy).actualCompanyCommission,
-                      row.currency,
-                    )}
-                  </p>
-                ) : null}
-              </div>
-              <small>{row.providerStatus}</small>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="muted">No partner has configured a price for this duration yet.</p>
-      )}
-    </div>
   );
 }
 
@@ -933,16 +580,4 @@ function providerPriceImpact(
     actualCompanyCommission,
     service,
   });
-}
-
-function priceLadderCoverage(service: AdminServiceCatalogItem) {
-  return servicePriceLadderCoverage(service);
-}
-
-function bulkPayoutRuleExample(service: AdminServiceCatalogItem) {
-  return serviceBulkPayoutRuleExample(service);
-}
-
-function formatBps(value: number) {
-  return `${(value / 100).toFixed(2)}%`;
 }
