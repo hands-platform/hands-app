@@ -545,6 +545,7 @@ const pages = [
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   { path: '/audit-log?range=7d', markers: ['Audit Log', 'Date range', 'Last 7 days'] },
   { path: '/audit-log?bucket=Finance%2FCloseout', markers: ['Audit Log', 'Finance closeout trail'] },
+  { path: '/audit-log?bucket=Notification', markers: ['Audit Log', 'Notification delivery trail'] },
   {
     path: '/audit-log?bucket=Finance%2FCloseout&range=7d',
     markers: ['Audit Log', 'Finance closeout trail', 'Last 7 days'],

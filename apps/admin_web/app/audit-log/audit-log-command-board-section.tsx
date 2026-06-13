@@ -32,7 +32,7 @@ export function AuditLogCommandBoardSection({ items }: AuditLogCommandBoardSecti
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="High-impact admin changes grouped by policy, money movement, dispatch state, and recent operator actions."
+        description="High-impact admin changes grouped by policy, money movement, dispatch state, notifications, and recent operator actions."
         status={
           <span className={`pill ${hasWarningLogs ? 'pill-warn' : 'pill-success'}`}>
             {totalLogCount} audit record(s)

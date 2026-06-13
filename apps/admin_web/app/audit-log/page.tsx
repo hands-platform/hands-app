@@ -170,7 +170,7 @@ function buildSummary(logs: AdminAuditLog[]) {
   };
 }
 
-function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandBoardItem[] {
+export function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandBoardItem[] {
   const now = Date.now();
   const servicePolicyLogs = logs.filter(
     (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
@@ -180,6 +180,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
   const dispatchLogs = logs.filter(
     (log) => isDispatchAction(log.action) || log.action.startsWith('booking.'),
   );
+  const notificationLogs = logs.filter((log) => isNotificationAction(log.action));
   const recentHighPriority = logs.filter(
     (log) => auditPriority(log.action) >= 3 && now - Date.parse(log.createdAt) <= 24 * 60 * 60 * 1000,
   );
@@ -222,6 +223,15 @@ function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['r
       href: withAuditRange('/audit-log?bucket=Dispatch', range),
       tone: dispatchLogs.length > 0 ? 'info' : 'ok',
       logs: buildAuditCommandLogPreviews(dispatchLogs),
+    },
+    {
+      title: 'Notification delivery trail',
+      detail: 'Send, retry, and device recovery actions should line up with notification delivery outcomes.',
+      status: 'Alerts',
+      operatorAction: 'Open Notifications, then confirm failed, stale, and disabled-device rows were handled.',
+      href: withAuditRange('/audit-log?bucket=Notification', range),
+      tone: notificationLogs.length > 0 ? 'info' : 'ok',
+      logs: buildAuditCommandLogPreviews(notificationLogs),
     },
     {
       title: 'Recent high-priority changes',

@@ -13,6 +13,7 @@ describe('AuditLogCommandBoardSection', () => {
 
     expect(rendered).toContain('Audit command board');
     expect(rendered).toContain('High-impact admin changes grouped by policy');
+    expect(rendered).toContain('notifications');
     expect(rendered).toContain('2 audit record(s)');
     expect(rendered).toContain('Policy and pricing changes');
     expect(rendered).toContain('Review before/after metadata');
