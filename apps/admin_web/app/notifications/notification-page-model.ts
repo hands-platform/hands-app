@@ -95,6 +95,8 @@ export type NotificationSummary = {
 export type NotificationChannelSummary = {
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
+  readonly latestFcmSentAttemptLabel: string | null;
+  readonly latestFcmSentDetail: string | null;
   readonly partnerAlertCount: number;
   readonly policyLabel: string;
 };
@@ -380,9 +382,14 @@ export function buildNotificationChannelSummary(
   const partnerAlertPolicy = findPartnerAlertPolicy(operationalPolicies);
   const partnerAlerts = notifications.filter((notification) => isPartnerAlertType(notification.type));
   const deliveries = notifications.flatMap(notificationDeliveries);
+  const latestFcmSent = latestFcmSentDelivery(notifications);
   return {
     inAppDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'IN_APP_ONLY')).length,
     fcmDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'FCM')).length,
+    latestFcmSentAttemptLabel: latestFcmSent ? formatDateTime(latestFcmSent.delivery.attemptedAt) : null,
+    latestFcmSentDetail: latestFcmSent
+      ? fcmSentDeliveryDetail(latestFcmSent.notification, latestFcmSent.delivery)
+      : null,
     partnerAlertCount: partnerAlerts.length,
     policyLabel: policyOptionLabel(partnerAlertPolicy),
   };
@@ -906,6 +913,31 @@ function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
         .map((delivery) => ({ delivery, notification })),
     )
     .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery));
+}
+
+function latestFcmSentDelivery(notifications: readonly AdminNotification[]) {
+  return notifications
+    .flatMap((notification) =>
+      notificationDeliveries(notification)
+        .filter((delivery) => isDeliveryProvider(delivery, 'FCM') && delivery.status === 'SENT')
+        .map((delivery) => ({ delivery, notification })),
+    )
+    .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery))[0];
+}
+
+function fcmSentDeliveryDetail(notification: AdminNotification, delivery: AdminNotificationDelivery) {
+  const role = notificationSmokeRole(notification, delivery);
+  const actorLabel = role === 'PROVIDER' ? 'Partner' : 'Customer';
+  const phone = notification.user?.phone ?? 'No phone on file';
+  const platform = delivery.pushDevice?.platform ?? 'device';
+  const deviceLabel = delivery.pushDevice?.id
+    ? `device ${shortId(delivery.pushDevice.id)}`
+    : 'device unknown';
+  const notificationLabel = `${marketplaceDisplayText(humanizeType(notification.type))} ${shortId(
+    notification.id,
+  )}`;
+
+  return `${actorLabel} ${phone} / ${platform} / ${notificationLabel} / ${deviceLabel}`;
 }
 
 function isReusableFcmDelivery(delivery: AdminNotificationDelivery) {

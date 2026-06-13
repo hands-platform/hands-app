@@ -61,6 +61,8 @@ export default async function NotificationsPage({
           inAppDeliveries={model.channelSummary.inAppDeliveries}
           fcmDeliveries={model.channelSummary.fcmDeliveries}
           fcmSmokeReadiness={model.fcmSmokeReadiness}
+          latestFcmSentAttemptLabel={model.channelSummary.latestFcmSentAttemptLabel}
+          latestFcmSentDetail={model.channelSummary.latestFcmSentDetail}
           partnerAlertSmokeFallback={model.partnerAlertSmokeFallback}
           partnerAlertCount={model.channelSummary.partnerAlertCount}
           policyLabel={model.channelSummary.policyLabel}

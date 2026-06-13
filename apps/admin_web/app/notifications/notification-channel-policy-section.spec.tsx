@@ -7,6 +7,8 @@ describe('NotificationChannelPolicySection', () => {
       inAppDeliveries: 7,
       fcmDeliveries: 2,
       fcmSmokeReadiness: fcmSmokeReadiness(),
+      latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
       partnerAlertCount: 5,
       partnerAlertSmokeFallback: null,
       policyLabel: 'In-app first',
@@ -22,6 +24,10 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('7');
     expect(rendered).toContain('FCM route');
     expect(rendered).toContain('2');
+    expect(rendered).toContain('Recent FCM SENT: 13 Jun 2026, 17:09');
+    expect(rendered).toContain(
+      'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
+    );
     expect(rendered).toContain('Live preflight ready');
     expect(rendered).toContain('Payment Updated notifica');
     expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"');
@@ -43,11 +49,14 @@ describe('NotificationChannelPolicySection', () => {
         status: 'needs-notification',
         statusLabel: 'Needs FCM delivery',
       }),
+      latestFcmSentAttemptLabel: null,
+      latestFcmSentDetail: null,
       partnerAlertCount: 3,
       partnerAlertSmokeFallback: null,
       policyLabel: 'In-app only',
     });
 
+    expect(normalizedText(section)).toContain('No FCM SENT delivery recorded yet.');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
   });
 
@@ -56,6 +65,8 @@ describe('NotificationChannelPolicySection', () => {
       inAppDeliveries: 4,
       fcmDeliveries: 3,
       fcmSmokeReadiness: fcmSmokeReadiness(),
+      latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
+      latestFcmSentDetail: 'Partner +84900000002 / android / Earning Created notifica / device push-dev',
       partnerAlertCount: 2,
       partnerAlertSmokeFallback: {
         detail:
@@ -90,6 +101,8 @@ describe('NotificationChannelPolicySection', () => {
         deviceWarningLabel:
           'Newer Customer android device device-new is disabled; preflight reuses older enabled device device-old. Refresh the app FCM token before broad push.',
       }),
+      latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
       partnerAlertCount: 1,
       partnerAlertSmokeFallback: null,
       policyLabel: 'FCM for all bookings',

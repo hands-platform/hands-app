@@ -11,6 +11,8 @@ type NotificationChannelPolicySectionProps = {
   readonly inAppDeliveries: number;
   readonly fcmDeliveries: number;
   readonly fcmSmokeReadiness: NotificationFcmSmokeReadiness;
+  readonly latestFcmSentAttemptLabel: string | null;
+  readonly latestFcmSentDetail: string | null;
   readonly partnerAlertCount: number;
   readonly partnerAlertSmokeFallback: NotificationPartnerAlertSmokeFallback | null;
   readonly policyLabel: string;
@@ -20,6 +22,8 @@ export function NotificationChannelPolicySection({
   inAppDeliveries,
   fcmDeliveries,
   fcmSmokeReadiness,
+  latestFcmSentAttemptLabel,
+  latestFcmSentDetail,
   partnerAlertCount,
   partnerAlertSmokeFallback,
   policyLabel,
@@ -55,6 +59,14 @@ export function NotificationChannelPolicySection({
           <span className={fcmDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>FCM route</span>
           <h3 className="admin-mt-10">{fcmDeliveries}</h3>
           <p className="muted">FCM push delivery attempts created by the active policy.</p>
+          {latestFcmSentAttemptLabel ? (
+            <>
+              <p className="muted admin-mt-6">Recent FCM SENT: {latestFcmSentAttemptLabel}</p>
+              <p className="muted admin-mt-6">{latestFcmSentDetail}</p>
+            </>
+          ) : (
+            <p className="muted admin-mt-6">No FCM SENT delivery recorded yet.</p>
+          )}
         </div>
         <div className="ops-task-card">
           <span

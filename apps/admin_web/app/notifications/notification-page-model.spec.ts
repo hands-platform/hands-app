@@ -118,6 +118,8 @@ describe('notification page model', () => {
     expect(summary).toEqual({
       inAppDeliveries: 1,
       fcmDeliveries: 3,
+      latestFcmSentAttemptLabel: '1 Jun 2026, 17:03',
+      latestFcmSentDetail: 'Customer No phone on file / android / Booking Matched notifica / device device-s',
       partnerAlertCount: 4,
       policyLabel: 'In-app first',
     });
@@ -306,6 +308,49 @@ describe('notification page model', () => {
     expect(readiness.preflightCommand).toContain('FCM_SMOKE_ROLE="PROVIDER"');
     expect(readiness.preflightCommand).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-new"');
     expect(readiness.preflightCommand).toContain('npm.cmd run fcm:push-smoke -- --preflight');
+  });
+
+  it('summarizes the latest FCM SENT delivery for the channel card', () => {
+    const summary = buildNotificationChannelSummary(
+      [
+        notification({
+          createdAt: '2026-06-01T10:00:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-customer',
+              provider: 'FCM',
+              pushDevice: { enabled: true, id: 'device-customer', platform: 'android', role: 'CUSTOMER' },
+              status: 'SENT',
+            },
+          ],
+          id: 'notification-customer',
+          type: 'payment.updated',
+          user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+        }),
+        notification({
+          createdAt: '2026-06-01T10:04:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:05:00.000Z',
+              id: 'delivery-partner',
+              provider: 'FCM',
+              pushDevice: { enabled: true, id: 'device-partner', platform: 'android', role: 'PROVIDER' },
+              status: 'SENT',
+            },
+          ],
+          id: 'notification-partner',
+          type: 'earning.created',
+          user: providerUser('provider-user-1'),
+        }),
+      ],
+      [],
+    );
+
+    expect(summary.latestFcmSentAttemptLabel).toBe('1 Jun 2026, 17:05');
+    expect(summary.latestFcmSentDetail).toBe(
+      'Partner +84900000002 / android / Earning Created notifica / device device-p',
+    );
   });
 
   it('warns when registered-device preflight would reuse an older enabled device', () => {
