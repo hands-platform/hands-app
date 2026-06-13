@@ -27,8 +27,6 @@ import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
-import { bookingAddressSnapshotStateFromFacts } from '../../lib/booking-address-snapshot-state';
-import { bookingChatListStateFromFacts } from '../../lib/booking-chat-list-state';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
@@ -167,8 +165,6 @@ import {
 } from './booking-preferred-provider-state';
 import {
   bookingLocationPillLabel,
-  bookingLocationSignalLabel,
-  bookingLocationToneClass,
 } from './booking-location-display';
 import {
   bookingHasProviderLocation as hasProviderLocation,
@@ -184,7 +180,6 @@ import {
   bookingPaymentNeedsOpsInput,
   bookingRefundReviewNeedsOpsInput,
 } from './booking-payment-ops-inputs';
-import { bookingAddressSnapshotStateInput } from './booking-address-snapshot-state-inputs';
 import { bookingListStage as bookingListStageFromBooking } from './booking-list-stage-inputs';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
@@ -193,6 +188,11 @@ import {
   BookingMonitorListSection,
   type BookingMonitorListRow,
 } from './booking-monitor-list-section';
+import {
+  buildBookingMonitorAddressState,
+  buildBookingMonitorChatState,
+  buildBookingMonitorListLocation,
+} from './booking-monitor-list-state-model';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -628,12 +628,12 @@ function buildBookingMonitorListRow(
 
   return {
     actionChips: bookingListActionChips(booking, currentTimeMs),
-    addressState: bookingAddressSnapshotState(booking),
+    addressState: buildBookingMonitorAddressState(booking),
     backupAlert: bookingMonitorListBackupAlert(booking, currentTimeMs),
     booking,
     cashDebtAmountLabel: bookingMonitorListCashDebtAmountLabel(booking, cashDebtNeedsOps),
     cashDebtNeedsOps,
-    chatState: bookingChatListState(booking),
+    chatState: buildBookingMonitorChatState(booking),
     checkSignal: bookingCheckLevel(flags),
     closureState: bookingClosureListSignal(booking, { formatDate }),
     commandDecisionStrip: bookingListCommandDecisionStrip(booking),
@@ -644,7 +644,7 @@ function buildBookingMonitorListRow(
     firstCheckTitle: flags[0]?.title ?? null,
     firstPickPhoneLabel: bookingMonitorListFirstPickPhoneLabel(booking),
     hasMatchingPolicySnapshot: Boolean(matchingPolicy),
-    location: bookingMonitorListLocation(booking, currentTimeMs),
+    location: buildBookingMonitorListLocation(booking, currentTimeMs),
     matchingPolicySummaryLabel: matchingPolicySummaryLabel(matchingPolicy),
     matchingRuleSnapshot: buildBookingMonitorMatchingRuleSnapshot(booking, currentTimeMs),
     marketplaceParticipantOverflowCount:
@@ -665,17 +665,6 @@ function buildBookingMonitorListRow(
     servicePayoutLabel: bookingServicePayoutRuleLabel(booking) ?? null,
     servicePriceLabel: bookingServicePriceLabel(booking),
     stage: bookingListStage(booking, currentTimeMs),
-  };
-}
-
-function bookingMonitorListLocation(
-  booking: AdminBooking,
-  currentTimeMs: number,
-): BookingMonitorListRow['location'] {
-  return {
-    pillLabel: bookingLocationPillLabel(booking, currentTimeMs),
-    signalLabel: bookingLocationSignalLabel(booking, currentTimeMs),
-    toneClass: bookingLocationToneClass(booking, currentTimeMs),
   };
 }
 
@@ -1024,7 +1013,7 @@ function bookingRefundReviewNeedsOps(booking: AdminBooking) {
 }
 
 function bookingListCommandDecisionStrip(booking: AdminBooking) {
-  const addressState = bookingAddressSnapshotState(booking);
+  const addressState = buildBookingMonitorAddressState(booking);
   const marketplaceCount = bookingMarketplaceParticipantCount(booking);
 
   return bookingCommandDecisionStrip(
@@ -1046,18 +1035,6 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
   return bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs));
-}
-
-function bookingAddressSnapshotState(booking: AdminBooking) {
-  return bookingAddressSnapshotStateFromFacts(bookingAddressSnapshotStateInput(booking));
-}
-
-function bookingChatListState(booking: AdminBooking) {
-  return bookingChatListStateFromFacts({
-    status: booking.status,
-    hasChatRoom: bookingMatchingChatReady(booking),
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
-  });
 }
 
 function nextAction(booking: AdminBooking) {
