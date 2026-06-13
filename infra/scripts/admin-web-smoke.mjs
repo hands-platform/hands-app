@@ -456,6 +456,14 @@ const pages = [
   {
     path: '/notifications?review=failed',
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue', 'Retry gate'],
+    followUps: [
+      {
+        hrefPattern: /href="([^"]*\/notifications\?review=failed(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
+        label: 'failed retry confirmation',
+        markers: ['Retry notification', 'Retry gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+    ],
   },
   {
     path: '/notifications?review=disabled-device',
