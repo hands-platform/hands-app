@@ -3307,6 +3307,7 @@ const notifications = await getJson('/notifications', customerAuth.accessToken);
 const notificationToRetry = notifications[0];
 let retryBeforeDeliveryCount = 0;
 let retryAccepted = false;
+let retryAuditObserved = false;
 if (notificationToRetry) {
   await patchJson('/notifications/device-token/register', customerAuth.accessToken, {
     token: 'demo-customer-device-token',
@@ -3322,6 +3323,21 @@ if (notificationToRetry) {
     adminAuth.accessToken,
   );
   retryAccepted = Boolean(retryResult?.ok);
+  const retryAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+  retryAuditObserved = retryAuditLogs?.some(
+    (log) =>
+      log.action === 'notification.retry' &&
+      log.target === `notification:${notificationToRetry.id}` &&
+      log.metadata?.notificationId === notificationToRetry.id,
+  );
+  if (!retryAuditObserved) {
+    throw new Error(
+      `Admin notification retry should leave an audit trail: ${JSON.stringify({
+        notificationId: notificationToRetry.id,
+        auditLogs: retryAuditLogs?.slice(0, 5),
+      })}`,
+    );
+  }
 }
 let retriedNotification = null;
 for (let attempt = 0; attempt < 20 && notificationToRetry; attempt++) {
@@ -3443,6 +3459,7 @@ console.log({
   customerNotifications: notifications.length,
   retryAccepted,
   retryBeforeDeliveryCount,
+  retryAuditObserved,
   retriedNotificationDeliveryCount: retriedNotification?.deliveries?.length ?? 0,
   retryDeliveryObserved: (retriedNotification?.deliveries?.length ?? 0) > retryBeforeDeliveryCount,
   readiness,
