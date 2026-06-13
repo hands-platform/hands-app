@@ -26,7 +26,7 @@ import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-locat
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
-import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
+import { bookingMonitorAlertEvidenceNeedsOps } from './booking-monitor-alert-evidence-model';
 import {
   bookingDashboardTone,
   commandToneClass,
@@ -873,23 +873,13 @@ function bookingMatchesEvidenceFilter(
     evidenceFilter,
     bookingMonitorEvidenceMatchReadersFromBooking(booking, {
       addressNeedsOps: () => bookingAddressNeedsOps(booking),
-      alertEvidenceNeedsOps: () => bookingAlertEvidenceNeedsOps(booking, nowMs),
+      alertEvidenceNeedsOps: () => bookingMonitorAlertEvidenceNeedsOps(booking, nowMs),
       cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
       closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
       locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
       paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
     }),
   );
-}
-
-function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
-  const summary = bookingBackupAlertTraceSummary(booking, nowMs);
-  return bookingAlertEvidenceNeedsOpsFromFacts({
-    alertBatchCount: summary.batchCount,
-    participantCount: booking.participants?.length,
-    stageKey: () => buildBookingMonitorListStage(booking, nowMs).key,
-    status: booking.status,
-  });
 }
 
 function bookingActionPriority(
