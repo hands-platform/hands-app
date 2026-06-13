@@ -66,6 +66,12 @@ Sequential work:
 | Docs/harness | `docs/**`, `infra/scripts/**` | business logic, schema | `verify:scope -- -Scope harness` | Low | Any time |
 | Read-only review | whole repo | no edits | report only | Low | Before large work |
 
+## Git Monorepo Contract
+
+HANDS must stay inside the existing `C:\dev\massage-on-demand-vn` Git history as one monorepo. Do not create, delete, replace, or nest `.git` directories, and do not move files across repository boundaries as part of normal cleanup.
+
+Use `npm.cmd run repo:monorepo-contract` to verify the current Git root, required monorepo folders, Node workspaces, and absence of nested Git boundaries.
+
 ## Protected Areas
 
 Free-edit areas:

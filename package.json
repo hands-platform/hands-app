@@ -24,6 +24,7 @@
     "external:pack": "node infra/scripts/external-registration-pack.mjs",
     "external:pack:write": "node infra/scripts/external-registration-pack.mjs --out=infra/setup/.generated/hands-external-registration-pack.md",
     "setup:doctor": "node infra/scripts/setup-doctor.mjs",
+    "repo:monorepo-contract": "node infra/scripts/check-git-monorepo-contract.mjs",
     "security:secrets": "node infra/scripts/check-secret-leaks.mjs",
     "security:admin-sensitive": "node infra/scripts/check-admin-sensitive-exposure.mjs",
     "admin:visible-copy": "node infra/scripts/check-admin-visible-copy.mjs",
