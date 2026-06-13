@@ -59,6 +59,7 @@ describe('SetupGroupDetailSection', () => {
           commands: [
             'npm.cmd run external:check:push',
             'npm.cmd run fcm:env-contract',
+            'npm.cmd run notifications:push-data-contract',
             'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
             'npm.cmd run security:secrets',
             'npm.cmd run fcm:credentials-check',
@@ -81,6 +82,7 @@ describe('SetupGroupDetailSection', () => {
     const rendered = textContent(section).replace(/\s+/g, ' ');
 
     expect(rendered).toContain('Dry-run readiness');
+    expect(rendered).toContain('npm.cmd run notifications:push-data-contract');
     expect(rendered).toContain('npm.cmd run fcm:credentials:install');
     expect(rendered).toContain('npm.cmd run security:secrets');
     expect(rendered).toContain('npm.cmd run fcm:credentials-check');

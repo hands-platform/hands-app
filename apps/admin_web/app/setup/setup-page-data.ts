@@ -210,6 +210,7 @@ export const setupOrder = [
     commands: [
       'npm.cmd run external:check:push',
       'npm.cmd run fcm:env-contract',
+      'npm.cmd run notifications:push-data-contract',
       'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -UpdateEnv',
       'npm.cmd run security:secrets',
       'npm.cmd run fcm:credentials-check',

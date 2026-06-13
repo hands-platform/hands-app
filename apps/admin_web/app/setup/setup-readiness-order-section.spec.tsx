@@ -66,6 +66,7 @@ describe('SetupReadinessOrderSection', () => {
 
     expect(rendered).toContain('npm.cmd run external:check:push');
     expect(rendered).toContain('npm.cmd run fcm:env-contract');
+    expect(rendered).toContain('npm.cmd run notifications:push-data-contract');
     expect(rendered).toContain('npm.cmd run security:secrets');
     expect(rendered).toContain('npm.cmd run fcm:credentials-check');
     expect(rendered).toContain('npm.cmd run docker:contract');

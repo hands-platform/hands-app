@@ -672,6 +672,10 @@ const pages = [
       'Runtime operations policy',
     ],
   },
+  {
+    path: '/setup#notifications',
+    markers: ['External setup', 'FCM push notifications', 'npm.cmd run notifications:push-data-contract'],
+  },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
 

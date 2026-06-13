@@ -23,6 +23,7 @@ describe('setup command groups', () => {
   it('groups notification FCM commands by operator phase', () => {
     const groups = setupCommandGroups('notifications', [
       'npm.cmd run external:check:push',
+      'npm.cmd run notifications:push-data-contract',
       'npm.cmd run fcm:push-smoke -- --preflight',
       'npm.cmd run fcm:token-smoke',
       '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_NOTIFICATION_ID="<id>"; npm.cmd run fcm:push-smoke -- --preflight',
@@ -42,6 +43,9 @@ describe('setup command groups', () => {
     ]);
     expect(groups.find((group) => group.title === 'Token registration')?.detail).toContain(
       'without sending FCM push',
+    );
+    expect(groups.find((group) => group.title === 'Dry-run readiness')?.commands).toContain(
+      'npm.cmd run notifications:push-data-contract',
     );
   });
 });

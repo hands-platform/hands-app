@@ -34,6 +34,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
           command.includes('--dry-run') ||
           command.includes('external:check:push') ||
           command.includes('fcm:env-contract') ||
+          command.includes('notifications:push-data-contract') ||
           command.includes('fcm:credentials:install') ||
           command.includes('security:secrets') ||
           command.includes('fcm:credentials-check') ||
