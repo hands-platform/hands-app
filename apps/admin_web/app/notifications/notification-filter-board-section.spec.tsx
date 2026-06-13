@@ -2,7 +2,12 @@ import {
   NotificationFilterBoardSection,
   type NotificationFilterLink,
 } from './notification-filter-board-section';
-import { classNamesIn, hrefsIn, normalizedText } from './notification-section-test-utils';
+import {
+  ariaCurrentValuesIn,
+  classNamesIn,
+  hrefsIn,
+  normalizedText,
+} from './notification-section-test-utils';
 
 describe('NotificationFilterBoardSection', () => {
   it('renders active queue, booking trace, and quick filter links', () => {
@@ -26,6 +31,7 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('Clear filter');
     expect(rendered).toContain('Booking book-1234');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications', '/notifications?review=failed']));
+    expect(ariaCurrentValuesIn(section)).toEqual(['page']);
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
   });
 
@@ -44,6 +50,7 @@ describe('NotificationFilterBoardSection', () => {
 
     expect(rendered).toContain('Showing 10 of 10');
     expect(rendered).not.toContain('Clear filter');
+    expect(ariaCurrentValuesIn(section)).toEqual(['page']);
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
   });
 });

@@ -58,6 +58,7 @@ export function NotificationFilterBoardSection({
         {activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}
         {links.map((link) => (
           <Link
+            aria-current={activeReview === link.review ? 'page' : undefined}
             className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}
             href={link.href}
             key={link.href}

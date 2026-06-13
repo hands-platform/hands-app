@@ -51,6 +51,21 @@ export function classNamesIn(value: unknown): string[] {
   return [...className, ...classNamesIn(props?.children)];
 }
 
+export function ariaCurrentValuesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(ariaCurrentValuesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const ariaCurrent = typeof props?.['aria-current'] === 'string' ? [props['aria-current']] : [];
+  return [...ariaCurrent, ...ariaCurrentValuesIn(props?.children)];
+}
+
 export function elementTypesIn(value: unknown): string[] {
   value = resolveElement(value);
   if (value === null || value === undefined || typeof value !== 'object') {
