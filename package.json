@@ -41,6 +41,7 @@
     "fcm:credentials-check": "node infra/scripts/check-firebase-admin-credentials.mjs",
     "fcm:credentials:install": "powershell -ExecutionPolicy Bypass -File infra/scripts/install-firebase-admin-credentials.ps1",
     "fcm:token-smoke": "node infra/scripts/fcm-token-registration-smoke.mjs",
+    "fcm:token-recovery-smoke": "node infra/scripts/fcm-token-recovery-smoke.mjs",
     "fcm:push-smoke": "node infra/scripts/fcm-push-smoke.mjs",
     "realtime:contract": "npm run shared:source-only-check && node infra/scripts/check-realtime-event-contract.mjs",
     "shared:source-only-check": "node infra/scripts/check-shared-types-runtime-imports.mjs",
