@@ -19,6 +19,8 @@ import {
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
 import type { NotificationDeliveryRow, NotificationTableRow } from './notifications-table-section';
 
+type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
+
 const PARTNER_ALERT_TYPES = [
   'booking.requested',
   'booking.backup_available',
@@ -52,7 +54,7 @@ const notificationReviewMatchers: Readonly<Record<string, (notification: AdminNo
   'no-show': (notification) => notification.type === 'booking.no_show',
   'partner-alerts': (notification) => isPartnerAlertType(notification.type),
   'payout-setup': (notification) => notification.type === 'provider.payout_setup_required',
-  pending: (notification) => (notification.deliveries ?? []).length === 0,
+  pending: hasNoDeliveryAttempts,
   sent: (notification) => hasDeliveryStatus(notification, 'SENT'),
   skipped: (notification) => hasDeliveryStatus(notification, 'SKIPPED'),
   'stale-device': hasStalePushDeviceDelivery,
@@ -191,14 +193,10 @@ export function buildNotificationSummary(notifications: readonly AdminNotificati
 export function buildNotificationDeliveryOpsQueue(
   notifications: readonly AdminNotification[],
 ): NotificationDeliveryOpsQueueItem[] {
-  const failed = notifications.filter((notification) =>
-    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
-  ).length;
+  const failed = countNotificationsWithDeliveryStatus(notifications, 'FAILED');
   const disabledDevices = countDisabledDevices(notifications);
   const staleDevices = countStalePushDeviceDeliveries(notifications);
-  const skipped = notifications.filter((notification) =>
-    (notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED'),
-  ).length;
+  const skipped = countNotificationsWithDeliveryStatus(notifications, 'SKIPPED');
   const pending = countPendingNotifications(notifications);
   const items: NotificationDeliveryOpsQueueItem[] = [];
 
@@ -265,7 +263,7 @@ export function buildNotificationChannelSummary(
     (setting) => setting.key === 'notification.partner_alert_channel',
   );
   const partnerAlerts = notifications.filter((notification) => isPartnerAlertType(notification.type));
-  const deliveries = notifications.flatMap((notification) => notification.deliveries ?? []);
+  const deliveries = notifications.flatMap(notificationDeliveries);
   return {
     inAppDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'IN_APP_ONLY')).length,
     fcmDeliveries: deliveries.filter((delivery) => isDeliveryProvider(delivery, 'FCM')).length,
@@ -351,36 +349,41 @@ export function emptyNotificationMessage(
 }
 
 function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
-  return [...(notification.deliveries ?? [])]
-    .sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left))
-    .map((delivery) => ({
-      attemptedAtLabel: formatDateTime(delivery.attemptedAt),
-      deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
-      deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
-        ? formatDateTime(delivery.pushDevice.lastSeenAt)
-        : '-',
-      deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
-      enableDeviceHref:
-        delivery.pushDevice?.enabled === false && delivery.pushDevice.id
-          ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
-          : null,
-      failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
-      failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
-      httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
-      id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
-      platformLabel: delivery.pushDevice?.platform ?? 'device',
-      provider: delivery.provider,
-      status: delivery.status,
-      statusClassName: deliveryStatusClassName(delivery.status),
-    }));
+  return newestDeliveries(notificationDeliveries(notification)).map((delivery) => ({
+    attemptedAtLabel: formatDateTime(delivery.attemptedAt),
+    deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
+    deviceLastSeenAtLabel: delivery.pushDevice?.lastSeenAt
+      ? formatDateTime(delivery.pushDevice.lastSeenAt)
+      : '-',
+    deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
+    enableDeviceHref:
+      delivery.pushDevice?.enabled === false && delivery.pushDevice.id
+        ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
+        : null,
+    failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
+    failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
+    httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
+    id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
+    platformLabel: delivery.pushDevice?.platform ?? 'device',
+    provider: delivery.provider,
+    status: delivery.status,
+    statusClassName: deliveryStatusClassName(delivery.status),
+  }));
 }
 
 function countDeliveries(notifications: readonly AdminNotification[], status: string) {
   return notifications.reduce(
     (total, notification) =>
-      total + (notification.deliveries ?? []).filter((delivery) => delivery.status === status).length,
+      total + notificationDeliveries(notification).filter((delivery) => delivery.status === status).length,
     0,
   );
+}
+
+function countNotificationsWithDeliveryStatus(
+  notifications: readonly AdminNotification[],
+  status: string,
+) {
+  return notifications.filter((notification) => hasDeliveryStatus(notification, status)).length;
 }
 
 function deliveryStatusClassName(status: string) {
@@ -396,7 +399,7 @@ function deliveryStatusClassName(status: string) {
   return 'pill pill-neutral';
 }
 
-function deliveryAttemptMs(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
+function deliveryAttemptMs(delivery: AdminNotificationDelivery) {
   const value = Date.parse(delivery.attemptedAt);
   return Number.isFinite(value) ? value : 0;
 }
@@ -404,7 +407,7 @@ function deliveryAttemptMs(delivery: NonNullable<AdminNotification['deliveries']
 function countDisabledDevices(notifications: readonly AdminNotification[]) {
   const ids = new Set<string>();
   for (const notification of notifications) {
-    for (const delivery of notification.deliveries ?? []) {
+    for (const delivery of notificationDeliveries(notification)) {
       if (delivery.pushDevice?.enabled === false) {
         ids.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
       }
@@ -414,19 +417,19 @@ function countDisabledDevices(notifications: readonly AdminNotification[]) {
 }
 
 function countPendingNotifications(notifications: readonly AdminNotification[]) {
-  return notifications.filter((notification) => (notification.deliveries ?? []).length === 0).length;
+  return notifications.filter(hasNoDeliveryAttempts).length;
 }
 
 function countStalePushDeviceDeliveries(notifications: readonly AdminNotification[]) {
   return notifications.reduce(
     (total, notification) =>
-      total + (notification.deliveries ?? []).filter(isStaleNotificationPushDeviceDelivery).length,
+      total + notificationDeliveries(notification).filter(isStaleNotificationPushDeviceDelivery).length,
     0,
   );
 }
 
 function hasStalePushDeviceDelivery(notification: AdminNotification) {
-  return (notification.deliveries ?? []).some(isStaleNotificationPushDeviceDelivery);
+  return notificationDeliveries(notification).some(isStaleNotificationPushDeviceDelivery);
 }
 
 export { isStaleNotificationPushDeviceDelivery as isStalePushDeviceDelivery };
@@ -687,9 +690,7 @@ function smokeFallbackPreflightCommand(
 }
 
 function latestDeliveryPlatform(notification: AdminNotification) {
-  return [...(notification.deliveries ?? [])].sort(
-    (left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left),
-  )[0]?.pushDevice?.platform;
+  return newestDeliveries(notificationDeliveries(notification))[0]?.pushDevice?.platform;
 }
 
 function policyRoutesPartnerAlertsToFcm(setting?: AdminOperationalPolicySetting) {
@@ -717,20 +718,29 @@ function readString(value: unknown) {
 }
 
 function hasDeliveryStatus(notification: AdminNotification, status: string) {
-  return (notification.deliveries ?? []).some((delivery) => delivery.status === status);
+  return notificationDeliveries(notification).some((delivery) => delivery.status === status);
 }
 
 function hasDisabledPushDevice(notification: AdminNotification) {
-  return (notification.deliveries ?? []).some((delivery) => delivery.pushDevice?.enabled === false);
+  return notificationDeliveries(notification).some((delivery) => delivery.pushDevice?.enabled === false);
 }
 
 function hasDeliveryProvider(notification: AdminNotification, provider: string) {
-  return (notification.deliveries ?? []).some((delivery) => isDeliveryProvider(delivery, provider));
+  return notificationDeliveries(notification).some((delivery) => isDeliveryProvider(delivery, provider));
 }
 
-function isDeliveryProvider(
-  delivery: NonNullable<AdminNotification['deliveries']>[number],
-  provider: string,
-) {
+function hasNoDeliveryAttempts(notification: AdminNotification) {
+  return notificationDeliveries(notification).length === 0;
+}
+
+function notificationDeliveries(notification: AdminNotification): readonly AdminNotificationDelivery[] {
+  return notification.deliveries ?? [];
+}
+
+function newestDeliveries(deliveries: readonly AdminNotificationDelivery[]) {
+  return [...deliveries].sort((left, right) => deliveryAttemptMs(right) - deliveryAttemptMs(left));
+}
+
+function isDeliveryProvider(delivery: AdminNotificationDelivery, provider: string) {
   return delivery.provider === provider;
 }
