@@ -33,6 +33,7 @@ describe('NotificationDeliveryOpsQueueSection', () => {
 
     expect(rendered).toContain('No delivery blockers');
     expect(rendered).toContain('Delivery path is clean');
+    expect(rendered).toContain('FCM credentials and mobile token registration');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-success']));
   });
 });
