@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 import { firebaseAdminCredentialsConfigured } from './lib/firebase-admin-credentials.mjs';
+import { firebaseProjectAlignment } from './lib/firebase-project-alignment.mjs';
 
 const steps = [
   {
@@ -97,7 +98,7 @@ const failed = results.filter((result) => result.status === 'FAIL');
 const missingGenerated = generatedFiles.filter((file) => !file.exists);
 const ok = failed.length === 0 && missingGenerated.length === 0;
 const { env } = loadMergedEnv('.env');
-const firebaseAdminReady = firebaseAdminCredentialsConfigured(env);
+const firebasePushReady = firebaseAdminCredentialsConfigured(env) && firebaseProjectAlignment(env).ok;
 
 console.log(
   JSON.stringify(
@@ -106,7 +107,7 @@ console.log(
       purpose: 'HANDS external setup preflight before filling real console credentials.',
       generatedFiles,
       checks: results,
-      nextSteps: ok ? nextSetupSteps({ firebaseAdminReady }) : failed.map((result) => result.fix),
+      nextSteps: ok ? nextSetupSteps({ firebasePushReady }) : failed.map((result) => result.fix),
     },
     null,
     2,
@@ -142,7 +143,7 @@ function runStep(step) {
   };
 }
 
-function nextSetupSteps({ firebaseAdminReady }) {
+function nextSetupSteps({ firebasePushReady }) {
   const preparationSteps = [
     'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
     'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
@@ -152,7 +153,7 @@ function nextSetupSteps({ firebaseAdminReady }) {
     'Run npm.cmd run external:check:supabase for Supabase core values.',
     'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
   ];
-  const fcmSteps = firebaseAdminReady
+  const fcmSteps = firebasePushReady
     ? [
         'Run npm.cmd run fcm:credentials-check before live FCM push smoke.',
         'Run npm.cmd run security:secrets before live FCM push smoke to confirm Firebase client/admin config files are not tracked.',
@@ -162,7 +163,7 @@ function nextSetupSteps({ firebaseAdminReady }) {
         'Set FCM_SMOKE_DEVICE_TOKEN for the same app session, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers an enabled device, before running live fcm:push-smoke.',
       ]
     : [
-        'After downloading Firebase service account JSON, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -UpdateEnv, then npm.cmd run security:secrets, npm.cmd run fcm:credentials-check, and npm.cmd run docker:contract.',
+        'After downloading a Firebase service account JSON from the same project as the mobile google-services.json files, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -UpdateEnv, then npm.cmd run security:secrets, npm.cmd run fcm:credentials-check, and npm.cmd run docker:contract.',
       ];
 
   return [...preparationSteps, ...fcmSteps, ...followUpSteps];

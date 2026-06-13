@@ -3,11 +3,17 @@ import { resolve } from 'node:path';
 
 import { loadMergedEnv } from './lib/env-file.mjs';
 import { firebaseAdminCredentialsConfigured } from './lib/firebase-admin-credentials.mjs';
+import {
+  firebaseProjectAlignment,
+  firebaseProjectAlignmentActions,
+} from './lib/firebase-project-alignment.mjs';
 
+const repoRoot = resolve(import.meta.dirname, '..', '..');
 const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
 const strict = process.argv.includes('--strict');
 const phase = process.argv.find((arg) => arg.startsWith('--phase='))?.slice('--phase='.length) ?? 'advisory';
 const { env, envFileExists, envPath } = loadMergedEnv(envFile);
+const projectAlignment = firebaseProjectAlignment(env, { repoRoot });
 
 const checks = [];
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
@@ -66,6 +72,7 @@ addRecommended(
   firebaseAdminConfigured(),
   'Fill server-side Firebase Admin credentials before production Android/iOS FCM push launch. If using GOOGLE_APPLICATION_CREDENTIALS, point it to an existing valid service account JSON file.',
 );
+addRecommended('push', 'Firebase project alignment', projectAlignment.ok, firebaseProjectAlignmentFix());
 addPhaseRequired(
   'push',
   'PUSH_PROVIDER=fcm for FCM push',
@@ -78,6 +85,13 @@ addPhaseRequired(
   'Firebase Admin credentials for FCM push',
   firebaseAdminConfigured(),
   'Fill FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_PROJECT_ID/FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY, or an existing valid GOOGLE_APPLICATION_CREDENTIALS service account JSON file before production-like FCM push E2E.',
+  ['push', 'production'],
+);
+addPhaseRequired(
+  'push',
+  'Firebase Admin project matches mobile apps',
+  projectAlignment.ok,
+  firebaseProjectAlignmentFix(),
   ['push', 'production'],
 );
 
@@ -315,7 +329,9 @@ function buildNextActions(requiredFailures, recommendedFailures) {
   const actions = [...requiredFailures, ...(strict ? recommendedFailures : [])].map((check) => check.fix);
   if (phase === 'push') {
     actions.push('Run npm.cmd run fcm:credentials-check to verify Firebase Admin credential file contents.');
-    actions.push('Run npm.cmd run docker:contract to verify Docker service URLs and Firebase Admin credential mount paths.');
+    actions.push(
+      'Run npm.cmd run docker:contract to verify Docker service URLs and Firebase Admin credential mount paths.',
+    );
     actions.push('Run npm.cmd run fcm:token-smoke -- --dry-run to verify token registration smoke inputs.');
     actions.push(
       'Run npm.cmd run fcm:push-smoke -- --dry-run for config-only readiness after Firebase Admin credentials are configured.',
@@ -373,6 +389,13 @@ function allHaveExistingPath(keys) {
 
 function firebaseAdminConfigured() {
   return firebaseAdminCredentialsConfigured(env);
+}
+
+function firebaseProjectAlignmentFix() {
+  return (
+    firebaseProjectAlignmentActions(projectAlignment.invalid).at(0) ??
+    'Keep Firebase Admin credentials and mobile google-services.json files in the same Firebase project before live FCM push.'
+  );
 }
 
 function storageConfigured() {
