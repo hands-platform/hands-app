@@ -14,7 +14,9 @@ import {
   adminPartnerAlertChannelRoutesToFcm,
 } from '../../lib/operations-policy';
 import {
+  buildNotificationActionConfirmation,
   enablePushDeviceConfirmHref,
+  readNotificationConfirmationAction,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
 import {
@@ -25,6 +27,14 @@ import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-o
 import type { NotificationDeliveryRow, NotificationTableRow } from './notifications-table-section';
 
 type AdminNotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
+
+type NotificationPageParams = Record<string, string | string[] | undefined>;
+
+type BuildNotificationPageModelInput = {
+  readonly notifications: readonly AdminNotification[];
+  readonly operationalPolicies: readonly AdminOperationalPolicySetting[];
+  readonly params: NotificationPageParams;
+};
 
 const PARTNER_ALERT_TYPES = [
   'booking.requested',
@@ -130,7 +140,45 @@ export function buildNotificationFilters(params: Record<string, string | string[
   };
 }
 
-export function sortNotifications(notifications: AdminNotification[]) {
+export function buildNotificationPageModel({
+  notifications: rawNotifications,
+  operationalPolicies,
+  params,
+}: BuildNotificationPageModelInput) {
+  const filters = buildNotificationFilters(params);
+  const allNotifications = sortNotifications(rawNotifications);
+  const notifications = filterNotifications(allNotifications, filters);
+  const summary = buildNotificationSummary(allNotifications);
+  const channelSummary = buildNotificationChannelSummary(allNotifications, operationalPolicies);
+  const partnerAlertSmokeFallback = buildNotificationPartnerAlertSmokeFallback(
+    allNotifications,
+    operationalPolicies,
+  );
+  const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
+
+  return {
+    activeBookingId: filters.booking,
+    activeFilter,
+    allNotifications,
+    channelSummary,
+    confirmation: buildNotificationActionConfirmation(
+      allNotifications,
+      readNotificationConfirmationAction(readSearchParam(params.confirm)),
+      {
+        notificationId: readSearchParam(params.notificationId),
+        pushDeviceId: readSearchParam(params.pushDeviceId),
+      },
+    ),
+    filters,
+    notificationRows: buildNotificationTableRows(notifications),
+    notifications,
+    opsQueue: buildNotificationDeliveryOpsQueue(allNotifications),
+    partnerAlertSmokeFallback,
+    summary,
+  };
+}
+
+export function sortNotifications(notifications: readonly AdminNotification[]) {
   return [...notifications].sort((left, right) => {
     const signalDiff = notificationPriority(right) - notificationPriority(left);
     if (signalDiff !== 0) {
@@ -378,10 +426,7 @@ function countDeliveries(notifications: readonly AdminNotification[], status: st
   );
 }
 
-function countNotificationsWithDeliveryStatus(
-  notifications: readonly AdminNotification[],
-  status: string,
-) {
+function countNotificationsWithDeliveryStatus(notifications: readonly AdminNotification[], status: string) {
   return notifications.filter((notification) => hasDeliveryStatus(notification, status)).length;
 }
 

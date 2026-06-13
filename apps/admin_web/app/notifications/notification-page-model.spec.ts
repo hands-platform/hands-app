@@ -3,6 +3,7 @@ import {
   buildNotificationChannelSummary,
   buildNotificationDeliveryOpsQueue,
   buildNotificationFilters,
+  buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
   buildNotificationSummary,
   buildNotificationTableRows,
@@ -106,15 +107,18 @@ describe('notification page model', () => {
   });
 
   it('maps the deprecated partner alert OS push value to FCM-facing Admin copy', () => {
-    const summary = buildNotificationChannelSummary([], [
-      {
-        category: 'notifications',
-        enforced: true,
-        key: 'notification.partner_alert_channel',
-        label: 'Partner alert channel',
-        value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
-      },
-    ]);
+    const summary = buildNotificationChannelSummary(
+      [],
+      [
+        {
+          category: 'notifications',
+          enforced: true,
+          key: 'notification.partner_alert_channel',
+          label: 'Partner alert channel',
+          value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
+        },
+      ],
+    );
 
     expect(summary.policyLabel).toBe('FCM for all bookings (legacy saved value)');
   });
@@ -277,6 +281,51 @@ describe('notification page model', () => {
     ]);
 
     expect(sorted.map((item) => item.id)).toEqual(['failed', 'sent', 'pending-newest']);
+  });
+
+  it('builds the page model with filtered rows and confirmation state', () => {
+    const model = buildNotificationPageModel({
+      notifications: [
+        notification({
+          data: { bookingId: 'booking-1' },
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-failed',
+              provider: 'FCM',
+              status: 'FAILED',
+            },
+          ],
+          id: 'notification-failed',
+          type: 'booking.requested',
+        }),
+        notification({
+          data: { bookingId: 'booking-2' },
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:02:00.000Z',
+              id: 'delivery-sent',
+              provider: 'FCM',
+              status: 'SENT',
+            },
+          ],
+          id: 'notification-sent',
+          type: 'booking.matched',
+        }),
+      ],
+      operationalPolicies: [],
+      params: {
+        confirm: 'retry',
+        notificationId: 'notification-failed',
+        review: 'failed',
+      },
+    });
+
+    expect(model.activeFilter?.label).toBe('Failed sends');
+    expect(model.confirmation?.action).toBe('retry');
+    expect(model.notifications.map((item) => item.id)).toEqual(['notification-failed']);
+    expect(model.notificationRows.map((row) => row.id)).toEqual(['notification-failed']);
+    expect(model.summary).toMatchObject({ failed: 1, sent: 1 });
   });
 
   it('builds table rows with action links, partner labels, and delivery evidence', () => {
