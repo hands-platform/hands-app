@@ -17,14 +17,38 @@ export type NotificationActionConfirmation = {
   readonly tone: StatusBadgeTone;
 };
 
+export type NotificationActionReturnContext = {
+  readonly booking?: string;
+  readonly review?: string;
+};
+
+type NotificationConfirmationValues = NotificationActionReturnContext & {
+  readonly notificationId: string;
+  readonly pushDeviceId: string;
+};
+
 type NotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
 
-export function retryNotificationConfirmHref(notificationId: string) {
-  return `/notifications?confirm=retry&notificationId=${encodeURIComponent(notificationId)}`;
+export function retryNotificationConfirmHref(
+  notificationId: string,
+  context: NotificationActionReturnContext = {},
+) {
+  return notificationHref([
+    ...notificationReturnQueryEntries(context),
+    ['confirm', 'retry'],
+    ['notificationId', notificationId],
+  ]);
 }
 
-export function enablePushDeviceConfirmHref(pushDeviceId: string) {
-  return `/notifications?confirm=enable-device&pushDeviceId=${encodeURIComponent(pushDeviceId)}`;
+export function enablePushDeviceConfirmHref(
+  pushDeviceId: string,
+  context: NotificationActionReturnContext = {},
+) {
+  return notificationHref([
+    ...notificationReturnQueryEntries(context),
+    ['confirm', 'enable-device'],
+    ['pushDeviceId', pushDeviceId],
+  ]);
 }
 
 export function readNotificationConfirmationAction(value: string): NotificationConfirmationAction | null {
@@ -37,23 +61,24 @@ export function readNotificationConfirmationAction(value: string): NotificationC
 export function buildNotificationActionConfirmation(
   notifications: readonly AdminNotification[],
   action: NotificationConfirmationAction | null,
-  values: { readonly notificationId: string; readonly pushDeviceId: string },
+  values: NotificationConfirmationValues,
 ): NotificationActionConfirmation | null {
   if (!action) {
     return null;
   }
 
   if (action === 'retry') {
-    return buildRetryConfirmation(notifications, values.notificationId);
+    return buildRetryConfirmation(notifications, values);
   }
 
-  return buildEnableDeviceConfirmation(notifications, values.pushDeviceId);
+  return buildEnableDeviceConfirmation(notifications, values);
 }
 
 function buildRetryConfirmation(
   notifications: readonly AdminNotification[],
-  notificationId: string,
+  values: NotificationConfirmationValues,
 ): NotificationActionConfirmation | null {
+  const { notificationId } = values;
   const notification = notifications.find((item) => item.id === notificationId);
   if (!notification) {
     return null;
@@ -63,7 +88,7 @@ function buildRetryConfirmation(
 
   return {
     action: 'retry',
-    cancelHref: '/notifications',
+    cancelHref: notificationReturnHref(values),
     confirmLabel: 'Retry notification',
     description: `Retry notification ${shortId(
       notification.id,
@@ -77,8 +102,9 @@ function buildRetryConfirmation(
 
 function buildEnableDeviceConfirmation(
   notifications: readonly AdminNotification[],
-  pushDeviceId: string,
+  values: NotificationConfirmationValues,
 ): NotificationActionConfirmation | null {
+  const { pushDeviceId } = values;
   const match = findNotificationPushDevice(notifications, pushDeviceId);
   if (!match) {
     return null;
@@ -86,7 +112,7 @@ function buildEnableDeviceConfirmation(
 
   return {
     action: 'enable-device',
-    cancelHref: '/notifications',
+    cancelHref: notificationReturnHref(values),
     confirmLabel: 'Re-enable device',
     description: `Re-enable ${match.platform} push device ${shortId(
       match.pushDeviceId,
@@ -98,6 +124,25 @@ function buildEnableDeviceConfirmation(
     title: `Re-enable device ${shortId(match.pushDeviceId)}?`,
     tone: 'danger',
   };
+}
+
+function notificationReturnHref(context: NotificationActionReturnContext) {
+  return notificationHref(notificationReturnQueryEntries(context));
+}
+
+function notificationReturnQueryEntries(context: NotificationActionReturnContext) {
+  return [
+    ['review', context.review],
+    ['booking', context.booking],
+  ] as const;
+}
+
+function notificationHref(entries: readonly (readonly [string, string | undefined])[]) {
+  const query = entries
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+    .join('&');
+  return query ? `/notifications?${query}` : '/notifications';
 }
 
 function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {

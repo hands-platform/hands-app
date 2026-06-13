@@ -445,6 +445,39 @@ describe('notification page model', () => {
     });
   });
 
+  it('keeps active queue context on row confirmation links', () => {
+    const rows = buildNotificationTableRows(
+      [
+        notification({
+          data: { bookingId: 'booking-123456' },
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-disabled',
+              provider: 'FCM',
+              pushDevice: {
+                enabled: false,
+                id: 'device-disabled',
+                platform: 'ios',
+              },
+              status: 'FAILED',
+            },
+          ],
+          id: 'notification-row',
+          type: 'booking.requested',
+        }),
+      ],
+      { booking: 'booking-123456', review: 'failed' },
+    );
+
+    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
+      href: '/notifications?review=failed&booking=booking-123456&confirm=retry&notificationId=notification-row',
+    });
+    expect(rows[0]?.deliveryRows[0]?.enableDeviceHref).toBe(
+      '/notifications?review=failed&booking=booking-123456&confirm=enable-device&pushDeviceId=device-disabled',
+    );
+  });
+
   it('reads current push processor failure details from delivery response metadata', () => {
     const rows = buildNotificationTableRows([
       notification({

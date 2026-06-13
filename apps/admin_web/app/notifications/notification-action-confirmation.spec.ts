@@ -142,4 +142,32 @@ describe('notification action confirmation', () => {
       '/notifications?confirm=enable-device&pushDeviceId=device%201',
     );
   });
+
+  it('preserves active queue context in confirmation URLs and cancel links', () => {
+    expect(
+      retryNotificationConfirmHref('notification 1', {
+        booking: 'booking 1',
+        review: 'failed',
+      }),
+    ).toBe(
+      '/notifications?review=failed&booking=booking%201&confirm=retry&notificationId=notification%201',
+    );
+    expect(
+      enablePushDeviceConfirmHref('device 1', {
+        booking: 'booking 1',
+        review: 'disabled-device',
+      }),
+    ).toBe(
+      '/notifications?review=disabled-device&booking=booking%201&confirm=enable-device&pushDeviceId=device%201',
+    );
+
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      booking: 'booking 1',
+      notificationId: notification.id,
+      pushDeviceId: '',
+      review: 'failed',
+    });
+
+    expect(confirmation?.cancelHref).toBe('/notifications?review=failed&booking=booking%201');
+  });
 });

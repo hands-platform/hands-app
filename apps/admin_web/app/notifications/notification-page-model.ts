@@ -17,6 +17,7 @@ import {
 import {
   buildNotificationActionConfirmation,
   enablePushDeviceConfirmHref,
+  type NotificationActionReturnContext,
   readNotificationConfirmationAction,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
@@ -181,11 +182,13 @@ export function buildNotificationPageModel({
       {
         notificationId: readSearchParam(params.notificationId),
         pushDeviceId: readSearchParam(params.pushDeviceId),
+        review: filters.review,
+        booking: filters.booking,
       },
     ),
     filters,
     metrics: buildNotificationMetrics(allNotifications.length, summary, channelSummary),
-    notificationRows: buildNotificationTableRows(notifications),
+    notificationRows: buildNotificationTableRows(notifications, filters),
     notifications,
     opsQueue: buildNotificationDeliveryOpsQueue(allNotifications),
     partnerAlertSmokeFallback,
@@ -230,6 +233,7 @@ export function sortNotifications(notifications: readonly AdminNotification[]) {
 
 export function buildNotificationTableRows(
   notifications: readonly AdminNotification[],
+  actionContext: NotificationActionReturnContext = {},
 ): NotificationTableRow[] {
   return notifications.map((notification) => {
     const partnerProfile = notification.user?.providerProfile;
@@ -243,11 +247,11 @@ export function buildNotificationTableRows(
 
     return {
       actionLabel: `Notification actions for ${shortId(notification.id)}`,
-      actions: notificationActionMenuItems(notification),
+      actions: notificationActionMenuItems(notification, actionContext),
       body: marketplaceDisplayText(notification.body),
       bookingDataHint: notificationDataHint(notification),
       createdAtLabel: formatDateTime(notification.createdAt),
-      deliveryRows: buildNotificationDeliveryRows(notification),
+      deliveryRows: buildNotificationDeliveryRows(notification, actionContext),
       id: notification.id,
       opsHint: opsHint(notification),
       opsSignal: opsSignal(notification),
@@ -439,7 +443,10 @@ export function emptyNotificationMessage(
   return `No notifications currently match this queue. ${notificationFilterDescription(review)}`;
 }
 
-function buildNotificationDeliveryRows(notification: AdminNotification): NotificationDeliveryRow[] {
+function buildNotificationDeliveryRows(
+  notification: AdminNotification,
+  actionContext: NotificationActionReturnContext,
+): NotificationDeliveryRow[] {
   return newestDeliveries(notificationDeliveries(notification)).map((delivery) => ({
     attemptedAtLabel: formatDateTime(delivery.attemptedAt),
     deviceFreshnessLabel: notificationPushDeviceFreshnessLabel(delivery),
@@ -449,7 +456,7 @@ function buildNotificationDeliveryRows(notification: AdminNotification): Notific
     deviceStateLabel: delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled',
     enableDeviceHref:
       delivery.pushDevice?.enabled === false && delivery.pushDevice.id
-        ? enablePushDeviceConfirmHref(delivery.pushDevice.id)
+        ? enablePushDeviceConfirmHref(delivery.pushDevice.id, actionContext)
         : null,
     failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
     failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
@@ -542,7 +549,10 @@ function notificationPriority(notification: AdminNotification) {
   return 0;
 }
 
-function notificationActionMenuItems(notification: AdminNotification): readonly ActionMenuItem[] {
+function notificationActionMenuItems(
+  notification: AdminNotification,
+  actionContext: NotificationActionReturnContext,
+): readonly ActionMenuItem[] {
   const bookingId = notificationBookingId(notification);
   const partnerId = notification.user?.providerProfile?.id ?? '';
   const actions: ActionMenuItem[] = [];
@@ -569,7 +579,7 @@ function notificationActionMenuItems(notification: AdminNotification): readonly 
     description: hasRetrySignal(notification)
       ? 'Review the delivery issue before retrying this notification.'
       : 'Retry only if operations needs to resend this alert.',
-    href: retryNotificationConfirmHref(notification.id),
+    href: retryNotificationConfirmHref(notification.id, actionContext),
     kind: 'link',
     label: 'Retry',
     tone: hasRetrySignal(notification) ? 'warning' : 'info',
