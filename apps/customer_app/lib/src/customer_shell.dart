@@ -40,6 +40,12 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
     super.initState();
     _notificationOpenSubscription =
         handsFcmNotificationOpens.listen(_handleNotificationOpen);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ref.read(authControllerProvider) == null) {
+        return;
+      }
+      _startPushRegistration();
+    });
   }
 
   @override
