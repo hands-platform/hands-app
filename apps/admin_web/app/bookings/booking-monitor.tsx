@@ -31,10 +31,6 @@ import {
   type BookingCheckLevelFlag as BookingCheckFlag,
 } from '../../lib/booking-check-level';
 import { bookingMonitorCheckFlagsFromFacts } from '../../lib/booking-monitor-check-flags';
-import {
-  buildBookingCommandSummaryCards,
-  buildBookingOperatorRouteCards,
-} from '../../lib/booking-command-route-cards';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
@@ -53,7 +49,6 @@ import {
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import {
-  actionOrderLabel,
   bookingDashboardTone,
   commandToneClass,
   commandToneLabel,
@@ -231,6 +226,7 @@ import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
+import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
 import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import {
   buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
@@ -504,46 +500,15 @@ export function BookingMonitor({
 
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
-  const topNextAction = nextActions[0];
-  const dispatchCommandLane =
-    commandCenter.find((lane) => lane.title === 'Dispatch pressure') ?? commandCenter[0];
-  const protectionCommandLane =
-    commandCenter.find((lane) => lane.title === 'Customer protection') ?? commandCenter[1];
-  const paymentCommandLane =
-    commandCenter.find((lane) => lane.title === 'Payment closeout') ?? commandCenter[2];
-  const handoffCommandLane =
-    commandCenter.find((lane) => lane.title === 'Handoff quality') ?? commandCenter[3];
-  const topActionCard = topNextAction
-    ? {
-        actionLabel: actionOrderLabel(topNextAction.priority),
-        href: topNextAction.href,
-        operatorAction: topNextAction.operatorAction,
-        owner: topNextAction.owner,
-        priority: topNextAction.priority,
-      }
-    : undefined;
-  const commandSummaryCards = buildBookingCommandSummaryCards({
-    activeView: {
-      label: activeView.label,
-      operatorHint: activeView.operatorHint,
-      view,
-    },
-    blockedCreateCount: orderedBookingCreateRejections.length,
-    blockedCreateDetail: bookingGateRejectionLane.detail,
-    lanes: {
-      dispatch: dispatchCommandLane,
-      handoff: handoffCommandLane,
-      payment: paymentCommandLane,
-      protection: protectionCommandLane,
-    },
-    topAction: topActionCard,
-    visibleBookingCount: visibleBookings.length,
-  });
-  const operatorRouteCards = buildBookingOperatorRouteCards({
+  const commandRouteModel = buildBookingMonitorCommandRouteModel({
+    activeView,
     blockedCreateCount: orderedBookingCreateRejections.length,
     blockedCreateDetail: bookingGateRejectionLane.detail,
     bookingViewCounts,
-    topAction: topActionCard,
+    commandCenter,
+    topNextAction: nextActions[0],
+    view,
+    visibleBookingCount: visibleBookings.length,
   });
 
   useEffect(() => {
@@ -593,11 +558,11 @@ export function BookingMonitor({
 
       <BookingMonitorCommandRouteSections
         autoRefresh={autoRefresh}
-        commandSummaryCards={commandSummaryCards}
+        commandSummaryCards={commandRouteModel.commandSummaryCards}
         hasMounted={hasMounted}
         isPending={isPending}
         lastRefreshLabel={lastRefreshLabel}
-        operatorRouteCards={operatorRouteCards}
+        operatorRouteCards={commandRouteModel.operatorRouteCards}
         primaryCommandQueue={primaryCommandQueue}
       />
 
