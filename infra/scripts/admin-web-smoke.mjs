@@ -19,33 +19,52 @@ const requestedSmokeArgs = process.argv
   .map((path) => path.trim())
   .filter(Boolean);
 
-function notificationRetryFollowUp(review, gateMarker, label = `${review} retry confirmation`) {
+function notificationRetryFollowUp(
+  review,
+  gateMarker,
+  label = `${review} retry confirmation`,
+  supportMarkers = ['FCM setup'],
+) {
   return notificationConfirmationFollowUp({
     action: 'retry',
     actionMarker: 'Retry notification',
     gateMarker,
     label,
     review,
+    supportMarkers,
   });
 }
 
-function notificationDeviceFollowUp(review, gateMarker, label = `${review} device confirmation`) {
+function notificationDeviceFollowUp(
+  review,
+  gateMarker,
+  label = `${review} device confirmation`,
+  supportMarkers = ['FCM setup'],
+) {
   return notificationConfirmationFollowUp({
     action: 'enable-device',
     actionMarker: 'Re-enable device',
     gateMarker,
     label,
     review,
+    supportMarkers,
   });
 }
 
-function notificationConfirmationFollowUp({ action, actionMarker, gateMarker, label, review }) {
+function notificationConfirmationFollowUp({
+  action,
+  actionMarker,
+  gateMarker,
+  label,
+  review,
+  supportMarkers,
+}) {
   return {
     hrefPattern: new RegExp(
       `href="([^"]*\\/notifications\\?review=${review}(?:&amp;|&)[^"]*confirm=${action}[^"]*)"`,
     ),
     label,
-    markers: [actionMarker, gateMarker, 'FCM setup', 'Audit trail'],
+    markers: [actionMarker, gateMarker, ...supportMarkers, 'Audit trail'],
     optional: true,
   };
 }
@@ -510,6 +529,7 @@ const pages = [
   {
     path: '/notifications?review=pending',
     markers: ['Notifications', 'Pending', 'Notification operation filters', 'Worker path gate'],
+    followUps: [notificationRetryFollowUp('pending', 'Worker path gate', 'pending retry confirmation', [])],
   },
   {
     path: '/notifications?review=fcm',

@@ -98,6 +98,26 @@ describe('notification action confirmation', () => {
     );
   });
 
+  it('adds worker path guidance before retrying a pending notification', () => {
+    const pendingNotification = { ...notification, deliveries: [] };
+    const confirmation = buildNotificationActionConfirmation([pendingNotification], 'retry', {
+      notificationId: pendingNotification.id,
+      pushDeviceId: '',
+      review: 'pending',
+    });
+
+    expect(confirmation?.description).toContain(
+      'Runbook: Worker path gate. Confirm API workers and delivery processing first; retry only if operations intentionally wants to create a new send attempt.',
+    );
+    expect(confirmation?.supportingLinks).toEqual([
+      {
+        description: 'Open retry, delivery, and device recovery audit events before resending.',
+        href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
+        label: 'Audit trail',
+      },
+    ]);
+  });
+
   it('uses the newest delivery attempt as retry evidence', () => {
     const confirmation = buildNotificationActionConfirmation(
       [
