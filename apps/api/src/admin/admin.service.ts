@@ -29,6 +29,7 @@ import {
   OPERATIONAL_POLICY_DEFINITIONS,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
+import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
@@ -2158,12 +2159,12 @@ export class AdminService {
 
   async retryNotification(actorId: string, notificationId: string) {
     const result = await this.notifications.retry(notificationId);
-    await this.writeAudit(actorId, 'notification.retry', `notification:${notificationId}`, {
-      notificationId,
-      latestDelivery: result.latestDelivery,
-      retryJob: result.retryJob,
-      retryAlreadyDelivered: result.latestDelivery?.status === 'SENT',
-    });
+    await this.writeAudit(
+      actorId,
+      'notification.retry',
+      `notification:${notificationId}`,
+      notificationRetryAuditMetadata(notificationId, result),
+    );
     return result;
   }
 

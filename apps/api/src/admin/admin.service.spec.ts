@@ -357,6 +357,7 @@ describe('AdminService query orchestration', () => {
             status: 'FAILED',
           },
           notificationId: 'notification-1',
+          operatorAction: 'Fix the latest delivery failure before retrying.',
           retryJob: {
             attempts: 3,
             backoffMs: 5000,
@@ -365,6 +366,7 @@ describe('AdminService query orchestration', () => {
             queuedJobId: 'queued-retry-job-1',
           },
           retryAlreadyDelivered: false,
+          retryRisk: 'FAILED_DELIVERY_RETRY',
         },
       },
     });
