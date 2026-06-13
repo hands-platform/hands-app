@@ -5,6 +5,7 @@ import type {
   NotificationFcmSmokeReadiness,
   NotificationPartnerAlertSmokeFallback,
 } from './notification-page-model';
+import { FCM_TOKEN_RECOVERY_SMOKE_COMMAND } from './fcm-smoke-commands';
 
 type NotificationChannelPolicySectionProps = {
   readonly inAppDeliveries: number;
@@ -83,7 +84,7 @@ export function NotificationChannelPolicySection({
           ) : null}
           <p className="muted admin-mt-6">Verify disabled or reinstalled app tokens before broad FCM push.</p>
           <CommandCopyRow
-            command="npm.cmd run fcm:token-recovery-smoke"
+            command={FCM_TOKEN_RECOVERY_SMOKE_COMMAND}
             label="Copy token recovery smoke command"
           />
         </div>

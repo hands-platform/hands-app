@@ -1,3 +1,8 @@
+import {
+  FCM_TOKEN_RECOVERY_SMOKE_COMMAND,
+  FCM_TOKEN_SMOKE_COMMAND,
+} from '../notifications/fcm-smoke-commands';
+
 export type SetupCommandGroup = {
   readonly title: string;
   readonly detail: string;
@@ -44,8 +49,11 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     },
     {
       title: 'Token registration',
-      detail: 'Verify customer/Partner FCM token registration through the API without sending FCM push.',
-      commands: commands.filter((command) => command === 'npm.cmd run fcm:token-smoke'),
+      detail:
+        'Verify customer/Partner FCM token registration, disabled-token recovery, and replacement-token behavior through the API without sending FCM push.',
+      commands: commands.filter(
+        (command) => command === FCM_TOKEN_SMOKE_COMMAND || command === FCM_TOKEN_RECOVERY_SMOKE_COMMAND,
+      ),
     },
     {
       title: 'API preflight',

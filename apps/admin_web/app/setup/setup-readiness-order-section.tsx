@@ -1,5 +1,6 @@
 import type { AdminExternalReadiness } from '../../lib/admin-api';
 import { CommandCopyRow } from '../../components/command-copy-row';
+import { FCM_SETUP_READINESS_COMMANDS } from '../notifications/fcm-smoke-commands';
 import { setupReadinessDisplayText } from './setup-readiness-copy';
 
 type SetupRecommendedOrderItem = {
@@ -103,19 +104,7 @@ function readinessCommands(check: AdminExternalReadiness['checks'][number]) {
   const commands = new Set(
     (check.commands ?? []).filter((command) => command !== 'npm.cmd run external:check:production'),
   );
-  commands.add('npm.cmd run external:check:push');
-  commands.add('npm.cmd run fcm:env-contract');
-  commands.add('npm.cmd run notifications:push-data-contract');
-  commands.add(
-    'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -CheckOnly',
-  );
-  commands.add('npm.cmd run security:secrets');
-  commands.add('npm.cmd run fcm:credentials-check');
-  commands.add('npm.cmd run docker:contract');
-  commands.add('npm.cmd run fcm:token-smoke -- --dry-run');
-  commands.add('npm.cmd run fcm:token-recovery-smoke');
-  commands.add('npm.cmd run fcm:push-smoke -- --dry-run');
-  commands.add('npm.cmd run fcm:push-smoke -- --preflight');
+  FCM_SETUP_READINESS_COMMANDS.forEach((command) => commands.add(command));
   return Array.from(commands);
 }
 

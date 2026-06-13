@@ -70,6 +70,7 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:push-smoke -- --preflight',
             '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested standard notification id>"; npm.cmd run fcm:push-smoke -- --preflight',
             'npm.cmd run fcm:token-smoke',
+            'npm.cmd run fcm:token-recovery-smoke',
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
             '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
             'Open http://localhost:3101/notifications?review=fcm',
@@ -90,6 +91,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('npm.cmd run docker:contract');
     expect(rendered).toContain('Token registration');
     expect(rendered).toContain('customer/Partner FCM token registration');
+    expect(rendered).toContain('disabled-token recovery');
     expect(rendered).toContain('without sending FCM push');
     expect(rendered).toContain('API preflight');
     expect(rendered).toContain('without sending FCM');
@@ -103,6 +105,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke');
+    expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(rendered).toContain('FCM_SMOKE_ROLE="CUSTOMER"');
     expect(rendered).toContain('FCM_SMOKE_PHONE="+84900000001"');
     expect(rendered).toContain('FCM_SMOKE_USE_REGISTERED_DEVICE="true"');
