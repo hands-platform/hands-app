@@ -100,7 +100,6 @@ import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-
 import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
 import { bookingMatchesMonitorView } from './booking-monitor-view-match';
 import { bookingMonitorViewMatchReadersFromBooking } from './booking-monitor-view-match-readers';
-import { bookingOpsSignalState, type BookingOpsSignalTone } from './booking-ops-signal-state';
 import {
   activeBookingStatuses as activeStatuses,
   bookingMonitorSummaryRows,
@@ -214,6 +213,7 @@ import {
   bookingProviderLabel,
   partnerDisplayName,
 } from './booking-monitor-labels';
+import { bookingMonitorOpsSignal } from './booking-monitor-ops-signal';
 import {
   buildBookingMonitorMarketplaceCoverageRows,
   buildBookingMonitorMarketplaceOperatingQueue,
@@ -657,7 +657,7 @@ function buildBookingMonitorListRow(
     marketplaceParticipants: bookingMonitorListMarketplaceParticipants(marketplaceParticipantRows),
     nextActionLabel: nextAction(booking),
     openedDateLabel: formatDate(bookingRequestOpenedAt(booking)),
-    opsSignal: opsSignal(booking),
+    opsSignal: bookingMonitorOpsSignal(booking),
     preferredPartnerLabel: partnerDisplayName(booking.preferredProvider, 'none'),
     preferredProviderStateLabel: booking.preferredProvider
       ? bookingPreferredProviderStateLabel(booking)
@@ -968,24 +968,6 @@ function bookingNextActionReaders(
     paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
     status: booking.status,
   };
-}
-
-function opsSignal(booking: AdminBooking) {
-  const state = bookingOpsSignalState({
-    backupSelected: () => bookingIsBackupSelected(booking),
-    cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-    firstPickPending: () => bookingFirstPickPending(booking),
-    marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
-    matchingChatReady: () => bookingMatchingChatReady(booking),
-    payment: booking.payment,
-    status: booking.status,
-  });
-
-  return bookingOpsSignal(state.tone, state.label);
-}
-
-function bookingOpsSignal(tone: BookingOpsSignalTone, label: string) {
-  return <span className={`signal signal-${tone}`}>{label}</span>;
 }
 
 function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
