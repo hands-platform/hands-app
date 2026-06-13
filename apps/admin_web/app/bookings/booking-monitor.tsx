@@ -18,10 +18,8 @@ import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-o
 import { bookingCheckLevel } from '../../lib/booking-check-level';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
-import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-location-helpers';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
-import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingMonitorAlertEvidenceNeedsOps } from './booking-monitor-alert-evidence-model';
 import { emptyBookingMessage } from './booking-empty-message';
 import {
@@ -74,16 +72,10 @@ import {
   type BookingCustomerProtectionLane,
 } from './booking-customer-protection-board';
 import {
-  bookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps,
   bookingHasQuietHandoffChat,
   bookingMatchingChatReady,
-  isHandoffBookingStatus,
 } from './booking-chat-handoff-state';
-import {
-  bookingChatEvidenceNeedsOpsFromReaders,
-  bookingDecisionEvidenceMissingFromReaders,
-} from './booking-chat-evidence-ops-state';
 import {
   bookingClosureListSignal,
   terminalBookingStatuses,
@@ -124,19 +116,10 @@ import {
   bookingPreferredProviderStateLabel,
 } from './booking-preferred-provider-state';
 import {
-  bookingHasProviderLocation as hasProviderLocation,
-  bookingLocationNeedsOpsInput,
-} from './booking-location-ops-inputs';
-import {
   bookingCashDebtNeedsOps,
   bookingCompletedCloseoutNeedsOps,
   bookingCustomerProtectionFactsFromBookings,
 } from './booking-payment-closeout-facts';
-import {
-  bookingManualDecisionNeedsOpsInput,
-  bookingPaymentNeedsOpsInput,
-  bookingRefundReviewNeedsOpsInput,
-} from './booking-payment-ops-inputs';
 import { bookingListActionChips } from './booking-list-action-chip-inputs';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
@@ -160,6 +143,15 @@ import { BookingMonitorMatchingEscalationSection } from './booking-monitor-match
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
+import {
+  bookingMonitorAddressNeedsOps,
+  bookingMonitorChatEvidenceNeedsOps,
+  bookingMonitorDecisionEvidenceMissing,
+  bookingMonitorLocationNeedsOps,
+  bookingMonitorManualDecisionNeedsOps,
+  bookingMonitorPaymentNeedsOps,
+  bookingMonitorRefundReviewNeedsOps,
+} from './booking-monitor-ops-state-model';
 import {
   bookingCustomerLabel,
   bookingProviderLabel,
@@ -187,11 +179,6 @@ import {
   buildMarketplaceParticipantLedgerPills,
   buildMarketplaceParticipantLedgerSummary,
 } from '../../lib/marketplace-participant-ledger';
-import {
-  bookingManualDecisionNeedsOpsFromFacts,
-  bookingPaymentNeedsOpsFromFacts,
-  bookingRefundReviewNeedsOpsFromFacts,
-} from '../../lib/booking-payment-ops';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 type Props = {
@@ -565,7 +552,6 @@ export function BookingMonitor({
     </>
   );
 }
-
 function buildBookingMonitorListRow(
   booking: AdminBooking,
   currentTimeMs: number,
@@ -617,7 +603,6 @@ function buildBookingMonitorListRow(
     stage: buildBookingMonitorListStage(booking, currentTimeMs),
   };
 }
-
 function bookingMonitorListSelection(booking: AdminBooking): BookingMonitorListRow['selection'] {
   return bookingMonitorSelectionCopy(booking);
 }
@@ -634,14 +619,14 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
     active,
     backupSelected: bookings.filter((booking) => bookingIsBackupSelected(booking)),
     cashDebt: bookings.filter((booking) => bookingCashDebtNeedsOps(booking)),
-    chatEvidence: bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, nowMs)),
+    chatEvidence: bookings.filter((booking) => bookingMonitorChatEvidenceNeedsOps(booking, nowMs)),
     chatReady: bookings.filter((booking) => bookingMatchingChatReady(booking)),
     closeoutChecks: bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking)),
-    evidenceMissing: bookings.filter((booking) => bookingDecisionEvidenceMissing(booking, nowMs)),
+    evidenceMissing: bookings.filter((booking) => bookingMonitorDecisionEvidenceMissing(booking, nowMs)),
     expiredMatching: open.filter(
       (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
     ),
-    locationChecks: bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs)),
+    locationChecks: bookings.filter((booking) => bookingMonitorLocationNeedsOps(booking, nowMs)),
     matchedWithoutChat: bookings.filter((booking) => bookingChatRepairNeedsOps(booking)),
     missingAuthorizedPaymentRefs: bookings.filter(
       (booking) => booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
@@ -649,11 +634,11 @@ function buildBookingCommandCenterFacts(bookings: AdminBooking[], nowMs: number)
     noShow: bookings.filter((booking) => booking.status === 'NO_SHOW'),
     noSupply: open.filter((booking) => (booking.participants?.length ?? 0) === 0),
     open,
-    paymentChecks: bookings.filter((booking) => bookingPaymentNeedsOps(booking)),
+    paymentChecks: bookings.filter((booking) => bookingMonitorPaymentNeedsOps(booking)),
     preferredPending: open.filter((booking) => bookingFirstPickPending(booking)),
     pricingChecks: bookings.filter((booking) => bookingMonitorPricingPolicyNeedsOps(booking)),
     quietChat: bookings.filter((booking) => bookingHasQuietHandoffChat(booking)),
-    refundReview: bookings.filter((booking) => bookingRefundReviewNeedsOps(booking)),
+    refundReview: bookings.filter((booking) => bookingMonitorRefundReviewNeedsOps(booking)),
   };
 }
 
@@ -684,22 +669,22 @@ function buildMatchingEscalationFacts(bookings: AdminBooking[], nowMs: number) {
 
 function buildBookingMonitorSummaryFact(booking: AdminBooking, nowMs: number): BookingMonitorSummaryFact {
   return bookingMonitorSummaryFactFromInputs({
-    addressNeedsOps: bookingAddressNeedsOps(booking),
+    addressNeedsOps: bookingMonitorAddressNeedsOps(booking),
     backupSelected: bookingIsBackupSelected(booking),
     checkSeverities: bookingMonitorCheckFlags(booking, nowMs).map((flag) => flag.severity),
-    chatEvidenceNeedsOps: bookingChatEvidenceNeedsOps(booking, nowMs),
+    chatEvidenceNeedsOps: bookingMonitorChatEvidenceNeedsOps(booking, nowMs),
     chatRepairNeedsOps: bookingChatRepairNeedsOps(booking),
     closeoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-    decisionEvidenceMissing: bookingDecisionEvidenceMissing(booking, nowMs),
+    decisionEvidenceMissing: bookingMonitorDecisionEvidenceMissing(booking, nowMs),
     firstPickPending: bookingFirstPickPending(booking),
-    locationNeedsOps: bookingLocationNeedsOps(booking, nowMs),
+    locationNeedsOps: bookingMonitorLocationNeedsOps(booking, nowMs),
     marketplaceParticipantCount: bookingMarketplaceParticipantCount(booking),
     matchingChatReady: bookingMatchingChatReady(booking),
     participantCount: booking.participants?.length ?? 0,
-    paymentNeedsOps: bookingPaymentNeedsOps(booking),
+    paymentNeedsOps: bookingMonitorPaymentNeedsOps(booking),
     policySnapshotPresent: Boolean(bookingMatchingPolicySnapshot(booking)),
     pricingPolicyNeedsOps: bookingMonitorPricingPolicyNeedsOps(booking),
-    refundReviewNeedsOps: bookingRefundReviewNeedsOps(booking),
+    refundReviewNeedsOps: bookingMonitorRefundReviewNeedsOps(booking),
     stageKey: buildBookingMonitorListStage(booking, nowMs).key,
     status: booking.status,
   });
@@ -727,23 +712,23 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
   return bookingMatchesMonitorView(
     view,
     bookingMonitorViewMatchReadersFromBooking(booking, {
-      addressNeedsOps: () => bookingAddressNeedsOps(booking),
+      addressNeedsOps: () => bookingMonitorAddressNeedsOps(booking),
       cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
-      chatEvidenceNeedsOps: () => bookingChatEvidenceNeedsOps(booking, nowMs),
+      chatEvidenceNeedsOps: () => bookingMonitorChatEvidenceNeedsOps(booking, nowMs),
       closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-      decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
+      decisionEvidenceMissing: () => bookingMonitorDecisionEvidenceMissing(booking, nowMs),
       highPriorityCheck: () =>
         bookingMonitorCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high'),
-      locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-      manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
+      locationNeedsOps: () => bookingMonitorLocationNeedsOps(booking, nowMs),
+      manualDecisionNeedsOps: () => bookingMonitorManualDecisionNeedsOps(booking),
       matchingEscalationNeedsOps: () =>
         bookingMatchingEscalationNeedsOps(booking, {
           hasChatRoom: bookingMatchingChatReady(booking),
           responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
         }),
-      paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+      paymentNeedsOps: () => bookingMonitorPaymentNeedsOps(booking),
       pricingPolicyNeedsOps: () => bookingMonitorPricingPolicyNeedsOps(booking),
-      refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
+      refundReviewNeedsOps: () => bookingMonitorRefundReviewNeedsOps(booking),
       stageKey: () => buildBookingMonitorListStage(booking, nowMs).key,
     }),
   );
@@ -757,66 +742,12 @@ function bookingMatchesEvidenceFilter(
   return bookingMatchesMonitorEvidenceFilter(
     evidenceFilter,
     bookingMonitorEvidenceMatchReadersFromBooking(booking, {
-      addressNeedsOps: () => bookingAddressNeedsOps(booking),
+      addressNeedsOps: () => bookingMonitorAddressNeedsOps(booking),
       alertEvidenceNeedsOps: () => bookingMonitorAlertEvidenceNeedsOps(booking, nowMs),
       cashDebtNeedsOps: () => bookingCashDebtNeedsOps(booking),
       closeoutNeedsOps: () => bookingCompletedCloseoutNeedsOps(booking),
-      locationNeedsOps: () => bookingLocationNeedsOps(booking, nowMs),
-      paymentNeedsOps: () => bookingPaymentNeedsOps(booking),
+      locationNeedsOps: () => bookingMonitorLocationNeedsOps(booking, nowMs),
+      paymentNeedsOps: () => bookingMonitorPaymentNeedsOps(booking),
     }),
   );
 }
-
-function bookingPaymentNeedsOps(booking: AdminBooking) {
-  return bookingPaymentNeedsOpsFromFacts(
-    bookingPaymentNeedsOpsInput({
-      booking,
-      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-    }),
-  );
-}
-
-function bookingManualDecisionNeedsOps(booking: AdminBooking) {
-  return bookingManualDecisionNeedsOpsFromFacts(
-    bookingManualDecisionNeedsOpsInput({
-      booking,
-      cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
-      completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
-    }),
-  );
-}
-
-function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
-  return bookingChatEvidenceNeedsOpsFromReaders({
-    chatReady: bookingMatchingChatReady(booking),
-    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
-    chatQuietNeedsOps: () => bookingChatQuietNeedsOps(booking),
-    decisionEvidenceMissing: () => bookingDecisionEvidenceMissing(booking, nowMs),
-    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
-    refundReviewNeedsOps: () => bookingRefundReviewNeedsOps(booking),
-  });
-}
-
-function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
-  return bookingDecisionEvidenceMissingFromReaders({
-    chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
-    hasAlertTrace: () => bookingBackupAlertTraceSummary(booking, nowMs).totalNotified > 0,
-    hasChatMessage: () => (booking.chatRoom?.messages?.length ?? 0) > 0,
-    hasProviderLocation: () => hasProviderLocation(booking),
-    manualDecisionNeedsOps: () => bookingManualDecisionNeedsOps(booking),
-  });
-}
-
-function bookingRefundReviewNeedsOps(booking: AdminBooking) {
-  return bookingRefundReviewNeedsOpsFromFacts(bookingRefundReviewNeedsOpsInput(booking));
-}
-
-function bookingAddressNeedsOps(booking: AdminBooking) {
-  return !booking.addressSnapshot;
-}
-
-function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
-  return bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs));
-}
-
