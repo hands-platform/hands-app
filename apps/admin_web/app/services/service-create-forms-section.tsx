@@ -7,7 +7,7 @@ export function ServiceCreateFormsSection() {
         <h2>Create service with duration options</h2>
         <p className="muted">
           This creates one service type with 60, 90, and 120 minute options. Leave a duration blank if that
-          option should not be sold yet. Add partner payout amounts now so each option can be booked
+          option should not be sold yet. Add Partner payout amounts now so each option can be booked
           immediately.
         </p>
         <form action={createServiceDurationSet} className="form-grid">
@@ -24,7 +24,7 @@ export function ServiceCreateFormsSection() {
             <input name="basePrice60" type="number" min="100000" step="100000" placeholder="500000" />
           </label>
           <label>
-            60 min partner payout
+            60 min Partner payout
             <input name="providerPayoutAmount60" type="number" min="0" step="1000" placeholder="380000" />
           </label>
           <label>
@@ -32,7 +32,7 @@ export function ServiceCreateFormsSection() {
             <input name="basePrice90" type="number" min="100000" step="100000" placeholder="700000" />
           </label>
           <label>
-            90 min partner payout
+            90 min Partner payout
             <input name="providerPayoutAmount90" type="number" min="0" step="1000" placeholder="540000" />
           </label>
           <label>
@@ -40,7 +40,7 @@ export function ServiceCreateFormsSection() {
             <input name="basePrice120" type="number" min="100000" step="100000" placeholder="900000" />
           </label>
           <label>
-            120 min partner payout
+            120 min Partner payout
             <input name="providerPayoutAmount120" type="number" min="0" step="1000" placeholder="700000" />
           </label>
           <label>
@@ -61,7 +61,7 @@ export function ServiceCreateFormsSection() {
           </label>
           <label className="full-span">
             Description
-            <input name="description" placeholder="Shown in customer/partner apps" />
+            <input name="description" placeholder="Shown in customer and Partner apps" />
           </label>
           <button type="submit">Create duration set</button>
         </form>
@@ -112,7 +112,7 @@ export function ServiceCreateFormsSection() {
           </label>
           <label className="full-span">
             Description
-            <input name="description" placeholder="Shown in customer/partner apps" />
+            <input name="description" placeholder="Shown in customer and Partner apps" />
           </label>
           <button type="submit">Create service</button>
         </form>
