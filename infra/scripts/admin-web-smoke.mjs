@@ -544,12 +544,12 @@ const pages = [
   {
     path: '/notifications?review=disabled-device',
     markers: ['Notifications', 'Disabled devices', 'Delivery operations queue', 'Device recovery gate'],
-    followUps: [notificationDeviceFollowUp('disabled-device', 'Device recovery gate')],
+    followUps: [notificationFcmDeviceFollowUp('disabled-device', 'Device recovery gate')],
   },
   {
     path: '/notifications?review=stale-device',
     markers: ['Notifications', 'Stale devices', 'Delivery operations queue', 'Token freshness gate'],
-    followUps: [notificationRetryFollowUp('stale-device', 'Token freshness gate')],
+    followUps: [notificationFcmRetryFollowUp('stale-device', 'Token freshness gate')],
   },
   {
     path: '/notifications?review=needs-retry',
