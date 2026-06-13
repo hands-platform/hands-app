@@ -44,8 +44,9 @@ describe('NotificationRetryProcessor', () => {
       processor.process({ data: { notificationId: 'notification-1' } } as never),
     ).resolves.toEqual({
       skipped: true,
-      reason: 'NO_ENABLED_DEVICES',
+      reason: 'NO_ENABLED_TARGET_ROLE_DEVICES',
       notificationId: 'notification-1',
+      targetRole: Role.PROVIDER,
     });
 
     expect(prisma.operationalPolicySetting.findUnique).not.toHaveBeenCalled();
@@ -63,7 +64,7 @@ describe('NotificationRetryProcessor', () => {
           type: 'booking.backup_available',
           data: { bookingId: 'booking-1' },
           user: {
-            pushDevices: [{ id: 'device-1', token: 'fcm-token-1' }],
+            pushDevices: [{ id: 'device-1', role: Role.PROVIDER, token: 'fcm-token-1' }],
           },
         }),
       },
@@ -107,7 +108,7 @@ describe('NotificationRetryProcessor', () => {
           type: 'booking.backup_available',
           data: { bookingId: 'booking-1' },
           user: {
-            pushDevices: [{ id: 'device-1', token: 'fcm-token-1' }],
+            pushDevices: [{ id: 'device-1', role: Role.PROVIDER, token: 'fcm-token-1' }],
           },
         }),
       },
@@ -151,7 +152,7 @@ describe('NotificationRetryProcessor', () => {
           type: 'payment.updated',
           data: { bookingId: 'booking-1', paymentId: 'payment-1' },
           user: {
-            pushDevices: [{ id: 'device-1', token: 'fcm-token-1' }],
+            pushDevices: [{ id: 'device-1', role: Role.CUSTOMER, token: 'fcm-token-1' }],
           },
         }),
       },
@@ -261,8 +262,8 @@ describe('NotificationRetryProcessor', () => {
           data: { bookingId: 'booking-1' },
           user: {
             pushDevices: [
-              { id: 'device-1', token: 'fcm-token-1' },
-              { id: 'device-2', token: 'fcm-token-2' },
+              { id: 'device-1', role: Role.CUSTOMER, token: 'fcm-token-1' },
+              { id: 'device-2', role: Role.CUSTOMER, token: 'fcm-token-2' },
             ],
           },
         }),

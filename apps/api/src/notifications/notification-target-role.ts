@@ -1,6 +1,28 @@
 import { Role } from '@prisma/client';
 
 const NOTIFICATION_TARGET_ROLE_KEY = 'targetRole';
+const LEGACY_CUSTOMER_NOTIFICATION_TYPES = new Set([
+  'booking.opened',
+  'booking.rejected',
+  'payment.updated',
+  'provider.accepted',
+  'provider.joined',
+  'provider.rejected',
+  'service.completed',
+]);
+const LEGACY_PROVIDER_NOTIFICATION_TYPES = new Set([
+  'booking.backup_available',
+  'booking.requested',
+  'earning.created',
+  'provider.account.blocked',
+  'provider.account.unblocked',
+  'provider.media.approved',
+  'provider.media.rejected',
+  'provider.payout_batch.updated',
+  'provider.payout_setup_required',
+  'provider.verification.approved',
+  'provider.verification.rejected',
+]);
 
 export type NotificationTargetRole = Extract<Role, 'CUSTOMER' | 'PROVIDER'>;
 
@@ -16,14 +38,16 @@ export function notificationDataWithTargetRole(data: unknown, targetRole?: Role)
   return { ...(data as Record<string, unknown>), [NOTIFICATION_TARGET_ROLE_KEY]: targetRole };
 }
 
-export function notificationTargetRole(notification: { data?: unknown }) {
+export function notificationTargetRole(notification: { type?: string; data?: unknown }) {
   const data = notification.data;
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    return null;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const targetRole = (data as Record<string, unknown>)[NOTIFICATION_TARGET_ROLE_KEY];
+    if (isNotificationTargetRole(targetRole)) {
+      return targetRole;
+    }
   }
 
-  const targetRole = (data as Record<string, unknown>)[NOTIFICATION_TARGET_ROLE_KEY];
-  return isNotificationTargetRole(targetRole) ? targetRole : null;
+  return legacyNotificationTargetRole(notification.type);
 }
 
 export function pushDeviceMatchesTargetRole(
@@ -35,4 +59,14 @@ export function pushDeviceMatchesTargetRole(
 
 export function isNotificationTargetRole(value: unknown): value is NotificationTargetRole {
   return value === Role.CUSTOMER || value === Role.PROVIDER;
+}
+
+function legacyNotificationTargetRole(notificationType: string | undefined) {
+  if (notificationType && LEGACY_CUSTOMER_NOTIFICATION_TYPES.has(notificationType)) {
+    return Role.CUSTOMER;
+  }
+  if (notificationType && LEGACY_PROVIDER_NOTIFICATION_TYPES.has(notificationType)) {
+    return Role.PROVIDER;
+  }
+  return null;
 }
