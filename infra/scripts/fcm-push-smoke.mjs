@@ -14,6 +14,10 @@ import {
   firebaseServiceAccountJsonConfigured,
   firebaseServiceAccountJsonEnvKey,
 } from './lib/firebase-admin-credentials.mjs';
+import {
+  firebaseProjectAlignment,
+  firebaseProjectAlignmentActions,
+} from './lib/firebase-project-alignment.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const partnerAlertTypes = readPartnerAlertTypes();
@@ -40,6 +44,7 @@ const useRegisteredDevice =
   booleanEnv(envValue(env, 'FCM_SMOKE_USE_REGISTERED_DEVICE'), false, 'FCM_SMOKE_USE_REGISTERED_DEVICE');
 const dryRun = process.argv.includes('--dry-run');
 const preflight = process.argv.includes('--preflight');
+const projectAlignment = firebaseProjectAlignment(env, { repoRoot });
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
   fail(`Unsupported FCM_SMOKE_EXPECT_STATUS=${expectedStatus}. Use ANY, SENT, FAILED, or SKIPPED.`);
@@ -72,6 +77,7 @@ if (dryRun) {
         pushReadiness: {
           hasPushProviderFcm: hasExpectedEnvValue('PUSH_PROVIDER', 'fcm'),
           hasFirebaseAdminCredentials: firebaseAdminConfigured(),
+          projectAlignment,
         },
         requestedNotificationId: requestedNotificationId || null,
         expectedProvider,
@@ -128,6 +134,7 @@ if (preflight) {
     notificationPreflight,
     registeredDevicePreflight,
     partnerAlertPolicyPreflight,
+    projectAlignment,
   });
   const blockedAlternativeNotificationPreflights = blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')
     ? alternativeNotificationPreflights
@@ -147,6 +154,7 @@ if (preflight) {
         hasDeviceToken: Boolean(deviceToken),
         useRegisteredDevice,
         pushReadiness: pushReadinessOutput(pushCheck),
+        projectAlignment,
         registeredDevicePreflight,
         notificationSelection: summarizeNotificationSelection(defaultNotificationSelection),
         notificationPreflight,
@@ -194,6 +202,16 @@ if (partnerAlertPolicyBlocker) {
     `Selected notification is routed to ${partnerAlertPolicyPreflight.resolvedProvider} by ${partnerAlertPolicyKey}, but FCM_SMOKE_EXPECT_PROVIDER=${expectedProvider}. ${alternativeNotificationHint(
       alternativeNotificationPreflights,
     )}`,
+  );
+}
+const projectAlignmentBlocker = fcmProjectAlignmentBlocker(projectAlignment);
+if (projectAlignmentBlocker) {
+  fail(
+    `FCM project alignment is not ready for live smoke: ${JSON.stringify({
+      blocker: projectAlignmentBlocker,
+      projectAlignment,
+      nextActions: firebaseProjectAlignmentActions(projectAlignment.invalid),
+    })}`,
   );
 }
 
@@ -596,10 +614,7 @@ function firebaseAdminConfigured() {
 }
 
 function readPartnerAlertTypes() {
-  const source = readFileSync(
-    resolve(repoRoot, 'packages/shared-types/src/index.ts'),
-    'utf8',
-  );
+  const source = readFileSync(resolve(repoRoot, 'packages/shared-types/src/index.ts'), 'utf8');
   const match = source.match(/const\s+PARTNER_ALERT_EVENTS\s*=\s*\[([\s\S]*?)\]\s*as\s+const/);
   if (!match) {
     throw new Error('Unable to read partner alert notification types from shared-types.');
@@ -642,6 +657,9 @@ function dryRunNextActions() {
   if (!firebaseAdminConfigured()) {
     actions.push(firebaseAdminCredentialAction());
   }
+  if (fcmProjectAlignmentBlocker(projectAlignment)) {
+    actions.push(...firebaseProjectAlignmentActions(projectAlignment.invalid));
+  }
 
   if (!deviceToken && useRegisteredDevice) {
     actions.push(
@@ -664,6 +682,7 @@ function preflightBlockers({
   notificationPreflight,
   registeredDevicePreflight,
   partnerAlertPolicyPreflight,
+  projectAlignment,
 }) {
   const blockers = [];
 
@@ -686,8 +705,25 @@ function preflightBlockers({
   if (partnerAlertBlocker) {
     blockers.push(partnerAlertBlocker);
   }
+  const projectAlignmentBlocker = fcmProjectAlignmentBlocker(projectAlignment);
+  if (projectAlignmentBlocker) {
+    blockers.push(projectAlignmentBlocker);
+  }
 
   return blockers;
+}
+
+function fcmProjectAlignmentBlocker(projectAlignment) {
+  if (!requiresFcmDeliveryCredentials()) {
+    return null;
+  }
+  return projectAlignment.ok
+    ? null
+    : (projectAlignment.invalid[0] ?? 'FIREBASE_PROJECT_ALIGNMENT_NOT_CHECKED');
+}
+
+function requiresFcmDeliveryCredentials() {
+  return hasExpectedEnvValue('PUSH_PROVIDER', 'fcm') && expectedProvider !== 'IN_APP_ONLY';
 }
 
 function expectedProviderBlocker(partnerAlertPolicyPreflight) {
@@ -731,6 +767,7 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = []) 
   if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
     actions.push(alternativeNotificationHint(alternativeNotificationPreflights));
   }
+  actions.push(...firebaseProjectAlignmentActions(blockers));
   return actions;
 }
 
