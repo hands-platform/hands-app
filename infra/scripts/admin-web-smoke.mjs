@@ -481,6 +481,14 @@ const pages = [
   {
     path: '/notifications?review=stale-device',
     markers: ['Notifications', 'Stale devices', 'Delivery operations queue', 'Token freshness gate'],
+    followUps: [
+      {
+        hrefPattern: /href="([^"]*\/notifications\?review=stale-device(?:&amp;|&)[^"]*confirm=retry[^"]*)"/,
+        label: 'stale-device retry confirmation',
+        markers: ['Retry notification', 'Token freshness gate', 'FCM setup', 'Audit trail'],
+        optional: true,
+      },
+    ],
   },
   {
     path: '/notifications?review=pending',
