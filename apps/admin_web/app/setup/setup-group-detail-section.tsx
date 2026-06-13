@@ -175,7 +175,7 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
     },
     {
       title: 'Token registration',
-      detail: 'Verify customer/provider FCM token registration through the API without sending OS push.',
+      detail: 'Verify customer/Partner FCM token registration through the API without sending OS push.',
       commands: commands.filter((command) => command === 'npm.cmd run fcm:token-smoke'),
     },
     {
@@ -189,7 +189,7 @@ function setupCommandGroups(groupId: string, commands: readonly string[]) {
     {
       title: 'Partner alert policy fallback',
       detail:
-        'When provider partner-alert preflight is routed to in-app delivery, reuse the suggested non partner-alert notification id for an FCM-only smoke check.',
+        'When Partner alert preflight is routed to in-app delivery, reuse the suggested non partner-alert notification id for an FCM-only smoke check.',
       commands: commands.filter((command) => command.includes('FCM_SMOKE_NOTIFICATION_ID')),
     },
     {

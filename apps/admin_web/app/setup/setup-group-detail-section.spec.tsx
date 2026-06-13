@@ -86,9 +86,11 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('npm.cmd run fcm:credentials-check');
     expect(rendered).toContain('npm.cmd run docker:contract');
     expect(rendered).toContain('Token registration');
+    expect(rendered).toContain('customer/Partner FCM token registration');
     expect(rendered).toContain('API preflight');
     expect(rendered).toContain('without sending FCM');
     expect(rendered).toContain('Partner alert policy fallback');
+    expect(rendered).toContain('When Partner alert preflight is routed to in-app delivery');
     expect(rendered).toContain('preflight suggested non partner-alert id');
     expect(rendered).toContain('Live push send');
     expect(rendered).toContain('reuse an enabled device already registered');

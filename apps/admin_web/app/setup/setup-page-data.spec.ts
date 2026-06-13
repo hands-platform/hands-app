@@ -28,11 +28,11 @@ describe('setup page data', () => {
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
         'google-services.json is mobile client config only; it does not replace server-side Firebase Admin credentials.',
-        'Run fcm:token-smoke -- --dry-run first; it lists customer/provider actors and config without contacting the API or FCM.',
-        'Run fcm:token-smoke before live push smoke; it verifies customer/provider token registration without contacting FCM.',
+        'Run fcm:token-smoke -- --dry-run first; it lists customer/Partner actors and config without contacting the API or FCM.',
+        'Run fcm:token-smoke before live push smoke; it verifies customer/Partner token registration without contacting FCM.',
         'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
         'Run fcm:push-smoke -- --preflight to check API readiness, notification availability, and registered device readiness without sending FCM.',
-        'If provider partner-alert preflight is blocked by notification.partner_alert_channel, use the suggested non partner-alert FCM_SMOKE_NOTIFICATION_ID for the smoke retry instead of changing policy just for testing.',
+        'If Partner alert preflight is blocked by notification.partner_alert_channel, use the suggested non partner-alert FCM_SMOKE_NOTIFICATION_ID for the smoke retry instead of changing policy just for testing.',
         'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
         'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, and pending queues before enabling OS push broadly.',
       ]),
