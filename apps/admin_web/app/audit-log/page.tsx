@@ -19,6 +19,7 @@ import { AuditLogTableSection, type AuditLogTableRow } from './audit-log-table-s
 import {
   notificationFailureCodeClassName,
   notificationFailureCodeLabel,
+  notificationFailureRecoveryActionLabel,
 } from '../notifications/notification-failure-copy';
 
 type AuditLogFilters = {
@@ -620,6 +621,13 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
       label: notificationFailureCodeLabel(failureCode),
       className: notificationFailureCodeClassName(failureCode),
     });
+    const recoveryActionLabel = notificationFailureRecoveryActionLabel(failureCode);
+    if (recoveryActionLabel) {
+      highlights.push({
+        label: recoveryActionLabel,
+        className: 'pill pill-warn',
+      });
+    }
   }
   if (latestDelivery.pushDeviceEnabled === true) {
     highlights.push({ label: 'Device enabled', className: 'pill pill-success' });

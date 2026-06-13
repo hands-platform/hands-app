@@ -42,6 +42,30 @@ export function notificationFailureRecoveryHint(failureCode: string | null | und
   return null;
 }
 
+export function notificationFailureRecoveryActionLabel(failureCode: string | null | undefined) {
+  if (!failureCode) {
+    return null;
+  }
+
+  if (failureCode === 'messaging/mismatched-credential') {
+    return 'Next install matching Firebase Admin JSON';
+  }
+  if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
+    return 'Next enable FCM credentials';
+  }
+  if (
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return 'Next refresh app token';
+  }
+  if (failureCode === 'messaging/internal-error' || failureCode === 'messaging/server-unavailable') {
+    return 'Next retry after Firebase health check';
+  }
+
+  return null;
+}
+
 function notificationFailureNeedsOperatorAction(failureCode: string) {
   return (
     failureCode === 'messaging/mismatched-credential' ||

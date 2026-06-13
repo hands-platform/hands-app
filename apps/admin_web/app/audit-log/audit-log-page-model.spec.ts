@@ -62,6 +62,7 @@ describe('audit log page model', () => {
       { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-warn', label: 'Firebase project mismatch' },
+      { className: 'pill pill-warn', label: 'Next install matching Firebase Admin JSON' },
       { className: 'pill pill-success', label: 'Device enabled' },
     ]);
   });
