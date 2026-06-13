@@ -966,8 +966,11 @@ function opsDetail(action: string) {
   if (action === 'booking.completed.closeout') {
     return 'Completed closeout should leave payment, earning, tax, wallet, and chat archive records aligned.';
   }
+  if (action === 'notification.retry') {
+    return 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.';
+  }
   if (action.endsWith('.retry')) {
-    return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';
+    return 'Retry events are useful when a delivery or operation needed another pass.';
   }
   if (action.startsWith('operational_policy.')) {
     return 'Operational policy edits can change matching timers, marketplace partner visibility, wallet gates, and alert routing.';

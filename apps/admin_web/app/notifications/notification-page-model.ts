@@ -579,6 +579,14 @@ function notificationActionMenuItems(
   }
 
   actions.push({
+    description: 'Review send, retry, and device recovery audit events for this notification.',
+    href: notificationAuditTrailHref(notification.id),
+    kind: 'link',
+    label: 'Audit trail',
+    tone: 'neutral',
+  });
+
+  actions.push({
     description: hasRetrySignal(notification)
       ? 'Review the delivery issue before retrying this notification.'
       : 'Retry only if operations needs to resend this alert.',
@@ -589,6 +597,10 @@ function notificationActionMenuItems(
   });
 
   return actions;
+}
+
+function notificationAuditTrailHref(notificationId: string) {
+  return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
 }
 
 function humanizeType(type: string) {

@@ -489,7 +489,15 @@ describe('notification page model', () => {
       partnerLabel: 'Partner Mai',
       typeLabel: 'Booking Marketplace Available',
     });
-    expect(rows[0]?.actions.map((action) => action.label)).toEqual(['Open booking', 'Open Partner', 'Retry']);
+    expect(rows[0]?.actions.map((action) => action.label)).toEqual([
+      'Open booking',
+      'Open Partner',
+      'Audit trail',
+      'Retry',
+    ]);
+    expect(rows[0]?.actions.find((action) => action.label === 'Audit trail')).toMatchObject({
+      href: '/audit-log?bucket=Notification&q=notification-row&range=all',
+    });
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       deviceFreshnessLabel: 'Token timestamp current',
       deviceLastSeenAtLabel: '1 Jun 2026, 17:02',

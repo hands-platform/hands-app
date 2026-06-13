@@ -25,6 +25,7 @@ describe('audit log page model', () => {
     expect(rows[0]).toMatchObject({
       actionLabel: 'Notification / Retry',
       bucketLabel: 'Notification',
+      opsDetail: 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.',
       relatedBoardHref: '/notifications#notification-123456',
       relatedBoardLabel: 'notification board',
       targetLabel: 'notification:notification-123456',
