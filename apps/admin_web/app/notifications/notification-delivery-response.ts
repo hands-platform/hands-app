@@ -33,6 +33,31 @@ export function notificationDeliveryFailureReason(delivery: NotificationDelivery
   );
 }
 
+export function notificationDeliveryRecoveryHint(delivery: NotificationDelivery) {
+  const failureCode = notificationDeliveryFailureCode(delivery);
+  if (!failureCode) {
+    return null;
+  }
+
+  if (failureCode === 'messaging/mismatched-credential') {
+    return 'Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.';
+  }
+  if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
+    return 'Enable FCM credentials or keep this route in-app-only before retrying push delivery.';
+  }
+  if (
+    failureCode === 'messaging/registration-token-not-registered' ||
+    failureCode === 'messaging/invalid-registration-token'
+  ) {
+    return 'Ask the user to reopen the app so it can register a fresh FCM token before retrying.';
+  }
+  if (failureCode === 'messaging/internal-error' || failureCode === 'messaging/server-unavailable') {
+    return 'Retry after Firebase service health and local worker health are confirmed.';
+  }
+
+  return null;
+}
+
 function asRecord(value: unknown) {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
 }

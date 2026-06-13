@@ -52,7 +52,8 @@ describe('notification page model', () => {
     expect(queue).toEqual([
       {
         count: 1,
-        detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
+        detail:
+          'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
         href: '/notifications?review=failed',
         key: 'failed',
         label: 'Failed sends',
@@ -186,7 +187,8 @@ describe('notification page model', () => {
     );
 
     expect(fallback).toEqual({
-      detail: 'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same Partner/phone FCM smoke preflight.',
+      detail:
+        'Use FCM_SMOKE_NOTIFICATION_ID=notification-earning for the same Partner/phone FCM smoke preflight.',
       partnerAlertNotificationId: 'notification-partner-alert',
       partnerAlertType: 'provider.payout_batch.updated',
       partnerAlertTypeLabel: 'Partner Payout Batch Updated',
@@ -326,12 +328,12 @@ describe('notification page model', () => {
       }),
     ];
 
-    expect(filterNotifications(notifications, { booking: '', review: 'failed' }).map((item) => item.id)).toEqual([
-      'notification-current-failed',
-    ]);
-    expect(filterNotifications(notifications, { booking: '', review: 'sent' }).map((item) => item.id)).toEqual([
-      'notification-recovered',
-    ]);
+    expect(
+      filterNotifications(notifications, { booking: '', review: 'failed' }).map((item) => item.id),
+    ).toEqual(['notification-current-failed']);
+    expect(
+      filterNotifications(notifications, { booking: '', review: 'sent' }).map((item) => item.id),
+    ).toEqual(['notification-recovered']);
     expect(buildNotificationDeliveryStats(notifications)).toMatchObject({
       failedDeliveries: 2,
       failedNotifications: 1,
@@ -494,6 +496,7 @@ describe('notification page model', () => {
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
       httpStatusLabel: '400',
+      recoveryHintLabel: null,
       statusClassName: 'pill pill-warn',
     });
   });
@@ -541,7 +544,7 @@ describe('notification page model', () => {
             id: 'delivery-failed-token',
             provider: 'FCM',
             response: {
-              failureCode: 'messaging/registration-token-not-registered',
+              failureCode: 'messaging/mismatched-credential',
               reason: 'registration token [masked]',
             },
             status: 'FAILED',
@@ -553,9 +556,11 @@ describe('notification page model', () => {
     ]);
 
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
-      failureCodeLabel: 'messaging/registration-token-not-registered',
+      failureCodeLabel: 'messaging/mismatched-credential',
       failureReasonLabel: 'registration token [masked]',
       provider: 'FCM',
+      recoveryHintLabel:
+        'Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
       status: 'FAILED',
       statusClassName: 'pill pill-warn',
     });

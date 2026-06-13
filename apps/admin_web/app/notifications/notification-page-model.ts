@@ -24,6 +24,7 @@ import {
 import {
   notificationDeliveryFailureCode,
   notificationDeliveryFailureReason,
+  notificationDeliveryRecoveryHint,
 } from './notification-delivery-response';
 import type { NotificationDeliveryRow } from './notification-delivery-cell';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
@@ -309,7 +310,8 @@ export function buildNotificationDeliveryOpsQueue(
   const queueItems: NotificationDeliveryOpsQueueItem[] = [
     {
       count: deliveryStats.failedNotifications,
-      detail: 'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
+      detail:
+        'Latest push attempt returned an error. Check failure reason, token freshness, and credentials.',
       href: '/notifications?review=failed',
       key: 'failed',
       label: 'Failed sends',
@@ -464,6 +466,7 @@ function buildNotificationDeliveryRows(
     id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
     platformLabel: delivery.pushDevice?.platform ?? 'device',
     provider: delivery.provider,
+    recoveryHintLabel: notificationDeliveryRecoveryHint(delivery),
     status: delivery.status,
     statusClassName: deliveryStatusClassName(delivery.status),
   }));

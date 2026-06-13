@@ -102,7 +102,7 @@ describe('notification action confirmation', () => {
               attemptedAt: '2026-06-01T00:04:00.000Z',
               id: 'delivery-new',
               provider: 'FCM',
-              response: { failureCode: 'messaging/internal-error' },
+              response: { failureCode: 'messaging/mismatched-credential' },
               status: 'FAILED',
             },
           ],
@@ -116,7 +116,10 @@ describe('notification action confirmation', () => {
     );
 
     expect(confirmation?.description).toContain('attempted 1 Jun 2026, 07:04');
-    expect(confirmation?.description).toContain('failure messaging/internal-error');
+    expect(confirmation?.description).toContain('failure messaging/mismatched-credential');
+    expect(confirmation?.description).toContain(
+      'next Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
+    );
   });
 
   it('makes retry copy explicit when the latest delivery already succeeded', () => {
@@ -199,9 +202,7 @@ describe('notification action confirmation', () => {
         booking: 'booking 1',
         review: 'failed',
       }),
-    ).toBe(
-      '/notifications?review=failed&booking=booking%201&confirm=retry&notificationId=notification%201',
-    );
+    ).toBe('/notifications?review=failed&booking=booking%201&confirm=retry&notificationId=notification%201');
     expect(
       enablePushDeviceConfirmHref('device 1', {
         booking: 'booking 1',

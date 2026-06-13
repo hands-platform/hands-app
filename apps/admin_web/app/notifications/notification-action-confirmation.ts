@@ -2,7 +2,10 @@ import type { AdminNotification } from '../../lib/admin-api';
 import { formatDateTime, shortId } from '../../lib/admin-format';
 import { notificationPushDeviceFreshnessLabel } from '../../lib/admin-notification-push-device';
 import type { StatusBadgeTone } from '../../components/status-badge';
-import { notificationDeliveryFailureCode } from './notification-delivery-response';
+import {
+  notificationDeliveryFailureCode,
+  notificationDeliveryRecoveryHint,
+} from './notification-delivery-response';
 
 export type NotificationConfirmationAction = 'enable-device' | 'retry';
 
@@ -96,9 +99,7 @@ function buildRetryConfirmation(
       ? `Notification ${shortId(
           notification.id,
         )} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}`
-      : `Retry notification ${shortId(
-          notification.id,
-        )} after reviewing duplicate-send risk. ${evidence}`,
+      : `Retry notification ${shortId(notification.id)} after reviewing duplicate-send risk. ${evidence}`,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
       { name: 'returnHref', value: notificationReturnHref(values) },
@@ -195,6 +196,10 @@ function deliveryEvidenceSummary(delivery: NotificationDelivery) {
   const failureCode = notificationDeliveryFailureCode(delivery);
   if (failureCode) {
     parts.push(`failure ${failureCode}`);
+  }
+  const recoveryHint = notificationDeliveryRecoveryHint(delivery);
+  if (recoveryHint) {
+    parts.push(`next ${recoveryHint}`);
   }
   return parts.join('; ');
 }

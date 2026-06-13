@@ -38,9 +38,14 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('400');
     expect(rendered).toContain('Reason');
     expect(rendered).toContain('Token expired');
+    expect(rendered).toContain('Next Ask the user to reopen the app');
     expect(rendered).toContain('Re-enable device');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'notification-delivery-attempt admin-mb-10', 'pill pill-warn']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'notification-delivery-attempt admin-mb-10',
+        'pill pill-warn',
+      ]),
     );
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
@@ -69,6 +74,7 @@ describe('NotificationsTableSection', () => {
               httpStatusLabel: '200',
               id: 'delivery-2',
               platformLabel: 'Android',
+              recoveryHintLabel: null,
               status: 'SENT',
               statusClassName: 'pill pill-success',
             },
@@ -108,6 +114,7 @@ describe('NotificationsTableSection', () => {
               failureReasonLabel: 'temporary provider error for [masked]',
               id: 'delivery-2',
               platformLabel: 'Android',
+              recoveryHintLabel: 'Retry after Firebase service health and local worker health are confirmed.',
             },
             {
               ...row.deliveryRows[0],
@@ -119,6 +126,7 @@ describe('NotificationsTableSection', () => {
               httpStatusLabel: '200',
               id: 'delivery-1',
               platformLabel: 'Android',
+              recoveryHintLabel: null,
               status: 'SENT',
               statusClassName: 'pill pill-success',
             },
@@ -132,6 +140,9 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('FAILED 2 attempts / latest FCM / Android / 2026-06-09 10:04');
     expect(rendered).toContain('Failure messaging/internal-error');
     expect(rendered).toContain('Reason temporary provider error for [masked]');
+    expect(rendered).toContain(
+      'Next Retry after Firebase service health and local worker health are confirmed.',
+    );
     expect(rendered.match(/Token hidden/g)).toHaveLength(2);
   });
 
@@ -172,6 +183,8 @@ function buildRow(): NotificationTableRow {
         id: 'delivery-1',
         platformLabel: 'IOS',
         provider: 'FCM',
+        recoveryHintLabel:
+          'Ask the user to reopen the app so it can register a fresh FCM token before retrying.',
         status: 'FAILED',
         statusClassName: 'pill pill-warn',
       },

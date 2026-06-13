@@ -1,6 +1,7 @@
 import {
   notificationDeliveryFailureCode,
   notificationDeliveryFailureReason,
+  notificationDeliveryRecoveryHint,
   type NotificationDelivery,
 } from './notification-delivery-response';
 
@@ -11,9 +12,7 @@ describe('notification delivery response helpers', () => {
       reason: 'registration token [masked]',
     });
 
-    expect(notificationDeliveryFailureCode(delivery)).toBe(
-      'messaging/registration-token-not-registered',
-    );
+    expect(notificationDeliveryFailureCode(delivery)).toBe('messaging/registration-token-not-registered');
     expect(notificationDeliveryFailureReason(delivery)).toBe('registration token [masked]');
   });
 
@@ -30,6 +29,20 @@ describe('notification delivery response helpers', () => {
 
     expect(notificationDeliveryFailureCode(delivery)).toBe('BAD_TOKEN');
     expect(notificationDeliveryFailureReason(delivery)).toBe('Invalid push payload');
+  });
+
+  it('maps known FCM failure codes to operator recovery hints', () => {
+    expect(
+      notificationDeliveryRecoveryHint(deliveryResponse({ failureCode: 'messaging/mismatched-credential' })),
+    ).toBe(
+      'Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
+    );
+    expect(
+      notificationDeliveryRecoveryHint(
+        deliveryResponse({ failureCode: 'messaging/registration-token-not-registered' }),
+      ),
+    ).toBe('Ask the user to reopen the app so it can register a fresh FCM token before retrying.');
+    expect(notificationDeliveryRecoveryHint(deliveryResponse({ failureCode: 'unknown' }))).toBeNull();
   });
 });
 

@@ -12,6 +12,7 @@ export type NotificationDeliveryRow = {
   readonly id: string;
   readonly platformLabel: string;
   readonly provider: string;
+  readonly recoveryHintLabel: string | null;
   readonly status: string;
   readonly statusClassName: string;
 };
@@ -67,6 +68,9 @@ function NotificationDeliveryAttempt({ delivery }: { readonly delivery: Notifica
         Failure {delivery.failureCodeLabel} / HTTP {delivery.httpStatusLabel}
       </div>
       <div className="muted admin-mt-4">Reason {delivery.failureReasonLabel}</div>
+      {delivery.recoveryHintLabel ? (
+        <div className="muted admin-mt-4">Next {delivery.recoveryHintLabel}</div>
+      ) : null}
       <div className="muted admin-mt-4">Token hidden</div>
       {delivery.enableDeviceHref ? (
         <Link className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
