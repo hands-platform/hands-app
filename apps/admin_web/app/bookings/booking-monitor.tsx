@@ -106,7 +106,6 @@ import {
 } from './booking-next-action-owner';
 import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
-import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMonitorCheckFlagsInputFromBooking } from './booking-monitor-check-flags-inputs';
 import { bookingMatchesMonitorEvidenceFilter } from './booking-monitor-evidence-match';
 import { bookingMonitorEvidenceMatchReadersFromBooking } from './booking-monitor-evidence-match-readers';
@@ -232,7 +231,7 @@ import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
-import { bookingMatchesSearch } from './booking-search';
+import { buildBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import {
   buildMarketplaceBookingCoverageRows as buildMarketplaceBookingCoverageRowsFromFacts,
   buildMarketplaceBookingCoveragePills,
@@ -424,26 +423,34 @@ export function BookingMonitor({
     [currentTimeMs, orderedBookings],
   );
 
-  const baseVisibleBookings = useMemo(() => {
-    if (view === 'blocked-create') {
-      return [];
-    }
-    return orderedBookings.filter((booking) => bookingMatchesView(booking, view, currentTimeMs));
-  }, [currentTimeMs, orderedBookings, view]);
-
-  const visibleBookings = useMemo(() => {
-    return baseVisibleBookings.filter(
-      (booking) =>
-        bookingMatchesSearch(booking, searchQuery) &&
-        bookingMatchesMonitorBasicFilters({
-          paymentFilter,
-          paymentMethod: booking.payment?.method,
-          status: booking.status,
-          statusFilter,
-        }) &&
-        bookingMatchesEvidenceFilter(booking, evidenceFilter, currentTimeMs),
-    );
-  }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
+  const visibleBookingModel = useMemo(
+    () =>
+      buildBookingMonitorVisibleModel({
+        blockedCreateCount: orderedBookingCreateRejections.length,
+        bookings: orderedBookings,
+        evidenceFilter,
+        matchers: {
+          matchesEvidenceFilter: (booking, filter) =>
+            bookingMatchesEvidenceFilter(booking, filter, currentTimeMs),
+          matchesView: (booking, bookingView) => bookingMatchesView(booking, bookingView, currentTimeMs),
+        },
+        paymentFilter,
+        searchQuery,
+        statusFilter,
+        view,
+      }),
+    [
+      currentTimeMs,
+      evidenceFilter,
+      orderedBookingCreateRejections.length,
+      orderedBookings,
+      paymentFilter,
+      searchQuery,
+      statusFilter,
+      view,
+    ],
+  );
+  const visibleBookings = visibleBookingModel.visibleBookings;
   const bookingListRows = useMemo(
     () => visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
     [currentTimeMs, nowMs, visibleBookings],
@@ -495,19 +502,7 @@ export function BookingMonitor({
     [orderedBookings],
   );
 
-  const bookingViewCounts = useMemo(
-    () =>
-      new Map(
-        bookingViewOptions.map((option) => [
-          option.view,
-          option.view === 'blocked-create'
-            ? orderedBookingCreateRejections.length
-            : orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs))
-                .length,
-        ]),
-      ),
-    [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
-  );
+  const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
   const topNextAction = nextActions[0];
   const dispatchCommandLane =
@@ -639,7 +634,7 @@ export function BookingMonitor({
 
       <BookingMonitorFiltersSection
         activeView={activeView}
-        baseVisibleBookingCount={baseVisibleBookings.length}
+        baseVisibleBookingCount={visibleBookingModel.baseVisibleBookingCount}
         evidenceFilter={evidenceFilter}
         evidenceFilterOptions={bookingEvidenceFilterOptions}
         onClearFilters={() => {
