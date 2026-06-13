@@ -14,6 +14,8 @@ type ServiceDurationPricingMatrixSectionProps = {
   readonly visibleGroups: readonly ServiceCatalogGroup[];
 };
 
+const SERVICE_MATRIX_DURATIONS = [60, 90, 120] as const;
+
 export function ServiceDurationPricingMatrixSection({
   activeTaxPolicy,
   hiddenGroupCount,
@@ -30,7 +32,7 @@ export function ServiceDurationPricingMatrixSection({
             projected company commission after VAT, withholding, and other configured costs.
           </p>
         </div>
-        <span className="pill pill-info">60 / 90 / 120 min</span>
+        <span className="pill pill-info">{SERVICE_MATRIX_DURATIONS.join(' / ')} min</span>
       </div>
       <table className="table service-matrix">
         <thead>
@@ -57,7 +59,7 @@ export function ServiceDurationPricingMatrixSection({
                   <strong>{group.label}</strong>
                   <p className="muted">{group.key}</p>
                 </td>
-                {[60, 90, 120].map((duration) => (
+                {SERVICE_MATRIX_DURATIONS.map((duration) => (
                   <ServiceDurationCell
                     cell={matrix.byDuration.get(duration)}
                     key={`${group.key}-${duration}`}
