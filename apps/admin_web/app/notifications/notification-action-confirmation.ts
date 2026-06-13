@@ -38,6 +38,14 @@ type NotificationConfirmationValues = NotificationActionReturnContext & {
 
 type NotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
 
+const FCM_SETUP_REVIEW_KEYS = new Set(['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device']);
+
+const FCM_SETUP_SUPPORTING_LINK = {
+  description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+  href: '/setup#notifications',
+  label: 'FCM setup',
+} as const;
+
 export function retryNotificationConfirmHref(
   notificationId: string,
   context: NotificationActionReturnContext = {},
@@ -96,7 +104,7 @@ function buildRetryConfirmation(
   const evidence = notificationRetryEvidence(notification);
   const latestDelivery = latestNotificationDelivery(notification);
   const retryAlreadySent = latestDelivery?.status === 'SENT';
-  const reviewGuidance = notificationConfirmationReviewGuidance(values.review);
+  const reviewGuidance = notificationReviewGuidanceText(values.review);
 
   return {
     action: 'retry',
@@ -136,7 +144,7 @@ function buildEnableDeviceConfirmation(
   if (!match) {
     return null;
   }
-  const reviewGuidance = notificationConfirmationReviewGuidance(values.review);
+  const reviewGuidance = notificationReviewGuidanceText(values.review);
 
   return {
     action: 'enable-device',
@@ -188,22 +196,17 @@ function notificationAuditTrailHref(notificationId: string) {
   return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
 }
 
-function notificationConfirmationReviewGuidance(review: string | undefined) {
+function notificationReviewGuidanceText(review: string | undefined) {
   const runbook = notificationReviewRunbook(review ?? '');
   return runbook ? ` Runbook: ${runbook.title}. ${runbook.primaryAction}` : '';
 }
 
 function notificationReviewSupportingLinks(review: string | undefined) {
-  if (!review || !['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device'].includes(review)) {
-    return [];
-  }
-  return [
-    {
-      description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
-      href: '/setup#notifications',
-      label: 'FCM setup',
-    },
-  ];
+  return notificationReviewHasFcmSetupLink(review) ? [FCM_SETUP_SUPPORTING_LINK] : [];
+}
+
+function notificationReviewHasFcmSetupLink(review: string | undefined) {
+  return Boolean(review && FCM_SETUP_REVIEW_KEYS.has(review));
 }
 
 function findNotificationPushDevice(notifications: readonly AdminNotification[], pushDeviceId: string) {

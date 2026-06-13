@@ -300,6 +300,27 @@ describe('notification action confirmation', () => {
     );
   });
 
+  it('keeps FCM setup guidance when retrying from the recovery queue', () => {
+    const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
+      notificationId: notification.id,
+      pushDeviceId: '',
+      review: 'needs-retry',
+    });
+
+    expect(confirmation?.description).toContain(
+      'Runbook: Recovery decision gate. Resolve the device or credential signal first, then retry from the row action menu with the active queue context preserved.',
+    );
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open FCM setup checks, token smoke, and recovery smoke commands.',
+          href: '/setup#notifications',
+          label: 'FCM setup',
+        },
+      ]),
+    );
+  });
+
   it('adds FCM route runbook guidance before retrying from the FCM queue', () => {
     const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
       notificationId: notification.id,
