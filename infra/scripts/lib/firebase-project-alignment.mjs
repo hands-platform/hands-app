@@ -8,6 +8,24 @@ export const firebaseProjectAlignmentInvalidKeys = {
   mobileProjectMismatch: 'MOBILE_FIREBASE_PROJECT_MISMATCH',
 };
 
+const firebaseProjectAlignmentIssueCopy = {
+  [firebaseProjectAlignmentInvalidKeys.projectMismatch]: {
+    label: 'Firebase Admin project does not match mobile app project',
+    action:
+      'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files: npm.cmd run fcm:credentials:install -- -SourcePath <service-account-json> -UpdateEnv.',
+  },
+  [firebaseProjectAlignmentInvalidKeys.mobileConfigInvalid]: {
+    label: 'Mobile Firebase config file is invalid',
+    action:
+      'Re-download the affected google-services.json file from Firebase project settings and keep it outside Git.',
+  },
+  [firebaseProjectAlignmentInvalidKeys.mobileProjectMismatch]: {
+    label: 'Customer and Partner Firebase configs use different projects',
+    action:
+      'Use customer and Partner google-services.json files from the same HANDS Firebase project before running live FCM smoke.',
+  },
+};
+
 const mobileFirebaseConfigs = [
   {
     app: 'customer_app',
@@ -47,27 +65,30 @@ export function firebaseProjectAlignment(env, options = {}) {
     expectedMobileProjectId,
     checkedMobileConfigs: configs,
     invalid,
+    issues: firebaseProjectAlignmentIssues(invalid),
   };
 }
 
 export function firebaseProjectAlignmentActions(invalidKeys) {
-  const actions = [];
-  if (invalidKeys.includes(firebaseProjectAlignmentInvalidKeys.projectMismatch)) {
-    actions.push(
-      'Install a Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files: npm.cmd run fcm:credentials:install -- -SourcePath <service-account-json> -UpdateEnv.',
-    );
-  }
-  if (invalidKeys.includes(firebaseProjectAlignmentInvalidKeys.mobileConfigInvalid)) {
-    actions.push(
-      'Re-download the affected google-services.json file from Firebase project settings and keep it outside Git.',
-    );
-  }
-  if (invalidKeys.includes(firebaseProjectAlignmentInvalidKeys.mobileProjectMismatch)) {
-    actions.push(
-      'Use customer and Partner google-services.json files from the same HANDS Firebase project before running live FCM smoke.',
-    );
-  }
-  return actions;
+  return firebaseProjectAlignmentIssues(invalidKeys).map((issue) => issue.action);
+}
+
+export function firebaseProjectAlignmentIssues(invalidKeys) {
+  return invalidKeys.map((code) => ({
+    code,
+    label: firebaseProjectAlignmentIssueLabel(code),
+    action: firebaseProjectAlignmentIssueAction(code),
+  }));
+}
+
+export function firebaseProjectAlignmentIssueLabel(code) {
+  return firebaseProjectAlignmentIssueCopy[code]?.label ?? code;
+}
+
+function firebaseProjectAlignmentIssueAction(code) {
+  return (
+    firebaseProjectAlignmentIssueCopy[code]?.action ?? `Resolve Firebase project alignment issue: ${code}.`
+  );
 }
 
 function readMobileFirebaseConfig(repoRoot, config) {

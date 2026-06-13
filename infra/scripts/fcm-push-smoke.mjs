@@ -17,6 +17,8 @@ import {
 import {
   firebaseProjectAlignment,
   firebaseProjectAlignmentActions,
+  firebaseProjectAlignmentInvalidKeys,
+  firebaseProjectAlignmentIssueLabel,
 } from './lib/firebase-project-alignment.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
@@ -45,6 +47,10 @@ const useRegisteredDevice =
 const dryRun = process.argv.includes('--dry-run');
 const preflight = process.argv.includes('--preflight');
 const projectAlignment = firebaseProjectAlignment(env, { repoRoot });
+const fcmProjectAlignmentBlockerCodes = new Set([
+  ...Object.values(firebaseProjectAlignmentInvalidKeys),
+  'FIREBASE_PROJECT_ALIGNMENT_NOT_CHECKED',
+]);
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
   fail(`Unsupported FCM_SMOKE_EXPECT_STATUS=${expectedStatus}. Use ANY, SENT, FAILED, or SKIPPED.`);
@@ -162,6 +168,7 @@ if (preflight) {
         alternativeNotificationPreflights: blockedAlternativeNotificationPreflights,
         liveReady: blockers.length === 0,
         blockers,
+        blockerLabels: blockers.map(fcmSmokeBlockerLabel),
         nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights),
       },
       null,
@@ -209,6 +216,7 @@ if (projectAlignmentBlocker) {
   fail(
     `FCM project alignment is not ready for live smoke: ${JSON.stringify({
       blocker: projectAlignmentBlocker,
+      blockerLabel: firebaseProjectAlignmentIssueLabel(projectAlignmentBlocker),
       projectAlignment,
       nextActions: firebaseProjectAlignmentActions(projectAlignment.invalid),
     })}`,
@@ -722,6 +730,14 @@ function fcmProjectAlignmentBlocker(projectAlignment) {
     : (projectAlignment.invalid[0] ?? 'FIREBASE_PROJECT_ALIGNMENT_NOT_CHECKED');
 }
 
+function fcmSmokeBlockerLabel(blocker) {
+  return isFcmProjectAlignmentBlockerCode(blocker) ? firebaseProjectAlignmentIssueLabel(blocker) : blocker;
+}
+
+function isFcmProjectAlignmentBlockerCode(blocker) {
+  return fcmProjectAlignmentBlockerCodes.has(blocker);
+}
+
 function requiresFcmDeliveryCredentials() {
   return hasExpectedEnvValue('PUSH_PROVIDER', 'fcm') && expectedProvider !== 'IN_APP_ONLY';
 }
@@ -767,7 +783,7 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = []) 
   if (blockers.includes('PARTNER_ALERT_POLICY_PROVIDER_MISMATCH')) {
     actions.push(alternativeNotificationHint(alternativeNotificationPreflights));
   }
-  actions.push(...firebaseProjectAlignmentActions(blockers));
+  actions.push(...firebaseProjectAlignmentActions(blockers.filter(isFcmProjectAlignmentBlockerCode)));
   return actions;
 }
 

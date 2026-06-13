@@ -11,6 +11,7 @@ import {
 import {
   firebaseProjectAlignment,
   firebaseProjectAlignmentActions,
+  firebaseProjectAlignmentIssueLabel,
 } from './lib/firebase-project-alignment.mjs';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
@@ -40,6 +41,7 @@ const result = {
   configured,
   missing,
   invalid,
+  invalidLabels: invalid.map(invalidCredentialLabel),
   credentialSources: {
     serviceAccountJson: serviceAccountJsonStatus,
     splitEnv: splitEnvStatus,
@@ -73,6 +75,16 @@ function invalidCredentialKeys() {
       : null,
     ...projectAlignment.invalid,
   ].filter(Boolean);
+}
+
+function invalidCredentialLabel(key) {
+  if (key === firebaseServiceAccountJsonEnvKey) {
+    return 'FIREBASE_SERVICE_ACCOUNT_JSON is invalid';
+  }
+  if (key === firebaseApplicationCredentialsEnvKey) {
+    return 'GOOGLE_APPLICATION_CREDENTIALS does not point to a valid Firebase service account JSON file';
+  }
+  return firebaseProjectAlignmentIssueLabel(key);
 }
 
 function splitCredentialStatus() {
