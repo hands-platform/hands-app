@@ -3,7 +3,7 @@ type ServiceActionNoticeMessage = {
   readonly title: string;
 };
 
-type ServiceActionNotice = ServiceActionNoticeMessage & {
+export type ServiceActionNotice = ServiceActionNoticeMessage & {
   readonly tone: 'danger' | 'success';
 };
 

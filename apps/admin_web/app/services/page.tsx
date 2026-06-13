@@ -22,9 +22,11 @@ import { servicePricingHealth as buildPricingHealth } from '../../lib/service-pr
 import { serviceTypeCoverageRows as buildServiceTypeCoverageRows } from '../../lib/service-type-coverage-rows';
 import { serviceTypeCoverageSummary as buildServiceTypeCoverageSummary } from '../../lib/service-type-coverage-summary';
 import { providerPriceImpact as buildProviderPriceImpact } from '../../lib/provider-price-impact';
+import { ServiceActionNoticeSection } from './service-action-notice-section';
 import { ServiceBookingExposureGuardSection } from './service-booking-exposure-guard-section';
 import { ServiceBookingFinanceTraceSection } from './service-booking-finance-trace-section';
 import { ServiceBookingReadinessQueueSection } from './service-booking-readiness-queue-section';
+import { ServiceCatalogSearchSection } from './service-catalog-search-section';
 import { ServiceCreateFormsSection } from './service-create-forms-section';
 import { ServiceDurationPricingMatrixSection } from './service-duration-pricing-matrix-section';
 import { ServiceGroupEditCard } from './service-group-edit-card';
@@ -104,7 +106,6 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   );
   const pricingAuditRows = servicePricingAuditRows(auditLogs);
   const actionNotice = serviceActionNotice(params);
-  const catalogScopeLabel = serviceSearchQuery ? `Filtered by "${serviceSearchQuery}"` : 'All service types';
 
   return (
     <AdminPageTemplate
@@ -121,49 +122,13 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       description="Create a service name once, then manage duration options such as 60, 90, and 120 minutes with separate minimum prices and payout policies."
       title="Service catalog"
     >
-      <section className="card admin-mb-16">
-        <form className="form-grid compact-form" action="/services">
-          <label className="full-span">
-            Find service type, duration, group key, or price
-            <input
-              name="q"
-              placeholder="foot massage, 90, 450000, deep_tissue"
-              defaultValue={serviceSearchQuery}
-            />
-          </label>
-          <button type="submit">Search catalog</button>
-          {serviceSearchQuery ? (
-            <a className="pill pill-neutral" href="/services">
-              Clear search
-            </a>
-          ) : null}
-        </form>
-        <p className="muted admin-mt-10">
-          {catalogScopeLabel}: showing {filteredGroupedServices.length} service type(s) and{' '}
-          {filteredActiveServices.length} active duration option(s). Dashboard readiness cards still check the
-          full catalog.
-        </p>
-      </section>
+      <ServiceCatalogSearchSection
+        activeServiceCount={filteredActiveServices.length}
+        groupCount={filteredGroupedServices.length}
+        searchQuery={serviceSearchQuery}
+      />
 
-      {actionNotice ? (
-        <section
-          className="card admin-mb-16"
-          style={{
-            borderColor: actionNotice.tone === 'success' ? '#b8ddb0' : '#f0c7c2',
-            background: actionNotice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
-          }}
-        >
-          <div className="ops-section-header">
-            <div>
-              <h2>{actionNotice.title}</h2>
-              <p className="muted">{actionNotice.detail}</p>
-            </div>
-            <span className={`pill ${actionNotice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
-              {actionNotice.tone === 'success' ? 'Saved' : 'Blocked'}
-            </span>
-          </div>
-        </section>
-      ) : null}
+      <ServiceActionNoticeSection notice={actionNotice} />
 
       <ServiceBookingExposureGuardSection
         activeServiceCount={activeServices.length}
