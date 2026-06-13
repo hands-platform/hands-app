@@ -29,7 +29,6 @@ import { bookingLocationNeedsOpsFromFacts } from '../../lib/booking-status-locat
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import { bookingPrimaryCommandHref } from '../../lib/booking-primary-command-href';
-import { bookingNextActionCopy } from '../../lib/booking-next-action-copy';
 import { bookingBackupAlertTraceSummary } from './booking-alert-trace';
 import { bookingAlertEvidenceNeedsOpsFromFacts } from './booking-alert-evidence-needs-ops';
 import {
@@ -73,7 +72,6 @@ import {
 } from './booking-next-action-priority';
 import {
   bookingNextActionOwnerInput,
-  bookingNextActionCopyInputFromBooking,
   bookingNextActionPriorityInput,
   bookingNextOperatorActionInput,
   type BookingNextActionInputReaders,
@@ -190,6 +188,7 @@ import {
   buildBookingMonitorListLocation,
 } from './booking-monitor-list-state-model';
 import { buildBookingMonitorCustomerVisibleStateLabel } from './booking-monitor-customer-visible-model';
+import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
@@ -647,7 +646,7 @@ function buildBookingMonitorListRow(
     marketplaceParticipantOverflowCount:
       bookingMonitorListMarketplaceParticipantOverflowCount(marketplaceParticipantRows),
     marketplaceParticipants: bookingMonitorListMarketplaceParticipants(marketplaceParticipantRows),
-    nextActionLabel: nextAction(booking),
+    nextActionLabel: bookingMonitorNextActionLabel(booking),
     openedDateLabel: formatDate(bookingRequestOpenedAt(booking)),
     opsSignal: bookingMonitorOpsSignal(booking),
     preferredPartnerLabel: partnerDisplayName(booking.preferredProvider, 'none'),
@@ -740,7 +739,7 @@ function bookingFlagNextAction(
   return {
     booking,
     title: highestFlag.title,
-    detail: nextAction(booking),
+    detail: bookingMonitorNextActionLabel(booking),
     operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
     owner: bookingActionOwner(booking, nowMs, highestFlag),
     priority: bookingActionPriority(booking, nowMs, highestFlag),
@@ -754,7 +753,7 @@ function bookingActiveNextAction(booking: AdminBooking, nowMs: number): BookingN
   return {
     booking,
     title: 'Monitor active booking',
-    detail: nextAction(booking),
+    detail: bookingMonitorNextActionLabel(booking),
     operatorAction: bookingOperatorAction(booking, nowMs),
     owner: bookingActionOwner(booking, nowMs),
     priority: bookingActionPriority(booking, nowMs),
@@ -1032,9 +1031,5 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
   return bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs));
-}
-
-function nextAction(booking: AdminBooking) {
-  return bookingNextActionCopy(bookingNextActionCopyInputFromBooking(booking));
 }
 
