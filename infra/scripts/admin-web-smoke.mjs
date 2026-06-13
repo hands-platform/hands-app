@@ -24,6 +24,7 @@ function notificationRetryFollowUp(
   gateMarker,
   label = `${review} retry confirmation`,
   supportMarkers = ['FCM setup'],
+  supportFollowUps = [],
 ) {
   return notificationConfirmationFollowUp({
     action: 'retry',
@@ -31,6 +32,7 @@ function notificationRetryFollowUp(
     gateMarker,
     label,
     review,
+    supportFollowUps,
     supportMarkers,
   });
 }
@@ -40,6 +42,7 @@ function notificationDeviceFollowUp(
   gateMarker,
   label = `${review} device confirmation`,
   supportMarkers = ['FCM setup'],
+  supportFollowUps = [],
 ) {
   return notificationConfirmationFollowUp({
     action: 'enable-device',
@@ -47,6 +50,7 @@ function notificationDeviceFollowUp(
     gateMarker,
     label,
     review,
+    supportFollowUps,
     supportMarkers,
   });
 }
@@ -57,6 +61,7 @@ function notificationConfirmationFollowUp({
   gateMarker,
   label,
   review,
+  supportFollowUps,
   supportMarkers,
 }) {
   return {
@@ -66,8 +71,22 @@ function notificationConfirmationFollowUp({
     label,
     markers: [actionMarker, gateMarker, ...supportMarkers, 'Audit trail'],
     optional: true,
+    supportFollowUps,
   };
 }
+
+const notificationFcmSupportFollowUps = [
+  {
+    hrefPattern: /href="([^"]*\/setup#notifications)"/,
+    label: 'FCM setup support link',
+    markers: ['External setup', 'FCM push notifications', 'npm.cmd run fcm:token-recovery-smoke'],
+  },
+  {
+    hrefPattern: /href="([^"]*\/audit-log\?bucket=Notification[^"]*)"/,
+    label: 'notification audit support link',
+    markers: ['Audit Log', 'Notification delivery trail'],
+  },
+];
 
 const pages = [
   {
@@ -534,7 +553,15 @@ const pages = [
   {
     path: '/notifications?review=fcm',
     markers: ['Notifications', 'FCM', 'FCM route', 'FCM route gate', 'npm.cmd run fcm:token-recovery-smoke'],
-    followUps: [notificationRetryFollowUp('fcm', 'FCM route gate', 'FCM retry confirmation')],
+    followUps: [
+      notificationRetryFollowUp(
+        'fcm',
+        'FCM route gate',
+        'FCM retry confirmation',
+        ['FCM setup'],
+        notificationFcmSupportFollowUps,
+      ),
+    ],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
@@ -908,6 +935,31 @@ async function runPageFollowUps(page, body) {
     }
     assertNoLegacyVisibleLanguage(followUpPath, followUpBody);
     console.log(`PASS ${followUpPath}`);
+    await runSupportFollowUps(followUp, followUpPath, followUpBody);
+  }
+}
+
+async function runSupportFollowUps(followUp, parentPath, body) {
+  for (const supportFollowUp of followUp.supportFollowUps ?? []) {
+    const match = body.match(supportFollowUp.hrefPattern);
+    if (!match?.[1]) {
+      throw new Error(`${parentPath} is missing support link for ${supportFollowUp.label}`);
+    }
+
+    const supportPath = decodeHtmlAttribute(match[1]);
+    if (!supportPath.startsWith('/')) {
+      throw new Error(
+        `${parentPath} support link ${supportFollowUp.label} must stay in the admin app: ${supportPath}`,
+      );
+    }
+
+    const supportBody = await fetchPage(supportPath);
+    const missing = supportFollowUp.markers.filter((marker) => !supportBody.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${supportPath} is missing expected markers: ${missing.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(supportPath, supportBody);
+    console.log(`PASS ${supportPath}`);
   }
 }
 
