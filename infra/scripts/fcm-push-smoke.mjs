@@ -367,6 +367,8 @@ console.log(
       selectedRegisteredDevice: selectedRegisteredDeviceOutput(registeredDevice, registeredDevicePreflight),
       registeredDevicePreflight,
       pushReadiness: pushReadinessOutput(pushCheck),
+      warnings,
+      warningLabels: warnings.map((warning) => warning.label),
       beforeDeliveryCount,
       deliveryCount,
       newDeliveryCount: newDeliveries.length,
