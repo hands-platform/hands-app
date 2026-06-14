@@ -305,7 +305,7 @@ export function BookingCloseoutReadinessSection({
           </div>
         ) : (
           <p className="muted admin-mt-10">
-            Customer, partner, chat, payment, finance, cash, location, and audit records are aligned for the
+            Customer, Partner, chat, payment, finance, cash, location, and audit records are aligned for the
             current booking stage.
           </p>
         )}
@@ -399,7 +399,7 @@ export function BookingHandoffChecklistSection({
         <div>
           <h2>Booking handoff checklist</h2>
           <p className="muted">
-            One-row-per-stage view of the customer app, partner app, admin archive, location, and finance
+            One-row-per-stage view of the customer app, Partner app, admin archive, location, and finance
             handoff. This is factual state tracking only.
           </p>
         </div>
@@ -439,7 +439,7 @@ export function BookingCommunicationMovementHandoffSection({
           <h2>Communication and movement handoff</h2>
           <p className="muted">
             Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This
-            helps support confirm whether the assigned partner and customer are connected.
+            helps support confirm whether the assigned Partner and customer are connected.
           </p>
         </div>
         <span className={`pill ${communicationMovementHandoff.tone}`}>
@@ -512,7 +512,7 @@ export function BookingChatLifecycleSection({
           <small>{chatLifecycle.customerDetail}</small>
         </div>
         <div>
-          <span>Mobile partner app</span>
+          <span>Mobile Partner app</span>
           <strong>{chatLifecycle.partnerState}</strong>
           <small>{chatLifecycle.partnerDetail}</small>
         </div>

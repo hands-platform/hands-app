@@ -331,7 +331,7 @@ export function BookingEvidenceSections({
           <div>
             <h2>Booking full evidence bundle</h2>
             <p className="muted">
-              Single booking command view that ties the customer, partner, address snapshot, chat archive,
+              Single booking command view that ties the customer, Partner, address snapshot, chat archive,
               payment, earning, wallet, location, alerts, and operator notes into one factual bundle.
             </p>
           </div>

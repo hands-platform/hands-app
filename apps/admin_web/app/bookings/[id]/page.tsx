@@ -925,13 +925,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#booking-full-evidence-bundle',
       label: 'Evidence bundle',
       value: `${bookingEvidenceBundleRows.length} lanes`,
-      detail: 'Customer, partner, address, chat, payment, finance, location, alerts, and notes.',
+      detail: 'Customer, Partner, address, chat, payment, finance, location, alerts, and notes.',
     },
     {
       href: '#connected-operations-records',
       label: 'Linked records',
       value: `${connectedRecordLinks.length} links`,
-      detail: 'Open customer, partner, chat archive, notifications, payment, refund, and settlement.',
+      detail: 'Open customer, Partner, chat archive, notifications, payment, refund, and settlement.',
     },
     {
       href: '#participants',

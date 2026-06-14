@@ -27,7 +27,7 @@ export function BookingFullRecordIndex({
         <div>
           <h2>Booking full record index</h2>
           <p className="muted">
-            One-booking record map for operators. This is factual tracking only: customer, partner,
+            One-booking record map for operators. This is factual tracking only: customer, Partner,
             matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
           </p>
         </div>

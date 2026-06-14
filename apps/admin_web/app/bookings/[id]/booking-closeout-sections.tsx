@@ -66,7 +66,7 @@ export function BookingCloseoutSections({
           <div>
             <h2>Connected operations records</h2>
             <p className="muted">
-              Jump from this booking to the linked customer, partner, chat archive, notification trace,
+              Jump from this booking to the linked customer, Partner, chat archive, notification trace,
               payment, refund, and settlement records.
             </p>
           </div>

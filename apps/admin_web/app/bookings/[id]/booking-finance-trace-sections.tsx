@@ -163,7 +163,7 @@ export function BookingAlertTraceSection({
         </div>
       ) : notificationTrace.backupBatches.length === 0 ? (
         <p className="muted admin-mt-12">
-          No notification rows are tied to this booking yet. If a partner says they missed the request, check
+          No notification rows are tied to this booking yet. If a Partner says they missed the request, check
           whether the booking created first-pick or marketplace availability alerts.
         </p>
       ) : null}
@@ -314,7 +314,7 @@ export function BookingPayoutBatchEligibilitySection({
         <div>
           <h2>Payout batch eligibility</h2>
           <p className="muted">
-            Booking-level release check before weekly, monthly, or admin-selected partner settlement batches.
+            Booking-level release check before weekly, monthly, or admin-selected Partner settlement batches.
           </p>
         </div>
         <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
