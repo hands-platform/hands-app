@@ -31,14 +31,14 @@ export function buildBookingDispatchPartnerShortcutsFromFacts(
     {
       title: 'Partner handoff',
       value: 'Open',
-      detail: 'Full partner command view with direct, marketplace, KYC, wallet, location, and alert lanes.',
+      detail: 'Full Partner command view with direct, marketplace, KYC, wallet, location, and alert lanes.',
       href: '/partners',
       tone: facts.openMatching.length ? 'info' : 'ok',
     },
     {
-      title: 'Direct-ready partners',
+      title: 'Direct-ready Partners',
       value: facts.firstPickWaiting.length.toString(),
-      detail: 'Use when preferred partners must answer inside the response window.',
+      detail: 'Use when preferred Partners must answer inside the response window.',
       href: '/partners?review=direct-ready',
       tone: facts.firstPickWaiting.length ? 'warn' : 'ok',
     },
@@ -66,7 +66,7 @@ export function buildBookingDispatchPartnerShortcutsFromFacts(
     {
       title: 'Location refresh',
       value: facts.locationChecks.length.toString(),
-      detail: 'Live booking location checks should send operators to partner location freshness review.',
+      detail: 'Live booking location checks should send operators to Partner location freshness review.',
       href: '/partners?review=location',
       tone: facts.locationChecks.length ? 'warn' : 'ok',
     },

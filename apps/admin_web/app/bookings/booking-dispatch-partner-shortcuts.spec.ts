@@ -4,7 +4,7 @@ import { buildBookingDispatchPartnerShortcutsFromFacts } from './booking-dispatc
 const booking = {} as AdminBooking;
 
 describe('buildBookingDispatchPartnerShortcutsFromFacts', () => {
-  it('builds the partner command shortcuts from grouped dispatch facts', () => {
+  it('builds the Partner command shortcuts from grouped dispatch facts', () => {
     const shortcuts = buildBookingDispatchPartnerShortcutsFromFacts({
       cashDebt: [booking],
       customerSelection: [booking, booking],
@@ -16,7 +16,7 @@ describe('buildBookingDispatchPartnerShortcutsFromFacts', () => {
 
     expect(shortcuts.map((shortcut) => [shortcut.title, shortcut.value, shortcut.tone])).toEqual([
       ['Partner handoff', 'Open', 'info'],
-      ['Direct-ready partners', '1', 'warn'],
+      ['Direct-ready Partners', '1', 'warn'],
       ['Marketplace-ready', '3', 'warn'],
       ['Acceptance blockers', '2', 'info'],
       ['Cash fee debt', '1', 'danger'],
