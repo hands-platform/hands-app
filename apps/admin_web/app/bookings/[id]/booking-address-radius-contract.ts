@@ -65,7 +65,7 @@ export function bookingAddressRadiusContract(
         status: snapshotLocked ? 'Required data ready' : 'Needs review',
         detail: snapshotLocked
           ? 'This booking has an immutable BookingAddressSnapshot for audit and dispatch.'
-          : 'Create or repair the address snapshot before relying on partner radius decisions.',
+          : 'Create or repair the address snapshot before relying on Partner radius decisions.',
         action: booking.addressSnapshot?.createdAt
           ? `Created ${formatDate(booking.addressSnapshot.createdAt)}`
           : 'No snapshot creation time available.',
@@ -75,7 +75,7 @@ export function bookingAddressRadiusContract(
       {
         title: '10km participation rule',
         status: pinReady ? 'Enforced by pin' : 'Blocked',
-        detail: `Marketplace partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
+        detail: `Marketplace Partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
           marketplaceSupply.radiusMeters,
         )}.`,
         action: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayable supply row(s).`,
@@ -96,7 +96,7 @@ export function bookingAddressRadiusContract(
         title: 'Booking creation gate',
         status: bookingGate.gatePassed ? 'Gate passed' : 'Needs evidence',
         detail:
-          'Booking creation records the service address snapshot, optional customer GPS evidence, and preferred partner distance before payment and matching open.',
+          'Booking creation records the service address snapshot, optional customer GPS evidence, and preferred Partner distance before payment and matching open.',
         action: bookingGate.summary,
         className: bookingGate.gatePassed ? 'ops-task-done' : 'ops-task-warning',
         pillClass: bookingGate.gatePassed ? 'pill-success' : 'pill-warn',
