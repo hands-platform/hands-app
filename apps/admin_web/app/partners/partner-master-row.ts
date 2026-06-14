@@ -109,9 +109,9 @@ export function buildPartnerMasterRow(
     pendingPayout: partnerPendingPayout(provider),
     availablePayout: partnerAvailablePayout(provider),
     auditLogCount: provider.auditLogCount ?? provider.auditLogs?.length ?? 0,
-    latestAuditTitle: latestAuditLog?.action ?? 'No internal note',
+    latestAuditTitle: marketplaceDisplayText(latestAuditLog?.action ?? 'No internal note'),
     latestAuditDetail: latestAuditLog
-      ? compactValue(latestAuditLog.metadata, 96)
+      ? marketplaceDisplayText(compactValue(latestAuditLog.metadata, 96))
       : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',

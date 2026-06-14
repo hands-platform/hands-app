@@ -146,7 +146,7 @@ describe('partner master row', () => {
     expect(row.pendingPayout).toBe(380000);
     expect(row.availablePayout).toBe(380000);
     expect(row.auditLogCount).toBe(7);
-    expect(row.latestAuditTitle).toBe('provider.ops_note.add');
+    expect(row.latestAuditTitle).toBe('partner.ops_note.add');
     expect(row.latestAuditDetail).toContain('manual review');
     expect(row.latestSessionDevice).toContain('android / v0.4.0');
     expect(row.latestSessionIp).toBe('203.0.113.7');

@@ -31,7 +31,7 @@ describe('PartnerFilesCell', () => {
             {
               contentType: 'image/jpeg',
               id: 'file-1',
-              key: 'private/identity.jpg',
+              key: 'private/provider-verification/identity.jpg',
               purpose: 'Partner verification',
               sizeBytes: 2048,
               uploadStatus: 'UPLOADED',
@@ -48,7 +48,8 @@ describe('PartnerFilesCell', () => {
     expect(rendered).toContain('Partner verification');
     expect(rendered).toContain('UPLOADED');
     expect(rendered).toContain('image/jpeg');
-    expect(rendered).toContain('private/identity.jpg');
+    expect(rendered).toContain('private/partner-verification/identity.jpg');
+    expect(rendered).not.toContain('private/provider-verification');
     expect(rendered).toContain('Public media review');
     expect(rendered).toContain('PROFILE_PHOTO');
     expect(rendered).toContain('PENDING_REVIEW');

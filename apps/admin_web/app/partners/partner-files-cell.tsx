@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import type { AdminProvider } from '../../lib/admin-api';
+import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
 import { formatBytes } from './partner-list-ops';
 import {
@@ -44,7 +45,7 @@ export function PartnerFilesCell({
               {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
             </p>
             <p className="muted">
-              {file.key}
+              {marketplaceDisplayText(file.key)}
               {' / '}
               <Link className="text-link" href={`/partners/${provider.id}#documents`}>
                 open detail to view
@@ -99,10 +100,10 @@ function PartnerPublicMediaQueue({
           <p className="muted admin-mb-6">
             {file.url ? (
               <a href={file.url} target="_blank" rel="noreferrer">
-                {file.key}
+                {marketplaceDisplayText(file.key)}
               </a>
             ) : (
-              file.key
+              marketplaceDisplayText(file.key)
             )}
           </p>
           {file.reviewReason ? (
