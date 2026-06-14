@@ -48,7 +48,7 @@ export function bookingListActionChipsFromFacts(
     {
       detail: input.cashDebtNeedsOps
         ? 'Partner cash fee debt must be settled before final acceptance, service start, or payout release resumes.'
-        : 'No partner cash fee debt is visible for this booking.',
+        : 'No Partner cash fee debt is visible for this booking.',
       href: '/bookings?view=cash-debt',
       label: input.cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       tone: input.cashDebtNeedsOps ? 'pill-danger' : 'pill-success',

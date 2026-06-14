@@ -76,9 +76,9 @@ export function bookingCloseoutChecklistRows(
           ? 'Choice pending'
           : 'Waiting',
       detail: input.finalPartnerId
-        ? `${input.finalPartnerLabel ?? 'Selected partner'} is linked as the selected partner for this booking.`
-        : `${input.customerChoiceCandidates} participating/accepted partner(s) are available for the customer decision step.`,
-      operatorRule: 'No automatic partner assignment; customer selection is the final matching authority.',
+        ? `${input.finalPartnerLabel ?? 'Selected Partner'} is linked as the selected Partner for this booking.`
+        : `${input.customerChoiceCandidates} participating/accepted Partner(s) are available for the customer decision step.`,
+      operatorRule: 'No automatic Partner assignment; customer selection is the final matching authority.',
       href: input.finalPartnerId ? `/partners/${input.finalPartnerId}` : '#participants',
       className: input.finalPartnerId
         ? 'ops-task-done'
@@ -119,7 +119,7 @@ export function bookingCloseoutChecklistRows(
       status: input.cashDebt ? 'Settlement needed' : input.paymentStatus ?? 'No payment',
       detail: input.cashDebt
         ? `${input.walletLedgerLabel}. Partner can view marketplace requests, but marketplace alerts and participation are held until settled or offset.`
-        : `${input.paymentMethod} payment / customer ${input.customerPriceLabel} / partner ${input.partnerPayoutLabel}.`,
+        : `${input.paymentMethod} payment / customer ${input.customerPriceLabel} / Partner ${input.partnerPayoutLabel}.`,
       operatorRule:
         'Cash fee debt must be resolved before marketplace alerts, participation, or payout batch release.',
       href: input.cashDebt ? '/cash-settlements' : '#finance',

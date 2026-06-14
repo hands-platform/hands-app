@@ -7,7 +7,7 @@ function input(
     cashDebtNeedsOps: false,
     chatNeedsRepair: false,
     chatState: {
-      detail: 'Chat opens after the customer locks a final partner.',
+      detail: 'Chat opens after the customer locks a final Partner.',
       label: 'Chat pending',
       tone: 'pill-neutral',
     },
