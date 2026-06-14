@@ -160,7 +160,7 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     label: 'Finance',
-    description: 'Payments, partner earnings, wallet debt, payout batches, and refunds.',
+    description: 'Payments, Partner earnings, wallet debt, payout batches, and refunds.',
     links: [
       {
         href: '/finance-closeout',
