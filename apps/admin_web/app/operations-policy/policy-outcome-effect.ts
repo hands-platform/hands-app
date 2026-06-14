@@ -19,6 +19,13 @@ type PolicyEffectStats = {
   backupInviteCount: number;
 };
 
+type PolicyEffectRowDefinition = {
+  policy: string;
+  settingKey: string;
+  readValue: (snapshot: BookingMatchingPolicySnapshot) => string | number | null;
+  formatValue: (value: string | number) => string;
+};
+
 export type PolicyOutcomeEffectAnalysis = {
   sampleCount: number;
   metrics: Array<{ label: string; value: string; helper: string }>;
@@ -51,132 +58,185 @@ export function buildPolicyOutcomeEffect(
   settings: AdminOperationalPolicySetting[],
   bookings: AdminBooking[],
 ): PolicyOutcomeEffectAnalysis {
-  const sampledBookings = bookings.filter((booking) => readBookingMatchingPolicySnapshot(booking));
+  const sampledBookings = bookings.filter(hasMatchingPolicySnapshot);
   const globalStats = policyEffectStatsForBookings(sampledBookings);
-  const globalMatchedRate =
-    globalStats.sampleCount > 0 ? globalStats.matchedCount / globalStats.sampleCount : 0;
-  const rows = [
-    ...buildPolicyEffectRows({
-      policy: 'First-pick response window',
-      settings,
-      bookings: sampledBookings,
-      settingKey: OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
-      readValue: (snapshot) => snapshot.providerResponseWindowMinutes,
-      formatValue: (value) => `${value} min`,
-      globalMatchedRate,
-    }),
-    ...buildPolicyEffectRows({
-      policy: 'Marketplace policy',
-      settings,
-      bookings: sampledBookings,
-      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-      readValue: (snapshot) => snapshot.backupProviderRadiusMeters,
-      formatValue: (value) => formatDistance(Number(value)),
-      globalMatchedRate,
-    }),
-    ...buildPolicyEffectRows({
-      policy: 'Marketplace alert cap',
-      settings,
-      bookings: sampledBookings,
-      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
-      readValue: (snapshot) => snapshot.backupProviderInvitationLimit,
-      formatValue: (value) => `${value} partner(s)`,
-      globalMatchedRate,
-    }),
-    ...buildPolicyEffectRows({
-      policy: 'Marketplace opening mode',
-      settings,
-      bookings: sampledBookings,
-      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-      readValue: (snapshot) => snapshot.backupOpenMode,
-      formatValue: (value) => formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, value),
-      globalMatchedRate,
-    }),
-    ...buildPolicyEffectRows({
-      policy: 'First-pick accept mode',
-      settings,
-      bookings: sampledBookings,
-      settingKey: OPERATIONAL_POLICY_KEYS.preferredAcceptMode,
-      readValue: (snapshot) => snapshot.preferredAcceptMode,
-      formatValue: (value) => formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode, value),
-      globalMatchedRate,
-    }),
-  ]
-    .sort((left, right) => right.sampleRaw - left.sampleRaw || left.policy.localeCompare(right.policy))
-    .slice(0, 12);
+  const globalMatchedRate = matchedRateForStats(globalStats);
+  const rows = buildPolicyEffectRowsFromDefinitions({
+    settings,
+    bookings: sampledBookings,
+    definitions: policyEffectRowDefinitions(settings),
+    globalMatchedRate,
+  });
 
-  const totalOutcomeCheckCount =
-    globalStats.cancelledCount + globalStats.expiredCount + globalStats.noShowCount;
+  const totalOutcomeCheckCount = closedOutcomeCountForStats(globalStats);
   const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner(s)');
   const currentInviteCap = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit);
   const currentRadius = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
 
   return {
     sampleCount: sampledBookings.length,
-    metrics: [
-      {
-        label: 'Matched rate',
-        value: percentLabel(globalStats.matchedCount, globalStats.sampleCount),
-        helper: `${globalStats.matchedCount}/${globalStats.sampleCount} sampled booking(s) reached a selected or active partner.`,
-      },
-      {
-        label: 'Completed rate',
-        value: percentLabel(globalStats.completedCount, globalStats.sampleCount),
-        helper: `${globalStats.completedCount}/${globalStats.sampleCount} sampled booking(s) completed service.`,
-      },
-      {
-        label: 'Avg marketplace alerts',
-        value: avgBackupInvites,
-        helper: 'Uses stored marketplace alert traces from booking metadata, not just live partner supply.',
-      },
-      {
-        label: 'Cancelled / expired / no-show',
-        value: String(totalOutcomeCheckCount),
-        helper: `${globalStats.cancelledCount} cancelled, ${globalStats.expiredCount} expired, ${globalStats.noShowCount} no-show.`,
-      },
-    ],
+    metrics: buildOutcomeEffectMetrics(globalStats, totalOutcomeCheckCount, avgBackupInvites),
     rows,
-    cards: [
-      {
-        scope: 'Evidence',
-        title: sampledBookings.length ? 'Policy snapshots are measurable' : 'Create more measured bookings',
-        detail: sampledBookings.length
-          ? 'Each booking opened under a saved policy can now be compared against outcome, partner participation, and marketplace alert batches.'
-          : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
-        operatorAction: sampledBookings.length
-          ? 'Use these cohorts before changing response window, marketplace radius, invite cap, or accept mode.'
-          : 'Create a fresh booking after policy setup, then run through accept/reject/marketplace scenarios.',
-        className: sampledBookings.length ? 'ops-task-done' : 'ops-task-pending',
-        pillClass: sampledBookings.length ? 'pill-success' : 'pill-warn',
-      },
-      {
-        scope: 'Current rule',
-      title: `Marketplace exposure: ${currentRadius}, cap ${currentInviteCap}`,
+    cards: buildOutcomeEffectCards({
+      sampledBookingCount: sampledBookings.length,
+      globalStats,
+      totalOutcomeCheckCount,
+      avgBackupInvites,
+      currentInviteCap,
+      currentRadius,
+    }),
+  };
+}
+
+function hasMatchingPolicySnapshot(booking: AdminBooking) {
+  return Boolean(readBookingMatchingPolicySnapshot(booking));
+}
+
+function matchedRateForStats(stats: PolicyEffectStats) {
+  return stats.sampleCount > 0 ? stats.matchedCount / stats.sampleCount : 0;
+}
+
+function closedOutcomeCountForStats(stats: PolicyEffectStats) {
+  return stats.cancelledCount + stats.expiredCount + stats.noShowCount;
+}
+
+function policyEffectRowDefinitions(
+  settings: AdminOperationalPolicySetting[],
+): PolicyEffectRowDefinition[] {
+  return [
+    {
+      policy: 'First-pick response window',
+      settingKey: OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+      readValue: (snapshot) => snapshot.providerResponseWindowMinutes,
+      formatValue: (value) => `${value} min`,
+    },
+    {
+      policy: 'Marketplace policy',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      readValue: (snapshot) => snapshot.backupProviderRadiusMeters,
+      formatValue: (value) => formatDistance(Number(value)),
+    },
+    {
+      policy: 'Marketplace alert cap',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      readValue: (snapshot) => snapshot.backupProviderInvitationLimit,
+      formatValue: (value) => `${value} partner(s)`,
+    },
+    {
+      policy: 'Marketplace opening mode',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      readValue: (snapshot) => snapshot.backupOpenMode,
+      formatValue: (value) =>
+        formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, value),
+    },
+    {
+      policy: 'First-pick accept mode',
+      settingKey: OPERATIONAL_POLICY_KEYS.preferredAcceptMode,
+      readValue: (snapshot) => snapshot.preferredAcceptMode,
+      formatValue: (value) =>
+        formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode, value),
+    },
+  ];
+}
+
+function buildPolicyEffectRowsFromDefinitions(input: {
+  settings: AdminOperationalPolicySetting[];
+  bookings: AdminBooking[];
+  definitions: PolicyEffectRowDefinition[];
+  globalMatchedRate: number;
+}) {
+  return input.definitions
+    .flatMap((definition) =>
+      buildPolicyEffectRows({
+        ...definition,
+        settings: input.settings,
+        bookings: input.bookings,
+        globalMatchedRate: input.globalMatchedRate,
+      }),
+    )
+    .sort((left, right) => right.sampleRaw - left.sampleRaw || left.policy.localeCompare(right.policy))
+    .slice(0, 12);
+}
+
+function buildOutcomeEffectMetrics(
+  stats: PolicyEffectStats,
+  totalOutcomeCheckCount: number,
+  avgBackupInvites: string,
+): PolicyOutcomeEffectAnalysis['metrics'] {
+  return [
+    {
+      label: 'Matched rate',
+      value: percentLabel(stats.matchedCount, stats.sampleCount),
+      helper: `${stats.matchedCount}/${stats.sampleCount} sampled booking(s) reached a selected or active partner.`,
+    },
+    {
+      label: 'Completed rate',
+      value: percentLabel(stats.completedCount, stats.sampleCount),
+      helper: `${stats.completedCount}/${stats.sampleCount} sampled booking(s) completed service.`,
+    },
+    {
+      label: 'Avg marketplace alerts',
+      value: avgBackupInvites,
+      helper: 'Uses stored marketplace alert traces from booking metadata, not just live partner supply.',
+    },
+    {
+      label: 'Cancelled / expired / no-show',
+      value: String(totalOutcomeCheckCount),
+      helper: `${stats.cancelledCount} cancelled, ${stats.expiredCount} expired, ${stats.noShowCount} no-show.`,
+    },
+  ];
+}
+
+function buildOutcomeEffectCards(input: {
+  sampledBookingCount: number;
+  globalStats: PolicyEffectStats;
+  totalOutcomeCheckCount: number;
+  avgBackupInvites: string;
+  currentInviteCap: string;
+  currentRadius: string;
+}): PolicyOutcomeEffectAnalysis['cards'] {
+  return [
+    {
+      scope: 'Evidence',
+      title: input.sampledBookingCount
+        ? 'Policy snapshots are measurable'
+        : 'Create more measured bookings',
+      detail: input.sampledBookingCount
+        ? 'Each booking opened under a saved policy can now be compared against outcome, partner participation, and marketplace alert batches.'
+        : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
+      operatorAction: input.sampledBookingCount
+        ? 'Use these cohorts before changing response window, marketplace radius, invite cap, or accept mode.'
+        : 'Create a fresh booking after policy setup, then run through accept/reject/marketplace scenarios.',
+      className: input.sampledBookingCount ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: input.sampledBookingCount ? 'pill-success' : 'pill-warn',
+    },
+    {
+      scope: 'Current rule',
+      title: `Marketplace exposure: ${input.currentRadius}, cap ${input.currentInviteCap}`,
       detail:
         'Marketplace Partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many Partners; a low cap can hide useful supply.',
-        operatorAction:
-          globalStats.backupInviteCount > 0
-            ? `Current sample averages ${avgBackupInvites} per measured booking.`
-            : 'No marketplace alert batch was found in the measured sample yet.',
-        className: 'ops-task-pending',
-        pillClass: 'pill-info',
-      },
-      {
-        scope: 'Outcome checks',
-        title: totalOutcomeCheckCount
-          ? 'Review closed booking cohorts before changing policy'
-          : 'No closed-outcome spike in sample',
-        detail: totalOutcomeCheckCount
-          ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
-          : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
-        operatorAction: totalOutcomeCheckCount
-          ? 'Open the booking drill-down and compare closed bookings against their saved policy snapshot.'
-          : 'Keep collecting results across more districts and time bands before treating this as final.',
-        className: totalOutcomeCheckCount ? 'ops-task-blocked' : 'ops-task-done',
-        pillClass: totalOutcomeCheckCount ? 'pill-danger' : 'pill-success',
-      },
-    ],
-  };
+      operatorAction:
+        input.globalStats.backupInviteCount > 0
+          ? `Current sample averages ${input.avgBackupInvites} per measured booking.`
+          : 'No marketplace alert batch was found in the measured sample yet.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
+      scope: 'Outcome checks',
+      title: input.totalOutcomeCheckCount
+        ? 'Review closed booking cohorts before changing policy'
+        : 'No closed-outcome spike in sample',
+      detail: input.totalOutcomeCheckCount
+        ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
+        : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
+      operatorAction: input.totalOutcomeCheckCount
+        ? 'Open the booking drill-down and compare closed bookings against their saved policy snapshot.'
+        : 'Keep collecting results across more districts and time bands before treating this as final.',
+      className: input.totalOutcomeCheckCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: input.totalOutcomeCheckCount ? 'pill-danger' : 'pill-success',
+    },
+  ];
 }
 
 function buildPolicyEffectRows(input: {
