@@ -53,6 +53,13 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
     expect(rendered).toContain('Marketplace operating queue');
     expect(rendered).toContain('First-pick timer control');
     expect(rendered).toContain('Customer A');
+    expect(headingTextsIn(section)).toEqual([
+      'Marketplace participant ledger',
+      'Marketplace record boundary',
+      'Not finalization rows',
+      'Marketplace operating queue',
+      'First-pick timer control',
+    ]);
     expect(hrefsIn(section)).toContain('/bookings?view=first-pick');
   });
 });
@@ -89,6 +96,22 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function headingTextsIn(value: unknown): string[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(headingTextsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const type = typeof record?.type === 'string' ? record.type : '';
+  const ownHeading =
+    /^h[1-6]$/.test(type) ? [textContent(props?.children).replace(/\s+/g, ' ').trim()] : [];
+  return [...ownHeading, ...headingTextsIn(props?.children)];
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

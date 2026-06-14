@@ -48,7 +48,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
         <div className="ops-task-grid admin-mt-12">
           <article className="ops-task-card">
             <span className="signal signal-info">Actual participation rows</span>
-            <h3>{marketplaceLedgerSummary.total}</h3>
+            <strong className="ops-task-card-value">{marketplaceLedgerSummary.total}</strong>
             <p>
               First-pick, marketplace participation, accepted, declined, and customer-selected rows stay in
               this ledger as the operational evidence trail.
@@ -64,7 +64,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
           </article>
           <article className="ops-task-card">
             <span className="signal signal-ok">Customer choice evidence</span>
-            <h3>{marketplaceLedgerSummary.selected}</h3>
+            <strong className="ops-task-card-value">{marketplaceLedgerSummary.selected}</strong>
             <p>
               Customer fallback selection is retained when first-pick does not validly win. Operators verify
               the selected participant row and retained chat evidence.
