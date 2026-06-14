@@ -24,8 +24,41 @@ type UnifiedActivityStreamInput = {
   readonly financeRows: readonly FinanceActivityRow[];
 };
 
+type ActivityStreamSourceRow = {
+  readonly id: string;
+  readonly area: string;
+  readonly source: string;
+  readonly record: string;
+  readonly summary: string;
+  readonly href: string;
+  readonly className: string;
+  readonly createdAt?: string | null;
+};
+
 export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
-  const bookingRows = input.bookings.slice(0, 25).map((booking) => ({
+  return [
+    ...buildBookingActivityRows(input.bookings),
+    ...buildChatActivityRows(input.chatArchive),
+    ...buildAuditActivityRows(input.auditLogs),
+    ...buildNotificationActivityRows(input.notifications),
+    ...buildFinanceActivityRows(input.financeRows),
+  ]
+    .filter((item) => dateValue(item.createdAt) > 0)
+    .sort((a, b) => dateValue(b.createdAt) - dateValue(a.createdAt))
+    .slice(0, 40);
+}
+
+export type ActivityStreamRow = ReturnType<typeof buildUnifiedActivityStream>[number];
+
+export function filterActivityStreamByRange(
+  rows: ReturnType<typeof buildUnifiedActivityStream>,
+  range: Parameters<typeof isInDateRange>[1],
+) {
+  return rows.filter((row) => isInDateRange(row.createdAt, range));
+}
+
+function buildBookingActivityRows(bookings: readonly AdminBooking[]): ActivityStreamSourceRow[] {
+  return bookings.slice(0, 25).map((booking) => ({
     id: `booking-${booking.id}`,
     area: 'Booking',
     source: booking.status,
@@ -35,36 +68,51 @@ export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
     className: bookingStatusClass(booking.status),
     createdAt: booking.updatedAt ?? booking.createdAt ?? new Date(0).toISOString(),
   }));
+}
 
-  const chatRows = input.chatArchive.flatMap((booking) =>
-    (
-      (
-        booking.chatRoom as {
-          messages?: Array<{
-            id: string;
-            body: string;
-            createdAt: string;
-            sender?: { fullName?: string | null; phone?: string | null; roles?: string[] };
-          }>;
-        } | null
-      )?.messages ?? []
-    )
+type ChatArchiveMessage = {
+  readonly id: string;
+  readonly body: string;
+  readonly createdAt: string;
+  readonly sender?: {
+    readonly fullName?: string | null;
+    readonly phone?: string | null;
+    readonly roles?: readonly string[];
+  };
+};
+
+function buildChatActivityRows(chatArchive: readonly AdminBookingDetail[]): ActivityStreamSourceRow[] {
+  return chatArchive.flatMap((booking) =>
+    chatArchiveMessages(booking)
       .slice(-5)
       .map((message) => ({
         id: `chat-${message.id}`,
         area: 'Chat',
-        source: message.sender?.roles?.includes('PROVIDER') ? 'Partner message' : 'Customer/admin message',
+        source: message.sender?.roles?.includes('PROVIDER')
+          ? 'Partner message'
+          : 'Customer/admin message',
         record: `Room ${shortDisplayId(booking.chatRoom?.id)}`,
         summary: operatorDisplayText(
-          `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(message.body, 110)}`,
+          `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(
+            message.body,
+            110,
+          )}`,
         ),
         href: `/bookings/${booking.id}`,
         className: 'pill pill-info',
         createdAt: message.createdAt,
       })),
   );
+}
 
-  const auditRows = input.auditLogs.slice(0, 30).map((log) => ({
+function chatArchiveMessages(booking: AdminBookingDetail): readonly ChatArchiveMessage[] {
+  return (
+    (booking.chatRoom as { messages?: readonly ChatArchiveMessage[] } | null)?.messages ?? []
+  );
+}
+
+function buildAuditActivityRows(auditLogs: readonly AdminAuditLog[]): ActivityStreamSourceRow[] {
+  return auditLogs.slice(0, 30).map((log) => ({
     id: `audit-${log.id}`,
     area: auditActivityArea(log),
     source: operatorDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
@@ -74,8 +122,12 @@ export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
     className: auditActivityClassName(log),
     createdAt: log.createdAt,
   }));
+}
 
-  const notificationRows = input.notifications
+function buildNotificationActivityRows(
+  notifications: readonly AdminNotification[],
+): ActivityStreamSourceRow[] {
+  return notifications
     .filter((notification) =>
       (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
     )
@@ -90,8 +142,12 @@ export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
       className: 'pill pill-warn',
       createdAt: notification.createdAt,
     }));
+}
 
-  const financeRows = input.financeRows.slice(0, 20).map((row) => ({
+function buildFinanceActivityRows(
+  financeRows: readonly FinanceActivityRow[],
+): ActivityStreamSourceRow[] {
+  return financeRows.slice(0, 20).map((row) => ({
     id: `finance-${row.id}`,
     area: 'Finance',
     source: row.status,
@@ -104,20 +160,6 @@ export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
     className: row.statusClass,
     createdAt: row.createdAt ?? new Date(0).toISOString(),
   }));
-
-  return [...bookingRows, ...chatRows, ...auditRows, ...notificationRows, ...financeRows]
-    .filter((item) => dateValue(item.createdAt) > 0)
-    .sort((a, b) => dateValue(b.createdAt) - dateValue(a.createdAt))
-    .slice(0, 40);
-}
-
-export type ActivityStreamRow = ReturnType<typeof buildUnifiedActivityStream>[number];
-
-export function filterActivityStreamByRange(
-  rows: ReturnType<typeof buildUnifiedActivityStream>,
-  range: Parameters<typeof isInDateRange>[1],
-) {
-  return rows.filter((row) => isInDateRange(row.createdAt, range));
 }
 
 function bookingActivitySummary(booking: AdminBooking) {
