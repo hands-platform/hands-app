@@ -1523,6 +1523,14 @@ textarea:focus-visible {
     overflow-x: auto;
   }
 
+  .command-copy-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .command-copy-button {
+    justify-self: flex-start;
+  }
+
   .service-matrix,
   .service-ledger,
   .service-trace {
