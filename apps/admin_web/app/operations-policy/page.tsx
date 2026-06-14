@@ -54,6 +54,7 @@ import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-f
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
 import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
 import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
+import { OperationsPolicyNextChoicesSection } from './operations-policy-next-choices-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
@@ -270,46 +271,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card">
-        <h2>Recommended next choices</h2>
-        <div className="booking-radar">
-          <DecisionHint
-            title="First-pick partner acceptance"
-            recommendation="Keep first-pick priority with customer fallback."
-            detail="The preferred Partner can match first under API rules, marketplace Partners can still enter the shortlist, and the customer chooses only when first-pick does not win."
-          />
-          <DecisionHint
-            title="Marketplace participation"
-            recommendation="Keep immediate marketplace visibility during the partner response window."
-            detail="It reduces waiting anxiety, gives the customer alternatives, and fits the reference flow you described."
-          />
-          <DecisionHint
-            title="Negative wallet gate"
-            recommendation="Keep marketplace visibility open, but block final acceptance, service start, and payout release."
-            detail="Cash services create company-fee debt. Partners can still see demand, while final acceptance, service start, and payout release wait for settlement."
-          />
-          <DecisionHint
-            title="Phone OTP"
-            recommendation="Keep production SMS deferred until the SMS service selection is complete."
-            detail="Use internal/demo auth for local development, then turn on phone auth once Vonage credentials, Vietnam sender rules, and the HANDS API token exchange are verified."
-          />
-          <DecisionHint
-            title="Cancellation after match"
-            recommendation="Keep admin review before any customer charge decision."
-            detail="This keeps early customer support flexible while HANDS learns real cancellation, chat, and partner arrival patterns."
-          />
-          <DecisionHint
-            title="No-show disputes"
-            recommendation="Require admin review until evidence upload and dispute screens are mature."
-            detail="No-show is an operational closeout state in MVP, not a person judgment. Operators should review evidence before payment or support action."
-          />
-          <DecisionHint
-            title="Partner alert routing"
-            recommendation="Keep in-app notifications first, then promote FCM after production credentials are stable."
-            detail="The system can record notifications now; push delivery should become mandatory only after monitoring is ready."
-          />
-        </div>
-      </section>
+      <OperationsPolicyNextChoicesSection />
 
       <section className="card admin-mt-16">
         <div className="ops-section-header">
@@ -554,24 +516,6 @@ function PolicyForm({
         </p>
       )}
     </form>
-  );
-}
-
-function DecisionHint({
-  title,
-  recommendation,
-  detail,
-}: {
-  title: string;
-  recommendation: string;
-  detail: string;
-}) {
-  return (
-    <div className="insight-card">
-      <strong>{title}</strong>
-      <p>{recommendation}</p>
-      <p className="muted">{detail}</p>
-    </div>
   );
 }
 
