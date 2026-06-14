@@ -116,119 +116,123 @@ const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDeta
   },
 };
 
+const MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes]: {
+    area: 'Booking timer',
+    title: 'Affects new booking expiry windows',
+    detail:
+      'New requests use this value for the first-pick Partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
+    saveChecks: [
+      {
+        label: 'First-pick queue',
+        detail:
+          'Check how many bookings are still waiting for the preferred partner before shortening the timer.',
+        href: '/bookings?view=first-pick',
+      },
+      {
+        label: 'Customer choice backlog',
+        detail: 'Confirm customers are not already waiting too long after partners accept.',
+        href: '/bookings?view=customer-choice',
+      },
+    ],
+  },
+  [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]: {
+    area: 'Partner supply',
+    title: 'Controls who can see and participate in marketplace requests',
+    detail:
+      'Partner open-booking lists, participation validation, marketplace notifications, and customer choice list visibility use this radius.',
+    saveChecks: [
+      {
+        label: 'Stage impact preview',
+        detail: 'Preview how the selected radius changes marketplace supply and no-supply checks.',
+        href: '/operations-policy#matching-stage-impact',
+      },
+      {
+        label: 'Marketplace ready',
+        detail: 'Review partners that can actually receive and participate in marketplace requests.',
+        href: '/partners?review=marketplace-ready',
+      },
+    ],
+  },
+  [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]: {
+    area: 'Partner supply',
+    title: 'Controls how many marketplace Partners are exposed',
+    detail:
+      'Eligible marketplace Partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
+    saveChecks: [
+      {
+        label: 'Marketplace notification load',
+        detail: 'Check delivery volume and failed partner alerts before raising invitation volume.',
+        href: '/notifications',
+      },
+      {
+        label: 'Marketplace shortlist',
+        detail:
+          'Confirm the customer choice shortlist will stay readable when more partners can participate.',
+        href: '/bookings?view=marketplace',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.travelBufferMinutes]: {
+    area: 'Availability',
+    title: 'Controls partner availability after work',
+    detail:
+      'Nearby sorting and availability calculations use this buffer before a partner becomes eligible for another booking.',
+    saveChecks: [
+      {
+        label: 'Partner capacity',
+        detail: 'Review online partners and session freshness before reducing rest/travel time.',
+        href: '/app-sessions?role=PROVIDER&state=live',
+      },
+      {
+        label: 'Capacity pressure',
+        detail: 'Look for stacked bookings that may create late arrivals if the buffer is too low.',
+        href: '/bookings?view=matching',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.preferredAcceptMode]: {
+    area: 'Customer choice',
+    title: 'Controls first-pick priority and customer fallback',
+    detail:
+      'The first-pick Partner can match first under API rules. If first-pick does not validly win, the customer selects from participating Partners.',
+    saveChecks: [
+      {
+        label: 'Customer choice queue',
+        detail: 'Use this queue to confirm accepted partners are waiting for customer final choice.',
+        href: '/bookings?view=customer-choice',
+      },
+      {
+        label: 'Handoff repair',
+        detail: 'Check chat and service-start failures after the customer chooses a final partner.',
+        href: '/bookings?view=handoff-repair',
+      },
+    ],
+  },
+  [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]: {
+    area: 'Marketplace flow',
+    title: 'Controls when other partners can participate',
+    detail:
+      'Immediate mode keeps marketplace participation parallel with the first-pick window. Legacy delayed values are normalized to immediate participation by the API.',
+    saveChecks: [
+      {
+        label: 'Open matching timeline',
+        detail:
+          'Confirm marketplace visibility stays parallel while old delayed policy rows are still being phased out.',
+        href: '/bookings?view=matching',
+      },
+      {
+        label: 'Policy stage preview',
+        detail: 'Confirm the stage preview treats delayed values as compatibility-only.',
+        href: '/operations-policy#matching-stage-impact',
+      },
+    ],
+  },
+};
+
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
     ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
-    'matching.provider_response_window_minutes': {
-      area: 'Booking timer',
-      title: 'Affects new booking expiry windows',
-      detail:
-        'New requests use this value for the first-pick Partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
-      saveChecks: [
-        {
-          label: 'First-pick queue',
-          detail:
-            'Check how many bookings are still waiting for the preferred partner before shortening the timer.',
-          href: '/bookings?view=first-pick',
-        },
-        {
-          label: 'Customer choice backlog',
-          detail: 'Confirm customers are not already waiting too long after partners accept.',
-          href: '/bookings?view=customer-choice',
-        },
-      ],
-    },
-    'matching.backup_provider_radius_meters': {
-      area: 'Partner supply',
-      title: 'Controls who can see and participate in marketplace requests',
-      detail:
-        'Partner open-booking lists, participation validation, marketplace notifications, and customer choice list visibility use this radius.',
-      saveChecks: [
-        {
-          label: 'Stage impact preview',
-          detail: 'Preview how the selected radius changes marketplace supply and no-supply checks.',
-          href: '/operations-policy#matching-stage-impact',
-        },
-        {
-          label: 'Marketplace ready',
-          detail: 'Review partners that can actually receive and participate in marketplace requests.',
-          href: '/partners?review=marketplace-ready',
-        },
-      ],
-    },
-    'matching.backup_provider_invitation_limit': {
-      area: 'Partner supply',
-      title: 'Controls how many marketplace Partners are exposed',
-      detail:
-        'Eligible marketplace Partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
-      saveChecks: [
-        {
-          label: 'Marketplace notification load',
-          detail: 'Check delivery volume and failed partner alerts before raising invitation volume.',
-          href: '/notifications',
-        },
-        {
-          label: 'Marketplace shortlist',
-          detail:
-            'Confirm the customer choice shortlist will stay readable when more partners can participate.',
-          href: '/bookings?view=marketplace',
-        },
-      ],
-    },
-    'matching.travel_buffer_minutes': {
-      area: 'Availability',
-      title: 'Controls partner availability after work',
-      detail:
-        'Nearby sorting and availability calculations use this buffer before a partner becomes eligible for another booking.',
-      saveChecks: [
-        {
-          label: 'Partner capacity',
-          detail: 'Review online partners and session freshness before reducing rest/travel time.',
-          href: '/app-sessions?role=PROVIDER&state=live',
-        },
-        {
-          label: 'Capacity pressure',
-          detail: 'Look for stacked bookings that may create late arrivals if the buffer is too low.',
-          href: '/bookings?view=matching',
-        },
-      ],
-    },
-    'matching.preferred_accept_mode': {
-      area: 'Customer choice',
-      title: 'Controls first-pick priority and customer fallback',
-      detail:
-        'The first-pick Partner can match first under API rules. If first-pick does not validly win, the customer selects from participating Partners.',
-      saveChecks: [
-        {
-          label: 'Customer choice queue',
-          detail: 'Use this queue to confirm accepted partners are waiting for customer final choice.',
-          href: '/bookings?view=customer-choice',
-        },
-        {
-          label: 'Handoff repair',
-          detail: 'Check chat and service-start failures after the customer chooses a final partner.',
-          href: '/bookings?view=handoff-repair',
-        },
-      ],
-    },
-    'matching.backup_open_mode': {
-      area: 'Marketplace flow',
-      title: 'Controls when other partners can participate',
-      detail:
-        'Immediate mode keeps marketplace participation parallel with the first-pick window. Legacy delayed values are normalized to immediate participation by the API.',
-      saveChecks: [
-        {
-          label: 'Open matching timeline',
-          detail:
-            'Confirm marketplace visibility stays parallel while old delayed policy rows are still being phased out.',
-          href: '/bookings?view=matching',
-        },
-        {
-          label: 'Policy stage preview',
-          detail: 'Confirm the stage preview treats delayed values as compatibility-only.',
-          href: '/operations-policy#matching-stage-impact',
-        },
-      ],
-    },
+    ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
     'wallet.negative_balance_gate': {
       area: 'Wallet controls',
       title: 'Controls unpaid cash-fee debt enforcement',
