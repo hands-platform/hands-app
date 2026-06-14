@@ -11,6 +11,12 @@ export function notificationFailureCodeLabel(failureCode: string) {
   if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
     return 'FCM credentials missing';
   }
+  if (failureCode === 'messaging/internal-error') {
+    return 'Firebase temporary service error';
+  }
+  if (failureCode === 'messaging/server-unavailable') {
+    return 'Firebase temporarily unavailable';
+  }
   return failureCode;
 }
 
