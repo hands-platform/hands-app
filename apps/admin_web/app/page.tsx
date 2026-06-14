@@ -489,7 +489,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} optional GPS evidence, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
     ],
     [
-      'Online partners',
+      'Online Partners',
       providers.filter((provider) => provider.status.startsWith('ONLINE')).length.toString(),
       'Supply currently visible to customers.',
     ],
@@ -560,7 +560,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     'Customers in app',
     'Live matching customers',
     'Partners in app',
-    'Online partners',
+    'Online Partners',
     'Payment holds',
     'Cash debt',
   ];
@@ -1756,7 +1756,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 detail="Live customers attached to active bookings."
               />
               <InfoRow
-                label="Live app partners"
+                label="Live app Partners"
                 value={appPresence.liveAppPartners.toString()}
                 detail="Partner app sessions with an unexpired heartbeat."
               />
@@ -1858,14 +1858,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </p>
             </div>
             <Link className="text-link" href="/partners">
-              Open partners
+              Open Partners
             </Link>
           </div>
           <div className="service-trace-summary">
             <div>
-              <span>Total partners</span>
+              <span>Total Partners</span>
               <strong>{partnerSupply.total}</strong>
-              <small>All registered partner profiles</small>
+              <small>All registered Partner profiles</small>
             </div>
             <div>
               <span>Online supply</span>
@@ -1873,7 +1873,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <small>{partnerSupply.onlineAvailable} available now</small>
             </div>
             <div>
-              <span>Live app partners</span>
+              <span>Live app Partners</span>
               <strong>{partnerSupply.liveSessions}</strong>
               <small>Active session heartbeat</small>
             </div>
@@ -1936,14 +1936,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 detail="Primary bank account ready for payout routing."
               />
               <InfoRow
-                label="First revenue partners"
+                label="First revenue Partners"
                 value={partnerSupply.firstRevenue.toString()}
                 detail="Partners who should now complete tax/address/agreement requirements."
               />
               <InfoRow
                 label="Tax ready after revenue"
                 value={partnerSupply.taxReadyAfterRevenue.toString()}
-                detail="First-revenue partners with approved tax profile."
+                detail="First-revenue Partners with approved tax profile."
               />
               <InfoRow
                 label="Profile review"
@@ -1990,9 +1990,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
           {partnerOpsQueue.items.length === 0 && (
             <div className="ops-task-note">
-              <strong>No partner blocker is currently visible.</strong>
+              <strong>No Partner blocker is currently visible.</strong>
               <p className="muted">
-                Verified partners, wallet debt, location freshness, payout readiness, and app contactability
+                Verified Partners, wallet debt, location freshness, payout readiness, and app contactability
                 are clear in the current snapshot.
               </p>
             </div>
@@ -2135,7 +2135,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <h2>Operations checklist queue</h2>
               <p className="muted">
-                Generated from the latest admin API snapshot. It groups customer protection, partner controls,
+                Generated from the latest admin API snapshot. It groups customer protection, Partner controls,
                 payment release, cash debt, and payout recovery together.
               </p>
             </div>
@@ -2338,9 +2338,9 @@ function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks
 
 function externalReadinessDisplayText(value: string) {
   return value
-    .replace(/\bCustomer and provider\b/g, 'Customer and partner')
-    .replace(/\bcustomer and provider\b/g, 'customer and partner')
-    .replace(/\bprovider Android\b/g, 'partner Android')
+    .replace(/\bCustomer and provider\b/g, 'Customer and Partner')
+    .replace(/\bcustomer and provider\b/g, 'customer and Partner')
+    .replace(/\bprovider Android\b/g, 'Partner Android')
     .replace(/\bProvider Android\b/g, 'Partner Android')
     .replace(/\bOS push provider\b/g, 'FCM push service')
     .replace(/\bSMS provider\b/g, 'SMS service')
@@ -2576,7 +2576,7 @@ function buildMatchingControlRoom(
           ? `${attentionRows.length} open matching booking(s) are expired or have no fresh eligible nearby Partner.`
           : 'Open matching bookings have usable Partner supply in the current sample.',
         operatorAction: attentionRows.length
-          ? 'Open the affected bookings, contact partners, or widen/refresh supply before customer wait grows.'
+          ? 'Open the affected bookings, contact Partners, or widen/refresh supply before customer wait grows.'
           : 'Keep monitoring response speed and participant depth.',
         className: attentionRows.length ? 'ops-task-blocked' : 'ops-task-done',
         pillClass: attentionRows.length ? 'pill-danger' : 'pill-success',
@@ -2624,7 +2624,7 @@ function buildMatchingControlRoom(
           : 'No online Partner has a fresh location update in the current admin sample.',
         operatorAction: freshOnlinePartners.length
           ? 'This is enough to validate the low-cost last-location model.'
-          : 'Ask partners to open the app so the 10-minute location update flow can seed matching.',
+          : 'Ask Partners to open the app so the 10-minute location update flow can seed matching.',
         className: freshOnlinePartners.length ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: freshOnlinePartners.length ? 'pill-success' : 'pill-danger',
       },
@@ -2674,7 +2674,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
       {
         label: 'Matched rate',
         value: dashboardPercentLabel(stats.matchedCount, stats.sampleCount),
-        helper: `${stats.matchedCount}/${stats.sampleCount} reached selected or active partner state.`,
+        helper: `${stats.matchedCount}/${stats.sampleCount} reached selected or active Partner state.`,
       },
       {
         label: 'Completed rate',
@@ -2715,7 +2715,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
           ? 'Keep current policy stable while collecting more district and time-band results.'
           : stats.sampleCount
             ? 'Open Operations Policy and compare cohorts before changing timer, radius, cap, or marketplace mode.'
-            : 'Run a direct booking and marketplace partner flow, then return here.',
+            : 'Run a direct booking and marketplace Partner flow, then return here.',
         href: '/operations-policy',
         className: outcomeHealthy
           ? 'ops-task-done'
@@ -2729,7 +2729,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
         title: `${liveWindow}m wait / ${formatDistance(liveRadius)} / cap ${liveInviteCap}`,
         detail:
           liveBackupMode === 'IMMEDIATE_WITHIN_WINDOW'
-            ? 'Marketplace partners can be exposed during the first-pick response window.'
+            ? 'Marketplace Partners can be exposed during the first-pick response window.'
             : 'Marketplace timing needs policy review before rollout.',
         operatorAction:
           lowBackupInviteCount > 0
@@ -2908,7 +2908,7 @@ function matchingRowNextAction(input: {
     return 'Confirm the customer service location so distance-based marketplace matching can work.';
   }
   if (input.customerReadyToChoose) {
-    return 'Confirm the customer sees the shortlist and can select the final partner.';
+    return 'Confirm the customer sees the shortlist and can select the final Partner.';
   }
   if (input.freshEligibleCount === 0 && input.eligibleCount > 0) {
     return 'Ask nearby Partners to refresh location or open the Partner app before widening policy.';
@@ -3093,7 +3093,7 @@ function buildDailyOperationsSnapshot(input: {
       tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
     },
     {
-      label: 'Online partners',
+      label: 'Online Partners',
       value: onlinePartners.length.toString(),
       helper: `${freshPartnerPins.length} with fresh location pins`,
       href: '/partners?review=direct-ready',
@@ -3551,7 +3551,7 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${addressChecks} check`,
       detail:
         addressChecks > 0
-          ? 'Booking rows need an address snapshot before partner discovery and distance evidence are reliable.'
+          ? 'Booking rows need an address snapshot before Partner discovery and distance evidence are reliable.'
           : 'Every loaded booking has the address snapshot needed for operations review.',
       href: '/bookings?view=all&evidence=address',
       tone: evidenceTone(addressChecks, 1, 3),
@@ -4371,8 +4371,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       owner: 'Finance',
       title: 'Clear cash fee debt',
       detail:
-        'Negative wallet partners can view marketplace requests, but final acceptance, service start, and payout release are blocked until settlement.',
-      metricLabel: 'Debt partners',
+        'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout release are blocked until settlement.',
+      metricLabel: 'Debt Partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',
       href: '/cash-settlements',
@@ -4386,7 +4386,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       detail: 'Blocked accounts and active account controls stay above booking convenience.',
       metricLabel: 'Account blocks',
       metricValue: activeAccountControls.toString(),
-      action: 'Open partner controls',
+      action: 'Open Partner controls',
       href: '/partner-controls?sanction=ACTIVE',
       blockerCount: activeAccountControls,
     }),
@@ -4398,7 +4398,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       detail: 'Identity and bank approval are the Level 2 work gate for paid bookings.',
       metricLabel: 'Needs review',
       metricValue: verificationBlockers.toString(),
-      action: 'Open partner review',
+      action: 'Open Partner review',
       href: '/partners?review=acceptance-blocked',
       blockerCount: verificationBlockers,
     }),
@@ -4406,7 +4406,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       id: 'dashboard-acceptance-location',
       step: '4',
       owner: 'Dispatch',
-      title: 'Refresh partner location',
+      title: 'Refresh Partner location',
       detail: 'Marketplace supply quality depends on recent app-open location updates.',
       metricLabel: 'Location gaps',
       metricValue: input.partnerOpsQueue.locationIssue.toString(),
@@ -4499,7 +4499,7 @@ function buildPartnerOpsQueueItem(
       status: 'Cash debt block',
       detail:
         'Partner wallet is negative from cash fee/tax debt. Marketplace alerts, participation, and payout release wait until finance records a deposit or offset.',
-      action: 'Open partner finance',
+      action: 'Open Partner finance',
       href,
       className: 'ops-task-blocked',
       priority: 110,
@@ -4990,8 +4990,8 @@ function buildDashboardCommandSignals(input: {
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
         ? 'Partner verification, reports, account controls, or KYC needs admin attention.'
-        : 'No partner review blocker in the current snapshot.',
-      action: 'Open partners',
+        : 'No Partner review blocker in the current snapshot.',
+      action: 'Open Partners',
       href: '/partners',
       priority:
         activeProviderSanctions.length || openProviderReports.length ? 90 : providerReviews.length ? 65 : 20,
@@ -5097,7 +5097,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
       detail: cashDebtRowCount
-        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before marketplace alerts, participation, or payout release.`
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} Partner cash fee/tax debt across ${cashDebtProviderCount} Partner(s) must be collected or offset before marketplace alerts, participation, or payout release.`
         : 'No open cash fee debt is blocking marketplace alerts, participation, or payout release.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
@@ -5113,7 +5113,7 @@ function buildDashboardCommandSignals(input: {
           href: '/cash-settlements',
         },
         {
-          label: 'Blocked partners',
+          label: 'Blocked Partners',
           value: cashDebtProviderCount.toString(),
           tone: cashDebtProviderCount ? 'danger' : 'ok',
           href: '/cash-settlements',
@@ -5142,7 +5142,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Payout lane',
       status: payoutHolds.length ? `${payoutHolds.length} HELD` : `${payoutReviews.length} OPEN`,
       detail: payoutHolds.length
-        ? 'One or more payout batches are blocked by active partner account controls.'
+        ? 'One or more payout batches are blocked by active Partner account controls.'
         : payoutReviews.length
           ? 'Draft, failed, or processing payout batches are waiting for finance movement.'
           : `${money(input.earnings.availableNetAmount, input.earnings.currency)} available from earnings.`,
@@ -5321,7 +5321,7 @@ function buildOpsQueue(input: {
       owner: 'Support',
       priority: 64,
       recommendedAction:
-        'Open blocked create attempts and guide customers to confirm the service address snapshot or choose a closer first-pick partner.',
+        'Open blocked create attempts and guide customers to confirm the service address snapshot or choose a closer first-pick Partner.',
     });
   }
 
@@ -5371,8 +5371,8 @@ function buildOpsQueue(input: {
     items.push({
       area: 'Finance',
       href: '/cash-settlements',
-      label: 'Cash settlement queue blocking partners',
-      detail: `${input.cashSettlementSummary.providerCount} partner(s) owe ${money(
+      label: 'Cash settlement queue blocking Partners',
+      detail: `${input.cashSettlementSummary.providerCount} Partner(s) owe ${money(
         input.cashSettlementSummary.totalDebtAmount,
         input.cashSettlementSummary.currency,
       )} across ${input.cashSettlementSummary.rowCount} open debt row(s).`,
@@ -5380,7 +5380,7 @@ function buildOpsQueue(input: {
       owner: 'Finance',
       priority: 100,
       recommendedAction:
-        'Collect partner deposit or approve an auditable offset before allowing more cash work.',
+        'Collect Partner deposit or approve an auditable offset before allowing more cash work.',
     });
   }
 
@@ -5394,7 +5394,7 @@ function buildOpsQueue(input: {
       owner: 'Finance',
       priority: 98,
       recommendedAction:
-        'Collect the company fee deposit or offset it before this partner participates in marketplace bookings again.',
+        'Collect the company fee deposit or offset it before this Partner participates in marketplace bookings again.',
     });
   }
 
@@ -5408,7 +5408,7 @@ function buildOpsQueue(input: {
         severity: 'medium',
         owner: 'Partner Ops',
         priority: 56,
-        recommendedAction: 'Open the partner profile and approve, reject, or request resubmission evidence.',
+        recommendedAction: 'Open the Partner profile and approve, reject, or request resubmission evidence.',
       });
     }
     const disabledDevices = provider.user?.pushDevices?.filter((device) => device.enabled === false) ?? [];
@@ -5421,7 +5421,7 @@ function buildOpsQueue(input: {
         severity: 'low',
         owner: 'Support',
         priority: 28,
-        recommendedAction: 'Review device delivery history and ask the partner to re-enable notifications.',
+        recommendedAction: 'Review device delivery history and ask the Partner to re-enable notifications.',
       });
     }
     const openReports = (provider.reports ?? []).filter((report) =>
@@ -5513,7 +5513,7 @@ function buildOpsQueue(input: {
         area: 'Payout',
         href: `/payouts#${batch.id}`,
         label: 'Failed payout needs recovery',
-        detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'partner'}`,
+        detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'Partner'}`,
         severity: 'high',
         owner: 'Finance',
         priority: 92,
@@ -5587,7 +5587,7 @@ function buildShiftCommandBriefing(input: {
       {
         label: 'Dispatch pressure',
         value: openMatchingRows.toString(),
-        helper: `${input.bookingDeepDive.openWithoutParticipants} without partner, ${input.bookingOps.noShowSignal} no-show record(s)`,
+        helper: `${input.bookingDeepDive.openWithoutParticipants} without Partner, ${input.bookingOps.noShowSignal} no-show record(s)`,
         tone: openMatchingRows ? 'warn' : 'ok',
         href: '/bookings?view=active',
       },
@@ -5663,7 +5663,7 @@ function buildOperatorStartChecklist(input: {
       title: 'Protect waiting customers',
       status: openMatchingFollowUp || input.bookingOps.noShowSignal ? 'Dispatch first' : 'Clear',
       detail: openMatchingFollowUp
-        ? `${openMatchingFollowUp} open matching booking(s) have expired timers or no fresh partner supply.`
+        ? `${openMatchingFollowUp} open matching booking(s) have expired timers or no fresh Partner supply.`
         : `${input.bookingOps.openMatching} matching wait, ${input.bookingOps.noShowSignal} no-show record(s).`,
       action: 'Open matching queue',
       href: openMatchingFollowUp ? '/bookings?view=matching' : '/bookings',
@@ -5671,10 +5671,10 @@ function buildOperatorStartChecklist(input: {
       pillClass: openMatchingFollowUp ? 'pill-danger' : 'pill-success',
     },
     {
-      title: 'Confirm partner supply',
+      title: 'Confirm Partner supply',
       status: missingPartnerSupply ? 'Refresh supply' : 'Ready',
       detail: `${input.partnerSupply.onlineAvailable} available, ${input.partnerSupply.staleLocation} stale location, ${input.partnerSupply.supplyPressureLabel} pressure.`,
-      action: 'Open partners',
+      action: 'Open Partners',
       href: missingPartnerSupply ? '/partners?review=location' : '/partners?review=direct-ready',
       className: missingPartnerSupply ? 'ops-task-pending' : 'ops-task-done',
       pillClass: missingPartnerSupply ? 'pill-warn' : 'pill-success',
@@ -5683,7 +5683,7 @@ function buildOperatorStartChecklist(input: {
       title: 'Clear acceptance blockers',
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
-        ? `${cashDebtPartners} partner(s) have cash fee or tax debt blocking final acceptance, service start, and payout release.`
+        ? `${cashDebtPartners} Partner(s) have cash fee or tax debt blocking final acceptance, service start, and payout release.`
         : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutChecks} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
@@ -5842,25 +5842,25 @@ function bookingFlags(booking: AdminBooking) {
       label: 'Open matching window expired',
       severity: 'high',
       priority: 90,
-      recommendedAction: 'Expire the request or contact the customer before it stays visible to partners.',
+      recommendedAction: 'Expire the request or contact the customer before it stays visible to Partners.',
     });
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
     flags.push({
-      label: 'First-pick partner has not replied yet',
+      label: 'First-pick Partner has not replied yet',
       severity: 'medium',
       priority: 61,
       recommendedAction:
-        'Ask the first-pick partner to reply or prepare marketplace matching for the customer.',
+        'Ask the first-pick Partner to reply or prepare marketplace matching for the customer.',
     });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     flags.push({
-      label: 'No partner participation yet',
+      label: 'No Partner participation yet',
       severity: 'medium',
       priority: 58,
       recommendedAction:
-        'Check nearby partner supply and widen marketplace matching if the customer is waiting.',
+        'Check nearby Partner supply and widen marketplace matching if the customer is waiting.',
     });
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
@@ -5868,7 +5868,7 @@ function bookingFlags(booking: AdminBooking) {
       label: 'Matched booking has no chat room',
       severity: 'high',
       priority: 88,
-      recommendedAction: 'Create or repair the chat room so customer and partner can coordinate.',
+      recommendedAction: 'Create or repair the chat room so customer and Partner can coordinate.',
     });
   }
   if (
@@ -5882,7 +5882,7 @@ function bookingFlags(booking: AdminBooking) {
       label: 'Chat room is ready but still quiet',
       severity: 'low',
       priority: 30,
-      recommendedAction: 'Monitor the room and nudge the partner if service start is approaching.',
+      recommendedAction: 'Monitor the room and nudge the Partner if service start is approaching.',
     });
   }
 
@@ -5929,7 +5929,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
     policyMetric(
       settingByKey(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes),
       'Response window',
-      'First-pick partner first reply timer.',
+      'First-pick Partner first reply timer.',
     ),
     policyMetric(
       settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
@@ -5939,7 +5939,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
     policyMetric(
       settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit),
       'Marketplace invite cap',
-      'Nearest eligible partners opened for marketplace participation.',
+      'Nearest eligible Partners opened for marketplace participation.',
     ),
     policyMetric(
       settingByKey(OPERATIONAL_POLICY_KEYS.travelBufferMinutes),
