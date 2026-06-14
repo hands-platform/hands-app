@@ -54,18 +54,18 @@ describe('bookingNextOperatorActionFromFacts', () => {
 
   it('builds status actions in operator order', () => {
     expect(bookingNextOperatorActionFromFacts(buildInput({ status: 'NO_SHOW' }))).toBe(
-      'Record customer and partner notes, then close payment and safety follow-up.',
+      'Record Customer and Partner notes, then close payment and safety follow-up.',
     );
     expect(bookingNextOperatorActionFromFacts(buildInput({ status: 'EXPIRED' }))).toBe(
-      'Release the hold, notify the customer, and confirm no partner remains assigned.',
+      'Release the hold, notify the customer, and confirm no Partner remains assigned.',
     );
     expect(
       bookingNextOperatorActionFromFacts(
         buildInput({ firstPickPending: true, status: 'OPEN_MATCHING' }),
       ),
-    ).toBe('Monitor the first-pick partner response window and prepare marketplace partner options.');
+    ).toBe('Monitor the first-pick Partner response window and prepare marketplace Partner options.');
     expect(bookingNextOperatorActionFromFacts(buildInput({ status: 'OPEN_MATCHING' }))).toBe(
-      'Check nearby partner supply and notification delivery until the customer has options.',
+      'Check nearby Partner supply and notification delivery until the customer has options.',
     );
     expect(
       bookingNextOperatorActionFromFacts(
@@ -76,7 +76,7 @@ describe('bookingNextOperatorActionFromFacts', () => {
 
   it('falls through to location, in-service, flag fallback, and default actions', () => {
     expect(bookingNextOperatorActionFromFacts(buildInput({ locationNeedsOps: true }))).toBe(
-      'Ask the partner to refresh location once; use last-known location only, no live routing.',
+      'Ask the Partner to refresh location once; use last-known location only, no live routing.',
     );
     expect(bookingNextOperatorActionFromFacts(buildInput({ status: 'IN_SERVICE' }))).toBe(
       'Monitor completion timing and prepare payment capture or cash fee ledger closeout.',
@@ -85,7 +85,7 @@ describe('bookingNextOperatorActionFromFacts', () => {
       bookingNextOperatorActionFromFacts(buildInput({ flagTitle: 'Matched without chat' })),
     ).toBe('Review matched without chat and add an ops note before closing.');
     expect(bookingNextOperatorActionFromFacts(buildInput())).toBe(
-      'Keep watching status, chat, and partner handoff.',
+      'Keep watching status, chat, and Partner handoff.',
     );
   });
 

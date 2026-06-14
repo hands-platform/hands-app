@@ -15,18 +15,18 @@ const closeoutAction =
   'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
 const paymentAction =
   'Open the booking payment panel and decide capture, release, refund, cash debt, or missing reference handling.';
-const noShowAction = 'Record customer and partner notes, then close payment and safety follow-up.';
-const expiredAction = 'Release the hold, notify the customer, and confirm no partner remains assigned.';
+const noShowAction = 'Record Customer and Partner notes, then close payment and safety follow-up.';
+const expiredAction = 'Release the hold, notify the customer, and confirm no Partner remains assigned.';
 const firstPickAction =
-  'Monitor the first-pick partner response window and prepare marketplace partner options.';
+  'Monitor the first-pick Partner response window and prepare marketplace Partner options.';
 const openMatchingAction =
-  'Check nearby partner supply and notification delivery until the customer has options.';
+  'Check nearby Partner supply and notification delivery until the customer has options.';
 const chatRepairAction = 'Create or repair chat handoff before the service moves forward.';
 const locationAction =
-  'Ask the partner to refresh location once; use last-known location only, no live routing.';
+  'Ask the Partner to refresh location once; use last-known location only, no live routing.';
 const inServiceAction =
   'Monitor completion timing and prepare payment capture or cash fee ledger closeout.';
-const defaultAction = 'Keep watching status, chat, and partner handoff.';
+const defaultAction = 'Keep watching status, chat, and Partner handoff.';
 
 export function bookingNextOperatorActionFromFacts(input: BookingNextOperatorActionInput) {
   const paymentActionCopy = bookingPaymentOperatorAction(input);

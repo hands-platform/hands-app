@@ -137,7 +137,7 @@ export function BookingDetailToolbar({
         )}
         {finalPartnerId && (
           <Link className="text-link" href={`/partners/${finalPartnerId}`}>
-            Open partner
+            Open Partner
           </Link>
         )}
         {finalPartnerId && (

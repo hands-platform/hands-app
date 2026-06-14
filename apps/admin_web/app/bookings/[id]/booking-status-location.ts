@@ -27,7 +27,7 @@ export function bookingStatusHint(status: string) {
     return 'Matching closed; confirm payment release and customer communication.';
   }
   if (status === 'NO_SHOW') {
-    return 'Review customer/partner communication and payment outcome.';
+    return 'Review Customer/Partner communication and payment outcome.';
   }
   return 'Monitor the next operational action.';
 }

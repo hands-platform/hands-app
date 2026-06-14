@@ -124,11 +124,11 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
         id: `${createdAt ?? 'batch'}-${stage}-${index}`,
         createdAtTime: createdAt ? Date.parse(createdAt) : 0,
         signal: notifiedCount > 0 ? 'Marketplace invited' : 'No marketplace sent',
-        title: `${humanizeNotificationType(stage)} / ${notifiedCount} partner(s)`,
+        title: `${humanizeNotificationType(stage)} / ${notifiedCount} Partner(s)`,
         notifiedCountLabel: `${notifiedCount}`,
         detail:
           notifiedCount > 0
-            ? `${notifiedCount} partner(s) were sent marketplace availability alerts.`
+            ? `${notifiedCount} Partner(s) were sent marketplace availability alerts.`
             : 'The marketplace batch ran, but no eligible partner was available under the saved policy.',
         meta: [
           createdAt ? `created ${formatDate(createdAt)}` : null,
@@ -144,9 +144,15 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
     })
     .filter((value): value is NonNullable<typeof value> => Boolean(value))
     .sort((left, right) => right.createdAtTime - left.createdAtTime)
-    .map(({ createdAtTime: _createdAtTime, ...batch }) => {
-      return batch;
-    });
+    .map((batch) => ({
+      id: batch.id,
+      signal: batch.signal,
+      title: batch.title,
+      notifiedCountLabel: batch.notifiedCountLabel,
+      detail: batch.detail,
+      meta: batch.meta,
+      providers: batch.providers,
+    }));
 }
 
 export function bookingNotificationTraceRow(notification: AdminNotification) {

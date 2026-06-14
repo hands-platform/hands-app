@@ -52,9 +52,9 @@ export function bookingOperationalPolicySnapshot(
     customerConfirmMode && customerChoiceCandidates.length > 0 && !selected ? 'pill-warn' : 'pill-success';
   const decisionDetail = customerConfirmMode
     ? customerChoiceCandidates.length > 0 && !selected
-      ? 'A partner participated or accepted, but the customer still needs to confirm the final partner before matched chat opens.'
-      : 'Preferred partner acceptance keeps the request open until the customer confirms the final partner.'
-    : 'Preferred partner acceptance immediately locks the booking to that partner.';
+      ? 'A Partner participated or accepted, but the customer still needs to confirm the final Partner before matched chat opens.'
+      : 'Preferred Partner acceptance keeps the request open until the customer confirms the final Partner.'
+    : 'Preferred Partner acceptance immediately locks the booking to that Partner.';
 
   return {
     decisionTitle,
@@ -68,8 +68,8 @@ export function bookingOperationalPolicySnapshot(
         label: 'Marketplace participation',
         helper:
           String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'
-            ? 'Marketplace partners are hidden until the preferred partner window passes, but open immediately if that partner declines.'
-            : 'Eligible nearby partners can participate while the preferred partner is still deciding.',
+            ? 'Marketplace Partners are hidden until the preferred Partner window passes, but open immediately if that Partner declines.'
+            : 'Eligible nearby Partners can participate while the preferred Partner is still deciding.',
         enforced: true,
       }),
       bookingPolicyDecisionCard({
@@ -205,7 +205,7 @@ export function bookingOperationalPolicySnapshot(
         helper: bookingPolicySnapshotHelper(
           savedMatchingPolicy.backupProviderLocationMaxAgeMinutes,
           backupLocationFreshness,
-          'Marketplace partners with older locations cannot participate.',
+          'Marketplace Partners with older locations cannot participate.',
         ),
       },
       {
@@ -223,7 +223,7 @@ export function bookingOperationalPolicySnapshot(
         label: 'Accept mode',
         value: bookingPolicySnapshotOptionLabel(savedMatchingPolicy.preferredAcceptMode, acceptMode),
         helper: selected
-          ? `Booking has a final partner. ${bookingPolicySnapshotHelper(
+          ? `Booking has a final Partner. ${bookingPolicySnapshotHelper(
               savedMatchingPolicy.preferredAcceptMode,
               acceptMode,
               'Live policy default.',

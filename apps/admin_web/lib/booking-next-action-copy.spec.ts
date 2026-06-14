@@ -77,7 +77,7 @@ describe('bookingNextActionCopy', () => {
     ],
     [
       { status: 'MATCHED', backupSelected: true },
-      'Customer switched away from the first-pick partner. Confirm chat, route, and partner handoff.',
+      'Customer switched away from the first-pick Partner. Confirm chat, route, and Partner handoff.',
     ],
     [
       { status: 'MATCHED' },

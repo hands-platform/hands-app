@@ -163,7 +163,7 @@ export function BookingCustomerWaitPanelSection({
         <div>
           <h2>Customer wait and matching decision</h2>
           <p className="muted">
-            First-pick timer, marketplace partner participation, customer final choice, and chat handoff in one
+            First-pick timer, marketplace Partner participation, customer final choice, and chat handoff in one
             operating view.
           </p>
         </div>
@@ -419,7 +419,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
             <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
           <Link className="text-link" href="/partners">
-            Open partners
+            Open Partners
           </Link>
         </div>
       </div>

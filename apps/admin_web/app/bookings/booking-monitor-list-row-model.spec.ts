@@ -17,7 +17,7 @@ describe('buildBookingMonitorListRow', () => {
     expect(row.booking).toBe(booking);
     expect(row.stage.key).toBe('first-pick');
     expect(row.nextActionLabel).toBe('Check notifications and nearby partner supply.');
-    expect(row.selection.label).toBe('No first-pick partner');
+    expect(row.selection.label).toBe('No first-pick Partner');
     expect(row.serviceOptionLabel).toBe('Service pending');
   });
 });

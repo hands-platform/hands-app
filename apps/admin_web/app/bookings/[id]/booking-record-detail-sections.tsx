@@ -179,7 +179,7 @@ export function BookingRecordDetailSections({
             <h2>Partner handoff</h2>
             {finalPartnerId ? (
               <Link className="text-link" href={`/partners/${finalPartnerId}`}>
-                Open partner record
+                Open Partner record
               </Link>
             ) : (
               <span className="pill pill-neutral">Partner record link pending</span>
@@ -235,7 +235,7 @@ export function BookingRecordDetailSections({
               </div>
             ))}
             {locationTrailRows.length === 0 && (
-              <p className="muted">No partner location snapshots linked to this booking yet.</p>
+              <p className="muted">No Partner location snapshots linked to this booking yet.</p>
             )}
           </div>
         </div>
@@ -373,7 +373,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
                   <p className="muted">{row.identity}</p>
                   {row.href && (
                     <Link className="text-link" href={row.href}>
-                      Open partner record
+                      Open Partner record
                     </Link>
                   )}
                 </td>
@@ -413,7 +413,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
             ))}
             {participantLedger.rows.length === 0 && (
               <tr>
-                <td colSpan={5}>No partner participation has been recorded for this booking yet.</td>
+                <td colSpan={5}>No Partner participation has been recorded for this booking yet.</td>
               </tr>
             )}
           </tbody>

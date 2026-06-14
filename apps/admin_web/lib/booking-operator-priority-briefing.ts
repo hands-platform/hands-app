@@ -94,10 +94,10 @@ export function bookingOperatorPriorityBriefing(input: BookingOperatorPriorityBr
       {
         id: 'priority-handoff',
         label: '2',
-        title: input.hasFinalPartner ? 'Confirm partner handoff' : 'Keep partner choice visible',
+        title: input.hasFinalPartner ? 'Confirm Partner handoff' : 'Keep Partner choice visible',
         detail: input.hasFinalPartner
           ? `${input.partnerLabel} is linked. Confirm chat, service pin, and payment handoff are visible.`
-          : 'Customer choice is still pending. Keep the shortlist, partner alerts, and marketplace window easy to audit.',
+          : 'Customer choice is still pending. Keep the shortlist, Partner alerts, and marketplace window easy to audit.',
         href: '#booking-handoff-checklist',
         linkLabel: 'Open handoff',
       },

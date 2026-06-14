@@ -29,9 +29,9 @@ describe('booking stage snapshot', () => {
     );
 
     expect(snapshot).toMatchObject({
-      stage: 'Stage 4 - Final partner repair',
+      stage: 'Stage 4 - Final Partner repair',
       pillClass: 'pill-danger',
-      actionLabel: 'Repair final partner',
+      actionLabel: 'Repair final Partner',
     });
     expect(snapshot.badges.at(-1)).toMatchObject({
       label: 'Not selected',

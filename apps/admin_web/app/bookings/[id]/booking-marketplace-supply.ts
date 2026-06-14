@@ -104,7 +104,7 @@ export function bookingMarketplacePartnerSupply(
             provider.id === selectedProviderId
               ? 'Selected partner'
               : provider.id === preferredProviderId
-                ? 'Preferred partner'
+                ? 'Preferred Partner'
                 : participantProviderIds.has(provider.id)
                   ? 'Shortlist partner'
                   : 'Marketplace candidate';
@@ -223,7 +223,7 @@ export function bookingMarketplacePartnerSupply(
         label: 'Invite cap',
         value: invitationLimit.toString(),
         helper:
-          'Nearest eligible marketplace partners opened for this request before notifications are created.',
+          'Nearest eligible marketplace Partners opened for this request before notifications are created.',
       },
     ],
   };
@@ -325,8 +325,8 @@ function bookingMarketplaceCandidateCommand(input: {
     return {
       status: 'SUPPLY READY',
       tone: 'pill-success',
-      title: 'This booking has usable marketplace partner supply',
-      detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer choice list under current policy.`,
+      title: 'This booking has usable marketplace Partner supply',
+      detail: `${input.eligibleCount} Partner(s) can be nudged or exposed to the customer choice list under current policy.`,
       href: '/partners?review=marketplace-ready',
       action: 'Open marketplace-ready',
     };
@@ -356,10 +356,10 @@ function bookingMarketplaceCandidateCommand(input: {
   return {
     status: 'NO SUPPLY',
     tone: 'pill-danger',
-    title: 'No partner supply is available for this booking',
+    title: 'No Partner supply is available for this booking',
     detail:
       'Escalate to support, confirm service location, or prepare customer cancellation/refund handling.',
     href: '/partners',
-    action: 'Open partners',
+    action: 'Open Partners',
   };
 }

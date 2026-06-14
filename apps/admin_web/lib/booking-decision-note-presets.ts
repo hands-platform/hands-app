@@ -92,7 +92,7 @@ export function bookingDecisionNotePresets(
       title: 'Operator context not recorded yet',
       detail: 'Use when support has reviewed the booking and needs to leave a factual handling note.',
       preset:
-        'Operator context note: booking reviewed for current status, customer/partner handoff, chat, payment, and closeout readiness.',
+        'Operator context note: booking reviewed for current status, customer/Partner handoff, chat, payment, and closeout readiness.',
     });
   }
 

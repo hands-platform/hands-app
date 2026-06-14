@@ -42,16 +42,16 @@ export function bookingOpsSignalState(input: BookingOpsSignalStateInput): Bookin
     return opsSignalState('warn', 'Cash fee debt');
   }
   if (status === 'OPEN_MATCHING' && input.firstPickPending()) {
-    return opsSignalState('warn', 'First-pick partner pending');
+    return opsSignalState('warn', 'First-pick Partner pending');
   }
   if (status === 'OPEN_MATCHING' && input.marketplaceParticipantCount === 0) {
-    return opsSignalState('warn', 'No marketplace partners yet');
+    return opsSignalState('warn', 'No marketplace Partners yet');
   }
   if (status === 'OPEN_MATCHING' && input.marketplaceParticipantCount > 0) {
     return opsSignalState('info', 'Marketplace options ready');
   }
   if (status === 'MATCHED' && input.backupSelected()) {
-    return opsSignalState('info', 'Marketplace partner selected');
+    return opsSignalState('info', 'Marketplace Partner selected');
   }
   if (status === 'MATCHED' && !input.matchingChatReady()) {
     return opsSignalState('warn', 'Chat missing');

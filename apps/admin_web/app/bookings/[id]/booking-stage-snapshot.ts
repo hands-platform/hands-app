@@ -71,37 +71,37 @@ export function bookingStageSnapshot(
     actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
     actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
   } else if (status === 'MATCHED' && !hasFinalPartner) {
-    stage = 'Stage 4 - Final partner repair';
+    stage = 'Stage 4 - Final Partner repair';
     pillClass = 'pill-danger';
     noteClassName = 'ops-task-blocked';
-    headline = 'Booking is matched, but no customer final partner is recorded.';
+    headline = 'Booking is matched, but no customer final Partner is recorded.';
     detail = 'Repair the booking record before chat, finance, payout, or closeout decisions rely on this match.';
     actionHref = `/bookings/${booking.id}#participants`;
-    actionLabel = 'Repair final partner';
+    actionLabel = 'Repair final Partner';
   } else if (hasFinalPartner && chatReady) {
     stage = 'Stage 4 - Chat handoff';
     pillClass = 'pill-success';
     noteClassName = 'ops-task-done';
-    headline = 'Final partner is selected and chat is available.';
+    headline = 'Final Partner is selected and chat is available.';
     detail =
       locationFreshness === 'recent'
         ? 'Chat and location handoff are live; monitor arrival, service start, completion, and payment closeout.'
-        : 'Chat is ready; ask the partner to refresh location if the customer needs approach visibility.';
+        : 'Chat is ready; ask the Partner to refresh location if the customer needs approach visibility.';
     actionHref = `/bookings/${booking.id}#chat`;
     actionLabel = 'Review chat';
   } else if (hasFinalPartner && !chatReady) {
     stage = 'Stage 4 - Handoff repair';
     pillClass = 'pill-danger';
     noteClassName = 'ops-task-blocked';
-    headline = 'A final partner exists, but the chat handoff is missing.';
-    detail = 'Repair the chat room before the customer and partner lose coordination after match.';
+    headline = 'A final Partner exists, but the chat handoff is missing.';
+    detail = 'Repair the chat room before the customer and Partner lose coordination after match.';
     actionHref = `/bookings/${booking.id}#chat`;
     actionLabel = 'Repair chat';
   } else if (status === 'OPEN_MATCHING' && customerSelectionAvailable) {
     stage = 'Stage 3 - Customer choice';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
-    headline = 'Participating or accepted partner(s) are waiting for customer final selection.';
+    headline = 'Participating or accepted Partner(s) are waiting for customer final selection.';
     detail = customerWaitPanel.detail;
     actionHref = `/bookings/${booking.id}#participants`;
     actionLabel = 'Review shortlist';
@@ -109,16 +109,16 @@ export function bookingStageSnapshot(
     stage = 'Stage 2 - Marketplace participation';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
-    headline = 'The marketplace partner window has usable supply.';
-    detail = `${marketplaceSupply.eligibleCount} partner(s) can participate or be nudged while the customer waits.`;
+    headline = 'The marketplace Partner window has usable supply.';
+    detail = `${marketplaceSupply.eligibleCount} Partner(s) can participate or be nudged while the customer waits.`;
     actionHref = '/partners?review=marketplace-ready';
-    actionLabel = 'Open marketplace partners';
+    actionLabel = 'Open marketplace Partners';
   } else if (status === 'OPEN_MATCHING') {
     stage = 'Stage 1 - First-pick response';
     pillClass = customerPinReady ? 'pill-info' : 'pill-danger';
     noteClassName = customerPinReady ? 'ops-task-pending' : 'ops-task-blocked';
     headline = customerPinReady
-      ? 'Preferred partner is still in the first response window.'
+      ? 'Preferred Partner is still in the first response window.'
       : 'Service address pin is missing, so radius matching is not reliable.';
     detail = customerPinReady
       ? customerWaitPanel.detail
@@ -144,11 +144,11 @@ export function bookingStageSnapshot(
         helper: bookingStatusHint(status),
       },
       {
-        label: 'Preferred partner',
+        label: 'Preferred Partner',
         value: providerName(booking.preferredProvider),
         helper: preferredParticipant
           ? `Partner response: ${preferredParticipant.status}.`
-          : 'No partner response recorded yet.',
+          : 'No Partner response recorded yet.',
       },
       {
         label: 'Shortlist',

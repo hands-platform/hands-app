@@ -46,10 +46,10 @@ describe('bookingOpsSignalState', () => {
     });
     expect(
       bookingOpsSignalState(input({ firstPickPending: () => true, status: 'OPEN_MATCHING' })),
-    ).toEqual({ label: 'First-pick partner pending', tone: 'warn' });
+    ).toEqual({ label: 'First-pick Partner pending', tone: 'warn' });
     expect(
       bookingOpsSignalState(input({ marketplaceParticipantCount: 0, status: 'OPEN_MATCHING' })),
-    ).toEqual({ label: 'No marketplace partners yet', tone: 'warn' });
+    ).toEqual({ label: 'No marketplace Partners yet', tone: 'warn' });
     expect(
       bookingOpsSignalState(input({ marketplaceParticipantCount: 2, status: 'OPEN_MATCHING' })),
     ).toEqual({ label: 'Marketplace options ready', tone: 'info' });
@@ -57,7 +57,7 @@ describe('bookingOpsSignalState', () => {
 
   it('summarizes matched handoff states and normal fallback', () => {
     expect(bookingOpsSignalState(input({ backupSelected: () => true, status: 'MATCHED' }))).toEqual({
-      label: 'Marketplace partner selected',
+      label: 'Marketplace Partner selected',
       tone: 'info',
     });
     expect(bookingOpsSignalState(input({ matchingChatReady: () => false, status: 'MATCHED' }))).toEqual({

@@ -325,7 +325,7 @@ export function BookingOperatingSnapshotSection({
         <div>
           <h2>Booking operating snapshot</h2>
           <p className="muted">
-            Same-shift control view for the confirmed address, customer choice, partner participation, chat,
+            Same-shift control view for the confirmed address, customer choice, Partner participation, chat,
             payment, wallet, and next operator action.
           </p>
         </div>
@@ -366,7 +366,7 @@ export function BookingOperatingTimelineSection({
         <div>
           <h2>Operating timeline</h2>
           <p className="muted">
-            Time-ordered operating trail for address confirmation, partner participation, customer final choice,
+            Time-ordered operating trail for address confirmation, Partner participation, customer final choice,
             chat, location, payment, wallet, tax, fee, and audit events.
           </p>
         </div>
@@ -438,7 +438,7 @@ export function BookingCommunicationMovementHandoffSection({
         <div>
           <h2>Communication and movement handoff</h2>
           <p className="muted">
-            Focused booking trail for chat archive, customer/partner alerts, and partner location sharing. This
+            Focused booking trail for chat archive, Customer/Partner alerts, and Partner location sharing. This
             helps support confirm whether the assigned partner and customer are connected.
           </p>
         </div>
@@ -479,7 +479,7 @@ export function BookingCommunicationMovementHandoffSection({
             </div>
           ))
         ) : (
-          <p className="muted">No chat, alert, or partner location event has been recorded yet.</p>
+          <p className="muted">No chat, alert, or Partner location event has been recorded yet.</p>
         )}
       </div>
     </section>

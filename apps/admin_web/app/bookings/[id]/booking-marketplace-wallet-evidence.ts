@@ -58,14 +58,14 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Customer final choice',
         value: finalPartner ? providerName(finalPartner) : 'Not selected',
         helper: finalPartner
-          ? 'Customer-selected final partner is stored on this booking.'
+          ? 'Customer-selected final Partner is stored on this booking.'
           : 'Operators do not auto-assign; customer choice is still required.',
         href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
       },
       {
         label: 'Marketplace policy',
         value: formatDistanceMeters(marketplaceSupply.radiusMeters),
-        helper: `${marketplaceSupply.eligibleCount} currently eligible partner(s) by booking address.`,
+        helper: `${marketplaceSupply.eligibleCount} currently eligible Partner(s) by booking address.`,
         href: '#marketplace-supply',
       },
       {
@@ -101,10 +101,10 @@ export function bookingMarketplaceWalletEvidence({
         href: '#participants',
       },
       {
-        label: 'Customer final partner',
+        label: 'Customer final Partner',
         value: finalPartner ? providerName(finalPartner) : 'Pending customer choice',
         helper:
-          'No automatic assignment. The final partner must come from the customer selection record.',
+          'No automatic assignment. The final Partner must come from the customer selection record.',
         href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
       },
       {
@@ -130,7 +130,7 @@ export function bookingMarketplaceWalletEvidence({
     rows: [
       {
         lane: 'Participation ledger',
-        scope: 'Only actual participating, accepted, rejected, or final partner rows are stored as participants.',
+        scope: 'Only actual participating, accepted, rejected, or final Partner rows are stored as participants.',
         status: `${participants.length} participant row(s)`,
         tone: participants.length ? 'pill-info' : 'pill-neutral',
         record: participants.length
@@ -138,7 +138,7 @@ export function bookingMarketplaceWalletEvidence({
               .slice(0, 4)
               .map((participant) => `${providerName(participant.providerProfile)} ${participant.status}`)
               .join(' / ')
-          : 'No partner participation has been recorded for this booking yet.',
+          : 'No Partner participation has been recorded for this booking yet.',
         operatorUse:
           'Use this lane to confirm who actually entered the customer choice list. Wallet-blocked view attempts are not stored here.',
       },
@@ -151,23 +151,23 @@ export function bookingMarketplaceWalletEvidence({
           excludedMarketplaceRows
         } excluded by current evidence.`,
         operatorUse:
-          'Use this lane to explain why marketplace partner supply is available or why operations may need location/policy review.',
+          'Use this lane to explain why marketplace Partner supply is available or why operations may need location/policy review.',
       },
       {
         lane: 'Customer final choice',
-        scope: 'HANDS does not automatically assign the final partner.',
+        scope: 'HANDS does not automatically assign the final Partner.',
         status: finalPartner ? 'Recorded' : customerChoiceCandidates.length ? 'Pending' : 'Waiting',
         tone: finalPartner ? 'pill-success' : customerChoiceCandidates.length ? 'pill-warn' : 'pill-info',
         record: finalPartner
           ? providerName(finalPartner)
-          : `${customerChoiceCandidates.length} customer-selectable partner(s), ${participants.length} participant row(s).`,
+          : `${customerChoiceCandidates.length} customer-selectable Partner(s), ${participants.length} participant row(s).`,
         operatorUse:
           'Use this lane to confirm that the customer, not the system, created the final match before chat and service handoff.',
       },
       {
         lane: 'Wallet settlement gate',
         scope:
-          'Negative partner wallet keeps marketplace requests visible and participation open, but final acceptance and service start wait for settlement.',
+          'Negative Partner wallet keeps marketplace requests visible and participation open, but final acceptance and service start wait for settlement.',
         status: walletDebt ? 'Settlement needed' : 'Clear',
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,

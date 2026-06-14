@@ -47,7 +47,7 @@ export function bookingMonitorSummaryRows(input: {
     ['Stage 3 customer choice', stageCounts.get('customer-choice') ?? 0],
     ['Stage 4 handoff repair', stageCounts.get('handoff-repair') ?? 0],
     [
-      'No partners yet',
+      'No Partners yet',
       countWhere(
         input.bookings,
         (booking) => booking.status === 'OPEN_MATCHING' && booking.participantCount === 0,

@@ -30,7 +30,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
         <span className="pill pill-info">Participant rows only</span>
         <span className="pill pill-warn">Blocked wallet joins are not participant records</span>
         <span className="pill">Partners may view marketplace requests before join gate</span>
-        <span className="pill">Customer-selected final partner only</span>
+        <span className="pill">Customer-selected final Partner only</span>
         <span className="pill">No automatic final assignment</span>
         {marketplaceLedgerPills.map((pill) => (
           <span className={`pill ${pill.tone}`} key={pill.label}>

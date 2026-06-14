@@ -80,7 +80,7 @@ function BookingChatRepairSection({
       <div>
         <h2>Chat room repair</h2>
         <p className="muted">
-          Create a retained customer-partner chat room only after a final partner exists. This is an
+          Create a retained customer-Partner chat room only after a final Partner exists. This is an
           operator command, not automatic assignment.
         </p>
       </div>

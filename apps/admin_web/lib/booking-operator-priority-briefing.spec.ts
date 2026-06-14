@@ -76,9 +76,9 @@ describe('bookingOperatorPriorityBriefing', () => {
     });
 
     expect(briefing.steps[1]).toMatchObject({
-      title: 'Keep partner choice visible',
+      title: 'Keep Partner choice visible',
       detail:
-        'Customer choice is still pending. Keep the shortlist, partner alerts, and marketplace window easy to audit.',
+        'Customer choice is still pending. Keep the shortlist, Partner alerts, and marketplace window easy to audit.',
     });
   });
 

@@ -17,7 +17,7 @@ export function marketplaceParticipantLedgerBoundaryCopy() {
       'Actual participant rows only',
       'Negative wallet blocks final acceptance and service start',
       'No view-only activity log',
-      'Customer-selected final partner only',
+      'Customer-selected final Partner only',
       'No automatic final assignment',
     ],
   };

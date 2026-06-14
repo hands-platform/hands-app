@@ -98,14 +98,14 @@ export function bookingMvpAuthorityContract({
     },
     {
       contract: 'First-pick window',
-      scope: 'Preferred partner response',
+      scope: 'Preferred Partner response',
       status: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred partner',
       tone: booking.preferredProvider ? 'pill-info' : 'pill-warn',
       evidence: booking.preferredProvider
         ? `${providerName(booking.preferredProvider)} / expires ${
             booking.expiresAt ? formatDate(booking.expiresAt) : 'not saved'
           }`
-        : 'The booking has no first-pick partner record.',
+        : 'The booking has no first-pick Partner record.',
       operatorUse:
         'Preferred Partner can become final if validly accepted first; otherwise customer reviews selectable participants.',
       href: '#customer-wait-panel',
@@ -131,7 +131,7 @@ export function bookingMvpAuthorityContract({
       tone: selectedPartner ? 'pill-success' : selectablePartnerCount ? 'pill-warn' : 'pill-info',
       evidence: selectedPartner
         ? providerName(selectedPartner)
-        : `${selectablePartnerCount} customer-selectable partner(s), ${booking.participants?.length ?? 0} participant(s).`,
+        : `${selectablePartnerCount} customer-selectable Partner(s), ${booking.participants?.length ?? 0} participant(s).`,
       operatorUse:
         'Do not auto-assign; customer choice is required unless first-pick validly accepts first through the API.',
       href: '#participants',

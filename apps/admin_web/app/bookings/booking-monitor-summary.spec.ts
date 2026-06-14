@@ -77,7 +77,7 @@ describe('booking monitor summary helpers', () => {
     expect(rows['Stage 1 first-pick']).toBe('1');
     expect(rows['Stage 2 marketplace']).toBe('1');
     expect(rows['Stage 4 handoff repair']).toBe('1');
-    expect(rows['No partners yet']).toBe('1');
+    expect(rows['No Partners yet']).toBe('1');
     expect(rows['First-pick pending']).toBe('1');
     expect(rows['Marketplace options']).toBe('1');
     expect(rows['Marketplace selected']).toBe('1');

@@ -102,7 +102,7 @@ describe('booking MVP authority contract', () => {
 
     expect(rows.find((row) => row.contract === 'Final Partner connection')).toMatchObject({
       status: 'Customer choice pending',
-      evidence: '3 customer-selectable partner(s), 0 participant(s).',
+      evidence: '3 customer-selectable Partner(s), 0 participant(s).',
       operatorUse:
         'Do not auto-assign; customer choice is required unless first-pick validly accepts first through the API.',
     });

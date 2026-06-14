@@ -77,7 +77,7 @@ export function buildBookingActivityRecords({
       type: 'MATCHING',
       at: booking.openedAt,
       title: 'Matching opened',
-      detail: `Preferred partner ${providerName(booking.preferredProvider)} / expires ${formatDate(booking.expiresAt)}`,
+      detail: `Preferred Partner ${providerName(booking.preferredProvider)} / expires ${formatDate(booking.expiresAt)}`,
       href: '#alerts',
     });
   }
@@ -364,12 +364,12 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
       value: count((record) =>
         ['BOOKING', 'MATCHING', 'MATCHED', 'SCHEDULE', 'PARTNER'].includes(record.type),
       ).toString(),
-      helper: 'Booking creation, wait window, partner participation, and final selection.',
+      helper: 'Booking creation, wait window, Partner participation, and final selection.',
     },
     {
       label: 'Chat',
       value: count((record) => record.type === 'CHAT').toString(),
-      helper: 'Loaded customer and partner messages kept for admin archive.',
+      helper: 'Loaded Customer and Partner messages kept for admin archive.',
     },
     {
       label: 'Finance',

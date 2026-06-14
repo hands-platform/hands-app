@@ -41,7 +41,7 @@ describe('bookingMonitorSelectionFromFacts', () => {
     expect(
       bookingMonitorSelectionFromFacts(facts({ hasPreferredProvider: false, marketplaceCount: 2 })),
     ).toEqual({
-      label: 'No first-pick partner',
+      label: 'No first-pick Partner',
       pathLabel: 'Open pool request with marketplace supply',
       toneClass: 'pill-neutral',
     });
@@ -49,29 +49,29 @@ describe('bookingMonitorSelectionFromFacts', () => {
     expect(
       bookingMonitorSelectionFromFacts(facts({ firstPickPending: true, marketplaceCount: 1 })),
     ).toEqual({
-      label: 'First-pick partner pending',
-      pathLabel: 'Direct request first, with marketplace partners already waiting',
+      label: 'First-pick Partner pending',
+      pathLabel: 'Direct request first, with marketplace Partners already waiting',
       toneClass: 'pill-warn',
     });
   });
 
   it('describes backup, matched, and declined selection states', () => {
     expect(bookingMonitorSelectionFromFacts(facts({ isBackupSelected: true }))).toEqual({
-      label: 'Marketplace partner selected',
-      pathLabel: 'Direct request escalated to marketplace participation, then the guest chose a marketplace partner',
+      label: 'Marketplace Partner selected',
+      pathLabel: 'Direct request escalated to marketplace participation, then the guest chose a marketplace Partner',
       toneClass: 'pill-neutral',
     });
 
     expect(bookingMonitorSelectionFromFacts(facts({ isMatched: true }))).toEqual({
-      label: 'Final partner selected',
-      pathLabel: 'Direct request confirmed by the first-pick partner',
+      label: 'Final Partner selected',
+      pathLabel: 'Direct request confirmed by the first-pick Partner',
       toneClass: 'pill-success',
     });
 
     expect(
       bookingMonitorSelectionFromFacts(facts({ preferredProviderState: 'declined' })),
     ).toEqual({
-      label: 'First-pick partner declined',
+      label: 'First-pick Partner declined',
       pathLabel: 'Direct request remains the active path',
       toneClass: 'pill-info',
     });

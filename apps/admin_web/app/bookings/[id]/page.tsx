@@ -523,7 +523,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       area: 'Location',
-      status: latestLocation ? 'Partner pin saved' : 'No partner pin',
+      status: latestLocation ? 'Partner pin saved' : 'No Partner pin',
       evidence: latestLocation
         ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
         : addressPin,
@@ -619,7 +619,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   });
   const manualDecisionEvidenceSummary = [
     messages.length > 0 ? `${messages.length} chat message(s)` : 'no chat messages',
-    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : 'no partner pin',
+    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : 'no Partner pin',
     notificationTrace.rows.length > 0
       ? `${notificationTrace.rows.length} alert row(s)`
       : 'no alert rows',
@@ -701,16 +701,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
       tone: booking.customerProfile?.id ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Preferred partner',
+      label: 'Preferred Partner',
       value: booking.preferredProvider?.id ? providerName(booking.preferredProvider) : 'Not selected',
-      detail: 'First-pick partner record and booking gate state.',
+      detail: 'First-pick Partner record and booking gate state.',
       href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : '#handoff',
       tone: booking.preferredProvider?.id ? 'pill-info' : 'pill-neutral',
     },
     {
-      label: 'Final partner',
+      label: 'Final Partner',
       value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Customer choice pending',
-      detail: 'Final selected partner, location, payout, and service records.',
+      detail: 'Final selected Partner, location, payout, and service records.',
       href: finalPartnerSummary.href,
       tone: finalPartnerSummary.selected ? 'pill-success' : 'pill-warn',
     },
@@ -993,21 +993,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#matching-rule-snapshot',
       label: 'Matching state',
       value: matchingRuleSnapshot.status,
-      detail: `${customerWaitPanel.signalStatus} / ${marketplaceSupply.eligibleCount} marketplace partner(s) in policy.`,
+      detail: `${customerWaitPanel.signalStatus} / ${marketplaceSupply.eligibleCount} marketplace Partner(s) in policy.`,
     },
     {
       href: finalPartnerSummary.href,
       label: 'Customer choice',
       value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Pending',
       detail: finalPartnerSummary.selected
-        ? 'Final partner exists; confirm chat handoff before service coordination.'
-        : 'Customer must choose the final partner before matched chat opens.',
+        ? 'Final Partner exists; confirm chat handoff before service coordination.'
+        : 'Customer must choose the final Partner before matched chat opens.',
     },
     {
       href: '#participants',
       label: 'Marketplace participants',
       value: `${participantCounts.marketplace} marketplace row(s)`,
-      detail: `${participantCounts.total} total participant row(s). Only actual partner participation rows are retained for this booking.`,
+      detail: `${participantCounts.total} total participant row(s). Only actual Partner participation rows are retained for this booking.`,
     },
     {
       href: '#chat',
@@ -1087,7 +1087,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     { label: 'Final', value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not selected' },
     { label: 'Final phone', value: booking.selectedProvider?.user?.phone ?? 'No phone' },
     {
-      label: 'Latest partner pin',
+      label: 'Latest Partner pin',
       value: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet',
     },
     {
@@ -1105,7 +1105,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
       : 'Not created',
     cashFeeDebtLabel: bookingCashDebtNeedsSettlement(booking)
-      ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`
+      ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / Partner blocked`
       : null,
     serviceFeedbackLabel: booking.review ? 'Submitted' : 'Not submitted',
   });
@@ -1301,7 +1301,7 @@ function bookingOperatorCommandQueue({
   latestLocation?: AdminLocationSnapshot;
 }) {
   const finalPartner = bookingFinalPartnerSummary(booking);
-  const partnerLabel = finalPartner.selected ? finalPartner.label : 'No final partner';
+  const partnerLabel = finalPartner.selected ? finalPartner.label : 'No final Partner';
   const pendingTasks = bookingOpsTaskCards(booking).filter((task) => task.status !== 'DONE');
 
   return buildBookingOperatorCommandQueue({
@@ -1492,14 +1492,14 @@ function bookingHandoffChecklist(
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
     : 'No payment record';
   const cashDebtLabel = bookingCashDebtNeedsSettlement(booking)
-    ? 'Cash fee debt must be settled before the partner participates in marketplace bookings again or receives payout release.'
+    ? 'Cash fee debt must be settled before the Partner participates in marketplace bookings again or receives payout release.'
     : 'No cash fee debt block on this booking.';
   const chatDetail = booking.chatRoom
     ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`
     : 'No chat room is linked yet. Matched or active bookings should create one.';
   const locationDetail = latestLocation
     ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
-    : 'No partner service location has been shared yet.';
+    : 'No Partner service location has been shared yet.';
 
   return [
     {
@@ -1513,7 +1513,7 @@ function bookingHandoffChecklist(
     {
       id: 'partner-response',
       label: 'Partner',
-      title: finalPartner.selected ? finalPartner.label : 'Waiting for partner response',
+      title: finalPartner.selected ? finalPartner.label : 'Waiting for Partner response',
       detail: `${participantCount} participant record(s) / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
       status: 'Customer shortlist',
       href: '#participants',
@@ -1521,10 +1521,10 @@ function bookingHandoffChecklist(
     {
       id: 'customer-choice',
       label: 'Choice',
-      title: finalPartner.selected ? 'Final partner selected' : 'Customer choice pending',
+      title: finalPartner.selected ? 'Final Partner selected' : 'Customer choice pending',
       detail: finalPartner.selected
-        ? `${finalPartner.label} is recorded as the final partner.`
-        : 'Keep the customer waiting screen synced with participating/accepted partner options.',
+        ? `${finalPartner.label} is recorded as the final Partner.`
+        : 'Keep the customer waiting screen synced with participating/accepted Partner options.',
       status: 'Customer screen',
       href: '#audit',
     },
@@ -1614,7 +1614,7 @@ function bookingCloseoutReadiness({
       status: partnerChoiceReady ? 'Partner choice state explainable' : 'Final partner missing',
       detail: finalPartner.selected
         ? `${finalPartner.label} / ${booking.participants?.length ?? 0} participant(s)`
-        : 'Customer has not selected a final partner yet.',
+        : 'Customer has not selected a final Partner yet.',
       owner: 'Dispatch',
       href: '#participants',
       ready: partnerChoiceReady,
@@ -1673,7 +1673,7 @@ function bookingCloseoutReadiness({
       status: locationReady ? 'Location state valid' : 'Partner location missing',
       detail: latestLocation
         ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
-        : 'No partner service pin is saved for this active booking.',
+        : 'No Partner service pin is saved for this active booking.',
       owner: 'Dispatch',
       href: '#location',
       ready: locationReady,
@@ -1784,8 +1784,8 @@ function bookingOperatingTimeline({
       type: 'MATCH',
       title: 'Matching window opened',
       detail: booking.preferredProvider
-        ? `First-pick partner: ${providerName(booking.preferredProvider)}.`
-        : 'No first-pick partner is attached to this booking.',
+        ? `First-pick Partner: ${providerName(booking.preferredProvider)}.`
+        : 'No first-pick Partner is attached to this booking.',
       at: booking.openedAt ?? booking.createdAt,
       status: 'Open',
     });
@@ -1796,7 +1796,7 @@ function bookingOperatingTimeline({
       id: `expires-${booking.id}`,
       type: 'TTL',
       title: 'Auto-close timer set',
-      detail: 'If no final partner is selected before this time, operations should close or follow up.',
+      detail: 'If no final Partner is selected before this time, operations should close or follow up.',
       at: booking.expiresAt,
       status: 'Timer',
     });
@@ -1841,8 +1841,8 @@ function bookingOperatingTimeline({
     addItem({
       id: `selected-${booking.selectedProvider.id ?? booking.id}`,
       type: 'SELECT',
-      title: 'Customer final partner selected',
-      detail: `${providerName(booking.selectedProvider)} is the final customer-selected partner.`,
+      title: 'Customer final Partner selected',
+      detail: `${providerName(booking.selectedProvider)} is the final customer-selected Partner.`,
       at: booking.updatedAt,
       status: 'Selected',
     });
@@ -1851,7 +1851,7 @@ function bookingOperatingTimeline({
       id: `selection-pending-${booking.id}`,
       type: 'SELECT',
       title: 'Customer final choice pending',
-      detail: 'Customer still needs to select one final partner before chat handoff.',
+      detail: 'Customer still needs to select one final Partner before chat handoff.',
       status: 'Pending',
     });
   }
@@ -1894,7 +1894,7 @@ function bookingOperatingTimeline({
     addItem({
       id: `location-${latestLocation.id}`,
       type: 'LOC',
-      title: 'Latest partner location shared',
+      title: 'Latest Partner location shared',
       detail: `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(
         booking,
       )}`,
@@ -1906,7 +1906,7 @@ function bookingOperatingTimeline({
       id: `location-missing-${booking.id}`,
       type: 'LOC',
       title: 'Partner location not shared',
-      detail: 'Active service state has no linked partner location snapshot.',
+      detail: 'Active service state has no linked Partner location snapshot.',
       status: 'Pending',
     });
   }
@@ -2137,8 +2137,8 @@ function bookingCommunicationMovementHandoff({
               status: 'Location check',
               tone: 'pill-info',
               noteClassName: 'ops-task-info',
-              nextAction: 'Ask partner to share current location',
-              nextDetail: 'The booking is active but no partner location snapshot is linked yet.',
+              nextAction: 'Ask Partner to share current location',
+              nextDetail: 'The booking is active but no Partner location snapshot is linked yet.',
               href: '#location',
               hrefLabel: 'Open location trail',
             }
@@ -2197,7 +2197,7 @@ function bookingCommunicationMovementHandoff({
         value: lastMessage ? formatDate(lastMessage.createdAt) : 'No message',
         helper: lastMessage
           ? `${messageSenderLabel(lastMessage)} / ${compactActivityText(lastMessage.body, 72)}`
-          : 'No customer or partner message yet.',
+          : 'No Customer or Partner message yet.',
       },
       {
         label: 'Booking alerts',
@@ -2218,14 +2218,14 @@ function bookingCommunicationMovementHandoff({
         value: providerLocationMetricValue(booking),
         helper:
           movementFreshness === 'missing'
-            ? 'No partner movement snapshot yet.'
+            ? 'No Partner movement snapshot yet.'
             : `${providerLocationMetricHelper(booking)} / ${coordinateLabel(latestLocation?.lat, latestLocation?.lng)}`,
       },
       {
         label: 'Movement rows',
         value: `${locationRows.length}`,
         helper: locationRows.length
-          ? 'Saved partner location snapshots linked to this booking.'
+          ? 'Saved Partner location snapshots linked to this booking.'
           : 'No movement row linked yet.',
       },
     ],
@@ -2310,22 +2310,22 @@ function bookingOperatingSnapshot({
         label: 'Customer final choice',
         value: compactActivityText(finalPartnerLabel, 34),
         helper: booking.selectedProvider
-          ? 'Customer-selected final partner is recorded.'
+          ? 'Customer-selected final Partner is recorded.'
           : 'Customer choice remains the source of truth.',
       },
       {
-        label: 'Preferred partner',
+        label: 'Preferred Partner',
         value: compactActivityText(providerName(booking.preferredProvider), 34),
         helper: preferredState
           ? `${preferredState.status} / ${distanceLabel(preferredState.distanceMeters)}`
           : booking.preferredProvider
-            ? 'Waiting for first partner response.'
-            : 'No first-pick partner on this booking.',
+            ? 'Waiting for first Partner response.'
+            : 'No first-pick Partner on this booking.',
       },
       {
         label: 'Marketplace supply',
         value: `${participantCounts.marketplace} marketplace / ${customerChoiceCandidates.length} selectable`,
-        helper: `${participantCounts.total} total participant row(s). Actual rows stay as evidence; customer choices are deduped by partner.`,
+        helper: `${participantCounts.total} total participant row(s). Actual rows stay as evidence; customer choices are deduped by Partner.`,
       },
       {
         label: 'Chat and alerts',
@@ -2355,10 +2355,10 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     return {
       title: booking.participants?.length
         ? 'Monitor customer final selection'
-        : 'Monitor partner participation',
+        : 'Monitor Partner participation',
       detail: booking.participants?.length
-        ? 'Participating or accepted partners should be visible to the customer so the customer can choose the final partner.'
-        : 'Keep the first-pick window and marketplace participation visible until a partner participates or the booking expires.',
+        ? 'Participating or accepted Partners should be visible to the customer so the customer can choose the final Partner.'
+        : 'Keep the first-pick window and marketplace participation visible until a Partner participates or the booking expires.',
       href: '#alerts',
       hrefLabel: 'Open matching',
     };
@@ -2366,7 +2366,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     return {
       title: 'Create or recover chat room',
-      detail: 'A matched booking must have chat before partner handoff and service coordination.',
+      detail: 'A matched booking must have chat before Partner handoff and service coordination.',
       href: '#chat',
       hrefLabel: 'Open chat',
     };
@@ -2374,7 +2374,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
     return {
       title: 'Track handoff and service progress',
-      detail: 'Confirm chat, partner location record, arrival state, and service lifecycle events.',
+      detail: 'Confirm chat, Partner location record, arrival state, and service lifecycle events.',
       href: '#location',
       hrefLabel: 'Open location',
     };
@@ -2390,7 +2390,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status)) {
     return {
       title: 'Close customer and finance loop',
-      detail: 'Confirm refund/release, customer communication, partner communication, and audit note.',
+      detail: 'Confirm refund/release, customer communication, Partner communication, and audit note.',
       href: '#payment',
       hrefLabel: 'Open payment',
     };
@@ -2485,7 +2485,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
   const serviceAddressPin = booking.addressSnapshot
     ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
     : coordinateLabel(booking.lat, booking.lng);
-  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No partner pin';
+  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No Partner pin';
   const distanceMeters = latest
     ? approximateDistanceMeters(
         booking.addressSnapshot?.latitude ?? booking.lat,
@@ -2510,7 +2510,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
       value: providerPin,
       helper: latest
         ? providerLocationMetricHelper(booking)
-        : 'Ask partner to share current location from chat.',
+        : 'Ask Partner to share current location from chat.',
       tone:
         freshness === 'recent'
           ? 'pill-success'
@@ -2523,15 +2523,15 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     {
       label: 'Approx. gap',
       value: distanceMeters === null ? 'Unknown' : distanceLabel(Math.round(distanceMeters / 100) * 100),
-      helper: 'Calculated from the service address pin and latest partner pin. It is not a route or ETA.',
+      helper: 'Calculated from the service address pin and latest Partner pin. It is not a route or ETA.',
       tone: distanceMeters === null ? 'pill-info' : distanceMeters > 5000 ? 'pill-warn' : 'pill-success',
     },
     {
       label: 'Service contact',
-      value: booking.selectedProvider?.user?.phone ?? 'No partner phone',
+      value: booking.selectedProvider?.user?.phone ?? 'No Partner phone',
       helper: finalPartner.selected
-        ? `${finalPartner.label} is the current handoff partner.`
-        : 'No partner assigned yet.',
+        ? `${finalPartner.label} is the current handoff Partner.`
+        : 'No Partner assigned yet.',
       tone: finalPartner.selected ? 'pill-success' : 'pill-warn',
     },
     {
@@ -2539,7 +2539,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
       value: booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} message(s)` : 'Not ready',
       helper: booking.chatRoom
         ? `Room ${booking.chatRoom.id}`
-        : 'Chat opens after partner selection/service start.',
+        : 'Chat opens after Partner selection/service start.',
       tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
     },
     {

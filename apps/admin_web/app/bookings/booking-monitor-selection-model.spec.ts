@@ -20,13 +20,13 @@ describe('booking monitor selection model', () => {
     } as AdminBooking;
 
     expect(bookingMonitorSelectionCopy(booking)).toEqual({
-      label: 'First-pick partner pending',
-      pathLabel: 'Direct request first, with marketplace partners already waiting',
+      label: 'First-pick Partner pending',
+      pathLabel: 'Direct request first, with marketplace Partners already waiting',
       toneClass: 'pill-warn',
     });
-    expect(bookingMonitorSelectionLabelForBooking(booking)).toBe('First-pick partner pending');
+    expect(bookingMonitorSelectionLabelForBooking(booking)).toBe('First-pick Partner pending');
     expect(bookingMonitorSelectionPathLabelForBooking(booking)).toBe(
-      'Direct request first, with marketplace partners already waiting',
+      'Direct request first, with marketplace Partners already waiting',
     );
   });
 

@@ -830,7 +830,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer booking journey</h2>
             <p className="muted">
-              Booking-by-booking journey for support review: service address, partner handoff,
+              Booking-by-booking journey for support review: service address, Partner handoff,
               retained chat, payment rows, and staff records are grouped as factual records only.
             </p>
           </div>

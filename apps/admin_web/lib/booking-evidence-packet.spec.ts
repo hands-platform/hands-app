@@ -92,7 +92,7 @@ describe('bookingEvidencePacket', () => {
     ]);
     expect(packet.metrics[1]).toMatchObject({
       value: '07 Jun 2026 10:30',
-      helper: '10.7769, 106.7009 latest partner pin.',
+      helper: '10.7769, 106.7009 latest Partner pin.',
     });
     expect(packet.metrics[3].helper).toBe('PENDING 120.000 VND, APPROVED 50.000 VND');
   });

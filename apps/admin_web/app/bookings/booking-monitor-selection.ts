@@ -33,30 +33,30 @@ export function bookingMonitorSelectionLabel(facts: BookingMonitorSelectionFacts
   }
 
   if (!facts.hasPreferredProvider) {
-    return 'No first-pick partner';
+    return 'No first-pick Partner';
   }
 
   if (facts.isBackupSelected) {
-    return 'Marketplace partner selected';
+    return 'Marketplace Partner selected';
   }
 
   if (facts.firstPickPending) {
-    return 'First-pick partner pending';
+    return 'First-pick Partner pending';
   }
 
   if (facts.preferredProviderState === 'declined') {
-    return 'First-pick partner declined';
+    return 'First-pick Partner declined';
   }
 
   if (facts.isMatched) {
-    return 'Final partner selected';
+    return 'Final Partner selected';
   }
 
   if (facts.isSelectedProviderParticipant) {
-    return 'First-pick partner is active';
+    return 'First-pick Partner is active';
   }
 
-  return 'First-pick partner requested';
+  return 'First-pick Partner requested';
 }
 
 export function bookingMonitorSelectionPathLabel(facts: BookingMonitorSelectionFacts): string {
@@ -70,20 +70,20 @@ export function bookingMonitorSelectionPathLabel(facts: BookingMonitorSelectionF
 
   if (facts.firstPickPending) {
     return facts.marketplaceCount > 0
-      ? 'Direct request first, with marketplace partners already waiting'
-      : 'Direct request first, waiting on the first-pick partner';
+      ? 'Direct request first, with marketplace Partners already waiting'
+      : 'Direct request first, waiting on the first-pick Partner';
   }
 
   if (facts.isBackupSelected) {
-    return 'Direct request escalated to marketplace participation, then the guest chose a marketplace partner';
+    return 'Direct request escalated to marketplace participation, then the guest chose a marketplace Partner';
   }
 
   if (facts.isMatched) {
-    return 'Direct request confirmed by the first-pick partner';
+    return 'Direct request confirmed by the first-pick Partner';
   }
 
   if (facts.marketplaceCount > 0) {
-    return 'Marketplace partners are available while the first-pick partner stays in the flow';
+    return 'Marketplace Partners are available while the first-pick Partner stays in the flow';
   }
 
   return 'Direct request remains the active path';

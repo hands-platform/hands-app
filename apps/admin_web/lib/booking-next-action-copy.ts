@@ -46,7 +46,7 @@ export function bookingNextActionCopy(input: BookingNextActionCopyInput) {
     return 'Customer can keep waiting or switch to a marketplace partner.';
   }
   if (input.status === 'MATCHED' && input.backupSelected) {
-    return 'Customer switched away from the first-pick partner. Confirm chat, route, and partner handoff.';
+    return 'Customer switched away from the first-pick Partner. Confirm chat, route, and Partner handoff.';
   }
   if (input.status === 'MATCHED') {
     return 'Customer selection is locked. Check chat creation, route tracking, and partner departure.';

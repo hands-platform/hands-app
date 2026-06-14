@@ -115,7 +115,7 @@ export function BookingAlertTraceSection({
         <div>
           <h2>Booking alert trace</h2>
           <p className="muted">
-            Booking-specific notification history for first-pick, marketplace partner visibility, retries, and
+            Booking-specific notification history for first-pick, marketplace Partner visibility, retries, and
             disabled device checks.
           </p>
         </div>

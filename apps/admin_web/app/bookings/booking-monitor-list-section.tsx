@@ -233,7 +233,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         </div>
         {row.marketplaceParticipantOverflowCount > 0 && (
           <div className="muted admin-mt-6">
-            +{row.marketplaceParticipantOverflowCount} more marketplace partner(s)
+            +{row.marketplaceParticipantOverflowCount} more marketplace Partner(s)
           </div>
         )}
       </td>

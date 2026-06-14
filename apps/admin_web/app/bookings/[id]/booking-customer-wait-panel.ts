@@ -102,20 +102,20 @@ export function bookingCustomerWaitPanel(
     signalTone = 'pill-danger';
     headline = 'No fresh nearby partner can currently join under policy.';
     detail =
-      'Ask partners to go online/refresh location, or review marketplace radius and location freshness policy.';
+      'Ask Partners to go online/refresh location, or review marketplace radius and location freshness policy.';
     nextActionHref = '/partners?review=marketplace-blocked';
     nextActionLabel = 'Review supply blockers';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
-    headline = 'Customer is waiting and marketplace partners can participate.';
-    detail = `${marketplaceSupply.eligibleCount} nearby partner(s) can be nudged into the customer shortlist.`;
+    headline = 'Customer is waiting and marketplace Partners can participate.';
+    detail = `${marketplaceSupply.eligibleCount} nearby Partner(s) can be nudged into the customer shortlist.`;
     nextActionHref = '/partners?review=marketplace-ready';
     nextActionLabel = 'Open marketplace-ready partners';
   } else if (waitingForPartnerJoin) {
     signalStatus = 'First-pick wait';
     signalTone = 'pill-info';
-    headline = 'Preferred partner still has the first response window.';
+    headline = 'Preferred Partner still has the first response window.';
     detail = `Monitor ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while marketplace supply stays visible to operators.`;
   } else if (selected && chatReady) {
     signalStatus = 'Chat ready';
@@ -126,7 +126,7 @@ export function bookingCustomerWaitPanel(
     signalStatus = 'Chat missing';
     signalTone = 'pill-danger';
     headline = 'Final partner is selected, but chat handoff is missing.';
-    detail = 'Repair or create the chat room so the customer and partner can coordinate.';
+    detail = 'Repair or create the chat room so the customer and Partner can coordinate.';
   }
 
   const cards: CustomerWaitCard[] = [
@@ -146,7 +146,7 @@ export function bookingCustomerWaitPanel(
       detail: selected
         ? `Final partner: ${selectedPartnerLabel}.`
         : waitingForCustomerChoice
-          ? `${customerChoiceCandidates.length} participating/accepted partner(s) are ready for customer selection.`
+          ? `${customerChoiceCandidates.length} participating/accepted Partner(s) are ready for customer selection.`
           : 'No participating/accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
         ? 'Customer final choice applies when first-pick does not validly match first.'
@@ -162,18 +162,18 @@ export function bookingCustomerWaitPanel(
       title: 'Marketplace participation',
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
-        ? `${marketplaceSupply.eligibleCount} eligible marketplace partner(s) can participate under current/saved policy.`
+        ? `${marketplaceSupply.eligibleCount} eligible marketplace Partner(s) can participate under current/saved policy.`
         : 'Marketplace participation is not currently open for this saved policy snapshot.',
       action: firstPickRejected
         ? 'First-pick declined, so marketplace recovery should be active.'
         : backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'Policy allows marketplace partners during the first-pick window.'
+          ? 'Policy allows marketplace Partners during the first-pick window.'
           : 'Saved policy snapshot delays marketplace visibility while first-pick is deciding.',
       className: backupWindowOpen ? 'ops-task-done' : 'ops-task-pending',
       pillClass: backupWindowOpen ? 'pill-success' : 'pill-info',
     },
     {
-      title: 'Nearby partner supply',
+      title: 'Nearby Partner supply',
       status: marketplaceSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply low' : 'No pin',
       detail: marketplaceSupply.decisionDetail,
       action: customerPinReady

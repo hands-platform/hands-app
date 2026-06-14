@@ -14,7 +14,7 @@ describe('booking monitor ops signal', () => {
         status: 'OPEN_MATCHING',
       } as unknown as AdminBooking),
     ).toEqual({
-      label: 'No marketplace partners yet',
+      label: 'No marketplace Partners yet',
       tone: 'warn',
     });
   });

@@ -91,7 +91,7 @@ export function bookingDetailMatchingRuleSnapshot({
       {
         label: 'Marketplace radius',
         value: formatDistanceMeters(radiusMeters),
-        helper: `${marketplaceSupply.eligibleCount} eligible partner(s), ${participants.length} participant row(s), ${customerChoiceCandidates.length} customer-selectable.`,
+        helper: `${marketplaceSupply.eligibleCount} eligible Partner(s), ${participants.length} participant row(s), ${customerChoiceCandidates.length} customer-selectable.`,
       },
       {
         label: 'Customer choice',

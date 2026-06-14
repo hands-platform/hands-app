@@ -165,12 +165,12 @@ describe('booking participant ledger', () => {
     expect(ledger.status).toBe('Customer choice pending');
     expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
       status: 'Pending',
-      value: 'No final partner yet',
+      value: 'No final Partner yet',
       helper: 'Customer final choice is required unless first-pick already matched first.',
     });
     expect(ledger.lifecycleRows.find((row) => row.stage === '3. Customer final choice')).toMatchObject({
       status: 'Waiting customer',
-      evidence: '1 customer-selectable partner(s) available.',
+      evidence: '1 customer-selectable Partner(s) available.',
     });
   });
 
@@ -233,7 +233,7 @@ describe('booking participant ledger', () => {
     });
     expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
       status: 'Pending',
-      value: 'No final partner yet',
+      value: 'No final Partner yet',
     });
   });
 

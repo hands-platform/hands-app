@@ -58,7 +58,7 @@ export function readBookingGateSnapshot(booking: AdminBookingDetail) {
       : `${distanceLabel(Math.round(customerDistance))} / historical support limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
   const preferredPartnerDistanceLabel =
     preferredDistance === null
-      ? 'No preferred partner distance'
+      ? 'No preferred Partner distance'
       : `${distanceLabel(Math.round(preferredDistance))} / limit ${distanceLabel(Math.round(preferredLimit ?? 0))}`;
 
   return {
@@ -70,8 +70,8 @@ export function readBookingGateSnapshot(booking: AdminBookingDetail) {
     preferredPartnerDistanceLabel,
     preferredPartnerDistanceHelper:
       preferredDistance === null
-        ? 'Marketplace-only bookings or older bookings may not have a first-pick partner distance.'
-        : 'Preferred partner distance is measured from the immutable booking address.',
+        ? 'Marketplace-only bookings or older bookings may not have a first-pick Partner distance.'
+        : 'Preferred Partner distance is measured from the immutable booking address.',
     summary: gatePassed
       ? `${customerDistanceLabel}; ${preferredPartnerDistanceLabel}`
       : 'Booking gate metadata is missing or older than this policy.',

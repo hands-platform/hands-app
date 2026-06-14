@@ -41,56 +41,56 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     description:
       'direct first-pick, marketplace participant, final customer selection, and chat handoff work.',
     operatorHint:
-      'Use this during live dispatch to manage the 10-minute partner response window and marketplace participant escalation.',
+      'Use this during live dispatch to manage the 10-minute Partner response window and marketplace participant escalation.',
   },
   {
     view: 'first-pick',
     label: 'Stage 1 first-pick',
-    description: 'open bookings where the selected partner still has the first response window.',
+    description: 'open bookings where the selected Partner still has the first response window.',
     operatorHint:
-      'Use this to monitor the 10-minute response window, push delivery, KYC, wallet gate, and partner decision timing.',
+      'Use this to monitor the 10-minute response window, push delivery, KYC, wallet gate, and Partner decision timing.',
   },
   {
     view: 'marketplace',
     label: 'Stage 2 marketplace',
-    description: 'open bookings where marketplace partners can participate or need a dispatch nudge.',
+    description: 'open bookings where marketplace Partners can participate or need a dispatch nudge.',
     operatorHint:
       'Use this to manage the marketplace participant pool, stale location checks, and availability alert delivery.',
   },
   {
     view: 'customer-choice',
     label: 'Stage 3 choice',
-    description: 'open bookings with participating/accepted partners waiting for customer final selection.',
+    description: 'open bookings with participating/accepted Partners waiting for customer final selection.',
     operatorHint:
-      'Use this when customer support should guide the customer to choose one final partner before matched chat opens.',
+      'Use this when customer support should guide the customer to choose one final Partner before matched chat opens.',
   },
   {
     view: 'handoff-repair',
     label: 'Stage 4 repair',
-    description: 'matched bookings whose final partner is selected but chat handoff is missing.',
+    description: 'matched bookings whose final Partner is selected but chat handoff is missing.',
     operatorHint:
       'Use this as a dispatch repair queue. Chat must be fixed before arrival, start, and completion flow.',
   },
   {
     view: 'no-supply',
     label: 'No supply',
-    description: 'open matching bookings with no partner participation yet.',
+    description: 'open matching bookings with no Partner participation yet.',
     operatorHint:
-      'Use this when customers are waiting but no partner participation is recorded. Call/notify nearby partners or review location/service pricing.',
+      'Use this when customers are waiting but no Partner participation is recorded. Call/notify nearby Partners or review location/service pricing.',
   },
   {
     view: 'blocked-create',
     label: 'Blocked create',
     description: 'booking create attempts rejected before payment authorization and matching.',
     operatorHint:
-      'Use this to debug optional GPS evidence, service address, and first-pick partner distance gates before support follow-up.',
+      'Use this to debug optional GPS evidence, service address, and first-pick Partner distance gates before support follow-up.',
   },
   {
     view: 'address',
     label: 'Address check',
     description: 'bookings missing the immutable customer service address snapshot.',
     operatorHint:
-      'Use this before dispatch. A confirmed address snapshot protects customer, partner, and admin records.',
+      'Use this before dispatch. A confirmed address snapshot protects customer, Partner, and admin records.',
   },
   {
     view: 'manual-decision',
@@ -111,16 +111,16 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     view: 'cash-debt',
     label: 'Cash debt',
     description:
-      'cash bookings that created partner fee/tax debt and can block marketplace alerts, participation, or payout release.',
+      'cash bookings that created Partner fee/tax debt and can block marketplace alerts, participation, or payout release.',
     operatorHint:
-      'Use this with Cash Settlements to confirm deposit or admin offset before the partner participates in marketplace bookings again.',
+      'Use this with Cash Settlements to confirm deposit or admin offset before the Partner participates in marketplace bookings again.',
   },
   {
     view: 'closeout',
     label: 'Closeout ops',
     description: 'completed bookings missing capture, earning, tax, platform fee, or wallet ledger records.',
     operatorHint:
-      'Use this after service completion to reconcile payment capture, partner earning, tax logs, and wallet ledger entries.',
+      'Use this after service completion to reconcile payment capture, Partner earning, tax logs, and wallet ledger entries.',
   },
   {
     view: 'pricing',
@@ -132,14 +132,14 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
   {
     view: 'location',
     label: 'Location ops',
-    description: 'on-the-way or in-service bookings with missing or stale partner location records.',
+    description: 'on-the-way or in-service bookings with missing or stale Partner location records.',
     operatorHint:
       'Use this only for live service states. The MVP tracks last-known location, not live route streaming.',
   },
   {
     view: 'chat',
     label: 'Chat live',
-    description: 'bookings where customer/partner communication is already available.',
+    description: 'bookings where customer/Partner communication is already available.',
     operatorHint:
       'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
   },
@@ -148,7 +148,7 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     label: 'Chat repair',
     description: 'matched or active bookings whose chat room is missing.',
     operatorHint:
-      'Use this when a matched customer and partner cannot coordinate. Repair chat before arrival, service start, or completion.',
+      'Use this when a matched customer and Partner cannot coordinate. Repair chat before arrival, service start, or completion.',
   },
   {
     view: 'chat-evidence',

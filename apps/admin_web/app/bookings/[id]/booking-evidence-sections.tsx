@@ -154,7 +154,7 @@ export function BookingEvidenceSections({
             <p className="muted">
               Cancellation, no-show, refund, and settlement decisions should use retained booking evidence.
               This packet groups chat, location, payment, alerts, notes, and audit records as factual decision
-              context for the customer and partner.
+              context for the Customer and Partner.
             </p>
           </div>
           <span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>

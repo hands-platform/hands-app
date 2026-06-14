@@ -92,8 +92,8 @@ export function bookingParticipantLedger(
         helper: firstPickParticipant
           ? `${firstPickParticipant.status} / participated ${formatDate(firstPickParticipant.joinedAt)}`
           : booking.preferredProvider
-            ? 'Waiting for the first-pick partner response window.'
-            : 'This booking was not opened with a preferred partner.',
+            ? 'Waiting for the first-pick Partner response window.'
+            : 'This booking was not opened with a preferred Partner.',
         href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : '#participants',
       },
       {
@@ -113,7 +113,7 @@ export function bookingParticipantLedger(
       {
         label: 'Booking-address radius',
         value: formatDistanceMeters(marketplaceSupply.radiusMeters),
-        helper: `${marketplaceSupply.eligibleCount} currently eligible partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
+        helper: `${marketplaceSupply.eligibleCount} currently eligible Partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
         href: '#marketplace-supply',
       },
       {
@@ -142,16 +142,16 @@ export function bookingParticipantLedger(
               ? 'pill-warn'
               : 'pill-info'
           : 'pill-neutral',
-        value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'No preferred partner',
+        value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'No preferred Partner',
         helper: firstPickSelectable
-          ? 'Preferred partner accepted and can be chosen by the customer.'
+          ? 'Preferred Partner accepted and can be chosen by the customer.'
           : firstPickParticipant?.status === 'JOINED'
-            ? 'Preferred partner is recorded as first-pick evidence, but is not customer-selectable until acceptance.'
+            ? 'Preferred Partner is recorded as first-pick evidence, but is not customer-selectable until acceptance.'
             : firstPickParticipant?.status === 'REJECTED'
-              ? 'Preferred partner declined; marketplace partners remain as customer options.'
+              ? 'Preferred Partner declined; marketplace Partners remain as customer options.'
               : booking.preferredProvider
-                ? 'Waiting for the first-pick partner response window.'
-                : 'Booking was opened without a first-pick partner.',
+                ? 'Waiting for the first-pick Partner response window.'
+                : 'Booking was opened without a first-pick Partner.',
       },
       {
         label: '2. Marketplace participation',
@@ -172,10 +172,10 @@ export function bookingParticipantLedger(
         label: '4. Final match',
         status: finalPartnerRecorded ? 'Customer selected' : 'Pending',
         tone: finalPartnerRecorded ? 'pill-success' : 'pill-neutral',
-        value: finalPartnerRecorded ? finalPartner.label : 'No final partner yet',
+        value: finalPartnerRecorded ? finalPartner.label : 'No final Partner yet',
         helper: finalPartnerRecorded
           ? selectedFromMarketplace
-            ? 'Customer selected a marketplace participant instead of the first-pick partner.'
+            ? 'Customer selected a marketplace participant instead of the first-pick Partner.'
             : 'First-pick partner is retained as the final matched partner.'
           : 'Customer final choice is required unless first-pick already matched first.',
       },
@@ -183,7 +183,7 @@ export function bookingParticipantLedger(
     lifecycleRows: [
       {
         stage: '1. First-pick response',
-        scope: 'Preferred partner receives the first response window; marketplace may still collect options.',
+        scope: 'Preferred Partner receives the first response window; marketplace may still collect options.',
         status: booking.preferredProvider
           ? firstPickParticipant
             ? firstPickParticipant.status
@@ -202,7 +202,7 @@ export function bookingParticipantLedger(
                 firstPickParticipant.joinedAt,
               )} / responded ${formatDate(firstPickParticipant.respondedAt)}`
             : `${providerName(booking.preferredProvider)} has no participant response row yet.`
-          : 'This booking does not have a preferred partner row.',
+          : 'This booking does not have a preferred Partner row.',
         operatorUse:
           'Confirm first-pick response evidence without manually overriding the API matching decision.',
       },
@@ -232,9 +232,9 @@ export function bookingParticipantLedger(
             : 'pill-neutral',
         evidence: finalPartnerRecorded
           ? `${finalPartner.label} is saved as selectedProvider.`
-          : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
+          : `${customerSelectableParticipants.length} customer-selectable Partner(s) available.`,
         operatorUse:
-          'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
+          'If final Partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
       },
       {
         stage: '4. Chat and service handoff',
@@ -347,7 +347,7 @@ function bookingParticipantEligibilityState(input: {
     return {
       label: 'Final selected by customer',
       tone: 'pill-success',
-      reason: 'Customer already selected this partner as the final match; the row stays in the archive.',
+      reason: 'Customer already selected this Partner as the final match; the row stays in the archive.',
       nextStep: 'Keep chat, payment, location, and closeout evidence linked to this selected row.',
     };
   }
@@ -357,8 +357,8 @@ function bookingParticipantEligibilityState(input: {
       label: 'Customer-selectable',
       tone: 'pill-info',
       reason:
-        'Customer-selectable reason: this partner has an eligible participation status for the shortlist.',
-      nextStep: 'Wait for the customer final choice; operators must not assign the final partner manually.',
+        'Customer-selectable reason: this Partner has an eligible participation status for the shortlist.',
+      nextStep: 'Wait for the customer final choice; operators must not assign the final Partner manually.',
     };
   }
 
@@ -385,7 +385,7 @@ function bookingParticipantEligibilityState(input: {
     return {
       label: 'Not customer-selectable',
       tone: 'pill-neutral',
-      reason: 'Why not selectable: this participant row is missing a linked partner profile.',
+      reason: 'Why not selectable: this participant row is missing a linked Partner profile.',
       nextStep: 'Inspect the booking participant data before exposing the row to the customer.',
     };
   }
@@ -421,7 +421,7 @@ function bookingParticipantEvidenceState(input: {
     return {
       evidenceLabel: 'Final selected row',
       evidenceDetail:
-        'Customer chose this partner; the participant row stays in the booking archive after matching.',
+        'Customer chose this Partner; the participant row stays in the booking archive after matching.',
       evidenceTone: 'pill-success',
     };
   }
@@ -438,7 +438,7 @@ function bookingParticipantEvidenceState(input: {
   if (input.isPreferred) {
     return {
       evidenceLabel: 'First-pick response row',
-      evidenceDetail: 'Preferred partner evidence from the 10-minute first-pick response window.',
+      evidenceDetail: 'Preferred Partner evidence from the 10-minute first-pick response window.',
       evidenceTone: 'pill-info',
     };
   }

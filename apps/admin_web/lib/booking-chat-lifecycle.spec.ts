@@ -11,7 +11,7 @@ describe('booking chat lifecycle helper', () => {
       status: 'Not created',
       tone: 'pill-neutral',
       customerState: 'Locked',
-      customerDetail: 'Customer chat appears after final partner handoff.',
+      customerDetail: 'Customer chat appears after final Partner handoff.',
       partnerState: 'Locked',
       partnerDetail: 'Partner chat appears after match/service start.',
       adminState: 'Waiting',
