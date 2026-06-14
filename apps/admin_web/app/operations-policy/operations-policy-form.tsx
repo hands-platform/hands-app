@@ -1,0 +1,183 @@
+import Link from 'next/link';
+import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
+import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
+import { formatDateTime } from '../../lib/admin-format';
+import { operationalPolicyAnchor } from '../../lib/operations-policy';
+import { updateOperationalPolicy } from './actions';
+import { policyImpactDetails } from './policy-impact-details';
+import { policyRelatedBookingRecords } from './policy-related-bookings';
+import { policyDisplayValue } from './policy-value-display';
+
+type OperationsPolicyFormProps = {
+  readonly setting: AdminOperationalPolicySetting;
+  readonly bookings: readonly AdminBooking[];
+};
+
+export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyFormProps) {
+  const valueType = typeof setting.value;
+  const isNumber = valueType === 'number';
+  const recommended = policyDisplayValue(setting, true);
+  const impact = policyImpactDetails(setting.key);
+  const relatedBookings = policyRelatedBookingRecords(setting.key, bookings);
+
+  return (
+    <form
+      action={updateOperationalPolicy}
+      className="card"
+      id={operationalPolicyAnchor(setting.key)}
+      style={{ margin: 0 }}
+    >
+      <input type="hidden" name="key" value={setting.key} />
+      <input type="hidden" name="valueType" value={valueType} />
+      <div className="ops-section-header">
+        <div>
+          <h3>{displayOperationalWording(setting.label)}</h3>
+          <p className="muted">{displayOperationalWording(setting.description)}</p>
+        </div>
+        <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
+          {setting.enforced ? 'Enforced' : 'Planning'}
+        </span>
+      </div>
+      <div className="service-trace-summary">
+        <div>
+          <span>Current</span>
+          <strong>{policyDisplayValue(setting)}</strong>
+        </div>
+        <div>
+          <span>Recommended</span>
+          <strong>{recommended}</strong>
+        </div>
+        <div>
+          <span>Impact</span>
+          <strong>{impact.area}</strong>
+        </div>
+        <div>
+          <span>Related booking records</span>
+          <strong>{relatedBookings.recordCount}</strong>
+        </div>
+      </div>
+      <div className="ops-task-note admin-mt-12">
+        <div className="ops-row">
+          <div>
+            <strong>{impact.title}</strong>
+            <p className="muted">{impact.detail}</p>
+          </div>
+          <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
+            {setting.enforced ? 'Live behavior' : 'Decision log'}
+          </span>
+        </div>
+      </div>
+      <div className="ops-task-note admin-mt-12">
+        <div className="ops-row">
+          <div>
+            <strong>{relatedBookings.title}</strong>
+            <p className="muted">{relatedBookings.helper}</p>
+          </div>
+          <Link className="text-link" href={relatedBookings.href}>
+            Open records
+          </Link>
+        </div>
+        <div className="booking-radar admin-mt-12">
+          {relatedBookings.rows.map((row) => (
+            <Link className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
+              <strong>{row.title}</strong>
+              <p className="muted">{row.subtitle}</p>
+              <div className="participant-list">
+                {row.pills.map((pill) => (
+                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+          {relatedBookings.rows.length === 0 ? (
+            <div className="insight-card">
+              <strong>No sampled record</strong>
+              <p className="muted">{relatedBookings.emptyText}</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="ops-task-note admin-mt-12">
+        <strong>Before saving this policy</strong>
+        <p className="muted">
+          Review these operating surfaces first, then write the reason so the shift team can trace why the
+          behavior changed.
+        </p>
+        <div className="booking-radar admin-mt-12">
+          {impact.saveChecks.map((check) => (
+            <Link className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
+              <strong>{check.label}</strong>
+              <p className="muted">{check.detail}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+      {setting.options?.length ? (
+        <>
+          <label className="field">
+            <span>Decision</span>
+            <select name="value" defaultValue={String(setting.value)}>
+              {setting.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {displayOperationalWording(option.label)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="booking-radar admin-mt-12">
+            {setting.options.map((option) => (
+              <div key={option.value} className="insight-card">
+                <strong>{displayOperationalWording(option.label)}</strong>
+                <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <label className="field">
+          <span>
+            Value {setting.unit ? `(${setting.unit})` : ''}
+            {isNumber && setting.min !== undefined && setting.max !== undefined
+              ? `, ${setting.min}-${setting.max}`
+              : ''}
+          </span>
+          <input
+            type={isNumber ? 'number' : 'text'}
+            name="value"
+            defaultValue={String(setting.value)}
+            min={isNumber ? (setting.min ?? undefined) : undefined}
+            max={isNumber ? (setting.max ?? undefined) : undefined}
+          />
+        </label>
+      )}
+      <label className="field">
+        <span>Change reason</span>
+        <textarea
+          name="reason"
+          minLength={12}
+          required
+          placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
+        />
+      </label>
+      <button className="admin-mt-12" type="submit">
+        Save policy
+      </button>
+      {setting.updatedAt ? (
+        <p className="muted admin-mt-10">
+          Last changed {formatDate(setting.updatedAt)} by{' '}
+          {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
+        </p>
+      ) : (
+        <p className="muted admin-mt-10">
+          Using default until an admin override is saved.
+        </p>
+      )}
+    </form>
+  );
+}
+
+function formatDate(value: string) {
+  return formatDateTime(value);
+}

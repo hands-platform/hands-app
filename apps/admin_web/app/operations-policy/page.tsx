@@ -9,7 +9,7 @@ import {
 } from '../../lib/admin-api';
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
-import { formatDateTime, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
+import { formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
 import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   LEGACY_OPERATIONAL_POLICY_KEYS,
@@ -27,9 +27,7 @@ import {
   adminPartnerWalletBalance,
   adminWalletGateBlocksMarketplaceParticipation,
   normalizeAdminMarketplaceOpenMode,
-  operationalPolicyAnchor,
 } from '../../lib/operations-policy';
-import { updateOperationalPolicy } from './actions';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildMatchingStageImpactPreview } from './matching-stage-impact-preview';
 import { buildMatchingPlaybook } from './matching-playbook';
@@ -41,7 +39,6 @@ import {
 import { buildPolicyEnforcementTrace } from './policy-enforcement-trace';
 import { buildPolicyDrilldown } from './policy-drilldown';
 import { buildPolicyOutcomeEffect } from './policy-outcome-effect';
-import { policyRelatedBookingRecords } from './policy-related-bookings';
 import { policyImpactDetails } from './policy-impact-details';
 import { buildPolicySupplySensitivity } from './policy-supply-sensitivity';
 import {
@@ -66,12 +63,14 @@ import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-s
 import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
 import { OperationsPolicyNextChoicesSection } from './operations-policy-next-choices-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
+import { OperationsPolicyForm } from './operations-policy-form';
 import {
   OperationsPolicyOwnerDecisionBacklogSection,
 } from './operations-policy-owner-decision-backlog-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 import { buildOwnerDecisionPressure } from './owner-decision-pressure';
+import { policyDisplayValue } from './policy-value-display';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 type BookingCreateGateReview = {
@@ -206,7 +205,7 @@ export default async function OperationsPolicyPage({
         </div>
         <div className="grid">
           {matchingSettings.map((setting) => (
-            <PolicyForm key={setting.key} setting={setting} bookings={bookings} />
+            <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
           {matchingSettings.length === 0 ? (
             <div className="card" style={{ margin: 0 }}>
@@ -250,7 +249,7 @@ export default async function OperationsPolicyPage({
         </div>
         <div className="grid">
           {decisionSettings.map((setting) => (
-            <PolicyForm key={setting.key} setting={setting} bookings={bookings} />
+            <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
         </div>
       </section>
@@ -262,176 +261,6 @@ export default async function OperationsPolicyPage({
         pressure={ownerDecisionPressure}
       />
     </>
-  );
-}
-
-function PolicyForm({
-  setting,
-  bookings,
-}: {
-  setting: AdminOperationalPolicySetting;
-  bookings: AdminBooking[];
-}) {
-  const valueType = typeof setting.value;
-  const isNumber = valueType === 'number';
-  const recommended = policyDisplayValue(setting, true);
-  const impact = policyImpactDetails(setting.key);
-  const relatedBookings = policyRelatedBookingRecords(setting.key, bookings);
-  return (
-    <form
-      action={updateOperationalPolicy}
-      className="card"
-      id={operationalPolicyAnchor(setting.key)}
-      style={{ margin: 0 }}
-    >
-      <input type="hidden" name="key" value={setting.key} />
-      <input type="hidden" name="valueType" value={valueType} />
-      <div className="ops-section-header">
-        <div>
-          <h3>{displayOperationalWording(setting.label)}</h3>
-          <p className="muted">{displayOperationalWording(setting.description)}</p>
-        </div>
-        <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
-          {setting.enforced ? 'Enforced' : 'Planning'}
-        </span>
-      </div>
-      <div className="service-trace-summary">
-        <div>
-          <span>Current</span>
-          <strong>{policyDisplayValue(setting)}</strong>
-        </div>
-        <div>
-          <span>Recommended</span>
-          <strong>{recommended}</strong>
-        </div>
-        <div>
-          <span>Impact</span>
-          <strong>{impact.area}</strong>
-        </div>
-        <div>
-          <span>Related booking records</span>
-          <strong>{relatedBookings.recordCount}</strong>
-        </div>
-      </div>
-      <div className="ops-task-note admin-mt-12">
-        <div className="ops-row">
-          <div>
-            <strong>{impact.title}</strong>
-            <p className="muted">{impact.detail}</p>
-          </div>
-          <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
-            {setting.enforced ? 'Live behavior' : 'Decision log'}
-          </span>
-        </div>
-      </div>
-      <div className="ops-task-note admin-mt-12">
-        <div className="ops-row">
-          <div>
-            <strong>{relatedBookings.title}</strong>
-            <p className="muted">{relatedBookings.helper}</p>
-          </div>
-          <Link className="text-link" href={relatedBookings.href}>
-            Open records
-          </Link>
-        </div>
-        <div className="booking-radar admin-mt-12">
-          {relatedBookings.rows.map((row) => (
-            <Link className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
-              <strong>{row.title}</strong>
-              <p className="muted">{row.subtitle}</p>
-              <div className="participant-list">
-                {row.pills.map((pill) => (
-                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
-                    {pill.label}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          ))}
-          {relatedBookings.rows.length === 0 ? (
-            <div className="insight-card">
-              <strong>No sampled record</strong>
-              <p className="muted">{relatedBookings.emptyText}</p>
-            </div>
-          ) : null}
-        </div>
-      </div>
-      <div className="ops-task-note admin-mt-12">
-        <strong>Before saving this policy</strong>
-        <p className="muted">
-          Review these operating surfaces first, then write the reason so the shift team can trace why the
-          behavior changed.
-        </p>
-        <div className="booking-radar admin-mt-12">
-          {impact.saveChecks.map((check) => (
-            <Link className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
-              <strong>{check.label}</strong>
-              <p className="muted">{check.detail}</p>
-            </Link>
-          ))}
-        </div>
-      </div>
-      {setting.options?.length ? (
-        <>
-          <label className="field">
-            <span>Decision</span>
-            <select name="value" defaultValue={String(setting.value)}>
-              {setting.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {displayOperationalWording(option.label)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="booking-radar admin-mt-12">
-            {setting.options.map((option) => (
-              <div key={option.value} className="insight-card">
-                <strong>{displayOperationalWording(option.label)}</strong>
-                <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <label className="field">
-          <span>
-            Value {setting.unit ? `(${setting.unit})` : ''}
-            {isNumber && setting.min !== undefined && setting.max !== undefined
-              ? `, ${setting.min}-${setting.max}`
-              : ''}
-          </span>
-          <input
-            type={isNumber ? 'number' : 'text'}
-            name="value"
-            defaultValue={String(setting.value)}
-            min={isNumber ? (setting.min ?? undefined) : undefined}
-            max={isNumber ? (setting.max ?? undefined) : undefined}
-          />
-        </label>
-      )}
-      <label className="field">
-        <span>Change reason</span>
-        <textarea
-          name="reason"
-          minLength={12}
-          required
-          placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
-        />
-      </label>
-      <button className="admin-mt-12" type="submit">
-        Save policy
-      </button>
-      {setting.updatedAt ? (
-        <p className="muted admin-mt-10">
-          Last changed {formatDate(setting.updatedAt)} by{' '}
-          {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
-        </p>
-      ) : (
-        <p className="muted admin-mt-10">
-          Using default until an admin override is saved.
-        </p>
-      )}
-    </form>
   );
 }
 
@@ -1800,32 +1629,8 @@ function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) 
   return adminOperationalPolicySettingByKey(settings, key)?.value;
 }
 
-function formatPolicyValue(value: unknown, unit?: string | null) {
-  if (value === null || value === undefined) return '-';
-  if (unit === 'meters') {
-    return `${(Number(value) / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-  }
-  if (unit === 'minutes') {
-    return `${value} min`;
-  }
-  const suffix = unit ? ` ${unit}` : '';
-  return `${String(value)}${suffix}`;
-}
-
-function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended = false) {
-  const value = String(recommended ? setting.recommendedValue : setting.value);
-  return displayOperationalWording(
-    setting.options?.find((option) => option.value === value)?.label ??
-      formatPolicyValue(value, setting.unit),
-  );
-}
-
 function policyKeyMatches(key: string, candidates: string[]) {
   return candidates.includes(key);
-}
-
-function formatDate(value: string) {
-  return formatDateTime(value);
 }
 
 function policyNotice(params: Record<string, string | string[] | undefined>) {
