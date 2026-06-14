@@ -10,8 +10,10 @@ describe('audit log page model', () => {
         id: 'audit-1',
         metadata: {
           latestDelivery: {
+            attemptedAt: '2026-06-13T10:23:00.000Z',
             provider: 'FCM',
             pushDeviceEnabled: true,
+            pushDeviceLastSeenAt: '2026-06-13T10:00:00.000Z',
             pushDevicePlatform: 'android',
             status: 'SENT',
           },
@@ -35,6 +37,7 @@ describe('audit log page model', () => {
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-warn', label: 'Duplicate send risk' },
       { className: 'pill pill-success', label: 'FCM sent evidence' },
+      { className: 'pill pill-success', label: 'Token freshness evidence' },
       { className: 'pill pill-info', label: 'Already delivered before retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },
@@ -77,6 +80,7 @@ describe('audit log page model', () => {
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-warn', label: 'Firebase project mismatch' },
       { className: 'pill pill-warn', label: 'Next install matching Firebase Admin JSON' },
+      { className: 'pill pill-success', label: 'Device enabled' },
     ]);
   });
 
@@ -134,6 +138,7 @@ describe('audit log page model', () => {
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-warn', label: 'Stale token retry' },
       { className: 'pill pill-success', label: 'FCM sent evidence' },
+      { className: 'pill pill-warn', label: 'Stale token evidence' },
       { className: 'pill pill-info', label: 'Already delivered before retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },

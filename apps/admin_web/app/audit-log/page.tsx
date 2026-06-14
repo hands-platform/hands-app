@@ -620,6 +620,10 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   if (fcmOutcome) {
     highlights.push(fcmOutcome);
   }
+  const tokenEvidence = notificationPushTokenEvidenceHighlight(latestDelivery);
+  if (tokenEvidence) {
+    highlights.push(tokenEvidence);
+  }
   if (metadata.retryAlreadyDelivered === true) {
     highlights.push({ label: 'Already delivered before retry', className: 'pill pill-info' });
   }
@@ -655,7 +659,7 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
     highlights.push({ label: 'Device disabled', className: 'pill pill-warn' });
   }
 
-  return highlights.slice(0, 7);
+  return highlights.slice(0, 8);
 }
 
 function notificationFcmOutcomeHighlight(
@@ -707,6 +711,25 @@ function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight 
     return { label: 'Skipped delivery retry', className: 'pill pill-info' };
   }
   return null;
+}
+
+function notificationPushTokenEvidenceHighlight(
+  latestDelivery: Record<string, unknown>,
+): MetadataHighlight | null {
+  if (latestDelivery.pushDeviceEnabled === false) {
+    return null;
+  }
+
+  const lastSeenAt = Date.parse(readString(latestDelivery.pushDeviceLastSeenAt) ?? '');
+  if (!Number.isFinite(lastSeenAt)) {
+    return null;
+  }
+
+  if (hasStaleRetryAuditPushToken(latestDelivery)) {
+    return { label: 'Stale token evidence', className: 'pill pill-warn' };
+  }
+
+  return { label: 'Token freshness evidence', className: 'pill pill-success' };
 }
 
 function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
