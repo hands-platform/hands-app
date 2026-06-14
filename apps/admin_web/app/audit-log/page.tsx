@@ -155,7 +155,7 @@ export function buildAuditLogTableRows(logs: readonly AdminAuditLog[]): AuditLog
     createdAtLabel: formatDateTime(log.createdAt),
     id: log.id,
     metadataHighlights: metadataHighlights(log),
-    metadataPreview: metadataPreview(log.metadata),
+    metadataPreview: metadataPreviewForLog(log),
     opsDetail: opsDetail(log.action),
     opsHint: opsHint(log.action, log.target),
     priorityLabel: reviewPriorityLabel(log.action),
@@ -318,7 +318,7 @@ function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
 }
 
 function auditSearchText(log: AdminAuditLog) {
-  return [log.action, log.target, log.actor?.fullName, log.actor?.phone, metadataPreview(log.metadata)]
+  return [log.action, log.target, log.actor?.fullName, log.actor?.phone, metadataSearchText(log.metadata)]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -495,6 +495,64 @@ function metadataPreview(metadata: unknown) {
   } catch {
     return 'Metadata could not be rendered';
   }
+}
+
+function metadataPreviewForLog(log: AdminAuditLog) {
+  if (log.action === 'notification.retry') {
+    return notificationRetryMetadataPreview(log.metadata);
+  }
+
+  return metadataPreview(log.metadata);
+}
+
+function metadataSearchText(metadata: unknown) {
+  if (!metadata) {
+    return '';
+  }
+  try {
+    return JSON.stringify(metadata);
+  } catch {
+    return '';
+  }
+}
+
+function notificationRetryMetadataPreview(metadata: unknown) {
+  const record = readMetadataObject(metadata);
+  const latestDelivery = readRecord(record.latestDelivery);
+  const retryJob = readRecord(record.retryJob);
+  const failureCode = readString(latestDelivery.failureCode);
+  const notificationId = readString(record.notificationId);
+  const platform = readString(latestDelivery.pushDevicePlatform);
+  const retryJobName = readString(retryJob.jobName);
+  const parts = [
+    notificationId ? `Notification ${notificationId.slice(0, 8)}` : null,
+    notificationRetryRiskPreview(readString(record.retryRisk)),
+    notificationDeliveryPreview(latestDelivery),
+    notificationFailurePreview(failureCode),
+    notificationFailureRecoveryActionLabel(failureCode),
+    platform ? `Device ${platform}` : null,
+    latestDelivery.pushDeviceEnabled === true
+      ? 'Device enabled'
+      : latestDelivery.pushDeviceEnabled === false
+        ? 'Device disabled'
+        : null,
+    retryJobName ? `Queued ${retryJobName}` : null,
+  ].filter((part): part is string => Boolean(part));
+
+  return parts.length > 0 ? parts.join(' / ') : metadataPreview(metadata);
+}
+
+function notificationDeliveryPreview(latestDelivery: Record<string, unknown>) {
+  const provider = readString(latestDelivery.provider);
+  const status = readString(latestDelivery.status);
+  if (provider && status) {
+    return `Latest ${provider} ${status}`;
+  }
+  return status ? `Latest ${status}` : null;
+}
+
+function notificationFailurePreview(failureCode: string | null) {
+  return failureCode ? `Failure ${notificationFailureCodeLabel(failureCode)}` : null;
 }
 
 type MetadataHighlight = {
@@ -708,6 +766,10 @@ function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight 
     return { label: 'Skipped delivery retry', className: 'pill pill-info' };
   }
   return null;
+}
+
+function notificationRetryRiskPreview(risk: string | null) {
+  return notificationRetryRiskHighlight(risk)?.label ?? null;
 }
 
 function notificationPushTokenEvidenceHighlight(

@@ -70,6 +70,8 @@ describe('audit log page model', () => {
     ]);
 
     expect(rows[0]).toMatchObject({
+      metadataPreview:
+        'Notification notifica / Failed delivery retry / Latest FCM FAILED / Failure Firebase project mismatch / Next install matching Firebase Admin JSON / Device android / Device enabled / Queued notification-send',
       relatedBoardHref: '/notifications?review=failed#notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
