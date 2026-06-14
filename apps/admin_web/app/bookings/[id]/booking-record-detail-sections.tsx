@@ -207,7 +207,7 @@ export function BookingRecordDetailSections({
         <div className="card" id="chat">
           <h2>Chat transcript</h2>
           <p className="muted">
-            Admin archive for this booking. Customer and partner apps can hide the room after completion, but
+            Admin archive for this booking. Customer and Partner apps can hide the room after completion, but
             operations keeps the loaded transcript here.
           </p>
           <div className="stack">
@@ -251,9 +251,9 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
         <div>
           <h2>Actual marketplace participant ledger</h2>
           <p className="muted">
-            Every partner who actually participated, accepted, rejected, or became the customer-selected final
-            partner stays here as booking evidence. Marketplace visibility is not retained as activity; wallet
-            gates stop blocked partners before a participant row is created.
+            Every Partner who actually participated, accepted, rejected, or became the customer-selected final
+            Partner stays here as booking evidence. Marketplace visibility is not retained as activity; wallet
+            gates stop blocked Partners before a participant row is created.
           </p>
         </div>
         <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
@@ -435,7 +435,7 @@ function CashFeeSettlementPathSection({
           <h2>Cash fee settlement path</h2>
           <p className="muted">
             Operational view for cash bookings: customer cash collection, HANDS fee debt, tax/fee logs,
-            partner wallet impact, and the exact unblock path for marketplace participation and payout.
+            Partner wallet impact, and the exact unblock path for marketplace participation and payout.
           </p>
         </div>
         <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>

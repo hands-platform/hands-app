@@ -34,7 +34,7 @@ export function bookingMarketplaceWalletEvidence({
     : customerChoiceCandidates.length
       ? 'Customer choice pending'
       : participants.length
-        ? 'Participating partners visible'
+        ? 'Participating Partners visible'
         : 'Waiting for participation';
   const tone = finalPartner
     ? 'pill-success'
@@ -97,7 +97,7 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Participant evidence boundary',
         value: `${participants.length} actual row(s)`,
         helper:
-          'Only partners who entered the booking are retained here; marketplace visibility is not an activity record.',
+          'Only Partners who entered the booking are retained here; marketplace visibility is not an activity record.',
         href: '#participants',
       },
       {
