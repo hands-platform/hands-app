@@ -60,9 +60,9 @@ describe('bookingMatchingEscalationRowInput', () => {
           preferredAwaitingDecision: false,
           responseWindowExpired: false,
           selectableCount: 0,
-          selectionLabel: 'Final partner selected',
+          selectionLabel: 'Final Partner selected',
           selectionPathLabel: 'Direct request confirmed by the first-pick partner',
-          windowLabel: 'final partner selected',
+          windowLabel: 'final Partner selected',
         },
       ),
     ).toMatchObject({

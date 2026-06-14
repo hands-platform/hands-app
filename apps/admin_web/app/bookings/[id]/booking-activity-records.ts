@@ -122,7 +122,7 @@ export function buildBookingActivityRecords({
         type: 'PARTNER',
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
-        detail: `${participant.status} / customer can select from participating or accepted partners.`,
+        detail: `${participant.status} / customer can select from participating or accepted Partners.`,
         href: participant.providerProfile?.id
           ? `/partners/${participant.providerProfile.id}`
           : '#participants',
@@ -136,7 +136,7 @@ export function buildBookingActivityRecords({
       id: `${booking.id}-selected-partner-${finalPartner.id ?? 'relation'}`,
       type: 'MATCHED',
       at: booking.updatedAt ?? booking.openedAt ?? booking.createdAt ?? '',
-      title: 'Final partner selected',
+      title: 'Final Partner selected',
       detail: `${finalPartner.label} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
       href: finalPartner.href,
     });
@@ -195,7 +195,7 @@ export function buildBookingActivityRecords({
       id: booking.earning.id,
       type: 'EARNING',
       at: booking.earning.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-      title: `${booking.earning.status} partner earning`,
+      title: `${booking.earning.status} Partner earning`,
       detail: `Gross ${money(booking.earning.grossAmount, booking.earning.currency)} / fee ${money(
         booking.earning.platformFee,
         booking.earning.currency,

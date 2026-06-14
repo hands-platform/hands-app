@@ -124,7 +124,7 @@ export function bookingMvpAuthorityContract({
       contract: 'Final Partner connection',
       scope: 'First-pick priority or customer choice',
       status: selectedPartner
-        ? 'Final partner selected'
+        ? 'Final Partner selected'
         : selectablePartnerCount
           ? 'Customer choice pending'
           : 'Waiting for selectable partner',

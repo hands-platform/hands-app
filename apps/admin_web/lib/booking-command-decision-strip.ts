@@ -84,7 +84,7 @@ function matchingRow(input: BookingCommandDecisionStripInput): BookingCommandDec
     return {
       lane: 'Matching',
       state: 'Customer choice',
-      detail: `${input.customerChoiceCandidateCount} customer-selectable partner(s) / ${input.participantCount} actual participant row(s).`,
+      detail: `${input.customerChoiceCandidateCount} customer-selectable Partner(s) / ${input.participantCount} actual participant row(s).`,
       href: '#participants',
       tone: 'pill-warn',
     };
@@ -94,7 +94,7 @@ function matchingRow(input: BookingCommandDecisionStripInput): BookingCommandDec
     return {
       lane: 'Matching',
       state: 'Marketplace open',
-      detail: `${input.marketplaceEligibleCount} partner(s) are inside the booking-address marketplace policy.`,
+      detail: `${input.marketplaceEligibleCount} Partner(s) are inside the booking-address marketplace policy.`,
       href: '#marketplace-supply',
       tone: 'pill-info',
     };
@@ -103,8 +103,8 @@ function matchingRow(input: BookingCommandDecisionStripInput): BookingCommandDec
   if (input.hasFinalPartner) {
     return {
       lane: 'Matching',
-      state: 'Final partner selected',
-      detail: 'Customer final partner choice is recorded. There is no automatic assignment.',
+      state: 'Final Partner selected',
+      detail: 'Customer final Partner choice is recorded. There is no automatic assignment.',
       href: '#participants',
       tone: 'pill-success',
     };
@@ -143,7 +143,7 @@ function chatRow(input: BookingCommandDecisionStripInput): BookingCommandDecisio
   return {
     lane: 'Chat',
     state: 'Pending',
-    detail: 'Chat opens after the customer chooses the final partner.',
+    detail: 'Chat opens after the customer chooses the final Partner.',
     href: '#chat',
     tone: 'pill-info',
   };
@@ -217,7 +217,7 @@ function primaryDecision(
     return {
       status: 'Finance gate',
       tone: 'pill-danger',
-      primaryAction: 'Settle partner cash fee debt',
+      primaryAction: 'Settle Partner cash fee debt',
       primaryDetail: finance.detail,
     };
   }

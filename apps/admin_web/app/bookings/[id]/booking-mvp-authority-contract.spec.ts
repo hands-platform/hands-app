@@ -68,7 +68,7 @@ describe('booking MVP authority contract', () => {
     });
 
     expect(rows.find((row) => row.contract === 'Final Partner connection')).toMatchObject({
-      status: 'Final partner selected',
+      status: 'Final Partner selected',
       evidence: 'First Pick Partner',
       tone: 'pill-success',
     });

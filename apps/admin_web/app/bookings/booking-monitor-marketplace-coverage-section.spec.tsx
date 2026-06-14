@@ -59,7 +59,7 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
 
     expect(rendered).toContain('Marketplace booking coverage board');
     expect(rendered).toContain('Bookings with participant history 1');
-    expect(rendered).toContain('Final partner selected 1');
+    expect(rendered).toContain('Final Partner selected 1');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('8m left');
     expect(rendered).toContain('2 participant record(s)');

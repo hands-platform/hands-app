@@ -47,7 +47,7 @@ describe('bookingCommandDecisionStrip', () => {
     expect(strip.primaryAction).toBe('Keep customer final choice visible');
     expect(strip.rows.find((row) => row.lane === 'Matching')).toMatchObject({
       state: 'Customer choice',
-      detail: '2 customer-selectable partner(s) / 3 actual participant row(s).',
+      detail: '2 customer-selectable Partner(s) / 3 actual participant row(s).',
     });
   });
 
@@ -68,7 +68,7 @@ describe('bookingCommandDecisionStrip', () => {
     });
   });
 
-  it('explains that partner cash debt blocks marketplace alerts and participation', () => {
+  it('explains that Partner cash debt blocks marketplace alerts and participation', () => {
     const strip = bookingCommandDecisionStrip({
       ...baseInput,
       bookingStatus: 'COMPLETED',
@@ -80,7 +80,7 @@ describe('bookingCommandDecisionStrip', () => {
       paymentStatus: 'CAPTURED',
     });
 
-    expect(strip.primaryAction).toBe('Settle partner cash fee debt');
+    expect(strip.primaryAction).toBe('Settle Partner cash fee debt');
     expect(strip.rows.find((row) => row.lane === 'Finance')).toMatchObject({
       state: 'Settlement required',
       detail:

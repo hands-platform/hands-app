@@ -237,7 +237,7 @@ function BookingCompletedCloseoutSection({
         <h2>Completed closeout</h2>
         <p className="muted">
           Reconcile a completed service after operational edits or a partial failure. This confirms payment
-          capture, partner earning, tax log, platform fee log, and wallet ledger are present.
+          capture, Partner earning, tax log, platform fee log, and wallet ledger are present.
         </p>
       </div>
       {closeout.canSubmit ? (
