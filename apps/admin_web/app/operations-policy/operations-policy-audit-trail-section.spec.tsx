@@ -11,6 +11,7 @@ describe('OperationsPolicyAuditTrailSection', () => {
           effect: 'New bookings use the latest enforced setting.',
           enforced: true,
           id: 'audit-1',
+          key: 'matching.provider_response_window_minutes',
           label: 'Matching / provider response window minutes',
           policyContext: 'First-pick response timer',
           previousValue: '10',

@@ -1,18 +1,6 @@
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
-
-type PolicyAuditRow = {
-  readonly id: string;
-  readonly createdAt: string;
-  readonly label: string;
-  readonly policyContext: string;
-  readonly actorName: string;
-  readonly previousValue: string;
-  readonly value: string;
-  readonly reason: string;
-  readonly enforced: boolean;
-  readonly effect: string;
-};
+import type { PolicyAuditRow } from './policy-audit-rows';
 
 type OperationsPolicyAuditTrailSectionProps = {
   readonly rows: readonly PolicyAuditRow[];

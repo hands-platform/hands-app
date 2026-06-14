@@ -1,7 +1,7 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
-import { operationalPolicyAuditRows } from './page';
+import { operationalPolicyAuditRows } from './policy-audit-rows';
 
-describe('operations policy page model', () => {
+describe('operations policy audit row builder', () => {
   it('keeps raw policy keys internal while exposing an operator policy context', () => {
     const rows = operationalPolicyAuditRows([
       {
@@ -70,4 +70,30 @@ describe('operations policy page model', () => {
       value: 'Admin Review For MVP',
     });
   });
+
+  it('sorts newest changes first and limits rows to the recent audit window', () => {
+    const rows = operationalPolicyAuditRows(
+      Array.from({ length: 10 }, (_, index) =>
+        auditLog({
+          createdAt: `2026-06-13T03:${String(index).padStart(2, '0')}:00.000Z`,
+          id: `audit-policy-${index}`,
+        }),
+      ),
+    );
+
+    expect(rows).toHaveLength(8);
+    expect(rows[0]?.id).toBe('audit-policy-9');
+    expect(rows.at(-1)?.id).toBe('audit-policy-2');
+  });
 });
+
+function auditLog(overrides: Partial<AdminAuditLog>): AdminAuditLog {
+  return {
+    action: 'operational_policy.update',
+    createdAt: '2026-06-13T03:00:00.000Z',
+    id: 'audit-policy',
+    metadata: { key: 'matching.provider_response_window_minutes' },
+    target: 'operational_policy:matching.provider_response_window_minutes',
+    ...overrides,
+  };
+}
