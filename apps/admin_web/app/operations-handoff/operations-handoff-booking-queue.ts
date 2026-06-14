@@ -62,6 +62,8 @@ export function buildBookingHandoffQueue(
     });
 }
 
+export type BookingHandoffQueueRow = ReturnType<typeof buildBookingHandoffQueue>[number];
+
 export function bookingPartnerName(booking: AdminBooking) {
   const participantLabel = participantNames(booking).join(', ');
   const directPartnerName = booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName;

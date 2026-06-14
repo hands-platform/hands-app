@@ -32,6 +32,7 @@ import {
   bookingStatusClass,
   buildBookingHandoffQueue,
 } from './operations-handoff-booking-queue';
+import { OperationsHandoffBookingQueueSection } from './operations-handoff-booking-queue-section';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { buildFinanceHandoffActionMap } from './operations-handoff-finance-actions';
 import { buildFinanceRows } from './operations-handoff-finance-rows';
@@ -314,73 +315,7 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffActivityStreamSection csvHref={activityStreamCsvHref} rows={activityStream} />
 
-      <section className="card admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Booking handoff queue</h2>
-            <p className="muted">
-              Open and recently changed bookings with payment, chat, Partner, and next action.
-            </p>
-          </div>
-          <div className="actions">
-            <Link className="text-link" href="/bookings?view=attention">
-              Booking monitor
-            </Link>
-            <Link className="text-link" href="/chat-archive">
-              Chat archive
-            </Link>
-          </div>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Customer</th>
-              <th>Partner</th>
-              <th>Status</th>
-              <th>Payment / wallet</th>
-              <th>Chat</th>
-              <th>Next action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookingQueue.map((booking) => (
-              <tr key={booking.id}>
-                <td>
-                  <Link className="text-link" href={`/bookings/${booking.id}`}>
-                    {shortDisplayId(booking.id)}
-                  </Link>
-                  <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
-                </td>
-                <td>
-                  <div>{booking.customerName}</div>
-                  <small className="muted">{booking.customerPhone}</small>
-                </td>
-                <td>
-                  <div>{booking.partnerName}</div>
-                  <small className="muted">{booking.partnerDetail}</small>
-                </td>
-                <td>
-                  <span className={booking.statusClass}>{booking.status}</span>
-                </td>
-                <td>
-                  <div>{booking.paymentLabel}</div>
-                  <small className="muted">{booking.walletLabel}</small>
-                </td>
-                <td>
-                  <span className={booking.chatClass}>{booking.chatLabel}</span>
-                </td>
-                <td>{booking.nextAction}</td>
-              </tr>
-            ))}
-            {bookingQueue.length === 0 ? (
-              <tr>
-                <td colSpan={7}>No active booking handoff rows.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <OperationsHandoffBookingQueueSection bookings={bookingQueue} />
 
       <section className="detail-grid admin-mb-16">
         <div className="card">
