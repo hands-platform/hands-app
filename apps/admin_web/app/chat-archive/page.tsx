@@ -75,7 +75,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           <h1>Chat Archive</h1>
           <p className="muted">
             Completed booking chats disappear from active mobile app flow, but the full admin archive remains
-            searchable by customer, partner, booking, date, status, and sender role.
+            searchable by customer, Partner, booking, date, status, and sender role.
           </p>
         </div>
         <div className="actions">
@@ -98,7 +98,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             <input
               name="q"
               defaultValue={filters.q}
-              placeholder="Booking, room, customer, partner, message"
+              placeholder="Booking, room, customer, Partner, message"
             />
           </label>
           <label>
@@ -159,7 +159,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         <MetricCard
           label="Messages"
           value={summary.messageCount.toString()}
-          helper={`${summary.customerMessages} customer / ${summary.partnerMessages} partner`}
+          helper={`${summary.customerMessages} customer / ${summary.partnerMessages} Partner`}
         />
         <MetricCard label="Completed rooms" value={summary.completedRooms.toString()} helper="Service done" />
         <MetricCard
@@ -287,7 +287,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           <div>
             <h2>Chat archive index</h2>
             <p className="muted">
-              One row per booking chat room. Open booking, customer, or partner detail for full operational
+              One row per booking chat room. Open booking, customer, or Partner detail for full operational
               context.
             </p>
           </div>
@@ -468,7 +468,7 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
   const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
   const partner = booking.selectedProvider ?? booking.preferredProvider;
   const partnerName = partnerDisplayText(
-    partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No partner',
+    partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No Partner',
   );
   const partnerPhone = partner?.user?.phone ?? 'No phone';
   const serviceLabel = bookingServiceLabel(booking);
@@ -522,7 +522,7 @@ function buildChatRepairRows(
       const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
       const partner = booking.selectedProvider ?? booking.preferredProvider;
       const partnerName = partnerDisplayText(
-        partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No partner',
+        partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No Partner',
       );
       const partnerPhone = partner?.user?.phone ?? 'No phone';
       const missingRoom = !booking.chatRoom;
@@ -531,7 +531,7 @@ function buildChatRepairRows(
         booking,
         issue: missingRoom ? 'Missing room' : 'No message',
         detail: missingRoom
-          ? 'Matched booking should create a customer-partner chat room.'
+          ? 'Matched booking should create a customer and Partner chat room.'
           : 'Chat room exists, but no retained message is stored yet.',
         operatorAction: missingRoom
           ? 'Open booking detail and verify chat creation handoff.'
@@ -638,7 +638,16 @@ function senderRole(message: AdminChatMessage) {
 }
 
 function senderLabel(message: AdminChatMessage) {
-  return partnerDisplayText(message.sender?.fullName ?? message.sender?.phone ?? senderRole(message));
+  return partnerDisplayText(
+    message.sender?.fullName ?? message.sender?.phone ?? displaySenderRole(senderRole(message)),
+  );
+}
+
+function displaySenderRole(role: string) {
+  if (role === 'CUSTOMER') return 'Customer';
+  if (role === 'PROVIDER') return 'Partner';
+  if (role === 'ADMIN') return 'Admin';
+  return 'System';
 }
 
 function bookingServiceLabel(booking: AdminBookingDetail) {
