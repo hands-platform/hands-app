@@ -230,28 +230,72 @@ const MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDet
   },
 };
 
+const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.walletNegativeGate]: {
+    area: 'Wallet controls',
+    title: 'Controls unpaid cash-fee debt enforcement',
+    detail:
+      'Policy controls cash-fee debt settlement. Marketplace requests remain visible, while final acceptance, service start, and payout release stay blocked while the wallet is negative.',
+    saveChecks: [
+      {
+        label: 'Cash debt queue',
+        detail:
+          'Review partners held from marketplace alerts, participation, or payout release by unpaid HANDS cash fees before changing settlement gates.',
+        href: '/partners?review=cash-debt',
+      },
+      {
+        label: 'Settlement command queue',
+        detail: 'Check pending repayments and manual offsets before relaxing debt enforcement.',
+        href: '/cash-settlements',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.cashSettlementClearance]: {
+    area: 'Cash settlement',
+    title: 'Controls negative wallet clearance evidence',
+    detail:
+      'Cash jobs create company fee debt because the partner receives cash directly. This policy defines whether operators need deposit evidence, admin offset approval, or both before clearing a negative wallet hold.',
+    saveChecks: [
+      {
+        label: 'Cash settlement queue',
+        detail:
+          'Review open cash fee debts, deposit references, and manual offsets before changing clearance rules.',
+        href: '/cash-settlements',
+      },
+      {
+        label: 'Partner cash holds',
+        detail:
+          'Check partners blocked from marketplace alerts, participation, or payout release by unpaid platform fees.',
+        href: '/partners?review=cash-debt',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.payoutBatchCycle]: {
+    area: 'Payout settlement',
+    title: 'Controls positive earning payout cadence',
+    detail:
+      'Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet ledger evidence.',
+    saveChecks: [
+      {
+        label: 'Payout batches',
+        detail:
+          'Review draft, approved, and paid batches before changing payout cadence or exception handling.',
+        href: '/payouts',
+      },
+      {
+        label: 'Earnings ledger',
+        detail:
+          'Confirm unpaid earnings, tax logs, withholding records, and wallet entries are ready for the next batch.',
+        href: '/earnings',
+      },
+    ],
+  },
+};
+
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
     ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
     ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
-    'wallet.negative_balance_gate': {
-      area: 'Wallet controls',
-      title: 'Controls unpaid cash-fee debt enforcement',
-      detail:
-        'Policy controls cash-fee debt settlement. Marketplace requests remain visible, while final acceptance, service start, and payout release stay blocked while the wallet is negative.',
-      saveChecks: [
-        {
-          label: 'Cash debt queue',
-          detail:
-            'Review partners held from marketplace alerts, participation, or payout release by unpaid HANDS cash fees before changing settlement gates.',
-          href: '/partners?review=cash-debt',
-        },
-        {
-          label: 'Settlement command queue',
-          detail: 'Check pending repayments and manual offsets before relaxing debt enforcement.',
-          href: '/cash-settlements',
-        },
-      ],
-    },
+    ...SETTLEMENT_POLICY_IMPACT_DETAILS,
     'decision.action_evidence_gate_mode': {
       area: 'Action gates',
       title: 'Controls booking action evidence posture',
@@ -268,46 +312,6 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
           label: 'Closeout checklist',
           detail: 'Confirm completed, cancelled, expired, and no-show closeout evidence is visible.',
           href: '/bookings?view=closeout',
-        },
-      ],
-    },
-    'cash.settlement_clearance_policy': {
-      area: 'Cash settlement',
-      title: 'Controls negative wallet clearance evidence',
-      detail:
-        'Cash jobs create company fee debt because the partner receives cash directly. This policy defines whether operators need deposit evidence, admin offset approval, or both before clearing a negative wallet hold.',
-      saveChecks: [
-        {
-          label: 'Cash settlement queue',
-          detail:
-            'Review open cash fee debts, deposit references, and manual offsets before changing clearance rules.',
-          href: '/cash-settlements',
-        },
-        {
-          label: 'Partner cash holds',
-          detail:
-            'Check partners blocked from marketplace alerts, participation, or payout release by unpaid platform fees.',
-          href: '/partners?review=cash-debt',
-        },
-      ],
-    },
-    'payout.batch_cycle_policy': {
-      area: 'Payout settlement',
-      title: 'Controls positive earning payout cadence',
-      detail:
-        'Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet ledger evidence.',
-      saveChecks: [
-        {
-          label: 'Payout batches',
-          detail:
-            'Review draft, approved, and paid batches before changing payout cadence or exception handling.',
-          href: '/payouts',
-        },
-        {
-          label: 'Earnings ledger',
-          detail:
-            'Confirm unpaid earnings, tax logs, withholding records, and wallet entries are ready for the next batch.',
-          href: '/earnings',
         },
       ],
     },
