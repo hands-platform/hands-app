@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { AdminBooking } from '../../lib/admin-api';
+import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { shortId } from '../../lib/admin-format';
 import {
   actionOrderLabel,
@@ -53,7 +54,7 @@ export function BookingMonitorNextActionsSection({
               <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}: {item.operatorAction}
             </p>
             <p className="muted">
-              {getCustomerLabel(item.booking)} / {getProviderLabel(item.booking)}
+              {getCustomerLabel(item.booking)} / {marketplaceDisplayText(getProviderLabel(item.booking))}
             </p>
             <div className="participant-list admin-mt-10">
               <span className="pill">{item.booking.status}</span>

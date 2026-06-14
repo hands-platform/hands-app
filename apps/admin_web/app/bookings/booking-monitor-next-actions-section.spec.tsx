@@ -51,7 +51,7 @@ describe('BookingMonitorNextActionsSection', () => {
     expect(rendered).toContain('1 action(s)');
     expect(rendered).toContain('Supply check');
     expect(rendered).toContain('Dispatch / Active watch');
-    expect(rendered).toContain('Customer A / Provider B');
+    expect(rendered).toContain('Customer A / Partner B');
     expect(rendered).toContain('OPEN_MATCHING');
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
   });
@@ -59,7 +59,7 @@ describe('BookingMonitorNextActionsSection', () => {
   it('renders clear state when no action is waiting', () => {
     const section = BookingMonitorNextActionsSection({
       getCustomerLabel: () => 'Customer A',
-      getProviderLabel: () => 'Provider B',
+      getProviderLabel: () => 'Partner B',
       nextActions: [],
       nowMs: 0,
     });
