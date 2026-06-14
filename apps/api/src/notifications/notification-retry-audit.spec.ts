@@ -19,6 +19,7 @@ describe('notification retry audit metadata', () => {
           provider: 'FCM',
           pushDeviceEnabled: true,
           pushDeviceId: 'push-device-1',
+          pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
           pushDevicePlatform: 'android',
           status: 'SENT',
         },
@@ -32,6 +33,7 @@ describe('notification retry audit metadata', () => {
         provider: 'FCM',
         pushDeviceEnabled: true,
         pushDeviceId: 'push-device-1',
+        pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
         pushDevicePlatform: 'android',
         status: 'SENT',
       },
@@ -53,6 +55,7 @@ describe('notification retry audit metadata', () => {
           provider: 'FCM',
           pushDeviceEnabled: true,
           pushDeviceId: 'push-device-1',
+          pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
           pushDevicePlatform: 'android',
           status: 'FAILED',
         },
@@ -75,6 +78,7 @@ describe('notification retry audit metadata', () => {
           provider: 'FCM',
           pushDeviceEnabled: false,
           pushDeviceId: 'push-device-1',
+          pushDeviceLastSeenAt: '2026-06-13T10:22:00.000Z',
           pushDevicePlatform: 'android',
           status: 'FAILED',
         },
@@ -83,6 +87,29 @@ describe('notification retry audit metadata', () => {
     ).toMatchObject({
       operatorAction: 'Refresh or re-enable the push device before relying on retry delivery.',
       retryRisk: 'DEVICE_DISABLED',
+    });
+  });
+
+  it('flags stale push token retries before duplicate-send risk', () => {
+    expect(
+      notificationRetryAuditMetadata('notification-1', {
+        latestDelivery: {
+          attemptedAt: '2026-06-13T10:23:00.000Z',
+          failureCode: null,
+          id: 'delivery-1',
+          provider: 'FCM',
+          pushDeviceEnabled: true,
+          pushDeviceId: 'push-device-1',
+          pushDeviceLastSeenAt: '2026-05-01T10:23:00.000Z',
+          pushDevicePlatform: 'android',
+          status: 'SENT',
+        },
+        retryJob,
+      }),
+    ).toMatchObject({
+      operatorAction: 'Refresh the app FCM token before relying on retry delivery.',
+      retryAlreadyDelivered: true,
+      retryRisk: 'STALE_PUSH_TOKEN',
     });
   });
 

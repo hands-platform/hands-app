@@ -633,6 +633,8 @@ function hasRetrySignal(notification: AdminNotification) {
 type NotificationDeliveryHealth = {
   readonly hint: string;
   readonly priority: number;
+  readonly retryActionDescription: string;
+  readonly retryActionTone: 'info' | 'warning';
   readonly signalClassName: string;
   readonly signalLabel: string;
 };
@@ -642,6 +644,8 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
     return {
       hint: 'Review failure code, confirm token health, then retry only after the device path makes sense.',
       priority: 5,
+      retryActionDescription: 'Review the delivery issue before retrying this notification.',
+      retryActionTone: 'warning',
       signalClassName: 'signal signal-warn',
       signalLabel: 'Retry needed',
     };
@@ -650,6 +654,8 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
     return {
       hint: 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.',
       priority: 4,
+      retryActionDescription: 'Refresh or re-enable the push device before retrying this notification.',
+      retryActionTone: 'warning',
       signalClassName: 'signal signal-warn',
       signalLabel: 'Device disabled',
     };
@@ -658,6 +664,8 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
     return {
       hint: 'Push token timestamp is old. Ask the user to open the app so FCM can refresh before relying on retry.',
       priority: 3,
+      retryActionDescription: 'Refresh the app FCM token before retrying this notification.',
+      retryActionTone: 'warning',
       signalClassName: 'signal signal-warn',
       signalLabel: 'Stale device',
     };
@@ -666,6 +674,9 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
     return {
       hint: 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.',
       priority: 2,
+      retryActionDescription:
+        'Confirm the skipped delivery was intentional before retrying this notification.',
+      retryActionTone: 'info',
       signalClassName: 'signal signal-info',
       signalLabel: 'Skipped delivery',
     };
@@ -674,6 +685,8 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
     return {
       hint: 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.',
       priority: 1,
+      retryActionDescription: 'Retry only if support confirmed the user still missed this delivered alert.',
+      retryActionTone: 'info',
       signalClassName: 'signal signal-ok',
       signalLabel: 'Delivered',
     };
@@ -681,6 +694,8 @@ function notificationDeliveryHealth(notification: AdminNotification): Notificati
   return {
     hint: 'Notification exists, but no delivery attempt was captured yet.',
     priority: 0,
+    retryActionDescription: 'Confirm workers and queue processing before retrying this notification.',
+    retryActionTone: 'info',
     signalClassName: 'signal signal-info',
     signalLabel: 'Pending',
   };
@@ -696,6 +711,7 @@ function notificationActionMenuItems(
 ): readonly ActionMenuItem[] {
   const bookingId = notificationBookingId(notification);
   const partnerId = notification.user?.providerProfile?.id ?? '';
+  const deliveryHealth = notificationDeliveryHealth(notification);
   const actions: ActionMenuItem[] = [];
 
   if (bookingId) {
@@ -725,13 +741,11 @@ function notificationActionMenuItems(
   });
 
   actions.push({
-    description: hasRetrySignal(notification)
-      ? 'Review the delivery issue before retrying this notification.'
-      : 'Retry only if operations needs to resend this alert.',
+    description: deliveryHealth.retryActionDescription,
     href: retryNotificationConfirmHref(notification.id, actionContext),
     kind: 'link',
     label: 'Retry',
-    tone: hasRetrySignal(notification) ? 'warning' : 'info',
+    tone: deliveryHealth.retryActionTone,
   });
 
   return actions;

@@ -30,6 +30,8 @@ type AuditLogFilters = {
 };
 type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
 export default async function AuditLogPage({ searchParams }: { searchParams?: AuditLogPageSearchParams }) {
   const filters = buildAuditFilters(searchParams ? await searchParams : {});
   const allLogs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
@@ -695,6 +697,9 @@ function notificationRetryRiskHighlight(risk: string | null): MetadataHighlight 
   if (risk === 'FAILED_DELIVERY_RETRY') {
     return { label: 'Failed delivery retry', className: 'pill pill-warn' };
   }
+  if (risk === 'STALE_PUSH_TOKEN') {
+    return { label: 'Stale token retry', className: 'pill pill-warn' };
+  }
   if (risk === 'NO_DELIVERY_EVIDENCE') {
     return { label: 'No delivery evidence', className: 'pill pill-info' };
   }
@@ -879,8 +884,15 @@ function notificationBoardHref(metadata: Record<string, unknown>, targetId?: str
 function notificationAuditReview(metadata: Record<string, unknown>) {
   const latestDelivery = readRecord(metadata.latestDelivery);
   const provider = readString(latestDelivery.provider);
+  const retryRisk = readString(metadata.retryRisk);
   const status = readString(latestDelivery.status);
 
+  if (retryRisk === 'DEVICE_DISABLED') {
+    return 'disabled-device';
+  }
+  if (retryRisk === 'STALE_PUSH_TOKEN' || hasStaleRetryAuditPushToken(latestDelivery)) {
+    return 'stale-device';
+  }
   if (status === 'FAILED') {
     return 'failed';
   }
@@ -894,6 +906,19 @@ function notificationAuditReview(metadata: Record<string, unknown>) {
     return 'sent';
   }
   return '';
+}
+
+function hasStaleRetryAuditPushToken(latestDelivery: Record<string, unknown>) {
+  if (latestDelivery.pushDeviceEnabled === false) {
+    return false;
+  }
+
+  const attemptedAt = Date.parse(readString(latestDelivery.attemptedAt) ?? '');
+  const lastSeenAt = Date.parse(readString(latestDelivery.pushDeviceLastSeenAt) ?? '');
+  if (!Number.isFinite(attemptedAt) || !Number.isFinite(lastSeenAt)) {
+    return false;
+  }
+  return attemptedAt - lastSeenAt >= STALE_PUSH_DEVICE_AGE_MS;
 }
 
 function relatedBoardLabel(log: AdminAuditLog) {

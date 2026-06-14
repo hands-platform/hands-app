@@ -6,6 +6,7 @@ export type NotificationRetryAuditLatestDelivery = {
   readonly failureCode: string | null;
   readonly pushDeviceId: string | null;
   readonly pushDeviceEnabled: boolean | null;
+  readonly pushDeviceLastSeenAt: string | null;
   readonly pushDevicePlatform: string | null;
 };
 
@@ -27,8 +28,11 @@ export type NotificationRetryAuditRisk =
   | 'DUPLICATE_SEND_RISK'
   | 'FAILED_DELIVERY_RETRY'
   | 'NO_DELIVERY_EVIDENCE'
+  | 'STALE_PUSH_TOKEN'
   | 'SKIPPED_DELIVERY_RETRY'
   | 'STANDARD_RETRY';
+
+const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function notificationRetryAuditMetadata(notificationId: string, result: NotificationRetryAuditResult) {
   const retryRisk = notificationRetryAuditRisk(result.latestDelivery);
@@ -49,14 +53,17 @@ function notificationRetryAuditRisk(
   if (!latestDelivery) {
     return 'NO_DELIVERY_EVIDENCE';
   }
-  if (latestDelivery.status === 'SENT') {
-    return 'DUPLICATE_SEND_RISK';
-  }
   if (latestDelivery.pushDeviceEnabled === false) {
     return 'DEVICE_DISABLED';
   }
   if (latestDelivery.status === 'FAILED') {
     return 'FAILED_DELIVERY_RETRY';
+  }
+  if (hasStalePushTokenTimestamp(latestDelivery)) {
+    return 'STALE_PUSH_TOKEN';
+  }
+  if (latestDelivery.status === 'SENT') {
+    return 'DUPLICATE_SEND_RISK';
   }
   if (latestDelivery.status === 'SKIPPED') {
     return 'SKIPPED_DELIVERY_RETRY';
@@ -74,6 +81,9 @@ function notificationRetryAuditOperatorAction(risk: NotificationRetryAuditRisk) 
   if (risk === 'FAILED_DELIVERY_RETRY') {
     return 'Fix the latest delivery failure before retrying.';
   }
+  if (risk === 'STALE_PUSH_TOKEN') {
+    return 'Refresh the app FCM token before relying on retry delivery.';
+  }
   if (risk === 'SKIPPED_DELIVERY_RETRY') {
     return 'Confirm the skipped delivery was expected before retrying.';
   }
@@ -81,4 +91,17 @@ function notificationRetryAuditOperatorAction(risk: NotificationRetryAuditRisk) 
     return 'Confirm notification workers and queue processing before retrying.';
   }
   return 'Review latest delivery evidence before retrying.';
+}
+
+function hasStalePushTokenTimestamp(delivery: NotificationRetryAuditLatestDelivery) {
+  if (delivery.pushDeviceEnabled === false) {
+    return false;
+  }
+
+  const attemptedAt = Date.parse(delivery.attemptedAt);
+  const lastSeenAt = Date.parse(delivery.pushDeviceLastSeenAt ?? '');
+  if (!Number.isFinite(attemptedAt) || !Number.isFinite(lastSeenAt)) {
+    return false;
+  }
+  return attemptedAt - lastSeenAt >= STALE_PUSH_DEVICE_AGE_MS;
 }

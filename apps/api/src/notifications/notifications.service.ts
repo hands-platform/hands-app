@@ -26,6 +26,7 @@ type RetryNotificationLatestDelivery = {
   failureCode: string | null;
   pushDeviceId: string | null;
   pushDeviceEnabled: boolean | null;
+  pushDeviceLastSeenAt: string | null;
   pushDevicePlatform: string | null;
 };
 
@@ -76,7 +77,7 @@ export class NotificationsService {
             attemptedAt: true,
             response: true,
             pushDeviceId: true,
-            pushDevice: { select: { enabled: true, platform: true } },
+            pushDevice: { select: { enabled: true, lastSeenAt: true, platform: true } },
           },
         },
       },
@@ -138,7 +139,7 @@ function summarizeRetryLatestDelivery(
         attemptedAt: Date;
         response: unknown;
         pushDeviceId: string | null;
-        pushDevice: { enabled: boolean; platform: string } | null;
+        pushDevice: { enabled: boolean; lastSeenAt: Date | null; platform: string } | null;
       }
     | undefined,
 ): RetryNotificationLatestDelivery | null {
@@ -154,6 +155,7 @@ function summarizeRetryLatestDelivery(
     failureCode: notificationDeliveryFailureCode(delivery.response),
     pushDeviceId: delivery.pushDeviceId,
     pushDeviceEnabled: delivery.pushDevice?.enabled ?? null,
+    pushDeviceLastSeenAt: delivery.pushDevice?.lastSeenAt?.toISOString() ?? null,
     pushDevicePlatform: delivery.pushDevice?.platform ?? null,
   };
 }

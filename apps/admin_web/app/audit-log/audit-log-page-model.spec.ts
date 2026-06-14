@@ -34,6 +34,7 @@ describe('audit log page model', () => {
     });
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-warn', label: 'Duplicate send risk' },
+      { className: 'pill pill-success', label: 'FCM sent evidence' },
       { className: 'pill pill-info', label: 'Already delivered before retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },
@@ -70,12 +71,12 @@ describe('audit log page model', () => {
     });
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-warn', label: 'Failed delivery retry' },
+      { className: 'pill pill-warn', label: 'FCM failure evidence' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-warn', label: 'Latest FCM FAILED' },
       { className: 'pill pill-info', label: 'Device android' },
       { className: 'pill pill-warn', label: 'Firebase project mismatch' },
       { className: 'pill pill-warn', label: 'Next install matching Firebase Admin JSON' },
-      { className: 'pill pill-success', label: 'Device enabled' },
     ]);
   });
 
@@ -99,6 +100,45 @@ describe('audit log page model', () => {
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-info', label: 'No delivery evidence' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
+    ]);
+  });
+
+  it('routes stale token retry audit rows to the stale device review queue', () => {
+    const rows = buildAuditLogTableRows([
+      {
+        action: 'notification.retry',
+        actor: { fullName: 'Operator One', phone: '+8490' },
+        createdAt: '2026-06-11T09:00:00.000Z',
+        id: 'audit-1',
+        metadata: {
+          latestDelivery: {
+            attemptedAt: '2026-06-13T10:23:00.000Z',
+            provider: 'FCM',
+            pushDeviceEnabled: true,
+            pushDeviceLastSeenAt: '2026-05-01T10:23:00.000Z',
+            pushDevicePlatform: 'android',
+            status: 'SENT',
+          },
+          notificationId: 'notification-123456',
+          retryAlreadyDelivered: true,
+          retryJob: { attempts: 3, backoffMs: 5000, jobName: 'notification-send' },
+          retryRisk: 'STALE_PUSH_TOKEN',
+        },
+        target: 'notification:notification-123456',
+      },
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      relatedBoardHref: '/notifications?review=stale-device#notification-123456',
+    });
+    expect(rows[0]?.metadataHighlights).toEqual([
+      { className: 'pill pill-warn', label: 'Stale token retry' },
+      { className: 'pill pill-success', label: 'FCM sent evidence' },
+      { className: 'pill pill-info', label: 'Already delivered before retry' },
+      { className: 'pill pill-info', label: 'Queued notification-send' },
+      { className: 'pill pill-success', label: 'Latest FCM SENT' },
+      { className: 'pill pill-info', label: 'Device android' },
+      { className: 'pill pill-success', label: 'Device enabled' },
     ]);
   });
 

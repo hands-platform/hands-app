@@ -735,6 +735,10 @@ describe('notification page model', () => {
     expect(rows[0]?.actions.find((action) => action.label === 'Audit trail')).toMatchObject({
       href: '/audit-log?bucket=Notification&q=notification-row&range=all',
     });
+    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
+      description: 'Review the delivery issue before retrying this notification.',
+      tone: 'warning',
+    });
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       deviceFreshnessLabel: 'Token timestamp current',
       deviceLastSeenAtLabel: '1 Jun 2026, 17:02',
@@ -870,6 +874,10 @@ describe('notification page model', () => {
       signalClassName: 'signal signal-warn',
     });
     expect(rows[0]?.opsHint).toContain('Push token timestamp is old');
+    expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
+      description: 'Refresh the app FCM token before retrying this notification.',
+      tone: 'warning',
+    });
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       deviceFreshnessLabel: '30+ day token timestamp',
       deviceStateLabel: 'Device enabled',
