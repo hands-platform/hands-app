@@ -84,6 +84,10 @@ import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
 import { bookingChatReady } from './booking-chat-evidence';
+import {
+  bookingChatRepairActionState,
+  bookingChatRepairNeedsOps,
+} from './booking-chat-repair-state';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
@@ -138,10 +142,6 @@ import {
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
 import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
-import {
-  bookingChatRepairActionState as buildBookingChatRepairActionState,
-  bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
-} from '../../../lib/booking-chat-repair-action-state';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import {
@@ -1446,22 +1446,6 @@ function bookingEvidencePacket({
     activityRecordCount: bookingActivityRecords.length,
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
-  });
-}
-
-function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
-  return buildBookingChatRepairNeedsOps({
-    status: booking.status,
-    hasChatRoom: bookingChatReady(booking),
-  });
-}
-
-function bookingChatRepairActionState(booking: AdminBookingDetail) {
-  return buildBookingChatRepairActionState({
-    status: booking.status,
-    hasChatRoom: bookingChatReady(booking),
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    hasSelectedPartner: bookingFinalPartnerSummary(booking).selected,
   });
 }
 
