@@ -94,6 +94,12 @@ export function NotificationChannelPolicySection({
           {fcmSmokeReadiness.preflightCommand ? (
             <CommandCopyRow command={fcmSmokeReadiness.preflightCommand} label="Copy FCM preflight command" />
           ) : null}
+          {fcmSmokeReadiness.selectedNotificationId ? (
+            <p className="muted admin-mt-6">
+              After live push, rerun preflight and confirm retryAuditPreflight.evidence before broad FCM
+              push.
+            </p>
+          ) : null}
           <p className="muted admin-mt-6">
             Credential issue: check setup. Token issue: review disabled or stale device queues. Worker issue:
             review pending sends.
@@ -111,6 +117,16 @@ export function NotificationChannelPolicySection({
             <Link className="pill pill-neutral" href="/notifications?review=pending">
               Worker queue
             </Link>
+            {fcmSmokeReadiness.selectedNotificationId ? (
+              <Link
+                className="pill pill-info"
+                href={`/audit-log?bucket=Notification&q=${encodeURIComponent(
+                  fcmSmokeReadiness.selectedNotificationId,
+                )}&range=all`}
+              >
+                Audit evidence
+              </Link>
+            ) : null}
           </div>
           <p className="muted admin-mt-6">Verify disabled or reinstalled app tokens before broad FCM push.</p>
           <CommandCopyRow

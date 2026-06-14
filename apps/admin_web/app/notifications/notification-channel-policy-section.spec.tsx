@@ -35,6 +35,10 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('Disabled tokens');
     expect(rendered).toContain('Stale tokens');
     expect(rendered).toContain('Worker queue');
+    expect(rendered).toContain(
+      'After live push, rerun preflight and confirm retryAuditPreflight.evidence before broad FCM push.',
+    );
+    expect(rendered).toContain('Audit evidence');
     expect(rendered).toContain('Verify disabled or reinstalled app tokens before broad FCM push.');
     expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(hrefsIn(section)).toEqual(
@@ -44,6 +48,7 @@ describe('NotificationChannelPolicySection', () => {
         '/notifications?review=disabled-device',
         '/notifications?review=stale-device',
         '/notifications?review=pending',
+        '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
