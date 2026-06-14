@@ -46,6 +46,7 @@ import {
   buildHandoffReadinessChecklist,
   countOpenHandoffChecklistItems,
 } from './operations-handoff-readiness-checklist';
+import { OperationsHandoffReadinessChecklistSection } from './operations-handoff-readiness-checklist-section';
 import {
   buildChatSignals,
   buildCustomerSignals,
@@ -218,34 +219,10 @@ export default async function OperationsHandoffPage({
         latestFcmSent={latestFcmSentSummary}
       />
 
-      <section className="card admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Shift handoff checklist</h2>
-            <p className="muted">
-              A factual close-of-shift list for the next operator: live bookings, chat continuity, cash
-              settlement, alerts, app presence, customer context, and written notes.
-            </p>
-          </div>
-          <span className={checklistNeedsReview ? 'pill pill-warn' : 'pill pill-success'}>
-            {checklistNeedsReview ? `${checklistNeedsReview} check(s) open` : 'Ready to hand over'}
-          </span>
-        </div>
-        <div className="ops-task-grid">
-          {handoffChecklist.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.id}>
-              <span className={item.badgeClass}>{item.status}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{item.countLabel}</span>
-                <span className={item.badgeClass}>{item.owner}</span>
-              </div>
-              <small>{item.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <OperationsHandoffReadinessChecklistSection
+        openCount={checklistNeedsReview}
+        rows={handoffChecklist}
+      />
 
       <section className="card admin-mb-16">
         <div className="toolbar">

@@ -186,6 +186,8 @@ export function countOpenHandoffChecklistItems(
   return rows.filter((item) => item.tone !== 'success').length;
 }
 
+export type HandoffReadinessChecklistRow = ReturnType<typeof buildHandoffReadinessChecklist>[number];
+
 function checklistToneClass(tone: ChecklistTone) {
   if (tone === 'danger') return 'pill pill-danger';
   if (tone === 'warn') return 'pill pill-warn';
