@@ -1,16 +1,4 @@
-type PolicyRecommendationReview = {
-  readonly warningCount: number;
-  readonly summary: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
-  readonly cards: readonly {
-    readonly key: string;
-    readonly label: string;
-    readonly status: string;
-    readonly detail: string;
-    readonly operatorAction: string;
-    readonly className: string;
-    readonly pillClass: string;
-  }[];
-};
+import type { PolicyRecommendationReview } from './policy-recommendation-review';
 
 type OperationsPolicyRecommendedValueReviewSectionProps = {
   readonly review: PolicyRecommendationReview;
