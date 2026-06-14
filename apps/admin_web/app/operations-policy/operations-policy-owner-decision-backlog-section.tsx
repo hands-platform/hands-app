@@ -1,20 +1,7 @@
 import Link from 'next/link';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
-
-export type OwnerDecisionPressure = {
-  readonly alertCount: number;
-  readonly summary: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
-  readonly cards: readonly {
-    readonly title: string;
-    readonly status: string;
-    readonly detail: string;
-    readonly operatorAction: string;
-    readonly href: string;
-    readonly className: string;
-    readonly pillClass: string;
-  }[];
-};
+import type { OwnerDecisionPressure } from './owner-decision-pressure';
 
 type OperationsPolicyOwnerDecisionBacklogSectionProps = {
   readonly pressure: OwnerDecisionPressure;
