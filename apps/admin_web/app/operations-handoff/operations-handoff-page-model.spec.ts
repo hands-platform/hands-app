@@ -1,4 +1,4 @@
-import { auditActivityArea, relatedHref } from './page';
+import { auditActivityArea, relatedHref } from './operations-handoff-activity-stream';
 
 describe('operations handoff page model', () => {
   it('links notification audit activity rows to filtered notification audit evidence', () => {
