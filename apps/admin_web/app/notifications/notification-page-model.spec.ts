@@ -751,6 +751,39 @@ describe('notification page model', () => {
     });
   });
 
+  it('does not duplicate Partner prefixes in notification table labels', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        deliveries: [],
+        id: 'notification-provider-name',
+        type: 'provider.payout_setup_required',
+        user: {
+          phone: '+8491',
+          providerProfile: {
+            displayName: 'Provider Linh',
+            id: 'partner-provider-name',
+            status: 'APPROVED',
+          },
+        },
+      }),
+      notification({
+        deliveries: [],
+        id: 'notification-partner-name',
+        type: 'provider.payout_setup_required',
+        user: {
+          phone: '+8492',
+          providerProfile: {
+            displayName: 'Partner Mai',
+            id: 'partner-partner-name',
+            status: 'APPROVED',
+          },
+        },
+      }),
+    ]);
+
+    expect(rows.map((row) => row.partnerLabel)).toEqual(['Partner Linh', 'Partner Mai']);
+  });
+
   it('keeps active queue context on row confirmation links', () => {
     const rows = buildNotificationTableRows(
       [

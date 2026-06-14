@@ -267,13 +267,7 @@ export function buildNotificationTableRows(
 ): NotificationTableRow[] {
   return notifications.map((notification) => {
     const partnerProfile = notification.user?.providerProfile;
-    const partnerLabel = partnerProfile
-      ? `Partner ${
-          partnerProfile.displayName
-            ? marketplaceDisplayText(partnerProfile.displayName)
-            : shortId(partnerProfile.id)
-        }`
-      : null;
+    const partnerLabel = notificationPartnerLabel(partnerProfile);
 
     return {
       actionLabel: `Notification actions for ${shortId(notification.id)}`,
@@ -297,6 +291,18 @@ export function buildNotificationTableRows(
       userPhone: notification.user?.phone ?? 'No phone on file',
     };
   });
+}
+
+function notificationPartnerLabel(
+  partnerProfile?: { readonly displayName?: string | null; readonly id: string } | null,
+) {
+  if (!partnerProfile) {
+    return null;
+  }
+  const name = partnerProfile.displayName
+    ? marketplaceDisplayText(partnerProfile.displayName)
+    : shortId(partnerProfile.id);
+  return name.startsWith('Partner ') ? name : `Partner ${name}`;
 }
 
 export function buildNotificationSummary(notifications: readonly AdminNotification[]): NotificationSummary {
