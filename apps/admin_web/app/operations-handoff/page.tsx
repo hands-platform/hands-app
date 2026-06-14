@@ -1113,12 +1113,12 @@ function buildUnifiedActivityStream(input: {
 
   const auditRows = input.auditLogs.slice(0, 30).map((log) => ({
     id: `audit-${log.id}`,
-    area: 'Ops note',
+    area: auditActivityArea(log),
     source: operatorDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
     record: shortTarget(log.target),
     summary: auditActivitySummary(log),
     href: relatedHref(log),
-    className: log.action.endsWith('.ops_note.add') ? 'pill pill-info' : 'pill',
+    className: auditActivityClassName(log),
     createdAt: log.createdAt,
   }));
 
@@ -1485,22 +1485,49 @@ function bookingStatusClass(status: string) {
   return 'pill';
 }
 
-function relatedHref(log: AdminAuditLog) {
+export function auditActivityArea(log: AdminAuditLog) {
+  if (isNotificationAuditLog(log)) {
+    return 'Notification audit';
+  }
+  return 'Ops note';
+}
+
+function auditActivityClassName(log: AdminAuditLog) {
+  if (isNotificationAuditLog(log)) {
+    return 'pill pill-info';
+  }
+  return log.action.endsWith('.ops_note.add') ? 'pill pill-info' : 'pill';
+}
+
+export function relatedHref(log: AdminAuditLog) {
   const metadata = asRecord(log.metadata);
   const bookingId = stringValue(metadata.bookingId);
   const customerId = stringValue(metadata.customerProfileId);
+  const notificationId = stringValue(metadata.notificationId) ?? notificationTargetId(log.target);
   const providerId =
     stringValue(metadata.providerProfileId) ??
     stringValue(metadata.partnerProfileId) ??
     stringValue(metadata.providerId);
   if (bookingId) return `/bookings/${bookingId}`;
   if (customerId) return `/customers/${customerId}`;
+  if (notificationId) {
+    return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
+  }
   if (providerId) return `/partners/${providerId}`;
   if (log.target.startsWith('booking:')) return `/bookings/${log.target.slice('booking:'.length)}`;
   if (log.target.startsWith('customer:')) return `/customers/${log.target.slice('customer:'.length)}`;
   if (log.target.startsWith('provider:')) return `/partners/${log.target.slice('provider:'.length)}`;
+  if (isNotificationAuditLog(log)) return '/audit-log?bucket=Notification&range=all';
   if (log.target === 'operations:handoff') return '/operations-handoff';
   return '/audit-log';
+}
+
+function isNotificationAuditLog(log: AdminAuditLog) {
+  return log.action.startsWith('notification.') || log.target.startsWith('notification:');
+}
+
+function notificationTargetId(target: string) {
+  return target.startsWith('notification:') ? target.slice('notification:'.length) : null;
 }
 
 function asRecord(value: unknown) {
