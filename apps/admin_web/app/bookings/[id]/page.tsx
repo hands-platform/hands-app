@@ -107,9 +107,9 @@ import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snaps
 import { bookingPaymentEvidence } from './booking-payment-evidence';
 import { bookingServicePricingSnapshotRows } from './booking-service-pricing-snapshot-rows';
 import { bookingParticipantLedger } from './booking-participant-ledger';
+import { bookingParticipantCounts } from './booking-participant-counts';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
-  bookingParticipantProviderId,
   bookingPreferredProviderId,
 } from './booking-participant-rules';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
@@ -1272,21 +1272,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
-}
-
-function bookingParticipantCounts(booking: AdminBookingDetail) {
-  const participants = booking.participants ?? [];
-  const preferredProviderId = bookingPreferredProviderId(booking);
-  const marketplace = participants.filter((participant) => {
-    const providerId = bookingParticipantProviderId(participant);
-    return !preferredProviderId || providerId !== preferredProviderId;
-  }).length;
-
-  return {
-    total: participants.length,
-    firstPick: Math.max(participants.length - marketplace, 0),
-    marketplace,
-  };
 }
 
 function bookingOperatorCommandQueue({
