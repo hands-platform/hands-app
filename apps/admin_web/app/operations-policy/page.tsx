@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { AdminTableScroll } from '../../components/admin-data-table';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -29,6 +28,7 @@ import {
   normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
+import { buildBookingCreateGateReview } from './booking-create-gate-review';
 import { buildMatchingStageImpactPreview } from './matching-stage-impact-preview';
 import { buildMatchingPlaybook } from './matching-playbook';
 import { bookingWalletLedgerTotal } from './policy-booking-format';
@@ -70,28 +70,6 @@ import { buildOwnerDecisionPressure } from './owner-decision-pressure';
 import { policyDisplayValue } from './policy-value-display';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
-type BookingCreateGateReview = {
-  currentPolicyLabel: string;
-  summary: Array<{ label: string; value: string; helper: string }>;
-  rows: Array<{
-    key: string;
-    gate: string;
-    current: string;
-    defaultValue: string;
-    operatorMeaning: string;
-    evidence: string;
-    href: string;
-    pillClass: string;
-  }>;
-  recentAttempts: Array<{
-    id: string;
-    reason: string;
-    detail: string;
-    createdAt: string;
-    href: string;
-    pillClass: string;
-  }>;
-};
 export default async function OperationsPolicyPage({
   searchParams,
 }: {
@@ -316,124 +294,6 @@ function buildPolicyRecommendationReview(
       },
     ],
     cards,
-  };
-}
-
-function buildBookingCreateGateReview(
-  settings: AdminOperationalPolicySetting[],
-  auditLogs: AdminAuditLog[],
-): BookingCreateGateReview {
-  const customerDistanceKm =
-    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingMaxCustomerCurrentToAddressKm;
-  const preferredPartnerDistanceKm =
-    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingMaxPreferredPartnerDistanceKm;
-  const freshnessMinutes =
-    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingCurrentLocationFreshnessMinutes;
-  const distanceGateEnabled = policyBooleanValue(settings, 'booking.distance_gate_enabled') ?? true;
-  const serviceAreaRequired = policyBooleanValue(settings, 'booking.service_area_required') ?? true;
-  const rejections = auditLogs
-    .filter((log) => log.action === 'booking.create.rejected')
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
-  const reasonCounts = bookingGateReasonCounts(rejections);
-
-  return {
-    currentPolicyLabel: distanceGateEnabled ? 'Distance gates active' : 'Distance gates disabled',
-    summary: [
-      {
-        label: 'Optional customer GPS evidence',
-        value: `${customerDistanceKm} km`,
-        helper: 'Optional evidence only. Booking authority comes from the confirmed service address.',
-      },
-      {
-        label: 'First-pick partner gate',
-        value: `${preferredPartnerDistanceKm} km`,
-        helper: 'Preferred partner must be near the booking address before payment opens.',
-      },
-      {
-        label: 'Location freshness',
-        value: `${freshnessMinutes} min`,
-        helper: 'Optional GPS evidence freshness when the app can provide it.',
-      },
-      {
-        label: 'Blocked attempts',
-        value: String(rejections.length),
-        helper: 'Recent booking create requests stopped before payment and matching.',
-      },
-    ],
-    rows: [
-      {
-        key: 'booking.distance_gate_enabled',
-        gate: 'Distance gate',
-        current: distanceGateEnabled ? 'Enabled' : 'Disabled',
-        defaultValue: 'Enabled',
-        operatorMeaning: distanceGateEnabled
-          ? 'First-pick partner distance is checked from the booking address. Customer GPS stays optional evidence.'
-          : 'Partner distance gate is disabled. Keep this only for controlled tests.',
-        evidence: 'Blocked attempts',
-        href: '/bookings?view=blocked-create',
-        pillClass: distanceGateEnabled ? 'pill-success' : 'pill-danger',
-      },
-      {
-        key: 'booking.service_area_required',
-        gate: 'Service area',
-        current: serviceAreaRequired ? 'Required' : 'Optional',
-        defaultValue: 'Required',
-        operatorMeaning: serviceAreaRequired
-          ? 'Booking address must be inside an enabled Vietnam service area.'
-          : 'Booking can be created outside configured service areas. Use only before a city launch test.',
-        evidence: `${reasonCounts.get('BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') ?? 0} reject(s)`,
-        href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
-        pillClass: serviceAreaRequired ? 'pill-success' : 'pill-warn',
-      },
-      {
-        key: 'booking.max_customer_current_to_booking_address_km',
-        gate: 'Optional customer GPS evidence',
-        current: `${customerDistanceKm} km`,
-        defaultValue: '20 km',
-        operatorMeaning:
-          'A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence.',
-        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} historical row(s)`,
-        href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
-        pillClass: customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
-      },
-      {
-        key: 'booking.max_preferred_partner_distance_km',
-        gate: 'First-pick partner',
-        current: `${preferredPartnerDistanceKm} km`,
-        defaultValue: '50 km',
-        operatorMeaning:
-          'The selected first-pick Partner must be close enough to the booking address before payment authorization.',
-        evidence: `${reasonCounts.get('PREFERRED_PARTNER_TOO_FAR') ?? 0} reject(s)`,
-        href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
-        pillClass: preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
-      },
-      {
-        key: 'booking.current_location_freshness_minutes',
-        gate: 'Optional GPS freshness',
-        current: `${freshnessMinutes} min`,
-        defaultValue: '10 min',
-        operatorMeaning:
-          'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
-        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} historical row(s)`,
-        href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
-        pillClass: freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
-      },
-    ],
-    recentAttempts: rejections.slice(0, 5).map((log) => {
-      const metadata = readPlainRecord(log.metadata);
-      const reasonCode = readOptionalString(metadata?.reasonCode) ?? 'UNKNOWN';
-      return {
-        id: log.id,
-        reason: bookingGateReasonLabel(reasonCode),
-        detail: bookingGateAttemptDetail(metadata),
-        createdAt: log.createdAt,
-        href: `/audit-log?query=${encodeURIComponent(reasonCode)}`,
-        pillClass: bookingGateReasonPill(reasonCode),
-      };
-    }),
   };
 }
 
@@ -1159,101 +1019,6 @@ function policyStringValueFromKeys(settings: AdminOperationalPolicySetting[], ke
     }
   }
   return null;
-}
-
-function policyBooleanValue(settings: AdminOperationalPolicySetting[], key: string) {
-  const value = policyRawValue(settings, key);
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (normalized === 'true') {
-      return true;
-    }
-    if (normalized === 'false') {
-      return false;
-    }
-  }
-  return null;
-}
-
-function bookingGateReasonCounts(logs: AdminAuditLog[]) {
-  const counts = new Map<string, number>();
-  logs.forEach((log) => {
-    const metadata = readPlainRecord(log.metadata);
-    const reasonCode = readOptionalString(metadata?.reasonCode) ?? 'UNKNOWN';
-    counts.set(reasonCode, (counts.get(reasonCode) ?? 0) + 1);
-  });
-  return counts;
-}
-
-function bookingGateReasonLabel(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Optional customer GPS distance evidence';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick partner too far';
-  }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
-    return 'Outside service area';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Optional stale customer GPS';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Optional missing customer GPS';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Optional missing GPS timestamp';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Optional invalid GPS timestamp';
-  }
-  return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
-}
-
-function bookingGateReasonPill(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'pill-warn';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'pill-danger';
-  }
-  return 'pill-info';
-}
-
-function bookingGateCurrentLocationRejectCount(counts: Map<string, number>) {
-  return [
-    'CUSTOMER_CURRENT_LOCATION_MISSING',
-    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
-    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
-    'CUSTOMER_CURRENT_LOCATION_STALE',
-  ].reduce((total, key) => total + (counts.get(key) ?? 0), 0);
-}
-
-function bookingGateAttemptDetail(metadata: Record<string, unknown> | null) {
-  if (!metadata) {
-    return 'No detailed booking gate evidence was recorded.';
-  }
-  const reason = readOptionalString(metadata.reason);
-  const customerDistance = readOptionalNumber(metadata.customerDistanceMeters);
-  const customerLimit = readOptionalNumber(metadata.customerDistanceLimitMeters);
-  const partnerDistance = readOptionalNumber(metadata.preferredProviderDistanceMeters);
-  const partnerLimit = readOptionalNumber(metadata.preferredProviderDistanceLimitMeters);
-  const address = readPlainRecord(metadata.bookingAddress);
-  const addressText = readOptionalString(address?.addressText);
-  const parts = [
-    reason,
-    customerDistance !== null && customerLimit !== null
-      ? `Customer ${formatDistance(customerDistance)} / limit ${formatDistance(customerLimit)}`
-      : null,
-    partnerDistance !== null && partnerLimit !== null
-      ? `First-pick ${formatDistance(partnerDistance)} / limit ${formatDistance(partnerLimit)}`
-      : null,
-    addressText ? `Address: ${addressText}` : null,
-  ].filter(Boolean);
-  return parts.length > 0 ? parts.join('. ') : 'Booking create was stopped before payment authorization.';
 }
 
 export function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
