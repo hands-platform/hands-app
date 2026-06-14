@@ -178,7 +178,7 @@ export function buildBookingOperatorRouteCards(input: BookingOperatorRouteInput)
       value: `${input.blockedCreateCount}`,
       detail: input.blockedCreateDetail,
       owner: 'Product ops',
-      action: 'Inspect booking.create.rejected audit records.',
+      action: 'Inspect blocked booking create audit records.',
       href: '/bookings?view=blocked-create',
     },
   ] satisfies readonly BookingCommandRouteCard[];

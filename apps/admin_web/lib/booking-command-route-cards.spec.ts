@@ -77,5 +77,9 @@ describe('booking command route cards', () => {
       href: '/bookings/booking-1',
       owner: 'Support',
     });
+    expect(cards[7]).toMatchObject({
+      action: 'Inspect blocked booking create audit records.',
+      href: '/bookings?view=blocked-create',
+    });
   });
 });
