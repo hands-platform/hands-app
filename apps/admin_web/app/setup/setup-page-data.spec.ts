@@ -39,6 +39,7 @@ describe('setup page data', () => {
         'Run fcm:push-smoke -- --preflight to check API readiness, Firebase project alignment, notification availability, and registered device readiness without sending FCM.',
         'If the latest Partner alert is blocked by notification.partner_alert_channel, FCM smoke auto-selects or suggests a standard-notification id instead of changing policy just for testing.',
         'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
+        'Use the notification board to separate credential or delivery failures, disabled tokens, stale tokens, and pending worker queue issues before retry.',
         'After fcm:push-smoke, review the FCM route, failed sends, disabled device, stale device, pending queue, operations handoff, and Notification audit evidence before enabling FCM push broadly.',
       ]),
     );

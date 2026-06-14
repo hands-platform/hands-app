@@ -103,7 +103,8 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('Live push send');
     expect(rendered).toContain('reuse an enabled device already registered');
     expect(rendered).toContain('Review queues and evidence');
-    expect(rendered).toContain('latest FCM sent result');
+    expect(rendered).toContain('failed sends for credential or delivery failures');
+    expect(rendered).toContain('pending for worker backlog');
     expect(rendered).toContain('Additional checks');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight');

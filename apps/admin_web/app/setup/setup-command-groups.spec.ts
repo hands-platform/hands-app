@@ -45,7 +45,10 @@ describe('setup command groups', () => {
       'Additional checks',
     ]);
     expect(groups.find((group) => group.title === 'Review queues and evidence')?.detail).toContain(
-      'latest FCM sent result',
+      'failed sends for credential or delivery failures',
+    );
+    expect(groups.find((group) => group.title === 'Review queues and evidence')?.detail).toContain(
+      'pending for worker backlog',
     );
     expect(groups.find((group) => group.title === 'Review queues and evidence')?.commands).toEqual([
       'Open http://localhost:3101/notifications?review=fcm',

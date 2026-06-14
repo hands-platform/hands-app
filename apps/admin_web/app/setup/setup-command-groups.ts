@@ -82,7 +82,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     {
       title: 'Review queues and evidence',
       detail:
-        'Open the operational queues and handoff/audit evidence that confirm route, failures, disabled devices, stale tokens, pending attempts, and the latest FCM sent result.',
+        'Open FCM route for success evidence, failed sends for credential or delivery failures, disabled/stale device queues for token health, pending for worker backlog, and handoff/audit evidence for operator history.',
       commands: commands.filter(isFcmReviewCommand),
     },
   ].filter((group) => group.commands.length > 0);
