@@ -1,0 +1,72 @@
+import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
+import { normalizedTextContent } from './operations-policy-section-test-utils';
+
+describe('OperationsPolicyOutcomeEffectSection', () => {
+  it('renders policy outcome rows and cards', () => {
+    const section = OperationsPolicyOutcomeEffectSection({
+      analysis: {
+        cards: [
+          {
+            className: 'ops-task-done',
+            detail: 'Snapshots are ready for comparison.',
+            operatorAction: 'Use these cohorts before changing policy.',
+            pillClass: 'pill-success',
+            scope: 'Evidence',
+            title: 'Policy snapshots are measurable',
+          },
+        ],
+        metrics: [
+          {
+            helper: '2/3 sampled booking(s) reached a selected or active Partner.',
+            label: 'Matched rate',
+            value: '67%',
+          },
+        ],
+        rows: [
+          {
+            avgBackupInvites: '2 partner(s)',
+            avgParticipants: '3 partner(s)',
+            completedRate: '33%',
+            key: 'Marketplace policy:10 km',
+            matchedRate: '67%',
+            outcomeDetail: '0 closed outcome(s) to review / live value now 10 km.',
+            outcomeLabel: 'On track',
+            outcomePill: 'pill-success',
+            operatorRead: 'This cohort is currently performing at or above average.',
+            policy: 'Marketplace policy',
+            sample: '3 booking(s)',
+            sampleRaw: 3,
+            value: '10 km',
+          },
+        ],
+        sampleCount: 3,
+      },
+    });
+
+    const rendered = normalizedTextContent(section);
+
+    expect(section.type).toBe('section');
+    expect(rendered).toContain('Policy outcome effect');
+    expect(rendered).toContain('3 booking(s) with saved policy');
+    expect(rendered).toContain('Matched rate');
+    expect(rendered).toContain('Marketplace policy');
+    expect(rendered).toContain('Policy snapshots are measurable');
+  });
+
+  it('renders the empty state when no cohorts exist', () => {
+    const rendered = normalizedTextContent(
+      OperationsPolicyOutcomeEffectSection({
+        analysis: {
+          cards: [],
+          metrics: [],
+          rows: [],
+          sampleCount: 0,
+        },
+      }),
+    );
+
+    expect(rendered).toContain('0 booking(s) with saved policy');
+    expect(rendered).toContain('No policy snapshots are available yet');
+    expect(rendered).toContain('Partners accept, reject, or complete');
+  });
+});
