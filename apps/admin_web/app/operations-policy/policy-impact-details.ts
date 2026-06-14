@@ -15,7 +15,10 @@ type PolicyImpactDetails = {
 
 export function policyImpactDetails(key: string): PolicyImpactDetails {
   const impactKey = policyImpactDetailsKey(key);
-  const details: Record<string, PolicyImpactDetails> = {
+  return POLICY_IMPACT_DETAILS[impactKey] ?? FALLBACK_POLICY_IMPACT_DETAILS;
+}
+
+const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
     'booking.distance_gate_enabled': {
       area: 'Booking create gate',
       title: 'Controls whether local booking distance checks are enforced',
@@ -392,40 +395,38 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
         },
       ],
     },
-  };
+};
 
-  return (
-    details[impactKey] ?? {
-      area: 'Operations',
-      title: 'Operational policy',
-      detail: 'This setting is tracked for auditability and future automation.',
-      saveChecks: [
-        {
-          label: 'Audit trail',
-          detail: 'Check recent policy changes and leave a clear reason before saving another change.',
-          href: '/audit-log',
-        },
-        {
-          label: 'Operations dashboard',
-          detail: 'Review live booking, partner, and customer health before changing behavior.',
-          href: '/',
-        },
-      ],
-    }
-  );
-}
+const FALLBACK_POLICY_IMPACT_DETAILS: PolicyImpactDetails = {
+  area: 'Operations',
+  title: 'Operational policy',
+  detail: 'This setting is tracked for auditability and future automation.',
+  saveChecks: [
+    {
+      label: 'Audit trail',
+      detail: 'Check recent policy changes and leave a clear reason before saving another change.',
+      href: '/audit-log',
+    },
+    {
+      label: 'Operations dashboard',
+      detail: 'Review live booking, partner, and customer health before changing behavior.',
+      href: '/',
+    },
+  ],
+};
+
+const POLICY_IMPACT_DETAIL_ALIASES: Record<string, string> = {
+  [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]:
+    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  [OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]:
+    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  [OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]:
+    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+  [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]:
+    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+};
 
 function policyImpactDetailsKey(key: string) {
-  const aliases: Record<string, string> = {
-    [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]:
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-    [OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]:
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
-    [OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]:
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
-    [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]:
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-  };
-  return aliases[key] ?? key;
+  return POLICY_IMPACT_DETAIL_ALIASES[key] ?? key;
 }
 
