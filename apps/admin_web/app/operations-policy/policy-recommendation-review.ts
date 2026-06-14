@@ -193,18 +193,7 @@ function policyRecommendationPosture(
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.preferredAcceptMode) {
-    return {
-      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'First-pick priority',
-      detail:
-        value === 'AUTO_MATCH_ON_ACCEPT'
-          ? 'The API now ignores this historical value and uses first-pick priority with customer fallback instead.'
-          : 'First-pick priority is required: the first-pick Partner can match first, otherwise customer fallback choice remains available.',
-      operatorAction: 'Keep first-pick priority active before scaling marketplace partner shortlist UX.',
-      alignedAction:
-        'First-pick priority with customer fallback is aligned with the intended direct + marketplace matching model.',
-      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
-    };
+    return preferredAcceptModePosture(value, recommended);
   }
 
   if (
@@ -213,33 +202,11 @@ function policyRecommendationPosture(
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
     ])
   ) {
-    return {
-      status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate marketplace' : 'Delayed marketplace',
-      detail:
-        value === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
-          : 'This protects the first-pick Partner window, but marketplace Partners now open immediately when the first-pick Partner declines.',
-      operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
-      alignedAction:
-        'Immediate marketplace participation supports lower customer anxiety during the first window.',
-      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
-    };
+    return marketplaceOpenModePosture(value, recommended, liveContext);
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.walletNegativeGate) {
-    const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
-    return {
-      status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
-      detail: blocksMarketplace
-        ? 'Cash-debt exposure is contained at final acceptance, service start, and payout release gates.'
-        : 'Historical exception mode is retained for audit only. The MVP still blocks final acceptance, service start, and payout release until settlement.',
-      operatorAction:
-        'Keep marketplace list visibility open; use settlement evidence before final acceptance, service start, or payout release.',
-      alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
-      className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
-    };
+    return walletNegativeGatePosture(value);
   }
 
   if (setting.key === 'booking.distance_gate_enabled') {
@@ -390,6 +357,58 @@ function marketplaceLocationFreshnessPosture(
       'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
     className: looser ? 'ops-task-pending' : 'ops-task-done',
     pillClass: looser ? 'pill-warn' : 'pill-success',
+  };
+}
+
+function preferredAcceptModePosture(
+  value: string,
+  recommended: string,
+): PolicyRecommendationPosture {
+  return {
+    status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'First-pick priority',
+    detail:
+      value === 'AUTO_MATCH_ON_ACCEPT'
+        ? 'The API now ignores this historical value and uses first-pick priority with customer fallback instead.'
+        : 'First-pick priority is required: the first-pick Partner can match first, otherwise customer fallback choice remains available.',
+    operatorAction: 'Keep first-pick priority active before scaling marketplace partner shortlist UX.',
+    alignedAction:
+      'First-pick priority with customer fallback is aligned with the intended direct + marketplace matching model.',
+    className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+    pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+  };
+}
+
+function marketplaceOpenModePosture(
+  value: string,
+  recommended: string,
+  liveContext: string,
+): PolicyRecommendationPosture {
+  return {
+    status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate marketplace' : 'Delayed marketplace',
+    detail:
+      value === 'IMMEDIATE_WITHIN_WINDOW'
+        ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
+        : 'This protects the first-pick Partner window, but marketplace Partners now open immediately when the first-pick Partner declines.',
+    operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
+    alignedAction:
+      'Immediate marketplace participation supports lower customer anxiety during the first window.',
+    className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+    pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+  };
+}
+
+function walletNegativeGatePosture(value: string): PolicyRecommendationPosture {
+  const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
+  return {
+    status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
+    detail: blocksMarketplace
+      ? 'Cash-debt exposure is contained at final acceptance, service start, and payout release gates.'
+      : 'Historical exception mode is retained for audit only. The MVP still blocks final acceptance, service start, and payout release until settlement.',
+    operatorAction:
+      'Keep marketplace list visibility open; use settlement evidence before final acceptance, service start, or payout release.',
+    alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
+    className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
+    pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
   };
 }
 
