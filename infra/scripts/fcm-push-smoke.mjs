@@ -163,6 +163,11 @@ const alternativeNotificationPreflights = defaultNotificationSelection.alternati
 const warnings = registeredDevicePreflight.warnings ?? [];
 
 if (preflight) {
+  const retryAuditPreflight = await findNotificationRetryAuditPreflight(
+    adminAuth.accessToken,
+    notificationId,
+  );
+  const retryAuditActions = retryAuditPreflightNextActions(retryAuditPreflight);
   const blockers = preflightBlockers({
     notificationId,
     notificationPreflight,
@@ -193,13 +198,19 @@ if (preflight) {
         notificationSelection: summarizeNotificationSelection(defaultNotificationSelection),
         notificationPreflight,
         partnerAlertPolicyPreflight,
+        retryAuditPreflight,
         alternativeNotificationPreflights: blockedAlternativeNotificationPreflights,
         liveReady: blockers.length === 0,
         warnings,
         warningLabels: warnings.map((warning) => warning.label),
         blockers,
         blockerLabels: blockers.map(fcmSmokeBlockerLabel),
-        nextActions: preflightNextActions(blockers, blockedAlternativeNotificationPreflights, warnings),
+        nextActions: preflightNextActions(
+          blockers,
+          blockedAlternativeNotificationPreflights,
+          warnings,
+          retryAuditActions,
+        ),
       },
       null,
       2,
@@ -451,6 +462,13 @@ async function listAdminNotifications(accessToken) {
   return Array.isArray(notifications) ? notifications : [];
 }
 
+async function listAdminAuditLogs(accessToken) {
+  const auditLogs = await request('/admin/audit-logs', {
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  return Array.isArray(auditLogs) ? auditLogs : [];
+}
+
 function findNotification(notifications, notificationId) {
   return notifications.find((notification) => notification.id === notificationId) ?? null;
 }
@@ -655,6 +673,165 @@ function summarizeDelivery(delivery) {
   };
 }
 
+async function findNotificationRetryAuditPreflight(accessToken, notificationId) {
+  if (!notificationId) {
+    return {
+      source: '/admin/audit-logs',
+      notificationId: null,
+      scannedCount: 0,
+      matchingCount: 0,
+      latestRetryAudit: null,
+      evidence: 'NO_NOTIFICATION_SELECTED',
+      staleTokenEvidenceReady: false,
+      operatorAction: 'Select a notification before checking retry audit evidence.',
+    };
+  }
+
+  const auditLogs = await listAdminAuditLogs(accessToken);
+  const matchingRetryLogs = auditLogs.filter(
+    (log) =>
+      log.action === 'notification.retry' &&
+      retryAuditNotificationId(log) === notificationId,
+  );
+  const latestRetryAudit = summarizeRetryAuditLog(matchingRetryLogs[0]);
+  const evidence = retryAuditEvidence(latestRetryAudit);
+
+  return {
+    source: '/admin/audit-logs',
+    notificationId,
+    scannedCount: auditLogs.length,
+    matchingCount: matchingRetryLogs.length,
+    latestRetryAudit,
+    evidence,
+    staleTokenEvidenceReady: evidence === 'HAS_PUSH_DEVICE_LAST_SEEN_AT',
+    operatorAction: retryAuditPreflightOperatorAction(evidence),
+    auditHref: `/audit-log?bucket=Notification&range=7d&q=${encodeURIComponent(notificationId)}`,
+    notificationHref: `/notifications?review=fcm&notificationId=${encodeURIComponent(notificationId)}`,
+  };
+}
+
+function summarizeRetryAuditLog(log) {
+  if (!log) {
+    return null;
+  }
+
+  const metadata = auditMetadata(log);
+  const latestDelivery = recordValue(metadata.latestDelivery);
+  const retryJob = recordValue(metadata.retryJob);
+
+  return {
+    id: log.id ?? null,
+    createdAt: log.createdAt ?? null,
+    action: log.action ?? null,
+    target: log.target ?? null,
+    notificationId: stringValue(metadata.notificationId),
+    retryRisk: stringValue(metadata.retryRisk),
+    retryAlreadyDelivered: booleanValue(metadata.retryAlreadyDelivered),
+    operatorAction: metadata.operatorAction
+      ? fcmSmokeDisplayText(metadata.operatorAction)
+      : null,
+    latestDelivery: summarizeRetryAuditLatestDelivery(latestDelivery),
+    retryJob: summarizeRetryAuditJob(retryJob),
+  };
+}
+
+function summarizeRetryAuditLatestDelivery(delivery) {
+  if (!delivery) {
+    return null;
+  }
+
+  return {
+    id: stringValue(delivery.id),
+    provider: stringValue(delivery.provider),
+    status: stringValue(delivery.status),
+    attemptedAt: stringValue(delivery.attemptedAt),
+    failureCode: stringValue(delivery.failureCode),
+    pushDeviceId: stringValue(delivery.pushDeviceId),
+    pushDeviceEnabled: booleanValue(delivery.pushDeviceEnabled),
+    pushDeviceLastSeenAt: stringValue(delivery.pushDeviceLastSeenAt),
+    pushDevicePlatform: stringValue(delivery.pushDevicePlatform),
+    hasPushDeviceLastSeenAt: Object.hasOwn(delivery, 'pushDeviceLastSeenAt'),
+  };
+}
+
+function summarizeRetryAuditJob(job) {
+  if (!job) {
+    return null;
+  }
+
+  return {
+    queueName: stringValue(job.queueName),
+    jobName: stringValue(job.jobName),
+    attempts: numberValue(job.attempts),
+    backoffMs: numberValue(job.backoffMs),
+    queuedJobId: stringValue(job.queuedJobId),
+  };
+}
+
+function retryAuditEvidence(latestRetryAudit) {
+  if (!latestRetryAudit) {
+    return 'NO_RETRY_AUDIT';
+  }
+  if (!latestRetryAudit.latestDelivery) {
+    return 'NO_DELIVERY_EVIDENCE';
+  }
+  if (!latestRetryAudit.latestDelivery.hasPushDeviceLastSeenAt) {
+    return 'LEGACY_AUDIT_WITHOUT_PUSH_DEVICE_LAST_SEEN_AT';
+  }
+  if (!latestRetryAudit.latestDelivery.pushDeviceLastSeenAt) {
+    return 'NO_PUSH_DEVICE_LAST_SEEN_AT';
+  }
+  return 'HAS_PUSH_DEVICE_LAST_SEEN_AT';
+}
+
+function retryAuditPreflightOperatorAction(evidence) {
+  if (evidence === 'NO_RETRY_AUDIT') {
+    return 'No retry audit exists yet. Run live retry only after confirming FCM side effects are intended.';
+  }
+  if (evidence === 'LEGACY_AUDIT_WITHOUT_PUSH_DEVICE_LAST_SEEN_AT') {
+    return 'Latest retry audit is from older metadata. Restart the API before relying on stale-token retry risk.';
+  }
+  if (evidence === 'NO_DELIVERY_EVIDENCE') {
+    return 'Confirm notification workers and queue processing before retrying.';
+  }
+  if (evidence === 'NO_PUSH_DEVICE_LAST_SEEN_AT') {
+    return 'Refresh the app FCM token before relying on retry delivery.';
+  }
+  return 'Retry audit includes push-device freshness evidence for stale-token review.';
+}
+
+function retryAuditPreflightNextActions(preflight) {
+  if (!preflight?.operatorAction || preflight.evidence === 'HAS_PUSH_DEVICE_LAST_SEEN_AT') {
+    return [];
+  }
+
+  return [preflight.operatorAction];
+}
+
+function retryAuditNotificationId(log) {
+  return stringValue(auditMetadata(log).notificationId);
+}
+
+function auditMetadata(log) {
+  return recordValue(log?.metadata) ?? {};
+}
+
+function recordValue(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+}
+
+function stringValue(value) {
+  return typeof value === 'string' ? value : null;
+}
+
+function booleanValue(value) {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function numberValue(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 function normalizeRole(value) {
   const normalized = value.trim().toUpperCase();
   if (normalized !== 'CUSTOMER' && normalized !== 'PROVIDER') {
@@ -837,14 +1014,23 @@ function expectedProviderBlocker(partnerAlertPolicyPreflight) {
   return 'PARTNER_ALERT_POLICY_PROVIDER_MISMATCH';
 }
 
-function preflightNextActions(blockers, alternativeNotificationPreflights = [], warnings = []) {
+function preflightNextActions(
+  blockers,
+  alternativeNotificationPreflights = [],
+  warnings = [],
+  advisoryActions = [],
+) {
   const warningActions = warnings
     .map((warning) => warning.operatorAction)
     .filter((action) => typeof action === 'string' && action.length > 0);
+  const safeAdvisoryActions = advisoryActions.filter(
+    (action) => typeof action === 'string' && action.length > 0,
+  );
 
   if (blockers.length === 0) {
     return [
       ...warningActions,
+      ...safeAdvisoryActions,
       'Run npm.cmd run fcm:push-smoke without --preflight when ready to send a live FCM retry.',
     ];
   }
@@ -852,6 +1038,7 @@ function preflightNextActions(blockers, alternativeNotificationPreflights = [], 
   return [
     ...blockers.flatMap((blocker) => fcmSmokeBlockerAction(blocker, { alternativeNotificationPreflights })),
     ...warningActions,
+    ...safeAdvisoryActions,
   ];
 }
 
