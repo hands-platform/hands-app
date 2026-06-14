@@ -455,7 +455,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Open matching',
       bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length.toString(),
-      'Live counter: customer is waiting for partner response.',
+      'Live counter: Customer is waiting for Partner response.',
     ],
     ['Active bookings', activeBookings.length.toString(), 'Bookings that still need operational visibility.'],
     [
@@ -502,7 +502,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Live matching customers',
       appPresence.liveOpenMatchingCustomers.toString(),
-      'Customers currently in app while waiting for partner matching.',
+      'Customers currently in app while waiting for Partner matching.',
     ],
     [
       'Partners in app',
@@ -536,7 +536,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking final acceptance, service start, and payout release.`,
+      `${cashSettlementSummary.providerCount} Partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking final acceptance, service start, and payout release.`,
     ],
     [
       'Open payout batches',
@@ -546,7 +546,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Action queue',
       queue.length.toString(),
-      'Prioritized items generated from booking, payment, partner, and notification state.',
+      'Prioritized items generated from booking, payment, Partner, and notification state.',
     ],
   ];
   const coreOperatingCounterLabels = [
@@ -596,7 +596,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     {
       label: 'Partner Management',
       href: '/partners',
-      primary: 'Partner list and partner detail',
+      primary: 'Partner list and Partner detail',
       helper:
         'KYC, service setup, marketplace access, app activity, location freshness, tax, payout, and account controls.',
       links: [
@@ -625,7 +625,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       href: '/earnings',
       primary: 'Payments, wallet, tax, payout',
       helper:
-        'Cash fee debt, platform fees, withholding, refunds, payout batches, and partner settlement readiness.',
+        'Cash fee debt, platform fees, withholding, refunds, payout batches, and Partner settlement readiness.',
       links: [
         ['Closeout', '/finance-closeout'],
         ['Payments', '/payments'],
@@ -657,7 +657,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div>
           <h1>HANDS Operations</h1>
           <p className="muted">
-            Daily command center for dispatch, partner supply, payment holds, refunds, notifications, and
+            Daily command center for dispatch, Partner supply, payment holds, refunds, notifications, and
             payout readiness.
           </p>
         </div>
@@ -700,7 +700,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Core operating counters</h2>
             <p className="muted">
-              Booking volume, matching wait, completed and cancelled work, live app presence, partner supply,
+              Booking volume, matching wait, completed and cancelled work, live app presence, Partner supply,
               payment holds, and cash debt in one operator scan.
             </p>
           </div>
@@ -738,7 +738,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Operations command board</h2>
             <p className="muted">
-              One-screen command order for live bookings, first-pick wait, 10km partner marketplace, customer
+              One-screen command order for live bookings, first-pick wait, 10km Partner marketplace, customer
               choice, chat handoff, settlement gates, notifications, and setup.
             </p>
           </div>
@@ -787,7 +787,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Open marketplace bookings</span>
             <strong>{marketplaceParticipantSnapshot.openMarketplaceBookings}</strong>
-            <small>Bookings still open for first-pick response, partner participation, or customer choice.</small>
+            <small>Bookings still open for first-pick response, Partner participation, or customer choice.</small>
           </div>
           <div>
             <span>Participant rows</span>
@@ -797,12 +797,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>First-pick rows</span>
             <strong>{marketplaceParticipantSnapshot.firstPickRows}</strong>
-            <small>Preferred partner response rows from the first-pick window.</small>
+            <small>Preferred Partner response rows from the first-pick window.</small>
           </div>
           <div>
             <span>Marketplace participants</span>
             <strong>{marketplaceParticipantSnapshot.marketplaceRows}</strong>
-            <small>Rows from partners beyond the preferred first-pick partner.</small>
+            <small>Rows from Partners beyond the preferred first-pick Partner.</small>
           </div>
           <div>
             <span>Customer-selectable</span>
@@ -812,17 +812,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Choice pending bookings</span>
             <strong>{marketplaceParticipantSnapshot.customerChoicePendingBookings}</strong>
-            <small>Open bookings where the customer can choose a final partner now.</small>
+            <small>Open bookings where the customer can choose a final Partner now.</small>
           </div>
           <div>
             <span>Customer selected</span>
             <strong>{marketplaceParticipantSnapshot.customerSelectedRows}</strong>
-            <small>Final partner decisions owned by the customer.</small>
+            <small>Final Partner decisions owned by the customer.</small>
           </div>
           <div>
             <span>No participants yet</span>
             <strong>{marketplaceParticipantSnapshot.openBookingsWithoutParticipants}</strong>
-            <small>Open matching rows where the customer is still waiting for partner options.</small>
+            <small>Open matching rows where the customer is still waiting for Partner options.</small>
           </div>
           <div>
             <span>Cash fee gate</span>
@@ -939,7 +939,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Booking evidence command queue</h2>
             <p className="muted">
               Direct routes into the booking monitor evidence filters. Use these when staff need the exact
-              booking list behind address, partner choice, chat archive, payment, wallet, location, alert, or
+              booking list behind address, Partner choice, chat archive, payment, wallet, location, alert, or
               closeout evidence.
             </p>
           </div>
@@ -1025,8 +1025,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Live operations radar</h2>
             <p className="muted">
-              Current-shift radar for customer wait, first-pick, 10km marketplace, final partner choice, chat
-              handoff, partner supply, cash fee gates, payout batches, and setup readiness.
+              Current-shift radar for customer wait, first-pick, 10km marketplace, final Partner choice, chat
+              handoff, Partner supply, cash fee gates, payout batches, and setup readiness.
             </p>
           </div>
           <Link className="text-link" href={liveOperationsRadar[0]?.href ?? '/bookings'}>
@@ -1065,7 +1065,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Admin menu map</h2>
             <p className="muted">
               Recommended operating structure for staff: start with the dashboard, then open the specific
-              customer, partner, booking, finance, or policy workspace.
+              customer, Partner, booking, finance, or policy workspace.
             </p>
           </div>
           <Link className="text-link" href="/audit-log">
@@ -1130,7 +1130,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Shift operating route</h2>
             <p className="muted">
               Click-through route for the control room. It keeps live booking work, customer final choice,
-              partner supply, chat archive, marketplace gates, and payout release in the same operating order.
+              Partner supply, chat archive, marketplace gates, and payout release in the same operating order.
             </p>
           </div>
           <Link className="text-link" href={shiftOperatingRoute[0]?.href ?? '/bookings'}>
@@ -1161,7 +1161,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Daily operations snapshot</h2>
             <p className="muted">
-              One-screen view of today&apos;s bookings, matching wait, app presence, partner supply, cash
+              One-screen view of today&apos;s bookings, matching wait, app presence, Partner supply, cash
               settlement blocks, and notification delivery.
             </p>
           </div>
@@ -1223,7 +1223,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Shift command briefing</h2>
             <p className="muted">
-              Start here before opening detail pages. It compresses dispatch, partner supply, cash debt,
+              Start here before opening detail pages. It compresses dispatch, Partner supply, cash debt,
               notification, and payout pressure into one operating handoff.
             </p>
           </div>
@@ -1273,7 +1273,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-note">
               <strong>No same-shift queue item is visible.</strong>
               <p className="muted">
-                Keep monitoring live matching, partner locations, cash debt, and notification delivery as
+                Keep monitoring live matching, Partner locations, cash debt, and notification delivery as
                 demand changes.
               </p>
             </div>
@@ -1286,7 +1286,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Opening shift checklist</h2>
             <p className="muted">
-              A simple order for the first admin pass: protect waiting customers, confirm partner supply,
+              A simple order for the first admin pass: protect waiting customers, confirm Partner supply,
               clear money blockers, then check external integrations.
             </p>
           </div>
@@ -1419,7 +1419,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Operations policy snapshot</h2>
             <p className="muted">
               Live dispatch rules and owner decisions currently guiding matching, marketplace participation,
-              cancellation, no-show, and partner alerts.
+              cancellation, no-show, and Partner alerts.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -1576,7 +1576,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>No participants</span>
               <strong>{bookingDeepDive.openWithoutParticipants}</strong>
-              <small>Customer waiting, no partner participation yet</small>
+              <small>Customer waiting, no Partner participation yet</small>
             </div>
             <div>
               <span>Matched no chat</span>
@@ -2027,7 +2027,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Marketplace unblock quick order</h2>
             <p className="muted">
-              First-screen sequence for clearing partner marketplace holds. Tax setup stays as a
+              First-screen sequence for clearing Partner marketplace holds. Tax setup stays as a
               post-first-earning payout gate, not an initial marketplace gate.
             </p>
           </div>
@@ -2062,7 +2062,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Today command lanes</h2>
             <p className="muted">
-              High-level routing for the operating day: dispatch, partner onboarding, payments, payouts, and
+              High-level routing for the operating day: dispatch, Partner onboarding, payments, payouts, and
               setup.
             </p>
           </div>
@@ -2249,12 +2249,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <InfoRow
                 label="Matching"
                 value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
-                detail="Direct request first, nearby marketplace partners can participate when needed."
+                detail="Direct request first, nearby marketplace Partners can participate when needed."
               />
               <InfoRow
                 label="Chat"
                 value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
-                detail="Chat is expected after partner selection/service start."
+                detail="Chat is expected after Partner selection/service start."
               />
               <InfoRow
                 label="Partner locations"
@@ -2282,7 +2282,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <InfoRow
                 label="Platform fee"
                 value={money(earnings.platformFee, earnings.currency)}
-                detail="Admin revenue before partner payout."
+                detail="Admin revenue before Partner payout."
               />
               <InfoRow
                 label="Pending net"
@@ -2533,7 +2533,7 @@ function buildMatchingControlRoom(
       {
         label: 'Customer can choose',
         value: String(customerChoiceReady),
-        helper: 'Open bookings with accepted partners visible in the customer choice list.',
+        helper: 'Open bookings with accepted Partners visible in the customer choice list.',
       },
       {
         label: 'Policy timer',
@@ -2543,19 +2543,19 @@ function buildMatchingControlRoom(
       {
         label: 'Marketplace radius',
         value: formatDistance(backupRadiusMeters),
-        helper: `${averageEligible} average eligible partner(s) using row-level saved radius when available.`,
+        helper: `${averageEligible} average eligible Partner(s) using row-level saved radius when available.`,
       },
       {
         label: 'Marketplace invite cap',
         value: String(backupInvitationLimit),
-        helper: 'Maximum nearest eligible partners opened for marketplace participation on new bookings.',
+        helper: 'Maximum nearest eligible Partners opened for marketplace participation on new bookings.',
       },
       {
         label: 'Marketplace open rule',
         value: immediateBackup ? 'Immediate live' : 'Delayed live',
         helper: immediateBackup
-          ? 'New bookings allow eligible partners during the first-pick timer.'
-          : 'New bookings hold marketplace partners unless first-pick declines or the window expires.',
+          ? 'New bookings allow eligible Partners during the first-pick timer.'
+          : 'New bookings hold marketplace Partners unless first-pick declines or the window expires.',
       },
       {
         label: 'Saved snapshots',
@@ -2565,7 +2565,7 @@ function buildMatchingControlRoom(
       {
         label: 'Fresh online supply',
         value: String(freshOnlinePartners.length),
-        helper: `Online partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`,
+        helper: `Online Partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`,
       },
     ],
     checks: [
@@ -2573,8 +2573,8 @@ function buildMatchingControlRoom(
         status: attentionRows.length ? 'Action needed' : 'Clear',
         title: 'Timer and supply check',
         detail: attentionRows.length
-          ? `${attentionRows.length} open matching booking(s) are expired or have no fresh eligible nearby partner.`
-          : 'Open matching bookings have usable partner supply in the current sample.',
+          ? `${attentionRows.length} open matching booking(s) are expired or have no fresh eligible nearby Partner.`
+          : 'Open matching bookings have usable Partner supply in the current sample.',
         operatorAction: attentionRows.length
           ? 'Open the affected bookings, contact partners, or widen/refresh supply before customer wait grows.'
           : 'Keep monitoring response speed and participant depth.',
@@ -2585,11 +2585,11 @@ function buildMatchingControlRoom(
         status: immediateBackup ? 'Visible early' : 'Delayed',
         title: 'Marketplace participation mode',
         detail: immediateBackup
-          ? 'New bookings can show nearby marketplace partners during the first-pick response window.'
-          : 'New bookings keep marketplace partners waiting until timeout, unless first-pick declines first.',
+          ? 'New bookings can show nearby marketplace Partners during the first-pick response window.'
+          : 'New bookings keep marketplace Partners waiting until timeout, unless first-pick declines first.',
         operatorAction: immediateBackup
           ? 'This supports the current customer anxiety-reduction direction.'
-          : 'Use this only when first-pick partner response rate is strong enough, and monitor decline recovery.',
+          : 'Use this only when first-pick Partner response rate is strong enough, and monitor decline recovery.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -2620,8 +2620,8 @@ function buildMatchingControlRoom(
         status: freshOnlinePartners.length ? 'Location ready' : 'Location gap',
         title: 'Partner app location freshness',
         detail: freshOnlinePartners.length
-          ? `${freshOnlinePartners.length} online partner(s) have location data fresh within ${backupLocationMaxAgeMinutes} minutes.`
-          : 'No online partner has a fresh location update in the current admin sample.',
+          ? `${freshOnlinePartners.length} online Partner(s) have location data fresh within ${backupLocationMaxAgeMinutes} minutes.`
+          : 'No online Partner has a fresh location update in the current admin sample.',
         operatorAction: freshOnlinePartners.length
           ? 'This is enough to validate the low-cost last-location model.'
           : 'Ask partners to open the app so the 10-minute location update flow can seed matching.',
@@ -2660,8 +2660,8 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
   ).length;
   const failedRate = stats.sampleCount > 0 ? stats.failedOutcomeCount / stats.sampleCount : 0;
   const matchedRate = stats.sampleCount > 0 ? stats.matchedCount / stats.sampleCount : 0;
-  const avgInvites = dashboardAverageLabel(stats.backupInviteCount, stats.sampleCount, 'partner(s)');
-  const avgParticipants = dashboardAverageLabel(stats.participantCount, stats.sampleCount, 'partner(s)');
+  const avgInvites = dashboardAverageLabel(stats.backupInviteCount, stats.sampleCount, 'Partner(s)');
+  const avgParticipants = dashboardAverageLabel(stats.participantCount, stats.sampleCount, 'Partner(s)');
   const outcomeHealthy = stats.sampleCount > 0 && matchedRate >= 0.7 && failedRate <= 0.15;
 
   return {
@@ -2911,15 +2911,15 @@ function matchingRowNextAction(input: {
     return 'Confirm the customer sees the shortlist and can select the final partner.';
   }
   if (input.freshEligibleCount === 0 && input.eligibleCount > 0) {
-    return 'Ask nearby partners to refresh location or open the Partner app before widening policy.';
+    return 'Ask nearby Partners to refresh location or open the Partner app before widening policy.';
   }
   if (input.freshEligibleCount === 0) {
-    return 'Check local supply; no fresh nearby partner is currently available for marketplace participation.';
+    return 'Check local supply; no fresh nearby Partner is currently available for marketplace participation.';
   }
   if (input.backupWindowOpen) {
-    return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer choice list.`;
+    return `Nudge ${input.freshEligibleCount} eligible nearby Partner(s) to join the customer choice list.`;
   }
-  return `Monitor first-pick response from ${input.firstPickName ?? 'the preferred partner'} while marketplace supply stays ready.`;
+  return `Monitor first-pick response from ${input.firstPickName ?? 'the preferred Partner'} while marketplace supply stays ready.`;
 }
 
 function readOptionalNumber(value: unknown) {
@@ -3067,7 +3067,7 @@ function buildDailyOperationsSnapshot(input: {
     {
       label: 'Matching wait now',
       value: input.bookingOps.openMatching.toString(),
-      helper: 'Customers waiting for partner response',
+      helper: 'Customers waiting for Partner response',
       href: '/bookings?view=matching',
       tone: input.bookingOps.openMatching ? 'warn' : 'ok',
     },
@@ -3169,7 +3169,7 @@ function buildTodayCommandOrder(input: {
       value: `${matchingFollowUps} follow-up`,
       detail:
         matchingFollowUps > 0
-          ? 'Some open matching rows need partner supply, location refresh, or timer review.'
+          ? 'Some open matching rows need Partner supply, location refresh, or timer review.'
           : 'First-pick response window and marketplace participant supply look normal in the current snapshot.',
       href: matchingFollowUps ? '/bookings?view=marketplace' : '/operations-policy',
       tone: matchingFollowUps ? 'danger' : 'ok',
@@ -3188,7 +3188,7 @@ function buildTodayCommandOrder(input: {
     {
       step: 'Step 4',
       title: 'Cash fee settlement gate',
-      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
       detail: input.cashSettlementSummary.providerCount
           ? `${money(
             input.cashSettlementSummary.totalDebtAmount,
@@ -3279,7 +3279,7 @@ function buildShiftOperatingRoute(input: {
       value: `${firstPickRows + marketplaceRows} row(s)`,
       checkpoint:
         firstPickRows + marketplaceRows > 0
-          ? 'Confirm preferred partner response, 10km marketplace supply, and customer choice list readiness.'
+          ? 'Confirm preferred Partner response, 10km marketplace supply, and customer choice list readiness.'
           : 'No first-pick or marketplace row needs active intervention in this snapshot.',
       href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
       tone: firstPickRows + marketplaceRows ? 'info' : 'ok',
@@ -3300,10 +3300,10 @@ function buildShiftOperatingRoute(input: {
       lane: 'Finance settlement route',
       owner: 'Finance',
       title: 'Clear cash fee debt before finalization',
-      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
       checkpoint:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can view marketplace requests, but final acceptance, service start, and payout release wait for settlement.'
+          ? 'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout release wait for settlement.'
           : 'No cash fee debt is blocking final acceptance, service start, or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -3311,12 +3311,12 @@ function buildShiftOperatingRoute(input: {
     {
       lane: 'Partner supply route',
       owner: 'Partner Ops',
-      title: 'Refresh partner readiness and last location',
+      title: 'Refresh Partner readiness and last location',
       value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online}`,
       checkpoint:
         input.partnerSupply.onlineAvailable > 0
-          ? `${input.partnerSupply.staleLocation} stale location pin(s); use partner list for factual status checks.`
-          : 'No online available partner is visible; check app sessions, location freshness, and onboarding readiness.',
+          ? `${input.partnerSupply.staleLocation} stale location pin(s); use Partner list for factual status checks.`
+          : 'No online available Partner is visible; check app sessions, location freshness, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
@@ -3331,7 +3331,7 @@ function buildShiftOperatingRoute(input: {
       value: `${input.failedNotifications.length} alert / ${input.activePayoutBatches.length} payout`,
       checkpoint:
         input.failedNotifications.length > 0
-          ? 'Retry failed deliveries or mark stale devices so staff do not assume push reached the customer or partner.'
+          ? 'Retry failed deliveries or mark stale devices so staff do not assume push reached the customer or Partner.'
           : 'Notification delivery is clear; review payout batches by weekly, monthly, or admin-selected cycle.',
       href: input.failedNotifications.length ? '/notifications?review=failed' : '/payouts',
       tone: input.failedNotifications.length ? 'warn' : input.activePayoutBatches.length ? 'info' : 'ok',
@@ -3390,12 +3390,12 @@ function buildOperationsCommandBoard(input: {
       status: openMatchingFollowUp ? 'Action' : input.bookingOps.openMatching ? 'Live' : 'Clear',
       value: `${input.bookingOps.openMatching} open`,
       detail: openMatchingFollowUp
-        ? `${openMatchingFollowUp} active booking row(s) have expired timers or no fresh nearby partner.`
+        ? `${openMatchingFollowUp} active booking row(s) have expired timers or no fresh nearby Partner.`
         : `${input.appPresence.liveOpenMatchingCustomers} customer(s) are live while matching is open.`,
       href: openMatchingFollowUp ? '/bookings?view=attention' : '/bookings?view=matching',
       tone: openMatchingFollowUp ? 'danger' : input.bookingOps.openMatching ? 'warn' : 'ok',
       checks: [
-        `${input.bookingDeepDive.openWithoutParticipants} without partner`,
+        `${input.bookingDeepDive.openWithoutParticipants} without Partner`,
         `${input.bookingDeepDive.expiredOpenMatching} expired timer(s)`,
         'Booking address snapshot',
       ],
@@ -3407,7 +3407,7 @@ function buildOperationsCommandBoard(input: {
       value: `${firstPickRows} first / ${marketplaceRows} market`,
       detail:
         firstPickRows || marketplaceRows
-          ? 'Preferred partner keeps the first window while nearby partners can request to participate for customer choice.'
+          ? 'Preferred Partner keeps the first window while nearby Partners can request to participate for customer choice.'
           : 'No first-pick or marketplace handoff is waiting in the current open sample.',
       href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
       tone: firstPickRows || marketplaceRows ? 'info' : 'ok',
@@ -3424,7 +3424,7 @@ function buildOperationsCommandBoard(input: {
       value: `${customerChoiceRows} ready`,
       detail:
         customerChoiceRows > 0
-          ? 'Accepted partners are visible; customer must select the final partner before work is locked.'
+          ? 'Accepted Partners are visible; customer must select the final Partner before work is locked.'
           : 'No customer final-choice handoff is waiting now.',
       href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
       tone: customerChoiceRows ? 'info' : 'ok',
@@ -3458,8 +3458,8 @@ function buildOperationsCommandBoard(input: {
       value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online} online`,
       detail:
         input.partnerSupply.onlineAvailable > 0
-          ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
-          : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
+          ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
+          : 'No online available Partner is visible; check app sessions, location update, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
@@ -3496,7 +3496,7 @@ function buildOperationsCommandBoard(input: {
       value: `${input.failedNotifications.length} failed`,
       detail:
         input.failedNotifications.length > 0
-          ? 'Failed delivery rows should be retried or marked so operators know whether the customer or partner saw it.'
+          ? 'Failed delivery rows should be retried or marked so operators know whether the customer or Partner saw it.'
           : 'No failed notification rows are visible in the current operations window.',
       href: input.failedNotifications.length ? '/notifications?review=failed' : '/notifications',
       tone: input.failedNotifications.length ? 'warn' : 'ok',
@@ -3566,7 +3566,7 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${partnerChoiceChecks} wait`,
       detail:
         partnerChoiceChecks > 0
-          ? 'Open rows need a preferred partner decision, marketplace participant, or customer final selection trace.'
+          ? 'Open rows need a preferred Partner decision, marketplace participant, or customer final selection trace.'
           : 'Partner choice rows are clear for the loaded operations set.',
       href: '/bookings?view=matching&evidence=partner',
       tone: evidenceTone(partnerChoiceChecks, 2, 6),
@@ -3612,7 +3612,7 @@ function buildBookingEvidenceCommandQueue(input: {
       value: `${locationChecks} pin`,
       detail:
         locationChecks > 0
-          ? 'Active handoff rows need a fresh partner location pin or an operator-visible reason it is missing.'
+          ? 'Active handoff rows need a fresh Partner location pin or an operator-visible reason it is missing.'
           : 'Active handoff rows have usable location evidence or do not require a live pin yet.',
       href: '/bookings?view=all&evidence=location',
       tone: evidenceTone(locationChecks, 1, 5),
@@ -3822,25 +3822,25 @@ function buildLiveOperationsRadar(input: {
       value: `${input.bookingOps.openMatching} open`,
       status: openMatchingFollowUp ? 'Action' : input.bookingOps.openMatching ? 'Live' : 'Clear',
       detail: openMatchingFollowUp
-        ? `${openMatchingFollowUp} matching row(s) have expired timers or no fresh nearby partner.`
+        ? `${openMatchingFollowUp} matching row(s) have expired timers or no fresh nearby Partner.`
         : `${input.appPresence.liveOpenMatchingCustomers} customer(s) are in app while matching is open.`,
       href: openMatchingFollowUp ? '/bookings?view=attention' : '/bookings?view=matching',
       tone: openMatchingFollowUp ? 'danger' : input.bookingOps.openMatching ? 'warn' : 'ok',
       checks: [
         `${input.appPresence.liveOpenMatchingCustomers} live matching customer(s)`,
-        `${input.bookingDeepDive.openWithoutParticipants} without partner`,
+        `${input.bookingDeepDive.openWithoutParticipants} without Partner`,
         `${input.bookingDeepDive.expiredOpenMatching} expired window(s)`,
       ],
     },
     {
       lane: 'First-pick and 10km market',
       owner: 'Dispatch',
-      title: 'Confirm preferred partner and marketplace supply',
+      title: 'Confirm preferred Partner and marketplace supply',
       value: `${firstPickRows} first / ${marketplaceRows} market`,
       status: noFreshSupplyRows ? 'Supply gap' : firstPickRows + marketplaceRows ? 'Monitoring' : 'Clear',
       detail:
         firstPickRows + marketplaceRows > 0
-            ? 'Preferred partner has the first window while 10km marketplace participants stay visible for customer choice.'
+            ? 'Preferred Partner has the first window while 10km marketplace participants stay visible for customer choice.'
           : 'No active first-pick or marketplace lane is visible in the current booking sample.',
       href: noFreshSupplyRows
         ? '/bookings?view=no-supply'
@@ -3857,12 +3857,12 @@ function buildLiveOperationsRadar(input: {
     {
       lane: 'Customer final choice lane',
       owner: 'Support',
-      title: 'Keep final partner choice with the customer',
+      title: 'Keep final Partner choice with the customer',
       value: `${customerChoiceRows} ready`,
       status: customerChoiceRows ? 'Choose' : 'Waiting',
       detail:
         customerChoiceRows > 0
-          ? 'Accepted partners are visible; customer must pick the final partner before the job is locked.'
+          ? 'Accepted Partners are visible; customer must pick the final Partner before the job is locked.'
           : 'No customer final-choice handoff is waiting in the open matching sample.',
       href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
       tone: customerChoiceRows ? 'info' : 'ok',
@@ -3894,11 +3894,11 @@ function buildLiveOperationsRadar(input: {
       lane: 'Cash settlement lane',
       owner: 'Finance',
       title: 'Separate list visibility from finalization gates',
-      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
       status: input.cashSettlementSummary.providerCount ? 'Gate' : 'Clear',
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can see marketplace requests while final acceptance, service start, and payout release wait for cash fee settlement.'
+          ? 'Negative wallet Partners can see marketplace requests while final acceptance, service start, and payout release wait for cash fee settlement.'
           : 'No cash fee debt is currently blocking final acceptance, service start, or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -3911,13 +3911,13 @@ function buildLiveOperationsRadar(input: {
     {
       lane: 'Partner supply lane',
       owner: 'Partner Ops',
-      title: 'Check online partners and last-location freshness',
+      title: 'Check online Partners and last-location freshness',
       value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online} online`,
       status: input.partnerSupply.onlineAvailable ? 'Available' : 'Low supply',
       detail:
         input.partnerSupply.onlineAvailable > 0
-          ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
-          : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
+          ? `${input.partnerSupply.staleLocation} Partner location pin(s) are older than the freshness window.`
+          : 'No online available Partner is visible; check app sessions, location update, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
       tone: input.partnerSupply.onlineAvailable
         ? input.partnerSupply.staleLocation
