@@ -11,7 +11,7 @@ function booking(input: Partial<AdminBookingDetail>): AdminBookingDetail {
 }
 
 describe('booking stage snapshot', () => {
-  it('flags matched bookings without a recorded final partner instead of falling back to preferred partner', () => {
+  it('flags matched bookings without a recorded final Partner instead of falling back to preferred Partner', () => {
     const snapshot = bookingStageSnapshot(
       booking({
         status: 'MATCHED',

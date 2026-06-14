@@ -108,7 +108,7 @@ export function bookingOperationalPolicySnapshot(
         label: 'First-pick expiry',
         helper:
           String(firstPickExpiryActionPolicy?.value) === 'EXPIRE_ONLY_AFTER_OPERATOR_REVIEW'
-            ? 'Do not expire automatically; operators review first-pick timeout and available partners.'
+            ? 'Do not expire automatically; operators review first-pick timeout and available Partners.'
             : 'After first-pick timeout, marketplace alternatives can remain visible while operators review the request.',
         enforced: false,
       }),
@@ -119,7 +119,7 @@ export function bookingOperationalPolicySnapshot(
         helper:
           booking.status === 'CANCELLED'
             ? 'Use this policy to decide release, refund, or fee review for this cancelled booking.'
-            : 'Applies if the customer cancels after a partner has accepted or been selected.',
+            : 'Applies if the customer cancels after a Partner has accepted or been selected.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({
@@ -192,7 +192,7 @@ export function bookingOperationalPolicySnapshot(
         helper: bookingPolicySnapshotHelper(
           savedMatchingPolicy.backupProviderRadiusMeters,
           backupRadius,
-          'Nearby partners outside this distance cannot participate.',
+          'Nearby Partners outside this distance cannot participate.',
         ),
       },
       {

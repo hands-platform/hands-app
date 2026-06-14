@@ -99,7 +99,7 @@ export function bookingMvpAuthorityContract({
     {
       contract: 'First-pick window',
       scope: 'Preferred Partner response',
-      status: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred partner',
+      status: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred Partner',
       tone: booking.preferredProvider ? 'pill-info' : 'pill-warn',
       evidence: booking.preferredProvider
         ? `${providerName(booking.preferredProvider)} / expires ${
@@ -117,7 +117,7 @@ export function bookingMvpAuthorityContract({
       tone: pinReady ? (marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
       evidence: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayable supply row(s).`,
       operatorUse:
-        'Only partners within booking-address radius and fresh-location policy should enter the customer shortlist.',
+        'Only Partners within booking-address radius and fresh-location policy should enter the customer shortlist.',
       href: '#marketplace-supply',
     },
     {
@@ -127,7 +127,7 @@ export function bookingMvpAuthorityContract({
         ? 'Final Partner selected'
         : selectablePartnerCount
           ? 'Customer choice pending'
-          : 'Waiting for selectable partner',
+          : 'Waiting for selectable Partner',
       tone: selectedPartner ? 'pill-success' : selectablePartnerCount ? 'pill-warn' : 'pill-info',
       evidence: selectedPartner
         ? providerName(selectedPartner)

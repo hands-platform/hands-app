@@ -57,7 +57,7 @@ export function bookingStageSnapshot(
   let pillClass = 'pill-info';
   let noteClassName = 'ops-task-pending';
   let headline = 'Booking is created and waiting for operational movement.';
-  let detail = 'Confirm service, customer pin, payment state, and the first partner before matching starts.';
+  let detail = 'Confirm service, customer pin, payment state, and the first-pick Partner before matching starts.';
   let actionHref = `/bookings/${booking.id}`;
   let actionLabel = 'Review booking';
 
