@@ -292,103 +292,107 @@ const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
   },
 };
 
+const ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.actionEvidenceGateMode]: {
+    area: 'Action gates',
+    title: 'Controls booking action evidence posture',
+    detail:
+      'Operators use this policy before payment capture, release, cash-fee settlement, expiry, no-show, and completed closeout actions. It keeps decisions tied to retained booking evidence instead of informal judgment.',
+    saveChecks: [
+      {
+        label: 'Manual decision queue',
+        detail:
+          'Review bookings that need payment or closeout decisions before tightening the evidence requirement.',
+        href: '/bookings?view=manual-decision',
+      },
+      {
+        label: 'Closeout checklist',
+        detail: 'Confirm completed, cancelled, expired, and no-show closeout evidence is visible.',
+        href: '/bookings?view=closeout',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.firstPickExpiryAction]: {
+    area: 'First-pick expiry',
+    title: 'Controls operator handling after the first-pick timer',
+    detail:
+      'When the preferred partner does not respond within the response window, the marketplace can remain open for nearby partner participation. The policy must never assign a final partner automatically.',
+    saveChecks: [
+      {
+        label: 'First-pick overdue queue',
+        detail: 'Review bookings waiting on the preferred partner before changing expiry handling.',
+        href: '/bookings?view=first-pick',
+      },
+      {
+        label: 'Marketplace alternatives',
+        detail: 'Confirm nearby partners are available before choosing a stricter expiry posture.',
+        href: '/bookings?view=marketplace',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.cancellationAfterMatch]: {
+    area: 'Cancellation money',
+    title: 'Controls payment handling after partner commitment',
+    detail:
+      'Admin-review mode releases normal early cancellations. Auto-fee mode keeps matched cancellation payment holds for operator review.',
+    saveChecks: [
+      {
+        label: 'Cancellation closeout',
+        detail:
+          'Review cancellation reasons, matched state, and refund exposure before changing fee posture.',
+        href: '/bookings?view=closeout',
+      },
+      {
+        label: 'Refund command board',
+        detail: 'Check manual refund workload before holding more matched cancellations.',
+        href: '/refunds',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.noShowEvidenceRequirement]: {
+    area: 'No-show evidence',
+    title: 'Controls minimum records before no-show closeout',
+    detail:
+      'No-show remains a factual admin closeout. This policy defines which retained records operators should inspect before marking a booking no-show and deciding payment handling.',
+    saveChecks: [
+      {
+        label: 'No-show board',
+        detail: 'Review no-show records with chat, location, notification, and note evidence visible.',
+        href: '/bookings?view=no-show',
+      },
+      {
+        label: 'Chat archive repair',
+        detail: 'Check missing chat rooms before using chat as a required evidence source.',
+        href: '/chat-archive?status=missing-room',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.noShowPartnerReport]: {
+    area: 'No-show review',
+    title: 'Controls no-show evidence and payment review posture',
+    detail:
+      'Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required evidence in notes and audit logs for consistent review.',
+    saveChecks: [
+      {
+        label: 'No-show board',
+        detail: 'Review active no-show cases and missing evidence before tightening no-show policy.',
+        href: '/bookings?view=no-show',
+      },
+      {
+        label: 'No-show alerts',
+        detail:
+          'Check alert delivery so partners and customers are informed before no-show closeout is reviewed.',
+        href: '/notifications?review=no-show',
+      },
+    ],
+  },
+};
+
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
     ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
     ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
     ...SETTLEMENT_POLICY_IMPACT_DETAILS,
-    'decision.action_evidence_gate_mode': {
-      area: 'Action gates',
-      title: 'Controls booking action evidence posture',
-      detail:
-        'Operators use this policy before payment capture, release, cash-fee settlement, expiry, no-show, and completed closeout actions. It keeps decisions tied to retained booking evidence instead of informal judgment.',
-      saveChecks: [
-        {
-          label: 'Manual decision queue',
-          detail:
-            'Review bookings that need payment or closeout decisions before tightening the evidence requirement.',
-          href: '/bookings?view=manual-decision',
-        },
-        {
-          label: 'Closeout checklist',
-          detail: 'Confirm completed, cancelled, expired, and no-show closeout evidence is visible.',
-          href: '/bookings?view=closeout',
-        },
-      ],
-    },
-    'matching.first_pick_expiry_action_policy': {
-      area: 'First-pick expiry',
-      title: 'Controls operator handling after the first-pick timer',
-      detail:
-        'When the preferred partner does not respond within the response window, the marketplace can remain open for nearby partner participation. The policy must never assign a final partner automatically.',
-      saveChecks: [
-        {
-          label: 'First-pick overdue queue',
-          detail: 'Review bookings waiting on the preferred partner before changing expiry handling.',
-          href: '/bookings?view=first-pick',
-        },
-        {
-          label: 'Marketplace alternatives',
-          detail: 'Confirm nearby partners are available before choosing a stricter expiry posture.',
-          href: '/bookings?view=marketplace',
-        },
-      ],
-    },
-    'cancellation.after_match_policy': {
-      area: 'Cancellation money',
-      title: 'Controls payment handling after partner commitment',
-      detail:
-        'Admin-review mode releases normal early cancellations. Auto-fee mode keeps matched cancellation payment holds for operator review.',
-      saveChecks: [
-        {
-          label: 'Cancellation closeout',
-          detail:
-            'Review cancellation reasons, matched state, and refund exposure before changing fee posture.',
-          href: '/bookings?view=closeout',
-        },
-        {
-          label: 'Refund command board',
-          detail: 'Check manual refund workload before holding more matched cancellations.',
-          href: '/refunds',
-        },
-      ],
-    },
-    'no_show.evidence_requirement_policy': {
-      area: 'No-show evidence',
-      title: 'Controls minimum records before no-show closeout',
-      detail:
-        'No-show remains a factual admin closeout. This policy defines which retained records operators should inspect before marking a booking no-show and deciding payment handling.',
-      saveChecks: [
-        {
-          label: 'No-show board',
-          detail: 'Review no-show records with chat, location, notification, and note evidence visible.',
-          href: '/bookings?view=no-show',
-        },
-        {
-          label: 'Chat archive repair',
-          detail: 'Check missing chat rooms before using chat as a required evidence source.',
-          href: '/chat-archive?status=missing-room',
-        },
-      ],
-    },
-    'no_show.partner_report_policy': {
-      area: 'No-show review',
-      title: 'Controls no-show evidence and payment review posture',
-      detail:
-        'Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required evidence in notes and audit logs for consistent review.',
-      saveChecks: [
-        {
-          label: 'No-show board',
-          detail: 'Review active no-show cases and missing evidence before tightening no-show policy.',
-          href: '/bookings?view=no-show',
-        },
-        {
-          label: 'No-show alerts',
-          detail:
-            'Check alert delivery so partners and customers are informed before no-show closeout is reviewed.',
-          href: '/notifications?review=no-show',
-        },
-      ],
-    },
+    ...ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS,
     'notification.partner_alert_channel': {
       area: 'Alert routing',
       title: 'Controls partner booking alert delivery route',
