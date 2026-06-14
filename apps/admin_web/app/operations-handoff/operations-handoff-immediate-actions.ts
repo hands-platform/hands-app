@@ -155,6 +155,8 @@ export function buildImmediateActionQueue(
   return rows.sort((a, b) => queueRowWeight(b) - queueRowWeight(a) || b.count - a.count);
 }
 
+export type ImmediateActionQueueRow = ReturnType<typeof buildImmediateActionQueue>[number];
+
 function queueRowWeight(item: { readonly statusClass: string }) {
   if (item.statusClass.includes('danger')) return 4;
   if (item.statusClass.includes('warn')) return 3;

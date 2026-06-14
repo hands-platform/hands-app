@@ -39,6 +39,7 @@ import { buildFinanceHandoffActionMap } from './operations-handoff-finance-actio
 import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
 import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
+import { OperationsHandoffImmediateActionSection } from './operations-handoff-immediate-action-section';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 import { buildOperatorNotes } from './operations-handoff-operator-notes';
 import { OperationsHandoffOperatorNotesSection } from './operations-handoff-operator-notes-section';
@@ -224,32 +225,7 @@ export default async function OperationsHandoffPage({
         rows={handoffChecklist}
       />
 
-      <section className="card admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Immediate action queue</h2>
-            <p className="muted">
-              Ordered by operational state only: live booking stage, chat availability, cash settlement,
-              notification delivery, and written handoff notes.
-            </p>
-          </div>
-          <span className="pill pill-info">{immediateActions.length} action lane(s)</span>
-        </div>
-        <div className="ops-task-grid">
-          {immediateActions.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.id}>
-              <span className={item.className}>{item.owner}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{item.countLabel}</span>
-                <span className={item.statusClass}>{item.status}</span>
-              </div>
-              <small>{item.nextAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <OperationsHandoffImmediateActionSection actions={immediateActions} />
 
       <section className="card admin-mb-16">
         <div className="toolbar">
