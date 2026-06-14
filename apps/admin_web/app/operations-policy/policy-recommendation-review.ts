@@ -61,6 +61,21 @@ const ACTIVE_BOOKING_STATUSES = new Set([
   'IN_SERVICE',
 ]);
 
+const MARKETPLACE_RADIUS_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+];
+
+const MARKETPLACE_LOCATION_FRESHNESS_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+  LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+];
+
+const MARKETPLACE_OPEN_MODE_POLICY_KEYS = [
+  OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+  LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+];
+
 export function buildPolicyRecommendationReview(
   settings: AdminOperationalPolicySetting[],
   bookings: AdminBooking[],
@@ -174,21 +189,11 @@ function policyRecommendationPosture(
     return providerResponseWindowPosture(numericInput, liveContext);
   }
 
-  if (
-    policyKeyMatches(setting.key, [
-      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-    ])
-  ) {
+  if (policyKeyMatches(setting.key, MARKETPLACE_RADIUS_POLICY_KEYS)) {
     return marketplaceRadiusPosture(numericInput, liveContext);
   }
 
-  if (
-    policyKeyMatches(setting.key, [
-      OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
-    ])
-  ) {
+  if (policyKeyMatches(setting.key, MARKETPLACE_LOCATION_FRESHNESS_POLICY_KEYS)) {
     return marketplaceLocationFreshnessPosture(numericInput, liveContext);
   }
 
@@ -196,12 +201,7 @@ function policyRecommendationPosture(
     return preferredAcceptModePosture(value, recommended);
   }
 
-  if (
-    policyKeyMatches(setting.key, [
-      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-    ])
-  ) {
+  if (policyKeyMatches(setting.key, MARKETPLACE_OPEN_MODE_POLICY_KEYS)) {
     return marketplaceOpenModePosture(value, recommended, liveContext);
   }
 
