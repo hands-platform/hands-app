@@ -116,7 +116,7 @@ export function buildCloseoutTasks(reconciliation: FinanceCloseoutReconciliation
       title: 'Cash collection review',
       status: `${reconciliation.cashPending.length} CASH`,
       detail:
-        'Cash bookings need confirmation that the partner collected customer cash and the wallet debt is recorded.',
+        'Cash bookings need confirmation that the Partner collected customer cash and the wallet debt is recorded.',
       action: reconciliation.cashPending.length
         ? 'Confirm cash rows and wallet ledger.'
         : 'No pending cash collection.',
@@ -328,7 +328,7 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
       count: reconciliation.cashPending.length,
       amount: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
       nextAction:
-        'Collect partner deposit or approve documented offset before final acceptance, service start, or payout release.',
+        'Collect Partner deposit or approve documented offset before final acceptance, service start, or payout release.',
       href: '/cash-settlements',
     },
     {
@@ -338,7 +338,7 @@ export function buildHandoffRows(reconciliation: FinanceCloseoutReconciliation):
         reconciliation.openPayouts.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
         reconciliation.currency,
       ),
-      nextAction: 'Verify transfer ref, earnings, withholding logs, and partner account state.',
+      nextAction: 'Verify transfer ref, earnings, withholding logs, and Partner account state.',
       href: '/payouts',
     },
   ];

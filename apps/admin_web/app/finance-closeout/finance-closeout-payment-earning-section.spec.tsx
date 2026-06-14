@@ -24,7 +24,7 @@ describe('FinanceCloseoutPaymentEarningSection', () => {
     expect(rendered).toContain('900.000 VND');
     expect(rendered).toContain('3');
     expect(rendered).toContain('earning record(s)');
-    expect(rendered).toContain('Pending partner net');
+    expect(rendered).toContain('Pending Partner net');
     expect(hrefsIn(section)).toContain('/earnings');
   });
 });

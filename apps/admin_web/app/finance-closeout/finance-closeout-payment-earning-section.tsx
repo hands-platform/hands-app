@@ -43,7 +43,7 @@ export function FinanceCloseoutPaymentEarningSection({
           <small>Stored from active tax policy snapshots.</small>
         </div>
         <div>
-          <span>Pending partner net</span>
+          <span>Pending Partner net</span>
           <strong>{formatMoney(summary.pendingNetAmount, currency)}</strong>
           <small>Positive payout or negative cash-fee debt.</small>
         </div>

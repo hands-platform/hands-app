@@ -34,7 +34,7 @@ export function FinanceCloseoutCashDebtHandoffSection({
       </div>
       <div className="detail-grid admin-mt-16">
         <div>
-          <span className="muted">Wallet-gated partners</span>
+          <span className="muted">Wallet-gated Partners</span>
           <h3>{providerCount}</h3>
         </div>
         <div>

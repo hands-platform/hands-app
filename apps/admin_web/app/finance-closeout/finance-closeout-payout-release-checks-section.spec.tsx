@@ -9,7 +9,7 @@ describe('FinanceCloseoutPayoutReleaseChecksSection', () => {
           count: 2,
           href: '/payouts',
           label: 'Payout batches',
-          nextAction: 'Verify transfer ref, earnings, withholding logs, and partner account state.',
+          nextAction: 'Verify transfer ref, earnings, withholding logs, and Partner account state.',
         },
       ],
     });

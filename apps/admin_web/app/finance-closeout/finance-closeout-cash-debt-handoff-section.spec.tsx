@@ -14,7 +14,7 @@ describe('FinanceCloseoutCashDebtHandoffSection', () => {
 
     expect(section.type).toBe('section');
     expect(rendered).toContain('Cash debt handoff');
-    expect(rendered).toContain('Wallet-gated partners');
+    expect(rendered).toContain('Wallet-gated Partners');
     expect(rendered).toContain('2');
     expect(rendered).toContain('5');
     expect(rendered).toContain('450.000 VND');
