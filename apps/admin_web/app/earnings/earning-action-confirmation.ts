@@ -166,5 +166,5 @@ function settlementMethodLabel(value: string) {
   if (value === 'ADMIN_OFFSET') {
     return 'admin offset';
   }
-  return 'partner deposit';
+  return 'Partner deposit';
 }

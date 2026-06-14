@@ -5,7 +5,7 @@ describe('EarningsFinanceQueueSection', () => {
     const section = EarningsFinanceQueueSection({
       signals: [
         {
-          action: 'Create partner payout batch after review.',
+          action: 'Create Partner payout batch after review.',
           className: 'ops-task-pending',
           detail: 'Two Partners have ready earnings.',
           pillClass: 'pill-info',
@@ -20,7 +20,7 @@ describe('EarningsFinanceQueueSection', () => {
     expect(section.type).toBe('div');
     expect(rendered).toContain('Finance queue');
     expect(rendered).toContain('Payout ready');
-    expect(rendered).toContain('Create partner payout batch after review.');
+    expect(rendered).toContain('Create Partner payout batch after review.');
     expect(hrefsIn(section)).toContain('/payouts');
   });
 

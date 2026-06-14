@@ -30,7 +30,7 @@ export function EarningsMoneyFlowSection({ cards, checks, currency }: EarningsMo
         <div>
           <h2>Money flow command center</h2>
           <p className="muted">
-            Same finance language as booking detail: customer charge, partner payout, HANDS fee, tax,
+            Same finance language as booking detail: customer charge, Partner payout, HANDS fee, tax,
             company net, and cash debt before payout.
           </p>
         </div>

@@ -50,7 +50,7 @@ describe('earning action confirmation', () => {
       cancelHref: '/earnings',
       confirmLabel: 'Confirm fee settlement',
       description:
-        'Partner Debt will settle 90.000 VND cash fee debt by partner deposit. Payment method: CASH. Reference: BANK-123.',
+        'Partner Debt will settle 90.000 VND cash fee debt by Partner deposit. Payment method: CASH. Reference: BANK-123.',
       hiddenInputs: [
         { name: 'earningId', value: settlementRow.earningId },
         { name: 'settlementMethod', value: 'PARTNER_DEPOSIT' },

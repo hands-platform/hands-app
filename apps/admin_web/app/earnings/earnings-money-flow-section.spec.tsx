@@ -14,7 +14,7 @@ describe('EarningsMoneyFlowSection', () => {
         {
           action: 'Review cash fee settlement before payout.',
           className: 'ops-task-blocked',
-          detail: 'Cash bookings are creating partner wallet debt.',
+          detail: 'Cash bookings are creating Partner wallet debt.',
           pillClass: 'pill-danger',
           status: '1 blocked',
           title: 'Cash debt',

@@ -21,7 +21,7 @@ describe('EarningsLedgerSection', () => {
           settlementMethodLabel: 'Partner deposit',
           settlementRef: 'DEP-1',
           signalClassName: 'signal signal-warn',
-          statusHint: 'Cash fee debt blocks partner wallet until settled',
+          statusHint: 'Cash fee debt blocks Partner wallet until settled',
           statusLabel: 'PENDING',
           taxPolicyHint: 'Tax rule ready',
           transferRef: 'MVP-partner-1',

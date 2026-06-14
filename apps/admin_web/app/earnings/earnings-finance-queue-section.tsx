@@ -20,7 +20,7 @@ export function EarningsFinanceQueueSection({ signals }: EarningsFinanceQueueSec
         <div>
           <h2>Finance queue</h2>
           <p className="muted">
-            Operator summary for partner payout readiness, batched earnings, tax logs, and stale pending
+            Operator summary for Partner payout readiness, batched earnings, tax logs, and stale pending
             revenue.
           </p>
         </div>

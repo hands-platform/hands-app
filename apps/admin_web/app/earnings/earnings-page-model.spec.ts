@@ -66,7 +66,7 @@ describe('earnings page model', () => {
       settlementReference: 'HANDS-WALLET-PROFILE1',
       taxAmount: 5000,
     });
-    expect(cashDebtItems[0]?.settlementChecklist[0]).toContain('Confirm partner deposit');
+    expect(cashDebtItems[0]?.settlementChecklist[0]).toContain('Confirm Partner deposit');
     expect(payoutQueue).toHaveLength(1);
     expect(payoutQueue[0]).toMatchObject({
       canBatch: false,

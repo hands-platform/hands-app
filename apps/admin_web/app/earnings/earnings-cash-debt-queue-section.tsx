@@ -40,7 +40,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
         <div>
           <h2>Cash fee debt queue</h2>
           <p className="muted">
-            Cash bookings create a negative partner wallet until the partner deposits the HANDS fee or
+            Cash bookings create a negative Partner wallet until the Partner deposits the HANDS fee or
             finance offsets it.
           </p>
         </div>
@@ -84,7 +84,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
                   {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
                 </div>
                 <p className="muted">
-                  Settling this row records the partner cash-fee debt as paid and can reopen final
+                  Settling this row records the Partner cash-fee debt as paid and can reopen final
                   acceptance, service start, and payout release once the wallet is non-negative.
                 </p>
               </div>
@@ -110,7 +110,7 @@ export function EarningsCashDebtQueueSection({ currency, items, totals }: Earnin
           ))}
         </div>
       ) : (
-        <p className="muted">No partner has unsettled cash fee debt in the current admin result window.</p>
+        <p className="muted">No Partner has unsettled cash fee debt in the current admin result window.</p>
       )}
     </div>
   );

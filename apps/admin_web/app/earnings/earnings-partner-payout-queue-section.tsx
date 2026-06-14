@@ -30,10 +30,10 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
         <div>
           <h2>Partner payout queue</h2>
           <p className="muted">
-            Grouped by partner so finance can create one payout batch for all eligible unpaid earnings.
+            Grouped by Partner so finance can create one payout batch for all eligible unpaid earnings.
           </p>
         </div>
-        <span className="pill pill-info">{groups.length} partner(s)</span>
+        <span className="pill pill-info">{groups.length} Partner(s)</span>
       </div>
       {groups.length ? (
         <div className="setup-stage-list">
@@ -74,7 +74,7 @@ export function EarningsPartnerPayoutQueueSection({ groups }: EarningsPartnerPay
           ))}
         </div>
       ) : (
-        <p className="muted">No partner has unpaid earnings in the current admin result window.</p>
+        <p className="muted">No Partner has unpaid earnings in the current admin result window.</p>
       )}
     </div>
   );

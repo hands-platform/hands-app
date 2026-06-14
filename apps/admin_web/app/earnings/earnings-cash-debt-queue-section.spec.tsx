@@ -54,7 +54,7 @@ describe('EarningsCashDebtQueueSection', () => {
       },
     });
 
-    expect(textContent(section)).toContain('No partner has unsettled cash fee debt in the current admin result window.');
+    expect(textContent(section)).toContain('No Partner has unsettled cash fee debt in the current admin result window.');
   });
 });
 

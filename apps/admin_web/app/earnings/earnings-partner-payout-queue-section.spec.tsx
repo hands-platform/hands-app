@@ -1,7 +1,7 @@
 import { EarningsPartnerPayoutQueueSection } from './earnings-partner-payout-queue-section';
 
 describe('EarningsPartnerPayoutQueueSection', () => {
-  it('renders partner payout queue rows and review action', () => {
+  it('renders Partner payout queue rows and review action', () => {
     const section = EarningsPartnerPayoutQueueSection({
       groups: [
         {
@@ -36,7 +36,7 @@ describe('EarningsPartnerPayoutQueueSection', () => {
   it('renders empty state when there are no payout queue groups', () => {
     const section = EarningsPartnerPayoutQueueSection({ groups: [] });
 
-    expect(textContent(section)).toContain('No partner has unpaid earnings in the current admin result window.');
+    expect(textContent(section)).toContain('No Partner has unpaid earnings in the current admin result window.');
   });
 });
 

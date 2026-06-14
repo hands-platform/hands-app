@@ -314,7 +314,7 @@ export function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[
         settlementReference,
         lastLedgerRef,
         settlementChecklist: [
-          `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
+          `Confirm Partner deposit or approved offset before settling ${settlementReference}.`,
           'Keep the reference on the bank transfer, chat evidence, or admin offset memo.',
           'Recheck payout queue after settlement.',
         ],
@@ -463,7 +463,7 @@ export function buildEarningsMoneyFlowChecks(
     },
     {
       title: 'Cash job lock',
-      status: `${cashDebtQueue.length} PARTNER(S)`,
+      status: `${cashDebtQueue.length} Partner(s)`,
       detail: cashDebtQueue.length
         ? 'Negative wallet Partners must settle company fee before final acceptance, service start, or payout release resumes.'
         : 'No cash fee debt currently blocks final acceptance, service start, or payout release.',
@@ -692,7 +692,7 @@ export function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches
             ? 'Settle or offset the cash fee debt before creating a payout batch.'
             : canBatch
               ? 'Create one batch for all currently eligible unpaid earnings.'
-              : 'No unbatched positive earning is available for this partner.',
+              : 'No unbatched positive earning is available for this Partner.',
       };
     })
     .sort((left, right) => {
@@ -730,14 +730,14 @@ export function buildFinanceSignals(
   return [
     {
       title: 'Ready to batch',
-      status: `${readyProviders.length} PARTNER(S)`,
+      status: `${readyProviders.length} Partner(s)`,
       detail: formatMoney(
         readyProviders.reduce((sum, item) => sum + item.unbatchedNet, 0),
         'VND',
       ),
       action: readyProviders.length
-        ? 'Create batches from the partner queue below.'
-        : 'No partner is ready to batch.',
+        ? 'Create batches from the Partner queue below.'
+        : 'No Partner is ready to batch.',
       className: readyProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: readyProviders.length ? 'pill-warn' : 'pill-success',
     },
@@ -773,7 +773,7 @@ export function buildFinanceSignals(
         'VND',
       ),
       action: cashDebtQueue.length
-        ? 'Confirm partner deposit or offset, then mark fee settled.'
+        ? 'Confirm Partner deposit or offset, then mark fee settled.'
         : 'No negative cash wallet needs settlement.',
       className: cashDebtQueue.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebtQueue.length ? 'pill-danger' : 'pill-success',
@@ -812,7 +812,7 @@ function earningPriority(earning: AdminEarning) {
 }
 
 function providerDisplayName(earning: AdminEarning) {
-  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown partner';
+  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown Partner';
 }
 
 function earningSignalClass(earning: AdminEarning) {
@@ -837,7 +837,7 @@ function earningStatusLabel(earning: AdminEarning) {
 
 function earningHint(earning: AdminEarning) {
   if (isCashDebt(earning)) {
-    return 'Cash fee debt blocks partner wallet until settled';
+    return 'Cash fee debt blocks Partner wallet until settled';
   }
   if (earning.status === 'PAID') {
     return earning.paidAt
@@ -887,7 +887,7 @@ function platformFeePolicyHint(earning: AdminEarning) {
       }
     | undefined;
   if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
-    return `Fee policy: service payout matrix / partner payout ${formatMoney(
+    return `Fee policy: service payout matrix / Partner payout ${formatMoney(
       snapshot.providerPayoutAmount ?? 0,
       earning.currency,
     )}`;

@@ -36,7 +36,7 @@ export function EarningsServiceBridgeSection({ currency, items }: EarningsServic
         <div>
           <h2>Service to earnings bridge</h2>
           <p className="muted">
-            Confirms which service duration options are creating partner net, HANDS platform fee, tax
+            Confirms which service duration options are creating Partner net, HANDS platform fee, tax
             withholding, cash wallet debt, and payout-batch pressure.
           </p>
         </div>
