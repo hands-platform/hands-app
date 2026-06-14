@@ -58,7 +58,7 @@ function previewRowFixture({ serviceName }: { readonly serviceName: string }): S
       currency: 'VND',
       customerPrice: 500000,
       finance: financeFixture(150000),
-      label: 'Customer and partner + step',
+      label: 'Customer and Partner + step',
       providerPayoutAmount: 350000,
       status: 'Positive',
       tone: 'pill-success',

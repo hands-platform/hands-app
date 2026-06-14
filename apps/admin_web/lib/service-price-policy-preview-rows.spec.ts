@@ -45,7 +45,7 @@ describe('service price policy preview rows', () => {
       checkLabel: '1 check(s)',
       checkTone: 'pill-warn',
       currency: 'VND',
-      nextAction: 'Review partner payout or tax/cost assumptions before saving a price change.',
+      nextAction: 'Review Partner payout or tax/cost assumptions before saving a price change.',
       priceStep: 100000,
     });
     expect(rows[1]?.customerStepScenario).toMatchObject({

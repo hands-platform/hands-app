@@ -55,11 +55,11 @@ export function providerPriceImpact<TPolicy>({
     })
     .map((providerService): ProviderPriceImpactRow => {
       const rule = activeRules.get(providerService.price) ?? null;
-      const providerName = providerService.providerProfile?.displayName ?? 'Unnamed partner';
+      const providerName = providerService.providerProfile?.displayName ?? 'Unnamed Partner';
       const providerStatus = providerService.providerProfile?.status ?? 'UNKNOWN';
       const providerBlocked = Boolean(providerService.providerProfile?.blockedAt);
       let state: ProviderPriceImpactState = 'bookable';
-      let reason = 'Customer can book this partner price.';
+      let reason = 'Customer can book this Partner price.';
 
       if (!providerService.active || providerBlocked) {
         state = 'inactive';

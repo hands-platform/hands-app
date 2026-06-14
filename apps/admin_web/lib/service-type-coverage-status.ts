@@ -31,7 +31,7 @@ export function serviceTypeCoverageStatus({
     return {
       tone: 'pill-danger',
       statusLabel: 'Partner price blocked',
-      nextAction: 'Raise partner prices below the admin minimum or intentionally lower the service minimum.',
+      nextAction: 'Raise Partner prices below the admin minimum or intentionally lower the service minimum.',
     };
   }
 
@@ -39,7 +39,7 @@ export function serviceTypeCoverageStatus({
     return {
       tone: 'pill-warn',
       statusLabel: 'Partner price hidden',
-      nextAction: 'Add payout rules for active partner prices that should be visible to customers.',
+      nextAction: 'Add payout rules for active Partner prices that should be visible to customers.',
     };
   }
 
@@ -47,7 +47,7 @@ export function serviceTypeCoverageStatus({
     return {
       tone: 'pill-warn',
       statusLabel: 'Commission check',
-      nextAction: 'Adjust partner payout, VAT, withholding, or other cost assumptions before scaling.',
+      nextAction: 'Adjust Partner payout, VAT, withholding, or other cost assumptions before scaling.',
     };
   }
 

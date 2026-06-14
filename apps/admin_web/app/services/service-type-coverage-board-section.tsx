@@ -32,7 +32,7 @@ export function ServiceTypeCoverageBoardSection({
           <h2>Service type coverage board</h2>
           <p className="muted">
             Checks each service name as one operating unit: duration options, minimum-price payout rules,
-            partner price visibility, and projected company commission.
+            Partner price visibility, and projected company commission.
           </p>
         </div>
         <div className="actions">
@@ -59,7 +59,7 @@ export function ServiceTypeCoverageBoardSection({
           <strong>{summary.missingBasePayoutCount}</strong>
         </div>
         <div>
-          <span>Hidden partner prices</span>
+          <span>Hidden Partner prices</span>
           <strong>{summary.hiddenPartnerPriceCount}</strong>
         </div>
         <div>

@@ -17,7 +17,7 @@ describe('service type coverage status', () => {
     });
   });
 
-  it('blocks partner prices below the admin minimum before warning on missing payout prices', () => {
+  it('blocks Partner prices below the admin minimum before warning on missing payout prices', () => {
     expect(
       serviceTypeCoverageStatus({
         belowMinimumCount: 1,
@@ -27,13 +27,13 @@ describe('service type coverage status', () => {
         missingPayoutPriceCount: 2,
       }),
     ).toEqual({
-      nextAction: 'Raise partner prices below the admin minimum or intentionally lower the service minimum.',
+      nextAction: 'Raise Partner prices below the admin minimum or intentionally lower the service minimum.',
       statusLabel: 'Partner price blocked',
       tone: 'pill-danger',
     });
   });
 
-  it('warns on hidden partner prices, low commission, then duration gaps', () => {
+  it('warns on hidden Partner prices, low commission, then duration gaps', () => {
     expect(
       serviceTypeCoverageStatus({
         belowMinimumCount: 0,

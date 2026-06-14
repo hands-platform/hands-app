@@ -26,7 +26,7 @@ export function ServiceBookingFinanceTraceSection({
         <div>
           <h2>Recent booking finance trace</h2>
           <p className="muted">
-            Links service pricing to booking payment, partner earning, tax log, platform fee log, and wallet
+            Links service pricing to booking payment, Partner earning, tax log, platform fee log, and wallet
             movement. Use this after changing a price policy to confirm real bookings are producing the
             expected finance records.
           </p>

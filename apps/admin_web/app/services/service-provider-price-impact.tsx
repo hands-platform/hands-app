@@ -21,7 +21,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
         <div>
           <h3>Partner price impact</h3>
           <p className="muted">
-            Shows which partner prices are visible in the customer app for this exact duration option.
+            Shows which Partner prices are visible in the customer app for this exact duration option.
           </p>
         </div>
         <span className={`pill ${impact.hiddenCount ? 'pill-warn' : 'pill-success'}`}>
@@ -48,7 +48,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
               <div>
                 <strong>{row.providerName}</strong>
                 <p className="muted">
-                  Customer {formatMoney(row.price, row.currency)} / partner{' '}
+                  Customer {formatMoney(row.price, row.currency)} / Partner{' '}
                   {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
                 </p>
                 <p className="muted">{row.reason}</p>
@@ -67,7 +67,7 @@ export function ServiceProviderPriceImpact({ activeTaxPolicy, service }: Service
           ))}
         </div>
       ) : (
-        <p className="muted">No partner has configured a price for this duration yet.</p>
+        <p className="muted">No Partner has configured a price for this duration yet.</p>
       )}
     </div>
   );

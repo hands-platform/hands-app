@@ -24,7 +24,7 @@ const savedMessages: Record<string, ServiceActionNoticeMessage> = {
   },
   'payout-rule-saved': {
     title: 'Payout rule saved',
-    detail: 'The customer price now has a partner payout rule for booking and finance checks.',
+    detail: 'The customer price now has a Partner payout rule for booking and finance checks.',
   },
   'payout-rule-updated': {
     title: 'Payout rule updated',
@@ -32,7 +32,7 @@ const savedMessages: Record<string, ServiceActionNoticeMessage> = {
   },
   'bulk-payout-rules-saved': {
     title: 'Payout ladder saved',
-    detail: 'The service now has the imported customer price and partner payout rows.',
+    detail: 'The service now has the imported customer price and Partner payout rows.',
   },
 };
 
@@ -48,7 +48,7 @@ const blockedMessages: Record<string, ServiceActionNoticeMessage> = {
   'invalid-duration-set': {
     title: 'Duration set pricing is invalid',
     detail:
-      'Every filled duration must follow the configured price step, and partner payout cannot exceed the customer price.',
+      'Every filled duration must follow the configured price step, and Partner payout cannot exceed the customer price.',
   },
   'invalid-service-pricing': {
     title: 'Service pricing is invalid',
@@ -56,11 +56,11 @@ const blockedMessages: Record<string, ServiceActionNoticeMessage> = {
   },
   'missing-payout-fields': {
     title: 'Payout fields are missing',
-    detail: 'Enter both the customer price and partner payout before saving a payout rule.',
+    detail: 'Enter both the customer price and Partner payout before saving a payout rule.',
   },
   'missing-bulk-payout-fields': {
     title: 'Bulk payout import is empty',
-    detail: 'Paste at least one customer price and partner payout row before importing.',
+    detail: 'Paste at least one customer price and Partner payout row before importing.',
   },
   'invalid-bulk-payout': {
     title: 'Bulk payout import is invalid',

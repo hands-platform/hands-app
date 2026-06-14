@@ -19,7 +19,7 @@ export function ServiceBookingReadinessQueueSection({
         <div>
           <h2>Booking readiness queue</h2>
           <p className="muted">
-            Shows services that can block customer booking or create a negative finance result before partners
+            Shows services that can block customer booking or create a negative finance result before Partners
             start using those prices.
           </p>
         </div>

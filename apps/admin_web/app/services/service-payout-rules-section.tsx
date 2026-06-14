@@ -21,7 +21,7 @@ export function ServicePayoutRulesSection({ activeTaxPolicy, service }: ServiceP
               <span>{rule.active ? 'ON' : 'OFF'}</span>
               <div>
                 <strong>
-                  Customer {formatMoney(rule.customerPrice, rule.currency)} / partner{' '}
+                  Customer {formatMoney(rule.customerPrice, rule.currency)} / Partner{' '}
                   {formatMoney(rule.providerPayoutAmount, rule.currency)}
                 </strong>
                 <p className="muted">

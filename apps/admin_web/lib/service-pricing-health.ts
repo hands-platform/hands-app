@@ -78,8 +78,8 @@ export function servicePricingHealth<TPolicy>({
       value: `${invalidRules.length} invalid`,
       detail:
         invalidRules.length === 0
-          ? 'Payout rules are above minimum, on the right increment, and do not overpay partners.'
-          : 'Review payout rules with invalid customer price or partner payout amount.',
+          ? 'Payout rules are above minimum, on the right increment, and do not overpay Partners.'
+          : 'Review payout rules with invalid customer price or Partner payout amount.',
     },
     {
       label: 'Company commission floor',

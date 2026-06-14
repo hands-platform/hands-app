@@ -84,7 +84,7 @@ export function servicePricePolicyPreviewRows<TPolicy>({
       const balancedStepScenario = baseRule
         ? buildPricePolicyScenario(service, baseRule, activeTaxPolicy, servicePayoutFinance, {
             customerPrice: baseRule.customerPrice + priceStep,
-            label: 'Customer and partner + step',
+            label: 'Customer and Partner + step',
             providerPayoutAmount: baseRule.providerPayoutAmount + priceStep,
           })
         : null;
@@ -103,7 +103,7 @@ export function servicePricePolicyPreviewRows<TPolicy>({
       const nextAction = !baseRule
         ? 'Add the base payout rule first.'
         : flaggedScenarios.length
-          ? 'Review partner payout or tax/cost assumptions before saving a price change.'
+          ? 'Review Partner payout or tax/cost assumptions before saving a price change.'
           : 'These one-step scenarios keep a positive projected company commission.';
 
       return {

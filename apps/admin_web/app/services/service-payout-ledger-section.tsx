@@ -22,8 +22,8 @@ export function ServicePayoutLedgerSection({
           <h2>Service payout ledger</h2>
           <p className="muted">
             Finance view for the current minimum price of every active duration option. This is the fastest
-            way to confirm customer price, partner payout, tax/cost assumptions, and customer-app visibility
-            before partners start selling.
+            way to confirm customer price, Partner payout, tax/cost assumptions, and customer-app visibility
+            before Partners start selling.
           </p>
         </div>
         <span className="pill pill-info">{activeServiceCount} active option(s)</span>
@@ -74,7 +74,7 @@ export function ServicePayoutLedgerSection({
                   <span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>
                     {row.visibleProviders} visible / {row.hiddenProviders} hidden
                   </span>
-                  <small>{row.totalProviderRows} partner price row(s)</small>
+                  <small>{row.totalProviderRows} Partner price row(s)</small>
                 </div>
               </td>
               <td>

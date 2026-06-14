@@ -28,7 +28,7 @@ export function ServiceDurationPricingMatrixSection({
         <div>
           <h2>Duration pricing matrix</h2>
           <p className="muted">
-            One row is one service name. Each duration cell shows customer minimum, partner payout, and
+            One row is one service name. Each duration cell shows customer minimum, Partner payout, and
             projected company commission after VAT, withholding, and other configured costs.
           </p>
         </div>

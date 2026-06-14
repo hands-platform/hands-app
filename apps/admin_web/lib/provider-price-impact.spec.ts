@@ -2,7 +2,7 @@ import type { AdminServiceCatalogItem, AdminServicePayoutRule } from './admin-ap
 import { providerPriceImpact } from './provider-price-impact';
 
 describe('provider price impact', () => {
-  it('builds sorted partner price visibility rows and summary counts', () => {
+  it('builds sorted Partner price visibility rows and summary counts', () => {
     const bookableRule = payoutRuleFixture({
       customerPrice: 1000,
       id: 'rule-1000',
@@ -61,7 +61,7 @@ describe('provider price impact', () => {
     });
     expect(Object.fromEntries(impact.rows.map((row) => [row.id, row.reason]))).toMatchObject({
       blocked: 'Partner account is blocked.',
-      bookable: 'Customer can book this partner price.',
+      bookable: 'Customer can book this Partner price.',
       inactive: 'Partner price row is inactive.',
       missing: 'No active payout rule exists for this exact customer price, so booking stays hidden.',
       zero: 'Payout rule exists, but projected company commission is not positive.',

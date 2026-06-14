@@ -15,7 +15,7 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
         <div>
           <h2>Recent pricing audit trail</h2>
           <p className="muted">
-            Tracks who changed service prices, partner payout amounts, VAT, other costs, and duration settings.
+            Tracks who changed service prices, Partner payout amounts, VAT, other costs, and duration settings.
             Use this before investigating unexpected commission or payout changes.
           </p>
         </div>

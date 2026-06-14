@@ -23,8 +23,8 @@ export function ServiceBookingExposureGuardSection({
         <div>
           <h2>Customer booking exposure guard</h2>
           <p className="muted">
-            Customer and partner apps only expose service options backed by an active payout rule. Use this
-            guard before opening a new service type or changing partner prices.
+            Customer and Partner apps only expose service options backed by an active payout rule. Use this
+            guard before opening a new service type or changing Partner prices.
           </p>
         </div>
         <div className="actions">

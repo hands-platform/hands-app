@@ -14,7 +14,7 @@ export function ServicePricingHealthSection({ items }: ServicePricingHealthSecti
           <h2>Pricing health</h2>
           <p className="muted">
             Partners can charge the minimum price or higher, but every configured customer price should have a
-            payout rule so finance can separate partner payout, VAT, withholding, and actual commission.
+            payout rule so finance can separate Partner payout, VAT, withholding, and actual commission.
           </p>
         </div>
         <span className={`pill ${isReady ? 'pill-success' : 'pill-warn'}`}>

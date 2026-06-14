@@ -130,12 +130,12 @@ function invalidPayoutRuleItems<TPolicy>({
     serviceId: service.id,
     title,
     status: 'INVALID',
-    detail: `Customer ${formatMoney(rule.customerPrice, rule.currency)} / partner ${formatMoney(
+    detail: `Customer ${formatMoney(rule.customerPrice, rule.currency)} / Partner ${formatMoney(
       rule.providerPayoutAmount,
       rule.currency,
     )}`,
     action:
-      'Customer price must respect the minimum and step, and partner payout cannot exceed customer price.',
+      'Customer price must respect the minimum and step, and Partner payout cannot exceed customer price.',
     tone: 'blocked',
   }));
 }
@@ -162,7 +162,7 @@ function lowCommissionRuleItems<TPolicy>({
         commission,
         rule.currency,
       )} for customer price ${formatMoney(rule.customerPrice, rule.currency)}.`,
-      action: 'Adjust partner payout, VAT/cost assumptions, or tax policy before scaling this price.',
+      action: 'Adjust Partner payout, VAT/cost assumptions, or tax policy before scaling this price.',
       tone: 'warning',
     }));
 }
@@ -182,14 +182,14 @@ function isInvalidPayoutRuleFor(service: AdminServiceCatalogItem) {
 
 function providerPriceAction(rowState: ProviderPriceImpactRow['state']) {
   if (rowState === 'missing_payout') {
-    return 'Add an active payout rule for this exact partner customer price.';
+    return 'Add an active payout rule for this exact Partner customer price.';
   }
 
   if (rowState === 'below_minimum') {
-    return 'Ask the partner to raise the price or lower the admin minimum price intentionally.';
+    return 'Ask the Partner to raise the price or lower the admin minimum price intentionally.';
   }
 
-  return 'No customer action needed unless this partner should be visible.';
+  return 'No customer action needed unless this Partner should be visible.';
 }
 
 function serviceReadinessTitle(service: AdminServiceCatalogItem) {

@@ -1,4 +1,4 @@
-import type { AdminServiceCatalogItem, AdminTaxPolicyVersion } from '../../lib/admin-api';
+import type { AdminTaxPolicyVersion } from '../../lib/admin-api';
 import { formatMoney } from '../../lib/admin-format';
 import type { ServiceCatalogGroup } from '../../lib/service-catalog-filters';
 import {
@@ -44,7 +44,7 @@ export function ServiceGroupEditCard({ activeTaxPolicy, group }: ServiceGroupEdi
                 Minimum {formatMoney(service.basePrice, 'VND')} / step {formatMoney(service.priceStep, 'VND')}
               </p>
               <p className="muted">
-                {service._count?.providers ?? 0} partner price row(s), {service._count?.bookings ?? 0} booking
+                {service._count?.providers ?? 0} Partner price row(s), {service._count?.bookings ?? 0} booking
                 row(s)
               </p>
               <ServiceProviderPriceImpact service={service} activeTaxPolicy={activeTaxPolicy} />

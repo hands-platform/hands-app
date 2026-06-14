@@ -53,7 +53,7 @@ describe('service pricing audit rows', () => {
         changedFields: ['basePrice'],
         createdAt: '2026-06-09T11:00:00.000Z',
         id: 'service-log',
-        payoutLabel: 'No partner payout snapshot',
+        payoutLabel: 'No Partner payout snapshot',
         priceLabel: 'Base 450.000 VND',
         serviceLabel: 'Foot Massage / 90 min',
         target: 'service:1234567890abcdef',

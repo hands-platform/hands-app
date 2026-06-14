@@ -34,7 +34,7 @@ export function ServicePricePolicyPreviewSection({
           <h2>Price policy change preview</h2>
           <p className="muted">
             Before changing service prices, compare the current minimum price against common one-step
-            scenarios. This helps avoid accidentally creating zero-margin prices or partner payouts that
+            scenarios. This helps avoid accidentally creating zero-margin prices or Partner payouts that
             create cash booking closeout problems.
           </p>
         </div>

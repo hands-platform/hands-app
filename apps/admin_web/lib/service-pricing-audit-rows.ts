@@ -42,8 +42,8 @@ export function servicePricingAuditRows(logs: readonly AdminAuditLog[]): readonl
         typeof after.providerPayoutAmount === 'number'
           ? `Partner ${formatMoney(after.providerPayoutAmount, String(after.currency ?? 'VND'))}`
           : typeof before.providerPayoutAmount === 'number'
-            ? `Previous partner ${formatMoney(before.providerPayoutAmount, String(before.currency ?? 'VND'))}`
-            : 'No partner payout snapshot';
+            ? `Previous Partner ${formatMoney(before.providerPayoutAmount, String(before.currency ?? 'VND'))}`
+            : 'No Partner payout snapshot';
 
       return {
         action: log.action,
