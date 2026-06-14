@@ -1168,15 +1168,10 @@ function filterActivityStreamByRange(
 function bookingActivitySummary(booking: AdminBooking) {
   const customer =
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
-  const partner =
-    booking.selectedProvider?.displayName ??
-    booking.preferredProvider?.displayName ??
-    participantNames(booking).join(', ') ??
-    'No partner yet';
   const payment = booking.payment
     ? `${booking.payment.method} ${booking.payment.status} ${formatMoney(booking.payment.amount, booking.payment.currency ?? 'VND')}`
     : 'No payment row';
-  return operatorDisplayText(`${customer} / ${partner} / ${payment}`);
+  return operatorDisplayText(`${customer} / ${bookingPartnerName(booking)} / ${payment}`);
 }
 
 function auditActivitySummary(log: AdminAuditLog) {
@@ -1210,11 +1205,6 @@ function buildBookingHandoffQueue(bookings: AdminBooking[]) {
     .map((booking) => {
       const selectedPartner = booking.selectedProvider ?? null;
       const preferredPartner = booking.preferredProvider ?? null;
-      const partnerName =
-        selectedPartner?.displayName ??
-        preferredPartner?.displayName ??
-        participantNames(booking).join(', ') ??
-        'No partner yet';
       const participantCount = booking.participants?.length ?? 0;
       const walletAmount = booking.earning?.netAmount ?? 0;
       const chatReady = Boolean(booking.chatRoom?.id);
@@ -1224,11 +1214,11 @@ function buildBookingHandoffQueue(bookings: AdminBooking[]) {
         updatedAt: booking.updatedAt,
         customerName: booking.customerProfile?.user?.fullName ?? 'Customer',
         customerPhone: booking.customerProfile?.user?.phone ?? '-',
-        partnerName: operatorDisplayText(partnerName),
+        partnerName: operatorDisplayText(bookingPartnerName(booking)),
         partnerDetail: selectedPartner
-          ? 'Selected partner'
+          ? 'Selected Partner'
           : preferredPartner
-            ? `Preferred partner / ${participantCount} participant(s)`
+            ? `Preferred Partner / ${participantCount} participant(s)`
             : `${participantCount} participant(s)`,
         status: booking.status,
         statusClass: bookingStatusClass(booking.status),
@@ -1243,6 +1233,12 @@ function buildBookingHandoffQueue(bookings: AdminBooking[]) {
         nextAction: bookingNextAction(booking),
       };
     });
+}
+
+function bookingPartnerName(booking: AdminBooking) {
+  const participantLabel = participantNames(booking).join(', ');
+  const directPartnerName = booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName;
+  return directPartnerName || participantLabel || 'No Partner yet';
 }
 
 function buildOperatorNotes(logs: AdminAuditLog[]) {
