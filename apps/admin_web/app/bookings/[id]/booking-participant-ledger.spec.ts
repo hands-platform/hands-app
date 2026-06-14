@@ -20,7 +20,7 @@ const notificationTrace = {
 };
 
 describe('booking participant ledger', () => {
-  it('keeps actual participant evidence while separating customer-selectable partners', () => {
+  it('keeps actual participant evidence while separating customer-selectable Partners', () => {
     const ledger = bookingParticipantLedger(
       booking({
         preferredProviderId: 'partner-first',
@@ -89,13 +89,13 @@ describe('booking participant ledger', () => {
     );
 
     expect(ledger.rows.find((row) => row.id === 'participant-selected')).toMatchObject({
-      role: 'Final partner',
+      role: 'Final Partner',
       choiceState: 'Customer final choice',
       eligibilityLabel: 'Final selected by customer',
     });
     expect(ledger.rows.find((row) => row.id === 'participant-selected')?.facts).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: 'Source', value: 'Final partner', tone: 'pill-success' }),
+        expect.objectContaining({ label: 'Source', value: 'Final Partner', tone: 'pill-success' }),
         expect.objectContaining({ label: 'Decision', value: 'SELECTED', tone: 'pill-success' }),
         expect.objectContaining({
           label: 'Customer choice',
@@ -114,7 +114,7 @@ describe('booking participant ledger', () => {
       expect.arrayContaining([
         expect.objectContaining({ label: 'Source', value: 'Marketplace', tone: 'pill-neutral' }),
         expect.objectContaining({ label: 'Customer choice', value: 'Customer-selectable', tone: 'pill-info' }),
-        expect.objectContaining({ label: 'Chat handoff', value: 'Not final partner', tone: 'pill-neutral' }),
+        expect.objectContaining({ label: 'Chat handoff', value: 'Not final Partner', tone: 'pill-neutral' }),
       ]),
     );
     expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
@@ -129,7 +129,7 @@ describe('booking participant ledger', () => {
     });
   });
 
-  it('does not imply automatic assignment when the customer has not selected a final partner', () => {
+  it('does not imply automatic assignment when the customer has not selected a final Partner', () => {
     const ledger = bookingParticipantLedger(
       booking({
         preferredProviderId: 'partner-first',
@@ -194,7 +194,7 @@ describe('booking participant ledger', () => {
     });
   });
 
-  it('keeps a legacy accepted first-pick partner customer-selectable as fallback evidence', () => {
+  it('keeps a legacy accepted first-pick Partner customer-selectable as fallback evidence', () => {
     const ledger = bookingParticipantLedger(
       booking({
         preferredProviderId: 'partner-first',
@@ -237,7 +237,7 @@ describe('booking participant ledger', () => {
     });
   });
 
-  it('treats selectedProviderId as final choice even when the selected partner relation is omitted', () => {
+  it('treats selectedProviderId as final choice even when the selected Partner relation is omitted', () => {
     const ledger = bookingParticipantLedger(
       booking({
         selectedProviderId: 'partner-selected',
@@ -269,7 +269,7 @@ describe('booking participant ledger', () => {
     });
   });
 
-  it('flags missing retained chat after a final partner is selected', () => {
+  it('flags missing retained chat after a final Partner is selected', () => {
     const ledger = bookingParticipantLedger(
       booking({
         status: 'MATCHED',

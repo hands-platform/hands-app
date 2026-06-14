@@ -87,7 +87,7 @@ export function bookingParticipantLedger(
     boundary: marketplaceParticipantLedgerBoundaryCopy(),
     cards: [
       {
-        label: 'First-pick partner',
+        label: 'First-pick Partner',
         value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'Not set',
         helper: firstPickParticipant
           ? `${firstPickParticipant.status} / participated ${formatDate(firstPickParticipant.joinedAt)}`
@@ -176,7 +176,7 @@ export function bookingParticipantLedger(
         helper: finalPartnerRecorded
           ? selectedFromMarketplace
             ? 'Customer selected a marketplace participant instead of the first-pick Partner.'
-            : 'First-pick partner is retained as the final matched partner.'
+            : 'First-pick Partner is retained as the final matched Partner.'
           : 'Customer final choice is required unless first-pick already matched first.',
       },
     ],
@@ -208,14 +208,14 @@ export function bookingParticipantLedger(
       },
       {
         stage: '2. Marketplace participation',
-        scope: 'Only partners who actually join, accept, reject, or are selected are stored as rows.',
+        scope: 'Only Partners who actually join, accept, reject, or are selected are stored as rows.',
         status: marketplaceParticipants.length
           ? `${marketplaceParticipants.length} marketplace row(s)`
           : 'No marketplace row',
         tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
         evidence: `${marketplaceCustomerSelectable.length} customer-selectable / ${acceptedParticipants.length} accepted / ${joinedParticipants.length} participating / ${rejectedParticipants.length} rejected.`,
         operatorUse:
-          'Use the rows below as the factual list of partners who entered the booking; marketplace visibility is not retained as activity.',
+          'Use the rows below as the factual list of Partners who entered the booking; marketplace visibility is not retained as activity.',
       },
       {
         stage: '3. Customer final choice',
@@ -254,7 +254,7 @@ export function bookingParticipantLedger(
       const partnerId = bookingParticipantProviderId(participant);
       const isPreferred = partnerId === preferredProviderId;
       const isFinal = partnerId === selectedProviderId;
-      const role = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
+      const role = isFinal ? 'Final Partner' : isPreferred ? 'First-pick' : 'Marketplace';
       const roleTone = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
       const customerSelectable = isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId);
       const statusTone =
@@ -366,7 +366,7 @@ function bookingParticipantEligibilityState(input: {
     return {
       label: 'Not customer-selectable',
       tone: 'pill-neutral',
-      reason: 'Why not selectable: the partner declined or could not take this booking.',
+      reason: 'Why not selectable: the Partner declined or could not take this booking.',
       nextStep: 'Keep the row as response evidence only.',
     };
   }
@@ -376,7 +376,7 @@ function bookingParticipantEligibilityState(input: {
       label: 'Not customer-selectable yet',
       tone: 'pill-warn',
       reason:
-        'Why not selectable: first-pick participation is retained, but the partner must accept before customer choice.',
+        'Why not selectable: first-pick participation is retained, but the Partner must accept before customer choice.',
       nextStep: 'Monitor the first-pick response window and marketplace shortlist visibility.',
     };
   }

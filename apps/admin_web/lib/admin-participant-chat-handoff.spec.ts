@@ -1,7 +1,7 @@
 import { participantChatHandoffState } from './admin-participant-chat-handoff';
 
 describe('participant chat handoff state', () => {
-  it('marks the final selected partner chat as retained when a chat room exists', () => {
+  it('marks the final selected Partner chat as retained when a chat room exists', () => {
     expect(
       participantChatHandoffState({
         chatRequired: true,
@@ -14,7 +14,7 @@ describe('participant chat handoff state', () => {
     ).toEqual({ label: 'Chat retained', tone: 'pill-success' });
   });
 
-  it('flags a selected final partner with missing retained chat', () => {
+  it('flags a selected final Partner with missing retained chat', () => {
     expect(
       participantChatHandoffState({
         chatRequired: true,
@@ -37,7 +37,7 @@ describe('participant chat handoff state', () => {
         isFinal: false,
         status: 'JOINED',
       }),
-    ).toEqual({ label: 'Not final partner', tone: 'pill-neutral' });
+    ).toEqual({ label: 'Not final Partner', tone: 'pill-neutral' });
   });
 
   it('marks customer-selectable participants as waiting before final choice', () => {

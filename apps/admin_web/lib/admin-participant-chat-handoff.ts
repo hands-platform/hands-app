@@ -21,7 +21,7 @@ export function participantChatHandoffState(input: ParticipantChatHandoffInput) 
   }
 
   if (input.finalPartnerRecorded) {
-    return { label: 'Not final partner', tone: 'pill-neutral' };
+    return { label: 'Not final Partner', tone: 'pill-neutral' };
   }
 
   if (input.customerSelectable) {
