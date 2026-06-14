@@ -53,6 +53,7 @@ import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enf
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
 import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
+import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
@@ -248,34 +249,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyAuditTrailSection rows={policyAuditRows} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking matching playbook</h2>
-            <p className="muted">
-              Current operator-facing flow based on the saved policy values. Use this to verify whether the
-              customer, partner, finance, and alert behavior still matches the intended operation.
-            </p>
-          </div>
-          <span className="pill pill-info">Policy driven</span>
-        </div>
-        <div className="timeline admin-mt-12">
-          {matchingPlaybook.map((step) => (
-            <div className={`timeline-step ${step.className}`} key={step.title}>
-              <span>{step.step}</span>
-              <strong>{step.title}</strong>
-              <p>{step.detail}</p>
-              <div className="participant-list">
-                {step.tags.map((tag) => (
-                  <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
-                    {tag.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyMatchingPlaybookSection playbook={matchingPlaybook} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
