@@ -54,7 +54,7 @@ describe('bookingAttentionFlags', () => {
     expect(flags).toEqual([
       expect.objectContaining({
         severity: 'high',
-        title: 'Cash fee debt blocks partner',
+        title: 'Cash fee debt blocks Partner',
         detail: 'Linh Wellness collected cash and still owes 120000 VND.',
       }),
     ]);

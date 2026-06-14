@@ -6,7 +6,7 @@ const baseInput = {
   hasOpened: false,
   hasPreferredPartner: false,
   partnerDecisionLabel: 'Waiting',
-  partnerHint: 'No partner response yet.',
+  partnerHint: 'No Partner response yet.',
   participantCount: 0,
   bookingStatus: 'CREATED',
   selectedPartnerLabel: 'Not selected',
@@ -34,7 +34,7 @@ describe('bookingFlowStages', () => {
     });
   });
 
-  it('uses direct request copy when a preferred partner exists', () => {
+  it('uses direct request copy when a preferred Partner exists', () => {
     const stages = bookingFlowStages({
       ...baseInput,
       openedAtLabel: '07 Jun 2026 10:05',
@@ -44,12 +44,12 @@ describe('bookingFlowStages', () => {
 
     expect(stages[1]).toMatchObject({
       value: '07 Jun 2026 10:05',
-      hint: 'Direct request sent to preferred partner.',
+      hint: 'Direct request sent to preferred Partner.',
       done: true,
     });
   });
 
-  it('uses open matching copy when no preferred partner exists', () => {
+  it('uses open matching copy when no preferred Partner exists', () => {
     const stages = bookingFlowStages({
       ...baseInput,
       hasOpened: true,
@@ -59,13 +59,13 @@ describe('bookingFlowStages', () => {
     expect(stages[1].hint).toBe('Open matching started.');
   });
 
-  it('marks partner reply done when participants exist or booking is matched onward', () => {
+  it('marks Partner reply done when participants exist or booking is matched onward', () => {
     expect(bookingFlowStages({ ...baseInput, participantCount: 1 })[2].done).toBe(true);
     expect(bookingFlowStages({ ...baseInput, bookingStatus: 'MATCHED' })[2].done).toBe(true);
     expect(bookingFlowStages({ ...baseInput, bookingStatus: 'OPEN_MATCHING' })[2].done).toBe(false);
   });
 
-  it('marks matched and payment stages from selected partner, chat, and terminal payment state', () => {
+  it('marks matched and payment stages from selected Partner, chat, and terminal payment state', () => {
     const stages = bookingFlowStages({
       ...baseInput,
       selectedPartnerLabel: 'Linh Wellness',

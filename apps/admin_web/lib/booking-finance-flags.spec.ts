@@ -154,7 +154,7 @@ describe('bookingFinanceFlags', () => {
     ]);
   });
 
-  it('flags cash debt settlement blocks with the partner label and debt amount', () => {
+  it('flags cash debt settlement blocks with the Partner label and debt amount', () => {
     const flags = bookingFinanceFlags({
       bookingStatus: 'COMPLETED',
       paymentAmount: 500000,
@@ -177,7 +177,7 @@ describe('bookingFinanceFlags', () => {
     expect(flags).toEqual([
       expect.objectContaining({
         severity: 'high',
-        title: 'Cash wallet debt blocks partner',
+        title: 'Cash wallet debt blocks Partner',
         detail:
           'Linh Wellness owes 120000 VND before marketplace alerts, participation, or payout release can continue.',
       }),

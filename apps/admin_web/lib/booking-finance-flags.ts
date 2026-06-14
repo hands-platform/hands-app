@@ -83,7 +83,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
     flags.push({
       severity: 'high',
       title: 'Completed booking has no earning',
-      detail: 'Service is completed but no partner earning/wallet entry exists.',
+      detail: 'Service is completed but no Partner earning/wallet entry exists.',
       action: 'Run earning creation or inspect completion processing.',
     });
   }
@@ -91,7 +91,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
   if (input.cashDebtNeedsSettlement) {
     flags.push({
       severity: 'high',
-      title: 'Cash wallet debt blocks partner',
+      title: 'Cash wallet debt blocks Partner',
       detail: `${input.partnerLabel} owes ${formatMoney(
         Math.abs(input.earningNetAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,

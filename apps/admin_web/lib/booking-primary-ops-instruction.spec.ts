@@ -22,7 +22,7 @@ describe('primary booking ops instruction', () => {
     };
 
     expect(primaryBookingOpsInstruction(booking)).toBe(
-      'Booking is marked no-show. Review customer communication, payment release/refund, and any partner fee impact before closing.',
+      'Booking is marked no-show. Review customer communication, payment release/refund, and any Partner fee impact before closing.',
     );
   });
 
@@ -44,17 +44,17 @@ describe('primary booking ops instruction', () => {
     };
 
     expect(primaryBookingOpsInstruction(booking, { cashDebtNeedsSettlement: true })).toBe(
-      'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.',
+      'Cash was collected by the Partner. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
     );
   });
 
-  it('points open matching bookings to partner response and marketplace supply', () => {
+  it('points open matching bookings to Partner response and marketplace supply', () => {
     const booking: PrimaryBookingOpsInstructionInput = {
       status: 'OPEN_MATCHING',
     };
 
     expect(primaryBookingOpsInstruction(booking)).toBe(
-      'Monitor partner response speed and marketplace supply. Customer is still waiting.',
+      'Monitor Partner response speed and marketplace supply. Customer is still waiting.',
     );
   });
 

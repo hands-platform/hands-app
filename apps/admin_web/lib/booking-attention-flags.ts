@@ -90,12 +90,12 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
   if (input.cashDebtNeedsSettlement) {
     flags.push({
       severity: 'high',
-      title: 'Cash fee debt blocks partner',
+      title: 'Cash fee debt blocks Partner',
       detail: `${input.cashDebtPartnerLabel} collected cash and still owes ${formatMoney(
         Math.abs(input.cashDebtAmount),
         input.cashDebtCurrency ?? 'VND',
       )}.`,
-      action: 'Confirm the partner deposit or admin offset before marketplace alerts, participation, or payout release resumes.',
+      action: 'Confirm the Partner deposit or admin offset before marketplace alerts, participation, or payout release resumes.',
     });
   }
 

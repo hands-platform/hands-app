@@ -18,7 +18,7 @@ export function primaryBookingOpsInstruction(
       : 'Matching expired but payment still needs review. Release or refund before closing.';
   }
   if (booking.status === 'NO_SHOW') {
-    return 'Booking is marked no-show. Review customer communication, payment release/refund, and any partner fee impact before closing.';
+    return 'Booking is marked no-show. Review customer communication, payment release/refund, and any Partner fee impact before closing.';
   }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED'
@@ -29,13 +29,13 @@ export function primaryBookingOpsInstruction(
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (options.cashDebtNeedsSettlement) {
-    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.';
+    return 'Cash was collected by the Partner. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
   }
   if (booking.status === 'OPEN_MATCHING') {
-    return 'Monitor partner response speed and marketplace supply. Customer is still waiting.';
+    return 'Monitor Partner response speed and marketplace supply. Customer is still waiting.';
   }
   if (booking.status === 'MATCHED') {
     return 'Partner is selected. Monitor chat readiness, location sharing, and arrival progression.';

@@ -36,7 +36,7 @@ export function bookingFlowStages(input: BookingFlowStagesInput): BookingFlowSta
       label: 'Opened',
       value: input.hasOpened ? input.openedAtLabel ?? 'Not opened' : 'Not opened',
       hint: input.hasPreferredPartner
-        ? 'Direct request sent to preferred partner.'
+        ? 'Direct request sent to preferred Partner.'
         : 'Open matching started.',
       done: input.hasOpened,
     },
