@@ -42,7 +42,7 @@ export function BookingMonitorCommandRouteSections({
           {commandSummaryCards.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.label}>
               <span className="signal signal-info">{item.label}</span>
-              <h3>{item.value}</h3>
+              <strong className="ops-task-card-value">{item.value}</strong>
               <p>{item.detail}</p>
               <div className="participant-list">
                 <span className="pill">{item.owner}</span>
@@ -67,7 +67,7 @@ export function BookingMonitorCommandRouteSections({
           {primaryCommandQueue.map((item) => (
             <Link className="ops-task-card" href={item.href} key={`${item.status}-${item.primaryAction}`}>
               <span className={`pill ${item.tone}`}>{item.status}</span>
-              <h3>{item.count} booking(s)</h3>
+              <strong className="ops-task-card-value">{item.count} booking(s)</strong>
               <p>{item.primaryAction}</p>
               <p className="muted">{item.detail}</p>
               <div className="participant-list">
@@ -97,7 +97,7 @@ export function BookingMonitorCommandRouteSections({
           {operatorRouteCards.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.label}>
               <span className="signal signal-info">{item.label}</span>
-              <h3>{item.value}</h3>
+              <strong className="ops-task-card-value">{item.value}</strong>
               <p>{item.detail}</p>
               <div className="participant-list">
                 <span className="pill">{item.owner}</span>

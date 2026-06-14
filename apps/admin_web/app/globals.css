@@ -520,6 +520,14 @@ a.action-button-card:hover {
   margin: 10px 0 0;
 }
 
+.ops-task-card-value {
+  display: block;
+  font-size: 1.17em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 10px 0 0;
+}
+
 .ops-task-card small {
   color: var(--admin-muted);
   display: block;
