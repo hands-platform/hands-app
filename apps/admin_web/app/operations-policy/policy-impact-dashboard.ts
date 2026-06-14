@@ -39,10 +39,38 @@ export type PolicyChangeImpactDashboard = {
   }[];
 };
 
+type PolicyImpactStats = {
+  readonly activeDispatch: readonly AdminBooking[];
+  readonly customerConfirm: boolean;
+  readonly immediateBackup: boolean;
+  readonly negativeCashDebtBookings: readonly AdminBooking[];
+  readonly openMatching: readonly AdminBooking[];
+  readonly openMatchingWithSnapshot: readonly AdminBooking[];
+  readonly openMatchingWithoutSnapshot: number;
+  readonly snapshotCoverage: string;
+  readonly snapshotDrift: readonly AdminBooking[];
+  readonly withSnapshot: readonly AdminBooking[];
+  readonly withoutSnapshot: readonly AdminBooking[];
+};
+
 export function buildPolicyImpactDashboard(
   settings: AdminOperationalPolicySetting[],
   bookings: AdminBooking[],
 ): PolicyChangeImpactDashboard {
+  const stats = buildPolicyImpactStats(settings, bookings);
+
+  return {
+    metrics: buildPolicyImpactMetrics(stats),
+    snapshotSummary: buildPolicySnapshotSummary(stats),
+    snapshotRows: buildSnapshotRows(settings, bookings),
+    cards: buildPolicyImpactCards(stats),
+  };
+}
+
+function buildPolicyImpactStats(
+  settings: AdminOperationalPolicySetting[],
+  bookings: AdminBooking[],
+): PolicyImpactStats {
   const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const activeDispatch = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
@@ -68,115 +96,138 @@ export function buildPolicyImpactDashboard(
     'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
   return {
-    metrics: [
-      {
-        label: 'Open matching now',
-        value: String(openMatching.length),
-        helper:
-          'Existing open bookings keep their saved policy snapshot; new bookings use the current live policy.',
-      },
-      {
-        label: 'Active dispatch',
-        value: String(activeDispatch.length),
-        helper: 'Matched or in-service bookings should be handled by their saved booking state.',
-      },
-      {
-        label: 'Policy drift',
-        value: String(snapshotDrift.length),
-        helper:
-          'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
-      },
-      {
-        label: 'Older bookings',
-        value: String(withoutSnapshot.length),
-        helper: 'Older bookings without metadata fall back to live policy explanations.',
-      },
-    ],
-    snapshotSummary: [
-      {
-        scope: 'Forward-only',
-        label: 'Live policy applies to new bookings',
-        value: 'Create time snapshot',
-        helper:
-          'When a customer books, HANDS copies the active matching policy into booking metadata for later audit.',
-      },
-      {
-        scope: 'Open now',
-        label: 'Open bookings with saved policy',
-        value: `${openMatchingWithSnapshot.length}/${openMatching.length}`,
-        helper:
-          openMatchingWithoutSnapshot > 0
-            ? `${openMatchingWithoutSnapshot} open booking(s) without snapshots still need manual policy interpretation.`
-            : 'Every open matching booking in this sample has a saved policy snapshot.',
-      },
-      {
-        scope: 'Coverage',
-        label: 'Snapshot coverage',
-        value: snapshotCoverage,
-        helper: `${withSnapshot.length}/${bookings.length} sampled booking(s) include metadata.matchingPolicy.`,
-      },
-      {
-        scope: 'Review',
-        label: 'Policy drift meaning',
-        value: snapshotDrift.length ? `${snapshotDrift.length} changed` : 'Aligned',
-        helper:
-          'Drift is not an error. It tells operators that the booking was opened under an older policy value.',
-      },
-    ],
-    snapshotRows: buildSnapshotRows(settings, bookings),
-    cards: [
-      {
-        scope: 'New bookings',
-        title: 'Response timer changes are forward-only',
-        detail:
-          'Changing the first-pick Partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
-        operatorAction:
-          openMatching.length > 0
-            ? `There are ${openMatching.length} open booking(s); do not expect their countdown to recalculate.`
-            : 'No open matching bookings are waiting right now.',
-        className: 'ops-task-done',
-        pillClass: 'pill-success',
-      },
-      {
-        scope: 'Live matching',
-        title: immediateBackup
-          ? 'Marketplace Partners can participate during the first window'
-          : 'Marketplace timing needs policy review',
-        detail: immediateBackup
-          ? 'Eligible Partners can appear while the first-pick Partner is still deciding.'
-          : 'Only immediate marketplace participation is approved for the current MVP runtime.',
-        operatorAction: customerConfirm
-          ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
-          : 'Historical policy value is ignored; reset the policy to first-pick priority with customer fallback.',
-        className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
-        pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
-      },
-      {
-        scope: 'Partner controls',
-        title: 'Negative wallet gate protects cash-fee debt',
-        detail:
-          'Partners with unpaid cash-fee debt can still see marketplace requests, but final acceptance, service start, and payout release wait until settlement is posted.',
-        operatorAction:
-          negativeCashDebtBookings.length > 0
-            ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
-            : 'No negative wallet booking state was found in the current sample.',
-        className: negativeCashDebtBookings.length > 0 ? 'ops-task-blocked' : 'ops-task-done',
-        pillClass: negativeCashDebtBookings.length > 0 ? 'pill-danger' : 'pill-success',
-      },
-      {
-        scope: 'Audit',
-        title: 'Saved policy snapshots make old bookings explainable',
-        detail:
-          'Bookings created after this change keep response window, marketplace radius, accept mode, marketplace-open mode, and travel buffer in metadata.',
-        operatorAction:
-          snapshotDrift.length > 0
-            ? `${snapshotDrift.length} booking(s) differ from current policy; review booking detail before manual action.`
-            : 'Current booking snapshots are aligned with the live policy sample.',
-        className: snapshotDrift.length > 0 ? 'ops-task-pending' : 'ops-task-done',
-        pillClass: snapshotDrift.length > 0 ? 'pill-warn' : 'pill-success',
-      },
-    ],
+    activeDispatch,
+    customerConfirm,
+    immediateBackup,
+    negativeCashDebtBookings,
+    openMatching,
+    openMatchingWithSnapshot,
+    openMatchingWithoutSnapshot,
+    snapshotCoverage,
+    snapshotDrift,
+    withSnapshot,
+    withoutSnapshot,
   };
+}
+
+function buildPolicyImpactMetrics(stats: PolicyImpactStats): PolicyChangeImpactDashboard['metrics'] {
+  return [
+    {
+      label: 'Open matching now',
+      value: String(stats.openMatching.length),
+      helper:
+        'Existing open bookings keep their saved policy snapshot; new bookings use the current live policy.',
+    },
+    {
+      label: 'Active dispatch',
+      value: String(stats.activeDispatch.length),
+      helper: 'Matched or in-service bookings should be handled by their saved booking state.',
+    },
+    {
+      label: 'Policy drift',
+      value: String(stats.snapshotDrift.length),
+      helper:
+        'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
+    },
+    {
+      label: 'Older bookings',
+      value: String(stats.withoutSnapshot.length),
+      helper: 'Older bookings without metadata fall back to live policy explanations.',
+    },
+  ];
+}
+
+function buildPolicySnapshotSummary(
+  stats: PolicyImpactStats,
+): PolicyChangeImpactDashboard['snapshotSummary'] {
+  return [
+    {
+      scope: 'Forward-only',
+      label: 'Live policy applies to new bookings',
+      value: 'Create time snapshot',
+      helper:
+        'When a customer books, HANDS copies the active matching policy into booking metadata for later audit.',
+    },
+    {
+      scope: 'Open now',
+      label: 'Open bookings with saved policy',
+      value: `${stats.openMatchingWithSnapshot.length}/${stats.openMatching.length}`,
+      helper:
+        stats.openMatchingWithoutSnapshot > 0
+          ? `${stats.openMatchingWithoutSnapshot} open booking(s) without snapshots still need manual policy interpretation.`
+          : 'Every open matching booking in this sample has a saved policy snapshot.',
+    },
+    {
+      scope: 'Coverage',
+      label: 'Snapshot coverage',
+      value: stats.snapshotCoverage,
+      helper: `${stats.withSnapshot.length}/${
+        stats.withSnapshot.length + stats.withoutSnapshot.length
+      } sampled booking(s) include metadata.matchingPolicy.`,
+    },
+    {
+      scope: 'Review',
+      label: 'Policy drift meaning',
+      value: stats.snapshotDrift.length ? `${stats.snapshotDrift.length} changed` : 'Aligned',
+      helper:
+        'Drift is not an error. It tells operators that the booking was opened under an older policy value.',
+    },
+  ];
+}
+
+function buildPolicyImpactCards(stats: PolicyImpactStats): PolicyChangeImpactDashboard['cards'] {
+  return [
+    {
+      scope: 'New bookings',
+      title: 'Response timer changes are forward-only',
+      detail:
+        'Changing the first-pick Partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
+      operatorAction:
+        stats.openMatching.length > 0
+          ? `There are ${stats.openMatching.length} open booking(s); do not expect their countdown to recalculate.`
+          : 'No open matching bookings are waiting right now.',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    },
+    {
+      scope: 'Live matching',
+      title: stats.immediateBackup
+        ? 'Marketplace Partners can participate during the first window'
+        : 'Marketplace timing needs policy review',
+      detail: stats.immediateBackup
+        ? 'Eligible Partners can appear while the first-pick Partner is still deciding.'
+        : 'Only immediate marketplace participation is approved for the current MVP runtime.',
+      operatorAction: stats.customerConfirm
+        ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
+        : 'Historical policy value is ignored; reset the policy to first-pick priority with customer fallback.',
+      className: stats.immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: stats.immediateBackup ? 'pill-success' : 'pill-warn',
+    },
+    {
+      scope: 'Partner controls',
+      title: 'Negative wallet gate protects cash-fee debt',
+      detail:
+        'Partners with unpaid cash-fee debt can still see marketplace requests, but final acceptance, service start, and payout release wait until settlement is posted.',
+      operatorAction:
+        stats.negativeCashDebtBookings.length > 0
+          ? `${stats.negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
+          : 'No negative wallet booking state was found in the current sample.',
+      className: stats.negativeCashDebtBookings.length > 0 ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: stats.negativeCashDebtBookings.length > 0 ? 'pill-danger' : 'pill-success',
+    },
+    {
+      scope: 'Audit',
+      title: 'Saved policy snapshots make old bookings explainable',
+      detail:
+        'Bookings created after this change keep response window, marketplace radius, accept mode, marketplace-open mode, and travel buffer in metadata.',
+      operatorAction:
+        stats.snapshotDrift.length > 0
+          ? `${stats.snapshotDrift.length} booking(s) differ from current policy; review booking detail before manual action.`
+          : 'Current booking snapshots are aligned with the live policy sample.',
+      className: stats.snapshotDrift.length > 0 ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: stats.snapshotDrift.length > 0 ? 'pill-warn' : 'pill-success',
+    },
+  ];
 }
 
 function buildSnapshotRows(
