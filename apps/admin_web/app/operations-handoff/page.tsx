@@ -23,16 +23,15 @@ import { isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/da
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { addOperationsHandoffNote } from './actions';
+import {
+  ACTIVE_BOOKING_STATUSES,
+  bookingPartnerName,
+  bookingStatusClass,
+  buildBookingHandoffQueue,
+} from './operations-handoff-booking-queue';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 
-const activeBookingStatuses = new Set([
-  'OPEN_MATCHING',
-  'MATCHED',
-  'PROVIDER_ON_THE_WAY',
-  'ARRIVED',
-  'IN_SERVICE',
-]);
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type OperationsHandoffFilters = {
   range: ReturnType<typeof normalizeDateRange>;
@@ -99,7 +98,7 @@ export default async function OperationsHandoffPage({
     adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
   ]);
 
-  const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
+  const activeBookings = bookings.filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status));
   const matchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const inServiceBookings = bookings.filter((booking) => booking.status === 'IN_SERVICE');
   const bookingQueue = buildBookingHandoffQueue(bookings);
@@ -1195,52 +1194,6 @@ function trimText(value: string, maxLength: number) {
   return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
 }
 
-function buildBookingHandoffQueue(bookings: AdminBooking[]) {
-  return bookings
-    .filter(
-      (booking) =>
-        activeBookingStatuses.has(booking.status) || recentlyChanged(booking.updatedAt ?? booking.createdAt),
-    )
-    .slice(0, 18)
-    .map((booking) => {
-      const selectedPartner = booking.selectedProvider ?? null;
-      const preferredPartner = booking.preferredProvider ?? null;
-      const participantCount = booking.participants?.length ?? 0;
-      const walletAmount = booking.earning?.netAmount ?? 0;
-      const chatReady = Boolean(booking.chatRoom?.id);
-      return {
-        id: booking.id,
-        createdAt: booking.createdAt,
-        updatedAt: booking.updatedAt,
-        customerName: booking.customerProfile?.user?.fullName ?? 'Customer',
-        customerPhone: booking.customerProfile?.user?.phone ?? '-',
-        partnerName: operatorDisplayText(bookingPartnerName(booking)),
-        partnerDetail: selectedPartner
-          ? 'Selected Partner'
-          : preferredPartner
-            ? `Preferred Partner / ${participantCount} participant(s)`
-            : `${participantCount} participant(s)`,
-        status: booking.status,
-        statusClass: bookingStatusClass(booking.status),
-        paymentLabel: booking.payment
-          ? `${booking.payment.method} / ${booking.payment.status} / ${formatMoney(booking.payment.amount, booking.payment.currency ?? 'VND')}`
-          : 'No payment row',
-        walletLabel: booking.earning
-          ? `Wallet effect ${formatMoney(walletAmount, booking.earning.currency)}`
-          : 'No earning row yet',
-        chatLabel: chatReady ? 'Chat archived' : 'Chat not created',
-        chatClass: chatReady ? 'pill pill-success' : 'pill pill-warn',
-        nextAction: bookingNextAction(booking),
-      };
-    });
-}
-
-function bookingPartnerName(booking: AdminBooking) {
-  const participantLabel = participantNames(booking).join(', ');
-  const directPartnerName = booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName;
-  return directPartnerName || participantLabel || 'No Partner yet';
-}
-
 function buildOperatorNotes(logs: AdminAuditLog[]) {
   return logs
     .filter((log) => log.action.endsWith('.ops_note.add') || log.action === 'operations.handoff_note.add')
@@ -1449,36 +1402,6 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
     })
     .sort((a, b) => b.sortPriority - a.sortPriority);
   return { rows, attentionCount: rows.filter((row) => row.attention).length };
-}
-
-function participantNames(booking: AdminBooking) {
-  return (booking.participants ?? [])
-    .map((participant) =>
-      operatorDisplayText(
-        participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName,
-      ),
-    )
-    .filter(Boolean) as string[];
-}
-
-function bookingNextAction(booking: AdminBooking) {
-  if (booking.status === 'OPEN_MATCHING') return 'Monitor Partner response window and customer choice list.';
-  if (booking.status === 'MATCHED')
-    return 'Confirm Partner starts service when ready; chat should be available.';
-  if (booking.status === 'IN_SERVICE') return 'Keep chat visible until Partner completion.';
-  if (booking.status === 'COMPLETED')
-    return 'Check payment, earning, tax, wallet, and chat archive closeout.';
-  if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED')
-    return 'Check payment release, refund, and customer notice.';
-  return 'Open booking detail for the latest factual state.';
-}
-
-function bookingStatusClass(status: string) {
-  if (status === 'OPEN_MATCHING') return 'pill pill-warn';
-  if (status === 'IN_SERVICE' || status === 'MATCHED') return 'pill pill-info';
-  if (status === 'COMPLETED') return 'pill pill-success';
-  if (status === 'CANCELLED' || status === 'EXPIRED') return 'pill pill-danger';
-  return 'pill';
 }
 
 export function auditActivityArea(log: AdminAuditLog) {
