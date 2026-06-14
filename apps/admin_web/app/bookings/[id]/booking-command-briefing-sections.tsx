@@ -142,7 +142,7 @@ export function BookingDetailToolbar({
         )}
         {finalPartnerId && (
           <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}>
-            All partner chats
+            All Partner chats
           </Link>
         )}
         {chatRoomId && (
@@ -275,7 +275,7 @@ export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityCo
           <h2>MVP authority contract</h2>
           <p className="muted">
             One-screen check against the HANDS MVP policy: NestJS business authority, address snapshot,
-            first-pick priority, 10km marketplace, customer fallback partner choice, chat retention, and wallet gate.
+            first-pick priority, 10km marketplace, customer fallback Partner choice, chat retention, and wallet gate.
           </p>
         </div>
         <Link className="text-link" href="/operations-policy">
@@ -330,7 +330,7 @@ export function BookingRecentOperationsTimelineSection({
         <div>
           <h2>Booking recent operations timeline</h2>
           <p className="muted">
-            Latest factual booking steps before an operator decides: address, first-pick wait, 10km partner
+            Latest factual booking steps before an operator decides: address, first-pick wait, 10km Partner
             participation, customer final choice, chat, location, payment, cash debt, and closeout.
           </p>
         </div>
@@ -366,7 +366,7 @@ export function BookingPriorityBriefingSection({
           <h2>Booking priority briefing</h2>
           <p className="muted">
             First-screen operator summary for handoff, chat, location, payment, and closeout. This shows
-            factual state only, not customer or partner judgment.
+            factual state only, not customer or Partner judgment.
           </p>
         </div>
         <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>

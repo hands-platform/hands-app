@@ -60,16 +60,16 @@ export function bookingCloseoutChecklistRows(
       title: 'Address snapshot',
       status: input.addressReady ? 'Ready' : 'Repair needed',
       detail: input.addressReady
-        ? `${input.addressLabel} is locked for partner distance and evidence review.`
+        ? `${input.addressLabel} is locked for Partner distance and evidence review.`
         : 'BookingAddressSnapshot is required before distance matching and closeout review are reliable.',
       operatorRule:
-        'Use the booking address, not the customer current location, for 10km partner participation.',
+        'Use the booking address, not the customer current location, for 10km Partner participation.',
       href: '#address-radius-contract',
       className: input.addressReady ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: input.addressReady ? 'pill-success' : 'pill-danger',
     },
     {
-      title: 'Customer final partner choice',
+      title: 'Customer final Partner choice',
       status: input.finalPartnerId
         ? 'Selected'
         : input.customerChoiceCandidates
@@ -100,7 +100,7 @@ export function bookingCloseoutChecklistRows(
           }.`
         : input.chatNeeded
           ? 'Matched or active booking has no retained chat room attached.'
-          : 'Chat opens after the customer selects the final partner.',
+          : 'Chat opens after the customer selects the final Partner.',
       operatorRule: 'Mobile chat may hide after completion, but admin must retain the transcript.',
       href: input.chatReady
         ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}`

@@ -204,7 +204,7 @@ const bookingDetailAuthoritySourceMarkers = [
   'MVP authority contract',
   'NestJS business authority',
   'BookingAddressSnapshot',
-  'customer fallback partner choice',
+  'customer fallback Partner choice',
   'wallet gate',
   'Connected operations records',
   'Operator action availability',
@@ -217,7 +217,7 @@ const bookingDetailAuthoritySourceMarkers = [
   'Communication and movement handoff',
   'Chat lifecycle and retention',
   'All customer chats',
-  'All partner chats',
+  'All Partner chats',
   'Service pricing snapshot',
 ] as const;
 

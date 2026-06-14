@@ -41,10 +41,10 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
       tone: input.firstPickExpired.length ? 'danger' : input.firstPickWaiting.length ? 'warn' : 'ok',
       detail:
         input.firstPickWaiting.length > 0
-          ? 'Customer selected a preferred partner and the first response window is running.'
+          ? 'Customer selected a preferred Partner and the first response window is running.'
           : 'No direct first-pick request is currently waiting.',
       operatorAction:
-        'Monitor the 10-minute response window, partner push delivery, and wallet/KYC gates before manually intervening.',
+        'Monitor the 10-minute response window, Partner push delivery, and wallet/KYC gates before manually intervening.',
       href: input.firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=matching',
       metrics: [metric('waiting', input.firstPickWaiting.length), metric('expired', input.firstPickExpired.length)],
       bookings: input.firstPickExpired.length ? input.firstPickExpired : input.firstPickWaiting,
@@ -56,10 +56,10 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
       tone: input.noSupply.length ? 'warn' : input.marketplaceVisible.length ? 'info' : 'ok',
       detail:
         input.noSupply.length > 0
-          ? 'Some open bookings have no marketplace partner for the customer to choose.'
-          : 'Marketplace partners are visible or no participation lane is currently needed.',
+          ? 'Some open bookings have no marketplace Partner for the customer to choose.'
+          : 'Marketplace Partners are visible or no participation lane is currently needed.',
       operatorAction:
-        'Use marketplace-ready partners, location freshness, alert delivery, and operating policy before widening rules.',
+        'Use marketplace-ready Partners, location freshness, alert delivery, and operating policy before widening rules.',
       href: input.noSupply.length ? '/partners?review=marketplace-ready' : '/bookings?view=matching',
       metrics: [
         metric('no marketplace', input.noSupply.length),
@@ -70,7 +70,7 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
     },
     {
       stage: 'Stage 3',
-      title: 'Customer fallback partner choice',
+      title: 'Customer fallback Partner choice',
       status: input.customerChoice.length ? 'Needs customer' : 'Clear',
       tone: input.customerChoice.length ? 'warn' : 'ok',
       detail:
@@ -78,7 +78,7 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
           ? 'One or more Partners are ready after first-pick did not validly win under API rules, but the customer has not locked the fallback choice.'
           : 'No open booking is waiting on customer fallback selection.',
       operatorAction:
-        'Prompt support to guide the customer while partner availability and wait anxiety are still fresh.',
+        'Prompt support to guide the customer while Partner availability and wait anxiety are still fresh.',
       href: '/bookings?view=matching',
       metrics: [metric('choice needed', input.customerChoice.length), metric('matched', input.matched.length)],
       bookings: input.customerChoice,
@@ -100,12 +100,12 @@ export function buildBookingMatchingFlowTimeline<TBooking>(
             : 'ok',
       detail:
         input.matchedWithoutChat.length > 0
-          ? 'A final partner is selected, but the chat room is missing.'
+          ? 'A final Partner is selected, but the chat room is missing.'
           : input.locationChecks.length > 0
-            ? 'A live booking has stale or missing partner location.'
+            ? 'A live booking has stale or missing Partner location.'
             : 'Matched and live bookings have no visible chat/location handoff blocker.',
       operatorAction:
-        'Repair chat first, then confirm partner location before arrival, service start, and payment closeout.',
+        'Repair chat first, then confirm Partner location before arrival, service start, and payment closeout.',
       href: input.matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings?view=location',
       metrics: [
         metric('chat repair', input.matchedWithoutChat.length),

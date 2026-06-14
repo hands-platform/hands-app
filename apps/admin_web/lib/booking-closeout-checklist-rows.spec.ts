@@ -40,7 +40,7 @@ describe('bookingCloseoutChecklistRows', () => {
 
     expect(rows.map((row) => row.title)).toEqual([
       'Address snapshot',
-      'Customer final partner choice',
+      'Customer final Partner choice',
       'Chat archive',
       'Money and wallet gate',
       'Manual outcome evidence',
@@ -69,7 +69,7 @@ describe('bookingCloseoutChecklistRows', () => {
       pillClass: 'pill-danger',
     });
     expect(rows[1]).toMatchObject({
-      title: 'Customer final partner choice',
+      title: 'Customer final Partner choice',
       status: 'Waiting',
       className: 'ops-task-blocked',
     });

@@ -131,7 +131,7 @@ export function buildBookingOperatorRouteCards(input: BookingOperatorRouteInput)
       'first-pick',
       'Preferred Partner has the first response window while the marketplace remains open in parallel.',
       'Dispatch',
-      'Watch the direct partner response window.',
+      'Watch the direct Partner response window.',
     ),
     routeCountCard(
       'Marketplace pool',
@@ -139,7 +139,7 @@ export function buildBookingOperatorRouteCards(input: BookingOperatorRouteInput)
       'marketplace',
       'Partners within the booking-address radius can participate and remain visible to the customer.',
       'Dispatch',
-      'Confirm 10km partner participation is healthy.',
+      'Confirm 10km Partner participation is healthy.',
     ),
     routeCountCard(
       'Customer choice',
@@ -147,7 +147,7 @@ export function buildBookingOperatorRouteCards(input: BookingOperatorRouteInput)
       'customer-choice',
       'Customer fallback choice is required when first-pick does not validly win under API rules.',
       'Support',
-      'Help customers finish final partner selection.',
+      'Help customers finish final Partner selection.',
     ),
     routeCountCard(
       'Chat repair',

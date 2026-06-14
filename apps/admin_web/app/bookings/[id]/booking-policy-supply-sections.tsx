@@ -209,7 +209,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
           <h2>Applied operations policy</h2>
           <p className="muted">
             The live admin policy that operators should use when handling this booking. Existing bookings keep
-            their saved timeout, while partner visibility and participation checks use the latest policy.
+            their saved timeout, while Partner visibility and participation checks use the latest policy.
           </p>
         </div>
         <Link className="text-link" href="/operations-policy">
@@ -302,7 +302,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           <h2>Booking-address supply check</h2>
           <p className="muted">
             Booking-specific readout for usable marketplace supply and operational blockers. Actual
-            participation evidence stays in the participant ledger; wallet-debt partners are repaired from
+            participation evidence stays in the participant ledger; wallet-debt Partners are repaired from
             Partner and Finance lanes instead of being listed as booking candidates.
           </p>
         </div>
@@ -323,9 +323,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
       </div>
       <div className="grid admin-mt-14">
         <div className="card">
-          <h3>Top usable partners</h3>
+          <h3>Top usable Partners</h3>
           <p className="muted">
-            Closest eligible partners under the booking pin, radius, online, verification, and location freshness
+            Closest eligible Partners under the booking pin, radius, online, verification, and location freshness
             gates.
           </p>
           <div className="setup-stage-list admin-mt-12">
@@ -350,7 +350,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                   <strong>No usable marketplace participant</strong>
                   <p className="muted">
                     Use the exclusion groups to decide whether to refresh location, widen policy, or contact
-                    partners.
+                    Partners.
                   </p>
                 </div>
                 <Link className="text-link" href="/partners?review=marketplace-ready">
@@ -392,7 +392,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
     <section className="card admin-mb-16" id="marketplace-supply">
       <div className="ops-section-header">
         <div>
-          <h2>Marketplace partner supply for this booking</h2>
+          <h2>Marketplace Partner supply for this booking</h2>
           <p className="muted">
             Booking-pin view of currently usable marketplace supply. This is not an activity log; participant
             history and customer choice evidence are retained in the participant ledger.
@@ -447,8 +447,8 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
         ))}
         {marketplaceSupply.rows.length === 0 ? (
           <p className="muted">
-            No displayable partner supply can be evaluated until the booking has a customer pin or an
-            eligible non-wallet-blocked partner.
+            No displayable Partner supply can be evaluated until the booking has a customer pin or an
+            eligible non-wallet-blocked Partner.
           </p>
         ) : null}
       </div>
