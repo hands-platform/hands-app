@@ -936,7 +936,7 @@ export default async function OperationsPolicyPage({
                   </td>
                   <td>
                     <strong>{displayOperationalWording(row.label)}</strong>
-                    <p className="muted">{displayOperationalWording(row.key)}</p>
+                    <p className="muted">{displayOperationalWording(row.policyContext)}</p>
                   </td>
                   <td>{row.actorName}</td>
                   <td>{row.previousValue}</td>
@@ -3020,7 +3020,7 @@ function formatDistance(meters: number) {
   return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
 }
 
-function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
+export function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
   return logs
     .filter((log) => log.action === 'operational_policy.update')
     .map((log) => {
@@ -3033,10 +3033,11 @@ function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
         createdAt: log.createdAt,
         key,
         label: policyKeyLabel(key),
+        policyContext: details.title,
         actorName: log.actor?.fullName ?? log.actor?.phone ?? 'System',
         previousValue: compactAuditValue(metadata?.previousValue),
         value: compactAuditValue(metadata?.value),
-        reason: readOptionalString(metadata?.reason) ?? 'No reason recorded',
+        reason: policyAuditReasonText(readOptionalString(metadata?.reason) ?? 'No reason recorded'),
         enforced,
         effect: enforced
           ? details.detail
@@ -3058,6 +3059,13 @@ function policyKeyLabel(key: string) {
     .join(' / ');
   const titled = label.charAt(0).toUpperCase() + label.slice(1);
   return displayOperationalWording(titled);
+}
+
+function policyAuditReasonText(reason: string) {
+  return reason.replace(
+    /\b(?:booking|matching|notification|wallet|cancellation|no_show|decision|cash|payout)\.[a-z0-9_.-]+/g,
+    (key) => policyKeyLabel(key),
+  );
 }
 
 function compactAuditValue(value: unknown) {
