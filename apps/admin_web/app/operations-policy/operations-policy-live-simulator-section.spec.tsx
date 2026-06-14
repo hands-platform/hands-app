@@ -1,0 +1,75 @@
+import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
+import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
+
+describe('OperationsPolicyLiveSimulatorSection', () => {
+  it('renders the ready simulator state with partner links and checks', () => {
+    const section = OperationsPolicyLiveSimulatorSection({
+      simulation: {
+        checks: [
+          {
+            className: 'ops-task-done',
+            detail: 'Fresh Partner locations are inside the current radius.',
+            operatorAction: 'This can support a real wait screen.',
+            pillClass: 'pill-success',
+            status: 'Supply ready',
+            title: 'Dispatch supply check',
+          },
+        ],
+        metrics: [
+          {
+            helper: '10.7769, 106.7009',
+            label: 'Reference location',
+            value: 'Booking cmqbcwop...oqle',
+          },
+        ],
+        partnerRows: [
+          {
+            distanceLabel: '2 km',
+            id: 'provider-1',
+            locationAgeLabel: '5m ago',
+            name: 'Partner One',
+            pillClass: 'pill-success',
+            status: 'Fresh',
+          },
+        ],
+        ready: true,
+        timeline: [
+          {
+            className: 'timeline-active',
+            detail: 'Marketplace list opens immediately.',
+            step: '1',
+            tags: [{ label: '10 min', tone: 'pill-success' }],
+            title: 'Customer creates direct request',
+          },
+        ],
+      },
+    });
+
+    const rendered = normalizedTextContent(section);
+
+    expect(section.type).toBe('section');
+    expect(rendered).toContain('Live policy simulator');
+    expect(rendered).toContain('Ready for dispatch check');
+    expect(rendered).toContain('Simulated booking path');
+    expect(rendered).toContain('Eligible Partner preview');
+    expect(rendered).toContain('Dispatch supply check');
+    expect(hrefsIn(section)).toContain('/partners/provider-1');
+  });
+
+  it('renders empty partner guidance when supply is not ready', () => {
+    const rendered = normalizedTextContent(
+      OperationsPolicyLiveSimulatorSection({
+        simulation: {
+          checks: [],
+          metrics: [],
+          partnerRows: [],
+          ready: false,
+          timeline: [],
+        },
+      }),
+    );
+
+    expect(rendered).toContain('Needs better location data');
+    expect(rendered).toContain('No online Partner with a usable location');
+  });
+});

@@ -50,6 +50,7 @@ import { OperationsPolicyBookingCreateGateSection } from './operations-policy-bo
 import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
+import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-simulator-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
@@ -218,93 +219,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Live policy simulator</h2>
-            <p className="muted">
-              Uses the current policy values, the latest booking/customer coordinate, and current partner
-              locations to preview who would see or participate in a new direct booking request.
-            </p>
-          </div>
-          <span className={`pill ${policySimulation.ready ? 'pill-success' : 'pill-warn'}`}>
-            {policySimulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
-          </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {policySimulation.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="detail-grid admin-mt-14">
-          <div className="ops-task-note">
-            <h3>Simulated booking path</h3>
-            <div className="timeline admin-mt-12">
-              {policySimulation.timeline.map((step) => (
-                <div className={`timeline-step ${step.className}`} key={step.title}>
-                  <span>{step.step}</span>
-                  <strong>{step.title}</strong>
-                  <p>{step.detail}</p>
-                  <div className="participant-list">
-                    {step.tags.map((tag) => (
-                      <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
-                        {tag.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="ops-task-note">
-            <div className="ops-section-header">
-              <div>
-                <h3>Eligible partner preview</h3>
-                <p className="muted">
-                  Top nearby online partners inside the current marketplace radius. Stale locations are
-                  excluded from the dispatch count.
-                </p>
-              </div>
-              <span className="pill pill-info">{policySimulation.partnerRows.length} shown</span>
-            </div>
-            <div className="stack admin-mt-10">
-              {policySimulation.partnerRows.map((partner) => (
-                <div className="ops-row" key={partner.id}>
-                  <div>
-                    <a className="text-link" href={`/partners/${partner.id}`}>
-                      {displayOperationalWording(partner.name)}
-                    </a>
-                    <p className="muted">
-                      {partner.distanceLabel} / location {partner.locationAgeLabel}
-                    </p>
-                  </div>
-                  <span className={`pill ${partner.pillClass}`}>{partner.status}</span>
-                </div>
-              ))}
-              {policySimulation.partnerRows.length === 0 ? (
-                <p className="muted">
-                  No online partner with a usable location is inside the current radius. Check partner app
-                  location update and city supply before live launch.
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {policySimulation.checks.map((check) => (
-            <div className={`ops-task-card ${check.className}`} key={check.title}>
-              <span className={`pill ${check.pillClass}`}>{check.status}</span>
-              <h3>{check.title}</h3>
-              <p>{check.detail}</p>
-              <small>{check.operatorAction}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyLiveSimulatorSection simulation={policySimulation} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
