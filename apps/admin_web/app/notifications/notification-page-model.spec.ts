@@ -545,6 +545,25 @@ describe('notification page model', () => {
         type: 'booking.matched',
       }),
       notification({
+        createdAt: '2026-06-01T10:00:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:00:00.000Z',
+            id: 'delivery-stale',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'device-stale',
+              lastSeenAt: '2026-04-15T10:00:00.000Z',
+              platform: 'android',
+            },
+            status: 'SENT',
+          },
+        ],
+        id: 'stale-device',
+        type: 'booking.matched',
+      }),
+      notification({
         createdAt: '2026-06-01T10:01:00.000Z',
         deliveries: [
           {
@@ -559,7 +578,7 @@ describe('notification page model', () => {
       }),
     ]);
 
-    expect(sorted.map((item) => item.id)).toEqual(['failed', 'sent', 'pending-newest']);
+    expect(sorted.map((item) => item.id)).toEqual(['failed', 'stale-device', 'sent', 'pending-newest']);
   });
 
   it('builds the page model with filtered rows and confirmation state', () => {

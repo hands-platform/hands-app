@@ -630,20 +630,64 @@ function hasRetrySignal(notification: AdminNotification) {
   return hasLatestDeliveryStatus(notification, 'FAILED') || hasCurrentDisabledPushDevice(notification);
 }
 
-function notificationPriority(notification: AdminNotification) {
+type NotificationDeliveryHealth = {
+  readonly hint: string;
+  readonly priority: number;
+  readonly signalClassName: string;
+  readonly signalLabel: string;
+};
+
+function notificationDeliveryHealth(notification: AdminNotification): NotificationDeliveryHealth {
   if (hasLatestDeliveryStatus(notification, 'FAILED')) {
-    return 4;
+    return {
+      hint: 'Review failure code, confirm token health, then retry only after the device path makes sense.',
+      priority: 5,
+      signalClassName: 'signal signal-warn',
+      signalLabel: 'Retry needed',
+    };
   }
   if (hasCurrentDisabledPushDevice(notification)) {
-    return 3;
+    return {
+      hint: 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.',
+      priority: 4,
+      signalClassName: 'signal signal-warn',
+      signalLabel: 'Device disabled',
+    };
+  }
+  if (hasStalePushDeviceDelivery(notification)) {
+    return {
+      hint: 'Push token timestamp is old. Ask the user to open the app so FCM can refresh before relying on retry.',
+      priority: 3,
+      signalClassName: 'signal signal-warn',
+      signalLabel: 'Stale device',
+    };
   }
   if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
-    return 2;
+    return {
+      hint: 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.',
+      priority: 2,
+      signalClassName: 'signal signal-info',
+      signalLabel: 'Skipped delivery',
+    };
   }
   if (hasLatestDeliveryStatus(notification, 'SENT')) {
-    return 1;
+    return {
+      hint: 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.',
+      priority: 1,
+      signalClassName: 'signal signal-ok',
+      signalLabel: 'Delivered',
+    };
   }
-  return 0;
+  return {
+    hint: 'Notification exists, but no delivery attempt was captured yet.',
+    priority: 0,
+    signalClassName: 'signal signal-info',
+    signalLabel: 'Pending',
+  };
+}
+
+function notificationPriority(notification: AdminNotification) {
+  return notificationDeliveryHealth(notification).priority;
 }
 
 function notificationActionMenuItems(
@@ -795,38 +839,11 @@ function notificationBookingId(notification: AdminNotification) {
 }
 
 function signalClass(notification: AdminNotification) {
-  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
-    return 'signal signal-warn';
-  }
-  if (hasCurrentDisabledPushDevice(notification)) {
-    return 'signal signal-warn';
-  }
-  if (hasStalePushDeviceDelivery(notification)) {
-    return 'signal signal-warn';
-  }
-  if (hasLatestDeliveryStatus(notification, 'SENT')) {
-    return 'signal signal-ok';
-  }
-  return 'signal signal-info';
+  return notificationDeliveryHealth(notification).signalClassName;
 }
 
 function opsSignal(notification: AdminNotification) {
-  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
-    return 'Retry needed';
-  }
-  if (hasCurrentDisabledPushDevice(notification)) {
-    return 'Device disabled';
-  }
-  if (hasStalePushDeviceDelivery(notification)) {
-    return 'Stale device';
-  }
-  if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
-    return 'Skipped delivery';
-  }
-  if (hasLatestDeliveryStatus(notification, 'SENT')) {
-    return 'Delivered';
-  }
-  return 'Pending';
+  return notificationDeliveryHealth(notification).signalLabel;
 }
 
 function opsHint(notification: AdminNotification) {
@@ -836,22 +853,7 @@ function opsHint(notification: AdminNotification) {
 }
 
 function opsHintBase(notification: AdminNotification) {
-  if (hasLatestDeliveryStatus(notification, 'FAILED')) {
-    return 'Review failure code, confirm token health, then retry only after the device path makes sense.';
-  }
-  if (hasCurrentDisabledPushDevice(notification)) {
-    return 'This user has at least one disabled push device. Re-enable only if a fresh token arrives.';
-  }
-  if (hasStalePushDeviceDelivery(notification)) {
-    return 'Push token timestamp is old. Ask the user to open the app so FCM can refresh before relying on retry.';
-  }
-  if (hasLatestDeliveryStatus(notification, 'SKIPPED')) {
-    return 'Skipped alerts usually mean no available push path or a delivery decision to avoid duplicate sends.';
-  }
-  if (hasLatestDeliveryStatus(notification, 'SENT')) {
-    return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
-  }
-  return 'Notification exists, but no delivery attempt was captured yet.';
+  return notificationDeliveryHealth(notification).hint;
 }
 
 function latestDeliveryAttemptLabel(notification: AdminNotification) {
