@@ -1,5 +1,9 @@
 import type { AdminBooking, AdminCashSettlementSummary, AdminNotification } from '../../lib/admin-api';
 import { formatRelativeTime } from '../../lib/admin-format';
+import {
+  bookingsMissingChatHandoffEvidence,
+  bookingsMissingCloseoutEvidence,
+} from './operations-handoff-booking-evidence';
 
 type ChecklistTone = 'danger' | 'warn' | 'info' | 'success';
 
@@ -32,15 +36,8 @@ export function buildHandoffReadinessChecklist(
   options: ReadinessChecklistOptions = {},
 ) {
   const nowMs = options.nowMs ?? Date.now();
-  const chatMissing = input.bookings.filter(
-    (booking) =>
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
-      !booking.chatRoom?.id,
-  );
-  const completedWithoutEvidence = input.bookings.filter(
-    (booking) =>
-      booking.status === 'COMPLETED' && (!booking.payment || !booking.earning || !booking.chatRoom?.id),
-  );
+  const chatMissing = bookingsMissingChatHandoffEvidence(input.bookings);
+  const completedWithoutEvidence = bookingsMissingCloseoutEvidence(input.bookings);
   const latestNote = input.operatorNotes[0] ?? null;
   const hasFreshHandoffNote = Boolean(
     latestNote && recentlyChangedWithin(latestNote.createdAt, nowMs, 480),

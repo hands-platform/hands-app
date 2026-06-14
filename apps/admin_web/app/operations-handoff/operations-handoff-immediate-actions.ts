@@ -1,4 +1,8 @@
 import type { AdminBooking, AdminCashSettlementSummary, AdminNotification } from '../../lib/admin-api';
+import {
+  bookingsMissingChatHandoffEvidence,
+  bookingsMissingCloseoutEvidence,
+} from './operations-handoff-booking-evidence';
 
 type PartnerSignalSummary = {
   readonly attentionCount: number;
@@ -27,15 +31,8 @@ export function buildImmediateActionQueue(
   options: ImmediateActionQueueOptions = {},
 ) {
   const nowMs = options.nowMs ?? Date.now();
-  const chatMissing = input.bookings.filter(
-    (booking) =>
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
-      !booking.chatRoom?.id,
-  );
-  const closeoutRows = input.bookings.filter(
-    (booking) =>
-      booking.status === 'COMPLETED' && (!booking.payment || !booking.earning || !booking.chatRoom?.id),
-  );
+  const chatMissing = bookingsMissingChatHandoffEvidence(input.bookings);
+  const closeoutRows = bookingsMissingCloseoutEvidence(input.bookings);
   const recentNotes = input.operatorNotes.filter((note) =>
     recentlyChangedWithin(note.createdAt, nowMs, 240),
   );
