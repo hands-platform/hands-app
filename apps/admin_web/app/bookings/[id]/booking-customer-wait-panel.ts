@@ -88,30 +88,30 @@ export function bookingCustomerWaitPanel(
   } else if (!customerPinReady && booking.status === 'OPEN_MATCHING') {
     signalStatus = 'Missing pin';
     signalTone = 'pill-danger';
-    headline = 'Distance-based partner matching cannot be confirmed yet.';
+    headline = 'Distance-based Partner matching cannot be confirmed yet.';
     detail = 'Confirm the customer address or selected pin before using marketplace participation decisions.';
   } else if (waitingForCustomerChoice) {
     signalStatus = 'Customer choice';
     signalTone = 'pill-warn';
-    headline = 'A participating or accepted partner is ready for customer final selection.';
+    headline = 'A participating or accepted Partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the participating partner shortlist when first-pick has not already matched.';
+      'Make sure the customer app shows the participating Partner shortlist when first-pick has not already matched.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && marketplaceSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
     signalTone = 'pill-danger';
-    headline = 'No fresh nearby partner can currently join under policy.';
+    headline = 'No fresh nearby Partner can currently join under policy.';
     detail =
       'Ask Partners to go online/refresh location, or review marketplace radius and location freshness policy.';
     nextActionHref = '/partners?review=marketplace-blocked';
     nextActionLabel = 'Review supply blockers';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
-    signalStatus = 'Nudge partners';
+    signalStatus = 'Nudge Partners';
     signalTone = 'pill-warn';
     headline = 'Customer is waiting and marketplace Partners can participate.';
     detail = `${marketplaceSupply.eligibleCount} nearby Partner(s) can be nudged into the customer shortlist.`;
     nextActionHref = '/partners?review=marketplace-ready';
-    nextActionLabel = 'Open marketplace-ready partners';
+    nextActionLabel = 'Open marketplace-ready Partners';
   } else if (waitingForPartnerJoin) {
     signalStatus = 'First-pick wait';
     signalTone = 'pill-info';
@@ -120,12 +120,12 @@ export function bookingCustomerWaitPanel(
   } else if (selected && chatReady) {
     signalStatus = 'Chat ready';
     signalTone = 'pill-success';
-    headline = 'Final partner is selected and chat is ready.';
+    headline = 'Final Partner is selected and chat is ready.';
     detail = 'Monitor location sharing, arrival, service start, completion, and payment closeout.';
   } else if (selected && !chatReady) {
     signalStatus = 'Chat missing';
     signalTone = 'pill-danger';
-    headline = 'Final partner is selected, but chat handoff is missing.';
+    headline = 'Final Partner is selected, but chat handoff is missing.';
     detail = 'Repair or create the chat room so the customer and Partner can coordinate.';
   }
 
@@ -144,10 +144,10 @@ export function bookingCustomerWaitPanel(
       title: 'Customer final choice',
       status: selected ? 'Selected' : waitingForCustomerChoice ? 'Choose now' : 'Waiting',
       detail: selected
-        ? `Final partner: ${selectedPartnerLabel}.`
+        ? `Final Partner: ${selectedPartnerLabel}.`
         : waitingForCustomerChoice
           ? `${customerChoiceCandidates.length} participating/accepted Partner(s) are ready for customer selection.`
-          : 'No participating/accepted partner is ready for final customer selection yet.',
+          : 'No participating/accepted Partner is ready for final customer selection yet.',
       action: customerConfirmMode
         ? 'Customer final choice applies when first-pick does not validly match first.'
         : 'Policy conflicts with HANDS matching flow; return to first-pick priority with customer fallback.',
@@ -190,7 +190,7 @@ export function bookingCustomerWaitPanel(
           ? `${chatMessageCount} message(s) are visible in the room.`
           : 'API evidence reports chat is ready, but room details are not loaded in this response.'
         : selected
-          ? 'Final partner is selected, but no chat room is attached.'
+          ? 'Final Partner is selected, but no chat room is attached.'
           : 'Chat stays locked until first-pick match or customer final selection is recorded.',
       action: chatReady
         ? 'Monitor coordination and location sharing.'

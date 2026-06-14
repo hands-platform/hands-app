@@ -17,15 +17,15 @@ function partnerDisplayName(provider?: { displayName?: string | null } | null) {
 
 export function bookingPartnerHint(booking: BookingPartnerDecisionInput) {
   if (booking.selectedProvider) {
-    return `Final partner: ${partnerDisplayName(booking.selectedProvider)}.`;
+    return `Final Partner: ${partnerDisplayName(booking.selectedProvider)}.`;
   }
   if (booking.preferredProvider && (booking.participants?.length ?? 0) === 0) {
-    return 'Preferred partner has first response window.';
+    return 'Preferred Partner has first response window.';
   }
   if ((booking.participants?.length ?? 0) > 0) {
-    return 'Shortlist has partners ready for customer decision.';
+    return 'Shortlist has Partners ready for customer decision.';
   }
-  return 'No partner response yet.';
+  return 'No Partner response yet.';
 }
 
 export function bookingPartnerDecisionLabel(

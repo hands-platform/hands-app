@@ -4,37 +4,37 @@ import {
   type BookingPartnerDecisionInput,
 } from './booking-partner-decision-copy';
 
-describe('booking partner decision copy', () => {
-  it('shows the final selected partner first', () => {
+describe('booking Partner decision copy', () => {
+  it('shows the final selected Partner first', () => {
     const booking: BookingPartnerDecisionInput = {
       selectedProvider: { displayName: 'Linh Wellness' },
       preferredProvider: { displayName: 'Preferred Partner' },
       participants: [{ status: 'JOINED' }],
     };
 
-    expect(bookingPartnerHint(booking)).toBe('Final partner: Linh Wellness.');
+    expect(bookingPartnerHint(booking)).toBe('Final Partner: Linh Wellness.');
   });
 
-  it('shows first response window when there is a preferred partner and no participants', () => {
+  it('shows first response window when there is a preferred Partner and no participants', () => {
     const booking: BookingPartnerDecisionInput = {
       preferredProvider: { displayName: 'Linh Wellness' },
       participants: [],
     };
 
-    expect(bookingPartnerHint(booking)).toBe('Preferred partner has first response window.');
+    expect(bookingPartnerHint(booking)).toBe('Preferred Partner has first response window.');
   });
 
-  it('shows customer decision copy when marketplace partners are present', () => {
+  it('shows customer decision copy when marketplace Partners are present', () => {
     const booking: BookingPartnerDecisionInput = {
       participants: [{ status: 'JOINED' }, { status: 'ACCEPTED' }],
     };
 
     expect(bookingPartnerHint(booking)).toBe(
-      'Shortlist has partners ready for customer decision.',
+      'Shortlist has Partners ready for customer decision.',
     );
   });
 
-  it('returns preferred participant status when the preferred partner joined', () => {
+  it('returns preferred participant status when the preferred Partner joined', () => {
     const booking: BookingPartnerDecisionInput = {
       participants: [
         { status: 'JOINED', providerProfile: { id: 'partner-other' } },
@@ -56,7 +56,7 @@ describe('booking partner decision copy', () => {
     expect(bookingPartnerDecisionLabel(booking, 'partner-preferred')).toBe('JOINED');
   });
 
-  it('counts marketplace-ready partners when no preferred participant is found', () => {
+  it('counts marketplace-ready Partners when no preferred participant is found', () => {
     const booking: BookingPartnerDecisionInput = {
       participants: [
         { status: 'JOINED', providerProfile: { id: 'partner-a' } },
@@ -67,8 +67,8 @@ describe('booking partner decision copy', () => {
     expect(bookingPartnerDecisionLabel(booking, 'missing')).toBe('2 marketplace ready');
   });
 
-  it('shows waiting when no partner has responded', () => {
-    expect(bookingPartnerHint({})).toBe('No partner response yet.');
+  it('shows waiting when no Partner has responded', () => {
+    expect(bookingPartnerHint({})).toBe('No Partner response yet.');
     expect(bookingPartnerDecisionLabel({}, null)).toBe('Waiting');
   });
 });

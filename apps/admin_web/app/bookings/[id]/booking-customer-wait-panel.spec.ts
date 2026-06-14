@@ -11,7 +11,7 @@ function booking(input: Partial<AdminBookingDetail>): AdminBookingDetail {
 }
 
 describe('booking customer wait panel', () => {
-  it('does not treat matched status alone as a customer final partner choice', () => {
+  it('does not treat matched status alone as a customer final Partner choice', () => {
     const panel = bookingCustomerWaitPanel(
       booking({
         status: 'MATCHED',
@@ -22,7 +22,7 @@ describe('booking customer wait panel', () => {
       }),
       {
         eligibleCount: 0,
-        decisionDetail: 'No eligible marketplace partners.',
+        decisionDetail: 'No eligible marketplace Partners.',
       },
       [],
     );
@@ -32,7 +32,7 @@ describe('booking customer wait panel', () => {
 
     expect(customerChoiceCard).toMatchObject({
       status: 'Waiting',
-      detail: 'No participating/accepted partner is ready for final customer selection yet.',
+      detail: 'No participating/accepted Partner is ready for final customer selection yet.',
     });
     expect(chatCard).toMatchObject({
       status: 'Locked',
@@ -72,7 +72,7 @@ describe('booking customer wait panel', () => {
       }),
       {
         eligibleCount: 0,
-        decisionDetail: 'No eligible marketplace partners.',
+        decisionDetail: 'No eligible marketplace Partners.',
       },
       [],
     );
