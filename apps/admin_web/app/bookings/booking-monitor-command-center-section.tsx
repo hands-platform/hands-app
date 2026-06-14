@@ -31,7 +31,7 @@ export function BookingMonitorCommandCenterSection({ lanes }: BookingMonitorComm
         {lanes.map((lane) => (
           <Link className="card" href={lane.href} key={lane.title}>
             <p>{lane.title}</p>
-            <h2>{lane.status}</h2>
+            <strong className="admin-summary-card-value">{lane.status}</strong>
             <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
             <p className="muted admin-mt-8">{lane.detail}</p>
             <div className="participant-list admin-mt-10">
