@@ -44,7 +44,7 @@ export function PartnerDetailRecentTimelineSection({
               <span>{record.type}</span>
               <div>
                 <Link className="text-link" href={record.href}>
-                  <strong>{marketplaceDisplayText(record.title)}</strong>
+                  <strong>{displayTimelineTitle(record.title)}</strong>
                 </Link>
                 <p className="muted">{marketplaceDisplayText(record.detail)}</p>
               </div>
@@ -64,4 +64,17 @@ export function PartnerDetailRecentTimelineSection({
       </div>
     </div>
   );
+}
+
+function displayTimelineTitle(value: string) {
+  const displayText = marketplaceDisplayText(value);
+  if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/.test(displayText)) {
+    return displayText;
+  }
+
+  return displayText
+    .split(/[._-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
 }

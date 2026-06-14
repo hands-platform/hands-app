@@ -57,10 +57,32 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('partner.supabase_role_sync.skipped');
+    expect(rendered).toContain('Partner Supabase Role Sync Skipped');
     expect(rendered).toContain('partnerProfileId');
+    expect(rendered).not.toContain('provider.supabase_role_sync.skipped');
     expect(rendered).not.toContain('provider.');
     expect(rendered).not.toContain('providerProfileId');
+  });
+
+  it('humanizes internal action slugs in timeline titles', () => {
+    const section = PartnerDetailRecentTimelineSection({
+      formatDate: (value) => value,
+      records: [
+        {
+          at: '2026-06-01T10:00:00.000Z',
+          detail: 'Booking match accepted.',
+          href: '#booking-chat-records',
+          id: 'event-3',
+          title: 'booking.matched.first_pick_accepted',
+          type: 'BOOKING',
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Booking Matched First Pick Accepted');
+    expect(rendered).not.toContain('booking.matched.first_pick_accepted');
   });
 });
 
