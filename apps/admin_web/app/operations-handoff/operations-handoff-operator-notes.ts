@@ -27,3 +27,5 @@ export function buildOperatorNotes(logs: readonly AdminAuditLog[]) {
       };
     });
 }
+
+export type OperatorNoteRow = ReturnType<typeof buildOperatorNotes>[number];
