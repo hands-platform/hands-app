@@ -48,7 +48,7 @@ import {
   buildPartnerSignals,
   buildPresence,
 } from './operations-handoff-signals';
-import { buildShiftBriefItems } from './operations-handoff-shift-brief';
+import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
 
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type OperationsHandoffFilters = {
@@ -300,33 +300,14 @@ export default async function OperationsHandoffPage({
       </section>
 
       <section className="detail-grid admin-mb-16">
-        <div className="card">
-          <div className="toolbar">
-            <div>
-              <h2>Shift brief</h2>
-              <p className="muted">Recommended opening order for the next operator.</p>
-            </div>
-            <span className="pill pill-info">Factual queue</span>
-          </div>
-          <div className="ops-task-grid">
-            {buildShiftBriefItems({
-              matchingBookings: matchingBookings.length,
-              activeBookings: activeBookings.length,
-              cashDebtPartners: cashSummary.providerCount,
-              failedNotificationCount: failedNotifications.length,
-              partnerIssueCount: partnerSignals.attentionCount,
-              customerSignalCount: customerSignals.length,
-            }).map((item) => (
-              <Link className="ops-task-card" href={item.href} key={item.title}>
-                <span className={item.className}>{item.owner}</span>
-                <h3>{item.title}</h3>
-                <p>{item.detail}</p>
-                <small>{item.action}</small>
-              </Link>
-            ))}
-          </div>
-        </div>
-
+        <OperationsHandoffShiftBriefSection
+          activeBookingCount={activeBookings.length}
+          cashDebtPartnerCount={cashSummary.providerCount}
+          customerSignalCount={customerSignals.length}
+          failedNotificationCount={failedNotifications.length}
+          matchingBookingCount={matchingBookings.length}
+          partnerIssueCount={partnerSignals.attentionCount}
+        />
         <OperationsHandoffOperatorNotesSection notes={operatorNotes} />
       </section>
 
