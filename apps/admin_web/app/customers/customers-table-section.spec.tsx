@@ -9,6 +9,7 @@ describe('CustomersTableSection', () => {
     });
 
     const rendered = textContent(section);
+    const compactRendered = rendered.replace(/\s+/g, ' ');
 
     expect(rendered).toContain('All customers');
     expect(rendered).toContain('List view sorted by');
@@ -18,6 +19,9 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('Deep tissue');
     expect(rendered).toContain('District 1');
     expect(rendered).toContain('Partner One');
+    expect(rendered).toContain('Repeated Partner');
+    expect(rendered).toContain('Repeated selected or preferred Partner');
+    expect(compactRendered).toContain('Customer 1 / admin 0 / Partner 0');
     expect(rendered).toContain('2');
     expect(rendered).toContain('chat room(s)');
     expect(rendered).toContain('1');

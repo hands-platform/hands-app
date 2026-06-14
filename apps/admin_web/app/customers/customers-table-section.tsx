@@ -32,7 +32,7 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
               <th>Bookings</th>
               <th>Completed</th>
               <th>Frequent service / area</th>
-              <th>Repeated partner</th>
+              <th>Repeated Partner</th>
               <th>Closed / no-show</th>
               <th>Total paid</th>
               <th>Device / IP</th>
@@ -81,12 +81,12 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
                 </td>
                 <td>
                   <strong>{row.commonPartner}</strong>
-                  <p className="muted">Repeated selected or preferred partner</p>
+                  <p className="muted">Repeated selected or preferred Partner</p>
                 </td>
                 <td>
                   <strong>{row.cancelledBookings}</strong>
                   <p className="muted">
-                    Customer {row.customerClosedBookings} / admin {row.adminClosedBookings} / partner{' '}
+                    Customer {row.customerClosedBookings} / admin {row.adminClosedBookings} / Partner{' '}
                     {row.partnerClosedBookings}
                   </p>
                   <p className="muted">{row.noShowBookings} no-show</p>

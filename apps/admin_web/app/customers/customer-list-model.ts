@@ -208,7 +208,7 @@ export function buildCustomerRow(customer: AdminCustomer) {
     lastBookingAt,
     lastCompletedAt,
     lastCompletedLabel: lastCompletedBooking ? bookingServiceLabel(lastCompletedBooking) : 'No finished service record',
-    lastCompletedPartner: lastCompletedBooking ? bookingPartnerLabel(lastCompletedBooking) : 'No completed partner',
+    lastCompletedPartner: lastCompletedBooking ? bookingPartnerLabel(lastCompletedBooking) : 'No completed Partner',
     commonService: commonService ?? 'Not enough bookings',
     commonArea: commonArea ?? 'No repeated area',
     commonPartner: commonPartner ?? 'Not enough bookings',
@@ -323,7 +323,7 @@ function bookingPartnerLabel(booking: NonNullable<AdminCustomer['bookings']>[num
     booking.preferredProvider?.user?.fullName ??
     booking.selectedProvider?.user?.phone ??
     booking.preferredProvider?.user?.phone ??
-    'No partner'
+    'No Partner'
   );
 }
 
@@ -346,7 +346,7 @@ function sessionDeviceLabel(session?: NonNullable<NonNullable<AdminCustomer['use
 function mostCommonLabel(values: string[]) {
   const counts = new Map<string, number>();
   for (const value of values) {
-    if (!value || value === 'No service' || value === 'No address' || value === 'No partner') continue;
+    if (!value || value === 'No service' || value === 'No address' || value === 'No Partner') continue;
     counts.set(value, (counts.get(value) ?? 0) + 1);
   }
   return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
