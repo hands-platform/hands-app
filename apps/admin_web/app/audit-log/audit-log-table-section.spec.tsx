@@ -15,7 +15,7 @@ describe('AuditLogTableSection', () => {
     expect(rendered).toContain('Dispatch');
     expect(rendered).toContain('Operator One');
     expect(rendered).toContain('booking:bookin');
-    expect(rendered).toContain('booking detail');
+    expect(rendered).toContain('Booking detail');
     expect(rendered).toContain('Trace related flow');
     expect(rendered).toContain('Structured booking handling status was updated by an operator.');
     expect(rendered).toContain('Changed status');
@@ -47,7 +47,7 @@ function buildRow(): AuditLogTableRow {
     opsHint: 'Structured booking handling status was updated by an operator.',
     priorityLabel: 'Trace related flow',
     relatedBoardHref: '/bookings/booking-1',
-    relatedBoardLabel: 'booking detail',
+    relatedBoardLabel: 'Booking detail',
     relativeTimeLabel: 'Updated just now',
     shortTargetLabel: 'booking:bookin',
     targetLabel: 'booking:booking-1',

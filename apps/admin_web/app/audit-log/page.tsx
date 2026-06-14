@@ -245,7 +245,7 @@ export function buildAuditCommandBoard(
       title: 'Dispatch and Partner actions',
       detail: 'Booking, matching, Partner status, and verification changes affect service delivery.',
       status: 'Dispatch',
-      operatorAction: 'Trace handoff problems from booking detail back to the acting operator.',
+      operatorAction: 'Trace handoff problems from Booking detail back to the acting operator.',
       href: withAuditRange('/audit-log?bucket=Dispatch', range),
       tone: dispatchLogs.length > 0 ? 'info' : 'ok',
       logs: buildAuditCommandLogPreviews(dispatchLogs),
@@ -418,9 +418,6 @@ function actionBucketLabel(action: string) {
   }
   if (isNotificationAction(action)) {
     return 'Notification';
-  }
-  if (isProviderReviewAction(action)) {
-    return 'Partner';
   }
   return 'System';
 }
@@ -953,12 +950,20 @@ function relatedBoardLabel(log: AdminAuditLog) {
     return 'Partner detail';
   }
   if (href.startsWith('/bookings/')) {
-    return 'booking detail';
+    return 'Booking detail';
   }
   if (href.startsWith('/notifications')) {
-    return 'notification board';
+    return 'Notification board';
   }
-  return href.slice(1).replace('-', ' ');
+  return titleCaseBoardLabel(href.slice(1));
+}
+
+function titleCaseBoardLabel(value: string) {
+  return value
+    .replace(/[-/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function readMetadataObject(metadata: unknown): Record<string, unknown> {

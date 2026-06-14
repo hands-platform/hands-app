@@ -12,7 +12,7 @@ describe('audit log page model', () => {
     ]);
 
     expect(row.relatedBoardHref).toBe('/notifications?review=fcm#notification-sent');
-    expect(row.relatedBoardLabel).toBe('notification board');
+    expect(row.relatedBoardLabel).toBe('Notification board');
     expect(row.metadataHighlights).toEqual(
       expect.arrayContaining([
         { className: 'pill pill-success', label: 'FCM sent evidence' },

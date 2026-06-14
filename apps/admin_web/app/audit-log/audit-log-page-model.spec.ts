@@ -31,7 +31,7 @@ describe('audit log page model', () => {
       bucketLabel: 'Notification',
       opsDetail: 'Retry events should line up with FCM delivery status, token freshness, and audit evidence.',
       relatedBoardHref: '/notifications?review=fcm#notification-123456',
-      relatedBoardLabel: 'notification board',
+      relatedBoardLabel: 'Notification board',
       targetLabel: 'notification:notification-123456',
     });
     expect(rows[0]?.metadataHighlights).toEqual([
@@ -170,7 +170,7 @@ describe('audit log page model', () => {
         'Device recovery events should line up with a fresh token or operator-confirmed delivery recovery.',
       opsHint: 'Check push token freshness and delivery health before re-enabling alerts.',
       relatedBoardHref: '/notifications?review=disabled-device',
-      relatedBoardLabel: 'notification board',
+      relatedBoardLabel: 'Notification board',
     });
   });
 
