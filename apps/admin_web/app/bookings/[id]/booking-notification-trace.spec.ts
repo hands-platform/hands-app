@@ -2,7 +2,7 @@ import type { AdminBookingDetail, AdminNotification } from '../../../lib/admin-a
 import { bookingNotificationTrace, bookingNotificationTraceRow } from './booking-notification-trace';
 
 describe('booking notification trace', () => {
-  it('reads current marketplace fields from partner alert notification data', () => {
+  it('reads current marketplace fields from Partner alert notification data', () => {
     const row = bookingNotificationTraceRow({
       id: 'notification-1',
       type: 'booking.backup_available',
@@ -30,7 +30,7 @@ describe('booking notification trace', () => {
       id: 'notification-stale',
       type: 'booking.matched',
       title: 'Partner matched',
-      body: 'A partner accepted the booking.',
+      body: 'A Partner accepted the booking.',
       createdAt: '2026-06-07T01:00:00.000Z',
       data: { bookingId: 'booking-1' },
       deliveries: [

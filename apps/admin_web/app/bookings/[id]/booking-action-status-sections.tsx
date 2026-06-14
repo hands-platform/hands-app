@@ -205,7 +205,7 @@ function BookingOperatorNotesSection({
         <textarea
           aria-label="Operator note"
           name="note"
-          placeholder="Example: Called partner, confirmed arrival in 15 minutes."
+          placeholder="Example: Called Partner, confirmed arrival in 15 minutes."
         />
         <div className="actions">
           <button type="submit">Add note</button>
@@ -279,7 +279,7 @@ function BookingMatchingExpirySection({
           <textarea
             aria-label="Expiry reason"
             name="reason"
-            placeholder="Example: Matching window passed and no suitable partner was available."
+            placeholder="Example: Matching window passed and no suitable Partner was available."
           />
           <button type="submit">Expire matching</button>
         </form>
@@ -304,7 +304,7 @@ function BookingNoShowHandlingSection({
       <div>
         <h2>No-show handling</h2>
         <p className="muted">
-          Use only when the customer or partner did not proceed and operations must close the live booking path.
+          Use only when the customer or Partner did not proceed and operations must close the live booking path.
           Payment, refund, and customer communication still need review after marking no-show.
         </p>
       </div>
@@ -314,7 +314,7 @@ function BookingNoShowHandlingSection({
           <textarea
             aria-label="No-show reason"
             name="reason"
-            placeholder="Example: Customer did not answer calls after partner arrival."
+            placeholder="Example: Customer did not answer calls after Partner arrival."
           />
           <button type="submit">Mark no-show</button>
         </form>

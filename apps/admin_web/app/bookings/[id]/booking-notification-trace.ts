@@ -37,13 +37,13 @@ export function bookingNotificationTrace(booking: AdminBookingDetail, notificati
         label: 'No-show alerts',
         value: `${noShowAlerts}`,
         helper: noShowAlerts
-          ? 'Customer or partner was notified about the no-show review.'
+          ? 'Customer or Partner was notified about the no-show review.'
           : 'No no-show communication row for this booking.',
       },
       {
         label: 'Partner alerts',
         value: `${partnerAlerts}`,
-        helper: 'First-pick, marketplace, and matched partner notices.',
+        helper: 'First-pick, marketplace, and matched Partner notices.',
       },
       {
         label: 'Failed sends',
@@ -75,7 +75,7 @@ export function bookingNotificationTrace(booking: AdminBookingDetail, notificati
       {
         label: 'Last marketplace invite',
         value: backupBatches[0]?.notifiedCountLabel ?? '0',
-        helper: backupBatches[0]?.detail ?? 'No partner was invited from a marketplace batch yet.',
+        helper: backupBatches[0]?.detail ?? 'No Partner was invited from a marketplace batch yet.',
       },
     ],
   };
@@ -109,7 +109,7 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
           const notificationId = readOptionalString(provider.notificationId);
           const distance = readOptionalNumber(provider.distanceMeters);
           return [
-            providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
+            providerProfileId ? `Partner ${shortId(providerProfileId)}` : null,
             distance !== null ? formatDistanceMeters(distance) : null,
             notificationId ? `alert ${shortId(notificationId)}` : null,
           ]
@@ -129,7 +129,7 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
         detail:
           notifiedCount > 0
             ? `${notifiedCount} Partner(s) were sent marketplace availability alerts.`
-            : 'The marketplace batch ran, but no eligible partner was available under the saved policy.',
+            : 'The marketplace batch ran, but no eligible Partner was available under the saved policy.',
         meta: [
           createdAt ? `created ${formatDate(createdAt)}` : null,
           websocketTargetCount !== null ? `websocket targets ${websocketTargetCount}` : null,
@@ -195,7 +195,7 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     meta: [
       humanizeNotificationType(notification.type),
       `created ${formatDate(notification.createdAt)}`,
-      providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
+      providerProfileId ? `Partner ${shortId(providerProfileId)}` : null,
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
       marketplaceFields.radius !== null
         ? `marketplace radius ${formatDistanceMeters(marketplaceFields.radius)}`
