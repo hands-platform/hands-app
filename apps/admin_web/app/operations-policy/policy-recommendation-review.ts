@@ -39,6 +39,20 @@ type PolicyRecommendationContext = {
   readonly openMatchingCount: number;
 };
 
+type PolicyRecommendationPosture = {
+  readonly status: string;
+  readonly detail: string;
+  readonly operatorAction: string;
+  readonly alignedAction: string;
+  readonly className: string;
+  readonly pillClass: string;
+};
+
+type PolicyRecommendationNumericInput = {
+  readonly numericRecommended: number;
+  readonly numericValue: number;
+};
+
 const ACTIVE_BOOKING_STATUSES = new Set([
   'OPEN_MATCHING',
   'MATCHED',
@@ -148,31 +162,16 @@ function buildPolicyRecommendationSummary(input: {
 function policyRecommendationPosture(
   setting: AdminOperationalPolicySetting,
   context: PolicyRecommendationContext,
-) {
+): PolicyRecommendationPosture {
   const value = String(setting.value);
   const recommended = String(setting.recommendedValue);
   const numericValue = Number(setting.value);
   const numericRecommended = Number(setting.recommendedValue);
-  const liveContext =
-    context.openMatchingCount > 0
-      ? `${context.openMatchingCount} open matching booking(s) may feel this policy while active.`
-      : 'No open matching booking is currently exposed to this policy.';
+  const numericInput = { numericRecommended, numericValue };
+  const liveContext = policyRecommendationLiveContext(context);
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) {
-    const shorter =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue < numericRecommended;
-    return {
-      status: shorter ? 'Faster than baseline' : 'Slower than baseline',
-      detail: shorter
-        ? 'This can reduce waiting time but may make first-pick Partners miss requests.'
-        : 'This gives Partners more time but increases customer waiting anxiety.',
-      operatorAction: `${liveContext} Existing booking countdowns do not recalculate.`,
-      alignedAction: 'Keep monitoring first-pick response rate and cancellation during the waiting window.',
-      className: shorter ? 'ops-task-pending' : 'ops-task-blocked',
-      pillClass: shorter ? 'pill-warn' : 'pill-danger',
-    };
+    return providerResponseWindowPosture(numericInput, liveContext);
   }
 
   if (
@@ -181,21 +180,7 @@ function policyRecommendationPosture(
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
     ])
   ) {
-    const narrower =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue < numericRecommended;
-    return {
-      status: narrower ? 'Narrow supply' : 'Wide supply',
-      detail: narrower
-        ? 'Fewer partners can participate in marketplace matching, so customer alternatives may look empty.'
-        : 'More partners can participate, but distance and arrival quality need closer monitoring.',
-      operatorAction: `${liveContext} Monitor ignored marketplace alerts and late arrivals by city.`,
-      alignedAction:
-        'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
-      className: narrower ? 'ops-task-blocked' : 'ops-task-pending',
-      pillClass: narrower ? 'pill-danger' : 'pill-warn',
-    };
+    return marketplaceRadiusPosture(numericInput, liveContext);
   }
 
   if (
@@ -204,21 +189,7 @@ function policyRecommendationPosture(
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
     ])
   ) {
-    const looser =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue > numericRecommended;
-    return {
-      status: looser ? 'Allows older locations' : 'Stricter freshness',
-      detail: looser
-        ? 'Marketplace alerts may reach partners whose last known location is no longer reliable.'
-        : 'Only recently refreshed partner locations are eligible for marketplace alerts and participation.',
-      operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
-      alignedAction:
-        'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
-      className: looser ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: looser ? 'pill-warn' : 'pill-success',
-    };
+    return marketplaceLocationFreshnessPosture(numericInput, liveContext);
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.preferredAcceptMode) {
@@ -361,6 +332,81 @@ function policyRecommendationPosture(
     className: setting.enforced ? 'ops-task-pending' : 'ops-task-done',
     pillClass: setting.enforced ? 'pill-warn' : 'pill-info',
   };
+}
+
+function policyRecommendationLiveContext(context: PolicyRecommendationContext) {
+  return context.openMatchingCount > 0
+    ? `${context.openMatchingCount} open matching booking(s) may feel this policy while active.`
+    : 'No open matching booking is currently exposed to this policy.';
+}
+
+function providerResponseWindowPosture(
+  input: PolicyRecommendationNumericInput,
+  liveContext: string,
+): PolicyRecommendationPosture {
+  const shorter = finiteLessThan(input);
+  return {
+    status: shorter ? 'Faster than baseline' : 'Slower than baseline',
+    detail: shorter
+      ? 'This can reduce waiting time but may make first-pick Partners miss requests.'
+      : 'This gives Partners more time but increases customer waiting anxiety.',
+    operatorAction: `${liveContext} Existing booking countdowns do not recalculate.`,
+    alignedAction: 'Keep monitoring first-pick response rate and cancellation during the waiting window.',
+    className: shorter ? 'ops-task-pending' : 'ops-task-blocked',
+    pillClass: shorter ? 'pill-warn' : 'pill-danger',
+  };
+}
+
+function marketplaceRadiusPosture(
+  input: PolicyRecommendationNumericInput,
+  liveContext: string,
+): PolicyRecommendationPosture {
+  const narrower = finiteLessThan(input);
+  return {
+    status: narrower ? 'Narrow supply' : 'Wide supply',
+    detail: narrower
+      ? 'Fewer partners can participate in marketplace matching, so customer alternatives may look empty.'
+      : 'More partners can participate, but distance and arrival quality need closer monitoring.',
+    operatorAction: `${liveContext} Monitor ignored marketplace alerts and late arrivals by city.`,
+    alignedAction:
+      'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
+    className: narrower ? 'ops-task-blocked' : 'ops-task-pending',
+    pillClass: narrower ? 'pill-danger' : 'pill-warn',
+  };
+}
+
+function marketplaceLocationFreshnessPosture(
+  input: PolicyRecommendationNumericInput,
+  liveContext: string,
+): PolicyRecommendationPosture {
+  const looser = finiteGreaterThan(input);
+  return {
+    status: looser ? 'Allows older locations' : 'Stricter freshness',
+    detail: looser
+      ? 'Marketplace alerts may reach partners whose last known location is no longer reliable.'
+      : 'Only recently refreshed partner locations are eligible for marketplace alerts and participation.',
+    operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
+    alignedAction:
+      'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
+    className: looser ? 'ops-task-pending' : 'ops-task-done',
+    pillClass: looser ? 'pill-warn' : 'pill-success',
+  };
+}
+
+function finiteLessThan(input: PolicyRecommendationNumericInput) {
+  return (
+    Number.isFinite(input.numericValue) &&
+    Number.isFinite(input.numericRecommended) &&
+    input.numericValue < input.numericRecommended
+  );
+}
+
+function finiteGreaterThan(input: PolicyRecommendationNumericInput) {
+  return (
+    Number.isFinite(input.numericValue) &&
+    Number.isFinite(input.numericRecommended) &&
+    input.numericValue > input.numericRecommended
+  );
 }
 
 function policyKeyMatches(key: string, candidates: string[]) {
