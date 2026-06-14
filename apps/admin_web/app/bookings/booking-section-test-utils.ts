@@ -48,6 +48,27 @@ export function headingTextsIn(value: unknown): string[] {
   return [...ownHeading, ...headingTextsIn(props?.children)];
 }
 
+export type TestButton = {
+  readonly props?: {
+    readonly children?: unknown;
+    readonly onClick?: () => void;
+  };
+};
+
+export function buttonsIn(value: unknown): TestButton[] {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(buttonsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const current = record?.type === 'button' ? [value as TestButton] : [];
+  return [...current, ...buttonsIn(props?.children)];
+}
+
 function readRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;

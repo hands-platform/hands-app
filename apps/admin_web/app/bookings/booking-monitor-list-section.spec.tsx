@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBooking } from '../../lib/admin-api';
+import { normalizedText } from './booking-section-test-utils';
 import {
   BookingMonitorListSection,
   type BookingMonitorListRow,
@@ -172,30 +173,3 @@ describe('BookingMonitorListSection', () => {
     expect(normalizedText(renderToStaticMarkup(section))).toContain('No bookings match filters.');
   });
 });
-
-function textContent(value: unknown): string {
-  if (value === null || value === undefined || typeof value === 'boolean') {
-    return '';
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(textContent).join(' ');
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  return textContent(props?.children);
-}
-
-function normalizedText(value: unknown): string {
-  return textContent(value).replace(/\s+/g, ' ').trim();
-}
-
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-}
