@@ -31,6 +31,7 @@ import {
 } from './operations-handoff-booking-queue';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { buildFinanceRows } from './operations-handoff-finance-rows';
+import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -141,7 +142,6 @@ export default async function OperationsHandoffPage({
     cashSummary,
     partnerSignals,
     operatorNotes,
-    financeRows,
   });
   const activityStream = filterActivityStreamByRange(
     buildUnifiedActivityStream({
@@ -779,152 +779,6 @@ function checklistToneWeight(tone: string) {
   if (tone === 'warn') return 3;
   if (tone === 'info') return 2;
   return 1;
-}
-
-function buildImmediateActionQueue(input: {
-  bookings: AdminBooking[];
-  matchingBookings: AdminBooking[];
-  inServiceBookings: AdminBooking[];
-  failedNotifications: AdminNotification[];
-  cashSummary: AdminCashSettlementSummary;
-  partnerSignals: ReturnType<typeof buildPartnerSignals>;
-  operatorNotes: ReturnType<typeof buildOperatorNotes>;
-  financeRows: ReturnType<typeof buildFinanceRows>;
-}) {
-  const chatMissing = input.bookings.filter(
-    (booking) =>
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
-      !booking.chatRoom?.id,
-  );
-  const closeoutRows = input.bookings.filter(
-    (booking) =>
-      booking.status === 'COMPLETED' && (!booking.payment || !booking.earning || !booking.chatRoom?.id),
-  );
-  const recentNotes = input.operatorNotes.filter((note) => recentlyChanged(note.createdAt, 240));
-
-  const rows = [
-    {
-      id: 'matching-live-window',
-      owner: 'Dispatch',
-      title: 'Open matching windows',
-      detail:
-        'Customers are waiting while first-pick and nearby Partner participation windows are still open.',
-      href: '/bookings?view=matching',
-      count: input.matchingBookings.length,
-      countLabel: `${input.matchingBookings.length} booking(s)`,
-      status: input.matchingBookings.length ? 'Monitor now' : 'Clear',
-      nextAction:
-        'Open the matching board and check Partner response, participant list, and customer choice.',
-      className: input.matchingBookings.length ? 'signal signal-warn' : 'signal signal-ok',
-      statusClass: input.matchingBookings.length ? 'pill pill-warn' : 'pill pill-success',
-    },
-    {
-      id: 'chat-creation',
-      owner: 'Support',
-      title: 'Matched booking chat',
-      detail: 'A matched or in-service booking should have an admin-retained chat room.',
-      href: '/bookings?view=chat-repair',
-      count: chatMissing.length,
-      countLabel: `${chatMissing.length} missing chat`,
-      status: chatMissing.length ? 'Repair' : 'Ready',
-      nextAction: 'Open chat repair queue if any matched booking has no chat room.',
-      className: chatMissing.length ? 'signal signal-danger' : 'signal signal-ok',
-      statusClass: chatMissing.length ? 'pill pill-danger' : 'pill pill-success',
-    },
-    {
-      id: 'in-service-watch',
-      owner: 'Dispatch',
-      title: 'Services in progress',
-      detail: 'Partner and customer are inside the work window; chat remains active until completion.',
-      href: '/bookings?view=closeout',
-      count: input.inServiceBookings.length,
-      countLabel: `${input.inServiceBookings.length} in service`,
-      status: input.inServiceBookings.length ? 'Monitor' : 'Clear',
-      nextAction: 'Track completion and prepare payment, wallet, and chat archive closeout.',
-      className: input.inServiceBookings.length ? 'signal signal-info' : 'signal signal-ok',
-      statusClass: input.inServiceBookings.length ? 'pill pill-info' : 'pill pill-success',
-    },
-    {
-      id: 'cash-fee-debt',
-      owner: 'Finance',
-      title: 'Cash fee wallet gate',
-      detail:
-        'Partners with negative wallet from cash bookings can stay visible, but marketplace alerts, participation, and payout release wait for settlement.',
-      href: '/cash-settlements',
-      count: input.cashSummary.providerCount,
-      countLabel: `${input.cashSummary.providerCount} Partner(s)`,
-      status: input.cashSummary.providerCount ? 'Collect/offset' : 'Clear',
-      nextAction:
-        'Open cash settlements and record deposit or offset before future marketplace participation.',
-      className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
-      statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
-    },
-    {
-      id: 'notification-delivery',
-      owner: 'Alerts',
-      title: 'Notification delivery failures',
-      detail: 'Failed delivery rows can hide booking requests, Partner updates, or customer status changes.',
-      href: '/notifications?review=failed',
-      count: input.failedNotifications.length,
-      countLabel: `${input.failedNotifications.length} failed`,
-      status: input.failedNotifications.length ? 'Retry/check' : 'Clear',
-      nextAction: 'Retry delivery or inspect disabled push devices before relying on app alerts.',
-      className: input.failedNotifications.length ? 'signal signal-warn' : 'signal signal-ok',
-      statusClass: input.failedNotifications.length ? 'pill pill-warn' : 'pill pill-success',
-    },
-    {
-      id: 'partner-admin-facts',
-      owner: 'Partner Ops',
-      title: 'Partner factual follow-up',
-      detail:
-        'Partner list groups KYC, bank, wallet, location, app session, marketplace, and payout gate facts.',
-      href: '/partners',
-      count: input.partnerSignals.attentionCount,
-      countLabel: `${input.partnerSignals.attentionCount} Partner fact(s)`,
-      status: input.partnerSignals.attentionCount ? 'Review' : 'Clear',
-      nextAction: 'Open Partner list and continue from the relevant factual filter.',
-      className: input.partnerSignals.attentionCount ? 'signal signal-warn' : 'signal signal-ok',
-      statusClass: input.partnerSignals.attentionCount ? 'pill pill-warn' : 'pill pill-success',
-    },
-    {
-      id: 'completed-closeout',
-      owner: 'Finance',
-      title: 'Completed closeout evidence',
-      detail: 'Completed bookings should have payment, earning, wallet/tax evidence, and retained chat.',
-      href: '/bookings?view=closeout',
-      count: closeoutRows.length,
-      countLabel: `${closeoutRows.length} booking(s)`,
-      status: closeoutRows.length ? 'Check' : 'Ready',
-      nextAction: 'Open closeout queue and compare payment, earning, tax, wallet, and chat rows.',
-      className: closeoutRows.length ? 'signal signal-warn' : 'signal signal-ok',
-      statusClass: closeoutRows.length ? 'pill pill-warn' : 'pill pill-success',
-    },
-    {
-      id: 'recent-operator-notes',
-      owner: 'Handoff',
-      title: 'Recent written notes',
-      detail: 'New Customer, Partner, or booking notes should be read before taking over the shift.',
-      href: '/audit-log',
-      count: recentNotes.length,
-      countLabel: `${recentNotes.length} recent note(s)`,
-      status: recentNotes.length ? 'Read' : 'None',
-      nextAction: 'Open the latest operator notes and continue from the related detail page.',
-      className: recentNotes.length ? 'signal signal-info' : 'signal signal-ok',
-      statusClass: recentNotes.length ? 'pill pill-info' : 'pill pill-success',
-    },
-  ];
-
-  return rows.sort((a, b) => {
-    const classWeight = (item: (typeof rows)[number]) =>
-      item.statusClass.includes('danger')
-        ? 4
-        : item.statusClass.includes('warn')
-          ? 3
-          : item.statusClass.includes('info')
-            ? 2
-            : 1;
-    return classWeight(b) - classWeight(a) || b.count - a.count;
-  });
 }
 
 function buildFinanceHandoffActionMap(input: {
