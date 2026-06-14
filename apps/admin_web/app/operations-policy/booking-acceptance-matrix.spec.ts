@@ -1,0 +1,136 @@
+import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
+import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
+import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
+
+describe('booking acceptance matrix builder', () => {
+  beforeEach(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-06-13T03:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('builds aligned control cards and current Partner readiness impact', () => {
+    const matrix = buildBookingAcceptanceMatrix(
+      [
+        setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, 10),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 10000),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 30),
+        setting(OPERATIONAL_POLICY_KEYS.preferredAcceptMode, 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'IMMEDIATE_WITHIN_WINDOW'),
+        setting(OPERATIONAL_POLICY_KEYS.partnerAlertChannel, 'FCM_FOR_ALL_BOOKINGS'),
+        setting(OPERATIONAL_POLICY_KEYS.walletNegativeGate, 'BLOCK_MARKETPLACE_PARTICIPATION'),
+      ],
+      [
+        provider({
+          bankAccounts: [{ status: 'APPROVED' }],
+          currentLocationUpdatedAt: '2026-06-13T02:55:00.000Z',
+          documents: [
+            { status: 'APPROVED', type: 'CCCD_FRONT' },
+            { status: 'APPROVED', type: 'CCCD_BACK' },
+            { status: 'APPROVED', type: 'SELFIE' },
+          ],
+          earnings: [{ netAmount: 0 }],
+          id: 'ready-partner',
+          kyc: { status: 'APPROVED' },
+          user: { pushDevices: [{ enabled: true }] },
+          verification: { status: 'APPROVED' },
+        }),
+        provider({
+          bankAccounts: [],
+          blockedAt: '2026-06-13T02:00:00.000Z',
+          id: 'blocked-partner',
+          user: { pushDevices: [] },
+        }),
+      ],
+    );
+
+    expect(matrix.blockingCount).toBe(0);
+    expect(matrix.summary).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'First-pick timer', value: '10 min' }),
+        expect.objectContaining({ label: 'Marketplace policy', value: '10 km' }),
+        expect.objectContaining({ label: 'Final match', value: 'Customer chooses' }),
+      ]),
+    );
+    expect(matrix.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          pillClass: 'pill-success',
+          status: 'Push enabled',
+          title: 'Partner alert delivery',
+        }),
+        expect.objectContaining({
+          pillClass: 'pill-success',
+          status: 'Marketplace hold',
+          title: 'Negative wallet gate',
+        }),
+      ]),
+    );
+    expect(matrix.impact).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Marketplace ready', value: '1' }),
+        expect.objectContaining({ label: 'Marketplace held', value: '1' }),
+        expect.objectContaining({ label: 'Push gap', value: '1' }),
+      ]),
+    );
+  });
+
+  it('flags policy conflicts when timer, marketplace, accept mode, and wallet gate drift', () => {
+    const matrix = buildBookingAcceptanceMatrix(
+      [
+        setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, 5),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 5000),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 45),
+        setting(OPERATIONAL_POLICY_KEYS.preferredAcceptMode, 'AUTO_MATCH_ON_ACCEPT'),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'CUSTOM_DELAYED_MODE'),
+        setting(OPERATIONAL_POLICY_KEYS.walletNegativeGate, 'LEGACY_ALLOW_WITH_DEBT'),
+      ],
+      [],
+    );
+
+    expect(matrix.blockingCount).toBe(6);
+    expect(matrix.summary).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Marketplace policy', value: '5 km' }),
+        expect.objectContaining({ label: 'Final match', value: 'Policy conflict' }),
+      ]),
+    );
+    expect(matrix.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: 'Owner override', title: 'First-pick response window' }),
+        expect.objectContaining({ status: 'Customer-choice conflict', title: 'Customer final selection' }),
+        expect.objectContaining({ status: 'Historical setting review', title: 'Negative wallet gate' }),
+      ]),
+    );
+  });
+});
+
+function setting(key: string, value: string | number): AdminOperationalPolicySetting {
+  return {
+    category: 'Matching',
+    enforced: true,
+    key,
+    label: key,
+    value,
+  } as AdminOperationalPolicySetting;
+}
+
+function provider(overrides: Record<string, unknown>): AdminProvider {
+  return {
+    bankAccounts: [],
+    currentLat: 10.7769,
+    currentLng: 106.7009,
+    currentLocationUpdatedAt: '2026-06-13T02:55:00.000Z',
+    displayName: 'Partner',
+    documents: [],
+    earnings: [],
+    id: 'partner',
+    kyc: { status: 'PENDING' },
+    status: 'ONLINE_AVAILABLE',
+    user: { pushDevices: [] },
+    verification: { status: 'PENDING' },
+    ...overrides,
+  } as unknown as AdminProvider;
+}
