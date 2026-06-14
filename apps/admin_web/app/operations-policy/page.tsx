@@ -48,6 +48,7 @@ import { OperationsPolicyActionGateChecklistSection } from './operations-policy-
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
+import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 
@@ -178,70 +179,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity} />
 
-      <section className="card admin-mb-16" id="matching-stage-impact">
-        <div className="ops-section-header">
-          <div>
-            <h2>Matching stage impact preview</h2>
-            <p className="muted">
-              Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km
-              radius, or location freshness policy changed. This is a planning preview; saved booking
-              snapshots still protect live requests.
-            </p>
-          </div>
-          <span className="pill pill-info">{matchingStageImpactPreview.currentPolicyLabel}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {matchingStageImpactPreview.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <AdminTableScroll>
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Scenario</th>
-                <th>Value</th>
-                <th>Stage 1 first-pick</th>
-                <th>Stage 2 marketplace</th>
-                <th>Stage 3 choice</th>
-                <th>Stage 4 repair</th>
-                <th>No supply</th>
-                <th>Overdue</th>
-                <th>Operator read</th>
-              </tr>
-            </thead>
-            <tbody>
-              {matchingStageImpactPreview.rows.map((row) => (
-                <tr key={`${row.scenario}-${row.value}`}>
-                  <td>
-                    <span className={`pill ${row.pillClass}`}>{row.scenario}</span>
-                  </td>
-                  <td>{row.value}</td>
-                  <td>{row.stage1}</td>
-                  <td>{row.stage2}</td>
-                  <td>{row.stage3}</td>
-                  <td>{row.repair}</td>
-                  <td>{row.noSupply}</td>
-                  <td>{row.overdue}</td>
-                  <td>{row.operatorRead}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AdminTableScroll>
-        <div className="ops-task-note admin-mt-14">
-          <strong>How to use this preview</strong>
-          <p className="muted">
-            If a tested value increases Stage 2 marketplace count without increasing stale/no-supply checks,
-            it may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve
-            partner location freshness, push delivery, or city supply before changing policy.
-          </p>
-        </div>
-      </section>
+      <OperationsPolicyMatchingStageImpactSection preview={matchingStageImpactPreview} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
