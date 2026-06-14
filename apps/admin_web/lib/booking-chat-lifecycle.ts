@@ -57,7 +57,7 @@ export function bookingChatLifecycle(
     status: 'Live',
     tone: 'pill-info',
     customerState: 'Visible',
-    customerDetail: 'Customer can coordinate with the assigned partner.',
+    customerDetail: 'Customer can coordinate with the assigned Partner.',
     partnerState: 'Visible',
     partnerDetail: 'Partner can message the customer during handoff and service.',
     adminState: 'Live archive',

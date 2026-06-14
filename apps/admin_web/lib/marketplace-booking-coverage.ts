@@ -161,7 +161,7 @@ function selectedPartnerState<TBooking>(input: MarketplaceBookingCoverageRowInpu
   if (input.selectableCount > 0) {
     return { label: 'Awaiting customer choice', tone: 'pill-warn' } as const;
   }
-  return { label: 'No final partner', tone: 'pill-neutral' } as const;
+  return { label: 'No final Partner', tone: 'pill-neutral' } as const;
 }
 
 function alertState<TBooking>(input: MarketplaceBookingCoverageRowInput<TBooking>) {

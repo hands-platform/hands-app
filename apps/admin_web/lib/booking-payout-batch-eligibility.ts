@@ -79,7 +79,7 @@ export function bookingPayoutBatchEligibility(
         label: 'Completed service',
         status: isCompleted ? 'Ready' : 'Not ready',
         detail: `Booking status is ${input.bookingStatus}.`,
-        operatorRule: 'Only completed work enters partner payout batches.',
+        operatorRule: 'Only completed work enters Partner payout batches.',
         href: '#flow',
         className: isCompleted ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: isCompleted ? 'pill-success' : 'pill-danger',
@@ -100,7 +100,7 @@ export function bookingPayoutBatchEligibility(
         status: input.earningExists ? (alreadyPaid ? 'Paid' : input.earningStatus ?? 'Created') : 'Missing',
         detail: input.earningExists
           ? `${input.earningNetAmountLabel} / payout batch ${input.payoutBatchShortId ?? 'not assigned'}`
-          : 'No partner earning exists for this completed booking.',
+          : 'No Partner earning exists for this completed booking.',
         operatorRule: 'The payout batch consumes the earning ledger, not the booking amount directly.',
         href: '/earnings',
         className: input.earningExists ? 'ops-task-done' : 'ops-task-blocked',
@@ -125,7 +125,7 @@ export function bookingPayoutBatchEligibility(
           ? `${input.walletLedgerLabel}. Settle company fee debt before batch release.`
           : `Wallet impact ${input.walletLedgerLabel}.`,
         operatorRule:
-          'Negative wallet partners can see the marketplace list, but cannot participate in marketplace bookings or receive payout release until deposit or admin offset evidence clears the debt.',
+          'Negative wallet Partners can see the marketplace list, but cannot participate in marketplace bookings or receive payout release until deposit or admin offset evidence clears the debt.',
         href: input.cashDebt ? '/cash-settlements' : '#finance',
         className: input.cashDebt ? 'ops-task-blocked' : 'ops-task-done',
         pillClass: input.cashDebt ? 'pill-danger' : 'pill-success',

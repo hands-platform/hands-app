@@ -232,7 +232,7 @@ export function PartnerDetailReportsControlsSection({
               ))}
             </div>
           ) : (
-            <p className="muted">No partner reports recorded yet.</p>
+            <p className="muted">No Partner reports recorded yet.</p>
           )}
         </div>
         <div>

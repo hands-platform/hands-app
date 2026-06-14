@@ -43,7 +43,7 @@ describe('bookingDispatchChecklist', () => {
     });
   });
 
-  it('prioritizes preferred partner response during first-pick', () => {
+  it('prioritizes preferred Partner response during first-pick', () => {
     const steps = bookingDispatchChecklist({
       ...baseInput,
       bookingStatus: 'OPEN_MATCHING',

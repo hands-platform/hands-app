@@ -5,8 +5,8 @@ describe('operations owner decision backlog', () => {
     const backlog = operationsOwnerDecisionBacklog();
     const titles = backlog.map((item) => item.title);
 
-    expect(titles).toContain('First-pick partner timer');
-    expect(titles).toContain('Marketplace partner radius');
+    expect(titles).toContain('First-pick Partner timer');
+    expect(titles).toContain('Marketplace Partner radius');
     expect(titles).toContain('Negative wallet marketplace policy');
     expect(titles).toContain('Negative wallet direct-request boundary');
     expect(titles).toContain('Payout batch cycle');

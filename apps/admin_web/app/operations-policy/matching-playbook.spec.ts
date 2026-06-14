@@ -16,14 +16,14 @@ describe('operations policy matching playbook', () => {
 
     expect(playbook).toHaveLength(6);
     expect(playbook.map((item) => item.title)).toEqual([
-      'Customer picks one first-pick partner',
-      'First-pick partner response window starts',
-      'Marketplace partners can participate by policy',
+      'Customer picks one first-pick Partner',
+      'First-pick Partner response window starts',
+      'Marketplace Partners can participate by policy',
       'Customer sees available partner choices',
       'Wallet and control gates protect operations',
       'Matched chat and service execution',
     ]);
-    expect(playbook[2].detail).toContain('50 partners inside 10 km');
+    expect(playbook[2].detail).toContain('50 Partners inside 10 km');
     expect(playbook[4].tags[0]).toEqual({
       label: 'Block marketplace participation while negative',
       tone: 'pill-danger',

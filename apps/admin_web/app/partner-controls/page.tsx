@@ -121,7 +121,7 @@ export default async function PartnerControlsPage({
         />
       ) : null}
       <AdminPageTemplate
-        description="Track partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
+        description="Track Partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
         metrics={pageMetrics}
         title="Partner Controls"
       >
@@ -198,7 +198,7 @@ export default async function PartnerControlsPage({
           </div>
         ) : (
           <p className="muted admin-mt-12">
-            No partner control action currently needs operator review.
+            No Partner control action currently needs operator review.
           </p>
         )}
       </section>
@@ -208,7 +208,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Partner control board</h2>
             <p className="muted">
-              Shows factual partner controls for booking blocks, wallet debt, payout gates, document gaps,
+              Shows factual Partner controls for booking blocks, wallet debt, payout gates, document gaps,
               location freshness, and device reachability.
             </p>
           </div>
@@ -263,7 +263,7 @@ export default async function PartnerControlsPage({
           </div>
         ) : (
           <p className="muted admin-mt-12">
-            No partner currently has an active account, wallet, document, payout, location, or device
+            No Partner currently has an active account, wallet, document, payout, location, or device
             follow-up.
           </p>
         )}
@@ -274,7 +274,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Marketplace and payout unblock board</h2>
             <p className="muted">
-              Shows which partners cannot participate in marketplace bookings now, which issues only affect payout, and
+              Shows which Partners cannot participate in marketplace bookings now, which issues only affect payout, and
               exactly where staff should clear the blocker.
             </p>
           </div>
@@ -326,7 +326,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Marketplace and payout unblock playbook</h2>
             <p className="muted">
-              Step-by-step operating order for restoring partner marketplace and payout gates without mixing payout-only
+              Step-by-step operating order for restoring Partner marketplace and payout gates without mixing payout-only
               gates into customer discovery or marketplace participation decisions.
             </p>
           </div>
@@ -377,7 +377,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Partner operating block matrix</h2>
             <p className="muted">
-              Explains why a partner may be held from paid work, payout, or dispatch-sensitive
+              Explains why a Partner may be held from paid work, payout, or dispatch-sensitive
               work, with the exact screen an operator should open next.
             </p>
           </div>
@@ -412,7 +412,7 @@ export default async function PartnerControlsPage({
           </div>
         ) : (
           <p className="muted admin-mt-12">
-            No partner currently has a control record that should block operations.
+            No Partner currently has a control record that should block operations.
           </p>
         )}
       </section>
@@ -502,7 +502,7 @@ export default async function PartnerControlsPage({
           <span className="pill pill-info">{providerWatchlist.length} partner(s)</span>
         </div>
         <AdminDataTable
-          emptyMessage="No partner control follow-ups are active."
+          emptyMessage="No Partner control follow-ups are active."
           headers={['Partner', 'Control signals', 'Money / access', 'Operator next step']}
           rowCount={providerWatchlist.length}
         >
@@ -1031,8 +1031,8 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet partners must settle cash fee debt before marketplace alerts, participation, or payout release.'
-        : 'No partner wallet is currently blocked by cash fee debt.',
+        ? 'Negative wallet Partners must settle cash fee debt before marketplace alerts, participation, or payout release.'
+        : 'No Partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
       className: walletDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1066,7 +1066,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       status: overdueReports.length ? 'OVERDUE' : 'ON TRACK',
       detail: overdueReports.length
         ? 'Some open investigations have passed the target review window.'
-        : 'Open partner reports are inside their review windows.',
+        : 'Open Partner reports are inside their review windows.',
       href: overdueReports.length
         ? '/partner-controls?status=OPEN'
         : '/partner-controls?status=INVESTIGATING',
@@ -1110,7 +1110,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         tone: 'pill-danger',
         title: `${partner} cannot participate in marketplace bookings`,
         reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
-        operatorAction: `Confirm partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
+        operatorAction: `Confirm Partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
         href: '/cash-settlements',
         priority: 110 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       });
@@ -1181,7 +1181,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         reason:
           'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
         operatorAction:
-          'Ask the partner to reopen the app and refresh location before dispatch-sensitive work.',
+          'Ask the Partner to reopen the app and refresh location before dispatch-sensitive work.',
         href: `/partners/${item.provider.id}`,
         priority: 64,
       });
@@ -1265,9 +1265,9 @@ function buildBookingAcceptanceUnblockBoard(
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
         ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests or receive payout release until HANDS fee debt is settled.'
-        : 'No partner is currently blocked by cash-service fee debt.',
+        : 'No Partner is currently blocked by cash-service fee debt.',
       operatorScript:
-        'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace alerts, participation, or payout release unlocks.',
+        'Tell the Partner their unpaid HANDS fee must be deposited or offset before marketplace alerts, participation, or payout release unlocks.',
       customerImpact:
         'Customers can still see marketplace request flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
@@ -1316,7 +1316,7 @@ function buildBookingAcceptanceUnblockBoard(
           )} marketplace invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',
       operatorScript:
-        'Ask the partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
+        'Ask the Partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
       customerImpact:
         'Distance sorting and marketplace invitations can be inaccurate when the last location is stale.',
       action: locationItems.length ? 'Open partner profiles' : 'Review location policy',
@@ -1344,8 +1344,8 @@ function buildBookingAcceptanceUnblockBoard(
       operatorScript:
         'Review CCCD/CMND, selfie, and bank evidence; reject with a specific reupload reason if anything is unclear.',
       customerImpact:
-        'Paid work should only be accepted by partners who passed identity and payout readiness checks.',
-      action: verificationItems.length ? 'Open acceptance-blocked partners' : 'Review partner levels',
+        'Paid work should only be accepted by Partners who passed identity and payout readiness checks.',
+      action: verificationItems.length ? 'Open acceptance-blocked Partners' : 'Review Partner levels',
       href: verificationItems.length ? '/partners?review=acceptance-blocked' : '/partners',
       className: verificationItems.length ? 'ops-task-blocked' : 'ops-task-done',
       blockingCount: verificationItems.length,
@@ -1423,7 +1423,7 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
-        'Customer final choice stays available only from actual eligible participants; fee-debt partners cannot enter the marketplace shortlist.',
+        'Customer final choice stays available only from actual eligible participants; fee-debt Partners cannot enter the marketplace shortlist.',
       action: card('wallet-debt')?.action ?? 'Open settlement queue',
       href: card('wallet-debt')?.href ?? '/cash-settlements',
       blockingCount: card('wallet-debt')?.blockingCount ?? 0,
@@ -1691,7 +1691,7 @@ function controlFilterDescription(kind: string, value: string) {
 }
 
 function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
-  const subject = kind === 'report' ? 'partner reports' : 'partner account controls';
+  const subject = kind === 'report' ? 'Partner reports' : 'Partner account controls';
   if (activeFilters.length === 0) {
     return `No ${subject} loaded yet.`;
   }
@@ -1869,7 +1869,7 @@ function partnerControlNextStep(
   controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
 ) {
   if (input.walletBalance < 0) {
-    return `Confirm partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
+    return `Confirm Partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
   }
   if (input.hasPayoutHold) {
     return 'Resolve payout hold evidence before creating or paying payout batches.';
@@ -1878,7 +1878,7 @@ function partnerControlNextStep(
     return 'Update report status with resolution note or apply an account control if needed.';
   }
   if (providerLocationSignal(input.provider, controlPolicy)) {
-    return 'Ask the partner to reopen the app and refresh their current location before dispatch-sensitive work.';
+    return 'Ask the Partner to reopen the app and refresh their current location before dispatch-sensitive work.';
   }
   return 'Complete missing verification data before enabling additional profile review or payout features.';
 }

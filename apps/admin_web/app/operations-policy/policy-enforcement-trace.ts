@@ -38,11 +38,11 @@ export function buildPolicyEnforcementTrace(
   const marketplaceTimingTitle = marketplaceTimingIsNormalized
     ? 'Legacy delayed value normalized to immediate marketplace'
     : marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-      ? 'Marketplace partners can participate during the wait'
-      : 'Marketplace partners wait until timer or decline';
+      ? 'Marketplace Partners can participate during the wait'
+      : 'Marketplace Partners wait until timer or decline';
   const marketplaceTimingDetail = marketplaceTimingIsNormalized
     ? 'The API accepts legacy delayed policy rows but runs marketplace participation in parallel with the first-pick window.'
-    : 'This controls whether marketplace partners can participate during the first-pick response window.';
+    : 'This controls whether marketplace Partners can participate during the first-pick response window.';
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
@@ -65,7 +65,7 @@ export function buildPolicyEnforcementTrace(
       scope: 'Marketplace participation',
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail:
-        'Marketplace partners are prioritized by booking-address distance before alerts and operator review.',
+        'Marketplace Partners are prioritized by booking-address distance before alerts and operator review.',
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
       server: 'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',

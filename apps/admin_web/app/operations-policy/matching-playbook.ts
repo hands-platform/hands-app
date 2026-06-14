@@ -25,9 +25,9 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
   return [
     {
       step: '1',
-      title: 'Customer picks one first-pick partner',
+      title: 'Customer picks one first-pick Partner',
       detail:
-        'The customer chooses a partner profile and service option first. This creates a direct booking request and opens the matching window.',
+        'The customer chooses a Partner profile and service option first. This creates a direct booking request and opens the matching window.',
       className: 'timeline-done',
       tags: [
         { label: 'Direct request', tone: 'pill-success' },
@@ -36,8 +36,8 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
     },
     {
       step: '2',
-      title: 'First-pick partner response window starts',
-      detail: `The first-pick partner has ${responseWindow} to accept. Existing open bookings keep their saved expiry time.`,
+      title: 'First-pick Partner response window starts',
+      detail: `The first-pick Partner has ${responseWindow} to accept. Existing open bookings keep their saved expiry time.`,
       className: 'timeline-active',
       tags: [
         { label: responseWindow, tone: 'pill-info' },
@@ -46,8 +46,8 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
     },
     {
       step: '3',
-      title: 'Marketplace partners can participate by policy',
-      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or participate in the marketplace lane according to "${backupOpenMode}".`,
+      title: 'Marketplace Partners can participate by policy',
+      detail: `Up to ${backupLimit} Partners inside ${backupRadius} can see or participate in the marketplace lane according to "${backupOpenMode}".`,
       className: 'timeline-active',
       tags: [
         { label: backupRadius, tone: 'pill-info' },

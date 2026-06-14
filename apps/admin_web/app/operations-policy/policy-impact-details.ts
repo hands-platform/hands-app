@@ -75,14 +75,14 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'booking.max_preferred_partner_distance_km': {
       area: 'Booking create gate',
-      title: 'Controls preferred first-pick partner distance',
+      title: 'Controls preferred first-pick Partner distance',
       detail:
-        'The customer-selected first-pick partner must be close enough to the booking address before the booking can authorize payment and open matching.',
+        'The customer-selected first-pick Partner must be close enough to the booking address before the booking can authorize payment and open matching.',
       saveChecks: [
         {
           label: 'First-pick distance rejects',
           detail:
-            'Review rejected booking attempts where the selected first-pick partner was too far from the booking address.',
+            'Review rejected booking attempts where the selected first-pick Partner was too far from the booking address.',
           href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
         },
         {
@@ -115,7 +115,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Booking timer',
       title: 'Affects new booking expiry windows',
       detail:
-        'New requests use this value for the first-pick partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
+        'New requests use this value for the first-pick Partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
       saveChecks: [
         {
           label: 'First-pick queue',
@@ -150,9 +150,9 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.backup_provider_invitation_limit': {
       area: 'Partner supply',
-      title: 'Controls how many marketplace partners are exposed',
+      title: 'Controls how many marketplace Partners are exposed',
       detail:
-        'Eligible marketplace partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
+        'Eligible marketplace Partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
       saveChecks: [
         {
           label: 'Marketplace notification load',

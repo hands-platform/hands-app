@@ -12,7 +12,6 @@ import {
 } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import type { ActionMenuItem } from '../../../components/action-menu';
-import { AdminTableScroll } from '../../../components/admin-data-table';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
 import {
   bookingLatestActivityAt,
@@ -2912,7 +2911,7 @@ function buildProviderBookingAcceptance(
           : 'No open negative wallet debt is visible.',
       action:
         cashDebt > 0
-          ? 'Record partner deposit or admin offset before marketplace alerts, participation, and payout release resume.'
+          ? 'Record Partner deposit or admin offset before marketplace alerts, participation, and payout release resume.'
           : 'Clear',
     },
     {
@@ -3839,7 +3838,7 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
       status: 'REJECTED',
       reason: provider.kyc.rejectionReason ?? 'No rejection reason was saved.',
       providerInstruction:
-        'Ask the partner to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
+        'Ask the Partner to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
       operatorAction: 'KYC',
     });
   }
@@ -4054,7 +4053,7 @@ function providerDocumentResubmissionInstruction(type?: string | null) {
   if (type === 'BANK_QR') {
     return 'Ask for a readable bank QR image, but still verify the typed bank account fields.';
   }
-  return 'Ask the partner to upload a clearer replacement image for review.';
+  return 'Ask the Partner to upload a clearer replacement image for review.';
 }
 
 function payoutBlockers(provider: ProviderDetail) {
@@ -4561,7 +4560,7 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
 
   let nextAction = 'No KYC action required.';
   if (!provider.kyc) {
-    nextAction = 'Ask the partner to submit CCCD/CMND number plus front, back, and selfie evidence.';
+    nextAction = 'Ask the Partner to submit CCCD/CMND number plus front, back, and selfie evidence.';
   } else if (!allRequiredApproved) {
     nextAction = `Approve or reject missing evidence first: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`;
   } else if (provider.kyc.status !== 'APPROVED') {
@@ -4585,7 +4584,7 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
         ok: legalNameReady,
         detail: legalNameReady
           ? `Legal name: ${marketplaceDisplayText(provider.legalName ?? 'Legal name missing')}.`
-          : 'Ask the partner to complete the legal name used for CCCD and payout checks.',
+          : 'Ask the Partner to complete the legal name used for CCCD and payout checks.',
       },
       {
         label: 'CCCD/CMND number captured',

@@ -151,9 +151,9 @@ export function buildPolicyOutcomeEffect(
       },
       {
         scope: 'Current rule',
-        title: `Marketplace exposure: ${currentRadius}, cap ${currentInviteCap}`,
-        detail:
-          'Marketplace partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many partners; a low cap can hide useful supply.',
+      title: `Marketplace exposure: ${currentRadius}, cap ${currentInviteCap}`,
+      detail:
+        'Marketplace Partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many Partners; a low cap can hide useful supply.',
         operatorAction:
           globalStats.backupInviteCount > 0
             ? `Current sample averages ${avgBackupInvites} per measured booking.`

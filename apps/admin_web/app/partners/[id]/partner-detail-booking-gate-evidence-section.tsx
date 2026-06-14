@@ -33,7 +33,7 @@ export function PartnerDetailBookingGateEvidenceSection({
         <div>
           <h2>Partner booking create gate evidence</h2>
           <p className="muted">
-            Booking creation attempts where this partner was the first-pick partner. These rows show factual
+            Booking creation attempts where this Partner was the first-pick Partner. These rows show factual
             address, distance, and GPS evidence before payment and matching.
           </p>
         </div>

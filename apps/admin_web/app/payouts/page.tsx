@@ -925,7 +925,7 @@ function buildPayoutMarketplaceUnblockBridge(
         : 'Partner cash-fee debt is kept in Cash Settlements instead of being paid out as partner net.',
       action: batchCashDebtLeak.length
         ? 'Repair the batch so cash debt is settled by deposit evidence or admin offset, not bank payout.'
-        : 'Use Cash Settlements for wallet reopening, then Payouts for positive partner earnings.',
+        : 'Use Cash Settlements for wallet reopening, then Payouts for positive Partner earnings.',
       href: batchCashDebtLeak.length ? '/payouts?review=cash-debt-leak' : '/cash-settlements',
       className: batchCashDebtLeak.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: batchCashDebtLeak.length ? 'pill-danger' : 'pill-success',

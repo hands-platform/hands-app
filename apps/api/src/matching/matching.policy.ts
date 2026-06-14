@@ -114,9 +114,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
     category: 'Matching',
-    label: 'First-pick partner response window',
+    label: 'First-pick Partner response window',
     description:
-      'Minutes the first-pick partner has to accept before marketplace participation becomes more visible.',
+      'Minutes the first-pick Partner has to accept before marketplace participation becomes more visible.',
     value: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     recommendedValue: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     unit: 'minutes',
@@ -127,9 +127,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
     category: 'Matching',
-    label: 'Marketplace partner radius',
+    label: 'Marketplace Partner radius',
     description:
-      'Maximum distance from the confirmed booking address for marketplace partners that can see and participate in an open request.',
+      'Maximum distance from the confirmed booking address for marketplace Partners that can see and participate in an open request.',
     value: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     unit: 'meters',
@@ -140,9 +140,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
     category: 'Matching',
-    label: 'Marketplace partner location freshness',
+    label: 'Marketplace Partner location freshness',
     description:
-      'Maximum age of a partner location before they are excluded from marketplace participation alerts.',
+      'Maximum age of a Partner location before they are excluded from marketplace participation alerts.',
     value: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
     unit: 'minutes',
@@ -153,9 +153,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY,
     category: 'Matching',
-    label: 'Marketplace partner invitation limit',
+    label: 'Marketplace Partner invitation limit',
     description:
-      'Maximum number of nearby eligible marketplace partners that can be exposed to the request and notified for participation.',
+      'Maximum number of nearby eligible marketplace Partners that can be exposed to the request and notified for participation.',
     value: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
     unit: 'partners',
@@ -167,7 +167,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: MATCHING_TRAVEL_BUFFER_MINUTES_KEY,
     category: 'Matching',
     label: 'Travel buffer after a booking',
-    description: 'Buffer minutes after the current booking before a partner is considered available again.',
+    description: 'Buffer minutes after the current booking before a Partner is considered available again.',
     value: DEFAULT_TRAVEL_BUFFER_MINUTES,
     recommendedValue: DEFAULT_TRAVEL_BUFFER_MINUTES,
     unit: 'minutes',
@@ -191,9 +191,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY,
     category: 'Booking',
-    label: 'First-pick partner-to-service address gate',
+    label: 'First-pick Partner-to-service address gate',
     description:
-      'Maximum allowed distance between the preferred partner last saved location and the booking address.',
+      'Maximum allowed distance between the preferred Partner last saved location and the booking address.',
     value: DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
     recommendedValue: DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
     unit: 'km',
@@ -219,7 +219,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Booking',
     label: 'Booking distance gate',
     description:
-      'When enabled, preferred first-pick partner distance is checked against the booking address. Customer GPS stays optional evidence.',
+      'When enabled, preferred first-pick Partner distance is checked against the booking address. Customer GPS stays optional evidence.',
     value: true,
     recommendedValue: true,
     enforced: true,
@@ -238,7 +238,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'First-pick acceptance contract',
     description:
-      'First-pick partner acceptance can match first under API rules; otherwise the customer selects from participating partners.',
+      'First-pick Partner acceptance can match first under API rules; otherwise the customer selects from participating Partners.',
     value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
@@ -254,9 +254,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_MARKETPLACE_OPEN_MODE_KEY,
     category: 'Decision',
-    label: 'When marketplace partners can participate',
+    label: 'When marketplace Partners can participate',
     description:
-      'Marketplace partners can participate during the first-pick response window. Legacy delayed values are accepted for compatibility and normalized to immediate participation.',
+      'Marketplace Partners can participate during the first-pick response window. Legacy delayed values are accepted for compatibility and normalized to immediate participation.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
@@ -357,7 +357,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'Payout batch cycle',
     description:
-      'Controls how positive partner earnings are grouped for settlement. Payout remains batch-based and admin-controlled, never paid instantly from a single booking.',
+      'Controls how positive Partner earnings are grouped for settlement. Payout remains batch-based and admin-controlled, never paid instantly from a single booking.',
     value: PAYOUT_BATCH_WEEKLY_OR_MONTHLY,
     recommendedValue: PAYOUT_BATCH_WEEKLY_OR_MONTHLY,
     options: [
@@ -386,7 +386,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'First-pick expiry handling',
     description:
-      'Controls the operator posture when the first-pick partner response window passes. No policy can automatically assign the final partner.',
+      'Controls the operator posture when the first-pick Partner response window passes. No policy can automatically assign the final Partner.',
     value: FIRST_PICK_OPEN_MARKETPLACE_REVIEW,
     recommendedValue: FIRST_PICK_OPEN_MARKETPLACE_REVIEW,
     options: [

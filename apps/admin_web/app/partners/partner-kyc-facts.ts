@@ -62,7 +62,7 @@ export function partnerKycState(provider: AdminProvider): PartnerKycState {
       blockedByDocuments,
       needsReview,
       detail: 'No KYC record is stored yet.',
-      operatorAction: 'Ask the partner to submit CCCD number, CCCD front/back, and selfie evidence.',
+      operatorAction: 'Ask the Partner to submit CCCD number, CCCD front/back, and selfie evidence.',
     };
   }
 
@@ -104,7 +104,7 @@ export function partnerKycState(provider: AdminProvider): PartnerKycState {
       blockedByDocuments,
       needsReview,
       detail: 'KYC or required evidence was rejected.',
-      operatorAction: 'Wait for partner resubmission, then re-check the full evidence set.',
+      operatorAction: 'Wait for Partner resubmission, then re-check the full evidence set.',
     };
   }
 

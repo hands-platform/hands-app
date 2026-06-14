@@ -20,21 +20,21 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
   return [
     {
       owner: 'Dispatch',
-      title: 'First-pick partner timer',
+      title: 'First-pick Partner timer',
       question:
-        'Should the first-pick partner keep the full response window, or should marketplace partners become more prominent earlier?',
+        'Should the first-pick Partner keep the full response window, or should marketplace Partners become more prominent earlier?',
       evidence:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
       options: [
         {
           label: 'Keep 10 minutes',
           tradeoff:
-            'Protects the customer-selected partner and keeps the first-pick promise clear, but customers may wait longer.',
+            'Protects the customer-selected Partner and keeps the first-pick promise clear, but customers may wait longer.',
         },
         {
           label: 'Escalate earlier',
           tradeoff:
-            'Shows marketplace partners sooner and reduces waiting anxiety, but the first-pick partner has less exclusive time.',
+            'Shows marketplace Partners sooner and reduces waiting anxiety, but the first-pick Partner has less exclusive time.',
         },
       ],
       recommendation:
@@ -47,11 +47,11 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
     },
     {
       owner: 'Supply',
-      title: 'Marketplace partner radius',
+      title: 'Marketplace Partner radius',
       question:
         'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
       evidence:
-        'Review partner count within radius, average distance, late arrivals, and ignored marketplace alerts by city.',
+        'Review Partner count within radius, average distance, late arrivals, and ignored marketplace alerts by city.',
       options: [
         {
           label: 'Single 10km default',
@@ -67,7 +67,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       recommendation:
         'Start with one marketplace policy baseline, then add city/service overrides after Ho Chi Minh City data is stable.',
       decisionTrigger:
-        'Revisit when marketplace alerts are ignored often, or accepted marketplace partners are repeatedly too far away.',
+        'Revisit when marketplace alerts are ignored often, or accepted marketplace Partners are repeatedly too far away.',
       href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
       className: 'ops-task-pending',
       pillClass: 'pill-info',
@@ -78,7 +78,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       question:
         'Should cash-fee debt block marketplace alerts and participation only, or also block payout release?',
       evidence:
-        'Review cash settlement speed, repeated debt partners, marketplace participation, and payout exposure before changing wallet gate scope.',
+        'Review cash settlement speed, repeated debt Partners, marketplace participation, and payout exposure before changing wallet gate scope.',
       options: [
         {
           label: 'Marketplace only',
@@ -102,9 +102,9 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Finance',
       title: 'Negative wallet direct-request boundary',
       question:
-        'Should unpaid cash-fee debt also block a first-pick partner from accepting a direct request, or only block marketplace alerts, participation, and payout release?',
+        'Should unpaid cash-fee debt also block a first-pick Partner from accepting a direct request, or only block marketplace alerts, participation, and payout release?',
       evidence:
-        'Review how often negative-wallet partners are chosen first by customers, how quickly they settle fees, and whether blocking direct requests creates customer wait issues.',
+        'Review how often negative-wallet Partners are chosen first by customers, how quickly they settle fees, and whether blocking direct requests creates customer wait issues.',
       options: [
         {
           label: 'Keep current MVP boundary',
@@ -129,7 +129,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Finance',
       title: 'Payout batch cycle',
       question:
-        'Should positive partner earnings be settled on a weekly rhythm, monthly rhythm, or admin-selected payout day?',
+        'Should positive Partner earnings be settled on a weekly rhythm, monthly rhythm, or admin-selected payout day?',
       evidence:
         'Review completed earning volume, withholding logs, bank verification, cash-debt offsets, and transfer-reference workload before changing payout cadence.',
       options: [
@@ -156,9 +156,9 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Support',
       title: 'Cancellation fee rule',
       question:
-        'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
+        'When a customer cancels after Partner commitment, should payment be released immediately or held for fee review?',
       evidence:
-        'Review after-match cancellation reasons, partner travel evidence, refund complaints, and manual review workload.',
+        'Review after-match cancellation reasons, Partner travel evidence, refund complaints, and manual review workload.',
       options: [
         {
           label: 'Admin review',
@@ -190,7 +190,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         {
           label: 'Manual evidence review',
           tradeoff:
-            'More controlled for launch and disputes, but slower for partner compensation and customer closeout.',
+            'More controlled for launch and disputes, but slower for Partner compensation and customer closeout.',
         },
         {
           label: 'Evidence checklist',
@@ -217,7 +217,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         {
           label: 'In-app first',
           tradeoff:
-            'Lowest setup work and easiest local testing, but partners may miss requests when the app is closed.',
+            'Lowest setup work and easiest local testing, but Partners may miss requests when the app is closed.',
         },
         {
           label: 'FCM required',

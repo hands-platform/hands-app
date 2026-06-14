@@ -146,19 +146,19 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Device/session review is narrowed to device, session, or account control state.';
   }
   if (kind === 'readiness') {
-    return 'Readiness shows whether a partner can safely appear in customer discovery and dispatch.';
+    return 'Readiness shows whether a Partner can safely appear in customer discovery and dispatch.';
   }
   if (kind === 'bookingFlow' && value === 'active-booking') {
-    return 'Booking flow is narrowed to partners with live or in-progress booking records.';
+    return 'Booking flow is narrowed to Partners with live or in-progress booking records.';
   }
   if (kind === 'bookingFlow' && value === 'first-pick') {
-    return 'Booking flow is narrowed to partners that were the preferred first-pick partner.';
+    return 'Booking flow is narrowed to Partners that were the preferred first-pick Partner.';
   }
   if (kind === 'bookingFlow' && value === 'marketplace-joined') {
-    return 'Booking flow is narrowed to partners that participated in an open matching request.';
+    return 'Booking flow is narrowed to Partners that participated in an open matching request.';
   }
   if (kind === 'bookingFlow' && value === 'final-partner') {
-    return 'Booking flow is narrowed to partners selected by the customer as final partner.';
+    return 'Booking flow is narrowed to Partners selected by the customer as final Partner.';
   }
   if (kind === 'bookingFlow' && value === 'chat-live') {
     return 'Booking flow is narrowed to partners with retained booking chat rooms.';

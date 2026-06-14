@@ -108,7 +108,7 @@ describe('marketplace booking coverage summary', () => {
     expect(rows.map((row) => [row.booking.id, row.selectedPartnerLabel, row.selectedPartnerTone])).toEqual([
       ['chat', 'Partner Linh', 'pill-success'],
       ['choice', 'Awaiting customer choice', 'pill-warn'],
-      ['monitor', 'No final partner', 'pill-neutral'],
+      ['monitor', 'No final Partner', 'pill-neutral'],
     ]);
     expect(rows[1]).toMatchObject({
       alertLabel: '3 notified',

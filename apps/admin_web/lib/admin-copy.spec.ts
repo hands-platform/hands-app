@@ -13,7 +13,7 @@ describe('admin visible copy helpers', () => {
 
   it('rewrites legacy backup wording into marketplace wording for operators', () => {
     expect(marketplaceDisplayText('Backup partner joined the backup list')).toBe(
-      'Marketplace partner joined the marketplace list',
+      'Marketplace Partner joined the marketplace list',
     );
     expect(marketplaceDisplayText('backup-open backup-radius backupNotificationTraces')).toBe(
       'marketplace-open marketplace-radius candidate alert traces',

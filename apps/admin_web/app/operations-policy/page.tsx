@@ -266,7 +266,7 @@ export default async function OperationsPolicyPage({
             <p className="muted">
               These policies stop unsafe bookings before payment authorization and matching. Customers can
               browse globally, but immediate booking must pass the selected address, Vietnam service area, and
-              first-pick partner distance checks. Customer GPS is optional evidence only.
+              first-pick Partner distance checks. Customer GPS is optional evidence only.
             </p>
           </div>
           <span className="pill pill-info">{bookingCreateGateReview.currentPolicyLabel}</span>
@@ -1479,7 +1479,7 @@ function buildPolicySimulation(
         step: '1',
         title: 'Customer creates direct request',
         detail:
-          'The selected partner receives the first-pick request. Marketplace partners are evaluated from current policy and location data.',
+          'The selected Partner receives the first-pick request. Marketplace Partners are evaluated from current policy and location data.',
         className: 'timeline-done',
         tags: [
           {
@@ -1495,8 +1495,8 @@ function buildPolicySimulation(
           ? 'Marketplace list opens immediately'
           : 'Marketplace list waits unless declined',
         detail: immediateBackup
-          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) can see or participate while the first partner decides under current policy.`
-          : `Marketplace partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
+          ? `${invitedPartners.length}/${eligiblePartners.length} Partner(s) can see or participate while the first Partner decides under current policy.`
+          : `Marketplace Partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick Partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
           { label: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode), tone: 'pill-info' },
@@ -1702,7 +1702,7 @@ function buildBookingCreateGateReview(
         current: `${preferredPartnerDistanceKm} km`,
         defaultValue: '50 km',
         operatorMeaning:
-          'The selected first-pick partner must be close enough to the booking address before payment authorization.',
+          'The selected first-pick Partner must be close enough to the booking address before payment authorization.',
         evidence: `${reasonCounts.get('PREFERRED_PARTNER_TOO_FAR') ?? 0} reject(s)`,
         href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
         pillClass: preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
@@ -1755,8 +1755,8 @@ function policyRecommendationPosture(
     return {
       status: shorter ? 'Faster than baseline' : 'Slower than baseline',
       detail: shorter
-        ? 'This can reduce waiting time but may make first-pick partners miss requests.'
-        : 'This gives partners more time but increases customer waiting anxiety.',
+        ? 'This can reduce waiting time but may make first-pick Partners miss requests.'
+        : 'This gives Partners more time but increases customer waiting anxiety.',
       operatorAction: `${liveContext} Existing booking countdowns do not recalculate.`,
       alignedAction: 'Keep monitoring first-pick response rate and cancellation during the waiting window.',
       className: shorter ? 'ops-task-pending' : 'ops-task-blocked',
@@ -1836,7 +1836,7 @@ function policyRecommendationPosture(
       detail:
         value === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
-          : 'This protects the first-pick partner window, but marketplace partners now open immediately when the first-pick partner declines.',
+          : 'This protects the first-pick Partner window, but marketplace Partners now open immediately when the first-pick Partner declines.',
       operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
       alignedAction:
         'Immediate marketplace participation supports lower customer anxiety during the first window.',
@@ -1914,9 +1914,9 @@ function policyRecommendationPosture(
     return {
       status: wider ? 'Wide first-pick gate' : 'Strict first-pick gate',
       detail:
-        'This controls how far the selected first-pick partner can be from the booking address before payment opens.',
+        'This controls how far the selected first-pick Partner can be from the booking address before payment opens.',
       operatorAction:
-        'Check partner location coverage and rejected first-pick distance logs before widening this.',
+        'Check Partner location coverage and rejected first-pick distance logs before widening this.',
       alignedAction: 'First-pick partner distance matches the 50 km baseline for local direct booking.',
       className: wider ? 'ops-task-pending' : 'ops-task-done',
       pillClass: wider ? 'pill-warn' : 'pill-success',
@@ -1999,7 +1999,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       blocking: !baselineTimer,
     },
     {
-      title: 'Marketplace partner pool',
+      title: 'Marketplace Partner pool',
       status: baselineRadius ? 'Default policy' : 'Custom policy',
       detail: `Marketplace participation currently uses ${formatDistance(backupRadiusMeters)} as an operating alert and distance-ordering policy.`,
       operatorAction: baselineRadius
@@ -2012,7 +2012,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     {
       title: 'Marketplace location freshness',
       status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
-      detail: `Marketplace partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
+      detail: `Marketplace Partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
       operatorAction: baselineLocationFreshness
         ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
         : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
@@ -2024,10 +2024,10 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Marketplace visibility timing',
       status: immediateBackup ? 'Visible during wait' : 'Legacy value review',
       detail: immediateBackup
-        ? 'Nearby partners can participate while the first-pick partner is still deciding.'
+        ? 'Nearby Partners can participate while the first-pick Partner is still deciding.'
         : 'Custom marketplace timing values need API review before rollout.',
       operatorAction: immediateBackup
-        ? 'This best matches the customer waiting screen where available marketplace partners appear early.'
+        ? 'This best matches the customer waiting screen where available marketplace Partners appear early.'
         : 'Keep immediate marketplace participation unless a new approved policy is added.',
       className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
       pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
@@ -2325,7 +2325,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           'Saved at booking open. Existing countdowns and Redis matching TTL should not be recalculated after a policy edit.',
       },
       {
-        policy: 'Marketplace partner radius',
+        policy: 'Marketplace Partner radius',
         scope: 'Partner eligibility',
         liveValue: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
         savedValue: summarizeSnapshotValues(
@@ -2358,7 +2358,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
         ),
         operatorMeaning:
-          'Confirms first-pick partners can match first under API rules; otherwise customer final selection is required.',
+          'Confirms first-pick Partners can match first under API rules; otherwise customer final selection is required.',
       },
       {
         policy: 'Marketplace opening mode',
@@ -2370,7 +2370,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, value),
         ),
         operatorMeaning:
-          'Explains whether marketplace partners were allowed to participate during the first-pick response window.',
+          'Explains whether marketplace Partners were allowed to participate during the first-pick response window.',
       },
       {
         policy: 'Travel buffer',
@@ -2390,7 +2390,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'New bookings',
         title: 'Response timer changes are forward-only',
         detail:
-          'Changing the first-pick partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
+          'Changing the first-pick Partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
         operatorAction:
           openMatching.length > 0
             ? `There are ${openMatching.length} open booking(s); do not expect their countdown to recalculate.`
@@ -2401,10 +2401,10 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         scope: 'Live matching',
         title: immediateBackup
-          ? 'Marketplace partners can participate during the first window'
+          ? 'Marketplace Partners can participate during the first window'
           : 'Marketplace timing needs policy review',
         detail: immediateBackup
-          ? 'Eligible partners can appear while the first-pick partner is still deciding.'
+          ? 'Eligible Partners can appear while the first-pick Partner is still deciding.'
           : 'Only immediate marketplace participation is approved for the current MVP runtime.',
         operatorAction: customerConfirm
           ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
@@ -3119,7 +3119,7 @@ function buildOwnerDecisionPressure(
       title: 'First-pick response window',
       status: waitingFirstPick.length ? 'Monitor now' : 'Stable',
       detail: waitingFirstPick.length
-        ? `${waitingFirstPick.length} open matching booking(s) are waiting on a first-pick partner. ${acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
+        ? `${waitingFirstPick.length} open matching booking(s) are waiting on a first-pick Partner. ${acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
         : 'No open booking is currently waiting on the first-pick response window.',
       operatorAction: waitingFirstPick.length
         ? 'Review matching wait time before shortening or extending the timer.'

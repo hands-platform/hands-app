@@ -97,7 +97,7 @@ export function buildPartnerOpsBadges(
       tone: hasPush ? 'success' : 'info',
       detail: hasPush
         ? 'At least one enabled push device is registered.'
-        : 'Ask the partner to open the app and register alerts.',
+        : 'Ask the Partner to open the app and register alerts.',
     },
     {
       label: authLinked ? 'Supabase linked' : 'Nest auth only',
