@@ -388,29 +388,33 @@ const ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails>
   },
 };
 
+const NOTIFICATION_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.partnerAlertChannel]: {
+    area: 'Alert routing',
+    title: 'Controls partner booking alert delivery route',
+    detail:
+      'In-app mode records inbox notifications only. FCM mode routes partner booking alerts through FCM push delivery and logs delivery results.',
+    saveChecks: [
+      {
+        label: 'Delivery operations queue',
+        detail: 'Confirm failed delivery codes and disabled devices before changing alert routing.',
+        href: '/notifications',
+      },
+      {
+        label: 'Setup checklist',
+        detail: 'Verify FCM project IDs, server credentials, and mobile config files are ready before enabling external push.',
+        href: '/setup',
+      },
+    ],
+  },
+};
+
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
-    ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
-    ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
-    ...SETTLEMENT_POLICY_IMPACT_DETAILS,
-    ...ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS,
-    'notification.partner_alert_channel': {
-      area: 'Alert routing',
-      title: 'Controls partner booking alert delivery route',
-      detail:
-        'In-app mode records inbox notifications only. FCM mode routes partner booking alerts through FCM push delivery and logs delivery results.',
-      saveChecks: [
-        {
-          label: 'Delivery operations queue',
-          detail: 'Confirm failed delivery codes and disabled devices before changing alert routing.',
-          href: '/notifications',
-        },
-        {
-          label: 'Setup checklist',
-          detail: 'Verify FCM project IDs, server credentials, and mobile config files are ready before enabling external push.',
-          href: '/setup',
-        },
-      ],
-    },
+  ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
+  ...MATCHING_MARKETPLACE_POLICY_IMPACT_DETAILS,
+  ...SETTLEMENT_POLICY_IMPACT_DETAILS,
+  ...ACTION_CLOSEOUT_POLICY_IMPACT_DETAILS,
+  ...NOTIFICATION_POLICY_IMPACT_DETAILS,
 };
 
 const FALLBACK_POLICY_IMPACT_DETAILS: PolicyImpactDetails = {
