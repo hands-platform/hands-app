@@ -1,0 +1,121 @@
+import Link from 'next/link';
+import { AdminTableScroll } from '../../components/admin-data-table';
+import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
+
+type BookingCreateGateReview = {
+  readonly currentPolicyLabel: string;
+  readonly summary: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
+  readonly rows: readonly {
+    readonly key: string;
+    readonly gate: string;
+    readonly current: string;
+    readonly defaultValue: string;
+    readonly operatorMeaning: string;
+    readonly evidence: string;
+    readonly href: string;
+    readonly pillClass: string;
+  }[];
+  readonly recentAttempts: readonly {
+    readonly id: string;
+    readonly reason: string;
+    readonly detail: string;
+    readonly createdAt: string;
+    readonly href: string;
+    readonly pillClass: string;
+  }[];
+};
+
+type OperationsPolicyBookingCreateGateSectionProps = {
+  readonly review: BookingCreateGateReview;
+};
+
+export function OperationsPolicyBookingCreateGateSection({
+  review,
+}: OperationsPolicyBookingCreateGateSectionProps) {
+  return (
+    <section className="card admin-mb-16">
+      <div className="ops-section-header">
+        <div>
+          <h2>Booking create gate controls</h2>
+          <p className="muted">
+            These policies stop unsafe bookings before payment authorization and matching. Customers can
+            browse globally, but immediate booking must pass the selected address, Vietnam service area, and
+            first-pick Partner distance checks. Customer GPS is optional evidence only.
+          </p>
+        </div>
+        <span className="pill pill-info">{review.currentPolicyLabel}</span>
+      </div>
+      <div className="service-trace-summary admin-mt-12">
+        {review.summary.map((item) => (
+          <div key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.helper}</small>
+          </div>
+        ))}
+      </div>
+      <AdminTableScroll>
+        <table className="table service-trace">
+          <thead>
+            <tr>
+              <th>Gate</th>
+              <th>Current</th>
+              <th>Default</th>
+              <th>Operator meaning</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {review.rows.map((row) => (
+              <tr key={row.key}>
+                <td>
+                  <span className={`pill ${row.pillClass}`}>{row.gate}</span>
+                </td>
+                <td>{row.current}</td>
+                <td>{row.defaultValue}</td>
+                <td>{row.operatorMeaning}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    {row.evidence}
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </AdminTableScroll>
+      <div className="ops-section-header admin-mt-18">
+        <div>
+          <h3>Recent blocked create attempts</h3>
+          <p className="muted">Shows factual support evidence for failed booking creation and troubleshooting.</p>
+        </div>
+        <Link className="text-link" href="/bookings?view=blocked-create">
+          Open blocked-create queue
+        </Link>
+      </div>
+      {review.recentAttempts.length === 0 ? (
+        <div className="empty-state admin-mt-12">
+          No booking create gate rejections are currently recorded.
+        </div>
+      ) : (
+        <div className="ops-task-grid admin-mt-14">
+          {review.recentAttempts.map((attempt) => (
+            <article className="ops-task-card" key={attempt.id}>
+              <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
+              <h3>Blocked booking create attempt</h3>
+              <p>{attempt.detail}</p>
+              <small>
+                Attempt {shortDisplayId(attempt.id)} - Recorded {formatDateTime(attempt.createdAt)}
+              </small>
+              <div className="actions admin-mt-10">
+                <Link className="text-link" href={attempt.href}>
+                  Open evidence
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}

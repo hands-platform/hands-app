@@ -46,6 +46,7 @@ import {
 import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
 import { OperationsPolicyActionGateChecklistSection } from './operations-policy-action-gate-checklist-section';
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
+import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -166,92 +167,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyActionGateChecklistSection checklist={actionGatePolicyChecklist} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking create gate controls</h2>
-            <p className="muted">
-              These policies stop unsafe bookings before payment authorization and matching. Customers can
-              browse globally, but immediate booking must pass the selected address, Vietnam service area, and
-              first-pick Partner distance checks. Customer GPS is optional evidence only.
-            </p>
-          </div>
-          <span className="pill pill-info">{bookingCreateGateReview.currentPolicyLabel}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {bookingCreateGateReview.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <AdminTableScroll>
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Gate</th>
-                <th>Current</th>
-                <th>Default</th>
-                <th>Operator meaning</th>
-                <th>Evidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookingCreateGateReview.rows.map((row) => (
-                <tr key={row.key}>
-                  <td>
-                    <span className={`pill ${row.pillClass}`}>{row.gate}</span>
-                  </td>
-                  <td>{row.current}</td>
-                  <td>{row.defaultValue}</td>
-                  <td>{row.operatorMeaning}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      {row.evidence}
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </AdminTableScroll>
-        <div className="ops-section-header admin-mt-18">
-          <div>
-            <h3>Recent blocked create attempts</h3>
-            <p className="muted">
-              Shows factual support evidence for failed booking creation and troubleshooting.
-            </p>
-          </div>
-          <Link className="text-link" href="/bookings?view=blocked-create">
-            Open blocked-create queue
-          </Link>
-        </div>
-        {bookingCreateGateReview.recentAttempts.length === 0 ? (
-          <div className="empty-state admin-mt-12">
-            No booking create gate rejections are currently recorded.
-          </div>
-        ) : (
-          <div className="ops-task-grid admin-mt-14">
-            {bookingCreateGateReview.recentAttempts.map((attempt) => (
-              <article className="ops-task-card" key={attempt.id}>
-                <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
-                <h3>Blocked booking create attempt</h3>
-                <p>{attempt.detail}</p>
-                <small>
-                  Attempt {shortId(attempt.id)} - Recorded {formatDate(attempt.createdAt)}
-                </small>
-                <div className="actions admin-mt-10">
-                  <Link className="text-link" href={attempt.href}>
-                    Open evidence
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      <OperationsPolicyBookingCreateGateSection review={bookingCreateGateReview} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
