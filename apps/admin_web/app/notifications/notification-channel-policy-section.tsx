@@ -34,7 +34,7 @@ export function NotificationChannelPolicySection({
         <div>
           <h3>Partner alert routing policy</h3>
           <p className="muted">
-            Current decision: <strong>{policyLabel}</strong>. Use this to confirm whether partner booking
+            Current decision: <strong>{policyLabel}</strong>. Use this to confirm whether Partner booking
             requests are intentionally in-app only or routed to FCM push.
           </p>
         </div>

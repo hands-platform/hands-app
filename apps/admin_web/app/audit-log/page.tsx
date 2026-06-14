@@ -43,7 +43,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
 
   return (
     <AdminPageTemplate
-      description="Operational history for bookings, payments, refunds, partner review, alerts, and policy changes."
+      description="Operational history for bookings, payments, refunds, Partner review, alerts, and policy changes."
       metrics={[
         { label: 'Total events', value: summary.total, helper: 'Events after the active filters.' },
         {
@@ -130,7 +130,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
         <div className="toolbar">
           <div>
             <p className="muted">
-              Recent operational trail for bookings, payments, refunds, partner review, and alerts.
+              Recent operational trail for bookings, payments, refunds, Partner review, and alerts.
             </p>
           </div>
           <div className="participant-list">
@@ -242,8 +242,8 @@ export function buildAuditCommandBoard(
       logs: buildAuditCommandLogPreviews(financeCloseoutLogs),
     },
     {
-      title: 'Dispatch and partner actions',
-      detail: 'Booking, matching, partner status, and verification changes affect service delivery.',
+      title: 'Dispatch and Partner actions',
+      detail: 'Booking, matching, Partner status, and verification changes affect service delivery.',
       status: 'Dispatch',
       operatorAction: 'Trace handoff problems from booking detail back to the acting operator.',
       href: withAuditRange('/audit-log?bucket=Dispatch', range),
@@ -1058,19 +1058,19 @@ function opsHint(action: string, target: string) {
     return 'Structured booking handling status was updated by an operator.';
   }
   if (action.startsWith('booking.')) {
-    return 'Trace booking state changes and verify customer/partner handoff.';
+    return 'Trace booking state changes and verify Customer/Partner handoff.';
   }
   if (action.startsWith('payment.')) {
     return 'Confirm the money state matches the booking state before closing the loop.';
   }
   if (isPayoutAction(action)) {
-    return 'Confirm transfer references, withholding logs, and partner payout readiness before release.';
+    return 'Confirm transfer references, withholding logs, and Partner payout readiness before release.';
   }
   if (isFinanceCloseoutAction(action)) {
     return 'Trace this row through Finance Closeout before ending the shift.';
   }
   if (action.startsWith('notification.')) {
-    return 'Check retry or delivery health if the customer or partner missed an alert.';
+    return 'Check retry or delivery health if the Customer or Partner missed an alert.';
   }
   if (isPushDeviceAction(action)) {
     return 'Check push token freshness and delivery health before re-enabling alerts.';
@@ -1079,17 +1079,17 @@ function opsHint(action: string, target: string) {
     return 'Confirm the policy change matches the current owner decision and active booking controls.';
   }
   if (isServicePricingAction(action)) {
-    return 'Review service price, partner payout, VAT, costs, and before/after changes.';
+    return 'Review service price, Partner payout, VAT, costs, and before/after changes.';
   }
   if (action.startsWith('provider.')) {
-    return 'Review partner readiness, moderation, or queue movement.';
+    return 'Review Partner readiness, moderation, or queue movement.';
   }
   return `Audit trail for ${target || 'system'} activity.`;
 }
 
 function opsDetail(action: string) {
   if (action === 'booking.ops_note.add') {
-    return 'Use the note to understand customer/partner contact history before taking the next action.';
+    return 'Use the note to understand Customer/Partner contact history before taking the next action.';
   }
   if (action === 'booking.ops_task.update') {
     return 'Use the status to see which handoff checks are done, pending, or blocked.';
@@ -1116,10 +1116,10 @@ function opsDetail(action: string) {
     return 'Retry events are useful when a delivery or operation needed another pass.';
   }
   if (action.startsWith('operational_policy.')) {
-    return 'Operational policy edits can change matching timers, marketplace partner visibility, wallet gates, and alert routing.';
+    return 'Operational policy edits can change matching timers, marketplace Partner visibility, wallet gates, and alert routing.';
   }
   if (isServicePricingAction(action)) {
-    return 'Price policy changes affect customer price, partner payout, tax withholding, cash debt, and payout batches.';
+    return 'Price policy changes affect customer price, Partner payout, tax withholding, cash debt, and payout batches.';
   }
   if (action.endsWith('.approve') || action.endsWith('.reject')) {
     return 'Partner review actions should match verification evidence and moderation notes.';
