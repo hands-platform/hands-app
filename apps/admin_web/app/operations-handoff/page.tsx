@@ -13,13 +13,6 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
-import {
-  formatFcmSentDeliveryDetail,
-  latestFcmSentNotificationDelivery,
-} from '../../lib/admin-notification-delivery';
-import { isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
-import { buildCsvDataHref } from '../../lib/csv-export';
 import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
@@ -27,8 +20,6 @@ import {
 import { OperationsHandoffActivityStreamSection } from './operations-handoff-activity-stream-section';
 import {
   ACTIVE_BOOKING_STATUSES,
-  bookingPartnerName,
-  bookingStatusClass,
   buildBookingHandoffQueue,
 } from './operations-handoff-booking-queue';
 import { OperationsHandoffBookingQueueSection } from './operations-handoff-booking-queue-section';
@@ -47,6 +38,13 @@ import {
   buildHandoffReadinessChecklist,
   countOpenHandoffChecklistItems,
 } from './operations-handoff-readiness-checklist';
+import {
+  buildActivityStreamCsvHref,
+  buildLatestFcmSentSummary,
+  buildOperationsHandoffFilters,
+  buildOperationsHandoffRangeData,
+  emptyCashSettlementSummary,
+} from './operations-handoff-page-model';
 import { OperationsHandoffReadinessChecklistSection } from './operations-handoff-readiness-checklist-section';
 import {
   buildChatSignals,
@@ -57,36 +55,6 @@ import {
 import { OperationsHandoffShiftBriefSection } from './operations-handoff-shift-brief-section';
 
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type OperationsHandoffFilters = {
-  range: ReturnType<typeof normalizeDateRange>;
-};
-
-function emptyCashSettlementSummary(): AdminCashSettlementSummary {
-  return {
-    generatedAt: new Date(0).toISOString(),
-    currency: 'VND',
-    rowCount: 0,
-    providerCount: 0,
-    totalDebtAmount: 0,
-    totalPlatformFee: 0,
-    totalTaxAmount: 0,
-    oldestOpenAt: null,
-    oldestOpenAgeMinutes: 0,
-    staleDebtRowCount: 0,
-    highDebtProviderCount: 0,
-    missingPaymentEvidenceCount: 0,
-    cashPaymentRowCount: 0,
-    topProviderGroups: [],
-  };
-}
-
-function buildOperationsHandoffFilters(
-  params: Record<string, string | string[] | undefined>,
-): OperationsHandoffFilters {
-  return {
-    range: normalizeDateRange(readSearchParam(params.range)),
-  };
-}
 
 export default async function OperationsHandoffPage({
   searchParams,
@@ -126,13 +94,17 @@ export default async function OperationsHandoffPage({
   const matchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const inServiceBookings = bookings.filter((booking) => booking.status === 'IN_SERVICE');
   const bookingQueue = buildBookingHandoffQueue(bookings);
-  const rangePayments = payments.filter((payment) =>
-    isInDateRange(payment.booking?.createdAt, filters.range),
-  );
-  const rangeRefunds = refunds.filter((refund) => isInDateRange(refund.createdAt, filters.range));
-  const rangePayouts = payouts.filter((payout) => isInDateRange(payout.createdAt, filters.range));
-  const rangeEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const rangeAuditLogs = auditLogs.filter((log) => isInDateRange(log.createdAt, filters.range));
+  const { rangeAuditLogs, rangeEarnings, rangePayments, rangePayouts, rangeRefunds } =
+    buildOperationsHandoffRangeData(
+      {
+        auditLogs,
+        earnings,
+        payments,
+        payouts,
+        refunds,
+      },
+      filters.range,
+    );
   const operatorNotes = buildOperatorNotes(rangeAuditLogs);
   const chatSignals = buildChatSignals(bookings);
   const financeRows = buildFinanceRows(rangeEarnings);
@@ -149,13 +121,7 @@ export default async function OperationsHandoffPage({
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
-  const latestFcmSent = latestFcmSentNotificationDelivery(notifications);
-  const latestFcmSentSummary = latestFcmSent
-    ? {
-        helper: formatFcmSentDeliveryDetail(latestFcmSent.notification, latestFcmSent.delivery),
-        value: formatDateTime(latestFcmSent.delivery.attemptedAt),
-      }
-    : null;
+  const latestFcmSentSummary = buildLatestFcmSentSummary(notifications);
   const immediateActions = buildImmediateActionQueue({
     bookings,
     matchingBookings,
@@ -175,18 +141,7 @@ export default async function OperationsHandoffPage({
     }),
     filters.range,
   );
-  const activityStreamCsvHref = buildCsvDataHref(
-    activityStream.map((item) => ({
-      created_at: item.createdAt,
-      relative_time: relativeTime(item.createdAt),
-      area: item.area,
-      source: item.source,
-      record: item.record,
-      summary: item.summary,
-      href: item.href,
-    })),
-    ['created_at', 'relative_time', 'area', 'source', 'record', 'summary', 'href'],
-  );
+  const activityStreamCsvHref = buildActivityStreamCsvHref(activityStream);
   const handoffChecklist = buildHandoffReadinessChecklist({
     bookings,
     matchingBookings,
@@ -250,12 +205,4 @@ export default async function OperationsHandoffPage({
       <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
     </>
   );
-}
-
-function relativeTime(value?: string | null) {
-  return formatRelativeTime(value, {
-    emptyFallback: 'unknown time',
-    invalidFallback: 'unknown time',
-    hourLabelCutoff: 48,
-  });
 }
