@@ -117,18 +117,18 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
   ) {
     flags.push({
       severity: 'medium',
-      title: 'Preferred partner slow',
+      title: 'Preferred Partner slow',
       detail: `${input.preferredPartnerLabel} has not responded after ${input.openedAgeMinutes} minute(s).`,
-      action: 'Encourage marketplace supply or contact the partner.',
+      action: 'Encourage marketplace supply or contact the Partner.',
     });
   }
 
   if (input.bookingStatus === 'OPEN_MATCHING' && input.participantCount === 0) {
     flags.push({
       severity: 'medium',
-      title: 'No partner supply',
-      detail: 'No partner participation is recorded for the request yet.',
-      action: 'Check nearby online partners and consider operational outreach.',
+      title: 'No Partner supply',
+      detail: 'No Partner participation is recorded for the request yet.',
+      action: 'Check nearby online Partners and consider operational outreach.',
     });
   }
 
@@ -136,7 +136,7 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
     flags.push({
       severity: 'high',
       title: 'Matched without chat',
-      detail: 'A partner is selected but no chat room exists.',
+      detail: 'A Partner is selected but no chat room exists.',
       action: 'Retry chat room creation before the service starts.',
     });
   }
@@ -144,9 +144,9 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
   if (input.activeWithLocationNeed && !input.hasLatestProviderLocation) {
     flags.push({
       severity: 'medium',
-      title: 'No partner location record',
-      detail: `Booking is ${input.bookingStatus}, but the partner has not shared a live pin.`,
-      action: 'Ask the partner to share current location from the Partner app.',
+      title: 'No Partner location record',
+      detail: `Booking is ${input.bookingStatus}, but the Partner has not shared a live pin.`,
+      action: 'Ask the Partner to share current location from the Partner app.',
     });
   }
 
@@ -158,8 +158,8 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
     flags.push({
       severity: 'medium',
       title: 'Partner location is stale',
-      detail: `The latest partner pin is ${input.providerLocationAgeLabel.toLowerCase()}.`,
-      action: 'Ask the partner to share location again from the Partner app.',
+      detail: `The latest Partner pin is ${input.providerLocationAgeLabel.toLowerCase()}.`,
+      action: 'Ask the Partner to share location again from the Partner app.',
     });
   }
 

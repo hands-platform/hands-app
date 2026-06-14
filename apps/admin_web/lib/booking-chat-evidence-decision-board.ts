@@ -71,8 +71,8 @@ export function bookingChatEvidenceDecisionBoard(
       ? 'This booking can hide chat in mobile after closeout, but admin keeps the retained transcript for operations review.'
       : 'This booking has an admin-retained chat room for service handoff and operations review.'
     : chatRequired
-      ? 'A final partner exists or service stage has started, but no retained chat room is attached yet.'
-      : 'Customer and partner chat opens only after the customer final partner selection.';
+      ? 'A final Partner exists or service stage has started, but no retained chat room is attached yet.'
+      : 'Customer and Partner chat opens only after the customer final Partner selection.';
 
   return {
     status,
@@ -86,19 +86,19 @@ export function bookingChatEvidenceDecisionBoard(
           ? `${input.messageCount} retained message(s) in admin archive.`
           : chatRequired
             ? 'Matched or active booking should have a retained chat room.'
-            : 'Chat is not expected before final partner selection.',
+            : 'Chat is not expected before final Partner selection.',
       },
       {
         label: 'Latest message',
         value: input.latestMessageAtLabel ?? 'No message',
-        helper: input.latestMessagePreview ?? 'No customer or partner message has been retained yet.',
+        helper: input.latestMessagePreview ?? 'No customer or Partner message has been retained yet.',
       },
       {
         label: 'Location handoff',
         value: input.latestLocationAtLabel ?? 'No pin',
         helper: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} latest partner pin.`
-          : 'No partner location record is attached to this booking.',
+          ? `${input.latestLocationCoordinateLabel} latest Partner pin.`
+          : 'No Partner location record is attached to this booking.',
       },
       {
         label: 'Alerts and notes',
@@ -111,7 +111,7 @@ export function bookingChatEvidenceDecisionBoard(
     rows: [
       {
         lane: 'Chat room creation',
-        scope: 'Final partner selection should create a retained customer-partner room.',
+        scope: 'Final Partner selection should create a retained customer-Partner room.',
         state: input.hasChatRoom ? 'Archived' : chatRequired ? 'Repair needed' : 'Waiting for final choice',
         tone: input.hasChatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
         record: input.hasChatRoom
@@ -124,7 +124,7 @@ export function bookingChatEvidenceDecisionBoard(
       },
       {
         lane: 'Conversation evidence',
-        scope: 'Messages explain what customer and partner actually communicated.',
+        scope: 'Messages explain what customer and Partner actually communicated.',
         state: input.messageCount > 0 ? 'Messages retained' : input.hasChatRoom ? 'No messages yet' : 'No room',
         tone: input.messageCount > 0 ? 'pill-success' : input.hasChatRoom ? 'pill-warn' : 'pill-neutral',
         record: input.latestMessagePreview
@@ -141,7 +141,7 @@ export function bookingChatEvidenceDecisionBoard(
         tone: input.hasLatestLocation ? 'pill-info' : 'pill-warn',
         record: input.latestLocationCoordinateLabel
           ? `${input.latestLocationCoordinateLabel} / ${input.latestLocationAtLabel ?? 'No timestamp'}`
-          : 'No partner movement row is attached.',
+          : 'No Partner movement row is attached.',
         operatorUse:
           'Use movement context with chat and alerts; do not judge either side from one signal alone.',
         href: '#location',

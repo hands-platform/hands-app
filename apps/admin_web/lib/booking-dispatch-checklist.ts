@@ -88,12 +88,12 @@ export function bookingDispatchChecklist(input: BookingDispatchChecklistInput): 
   ) {
     steps.push({
       priority: 'Now',
-      title: 'Preferred partner response',
+      title: 'Preferred Partner response',
       detail: `${input.preferredPartner.label} has the first response window. Contact them if the customer is waiting too long.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: partnerPhoneHref(input.preferredPartner),
-      actionLabel: 'Call partner',
+      actionLabel: 'Call Partner',
     });
   }
 
@@ -101,11 +101,11 @@ export function bookingDispatchChecklist(input: BookingDispatchChecklistInput): 
     steps.push({
       priority: 'Monitor',
       title: 'Supply monitor',
-      detail: 'No partner participation is recorded yet. Keep partner availability and notification delivery visible.',
+      detail: 'No Partner participation is recorded yet. Keep Partner availability and notification delivery visible.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: '/partners',
-      actionLabel: 'Open partners',
+      actionLabel: 'Open Partners',
     });
   }
 
@@ -122,12 +122,12 @@ export function bookingDispatchChecklist(input: BookingDispatchChecklistInput): 
   if (input.activeWithLocationNeed && !input.hasLatestProviderLocation) {
     steps.push({
       priority: 'Now',
-      title: 'Request partner location',
-      detail: 'The partner has not shared a saved service pin for this active booking.',
+      title: 'Request Partner location',
+      detail: 'The Partner has not shared a saved service pin for this active booking.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: partnerPhone,
-      actionLabel: 'Call partner',
+      actionLabel: 'Call Partner',
     });
   }
 
@@ -139,11 +139,11 @@ export function bookingDispatchChecklist(input: BookingDispatchChecklistInput): 
     steps.push({
       priority: 'Monitor',
       title: 'Refresh stale location',
-      detail: `${input.providerLocationAgeLabel}. Ask the partner to share current location again if the customer asks.`,
+      detail: `${input.providerLocationAgeLabel}. Ask the Partner to share current location again if the customer asks.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: partnerPhone,
-      actionLabel: 'Call partner',
+      actionLabel: 'Call Partner',
     });
   }
 
@@ -161,11 +161,11 @@ export function bookingDispatchChecklist(input: BookingDispatchChecklistInput): 
     steps.push({
       priority: 'Done',
       title: 'Partner handoff locked',
-      detail: `${input.selectedPartner.label} is the current final partner for this booking.`,
+      detail: `${input.selectedPartner.label} is the current final Partner for this booking.`,
       owner: 'Dispatch operator',
       tone: 'pill-success',
       actionHref: partnerPhoneHref(input.selectedPartner),
-      actionLabel: 'Call partner',
+      actionLabel: 'Call Partner',
     });
   }
 

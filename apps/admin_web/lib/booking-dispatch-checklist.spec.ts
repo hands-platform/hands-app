@@ -52,11 +52,11 @@ describe('bookingDispatchChecklist', () => {
       participantCount: 0,
     });
 
-    expect(steps.map((step) => step.title)).toEqual(['Preferred partner response', 'Supply monitor']);
+    expect(steps.map((step) => step.title)).toEqual(['Preferred Partner response', 'Supply monitor']);
     expect(steps[0]).toMatchObject({
       priority: 'Now',
       actionHref: 'tel:0865907184',
-      actionLabel: 'Call partner',
+      actionLabel: 'Call Partner',
     });
   });
 
@@ -79,7 +79,7 @@ describe('bookingDispatchChecklist', () => {
     );
   });
 
-  it('asks for partner location during active handoff when no pin exists', () => {
+  it('asks for Partner location during active handoff when no pin exists', () => {
     const steps = bookingDispatchChecklist({
       ...baseInput,
       bookingStatus: 'PROVIDER_ON_THE_WAY',
@@ -90,13 +90,13 @@ describe('bookingDispatchChecklist', () => {
     expect(steps[0]).toEqual(
       expect.objectContaining({
         priority: 'Now',
-        title: 'Request partner location',
+        title: 'Request Partner location',
         actionHref: 'tel:0865907184',
       }),
     );
   });
 
-  it('monitors stale partner location without replacing the active booking state', () => {
+  it('monitors stale Partner location without replacing the active booking state', () => {
     const steps = bookingDispatchChecklist({
       ...baseInput,
       bookingStatus: 'ARRIVED',
@@ -110,7 +110,7 @@ describe('bookingDispatchChecklist', () => {
     expect(steps[0]).toMatchObject({
       priority: 'Monitor',
       title: 'Refresh stale location',
-      detail: 'Updated 45m ago. Ask the partner to share current location again if the customer asks.',
+      detail: 'Updated 45m ago. Ask the Partner to share current location again if the customer asks.',
     });
   });
 

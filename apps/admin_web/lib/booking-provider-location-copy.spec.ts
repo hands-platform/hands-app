@@ -15,7 +15,7 @@ describe('booking provider location copy', () => {
   });
 
   it('shows missing copy when there is no recorded timestamp', () => {
-    expect(bookingProviderLocationMetricHelper(null)).toBe('No partner location shared yet');
+    expect(bookingProviderLocationMetricHelper(null)).toBe('No Partner location shared yet');
   });
 
   it('shows invalid timestamp copy when the recorded timestamp cannot be parsed', () => {

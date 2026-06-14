@@ -18,7 +18,7 @@ export function bookingProviderLocationMetricHelper(
   options: { nowMs?: number } = {},
 ) {
   if (!recordedAt) {
-    return 'No partner location shared yet';
+    return 'No Partner location shared yet';
   }
 
   const recordedAtMs = new Date(recordedAt).getTime();

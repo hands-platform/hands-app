@@ -72,15 +72,15 @@ export function bookingDecisionEvidenceGuardrails(
         ? `${input.addressSnapshotLabel} / ${input.addressPinLabel}`
         : 'No BookingAddressSnapshot is attached.',
       nextStep: input.hasAddressSnapshot
-        ? 'Use this address for partner radius, support, and settlement review.'
+        ? 'Use this address for Partner radius, support, and settlement review.'
         : 'Repair or attach address evidence before relying on distance or closeout decisions.',
       href: '#address-radius-contract',
     },
     {
       id: 'required-final-partner',
-      title: 'Required: customer final partner choice',
+      title: 'Required: customer final Partner choice',
       scope: 'HANDS does not auto-assign; customer choice creates the final handoff.',
-      status: input.hasSelectedPartner ? 'Final partner saved' : 'Customer choice pending',
+      status: input.hasSelectedPartner ? 'Final Partner saved' : 'Customer choice pending',
       tone: input.hasSelectedPartner
         ? 'pill-success'
         : input.bookingStatus === 'OPEN_MATCHING'
@@ -91,39 +91,39 @@ export function bookingDecisionEvidenceGuardrails(
         : `${input.participantCount} marketplace participant(s) / preferred ${input.preferredPartnerLabel}`,
       nextStep: input.hasSelectedPartner
         ? 'Confirm chat, location, and payment handoff.'
-        : 'Keep the customer selection state visible; do not auto-select a partner.',
+        : 'Keep the customer selection state visible; do not auto-select a Partner.',
       href: '#participants',
     },
     {
       id: 'required-chat',
       title: 'Required after match: retained chat',
-      scope: 'Matched bookings need customer-partner chat; admin keeps the archive after mobile closeout.',
+      scope: 'Matched bookings need customer-Partner chat; admin keeps the archive after mobile closeout.',
       status: input.hasChatRoom ? 'Archived' : chatRequired ? 'Repair needed' : 'Locked until match',
       tone: input.hasChatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
       evidence: input.hasChatRoom
         ? `Room ${input.chatRoomShortId ?? 'missing'} / ${input.messageCount} message(s)`
         : chatRequired
           ? 'Matched or service-stage booking has no retained room.'
-          : 'Chat opens only after final partner selection.',
+          : 'Chat opens only after final Partner selection.',
       nextStep: input.hasChatRoom
         ? 'Use the retained transcript for support and outcome review.'
         : chatRequired
           ? 'Repair the chat handoff before service coordination or money actions.'
-          : 'Wait for customer final partner selection.',
+          : 'Wait for customer final Partner selection.',
       href: '#chat',
     },
     {
       id: 'supporting-context',
       title: 'Supporting: communication and movement context',
       scope:
-        'Chat messages, partner pin, alerts, and notes explain what happened without judging either side.',
+        'Chat messages, Partner pin, alerts, and notes explain what happened without judging either side.',
       status: hasSupportingContext ? 'Context loaded' : 'Needs factual note',
       tone: hasSupportingContext ? 'pill-success' : 'pill-warn',
       evidence: [
         `${input.messageCount} message(s)`,
         input.hasLatestLocation && input.latestLocationAtLabel
           ? `location ${input.latestLocationAtLabel}`
-          : 'no partner pin',
+          : 'no Partner pin',
         `${input.notificationCount} alert row(s)`,
         `${input.operatorNoteCount} note(s)`,
       ].join(' / '),

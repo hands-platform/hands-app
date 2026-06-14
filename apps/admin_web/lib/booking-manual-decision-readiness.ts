@@ -78,7 +78,7 @@ export function bookingManualDecisionReadiness(
               : 'pill-warn'
             : 'pill-neutral',
       evidence: input.evidenceSummary,
-      operatorUse: 'Check chat, alert delivery, partner location, and notes before using the no-show action.',
+      operatorUse: 'Check chat, alert delivery, Partner location, and notes before using the no-show action.',
       href: '#no-show-handling',
     },
     {

@@ -87,7 +87,7 @@ describe('booking status location helpers', () => {
     expect(hasProviderCoordinate({ currentLat: 'not-a-number', currentLng: '106.7009' })).toBe(false);
   });
 
-  it('classifies partner location freshness from the last update timestamp', () => {
+  it('classifies Partner location freshness from the last update timestamp', () => {
     const now = new Date('2026-06-07T10:00:00.000Z').getTime();
 
     expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:45:00.000Z', now)).toBe('recent');
@@ -135,7 +135,7 @@ describe('booking status location helpers', () => {
         hasProviderLocation: false,
         providerLocationFreshness: 'missing',
       }),
-    ).toEqual([{ severity: 'medium', title: 'No partner location record' }]);
+    ).toEqual([{ severity: 'medium', title: 'No Partner location record' }]);
 
     expect(
       bookingLocationCheckFlagsFromFacts({

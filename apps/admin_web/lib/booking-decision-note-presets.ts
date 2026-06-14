@@ -56,7 +56,7 @@ export function bookingDecisionNotePresets(
       id: 'chat-empty-note',
       label: 'Chat',
       title: 'Chat evidence is empty',
-      detail: 'Use when a manual outcome is being reviewed but no customer/partner messages are loaded.',
+      detail: 'Use when a manual outcome is being reviewed but no customer/Partner messages are loaded.',
       preset:
         'Manual decision evidence note: chat archive is present/checked but has no retained customer or partner messages for this booking.',
     });
@@ -68,9 +68,9 @@ export function bookingDecisionNotePresets(
       label: 'Location',
       title: 'Partner location is not retained',
       detail:
-        'Use before arrival, no-show, service completion, or refund review when no partner pin is loaded.',
+        'Use before arrival, no-show, service completion, or refund review when no Partner pin is loaded.',
       preset:
-        'Manual decision evidence note: no partner location snapshot is retained for this booking at the time of operator review.',
+        'Manual decision evidence note: no Partner location snapshot is retained for this booking at the time of operator review.',
     });
   }
 

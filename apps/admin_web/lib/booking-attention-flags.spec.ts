@@ -79,7 +79,7 @@ describe('bookingAttentionFlags', () => {
     );
   });
 
-  it('flags a slow preferred partner and no partner supply while matching stays open', () => {
+  it('flags a slow preferred Partner and no Partner supply while matching stays open', () => {
     const flags = bookingAttentionFlags({
       ...baseInput,
       bookingStatus: 'OPEN_MATCHING',
@@ -88,7 +88,7 @@ describe('bookingAttentionFlags', () => {
       participantCount: 0,
     });
 
-    expect(flags.map((flag) => flag.title)).toEqual(['Preferred partner slow', 'No partner supply']);
+    expect(flags.map((flag) => flag.title)).toEqual(['Preferred Partner slow', 'No Partner supply']);
   });
 
   it('flags matched bookings that are missing the mandatory chat room', () => {
@@ -106,7 +106,7 @@ describe('bookingAttentionFlags', () => {
     ]);
   });
 
-  it('flags stale partner location during active handoff stages', () => {
+  it('flags stale Partner location during active handoff stages', () => {
     const flags = bookingAttentionFlags({
       ...baseInput,
       bookingStatus: 'PROVIDER_ON_THE_WAY',
@@ -120,7 +120,7 @@ describe('bookingAttentionFlags', () => {
       expect.objectContaining({
         severity: 'medium',
         title: 'Partner location is stale',
-        detail: 'The latest partner pin is updated 40m ago.',
+        detail: 'The latest Partner pin is updated 40m ago.',
       }),
     ]);
   });

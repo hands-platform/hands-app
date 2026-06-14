@@ -8,11 +8,11 @@ const baseInput: BookingOperatorPriorityBriefingInput = {
     tone: 'pill-warn',
     title: 'Monitor customer choice',
     owner: 'Dispatch operator',
-    detail: 'Customer still chooses the final partner.',
+    detail: 'Customer still chooses the final Partner.',
   },
   nextAction: {
     title: 'Keep customer wait visible',
-    detail: 'Watch partner participation and customer choice.',
+    detail: 'Watch Partner participation and customer choice.',
   },
   customerName: 'Demo Customer',
   customerPhone: '0865907184',

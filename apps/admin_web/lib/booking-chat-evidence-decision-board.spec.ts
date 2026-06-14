@@ -17,7 +17,7 @@ const baseInput = {
 };
 
 describe('bookingChatEvidenceDecisionBoard', () => {
-  it('keeps chat locked before customer final partner selection', () => {
+  it('keeps chat locked before customer final Partner selection', () => {
     const board = bookingChatEvidenceDecisionBoard(baseInput);
 
     expect(board.status).toBe('Chat locked until match');
@@ -25,7 +25,7 @@ describe('bookingChatEvidenceDecisionBoard', () => {
     expect(board.metrics[0]).toMatchObject({
       label: 'Chat room',
       value: 'No room',
-      helper: 'Chat is not expected before final partner selection.',
+      helper: 'Chat is not expected before final Partner selection.',
     });
   });
 
@@ -45,7 +45,7 @@ describe('bookingChatEvidenceDecisionBoard', () => {
     });
   });
 
-  it('summarizes retained chat, latest message, and partner pin context', () => {
+  it('summarizes retained chat, latest message, and Partner pin context', () => {
     const board = bookingChatEvidenceDecisionBoard({
       ...baseInput,
       bookingStatus: 'IN_SERVICE',

@@ -49,7 +49,7 @@ export function bookingFlowStages(input: BookingFlowStagesInput): BookingFlowSta
     {
       label: 'Matched',
       value: input.selectedPartnerLabel,
-      hint: input.hasChatRoom ? 'Chat room is ready.' : 'Waiting for final partner selection.',
+      hint: input.hasChatRoom ? 'Chat room is ready.' : 'Waiting for final Partner selection.',
       done: input.hasSelectedPartner,
     },
     {

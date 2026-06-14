@@ -71,7 +71,7 @@ export function bookingOperatorCommandQueue(
       id: 'matching-watch',
       label: 'MATCH',
       title: 'Monitor customer choice',
-      detail: `${selectableDetail} Customer still chooses the final partner.`,
+      detail: `${selectableDetail} Customer still chooses the final Partner.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#participants', label: 'Open shortlist' },
@@ -84,7 +84,7 @@ export function bookingOperatorCommandQueue(
       label: 'SUPPLY',
       title: 'Check nearby partner supply',
       detail:
-        'No partner participation is recorded yet. Review marketplace-ready partners and notification delivery before widening operations policy.',
+        'No Partner participation is recorded yet. Review marketplace-ready Partners and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#marketplace-supply', label: 'Open supply' },
@@ -131,7 +131,7 @@ export function bookingOperatorCommandQueue(
       action: {
         type: 'note',
         label: 'Log watch',
-        preset: 'Chat is ready but quiet; support is monitoring first customer/partner contact.',
+        preset: 'Chat is ready but quiet; support is monitoring first customer/Partner contact.',
       },
     });
   }
@@ -150,7 +150,7 @@ export function bookingOperatorCommandQueue(
     add({
       id: 'location-stale',
       label: 'LOC',
-      title: 'Refresh stale partner location',
+      title: 'Refresh stale Partner location',
       detail: input.providerLocationHelper,
       owner: 'Dispatch operator',
       tone: 'pill-warn',

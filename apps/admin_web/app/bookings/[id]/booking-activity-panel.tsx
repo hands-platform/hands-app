@@ -64,7 +64,7 @@ export function BookingActivityPanel({
         <div>
           <h2>Booking chronological activity</h2>
           <p className="muted">
-            Date-sorted factual event trail for this booking: booking status, partner participation, chat
+            Date-sorted factual event trail for this booking: booking status, Partner participation, chat
             messages, payment, refund, earning, platform fee, tax, wallet, location, notification, review,
             and operator audit records.
           </p>

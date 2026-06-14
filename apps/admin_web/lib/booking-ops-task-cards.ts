@@ -32,12 +32,12 @@ const bookingOpsTaskDefinitions = [
   {
     type: 'PROVIDER_CONTACTED',
     label: 'Partner contacted',
-    helper: 'Confirm the partner has been reached for response, location, arrival, or service progress.',
+    helper: 'Confirm the Partner has been reached for response, location, arrival, or service progress.',
   },
   {
     type: 'LOCATION_CHECKED',
     label: 'Location checked',
-    helper: 'Confirm saved customer/partner pins are reasonable. No route or continuous tracking is used.',
+    helper: 'Confirm saved customer/Partner pins are reasonable. No route or continuous tracking is used.',
   },
   {
     type: 'PAYMENT_REVIEWED',

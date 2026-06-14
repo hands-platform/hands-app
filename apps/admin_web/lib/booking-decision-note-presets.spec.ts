@@ -25,7 +25,7 @@ describe('bookingDecisionNotePresets', () => {
     ]);
   });
 
-  it('adds a location note when service-stage bookings have no retained partner pin', () => {
+  it('adds a location note when service-stage bookings have no retained Partner pin', () => {
     const presets = bookingDecisionNotePresets({
       ...baseInput,
       bookingStatus: 'IN_SERVICE',

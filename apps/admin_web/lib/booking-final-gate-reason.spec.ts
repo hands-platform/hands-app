@@ -75,7 +75,7 @@ describe('bookingFinalGateReason', () => {
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
     });
-    expect(result.detail).toContain('3 partner(s)');
+    expect(result.detail).toContain('3 Partner(s)');
     expect(result.detail).toContain('2 marketplace participant(s)');
   });
 
@@ -103,7 +103,7 @@ describe('bookingFinalGateReason', () => {
     });
 
     expect(result).toMatchObject({
-      title: 'Final partner locked',
+      title: 'Final Partner locked',
       className: 'ops-task-done',
       pillClass: 'pill-success',
     });
@@ -132,7 +132,7 @@ describe('bookingFinalGateReason', () => {
         }),
       }),
     ).toMatchObject({
-      label: 'Final partner locked',
+      label: 'Final Partner locked',
       href: '/bookings/booking-2',
       tone: 'pill-success',
     });

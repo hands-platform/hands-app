@@ -112,7 +112,7 @@ export function bookingLocationCheckFlagsFromFacts(
     bookingCheckFlag(
       locationRequired && !input.hasProviderLocation,
       'medium',
-      'No partner location record',
+      'No Partner location record',
     ),
     bookingCheckFlag(
       locationRequired &&

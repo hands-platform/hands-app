@@ -68,7 +68,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
   if (input.bookingStatus === 'OPEN_MATCHING' && input.customerChoiceCandidates > 0 && !input.selected) {
     return {
       title: 'Customer final choice',
-      detail: `${input.customerChoiceCandidates} partner(s) can be selected by the customer, including ${input.marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final partner.`,
+      detail: `${input.customerChoiceCandidates} Partner(s) can be selected by the customer, including ${input.marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final Partner.`,
       operatorRule: 'Support the customer decision step; do not assign a partner automatically.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
@@ -91,7 +91,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
       title: 'Chat handoff gate',
       detail:
         'Customer final partner is locked, but the chat room is missing. Service coordination should wait until chat is repaired.',
-      operatorRule: 'Repair chat creation or open a support record before partner movement handoff.',
+      operatorRule: 'Repair chat creation or open a support record before Partner movement handoff.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     };
@@ -99,9 +99,9 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
 
   if (input.bookingStatus === 'MATCHED') {
     return {
-      title: 'Final partner locked',
+      title: 'Final Partner locked',
       detail:
-        'Customer final choice is complete. Continue monitoring chat, partner location handoff, and service progress.',
+        'Customer final choice is complete. Continue monitoring chat, Partner location handoff, and service progress.',
       operatorRule: 'Use the retained booking record as source of truth for operations follow-up.',
       className: 'ops-task-done',
       pillClass: 'pill-success',

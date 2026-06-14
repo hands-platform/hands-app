@@ -4,13 +4,13 @@ const baseInput = {
   bookingStatus: 'CREATED',
   participantCount: 0,
   customerChoiceCandidateCount: 0,
-  partnerLabel: 'No final partner',
+  partnerLabel: 'No final Partner',
   hasFinalPartner: false,
   hasChatRoom: false,
   messageCount: 0,
   hasLatestLocation: false,
   latestLocationFreshness: 'missing',
-  providerLocationHelper: 'No partner location yet.',
+  providerLocationHelper: 'No Partner location yet.',
   paymentStatus: 'NONE',
   cashDebtNeedsSettlement: false,
   closeoutAvailable: false,
@@ -112,7 +112,7 @@ describe('bookingOperatorCommandQueue', () => {
     });
   });
 
-  it('uses stale location copy when a saved partner location is old', () => {
+  it('uses stale location copy when a saved Partner location is old', () => {
     const queue = bookingOperatorCommandQueue({
       ...baseInput,
       bookingStatus: 'ARRIVED',

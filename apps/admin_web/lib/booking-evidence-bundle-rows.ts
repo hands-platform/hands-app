@@ -69,7 +69,7 @@ export function bookingEvidenceBundleRows(
       status: input.addressReady ? 'Locked' : 'Repair needed',
       tone: input.addressReady ? 'pill-success' : 'pill-danger',
       evidence: `${input.addressLabel} / ${input.addressSourceLabel}`,
-      operatorUse: 'Use this immutable address snapshot for partner radius checks and service evidence.',
+      operatorUse: 'Use this immutable address snapshot for Partner radius checks and service evidence.',
       href: '#address-radius-contract',
     },
     {
@@ -82,9 +82,9 @@ export function bookingEvidenceBundleRows(
           ? 'pill-warn'
           : 'pill-info',
       evidence: input.finalPartnerId
-        ? input.finalPartnerEvidenceLabel ?? 'Selected partner evidence missing'
+        ? input.finalPartnerEvidenceLabel ?? 'Selected Partner evidence missing'
         : `${input.participantCount} participant row(s), ${input.customerChoiceCandidates} customer-selectable row(s)`,
-      operatorUse: 'Confirm the customer final partner selection and marketplace/payout settlement requirements.',
+      operatorUse: 'Confirm the customer final Partner selection and marketplace/payout settlement requirements.',
       href: input.finalPartnerId ? `/partners/${input.finalPartnerId}` : '#participants',
     },
     {
