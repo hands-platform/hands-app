@@ -1,5 +1,6 @@
 import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
+import { adminOperationalPolicySettingByKey } from '../../lib/operations-policy';
 
 export function formatPolicyValue(value: unknown, unit?: string | null) {
   if (value === null || value === undefined) return '-';
@@ -19,4 +20,9 @@ export function policyDisplayValue(setting: AdminOperationalPolicySetting, recom
     setting.options?.find((option) => option.value === value)?.label ??
       formatPolicyValue(value, setting.unit),
   );
+}
+
+export function policyDisplayByKey(settings: readonly AdminOperationalPolicySetting[], key: string) {
+  const setting = adminOperationalPolicySettingByKey([...settings], key);
+  return setting ? policyDisplayValue(setting) : 'Not configured';
 }

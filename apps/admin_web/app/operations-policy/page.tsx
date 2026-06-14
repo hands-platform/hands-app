@@ -8,10 +8,7 @@ import {
 } from '../../lib/admin-api';
 import { MetricCard } from '../../components/metric-card';
 import { formatRelativeTime } from '../../lib/admin-format';
-import {
-  ADMIN_OPERATIONS_POLICY_DEFAULTS,
-  adminOperationalPolicySettingByKey,
-} from '../../lib/operations-policy';
+import { ADMIN_OPERATIONS_POLICY_DEFAULTS } from '../../lib/operations-policy';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 import { buildBookingCreateGateReview } from './booking-create-gate-review';
@@ -49,7 +46,8 @@ import { OperationsPolicyRecommendedValueReviewSection } from './operations-poli
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 import { buildOwnerDecisionPressure } from './owner-decision-pressure';
 import { operationalPolicyAuditRows } from './policy-audit-rows';
-import { policyDisplayValue } from './policy-value-display';
+import { operationsPolicyNotice } from './policy-notice';
+import { policyDisplayByKey } from './policy-value-display';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function OperationsPolicyPage({
@@ -67,7 +65,7 @@ export default async function OperationsPolicyPage({
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
-  const notice = policyNotice(params);
+  const notice = operationsPolicyNotice(params);
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook((key) => policyDisplayByKey(settings, key));
   const policySimulation = buildPolicySimulation(settings, bookings, providers);
@@ -219,36 +217,4 @@ export default async function OperationsPolicyPage({
       />
     </>
   );
-}
-
-function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: string) {
-  const setting = adminOperationalPolicySettingByKey(settings, key);
-  return setting ? policyDisplayValue(setting) : 'Not configured';
-}
-
-function policyNotice(params: Record<string, string | string[] | undefined>) {
-  const status = firstParam(params.status);
-  const reason = firstParam(params.reason);
-  if (status === 'saved') {
-    return {
-      tone: 'success' as const,
-      title: 'Operational policy saved',
-      detail: `Updated ${reason}. New bookings and partner participation checks will use the latest enforced settings.`,
-    };
-  }
-  if (status === 'blocked') {
-    return {
-      tone: 'danger' as const,
-      title: 'Policy update blocked',
-      detail:
-        reason === 'missing-value'
-          ? 'Enter a policy value before saving.'
-          : 'The API rejected this policy update. Check the allowed range and try again.',
-    };
-  }
-  return null;
-}
-
-function firstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
 }

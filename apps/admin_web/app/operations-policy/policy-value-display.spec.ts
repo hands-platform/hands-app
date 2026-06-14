@@ -1,5 +1,5 @@
 import type { AdminOperationalPolicySetting } from '../../lib/admin-api';
-import { formatPolicyValue, policyDisplayValue } from './policy-value-display';
+import { formatPolicyValue, policyDisplayByKey, policyDisplayValue } from './policy-value-display';
 
 describe('policy value display helpers', () => {
   it('formats distance and duration policy values for operators', () => {
@@ -28,5 +28,19 @@ describe('policy value display helpers', () => {
 
     expect(policyDisplayValue(setting)).toBe('Customer final confirm after accept');
     expect(policyDisplayValue(setting, true)).toBe('First accepted auto match');
+  });
+
+  it('reads display values by canonical or legacy policy key', () => {
+    const settings = [
+      {
+        key: 'matching.backup_provider_radius_meters',
+        label: 'Legacy radius',
+        unit: 'meters',
+        value: 5000,
+      },
+    ] as AdminOperationalPolicySetting[];
+
+    expect(policyDisplayByKey(settings, 'matching.marketplace_partner_radius_meters')).toBe('5 km');
+    expect(policyDisplayByKey([], 'missing.policy')).toBe('Not configured');
   });
 });

@@ -4,7 +4,6 @@ import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
-  adminOperationalPolicySettingByKey,
   adminPartnerAlertChannelRoutesToFcm,
   normalizeAdminMarketplaceOpenMode,
   readPolicyNumber,
@@ -12,7 +11,7 @@ import {
   readPolicyStringFromKeys,
 } from '../../lib/operations-policy';
 import { byNewestBooking, shortId } from './policy-booking-format';
-import { policyDisplayValue } from './policy-value-display';
+import { policyDisplayByKey } from './policy-value-display';
 
 type PolicySimulatorPartnerRow = {
   readonly id: string;
@@ -224,11 +223,6 @@ export function formatDistance(meters: number) {
     return `${Math.round(meters)} m`;
   }
   return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-}
-
-function policyDisplayByKey(settings: readonly AdminOperationalPolicySetting[], key: string) {
-  const setting = adminOperationalPolicySettingByKey([...settings], key);
-  return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
 function referenceBookingCoordinate(bookings: readonly AdminBooking[]) {

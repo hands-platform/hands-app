@@ -12,7 +12,7 @@ import {
   readBookingMatchingPolicySnapshot,
   summarizeSnapshotValues,
 } from './policy-snapshot';
-import { policyDisplayValue } from './policy-value-display';
+import { policyDisplayByKey } from './policy-value-display';
 
 export type PolicyChangeImpactDashboard = {
   readonly metrics: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
@@ -257,11 +257,6 @@ function buildSnapshotRows(
         'Used for availability explanations and partner supply planning around back-to-back bookings.',
     },
   ];
-}
-
-function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: string) {
-  const setting = adminOperationalPolicySettingByKey(settings, key);
-  return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
 function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
