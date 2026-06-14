@@ -210,83 +210,23 @@ function policyRecommendationPosture(
   }
 
   if (setting.key === 'booking.distance_gate_enabled') {
-    return {
-      status: value === 'true' ? 'Distance protected' : 'Distance disabled',
-      detail:
-        value === 'true'
-          ? 'Booking create keeps address, customer GPS, and preferred partner distance gates active.'
-          : 'Booking create can bypass distance gates. Keep this only for internal tests.',
-      operatorAction:
-        'Review blocked create attempts before changing this because customers can browse globally while booking remains local.',
-      alignedAction: 'Distance gates are active before payment authorization and matching.',
-      className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: value === recommended ? 'pill-success' : 'pill-danger',
-    };
+    return bookingDistanceGatePosture(value, recommended);
   }
 
   if (setting.key === 'booking.service_area_required') {
-    return {
-      status: value === 'true' ? 'Service area required' : 'Service area bypass',
-      detail:
-        'This controls whether selected booking addresses must be inside enabled Vietnam operating areas.',
-      operatorAction:
-        'Use setup and blocked-create evidence before relaxing this during city launch configuration.',
-      alignedAction: 'Immediate booking stays inside configured HANDS service areas.',
-      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
-    };
+    return bookingServiceAreaPosture(value, recommended);
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm) {
-    const looser =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue > numericRecommended;
-    return {
-      status: looser ? 'Wide optional GPS evidence range' : 'Baseline optional GPS evidence range',
-      detail:
-        'This records the optional customer GPS evidence threshold. Booking creation authority is the confirmed service address snapshot.',
-      operatorAction:
-        'Review optional customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
-      alignedAction:
-        'Customer GPS evidence is optional while global browsing and address-based booking stay open.',
-      className: looser ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: looser ? 'pill-warn' : 'pill-success',
-    };
+    return bookingOptionalGpsDistancePosture(numericInput);
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm) {
-    const wider =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue > numericRecommended;
-    return {
-      status: wider ? 'Wide first-pick gate' : 'Strict first-pick gate',
-      detail:
-        'This controls how far the selected first-pick Partner can be from the booking address before payment opens.',
-      operatorAction:
-        'Check Partner location coverage and rejected first-pick distance logs before widening this.',
-      alignedAction: 'First-pick partner distance matches the 50 km baseline for local direct booking.',
-      className: wider ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: wider ? 'pill-warn' : 'pill-success',
-    };
+    return bookingPreferredPartnerDistancePosture(numericInput);
   }
 
   if (setting.key === OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes) {
-    const looser =
-      Number.isFinite(numericValue) &&
-      Number.isFinite(numericRecommended) &&
-      numericValue > numericRecommended;
-    return {
-      status: looser ? 'Keeps older optional GPS evidence' : 'Optional GPS evidence baseline',
-      detail:
-        'This controls how recent optional customer GPS evidence is retained when the app can provide it.',
-      operatorAction:
-        'Verify address search and optional current-location capture before changing evidence freshness.',
-      alignedAction: 'Optional customer GPS evidence matches the 10 minute support-evidence baseline.',
-      className: looser ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: looser ? 'pill-warn' : 'pill-success',
-    };
+    return bookingCurrentLocationFreshnessPosture(numericInput);
   }
 
   return {
@@ -409,6 +349,89 @@ function walletNegativeGatePosture(value: string): PolicyRecommendationPosture {
     alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
     className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
     pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
+  };
+}
+
+function bookingDistanceGatePosture(
+  value: string,
+  recommended: string,
+): PolicyRecommendationPosture {
+  return {
+    status: value === 'true' ? 'Distance protected' : 'Distance disabled',
+    detail:
+      value === 'true'
+        ? 'Booking create keeps address, customer GPS, and preferred partner distance gates active.'
+        : 'Booking create can bypass distance gates. Keep this only for internal tests.',
+    operatorAction:
+      'Review blocked create attempts before changing this because customers can browse globally while booking remains local.',
+    alignedAction: 'Distance gates are active before payment authorization and matching.',
+    className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
+    pillClass: value === recommended ? 'pill-success' : 'pill-danger',
+  };
+}
+
+function bookingServiceAreaPosture(
+  value: string,
+  recommended: string,
+): PolicyRecommendationPosture {
+  return {
+    status: value === 'true' ? 'Service area required' : 'Service area bypass',
+    detail:
+      'This controls whether selected booking addresses must be inside enabled Vietnam operating areas.',
+    operatorAction:
+      'Use setup and blocked-create evidence before relaxing this during city launch configuration.',
+    alignedAction: 'Immediate booking stays inside configured HANDS service areas.',
+    className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+    pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+  };
+}
+
+function bookingOptionalGpsDistancePosture(
+  input: PolicyRecommendationNumericInput,
+): PolicyRecommendationPosture {
+  const looser = finiteGreaterThan(input);
+  return {
+    status: looser ? 'Wide optional GPS evidence range' : 'Baseline optional GPS evidence range',
+    detail:
+      'This records the optional customer GPS evidence threshold. Booking creation authority is the confirmed service address snapshot.',
+    operatorAction:
+      'Review optional customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
+    alignedAction:
+      'Customer GPS evidence is optional while global browsing and address-based booking stay open.',
+    className: looser ? 'ops-task-pending' : 'ops-task-done',
+    pillClass: looser ? 'pill-warn' : 'pill-success',
+  };
+}
+
+function bookingPreferredPartnerDistancePosture(
+  input: PolicyRecommendationNumericInput,
+): PolicyRecommendationPosture {
+  const wider = finiteGreaterThan(input);
+  return {
+    status: wider ? 'Wide first-pick gate' : 'Strict first-pick gate',
+    detail:
+      'This controls how far the selected first-pick Partner can be from the booking address before payment opens.',
+    operatorAction:
+      'Check Partner location coverage and rejected first-pick distance logs before widening this.',
+    alignedAction: 'First-pick partner distance matches the 50 km baseline for local direct booking.',
+    className: wider ? 'ops-task-pending' : 'ops-task-done',
+    pillClass: wider ? 'pill-warn' : 'pill-success',
+  };
+}
+
+function bookingCurrentLocationFreshnessPosture(
+  input: PolicyRecommendationNumericInput,
+): PolicyRecommendationPosture {
+  const looser = finiteGreaterThan(input);
+  return {
+    status: looser ? 'Keeps older optional GPS evidence' : 'Optional GPS evidence baseline',
+    detail:
+      'This controls how recent optional customer GPS evidence is retained when the app can provide it.',
+    operatorAction:
+      'Verify address search and optional current-location capture before changing evidence freshness.',
+    alignedAction: 'Optional customer GPS evidence matches the 10 minute support-evidence baseline.',
+    className: looser ? 'ops-task-pending' : 'ops-task-done',
+    pillClass: looser ? 'pill-warn' : 'pill-success',
   };
 }
 
