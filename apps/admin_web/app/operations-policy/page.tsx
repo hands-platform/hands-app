@@ -47,6 +47,7 @@ import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
 import { OperationsPolicyActionGateChecklistSection } from './operations-policy-action-gate-checklist-section';
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
+import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
@@ -184,30 +185,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyOutcomeEffectSection analysis={policyEffectAnalysis} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Policy enforcement trace</h2>
-            <p className="muted">
-              Shows where each operating decision is enforced today, so operators know whether a policy change
-              affects customer matching, partner acceptance, notifications, or finance gates.
-            </p>
-          </div>
-          <span className="pill pill-info">{policyEnforcementTrace.length} enforced lane(s)</span>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {policyEnforcementTrace.map((item) => (
-            <div className="ops-task-card ops-task-done" key={item.title}>
-              <span className="pill pill-success">{item.scope}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <small>{`API touchpoint: ${item.api}`}</small>
-              <small>{`Server owner: ${item.server}`}</small>
-              <small>{item.verify}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyEnforcementTraceSection trace={policyEnforcementTrace} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
