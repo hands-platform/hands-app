@@ -586,7 +586,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const adjustedProviderPrices = readNumber(metadata.adjustedProviderPrices);
   if (adjustedProviderPrices !== null && adjustedProviderPrices > 0) {
     highlights.push({
-      label: `${adjustedProviderPrices} partner price(s) adjusted`,
+      label: `${adjustedProviderPrices} Partner price(s) adjusted`,
       className: 'pill pill-warn',
     });
   }
@@ -765,7 +765,7 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'first-pick partner too far';
+    return 'first-pick Partner too far';
   }
   if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'address outside service area';
@@ -950,7 +950,7 @@ function relatedBoardLabel(log: AdminAuditLog) {
     return 'Audit';
   }
   if (href.startsWith('/partners/')) {
-    return 'partner detail';
+    return 'Partner detail';
   }
   if (href.startsWith('/bookings/')) {
     return 'booking detail';

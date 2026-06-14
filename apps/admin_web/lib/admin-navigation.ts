@@ -24,12 +24,12 @@ export const adminShiftFlow: AdminNavLink[] = [
   {
     href: '/bookings?view=marketplace',
     label: 'Marketplace',
-    description: 'Watch 10km partner participation and customer choice.',
+    description: 'Watch 10km Partner participation and customer choice.',
   },
   {
     href: '/cash-settlements',
     label: 'Cash Debt',
-    description: 'Clear partner wallet debt from cash bookings.',
+    description: 'Clear Partner wallet debt from cash bookings.',
   },
   {
     href: '/operations-handoff',
@@ -46,7 +46,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/',
         label: 'Command Dashboard',
-        description: 'Top-level booking, finance, partner, customer, and setup signals.',
+        description: 'Top-level booking, finance, Partner, customer, and setup signals.',
       },
       {
         href: '/operations-handoff',
@@ -56,7 +56,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/app-sessions',
         label: 'App Presence',
-        description: 'Customers and partners currently or recently active in the apps.',
+        description: 'Customers and Partners currently or recently active in the apps.',
       },
       {
         href: '/notifications?review=failed',
@@ -87,12 +87,12 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/bookings?view=customer-choice',
         label: 'Customer Choice',
-        description: 'Bookings waiting for the customer to select the final partner.',
+        description: 'Bookings waiting for the customer to select the final Partner.',
       },
       {
         href: '/bookings?view=marketplace',
         label: '10km Marketplace',
-        description: 'Eligible partner participation around the booking address.',
+        description: 'Eligible Partner participation around the booking address.',
       },
       {
         href: '/bookings?view=chat-repair',
@@ -113,7 +113,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/partners',
         label: 'Partner List',
-        description: 'List and detail records for every partner.',
+        description: 'List and detail records for every Partner.',
       },
       {
         href: '/partners?review=kyc',
@@ -133,7 +133,7 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/partner-controls',
         label: 'Partner Controls',
-        description: 'Manual partner state, hold, and account controls.',
+        description: 'Manual Partner state, hold, and account controls.',
       },
     ],
   },
