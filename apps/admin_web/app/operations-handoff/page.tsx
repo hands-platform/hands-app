@@ -24,12 +24,8 @@ import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { addOperationsHandoffNote } from './actions';
 import {
-  asRecord,
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
-  humanizeAction,
-  relatedHref,
-  stringValue,
 } from './operations-handoff-activity-stream';
 import {
   ACTIVE_BOOKING_STATUSES,
@@ -42,6 +38,7 @@ import { buildFinanceHandoffActionMap } from './operations-handoff-finance-actio
 import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
+import { buildOperatorNotes } from './operations-handoff-operator-notes';
 import {
   buildHandoffReadinessChecklist,
   countOpenHandoffChecklistItems,
@@ -633,32 +630,6 @@ export default async function OperationsHandoffPage({
       </section>
     </>
   );
-}
-
-function buildOperatorNotes(logs: AdminAuditLog[]) {
-  return logs
-    .filter((log) => log.action.endsWith('.ops_note.add') || log.action === 'operations.handoff_note.add')
-    .map((log) => {
-      const metadata = asRecord(log.metadata);
-      const area =
-        log.action === 'operations.handoff_note.add'
-          ? 'Shift'
-          : log.action.startsWith('booking')
-            ? 'Booking'
-            : log.action.startsWith('customer')
-              ? 'Customer'
-              : 'Partner';
-      return {
-        id: log.id,
-        area,
-        note: operatorDisplayText(
-          stringValue(metadata.note) ?? stringValue(metadata.preset) ?? humanizeAction(log.action),
-        ),
-        href: relatedHref(log),
-        actor: log.actor?.fullName ?? log.actor?.phone ?? 'System',
-        createdAt: log.createdAt,
-      };
-    });
 }
 
 function buildShiftBriefItems(input: {
