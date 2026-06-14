@@ -75,6 +75,8 @@ export function buildCustomerSignals(customers: readonly AdminCustomer[]) {
     .sort((a, b) => b.sortTime - a.sortTime);
 }
 
+export type CustomerSignalRow = ReturnType<typeof buildCustomerSignals>[number];
+
 export function buildPartnerSignals(
   partners: readonly AdminProvider[],
   cashSummary: AdminCashSettlementSummary,
@@ -132,6 +134,8 @@ export function buildPartnerSignals(
     .sort((a, b) => b.sortPriority - a.sortPriority);
   return { rows, attentionCount: rows.filter((row) => row.attention).length };
 }
+
+export type PartnerSignalRow = ReturnType<typeof buildPartnerSignals>['rows'][number];
 
 function recentlyChangedWithin(value: string | null | undefined, nowMs: number, minutes = 120) {
   const timestamp = dateValue(value);
