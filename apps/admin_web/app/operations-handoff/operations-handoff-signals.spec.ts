@@ -127,6 +127,38 @@ describe('operations handoff signal models', () => {
       className: 'pill pill-warn',
     });
   });
+
+  it('labels Partner bank review, stale location, and fresh location postures', () => {
+    const nowMs = Date.parse('2026-06-14T10:00:00.000Z');
+    const signals = buildPartnerSignals(
+      [
+        partner({
+          bankAccounts: [
+            { status: 'SUBMITTED' } as NonNullable<AdminProvider['bankAccounts']>[number],
+          ],
+          currentLocationUpdatedAt: '2026-06-14T09:45:00.000Z',
+          id: 'partner-bank',
+        }),
+        partner({
+          currentLocationUpdatedAt: '2026-06-14T01:00:00.000Z',
+          id: 'partner-stale',
+        }),
+        partner({
+          currentLocationUpdatedAt: '2026-06-14T09:55:00.000Z',
+          id: 'partner-fresh',
+        }),
+      ],
+      cashSummary({}),
+      { nowMs },
+    );
+
+    expect(signals.attentionCount).toBe(2);
+    expect(signals.rows.map((row) => [row.id, row.status, row.className, row.attention])).toEqual([
+      ['partner-bank', 'Bank review', 'pill pill-warn', true],
+      ['partner-stale', 'Location stale', 'pill pill-success', true],
+      ['partner-fresh', 'Location fresh', 'pill pill-success', false],
+    ]);
+  });
 });
 
 function booking(input: Partial<AdminBooking>): AdminBooking {

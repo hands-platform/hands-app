@@ -12,6 +12,15 @@ type SignalTimeOptions = {
   readonly nowMs?: number;
 };
 
+type PartnerSignalFacts = {
+  readonly hasCashDebt: boolean;
+  readonly hasKycPending: boolean;
+  readonly hasBankPending: boolean;
+  readonly hasFreshLocation: boolean;
+};
+
+const PENDING_REVIEW_STATUSES = new Set(['pending', 'PENDING', 'SUBMITTED']);
+
 export function buildChatSignals(
   bookings: readonly AdminBooking[],
   options: SignalTimeOptions = {},
@@ -86,49 +95,22 @@ export function buildPartnerSignals(
   const cashDebtPartnerIds = new Set(cashSummary.topProviderGroups.map((group) => group.providerProfileId));
   const rows = partners
     .map((partner) => {
-      const hasCashDebt = cashDebtPartnerIds.has(partner.id);
-      const hasKycPending = ['pending', 'PENDING', 'SUBMITTED'].includes(partner.kyc?.status ?? '');
-      const hasBankPending = (partner.bankAccounts ?? []).some((account) =>
-        ['pending', 'PENDING', 'SUBMITTED'].includes(account.status),
-      );
-      const hasFreshLocation = recentlyChangedWithin(partner.currentLocationUpdatedAt, nowMs, 30);
+      const facts = partnerSignalFacts(partner, cashDebtPartnerIds, nowMs);
+      const posture = partnerSignalPosture(facts);
       const completed = (partner.selectedBookings ?? []).filter(
         (booking) => booking.status === 'COMPLETED',
       ).length;
-      const status = hasCashDebt
-        ? 'Cash settlement'
-        : hasKycPending
-          ? 'KYC review'
-          : hasBankPending
-            ? 'Bank review'
-            : hasFreshLocation
-              ? 'Location fresh'
-              : 'Location stale';
       return {
         id: partner.id,
         name: operatorDisplayText(
           partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner',
         ),
-        status,
+        status: posture.status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
-        action: hasCashDebt
-          ? 'Open cash settlement before marketplace alerts, participation, or payout release.'
-          : hasKycPending
-            ? 'Open Partner documents for review.'
-            : hasBankPending
-              ? 'Open payout account review.'
-              : 'Continue normal operational watch.',
-        className: hasCashDebt
-          ? 'pill pill-danger'
-          : hasKycPending || hasBankPending
-            ? 'pill pill-warn'
-            : 'pill pill-success',
-        attention: hasCashDebt || hasKycPending || hasBankPending || !hasFreshLocation,
-        sortPriority:
-          (hasCashDebt ? 5 : 0) +
-          (hasKycPending ? 3 : 0) +
-          (hasBankPending ? 2 : 0) +
-          (!hasFreshLocation ? 1 : 0),
+        action: posture.action,
+        className: posture.className,
+        attention: posture.attention,
+        sortPriority: posture.sortPriority,
       };
     })
     .sort((a, b) => b.sortPriority - a.sortPriority);
@@ -136,6 +118,71 @@ export function buildPartnerSignals(
 }
 
 export type PartnerSignalRow = ReturnType<typeof buildPartnerSignals>['rows'][number];
+
+function partnerSignalFacts(
+  partner: AdminProvider,
+  cashDebtPartnerIds: ReadonlySet<string>,
+  nowMs: number,
+): PartnerSignalFacts {
+  return {
+    hasCashDebt: cashDebtPartnerIds.has(partner.id),
+    hasKycPending: hasPendingReviewStatus(partner.kyc?.status),
+    hasBankPending: (partner.bankAccounts ?? []).some((account) =>
+      hasPendingReviewStatus(account.status),
+    ),
+    hasFreshLocation: recentlyChangedWithin(partner.currentLocationUpdatedAt, nowMs, 30),
+  };
+}
+
+function partnerSignalPosture(facts: PartnerSignalFacts) {
+  const sortPriority =
+    (facts.hasCashDebt ? 5 : 0) +
+    (facts.hasKycPending ? 3 : 0) +
+    (facts.hasBankPending ? 2 : 0) +
+    (!facts.hasFreshLocation ? 1 : 0);
+
+  if (facts.hasCashDebt) {
+    return {
+      action: 'Open cash settlement before marketplace alerts, participation, or payout release.',
+      attention: true,
+      className: 'pill pill-danger',
+      sortPriority,
+      status: 'Cash settlement',
+    };
+  }
+
+  if (facts.hasKycPending) {
+    return {
+      action: 'Open Partner documents for review.',
+      attention: true,
+      className: 'pill pill-warn',
+      sortPriority,
+      status: 'KYC review',
+    };
+  }
+
+  if (facts.hasBankPending) {
+    return {
+      action: 'Open payout account review.',
+      attention: true,
+      className: 'pill pill-warn',
+      sortPriority,
+      status: 'Bank review',
+    };
+  }
+
+  return {
+    action: 'Continue normal operational watch.',
+    attention: !facts.hasFreshLocation,
+    className: 'pill pill-success',
+    sortPriority,
+    status: facts.hasFreshLocation ? 'Location fresh' : 'Location stale',
+  };
+}
+
+function hasPendingReviewStatus(status?: string | null) {
+  return PENDING_REVIEW_STATUSES.has(status ?? '');
+}
 
 function recentlyChangedWithin(value: string | null | undefined, nowMs: number, minutes = 120) {
   const timestamp = dateValue(value);
