@@ -47,6 +47,7 @@ import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
 import { OperationsPolicyActionGateChecklistSection } from './operations-policy-action-gate-checklist-section';
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
+import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -172,62 +173,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyRecommendedValueReviewSection review={recommendationReview} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Final partner choice control matrix</h2>
-            <p className="muted">
-              Current owner choices for the direct booking window, marketplace participation, partner push
-              reach, and the negative wallet marketplace/payout gate. This is the screen operators should
-              check before changing the mobile flow.
-            </p>
-          </div>
-          <span className={`pill ${acceptanceMatrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
-            {acceptanceMatrix.blockingCount} control choice(s)
-          </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {acceptanceMatrix.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {acceptanceMatrix.cards.map((card) => (
-            <div className={`ops-task-card ${card.className}`} key={card.title}>
-              <span className={`pill ${card.pillClass}`}>{card.status}</span>
-              <h3>{card.title}</h3>
-              <p>{card.detail}</p>
-              <small>{card.operatorAction}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-section-header admin-mt-18">
-          <div>
-            <h3>Current partner acceptance impact</h3>
-            <p className="muted">
-              Applies the policy posture to the current partner snapshot so operators can see who can pass
-              marketplace and payout gates, who needs account or identity follow-up, and who only needs
-              readiness follow-up.
-            </p>
-          </div>
-          <Link className="text-link" href="/partners">
-            Open partner queue
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {acceptanceMatrix.impact.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
