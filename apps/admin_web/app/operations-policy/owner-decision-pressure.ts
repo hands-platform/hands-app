@@ -19,12 +19,47 @@ type OwnerDecisionAcceptanceMatrix = {
   readonly blockingCount: number;
 };
 
+type OwnerDecisionPressureStats = {
+  readonly acceptedButNotFinal: readonly AdminBooking[];
+  readonly activeBookings: readonly AdminBooking[];
+  readonly backupInterest: readonly AdminBooking[];
+  readonly currentVisibleSupply: number;
+  readonly enabledPushPartners: number;
+  readonly finalGatePressure: number;
+  readonly onlinePartners: number;
+  readonly openMatching: readonly AdminBooking[];
+  readonly pushGap: number;
+  readonly staleExcluded: number;
+  readonly waitingFirstPick: readonly AdminBooking[];
+};
+
 export function buildOwnerDecisionPressure(
   bookings: readonly AdminBooking[],
   providers: readonly AdminProvider[],
   supplySensitivity: PolicySupplySensitivity,
   acceptanceMatrix: OwnerDecisionAcceptanceMatrix,
 ): OwnerDecisionPressure {
+  const stats = buildOwnerDecisionPressureStats(
+    bookings,
+    providers,
+    supplySensitivity,
+    acceptanceMatrix,
+  );
+  const cards = buildOwnerDecisionPressureCards(stats);
+
+  return {
+    alertCount: cards.filter((card) => card.className !== 'ops-task-done').length,
+    summary: buildOwnerDecisionPressureSummary(stats, supplySensitivity),
+    cards,
+  };
+}
+
+function buildOwnerDecisionPressureStats(
+  bookings: readonly AdminBooking[],
+  providers: readonly AdminProvider[],
+  supplySensitivity: PolicySupplySensitivity,
+  acceptanceMatrix: OwnerDecisionAcceptanceMatrix,
+): OwnerDecisionPressureStats {
   const activeStatuses = new Set([
     'OPEN_MATCHING',
     'MATCHED',
@@ -63,94 +98,111 @@ export function buildOwnerDecisionPressure(
   const pushGap = Math.max(onlinePartners - enabledPushPartners, 0);
   const finalGatePressure = acceptanceMatrix.blockingCount + finalGateHeldInRadius;
 
-  const cards = [
+  return {
+    acceptedButNotFinal,
+    activeBookings,
+    backupInterest,
+    currentVisibleSupply,
+    enabledPushPartners,
+    finalGatePressure,
+    onlinePartners,
+    openMatching,
+    pushGap,
+    staleExcluded,
+    waitingFirstPick,
+  };
+}
+
+function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): OwnerDecisionPressure['cards'] {
+  return [
     {
       title: 'First-pick response window',
-      status: waitingFirstPick.length ? 'Monitor now' : 'Stable',
-      detail: waitingFirstPick.length
-        ? `${waitingFirstPick.length} open matching booking(s) are waiting on a first-pick Partner. ${acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
+      status: stats.waitingFirstPick.length ? 'Monitor now' : 'Stable',
+      detail: stats.waitingFirstPick.length
+        ? `${stats.waitingFirstPick.length} open matching booking(s) are waiting on a first-pick Partner. ${stats.acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
         : 'No open booking is currently waiting on the first-pick response window.',
-      operatorAction: waitingFirstPick.length
+      operatorAction: stats.waitingFirstPick.length
         ? 'Review matching wait time before shortening or extending the timer.'
         : 'Keep the launch baseline unless new wait-time data changes.',
       href: '/bookings?view=matching',
-      className: waitingFirstPick.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: waitingFirstPick.length ? 'pill-warn' : 'pill-success',
+      className: stats.waitingFirstPick.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: stats.waitingFirstPick.length ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Marketplace policy and supply',
-      status: currentVisibleSupply > 0 ? 'Supply visible' : 'Supply thin',
-      detail: `${currentVisibleSupply} visible Partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
+      status: stats.currentVisibleSupply > 0 ? 'Supply visible' : 'Supply thin',
+      detail: `${stats.currentVisibleSupply} visible Partner(s) are inside the current policy sample. ${stats.backupInterest.length} open booking(s) already show marketplace interest.`,
       operatorAction:
-        currentVisibleSupply > 0
+        stats.currentVisibleSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
           : 'Refresh Partner locations or consider city/service supply rules before launch.',
       href: '/partners?review=marketplace-ready',
-      className: currentVisibleSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: currentVisibleSupply > 0 ? 'pill-success' : 'pill-danger',
+      className: stats.currentVisibleSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: stats.currentVisibleSupply > 0 ? 'pill-success' : 'pill-danger',
     },
     {
       title: 'Location freshness rule',
-      status: staleExcluded ? 'Refresh needed' : 'Fresh enough',
-      detail: `${staleExcluded} Partner(s) are excluded only because their saved location is stale under the current freshness window.`,
-      operatorAction: staleExcluded
+      status: stats.staleExcluded ? 'Refresh needed' : 'Fresh enough',
+      detail: `${stats.staleExcluded} Partner(s) are excluded only because their saved location is stale under the current freshness window.`,
+      operatorAction: stats.staleExcluded
         ? 'Ask Partners to open the app and send location before loosening freshness rules.'
         : 'Current location freshness is not excluding supply in the sample.',
       href: '/partners?review=location',
-      className: staleExcluded ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: staleExcluded ? 'pill-warn' : 'pill-success',
+      className: stats.staleExcluded ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: stats.staleExcluded ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Wallet and marketplace holds',
-      status: finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${finalGatePressure} Partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
-      operatorAction: finalGatePressure
+      status: stats.finalGatePressure ? 'Gate active' : 'Clear',
+      detail: `${stats.finalGatePressure} Partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
+      operatorAction: stats.finalGatePressure
         ? 'Keep marketplace visibility open while finance and Partner controls clear marketplace and payout holds.'
         : 'No current sample pressure to relax marketplace gates.',
-      href: finalGatePressure ? '/partners?review=marketplace-held' : '/partner-controls',
-      className: finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: finalGatePressure ? 'pill-danger' : 'pill-success',
+      href: stats.finalGatePressure ? '/partners?review=marketplace-held' : '/partner-controls',
+      className: stats.finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: stats.finalGatePressure ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Partner FCM readiness',
-      status: pushGap ? 'Push gap' : 'Ready',
-      detail: `${enabledPushPartners}/${onlinePartners} online Partner(s) have enabled push devices in the current snapshot.`,
-      operatorAction: pushGap
+      status: stats.pushGap ? 'Push gap' : 'Ready',
+      detail: `${stats.enabledPushPartners}/${stats.onlinePartners} online Partner(s) have enabled push devices in the current snapshot.`,
+      operatorAction: stats.pushGap
         ? 'Keep in-app request listing as the fallback until FCM device coverage is reliable.'
         : 'Push coverage is ready enough for production-device testing.',
       href: '/notifications?review=failed',
-      className: pushGap ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: pushGap ? 'pill-warn' : 'pill-success',
+      className: stats.pushGap ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: stats.pushGap ? 'pill-warn' : 'pill-success',
     },
   ];
+}
 
-  return {
-    alertCount: cards.filter((card) => card.className !== 'ops-task-done').length,
-    summary: [
-      {
-        label: 'Open matching',
-        value: String(openMatching.length),
-        helper: 'Bookings where customers are waiting for Partner response or final choice.',
-      },
-      {
-        label: 'Active service flow',
-        value: String(activeBookings.length),
-        helper: 'Matched, on-the-way, arrived, or in-service bookings affected by operator decisions.',
-      },
-      {
-        label: 'Visible supply',
-        value: String(currentVisibleSupply),
-        helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
-      },
-      {
-        label: 'Marketplace/payout holds',
-        value: String(finalGatePressure),
-        helper:
-          'Wallet, identity, bank, or account-control records that change marketplace or payout readiness.',
-      },
-    ],
-    cards,
-  };
+function buildOwnerDecisionPressureSummary(
+  stats: OwnerDecisionPressureStats,
+  supplySensitivity: PolicySupplySensitivity,
+): OwnerDecisionPressure['summary'] {
+  return [
+    {
+      label: 'Open matching',
+      value: String(stats.openMatching.length),
+      helper: 'Bookings where customers are waiting for Partner response or final choice.',
+    },
+    {
+      label: 'Active service flow',
+      value: String(stats.activeBookings.length),
+      helper: 'Matched, on-the-way, arrived, or in-service bookings affected by operator decisions.',
+    },
+    {
+      label: 'Visible supply',
+      value: String(stats.currentVisibleSupply),
+      helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
+    },
+    {
+      label: 'Marketplace/payout holds',
+      value: String(stats.finalGatePressure),
+      helper:
+        'Wallet, identity, bank, or account-control records that change marketplace or payout readiness.',
+    },
+  ];
 }
 
 function readSupplySummaryNumber(supplySensitivity: PolicySupplySensitivity, label: string) {
