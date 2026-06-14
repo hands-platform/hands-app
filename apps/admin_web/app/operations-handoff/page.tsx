@@ -14,7 +14,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { formatDateTime, formatMoney, formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
+import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   formatFcmSentDeliveryDetail,
   latestFcmSentNotificationDelivery,
@@ -36,6 +36,7 @@ import { OperationsHandoffBookingQueueSection } from './operations-handoff-booki
 import { OperationsHandoffCustomerPartnerSection } from './operations-handoff-customer-partner-section';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { buildFinanceHandoffActionMap } from './operations-handoff-finance-actions';
+import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
 import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
@@ -320,65 +321,7 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffCustomerPartnerSection customers={customerSignals} partners={partnerSignals.rows} />
 
-      <section className="card">
-        <div className="toolbar">
-          <div>
-            <h2>Finance and chat closeout</h2>
-            <p className="muted">
-              Cash debt, payout evidence, and chat records that an operator should not lose at handoff.
-            </p>
-          </div>
-          <div className="actions">
-            <Link className="text-link" href="/cash-settlements">
-              Cash settlements
-            </Link>
-            <Link className="text-link" href="/payouts">
-              Payouts
-            </Link>
-          </div>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Booking</th>
-              <th>Gross</th>
-              <th>HANDS fee</th>
-              <th>Withholding</th>
-              <th>Wallet effect</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {financeRows.slice(0, 12).map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <Link className="text-link" href={`/partners/${row.providerId}`}>
-                    {row.partnerName}
-                  </Link>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.bookingId}`}>
-                    {shortDisplayId(row.bookingId)}
-                  </Link>
-                </td>
-                <td>{formatMoney(row.grossAmount, row.currency)}</td>
-                <td>{formatMoney(row.platformFee, row.currency)}</td>
-                <td>{formatMoney(row.withholdingAmount, row.currency)}</td>
-                <td>{formatMoney(row.netAmount, row.currency)}</td>
-                <td>
-                  <span className={row.statusClass}>{row.status}</span>
-                </td>
-              </tr>
-            ))}
-            {financeRows.length === 0 ? (
-              <tr>
-                <td colSpan={7}>No finance rows need handoff.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
     </>
   );
 }

@@ -23,6 +23,8 @@ export function buildFinanceRows(earnings: readonly AdminEarning[]) {
     }));
 }
 
+export type FinanceHandoffRow = ReturnType<typeof buildFinanceRows>[number];
+
 function financeRowStatusClass(earning: AdminEarning) {
   if (earning.netAmount < 0) {
     return 'pill pill-danger';
