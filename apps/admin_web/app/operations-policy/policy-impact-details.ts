@@ -18,102 +18,106 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
   return POLICY_IMPACT_DETAILS[impactKey] ?? FALLBACK_POLICY_IMPACT_DETAILS;
 }
 
+const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
+  [OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled]: {
+    area: 'Booking create gate',
+    title: 'Controls whether local booking distance checks are enforced',
+    detail:
+      'When enabled, booking creation checks the preferred partner distance against the selected service address before payment authorization. Customer GPS is optional evidence only.',
+    saveChecks: [
+      {
+        label: 'Blocked create attempts',
+        detail:
+          'Review booking create rejections before disabling or re-enabling this gate, because customers can still browse globally while booking remains local.',
+        href: '/bookings?view=blocked-create',
+      },
+      {
+        label: 'Audit evidence',
+        detail: 'Confirm recent rejected creates include clear address and distance evidence for support.',
+        href: '/audit-log?query=booking.create.rejected',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired]: {
+    area: 'Booking create gate',
+    title: 'Controls whether booking addresses must be inside enabled Vietnam service areas',
+    detail:
+      'Customers may browse partner profiles for context, but immediate booking should only open at confirmed Vietnam service addresses while service-area enforcement is enabled.',
+    saveChecks: [
+      {
+        label: 'Service area launch list',
+        detail: 'Confirm the target Vietnam province or district is enabled before relaxing this control.',
+        href: '/setup',
+      },
+      {
+        label: 'Blocked create attempts',
+        detail: 'Check whether failed bookings are caused by missing service area configuration.',
+        href: '/bookings?view=blocked-create',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm]: {
+    area: 'Booking create gate',
+    title: 'Records optional customer GPS-to-service-address evidence',
+    detail:
+      'Optional customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
+    saveChecks: [
+      {
+        label: 'Optional GPS rows',
+        detail:
+          'Review historical rejected booking attempts where optional customer GPS evidence looked far from the booking address.',
+        href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+      },
+      {
+        label: 'Customer support queue',
+        detail:
+          'Check whether customers are selecting distant addresses because GPS failed or address search was unclear.',
+        href: '/customers',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm]: {
+    area: 'Booking create gate',
+    title: 'Controls preferred first-pick Partner distance',
+    detail:
+      'The customer-selected first-pick Partner must be close enough to the booking address before the booking can authorize payment and open matching.',
+    saveChecks: [
+      {
+        label: 'First-pick distance rejects',
+        detail:
+          'Review rejected booking attempts where the selected first-pick Partner was too far from the booking address.',
+        href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
+      },
+      {
+        label: 'Partner location coverage',
+        detail: 'Check whether partners have fresh last locations in the city before widening this limit.',
+        href: '/partners?review=location',
+      },
+    ],
+  },
+  [OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes]: {
+    area: 'Booking create gate',
+    title: 'Records optional current customer GPS freshness',
+    detail:
+      'The app may attach recent customer GPS evidence when available. Booking must not require current GPS; the confirmed Vietnam service address remains the authority.',
+    saveChecks: [
+      {
+        label: 'Optional GPS evidence rows',
+        detail: 'Review historical GPS-related rows as support evidence, not as a current booking blocker.',
+        href: '/bookings?view=blocked-create',
+      },
+      {
+        label: 'Address selection flow',
+        detail:
+          'Confirm customers can still search and confirm a Vietnam service address when GPS is denied.',
+        href: '/setup',
+      },
+    ],
+  },
+};
+
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
-    [OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled]: {
-      area: 'Booking create gate',
-      title: 'Controls whether local booking distance checks are enforced',
-      detail:
-        'When enabled, booking creation checks the preferred partner distance against the selected service address before payment authorization. Customer GPS is optional evidence only.',
-      saveChecks: [
-        {
-          label: 'Blocked create attempts',
-          detail:
-            'Review booking create rejections before disabling or re-enabling this gate, because customers can still browse globally while booking remains local.',
-          href: '/bookings?view=blocked-create',
-        },
-        {
-          label: 'Audit evidence',
-          detail: 'Confirm recent rejected creates include clear address and distance evidence for support.',
-          href: '/audit-log?query=booking.create.rejected',
-        },
-      ],
-    },
-    [OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired]: {
-      area: 'Booking create gate',
-      title: 'Controls whether booking addresses must be inside enabled Vietnam service areas',
-      detail:
-        'Customers may browse partner profiles for context, but immediate booking should only open at confirmed Vietnam service addresses while service-area enforcement is enabled.',
-      saveChecks: [
-        {
-          label: 'Service area launch list',
-          detail: 'Confirm the target Vietnam province or district is enabled before relaxing this control.',
-          href: '/setup',
-        },
-        {
-          label: 'Blocked create attempts',
-          detail: 'Check whether failed bookings are caused by missing service area configuration.',
-          href: '/bookings?view=blocked-create',
-        },
-      ],
-    },
-    [OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm]: {
-      area: 'Booking create gate',
-      title: 'Records optional customer GPS-to-service-address evidence',
-      detail:
-        'Optional customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
-      saveChecks: [
-        {
-          label: 'Optional GPS rows',
-          detail:
-            'Review historical rejected booking attempts where optional customer GPS evidence looked far from the booking address.',
-          href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
-        },
-        {
-          label: 'Customer support queue',
-          detail:
-            'Check whether customers are selecting distant addresses because GPS failed or address search was unclear.',
-          href: '/customers',
-        },
-      ],
-    },
-    [OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm]: {
-      area: 'Booking create gate',
-      title: 'Controls preferred first-pick Partner distance',
-      detail:
-        'The customer-selected first-pick Partner must be close enough to the booking address before the booking can authorize payment and open matching.',
-      saveChecks: [
-        {
-          label: 'First-pick distance rejects',
-          detail:
-            'Review rejected booking attempts where the selected first-pick Partner was too far from the booking address.',
-          href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
-        },
-        {
-          label: 'Partner location coverage',
-          detail: 'Check whether partners have fresh last locations in the city before widening this limit.',
-          href: '/partners?review=location',
-        },
-      ],
-    },
-    [OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes]: {
-      area: 'Booking create gate',
-      title: 'Records optional current customer GPS freshness',
-      detail:
-        'The app may attach recent customer GPS evidence when available. Booking must not require current GPS; the confirmed Vietnam service address remains the authority.',
-      saveChecks: [
-        {
-          label: 'Optional GPS evidence rows',
-          detail: 'Review historical GPS-related rows as support evidence, not as a current booking blocker.',
-          href: '/bookings?view=blocked-create',
-        },
-        {
-          label: 'Address selection flow',
-          detail:
-            'Confirm customers can still search and confirm a Vietnam service address when GPS is denied.',
-          href: '/setup',
-        },
-      ],
-    },
+    ...BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS,
     'matching.provider_response_window_minutes': {
       area: 'Booking timer',
       title: 'Affects new booking expiry windows',
