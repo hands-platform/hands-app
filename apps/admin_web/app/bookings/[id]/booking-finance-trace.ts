@@ -100,7 +100,7 @@ export function bookingFinanceTrace(booking: AdminBookingDetail) {
       ? `${money(readAmount(servicePayoutLine.customerPrice), currency)} customer -> ${money(
           readAmount(servicePayoutLine.providerPayoutAmount),
           currency,
-        )} partner`
+        )} Partner`
       : payoutRule
         ? `Active rule ${shortId(payoutRule.id)}`
         : 'No matching rule line',

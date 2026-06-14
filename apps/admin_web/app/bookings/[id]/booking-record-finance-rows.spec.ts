@@ -8,7 +8,7 @@ describe('booking record finance rows', () => {
       customerPrice: '500.000 VND',
       adminMinimum: '400.000 VND',
       payoutRuleStatus: '500.000 VND active',
-      payoutRuleLine: '500.000 VND customer -> 350.000 VND partner',
+      payoutRuleLine: '500.000 VND customer -> 350.000 VND Partner',
       providerPayout: '350.000 VND',
       platformFee: '150.000 VND logged',
       feeCosts: '10.000 VND VAT / 5.000 VND other',

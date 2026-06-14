@@ -38,10 +38,10 @@ describe('booking record info rows', () => {
         paymentAmountLabel: '500.000 VND',
         refundCount: 0,
         earningLabel: '-150.000 VND / PENDING',
-        cashFeeDebtLabel: '150.000 VND / partner blocked',
+        cashFeeDebtLabel: '150.000 VND / Partner blocked',
         serviceFeedbackLabel: 'Not submitted',
       }),
-    ).toContainEqual({ label: 'Cash fee debt', value: '150.000 VND / partner blocked' });
+    ).toContainEqual({ label: 'Cash fee debt', value: '150.000 VND / Partner blocked' });
 
     expect(
       bookingRecordPaymentRows({

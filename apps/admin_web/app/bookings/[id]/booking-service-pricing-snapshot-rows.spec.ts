@@ -5,7 +5,7 @@ const baseInput = {
   customerPrice: '500.000 VND',
   adminMinimum: '400.000 VND',
   payoutRuleStatus: '500.000 VND active',
-  payoutRuleLine: '500.000 VND customer -> 350.000 VND partner',
+  payoutRuleLine: '500.000 VND customer -> 350.000 VND Partner',
   providerPayout: '350.000 VND',
   providerNet: '320.000 VND / AVAILABLE',
   platformFee: '150.000 VND logged',
