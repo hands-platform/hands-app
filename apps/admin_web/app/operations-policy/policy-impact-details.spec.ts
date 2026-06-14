@@ -41,7 +41,7 @@ describe('operations policy impact details', () => {
   });
 
   it('keeps service area impact copy scoped to Vietnam booking addresses', () => {
-    const details = policyImpactDetails('booking.service_area_required');
+    const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired);
 
     expect(details.title).toContain('Vietnam service areas');
     expect(details.detail).toContain('confirmed Vietnam service addresses');

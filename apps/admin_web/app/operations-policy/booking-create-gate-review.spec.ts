@@ -6,8 +6,8 @@ describe('booking create gate review builder', () => {
   it('builds current gate rows, reason evidence, and sorted recent attempts', () => {
     const review = buildBookingCreateGateReview(
       [
-        setting('booking.distance_gate_enabled', false),
-        setting('booking.service_area_required', true),
+        setting(OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled, false),
+        setting(OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired, true),
         setting(OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm, 25),
         setting(OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm, 50),
         setting(OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes, 10),
@@ -68,7 +68,11 @@ describe('booking create gate review builder', () => {
       }),
     ]);
 
-    expect(review.rows.find((row) => row.key === 'booking.current_location_freshness_minutes')).toEqual(
+    expect(
+      review.rows.find(
+        (row) => row.key === OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes,
+      ),
+    ).toEqual(
       expect.objectContaining({
         evidence: '2 historical row(s)',
         pillClass: 'pill-success',

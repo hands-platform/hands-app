@@ -1,3 +1,4 @@
+import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { hrefsIn, normalizedTextContent } from './operations-policy-section-test-utils';
 
@@ -23,7 +24,7 @@ describe('OperationsPolicyBookingCreateGateSection', () => {
             evidence: '1 reject(s)',
             gate: 'Service area',
             href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
-            key: 'booking.service_area_required',
+            key: OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired,
             operatorMeaning: 'Booking address must be inside an enabled Vietnam service area.',
             pillClass: 'pill-success',
           },

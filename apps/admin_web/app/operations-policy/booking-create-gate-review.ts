@@ -79,8 +79,10 @@ function readBookingCreateGatePolicy(
   const freshnessMinutes =
     readPolicyNumber(policySettings, OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingCurrentLocationFreshnessMinutes;
-  const distanceGateEnabled = policyBooleanValue(policySettings, 'booking.distance_gate_enabled') ?? true;
-  const serviceAreaRequired = policyBooleanValue(policySettings, 'booking.service_area_required') ?? true;
+  const distanceGateEnabled =
+    policyBooleanValue(policySettings, OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled) ?? true;
+  const serviceAreaRequired =
+    policyBooleanValue(policySettings, OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired) ?? true;
 
   return {
     customerDistanceKm,
@@ -131,7 +133,7 @@ function buildBookingCreateGateRows(
 ): BookingCreateGateReview['rows'] {
   return [
     {
-      key: 'booking.distance_gate_enabled',
+      key: OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled,
       gate: 'Distance gate',
       current: policy.distanceGateEnabled ? 'Enabled' : 'Disabled',
       defaultValue: 'Enabled',
@@ -143,7 +145,7 @@ function buildBookingCreateGateRows(
       pillClass: policy.distanceGateEnabled ? 'pill-success' : 'pill-danger',
     },
     {
-      key: 'booking.service_area_required',
+      key: OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired,
       gate: 'Service area',
       current: policy.serviceAreaRequired ? 'Required' : 'Optional',
       defaultValue: 'Required',
@@ -155,7 +157,7 @@ function buildBookingCreateGateRows(
       pillClass: policy.serviceAreaRequired ? 'pill-success' : 'pill-warn',
     },
     {
-      key: 'booking.max_customer_current_to_booking_address_km',
+      key: OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm,
       gate: 'Optional customer GPS evidence',
       current: `${policy.customerDistanceKm} km`,
       defaultValue: '20 km',
@@ -166,7 +168,7 @@ function buildBookingCreateGateRows(
       pillClass: policy.customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
     },
     {
-      key: 'booking.max_preferred_partner_distance_km',
+      key: OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm,
       gate: 'First-pick partner',
       current: `${policy.preferredPartnerDistanceKm} km`,
       defaultValue: '50 km',
@@ -177,7 +179,7 @@ function buildBookingCreateGateRows(
       pillClass: policy.preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
     },
     {
-      key: 'booking.current_location_freshness_minutes',
+      key: OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes,
       gate: 'Optional GPS freshness',
       current: `${policy.freshnessMinutes} min`,
       defaultValue: '10 min',

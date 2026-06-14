@@ -209,11 +209,11 @@ function policyRecommendationPosture(
     return walletNegativeGatePosture(value);
   }
 
-  if (setting.key === 'booking.distance_gate_enabled') {
+  if (setting.key === OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled) {
     return bookingDistanceGatePosture(value, recommended);
   }
 
-  if (setting.key === 'booking.service_area_required') {
+  if (setting.key === OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired) {
     return bookingServiceAreaPosture(value, recommended);
   }
 

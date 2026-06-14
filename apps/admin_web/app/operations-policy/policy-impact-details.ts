@@ -19,7 +19,7 @@ export function policyImpactDetails(key: string): PolicyImpactDetails {
 }
 
 const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
-    'booking.distance_gate_enabled': {
+    [OPERATIONAL_POLICY_KEYS.bookingDistanceGateEnabled]: {
       area: 'Booking create gate',
       title: 'Controls whether local booking distance checks are enforced',
       detail:
@@ -38,7 +38,7 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
         },
       ],
     },
-    'booking.service_area_required': {
+    [OPERATIONAL_POLICY_KEYS.bookingServiceAreaRequired]: {
       area: 'Booking create gate',
       title: 'Controls whether booking addresses must be inside enabled Vietnam service areas',
       detail:
@@ -56,7 +56,7 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
         },
       ],
     },
-    'booking.max_customer_current_to_booking_address_km': {
+    [OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm]: {
       area: 'Booking create gate',
       title: 'Records optional customer GPS-to-service-address evidence',
       detail:
@@ -76,7 +76,7 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
         },
       ],
     },
-    'booking.max_preferred_partner_distance_km': {
+    [OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm]: {
       area: 'Booking create gate',
       title: 'Controls preferred first-pick Partner distance',
       detail:
@@ -95,7 +95,7 @@ const POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
         },
       ],
     },
-    'booking.current_location_freshness_minutes': {
+    [OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes]: {
       area: 'Booking create gate',
       title: 'Records optional current customer GPS freshness',
       detail:

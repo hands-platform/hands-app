@@ -7,6 +7,8 @@ export const OPERATIONAL_POLICY_KEYS = {
   marketplaceLocationFreshnessMinutes: 'matching.marketplace_partner_location_max_age_minutes',
   marketplaceInvitationLimit: 'matching.marketplace_partner_invitation_limit',
   marketplaceOpenMode: 'matching.marketplace_open_mode',
+  bookingDistanceGateEnabled: 'booking.distance_gate_enabled',
+  bookingServiceAreaRequired: 'booking.service_area_required',
   bookingMaxCustomerCurrentToAddressKm: 'booking.max_customer_current_to_booking_address_km',
   bookingMaxPreferredPartnerDistanceKm: 'booking.max_preferred_partner_distance_km',
   bookingCurrentLocationFreshnessMinutes: 'booking.current_location_freshness_minutes',
