@@ -30,6 +30,7 @@ import {
   buildBookingHandoffQueue,
 } from './operations-handoff-booking-queue';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
+import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { OperationsHandoffMetricGridSection } from './operations-handoff-metric-grid-section';
 
 type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -1284,33 +1285,6 @@ function buildChatSignals(bookings: AdminBooking[]) {
     0,
   );
   return { roomCount: withRooms.length, recentMessageCount };
-}
-
-function buildFinanceRows(earnings: AdminEarning[]) {
-  return earnings
-    .filter((earning) => earning.netAmount < 0 || earning.status !== 'PAID')
-    .slice(0, 40)
-    .map((earning) => ({
-      id: earning.id,
-      providerId: earning.providerProfileId,
-      bookingId: earning.bookingId,
-      partnerName: operatorDisplayText(
-        earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Partner',
-      ),
-      grossAmount: earning.grossAmount,
-      platformFee: earning.platformFee,
-      withholdingAmount: earning.withholdingAmount,
-      netAmount: earning.netAmount,
-      currency: earning.currency,
-      status: earning.status,
-      createdAt: earning.createdAt,
-      statusClass:
-        earning.netAmount < 0
-          ? 'pill pill-danger'
-          : earning.status === 'AVAILABLE'
-            ? 'pill pill-info'
-            : 'pill pill-warn',
-    }));
 }
 
 function buildPresence(sessions: AdminAppSession[]) {
