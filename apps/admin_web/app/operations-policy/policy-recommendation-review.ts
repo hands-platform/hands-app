@@ -229,6 +229,13 @@ function policyRecommendationPosture(
     return bookingCurrentLocationFreshnessPosture(numericInput);
   }
 
+  return defaultPolicyRecommendationPosture(setting, context);
+}
+
+function defaultPolicyRecommendationPosture(
+  setting: AdminOperationalPolicySetting,
+  context: PolicyRecommendationContext,
+): PolicyRecommendationPosture {
   return {
     status: setting.enforced ? 'Owner choice' : 'Planning choice',
     detail: 'This differs from the recommended baseline and should stay visible in weekly operations review.',
