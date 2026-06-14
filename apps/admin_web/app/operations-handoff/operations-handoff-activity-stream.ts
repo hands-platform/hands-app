@@ -111,6 +111,8 @@ export function buildUnifiedActivityStream(input: UnifiedActivityStreamInput) {
     .slice(0, 40);
 }
 
+export type ActivityStreamRow = ReturnType<typeof buildUnifiedActivityStream>[number];
+
 export function filterActivityStreamByRange(
   rows: ReturnType<typeof buildUnifiedActivityStream>,
   range: Parameters<typeof isInDateRange>[1],

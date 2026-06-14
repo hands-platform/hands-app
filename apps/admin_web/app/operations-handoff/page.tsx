@@ -25,6 +25,7 @@ import {
   buildUnifiedActivityStream,
   filterActivityStreamByRange,
 } from './operations-handoff-activity-stream';
+import { OperationsHandoffActivityStreamSection } from './operations-handoff-activity-stream-section';
 import {
   ACTIVE_BOOKING_STATUSES,
   bookingPartnerName,
@@ -311,71 +312,7 @@ export default async function OperationsHandoffPage({
         <OperationsHandoffOperatorNotesSection notes={operatorNotes} />
       </section>
 
-      <section className="card admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Unified activity stream</h2>
-            <p className="muted">
-              Recent booking movement, chat archive messages, operator notes, notification failures, and
-              finance rows in one chronological trail.
-            </p>
-          </div>
-          <div className="actions">
-            <a
-              className="text-link"
-              download="hands-operations-handoff-activity.csv"
-              href={activityStreamCsvHref}
-            >
-              Export activity CSV
-            </a>
-            <Link className="text-link" href="/audit-log">
-              Audit trail
-            </Link>
-            <Link className="text-link" href="/chat-archive">
-              Chat archive
-            </Link>
-          </div>
-        </div>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Area</th>
-              <th>Record</th>
-              <th>Summary</th>
-              <th>Continue</th>
-            </tr>
-          </thead>
-          <tbody>
-            {activityStream.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <div>{relativeTime(item.createdAt)}</div>
-                  <small className="muted">{formatDateTime(item.createdAt)}</small>
-                </td>
-                <td>
-                  <span className={item.className}>{item.area}</span>
-                </td>
-                <td>
-                  <div>{item.record}</div>
-                  <small className="muted">{item.source}</small>
-                </td>
-                <td>{item.summary}</td>
-                <td>
-                  <Link className="text-link" href={item.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {activityStream.length === 0 ? (
-              <tr>
-                <td colSpan={5}>No recent activity stream rows.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <OperationsHandoffActivityStreamSection csvHref={activityStreamCsvHref} rows={activityStream} />
 
       <section className="card admin-mb-16">
         <div className="toolbar">
