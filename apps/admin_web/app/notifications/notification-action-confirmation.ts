@@ -1,6 +1,9 @@
 import type { AdminNotification } from '../../lib/admin-api';
 import { formatDateTime, shortId } from '../../lib/admin-format';
-import { notificationPushDeviceFreshnessLabel } from '../../lib/admin-notification-push-device';
+import {
+  isStaleNotificationPushDeviceDelivery,
+  notificationPushDeviceFreshnessLabel,
+} from '../../lib/admin-notification-push-device';
 import type { StatusBadgeTone } from '../../components/status-badge';
 import {
   notificationDeliveryFailureCode,
@@ -37,6 +40,11 @@ type NotificationConfirmationValues = NotificationActionReturnContext & {
 };
 
 type NotificationDelivery = NonNullable<AdminNotification['deliveries']>[number];
+type RetryConfirmationCopy = {
+  readonly confirmLabel: string;
+  readonly description: string;
+  readonly tone: StatusBadgeTone;
+};
 
 const FCM_SETUP_REVIEW_KEYS = new Set(['disabled-device', 'failed', 'fcm', 'needs-retry', 'stale-device']);
 
@@ -103,20 +111,14 @@ function buildRetryConfirmation(
 
   const evidence = notificationRetryEvidence(notification);
   const latestDelivery = latestNotificationDelivery(notification);
-  const retryAlreadySent = latestDelivery?.status === 'SENT';
   const reviewGuidance = notificationReviewGuidanceText(values.review);
+  const copy = retryConfirmationCopy(notification, latestDelivery, evidence, reviewGuidance);
 
   return {
     action: 'retry',
     cancelHref: notificationReturnHref(values),
-    confirmLabel: retryAlreadySent ? 'Retry anyway' : 'Retry notification',
-    description: retryAlreadySent
-      ? `Notification ${shortId(
-          notification.id,
-        )} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}${reviewGuidance}`
-      : `Retry notification ${shortId(
-          notification.id,
-        )} after reviewing duplicate-send risk. ${evidence}${reviewGuidance}`,
+    confirmLabel: copy.confirmLabel,
+    description: copy.description,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
       { name: 'returnHref', value: notificationReturnHref(values) },
@@ -131,7 +133,70 @@ function buildRetryConfirmation(
       ...notificationReviewSupportingLinks(values.review),
     ],
     title: `Retry notification ${shortId(notification.id)}?`,
-    tone: retryAlreadySent ? 'info' : 'warning',
+    tone: copy.tone,
+  };
+}
+
+function retryConfirmationCopy(
+  notification: AdminNotification,
+  latestDelivery: NotificationDelivery | undefined,
+  evidence: string,
+  reviewGuidance: string,
+): RetryConfirmationCopy {
+  const id = shortId(notification.id);
+
+  if (!latestDelivery) {
+    return {
+      confirmLabel: 'Retry notification',
+      description: `Retry notification ${id} only after confirming workers and queue processing. ${evidence}${reviewGuidance}`,
+      tone: 'warning',
+    };
+  }
+
+  if (latestDelivery.pushDevice?.enabled === false) {
+    return {
+      confirmLabel: 'Retry after device recovery',
+      description: `Notification ${id} latest delivery used a disabled push device. Refresh or re-enable the device path before retrying. ${evidence}${reviewGuidance}`,
+      tone: 'danger',
+    };
+  }
+
+  if (isStaleNotificationPushDeviceDelivery(latestDelivery)) {
+    return {
+      confirmLabel: 'Retry after token refresh',
+      description: `Notification ${id} latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying. ${evidence}${reviewGuidance}`,
+      tone: 'warning',
+    };
+  }
+
+  if (latestDelivery.status === 'FAILED') {
+    return {
+      confirmLabel: 'Retry notification',
+      description: `Retry notification ${id} after fixing the latest delivery failure. ${evidence}${reviewGuidance}`,
+      tone: 'warning',
+    };
+  }
+
+  if (latestDelivery.status === 'SKIPPED') {
+    return {
+      confirmLabel: 'Retry notification',
+      description: `Retry notification ${id} only after confirming the skipped delivery was expected. ${evidence}${reviewGuidance}`,
+      tone: 'info',
+    };
+  }
+
+  if (latestDelivery.status === 'SENT') {
+    return {
+      confirmLabel: 'Retry anyway',
+      description: `Notification ${id} already has a successful latest delivery. Retry only if support confirmed the user still missed it. ${evidence}${reviewGuidance}`,
+      tone: 'info',
+    };
+  }
+
+  return {
+    confirmLabel: 'Retry notification',
+    description: `Retry notification ${id} after reviewing duplicate-send risk. ${evidence}${reviewGuidance}`,
+    tone: 'warning',
   };
 }
 

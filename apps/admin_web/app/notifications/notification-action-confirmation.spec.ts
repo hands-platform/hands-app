@@ -37,9 +37,9 @@ describe('notification action confirmation', () => {
     expect(confirmation).toEqual({
       action: 'retry',
       cancelHref: '/notifications',
-      confirmLabel: 'Retry notification',
+      confirmLabel: 'Retry after device recovery',
       description:
-        'Retry notification notifica after reviewing duplicate-send risk. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
+        'Notification notifica latest delivery used a disabled push device. Refresh or re-enable the device path before retrying. Latest evidence: FCM FAILED; platform ios; attempted 1 Jun 2026, 07:01; device disabled; token timestamp unknown.',
       hiddenInputs: [
         { name: 'notificationId', value: notification.id },
         { name: 'returnHref', value: '/notifications' },
@@ -53,7 +53,7 @@ describe('notification action confirmation', () => {
         },
       ],
       title: 'Retry notification notifica?',
-      tone: 'warning',
+      tone: 'danger',
     });
   });
 
@@ -94,7 +94,7 @@ describe('notification action confirmation', () => {
     });
 
     expect(confirmation?.description).toBe(
-      'Retry notification notifica after reviewing duplicate-send risk. No delivery attempt is captured yet; confirm workers before retrying.',
+      'Retry notification notifica only after confirming workers and queue processing. No delivery attempt is captured yet; confirm workers before retrying.',
     );
   });
 
@@ -135,6 +135,11 @@ describe('notification action confirmation', () => {
               ...notification.deliveries?.[0],
               attemptedAt: '2026-06-01T00:04:00.000Z',
               id: 'delivery-new',
+              pushDevice: {
+                id: 'push-device-123456',
+                platform: 'android',
+                enabled: true,
+              },
               provider: 'FCM',
               response: { failureCode: 'messaging/mismatched-credential' },
               status: 'FAILED',
@@ -150,10 +155,52 @@ describe('notification action confirmation', () => {
     );
 
     expect(confirmation?.description).toContain('attempted 1 Jun 2026, 07:04');
+    expect(confirmation?.description).toContain('after fixing the latest delivery failure');
     expect(confirmation?.description).toContain('failure messaging/mismatched-credential');
     expect(confirmation?.description).toContain(
       'next Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
     );
+  });
+
+  it('requires token refresh before retrying a stale FCM delivery', () => {
+    const confirmation = buildNotificationActionConfirmation(
+      [
+        {
+          ...notification,
+          deliveries: [
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:04:00.000Z',
+              id: 'delivery-stale-sent',
+              provider: 'FCM',
+              status: 'SENT',
+              pushDevice: {
+                id: 'push-device-123456',
+                platform: 'android',
+                enabled: true,
+                lastSeenAt: '2026-04-15T00:04:00.000Z',
+              },
+            },
+          ],
+        },
+      ],
+      'retry',
+      {
+        notificationId: notification.id,
+        pushDeviceId: '',
+        review: 'stale-device',
+      },
+    );
+
+    expect(confirmation).toMatchObject({
+      confirmLabel: 'Retry after token refresh',
+      tone: 'warning',
+    });
+    expect(confirmation?.description).toContain(
+      'latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying.',
+    );
+    expect(confirmation?.description).toContain('30+ day token timestamp');
+    expect(confirmation?.description).toContain('Runbook: Token freshness gate.');
   });
 
   it('makes retry copy explicit when the latest delivery already succeeded', () => {
