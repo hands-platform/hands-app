@@ -71,7 +71,7 @@ export function bookingMarketplaceWalletEvidence({
       {
         label: 'Marketplace alerts',
         value: `${marketplaceAlerts} batch(es)`,
-        helper: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert row(s).`,
+        helper: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} Partner alert row(s).`,
         href: '#alerts',
       },
       {
@@ -88,7 +88,7 @@ export function bookingMarketplaceWalletEvidence({
         helper:
           financeTrace.paymentMethod === 'CASH'
             ? `${financeTrace.walletLedger} wallet impact from cash collection.`
-            : `${financeTrace.providerPayout} partner payout for non-cash flow.`,
+            : `${financeTrace.providerPayout} Partner payout for non-cash flow.`,
         href: '#finance',
       },
     ],
@@ -177,7 +177,7 @@ export function bookingMarketplaceWalletEvidence({
       },
       {
         lane: 'Cash fee accounting',
-        scope: 'Cash bookings can create partner wallet debt because the partner collects customer cash directly.',
+        scope: 'Cash bookings can create Partner wallet debt because the Partner collects customer cash directly.',
         status:
           financeTrace.paymentMethod === 'CASH'
             ? walletDebt

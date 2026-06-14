@@ -79,10 +79,10 @@ export function bookingCashFeeSettlementPath(
     rows: [
       {
         lane: 'Cash collection source',
-        scope: 'Whether the partner collected customer cash directly.',
+        scope: 'Whether the Partner collected customer cash directly.',
         status: isCash ? 'Cash booking' : 'Non-cash',
         tone: isCash ? 'pill-info' : 'pill-neutral',
-        evidence: `${financeTrace.paymentMethod} / customer ${financeTrace.customerPrice} / partner ${
+        evidence: `${financeTrace.paymentMethod} / customer ${financeTrace.customerPrice} / Partner ${
           selectedPartner ? providerName(selectedPartner) : 'not selected'
         }`,
         nextStep: isCash

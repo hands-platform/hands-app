@@ -475,7 +475,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       area: 'Service/Pricing',
       status: financeTrace.payoutRuleStatus,
-      evidence: `${financeTrace.serviceOption} / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}`,
+      evidence: `${financeTrace.serviceOption} / customer ${financeTrace.customerPrice} / Partner ${financeTrace.providerPayout}`,
       href: '#service',
     },
     {
@@ -493,7 +493,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       area: 'Finance',
       status: financeFlags.length ? `${financeFlags.length} check(s)` : 'Trace ready',
-      evidence: `${financeTrace.providerPayout} partner payout / ${financeTrace.platformFee} platform fee`,
+      evidence: `${financeTrace.providerPayout} Partner payout / ${financeTrace.platformFee} platform fee`,
       href: '#finance',
     },
     {
@@ -532,7 +532,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       area: 'Alerts',
       status: `${notificationTrace.rows.length} notification(s)`,
-      evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert(s) / ${
+      evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} Partner alert(s) / ${
         notificationTrace.backupBatches.length
       } marketplace alert batch(es)`,
       href: '#alerts',
@@ -1611,7 +1611,7 @@ function bookingCloseoutReadiness({
     {
       id: 'partner-choice',
       label: 'Partner',
-      status: partnerChoiceReady ? 'Partner choice state explainable' : 'Final partner missing',
+      status: partnerChoiceReady ? 'Partner choice state explainable' : 'Final Partner missing',
       detail: finalPartner.selected
         ? `${finalPartner.label} / ${booking.participants?.length ?? 0} participant(s)`
         : 'Customer has not selected a final Partner yet.',

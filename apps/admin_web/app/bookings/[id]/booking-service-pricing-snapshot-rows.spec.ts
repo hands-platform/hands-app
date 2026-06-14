@@ -34,7 +34,7 @@ describe('booking service pricing snapshot rows', () => {
     const cashRow = bookingServicePricingSnapshotRows({ ...baseInput, paymentMethod: 'CASH' }).at(-1);
     const nonCashRow = bookingServicePricingSnapshotRows(baseInput).at(-1);
 
-    expect(cashRow?.helper).toBe('Cash bookings can create partner fee debt until settled.');
+    expect(cashRow?.helper).toBe('Cash bookings can create Partner fee debt until settled.');
     expect(nonCashRow?.helper).toBe('Non-cash bookings should create a payout credit after completion.');
   });
 });

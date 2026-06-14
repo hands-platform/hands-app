@@ -276,7 +276,7 @@ export function BookingFinanceCommandCenterSection({
         <div>
           <h2>Finance command center</h2>
           <p className="muted">
-            One-booking money flow from customer price to partner payout, HANDS fee, tax, and wallet impact.
+            One-booking money flow from customer price to Partner payout, HANDS fee, tax, and wallet impact.
           </p>
         </div>
         <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
@@ -352,7 +352,7 @@ export function BookingServicePricingSnapshotSection({
         <div>
           <h2>Service pricing snapshot</h2>
           <p className="muted">
-            Booking-level price evidence for the selected service duration, partner payout, platform fee, tax,
+            Booking-level price evidence for the selected service duration, Partner payout, platform fee, tax,
             and wallet impact.
           </p>
         </div>

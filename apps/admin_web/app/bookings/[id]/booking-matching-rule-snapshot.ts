@@ -43,8 +43,8 @@ export function bookingDetailMatchingRuleSnapshot({
 
   const status = finalPartner
     ? booking.chatRoom
-      ? 'Final partner and chat ready'
-      : 'Final partner, chat missing'
+      ? 'Final Partner and chat ready'
+      : 'Final Partner, chat missing'
     : customerChoiceCandidates.length
       ? 'Customer final choice pending'
       : booking.status === 'OPEN_MATCHING'
@@ -66,7 +66,7 @@ export function bookingDetailMatchingRuleSnapshot({
         : customerChoiceCandidates.length
           ? 'Customer fallback selection is required because first-pick did not validly win; operators should not assign one for them.'
           : booking.status === 'OPEN_MATCHING'
-            ? 'Monitor first-pick, marketplace participants, and partner alert evidence.'
+            ? 'Monitor first-pick, marketplace participants, and Partner alert evidence.'
             : 'Continue from the current booking status and retained evidence.';
 
   return {
@@ -83,10 +83,10 @@ export function bookingDetailMatchingRuleSnapshot({
       },
       {
         label: 'First-pick',
-        value: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred partner',
+        value: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred Partner',
         helper: booking.preferredProvider
           ? `${providerName(booking.preferredProvider)} gets the first response window.`
-          : 'Marketplace-only or older booking without a preferred partner record.',
+          : 'Marketplace-only or older booking without a preferred Partner record.',
       },
       {
         label: 'Marketplace radius',

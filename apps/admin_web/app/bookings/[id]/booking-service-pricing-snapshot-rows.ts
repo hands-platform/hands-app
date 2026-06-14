@@ -25,7 +25,7 @@ export function bookingServicePricingSnapshotRows(input: BookingServicePricingSn
     {
       label: 'Customer price',
       value: input.customerPrice,
-      helper: `Admin minimum ${input.adminMinimum}; partner price must follow the configured step.`,
+      helper: `Admin minimum ${input.adminMinimum}; Partner price must follow the configured step.`,
     },
     {
       label: 'Payout rule',
@@ -52,7 +52,7 @@ export function bookingServicePricingSnapshotRows(input: BookingServicePricingSn
       value: input.walletLedger,
       helper:
         input.paymentMethod === 'CASH'
-          ? 'Cash bookings can create partner fee debt until settled.'
+          ? 'Cash bookings can create Partner fee debt until settled.'
           : 'Non-cash bookings should create a payout credit after completion.',
     },
   ];
