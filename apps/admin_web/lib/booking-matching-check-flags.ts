@@ -27,12 +27,12 @@ export function bookingMatchingCheckFlagsFromFacts(
     bookingCheckFlag(
       isOpenMatching && Boolean(input.firstPickPending),
       'medium',
-      'First-pick partner pending',
+      'First-pick Partner pending',
     ),
     bookingCheckFlag(
       isOpenMatching && (input.participantCount ?? 0) === 0,
       'medium',
-      'No partner supply',
+      'No Partner supply',
     ),
     bookingCheckFlag(
       status === 'MATCHED' && input.matchingChatReady === false,

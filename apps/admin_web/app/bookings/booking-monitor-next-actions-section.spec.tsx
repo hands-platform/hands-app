@@ -32,7 +32,7 @@ describe('BookingMonitorNextActionsSection', () => {
       nextActions: [
         {
           booking,
-          detail: 'Open matching needs partner supply.',
+          detail: 'Open matching needs Partner supply.',
           href: '/bookings/booking_123456789',
           operatorAction: 'Review dispatch queue.',
           owner: 'Dispatch',

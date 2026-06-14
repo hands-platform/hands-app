@@ -62,7 +62,7 @@ describe('BookingMonitorListSection', () => {
       cashDebtAmountLabel: '20,000 VND',
       cashDebtNeedsOps: true,
       chatState: {
-        detail: 'Chat opens after final partner choice.',
+        detail: 'Chat opens after final Partner choice.',
         label: 'Chat pending',
         tone: 'pill-info',
       },
@@ -78,7 +78,7 @@ describe('BookingMonitorListSection', () => {
         status: 'Finance',
         tone: 'pill-warn',
       },
-      customerVisibleStateLabel: 'Customer sees partner choices',
+      customerVisibleStateLabel: 'Customer sees Partner choices',
       expiresAtLabel: '12 Jun 2026, 10:15',
       finalGateReason: {
         detail: 'Payment has to clear before closeout.',
@@ -126,15 +126,15 @@ describe('BookingMonitorListSection', () => {
       recencyLabel: 'Updated 2m ago',
       selectedFinalPartnerPillLabel: 'Partner B',
       selection: {
-        label: 'Marketplace partner selected',
-        pathLabel: 'Customer selected a marketplace partner',
+        label: 'Marketplace Partner selected',
+        pathLabel: 'Customer selected a marketplace Partner',
         toneClass: 'pill-success',
       },
       serviceOptionLabel: 'Foot Massage',
       servicePayoutLabel: 'Partner payout 70%',
       servicePriceLabel: '150,000 VND',
       stage: {
-        action: 'Monitor partner choice and handoff.',
+        action: 'Monitor Partner choice and handoff.',
         detail: 'Marketplace options are ready.',
         href: '/bookings/booking_123456789#participants',
         key: 'marketplace',

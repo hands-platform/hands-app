@@ -48,7 +48,7 @@ describe('marketplace participant ledger summary', () => {
     const summary = buildMarketplaceParticipantLedgerSummary([
       {
         choiceLabel: 'Selected by customer',
-        roleLabel: 'First-pick partner',
+        roleLabel: 'First-pick Partner',
         statusLabel: 'Accepted',
       },
       {
@@ -84,9 +84,9 @@ describe('marketplace participant ledger summary', () => {
         waitingChoice: 2,
       }),
     ).toEqual([
-      { label: 'First-pick partners 2', tone: 'pill-info' },
+      { label: 'First-pick Partners 2', tone: 'pill-info' },
       { label: 'Marketplace participants 3', tone: 'pill-info' },
-      { label: 'Selected marketplace partner 1', tone: 'pill-success' },
+      { label: 'Selected marketplace Partner 1', tone: 'pill-success' },
       { label: 'Waiting customer choice 2', tone: 'pill-warn' },
       { label: 'Declined responses 1', tone: 'pill-info' },
     ]);
@@ -112,7 +112,7 @@ describe('marketplace participant ledger summary', () => {
     expect(rows.map((row) => [row.participant.id, row.roleLabel, row.choiceLabel])).toEqual([
       ['selected', 'Marketplace participant', 'Selected by customer'],
       ['other', 'Marketplace participant', 'Customer-selectable'],
-      ['preferred', 'First-pick partner', 'Evidence-only'],
+      ['preferred', 'First-pick Partner', 'Evidence-only'],
     ]);
     expect(rows[0]).toMatchObject({
       chatHandoffLabel: 'Chat retained',
@@ -129,7 +129,7 @@ describe('marketplace participant ledger summary', () => {
 
     expect(rows[0]).toMatchObject({
       choiceLabel: 'Evidence-only',
-      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable partner.',
+      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable Partner.',
       evidenceLabel: 'Declined response row',
       statusLabel: 'Declined',
     });

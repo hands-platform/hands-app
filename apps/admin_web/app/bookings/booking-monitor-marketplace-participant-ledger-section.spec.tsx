@@ -60,7 +60,7 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
       ],
       marketplaceOperationsCards: [
         {
-          detail: 'Bookings still visible for partner participation or customer choice.',
+          detail: 'Bookings still visible for Partner participation or customer choice.',
           href: '/bookings?view=marketplace',
           title: 'Open marketplace',
           tone: 'pill-warn',

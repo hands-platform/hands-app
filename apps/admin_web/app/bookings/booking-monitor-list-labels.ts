@@ -14,5 +14,5 @@ export function bookingMonitorListCashDebtAmountLabel(
 export function bookingMonitorListFirstPickPhoneLabel(booking: AdminBooking): string {
   return booking.preferredProvider?.user?.phone
     ? `First-pick phone ${booking.preferredProvider.user.phone}`
-    : 'First-pick partner not set';
+    : 'First-pick Partner not set';
 }

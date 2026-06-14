@@ -10,7 +10,7 @@ describe('bookingMonitorNextActionLabel', () => {
         status: 'OPEN_MATCHING',
         participants: [{ providerProfile: { id: 'preferred-1' }, status: 'REQUESTED' }],
       } as unknown as AdminBooking),
-    ).toBe('Wait for the first-pick partner, but monitor marketplace partner supply.');
+    ).toBe('Wait for the first-pick Partner, but monitor marketplace Partner supply.');
   });
 
   it('builds completed closeout guidance from booking facts', () => {

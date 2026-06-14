@@ -41,7 +41,7 @@ export function BookingMonitorMatchingEscalationSection({
         <div>
           <h2>Matching escalation board</h2>
           <p className="muted">
-            Direct first-pick partner flow, 10-minute response window, marketplace partner participation,
+            Direct first-pick Partner flow, 10-minute response window, marketplace Partner participation,
             and customer final selection in one operating board.
           </p>
         </div>
@@ -99,7 +99,7 @@ export function BookingMonitorMatchingEscalationSection({
       <div className="admin-mt-16">
         <h3>Matching flow timeline</h3>
         <p className="muted">
-          Stage view for direct partner requests, marketplace participation, customer final choice, and
+          Stage view for direct Partner requests, marketplace participation, customer final choice, and
           chat/location handoff.
         </p>
         <div className="ops-task-grid admin-mt-12">
@@ -134,7 +134,7 @@ export function BookingMonitorMatchingEscalationSection({
       <div className="admin-mt-16">
         <h3>Dispatch partner repair shortcuts</h3>
         <p className="muted">
-          Use these when a matching booking needs partner supply, partner acceptance repair, cash-fee
+          Use these when a matching booking needs Partner supply, Partner acceptance repair, cash-fee
           cleanup, or policy adjustment.
         </p>
         <div className="service-trace-summary admin-mt-12">

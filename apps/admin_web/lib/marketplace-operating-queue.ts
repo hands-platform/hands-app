@@ -80,9 +80,9 @@ export function buildMarketplaceOperatingQueueItems<TBooking>({
       status: firstPickExpired.length ? 'Timer review' : firstPickWaiting.length ? 'Running' : 'Clear',
       tone: firstPickExpired.length ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
       detail:
-        'Preferred partner gets the first response window. Operators watch timer, alert delivery, wallet gate, and KYC readiness without auto assignment.',
+        'Preferred Partner gets the first response window. Operators watch timer, alert delivery, wallet gate, and KYC readiness without auto assignment.',
       operatorAction:
-        'If the first-pick timer is near expiry, prepare marketplace partner nudges and keep customer wait messaging accurate.',
+        'If the first-pick timer is near expiry, prepare marketplace Partner nudges and keep customer wait messaging accurate.',
       href: firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=first-pick',
       bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
     },
@@ -95,7 +95,7 @@ export function buildMarketplaceOperatingQueueItems<TBooking>({
       detail:
         'Partners inside the booking-address marketplace radius can participate. Participating, accepted, declined, and selected rows stay as operations evidence.',
       operatorAction:
-        'When supply is thin, check location freshness, app presence, alert delivery, service price, and partner wallet gate before changing policy.',
+        'When supply is thin, check location freshness, app presence, alert delivery, service price, and Partner wallet gate before changing policy.',
       href: noJoinedSupply.length ? '/bookings?view=no-supply' : '/bookings?view=marketplace',
       bookings: noJoinedSupply.length ? noJoinedSupply : marketplaceJoined,
     },
@@ -106,9 +106,9 @@ export function buildMarketplaceOperatingQueueItems<TBooking>({
       status: customerChoiceWaiting.length ? 'Customer decision' : 'Clear',
       tone: customerChoiceWaiting.length ? 'warn' : 'ok',
       detail:
-        'Customer selects the final partner from ready participants. HANDS does not automatically assign the final partner.',
+        'Customer selects the final Partner from ready participants. HANDS does not automatically assign the final Partner.',
       operatorAction:
-        'Support should guide the customer only when partner options are ready and the booking is still open.',
+        'Support should guide the customer only when Partner options are ready and the booking is still open.',
       href: '/bookings?view=customer-choice',
       bookings: customerChoiceWaiting,
     },
@@ -119,7 +119,7 @@ export function buildMarketplaceOperatingQueueItems<TBooking>({
       status: matchedWithoutChat.length ? 'Repair needed' : 'Ready',
       tone: matchedWithoutChat.length ? 'danger' : 'ok',
       detail:
-        'Final partner selection must create a retained chat room for customer and partner coordination.',
+        'Final Partner selection must create a retained chat room for customer and Partner coordination.',
       operatorAction:
         'Repair missing chat before arrival, service start, completion, or any manual outcome decision.',
       href: matchedWithoutChat.length ? '/bookings?view=chat-repair' : '/bookings?view=chat',
@@ -132,7 +132,7 @@ export function buildMarketplaceOperatingQueueItems<TBooking>({
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see and participate in marketplace requests, but final acceptance, service start, and payout release wait for settlement. App message: Unpaid HANDS fees must be settled before final acceptance or service start.',
+        'Negative wallet Partners can see and participate in marketplace requests, but final acceptance, service start, and payout release wait for settlement. App message: Unpaid HANDS fees must be settled before final acceptance or service start.',
       operatorAction:
         'Confirm HANDS fee deposit or approved admin offset before final acceptance, service start, and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',

@@ -43,7 +43,7 @@ describe('bookingOperatorCommandQueue', () => {
     });
   });
 
-  it('separates participant evidence rows from customer-selectable partners', () => {
+  it('separates participant evidence rows from customer-selectable Partners', () => {
     const queue = bookingOperatorCommandQueue({
       ...baseInput,
       bookingStatus: 'OPEN_MATCHING',
@@ -52,7 +52,7 @@ describe('bookingOperatorCommandQueue', () => {
     });
 
     expect(queue.commands.find((command) => command.id === 'matching-watch')?.detail).toContain(
-      '0 customer-selectable partner(s)',
+      '0 customer-selectable Partner(s)',
     );
     expect(queue.commands.find((command) => command.id === 'matching-watch')?.detail).toContain(
       '1 participant row(s)',
@@ -91,7 +91,7 @@ describe('bookingOperatorCommandQueue', () => {
     expect(queue.labels[1]).toMatchObject({
       label: 'Partner',
       value: 'Linh Wellness',
-      helper: 'Preferred/final partner context.',
+      helper: 'Preferred/final Partner context.',
     });
   });
 
@@ -144,7 +144,7 @@ describe('bookingOperatorCommandQueue', () => {
     });
 
     expect(queue.commands.find((command) => command.id === 'cash-debt')).toMatchObject({
-      title: 'Settle partner cash fee debt',
+      title: 'Settle Partner cash fee debt',
       detail:
         'Cash service fee debt blocks marketplace alerts, participation, and payout release until the company fee is settled.',
       owner: 'Finance operator',

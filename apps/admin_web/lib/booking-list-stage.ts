@@ -65,8 +65,8 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
 
   if (input.isHandoffStatus && !chatReady) {
     return {
-      action: 'Repair chat before the partner moves further through the service flow.',
-      detail: 'Final partner exists, but chat is not ready.',
+      action: 'Repair chat before the Partner moves further through the service flow.',
+      detail: 'Final Partner exists, but chat is not ready.',
       href: `/bookings/${input.bookingId}#chat`,
       key: 'handoff-repair',
       label: 'Stage 4 repair',
@@ -78,7 +78,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     return {
       action: 'Track location, arrival, service start, completion, and closeout.',
       detail: input.locationNeedsOps
-        ? 'Chat is ready, but partner location needs review.'
+        ? 'Chat is ready, but Partner location needs review.'
         : 'Chat and service handoff are available.',
       href: `/bookings/${input.bookingId}#chat`,
       key: 'handoff',
@@ -89,8 +89,8 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
 
   if (input.status === 'OPEN_MATCHING' && selectableCount > 0 && !selectedPartnerPresent) {
     return {
-      action: 'Prompt customer support to help the customer choose the final partner.',
-      detail: `${selectableCount} customer-selectable partner(s) are waiting for customer selection.`,
+      action: 'Prompt customer support to help the customer choose the final Partner.',
+      detail: `${selectableCount} customer-selectable Partner(s) are waiting for customer selection.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'customer-choice',
       label: 'Stage 3 choice',
@@ -103,8 +103,8 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
       action:
         input.marketplaceAlertNotifiedCount > 0
           ? 'Monitor marketplace alert delivery and customer choice list quality.'
-          : 'Nudge eligible partners or check marketplace alert creation.',
-      detail: `${marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
+          : 'Nudge eligible Partners or check marketplace alert creation.',
+      detail: `${marketplaceCount} marketplace Partner(s) are visible while matching stays open.`,
       href: `/bookings/${input.bookingId}#participants`,
       key: 'marketplace',
       label: 'Stage 2 marketplace',
@@ -116,10 +116,10 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
     return {
       action: input.responseWindowExpired
         ? 'Escalate marketplace supply or close/extend the request intentionally.'
-        : 'Monitor partner response, wallet gate, push delivery, and KYC status.',
+        : 'Monitor Partner response, wallet gate, push delivery, and KYC status.',
       detail: input.responseWindowExpired
-        ? 'The first response window is overdue and no usable marketplace partner is visible.'
-        : 'Preferred partner is inside the first response window.',
+        ? 'The first response window is overdue and no usable marketplace Partner is visible.'
+        : 'Preferred Partner is inside the first response window.',
       href: `/bookings/${input.bookingId}#participants`,
       key: 'first-pick',
       label: 'Stage 1 first-pick',
@@ -128,7 +128,7 @@ export function bookingListStageFromFacts(input: BookingListStageInput): Booking
   }
 
   return {
-    action: 'Confirm service, customer location, payment state, and first partner before opening matching.',
+    action: 'Confirm service, customer location, payment state, and first Partner before opening matching.',
     detail: `Booking is ${input.status.toLowerCase().replaceAll('_', ' ')}.`,
     href: `/bookings/${input.bookingId}`,
     key: 'intake',

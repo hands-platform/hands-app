@@ -5,7 +5,7 @@ describe('BookingMonitorCommandCenterSection', () => {
     const section = BookingMonitorCommandCenterSection({
       lanes: [
         {
-          detail: 'Open matching has customer demand without partner supply.',
+          detail: 'Open matching has customer demand without Partner supply.',
           href: '/bookings?view=no-supply',
           metrics: [
             { label: 'active', value: '3' },

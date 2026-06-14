@@ -59,7 +59,7 @@ describe('booking gate rejections', () => {
       }),
     );
 
-    expect(info.preferredPartnerDistanceLabel).toBe('First-pick partner: 12.5 km / limit 10 km');
+    expect(info.preferredPartnerDistanceLabel).toBe('First-pick Partner: 12.5 km / limit 10 km');
     expect(info.customerDistanceLabel).toBe('Optional customer GPS: 3 km / limit 20 km');
     expect(info.customerHref).toBe('/customers/customer-from-target');
   });

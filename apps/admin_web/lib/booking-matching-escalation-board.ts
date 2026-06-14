@@ -36,8 +36,8 @@ export function buildBookingMatchingEscalationBoard<TBooking>(
       tone: input.expiredWindow.length > 0 ? 'danger' : input.firstPickWaiting.length ? 'warn' : 'ok',
       detail:
         input.firstPickWaiting.length > 0
-          ? 'Preferred partners have the first chance before the customer reviews marketplace supply.'
-          : 'No preferred partner is currently blocking a direct request.',
+          ? 'Preferred Partners have the first chance before the customer reviews marketplace supply.'
+          : 'No preferred Partner is currently blocking a direct request.',
       operatorAction:
         'If the timer is near expiry, prepare marketplace participant reminders and keep the customer waiting screen honest.',
       href: input.expiredWindow.length > 0 ? '/bookings?view=attention' : '/bookings?view=matching',
@@ -53,7 +53,7 @@ export function buildBookingMatchingEscalationBoard<TBooking>(
           ? 'Some open requests have no marketplace participant visible to the customer yet.'
           : 'Marketplace participants are already visible for open requests that need options.',
       operatorAction:
-        'Check partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
+        'Check Partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
       href: input.noMarketplaceSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
       bookings: input.noMarketplaceSupply.length > 0 ? input.noMarketplaceSupply : input.marketplaceReady,
       metrics: [
@@ -67,10 +67,10 @@ export function buildBookingMatchingEscalationBoard<TBooking>(
       tone: input.customerFinalSelection.length > 0 ? 'warn' : 'ok',
       detail:
         input.customerFinalSelection.length > 0
-          ? 'At least one partner is participating or accepted; the customer still needs to lock the final partner.'
+          ? 'At least one Partner is participating or accepted; the customer still needs to lock the final Partner.'
           : 'No open request is waiting on customer final selection.',
       operatorAction:
-        'Guide support to nudge the customer when participating/accepted partners are waiting and the booking is still open.',
+        'Guide support to nudge the customer when participating/accepted Partners are waiting and the booking is still open.',
       href: '/bookings?view=matching',
       bookings: input.customerFinalSelection,
       metrics: [
@@ -84,10 +84,10 @@ export function buildBookingMatchingEscalationBoard<TBooking>(
       tone: input.matchedWithoutChat.length > 0 ? 'danger' : input.chatReady.length ? 'info' : 'ok',
       detail:
         input.matchedWithoutChat.length > 0
-          ? 'A final partner is selected, but chat is missing and service coordination can stall.'
+          ? 'A final Partner is selected, but chat is missing and service coordination can stall.'
           : 'Matched bookings have chat or no active handoff blocker is visible.',
       operatorAction:
-        'Repair chat room creation before the partner moves to service start, arrival, or payment closeout.',
+        'Repair chat room creation before the Partner moves to service start, arrival, or payment closeout.',
       href: input.matchedWithoutChat.length > 0 ? '/bookings?view=attention' : '/bookings?view=chat',
       bookings: input.matchedWithoutChat,
       metrics: [

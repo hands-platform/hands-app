@@ -6,7 +6,7 @@ function booking(input: Partial<AdminBooking>): AdminBooking {
 }
 
 describe('bookingCustomerVisibleStateLabel', () => {
-  it('builds final partner customer copy from booking data and visible state facts', () => {
+  it('builds final Partner customer copy from booking data and visible state facts', () => {
     expect(
       bookingCustomerVisibleStateLabel(
         booking({
@@ -21,7 +21,7 @@ describe('bookingCustomerVisibleStateLabel', () => {
           selectedPartnerLabel: 'Selected Partner',
         },
       ),
-    ).toBe('Customer screen: final partner Selected Partner with chat ready');
+    ).toBe('Customer screen: final Partner Selected Partner with chat ready');
   });
 
   it('keeps first-pick and marketplace visibility copy based on local facts', () => {

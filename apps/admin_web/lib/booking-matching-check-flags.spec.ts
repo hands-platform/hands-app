@@ -11,8 +11,8 @@ describe('bookingMatchingCheckFlagsFromFacts', () => {
       }),
     ).toEqual([
       { severity: 'high', title: 'Matching window expired' },
-      { severity: 'medium', title: 'First-pick partner pending' },
-      { severity: 'medium', title: 'No partner supply' },
+      { severity: 'medium', title: 'First-pick Partner pending' },
+      { severity: 'medium', title: 'No Partner supply' },
     ]);
   });
 

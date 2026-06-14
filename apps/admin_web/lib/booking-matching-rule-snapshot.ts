@@ -71,7 +71,7 @@ export function buildBookingMatchingRuleSnapshot(
   const customerChoice = input.selectedPartnerLabel
     ? `Customer final choice: ${input.selectedPartnerLabel}`
     : input.selectableCount > 0
-      ? `Customer final choice: waiting, ${input.selectableCount} selectable partner(s)`
+      ? `Customer final choice: waiting, ${input.selectableCount} selectable Partner(s)`
       : 'Customer final choice: not ready yet';
 
   return {
@@ -93,7 +93,7 @@ function matchingWindowState(input: BookingMatchingRuleSnapshotInput) {
     return 'closed';
   }
   if (input.selectedPartnerLabel) {
-    return 'final partner selected';
+    return 'final Partner selected';
   }
   return 'not in open matching';
 }
@@ -102,7 +102,7 @@ function bookingMatchingRuleOperatorAction(input: BookingMatchingRuleSnapshotInp
   if (input.selectedPartnerLabel) {
     return input.hasChatRoom
       ? 'Chat is ready. Continue service handoff and closeout from booking detail.'
-      : 'Final partner exists. Repair or create chat before service movement continues.';
+      : 'Final Partner exists. Repair or create chat before service movement continues.';
   }
   if (input.status !== 'OPEN_MATCHING') {
     return 'Open booking detail and continue from the latest factual status.';
@@ -111,12 +111,12 @@ function bookingMatchingRuleOperatorAction(input: BookingMatchingRuleSnapshotInp
     return 'Customer fallback selection is needed because first-pick did not validly win; do not auto-assign.';
   }
   if (input.marketplaceCount > 0) {
-    return 'Marketplace partners are visible. Monitor customer choice list and partner response evidence.';
+    return 'Marketplace Partners are visible. Monitor customer choice list and Partner response evidence.';
   }
   if (input.totalNotified > 0) {
-    return 'Push invitations were sent. Watch for partner participation before the first-pick window closes.';
+    return 'Push invitations were sent. Watch for Partner participation before the first-pick window closes.';
   }
-  return 'No marketplace supply is visible yet. Check partner radius, location freshness, and notification trace.';
+  return 'No marketplace supply is visible yet. Check Partner radius, location freshness, and notification trace.';
 }
 
 function formatMeters(value: number | null) {

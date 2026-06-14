@@ -17,8 +17,8 @@ function input(
     preferredAwaitingDecision: false,
     responseWindowExpired: false,
     selectableCount: 0,
-    selectionLabel: 'No first-pick partner',
-    selectionPathLabel: 'No customer-selectable partner',
+    selectionLabel: 'No first-pick Partner',
+    selectionPathLabel: 'No customer-selectable Partner',
     sortTimestamp: 100,
     status: 'OPEN_MATCHING',
     windowLabel: '5m left',
@@ -52,7 +52,7 @@ describe('buildBookingMatchingEscalationRows', () => {
     expect(rows.map((row) => [row.booking.id, row.title, row.tone])).toEqual([
       ['chat', 'Matched booking missing chat', 'danger'],
       ['expired', 'Response window expired', 'danger'],
-      ['choice', 'Customer fallback partner selection needed', 'warn'],
+      ['choice', 'Customer fallback Partner selection needed', 'warn'],
       ['first-pick', 'First-pick pending with no marketplace option', 'warn'],
       ['marketplace-ready', 'First-pick pending with marketplace ready', 'info'],
     ]);
@@ -69,7 +69,7 @@ describe('buildBookingMatchingEscalationRows', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       booking: { id: 'supply-gap' },
-      title: 'Open request has no partner supply',
+      title: 'Open request has no Partner supply',
       tone: 'warn',
     });
   });

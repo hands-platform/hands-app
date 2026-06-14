@@ -56,7 +56,7 @@ describe('buildBookingMatchingRuleSnapshot', () => {
       radiusLabel: 'Marketplace radius: 10 km from booking address',
       supplyLabel: 'Marketplace supply: 2 participants / 1 selectable / 5 notified',
       customerChoiceLabel:
-        'Customer final choice: waiting, 1 selectable partner(s); no automatic assignment',
+        'Customer final choice: waiting, 1 selectable Partner(s); no automatic assignment',
       operatorAction:
         'Customer fallback selection is needed because first-pick did not validly win; do not auto-assign.',
     });
@@ -75,12 +75,12 @@ describe('buildBookingMatchingRuleSnapshot', () => {
       totalNotified: 0,
     });
 
-    expect(snapshot.windowLabel).toBe('First-pick window: 7m / final partner selected');
+    expect(snapshot.windowLabel).toBe('First-pick window: 7m / final Partner selected');
     expect(snapshot.customerChoiceLabel).toBe(
       'Customer final choice: Partner Linh; no automatic assignment',
     );
     expect(snapshot.operatorAction).toBe(
-      'Final partner exists. Repair or create chat before service movement continues.',
+      'Final Partner exists. Repair or create chat before service movement continues.',
     );
   });
 });

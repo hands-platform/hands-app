@@ -17,7 +17,7 @@ export function buildBookingLiveMatchingPolicyCards(
     {
       label: 'First-pick window',
       value: `${policy.providerResponseWindowMinutes}m`,
-      helper: 'First-pick partner response timer before operators watch marketplace alternatives.',
+      helper: 'First-pick Partner response timer before operators watch marketplace alternatives.',
     },
     {
       label: 'Travel buffer',
@@ -37,7 +37,7 @@ export function buildBookingLiveMatchingPolicyCards(
     {
       label: 'Invitation cap',
       value: `${policy.marketplaceInvitationLimit}`,
-      helper: 'Maximum nearby partners exposed to a marketplace request.',
+      helper: 'Maximum nearby Partners exposed to a marketplace request.',
     },
     {
       label: 'Wallet gate',

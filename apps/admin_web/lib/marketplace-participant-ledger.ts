@@ -81,7 +81,7 @@ export function buildMarketplaceParticipantLedgerSummary(
 ) {
   return {
     declined: rows.filter((row) => row.statusLabel === 'Declined').length,
-    firstPick: rows.filter((row) => row.roleLabel === 'First-pick partner').length,
+    firstPick: rows.filter((row) => row.roleLabel === 'First-pick Partner').length,
     marketplace: rows.filter((row) => row.roleLabel === 'Marketplace participant').length,
     selected: rows.filter((row) => row.choiceLabel === 'Selected by customer').length,
     total: rows.length,
@@ -93,9 +93,9 @@ export function buildMarketplaceParticipantLedgerPills(
   summary: MarketplaceParticipantLedgerSummary,
 ): readonly MarketplaceParticipantLedgerPill[] {
   return [
-    { label: `First-pick partners ${summary.firstPick}`, tone: 'pill-info' },
+    { label: `First-pick Partners ${summary.firstPick}`, tone: 'pill-info' },
     { label: `Marketplace participants ${summary.marketplace}`, tone: 'pill-info' },
-    { label: `Selected marketplace partner ${summary.selected}`, tone: 'pill-success' },
+    { label: `Selected marketplace Partner ${summary.selected}`, tone: 'pill-success' },
     { label: `Waiting customer choice ${summary.waitingChoice}`, tone: 'pill-warn' },
     { label: `Declined responses ${summary.declined}`, tone: 'pill-info' },
   ];
@@ -167,7 +167,7 @@ function toLedgerRow<TBooking, TParticipant>(
     participant: input.participant,
     partnerLabel: input.partnerLabel,
     respondedLabel: input.respondedLabel,
-    roleLabel: isPreferred ? 'First-pick partner' : 'Marketplace participant',
+    roleLabel: isPreferred ? 'First-pick Partner' : 'Marketplace participant',
     sortTimestamp: input.sortTimestamp,
     statusLabel: marketplaceParticipantStatusLabel(input.status),
     statusTone: marketplaceParticipantStatusTone(input.status),
@@ -219,7 +219,7 @@ function marketplaceParticipantEvidenceState(
   if (isFinal) {
     return {
       evidenceLabel: 'Final selected row',
-      evidenceDetail: 'Customer chose this partner; the row remains after matching for operations history.',
+      evidenceDetail: 'Customer chose this Partner; the row remains after matching for operations history.',
       evidenceTone: 'pill-success',
     };
   }
@@ -227,7 +227,7 @@ function marketplaceParticipantEvidenceState(
   if (status === 'REJECTED') {
     return {
       evidenceLabel: 'Declined response row',
-      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable partner.',
+      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable Partner.',
       evidenceTone: 'pill-info',
     };
   }
@@ -235,7 +235,7 @@ function marketplaceParticipantEvidenceState(
   if (participantPartnerId && participantPartnerId === preferredPartnerId) {
     return {
       evidenceLabel: 'First-pick response row',
-      evidenceDetail: 'Preferred partner response evidence from the 10-minute first-pick window.',
+      evidenceDetail: 'Preferred Partner response evidence from the 10-minute first-pick window.',
       evidenceTone: 'pill-info',
     };
   }

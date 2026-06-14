@@ -21,7 +21,7 @@ describe('booking monitor list labels', () => {
     expect(bookingMonitorListCashDebtAmountLabel(cashDebtBooking, true)).toBe('250.000 VND');
   });
 
-  it('describes the first-pick partner phone state', () => {
+  it('describes the first-pick Partner phone state', () => {
     expect(
       bookingMonitorListFirstPickPhoneLabel(
         booking({
@@ -32,6 +32,6 @@ describe('booking monitor list labels', () => {
       ),
     ).toBe('First-pick phone +84901234567');
 
-    expect(bookingMonitorListFirstPickPhoneLabel(booking({}))).toBe('First-pick partner not set');
+    expect(bookingMonitorListFirstPickPhoneLabel(booking({}))).toBe('First-pick Partner not set');
   });
 });

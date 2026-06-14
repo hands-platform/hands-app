@@ -15,10 +15,10 @@ describe('buildBookingMonitorCustomerVisibleStateLabel', () => {
           { providerProfile: { id: 'marketplace-2' }, status: 'ACCEPTED' },
         ],
       } as unknown as AdminBooking),
-    ).toBe('Customer screen: 2 participating/accepted partner(s) ready for final choice');
+    ).toBe('Customer screen: 2 participating/accepted Partner(s) ready for final choice');
   });
 
-  it('builds final partner chat-ready copy for matched bookings', () => {
+  it('builds final Partner chat-ready copy for matched bookings', () => {
     expect(
       buildBookingMonitorCustomerVisibleStateLabel({
         chatRoom: { id: 'chat-1' },
@@ -26,6 +26,6 @@ describe('buildBookingMonitorCustomerVisibleStateLabel', () => {
         selectedProvider: { displayName: 'Selected Partner' },
         status: 'MATCHED',
       } as unknown as AdminBooking),
-    ).toBe('Customer screen: final partner Selected Partner with chat ready');
+    ).toBe('Customer screen: final Partner Selected Partner with chat ready');
   });
 });

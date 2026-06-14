@@ -46,7 +46,7 @@ export function bookingCommandCenterFromFacts(
       tone: facts.expiredMatching.length > 0 ? 'danger' : facts.noSupply.length > 0 ? 'warn' : 'ok',
       detail:
         facts.noSupply.length > 0
-          ? 'Open matching has customer demand without partner supply.'
+          ? 'Open matching has customer demand without Partner supply.'
           : 'Active booking demand has enough current operating data.',
       href:
         facts.noSupply.length > 0 || facts.expiredMatching.length > 0
@@ -75,7 +75,7 @@ export function bookingCommandCenterFromFacts(
             : 'ok',
       detail:
         facts.expiredMatching.length > 0
-          ? 'Matching window expired before a final partner was selected.'
+          ? 'Matching window expired before a final Partner was selected.'
           : 'Customer-facing booking handoff has no critical blocker.',
       href:
         facts.expiredMatching.length > 0 || facts.matchedWithoutChat.length > 0
@@ -169,7 +169,7 @@ export function bookingCommandCenterFromFacts(
       tone: facts.locationChecks.length > 0 ? 'warn' : facts.quietChat.length > 0 ? 'info' : 'ok',
       detail:
         facts.locationChecks.length > 0
-          ? 'Live service state has missing or stale last-known partner location.'
+          ? 'Live service state has missing or stale last-known Partner location.'
           : 'Chat, marketplace selection, and location handoff look normal.',
       href: facts.locationChecks.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
       metrics: [

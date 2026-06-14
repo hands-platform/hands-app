@@ -14,7 +14,7 @@ export function bookingNextActionCopy(input: BookingNextActionCopyInput) {
   if (input.status === 'NO_SHOW') {
     return input.hasPayment && !['RELEASED', 'REFUNDED'].includes(input.paymentStatus ?? '')
       ? 'No-show is marked. Decide payment release, refund, or fee handling before closing.'
-      : 'No-show is marked and payment outcome is already closed. Confirm customer and partner notes.';
+      : 'No-show is marked and payment outcome is already closed. Confirm customer and Partner notes.';
   }
   if (input.status === 'EXPIRED') {
     return input.paymentStatus === 'RELEASED'
@@ -30,26 +30,26 @@ export function bookingNextActionCopy(input: BookingNextActionCopyInput) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (input.cashDebtNeedsOps) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.';
   }
   if (
     input.status === 'OPEN_MATCHING' &&
     input.hasPreferredPartner &&
     input.preferredAwaitingDecision
   ) {
-    return 'Wait for the first-pick partner, but monitor marketplace partner supply.';
+    return 'Wait for the first-pick Partner, but monitor marketplace Partner supply.';
   }
   if (input.status === 'OPEN_MATCHING' && input.marketplaceParticipantCount === 0) {
-    return 'Check notifications and nearby partner supply.';
+    return 'Check notifications and nearby Partner supply.';
   }
   if (input.status === 'OPEN_MATCHING' && input.marketplaceParticipantCount > 0) {
-    return 'Customer can keep waiting or switch to a marketplace partner.';
+    return 'Customer can keep waiting or switch to a marketplace Partner.';
   }
   if (input.status === 'MATCHED' && input.backupSelected) {
     return 'Customer switched away from the first-pick Partner. Confirm chat, route, and Partner handoff.';
   }
   if (input.status === 'MATCHED') {
-    return 'Customer selection is locked. Check chat creation, route tracking, and partner departure.';
+    return 'Customer selection is locked. Check chat creation, route tracking, and Partner departure.';
   }
   if (input.status === 'PROVIDER_ON_THE_WAY') {
     return 'Monitor live location and arrival progress.';

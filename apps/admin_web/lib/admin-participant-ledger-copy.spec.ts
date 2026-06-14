@@ -5,7 +5,7 @@ import {
 } from './admin-participant-ledger-copy';
 
 describe('participantReadableDecision', () => {
-  it('describes a customer-selected final partner', () => {
+  it('describes a customer-selected final Partner', () => {
     expect(
       participantReadableDecision({
         isFinal: true,
@@ -15,7 +15,7 @@ describe('participantReadableDecision', () => {
       }),
     ).toEqual({
       title: 'Final customer choice',
-      decision: 'Customer selected this partner as the final match.',
+      decision: 'Customer selected this Partner as the final match.',
       nextStep: 'Keep chat, payment, location, and closeout evidence linked to this row.',
     });
   });
@@ -30,8 +30,8 @@ describe('participantReadableDecision', () => {
       }),
     ).toEqual({
       title: 'Customer-selectable marketplace option',
-      decision: 'Customer can choose this partner as the final match; the system will not auto-assign.',
-      nextStep: 'Wait for the customer final choice; operators must not assign the final partner manually.',
+      decision: 'Customer can choose this Partner as the final match; the system will not auto-assign.',
+      nextStep: 'Wait for the customer final choice; operators must not assign the final Partner manually.',
     });
   });
 
@@ -62,7 +62,7 @@ describe('marketplaceParticipantLedgerBoundaryCopy', () => {
   it('explains that only actual marketplace participation is retained', () => {
     expect(marketplaceParticipantLedgerBoundaryCopy()).toEqual({
       helper:
-        'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app warns before final acceptance or service start while actual participant rows remain the evidence source.',
+        'Marketplace visibility is not an activity record. If the Partner wallet is negative, the Partner app warns before final acceptance or service start while actual participant rows remain the evidence source.',
       pills: [
         'Actual participant rows only',
         'Negative wallet blocks final acceptance and service start',
@@ -87,7 +87,7 @@ describe('participantChoicePresentation', () => {
     ).toEqual({
       choiceLabel: 'Selected by customer',
       choiceTone: 'pill-success',
-      choiceReason: 'Customer selected this partner as the final match.',
+      choiceReason: 'Customer selected this Partner as the final match.',
       choiceNextStep: 'Keep chat, payment, location, and closeout evidence linked to this row.',
     });
   });
@@ -105,9 +105,9 @@ describe('participantChoicePresentation', () => {
       choiceLabel: 'Customer-selectable',
       choiceTone: 'pill-info',
       choiceReason:
-        'Customer can choose this partner as the final match; the system will not auto-assign.',
+        'Customer can choose this Partner as the final match; the system will not auto-assign.',
       choiceNextStep:
-        'Wait for the customer final choice; operators must not assign the final partner manually.',
+        'Wait for the customer final choice; operators must not assign the final Partner manually.',
     });
   });
 
@@ -123,7 +123,7 @@ describe('participantChoicePresentation', () => {
     ).toEqual({
       choiceLabel: 'Not final choice',
       choiceTone: 'pill-neutral',
-      choiceReason: 'Customer already selected another final partner.',
+      choiceReason: 'Customer already selected another final Partner.',
       choiceNextStep: 'Keep this row as participation history only.',
     });
   });

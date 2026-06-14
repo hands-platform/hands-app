@@ -73,7 +73,7 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
       'Address not recorded',
     customerDistanceLabel: formatGateDistance('Optional customer GPS', customerDistance, customerDistanceLimit),
     preferredPartnerDistanceLabel: formatGateDistance(
-      'First-pick partner',
+      'First-pick Partner',
       preferredPartnerDistance,
       preferredPartnerDistanceLimit,
     ),
@@ -90,7 +90,7 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick partner too far';
+    return 'First-pick Partner too far';
   }
   if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'Address outside service area';
@@ -115,7 +115,7 @@ function bookingGateOperatorAction(reasonCode: string) {
     return 'Treat this as historical support evidence. Current booking creation should rely on the confirmed service address snapshot, not customer GPS distance.';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'Ask the customer to choose a closer first-pick partner or correct the service address. Payment and matching did not start.';
+    return 'Ask the customer to choose a closer first-pick Partner or correct the service address. Payment and matching did not start.';
   }
   if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'Confirm the requested address is inside an enabled Vietnam service area before booking can start.';

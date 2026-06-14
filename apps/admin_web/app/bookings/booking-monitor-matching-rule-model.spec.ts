@@ -20,7 +20,7 @@ describe('buildBookingMonitorMatchingRuleSnapshot', () => {
       supplyLabel: 'Marketplace supply: 0 participants / 0 selectable / 0 notified',
     });
     expect(snapshot.operatorAction).toBe(
-      'No marketplace supply is visible yet. Check partner radius, location freshness, and notification trace.',
+      'No marketplace supply is visible yet. Check Partner radius, location freshness, and notification trace.',
     );
   });
 

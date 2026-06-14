@@ -31,8 +31,8 @@ describe('bookingMonitorCheckFlagsFromFacts', () => {
       { severity: 'high', title: 'Cash fee debt blocks marketplace alerts' },
       { severity: 'high', title: 'Price missing' },
       { severity: 'high', title: 'Matching window expired' },
-      { severity: 'medium', title: 'First-pick partner pending' },
-      { severity: 'medium', title: 'No partner supply' },
+      { severity: 'medium', title: 'First-pick Partner pending' },
+      { severity: 'medium', title: 'No Partner supply' },
       { severity: 'medium', title: 'Payment reference missing' },
     ]);
   });

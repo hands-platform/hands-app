@@ -19,7 +19,7 @@ describe('marketplace operations cards', () => {
       ['Customer choice', '2', 'pill-info', '/bookings?view=customer-choice'],
       ['No participant supply', '3', 'pill-warn', '/bookings?view=marketplace'],
       ['Alert trace missing', '4', 'pill-warn', '/bookings?view=marketplace'],
-      ['Selected partners', '1', 'pill-success', '/bookings?view=marketplace'],
+      ['Selected Partners', '1', 'pill-success', '/bookings?view=marketplace'],
       ['Cash fee debt', '6', 'pill-warn', '/bookings?view=cash-debt'],
     ]);
   });
@@ -39,7 +39,7 @@ describe('marketplace operations cards', () => {
       ['Customer choice', 'pill-neutral'],
       ['No participant supply', 'pill-success'],
       ['Alert trace missing', 'pill-success'],
-      ['Selected partners', 'pill-neutral'],
+      ['Selected Partners', 'pill-neutral'],
       ['Cash fee debt', 'pill-neutral'],
     ]);
   });

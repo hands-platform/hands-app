@@ -56,7 +56,7 @@ function toSortableEscalationRow<TBooking>(
     return row(input, {
       detail: 'The booking is still open after its saved response window.',
       operatorAction:
-        'Close or extend matching intentionally, then release payment if no final partner can be selected.',
+        'Close or extend matching intentionally, then release payment if no final Partner can be selected.',
       tags: baseTags(input),
       title: 'Response window expired',
       tone: 'danger',
@@ -67,9 +67,9 @@ function toSortableEscalationRow<TBooking>(
     return row(input, {
       detail:
         'One or more Partners are ready after first-pick did not validly win, but the booking has not moved to final match.',
-      operatorAction: 'Ask support to prompt the customer to choose a final partner from the waiting list.',
+      operatorAction: 'Ask support to prompt the customer to choose a final Partner from the waiting list.',
       tags: [...baseTags(input), input.selectionPathLabel],
-      title: 'Customer fallback partner selection needed',
+      title: 'Customer fallback Partner selection needed',
       tone: 'warn',
     });
   }
@@ -81,9 +81,9 @@ function toSortableEscalationRow<TBooking>(
     input.marketplaceCount === 0
   ) {
     return row(input, {
-      detail: 'The preferred partner is still deciding and no marketplace partner participation is recorded.',
+      detail: 'The preferred Partner is still deciding and no marketplace Partner participation is recorded.',
       operatorAction:
-        'Check push delivery and eligible partners within the configured radius before the customer loses patience.',
+        'Check push delivery and eligible Partners within the configured radius before the customer loses patience.',
       tags: [...baseTags(input), 'customer waiting'],
       title: 'First-pick pending with no marketplace option',
       tone: 'warn',
@@ -97,9 +97,9 @@ function toSortableEscalationRow<TBooking>(
     input.marketplaceCount > 0
   ) {
     return row(input, {
-      detail: 'Marketplace partners are visible while the preferred partner still has first chance.',
+      detail: 'Marketplace Partners are visible while the preferred Partner still has first chance.',
       operatorAction:
-        'Let the timer run or guide the customer to select a marketplace partner when wait time is becoming visible.',
+        'Let the timer run or guide the customer to select a marketplace Partner when wait time is becoming visible.',
       tags: [...baseTags(input), input.selectionPathLabel],
       title: 'First-pick pending with marketplace ready',
       tone: 'info',
@@ -108,17 +108,17 @@ function toSortableEscalationRow<TBooking>(
 
   if (input.status === 'OPEN_MATCHING' && input.marketplaceCount === 0) {
     return row(input, {
-      detail: 'No partner participation is recorded for the request yet.',
-      operatorAction: 'Review location, service price, radius policy, and partner alert delivery.',
+      detail: 'No Partner participation is recorded for the request yet.',
+      operatorAction: 'Review location, service price, radius policy, and Partner alert delivery.',
       tags: baseTags(input),
-      title: 'Open request has no partner supply',
+      title: 'Open request has no Partner supply',
       tone: 'warn',
     });
   }
 
   if (input.status === 'MATCHED' && !input.hasChatRoom) {
     return row(input, {
-      detail: 'The final partner is selected, but customer and partner cannot coordinate in chat.',
+      detail: 'The final Partner is selected, but customer and Partner cannot coordinate in chat.',
       operatorAction: 'Repair chat room creation before allowing service progress.',
       tags: [input.status, input.selectionLabel, 'chat missing'],
       title: 'Matched booking missing chat',

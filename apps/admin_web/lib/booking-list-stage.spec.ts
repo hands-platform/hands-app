@@ -71,7 +71,7 @@ describe('bookingListStageFromFacts', () => {
       ),
     ).toMatchObject({
       key: 'handoff',
-      detail: 'Chat is ready, but partner location needs review.',
+      detail: 'Chat is ready, but Partner location needs review.',
       tone: 'warn',
     });
   });
@@ -104,7 +104,7 @@ describe('bookingListStageFromFacts', () => {
       ),
     ).toMatchObject({
       key: 'customer-choice',
-      detail: '2 customer-selectable partner(s) are waiting for customer selection.',
+      detail: '2 customer-selectable Partner(s) are waiting for customer selection.',
       label: 'Stage 3 choice',
     });
 
@@ -117,7 +117,7 @@ describe('bookingListStageFromFacts', () => {
       ),
     ).toMatchObject({
       key: 'marketplace',
-      detail: '3 marketplace partner(s) are visible while matching stays open.',
+      detail: '3 marketplace Partner(s) are visible while matching stays open.',
       label: 'Stage 2 marketplace',
     });
   });

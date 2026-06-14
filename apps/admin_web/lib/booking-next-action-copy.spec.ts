@@ -23,7 +23,7 @@ describe('bookingNextActionCopy', () => {
     ],
     [
       { status: 'NO_SHOW', hasPayment: true, paymentStatus: 'RELEASED' },
-      'No-show is marked and payment outcome is already closed. Confirm customer and partner notes.',
+      'No-show is marked and payment outcome is already closed. Confirm customer and Partner notes.',
     ],
     [
       { status: 'EXPIRED', paymentStatus: 'RELEASED' },
@@ -54,7 +54,7 @@ describe('bookingNextActionCopy', () => {
         preferredAwaitingDecision: true,
       }),
     ).toBe(
-      'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.',
+      'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
     );
   });
 
@@ -65,15 +65,15 @@ describe('bookingNextActionCopy', () => {
         hasPreferredPartner: true,
         preferredAwaitingDecision: true,
       },
-      'Wait for the first-pick partner, but monitor marketplace partner supply.',
+      'Wait for the first-pick Partner, but monitor marketplace Partner supply.',
     ],
     [
       { status: 'OPEN_MATCHING', marketplaceParticipantCount: 0 },
-      'Check notifications and nearby partner supply.',
+      'Check notifications and nearby Partner supply.',
     ],
     [
       { status: 'OPEN_MATCHING', marketplaceParticipantCount: 2 },
-      'Customer can keep waiting or switch to a marketplace partner.',
+      'Customer can keep waiting or switch to a marketplace Partner.',
     ],
     [
       { status: 'MATCHED', backupSelected: true },
@@ -81,7 +81,7 @@ describe('bookingNextActionCopy', () => {
     ],
     [
       { status: 'MATCHED' },
-      'Customer selection is locked. Check chat creation, route tracking, and partner departure.',
+      'Customer selection is locked. Check chat creation, route tracking, and Partner departure.',
     ],
   ] satisfies ReadonlyArray<[Partial<BookingNextActionCopyInput>, string]>)(
     'returns matching guidance',

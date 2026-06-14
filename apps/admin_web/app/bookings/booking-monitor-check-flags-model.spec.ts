@@ -15,7 +15,7 @@ describe('bookingMonitorCheckFlags', () => {
         } as unknown as AdminBooking,
         nowMs,
       ).map((flag) => flag.title),
-    ).toEqual(expect.arrayContaining(['Matching window expired', 'No partner supply']));
+    ).toEqual(expect.arrayContaining(['Matching window expired', 'No Partner supply']));
   });
 
   it('builds matched chat repair flags from retained chat facts', () => {

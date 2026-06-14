@@ -23,7 +23,7 @@ describe('customerVisibleStateLabelFromFacts', () => {
     },
   );
 
-  it('returns final partner copy with chat readiness', () => {
+  it('returns final Partner copy with chat readiness', () => {
     expect(
       customerVisibleStateLabelFromFacts({
         ...baseInput,
@@ -31,17 +31,17 @@ describe('customerVisibleStateLabelFromFacts', () => {
         selectedPartnerLabel: 'Linh Tran',
         status: 'MATCHED',
       }),
-    ).toBe('Customer screen: final partner Linh Tran with chat ready');
+    ).toBe('Customer screen: final Partner Linh Tran with chat ready');
   });
 
-  it('returns final partner copy when chat is not ready', () => {
+  it('returns final Partner copy when chat is not ready', () => {
     expect(
       customerVisibleStateLabelFromFacts({
         ...baseInput,
         selectedPartnerLabel: 'Linh Tran',
         status: 'MATCHED',
       }),
-    ).toBe('Customer screen: final partner Linh Tran but chat not ready');
+    ).toBe('Customer screen: final Partner Linh Tran but chat not ready');
   });
 
   it('returns customer final choice copy when participants are selectable', () => {
@@ -50,7 +50,7 @@ describe('customerVisibleStateLabelFromFacts', () => {
         ...baseInput,
         customerSelectablePartnerCount: 2,
       }),
-    ).toBe('Customer screen: 2 participating/accepted partner(s) ready for final choice');
+    ).toBe('Customer screen: 2 participating/accepted Partner(s) ready for final choice');
   });
 
   it('returns first-pick plus marketplace copy while both paths are visible', () => {
@@ -64,7 +64,7 @@ describe('customerVisibleStateLabelFromFacts', () => {
     ).toBe('Customer screen: first-pick wait plus 3 marketplace option(s)');
   });
 
-  it('returns first-pick only copy when no marketplace partner has joined yet', () => {
+  it('returns first-pick only copy when no marketplace Partner has joined yet', () => {
     expect(
       customerVisibleStateLabelFromFacts({
         ...baseInput,
@@ -76,13 +76,13 @@ describe('customerVisibleStateLabelFromFacts', () => {
 
   it('returns open marketplace waiting copy', () => {
     expect(customerVisibleStateLabelFromFacts({ ...baseInput, marketplacePartnerCount: 4 })).toBe(
-      'Customer screen: 4 partner option(s) waiting',
+      'Customer screen: 4 Partner option(s) waiting',
     );
   });
 
   it('humanizes fallback statuses', () => {
     expect(customerVisibleStateLabelFromFacts({ ...baseInput, status: 'PROVIDER_ON_THE_WAY' })).toBe(
-      'Customer screen: provider on the way',
+      'Customer screen: Partner on the way',
     );
   });
 });

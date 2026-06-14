@@ -12,7 +12,7 @@ export type ParticipantChoicePresentationInput = ParticipantReadableDecisionInpu
 export function marketplaceParticipantLedgerBoundaryCopy() {
   return {
     helper:
-      'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app warns before final acceptance or service start while actual participant rows remain the evidence source.',
+      'Marketplace visibility is not an activity record. If the Partner wallet is negative, the Partner app warns before final acceptance or service start while actual participant rows remain the evidence source.',
     pills: [
       'Actual participant rows only',
       'Negative wallet blocks final acceptance and service start',
@@ -27,7 +27,7 @@ export function participantReadableDecision(input: ParticipantReadableDecisionIn
   if (input.isFinal || input.status === 'SELECTED') {
     return {
       title: 'Final customer choice',
-      decision: 'Customer selected this partner as the final match.',
+      decision: 'Customer selected this Partner as the final match.',
       nextStep: 'Keep chat, payment, location, and closeout evidence linked to this row.',
     };
   }
@@ -37,8 +37,8 @@ export function participantReadableDecision(input: ParticipantReadableDecisionIn
       title: input.isPreferred
         ? 'Customer-selectable first-pick option'
         : 'Customer-selectable marketplace option',
-      decision: 'Customer can choose this partner as the final match; the system will not auto-assign.',
-      nextStep: 'Wait for the customer final choice; operators must not assign the final partner manually.',
+      decision: 'Customer can choose this Partner as the final match; the system will not auto-assign.',
+      nextStep: 'Wait for the customer final choice; operators must not assign the final Partner manually.',
     };
   }
 
@@ -83,7 +83,7 @@ export function participantChoicePresentation(input: ParticipantChoicePresentati
     return {
       choiceLabel: 'Not final choice',
       choiceTone: 'pill-neutral',
-      choiceReason: 'Customer already selected another final partner.',
+      choiceReason: 'Customer already selected another final Partner.',
       choiceNextStep: 'Keep this row as participation history only.',
     };
   }

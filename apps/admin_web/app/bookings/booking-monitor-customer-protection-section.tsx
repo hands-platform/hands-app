@@ -32,7 +32,7 @@ export function BookingMonitorCustomerProtectionSection({
           <h2>Customer protection closeout board</h2>
           <p className="muted">
             Focused closeout lanes for cancelled, expired, no-show, completed, and cash-fee debt bookings.
-            Use this before ending a shift so customer payment and partner wallet outcomes are not left
+            Use this before ending a shift so customer payment and Partner wallet outcomes are not left
             open.
           </p>
         </div>

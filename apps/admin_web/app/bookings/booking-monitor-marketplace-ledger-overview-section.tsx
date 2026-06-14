@@ -26,7 +26,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
             All participant records by booking, including first-pick, marketplace participants, declined
             responses, and the customer final choice. This is the operations record of who entered the
             request. It shows the Customer-selectable reason and Why not selectable for evidence-only rows.
-            Marketplace visibility is not an activity record; wallet-blocked partners are stopped before
+            Marketplace visibility is not an activity record; wallet-blocked Partners are stopped before
             participation and never create participant rows.
           </p>
         </div>
@@ -77,7 +77,7 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
           <div>
             <h3>Marketplace operating queue</h3>
             <p className="muted">
-              Practical dispatch sequence for first-pick timer control, partner participation pool, customer
+              Practical dispatch sequence for first-pick timer control, Partner participation pool, customer
               final selection lane, chat handoff, and wallet unblock lane.
             </p>
           </div>

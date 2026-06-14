@@ -32,7 +32,7 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
       marketplaceOperatingQueue: [
         {
           bookings: [booking],
-          detail: 'Preferred partner gets the first response window.',
+          detail: 'Preferred Partner gets the first response window.',
           href: '/bookings?view=first-pick',
           operatorAction: 'Monitor response window.',
           status: 'Running',

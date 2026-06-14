@@ -15,12 +15,12 @@ export function customerVisibleStateLabelFromFacts(input: CustomerVisibleStateLa
     return `Customer screen: closed as ${input.status}`;
   }
   if (input.selectedPartnerLabel) {
-    return `Customer screen: final partner ${input.selectedPartnerLabel}${
+    return `Customer screen: final Partner ${input.selectedPartnerLabel}${
       input.hasChatRoom ? ' with chat ready' : ' but chat not ready'
     }`;
   }
   if (input.customerSelectablePartnerCount > 0) {
-    return `Customer screen: ${input.customerSelectablePartnerCount} participating/accepted partner(s) ready for final choice`;
+    return `Customer screen: ${input.customerSelectablePartnerCount} participating/accepted Partner(s) ready for final choice`;
   }
   if (
     input.status === 'OPEN_MATCHING' &&
@@ -33,8 +33,8 @@ export function customerVisibleStateLabelFromFacts(input: CustomerVisibleStateLa
   }
   if (input.status === 'OPEN_MATCHING') {
     return input.marketplacePartnerCount > 0
-      ? `Customer screen: ${input.marketplacePartnerCount} partner option(s) waiting`
-      : 'Customer screen: waiting for partners';
+      ? `Customer screen: ${input.marketplacePartnerCount} Partner option(s) waiting`
+      : 'Customer screen: waiting for Partners';
   }
-  return `Customer screen: ${input.status.toLowerCase().replaceAll('_', ' ')}`;
+  return `Customer screen: ${input.status.toLowerCase().replaceAll('_', ' ').replaceAll('provider', 'Partner')}`;
 }

@@ -64,8 +64,8 @@ export function bookingOperatorCommandQueue(
   if (input.bookingStatus === 'OPEN_MATCHING') {
     const selectableDetail =
       input.customerChoiceCandidateCount > 0
-        ? `${input.customerChoiceCandidateCount} customer-selectable partner(s) / ${input.participantCount} participant row(s).`
-        : `0 customer-selectable partner(s) / ${input.participantCount} participant row(s).`;
+        ? `${input.customerChoiceCandidateCount} customer-selectable Partner(s) / ${input.participantCount} participant row(s).`
+        : `0 customer-selectable Partner(s) / ${input.participantCount} participant row(s).`;
 
     add({
       id: 'matching-watch',
@@ -82,7 +82,7 @@ export function bookingOperatorCommandQueue(
     add({
       id: 'partner-supply',
       label: 'SUPPLY',
-      title: 'Check nearby partner supply',
+      title: 'Check nearby Partner supply',
       detail:
         'No Partner participation is recorded yet. Review marketplace-ready Partners and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
@@ -101,7 +101,7 @@ export function bookingOperatorCommandQueue(
       label: 'CHOICE',
       title: 'Check customer choice readiness',
       detail:
-        'Participant evidence rows exist, but no partner is customer-selectable yet. Review participant statuses before telling the customer to choose.',
+        'Participant evidence rows exist, but no Partner is customer-selectable yet. Review participant statuses before telling the customer to choose.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#participants', label: 'Open ledger' },
@@ -140,7 +140,7 @@ export function bookingOperatorCommandQueue(
     add({
       id: 'location-request',
       label: 'LOC',
-      title: 'Ask partner to share location',
+      title: 'Ask Partner to share location',
       detail: `${input.partnerLabel} has not shared a saved current service pin for this active booking.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
@@ -174,7 +174,7 @@ export function bookingOperatorCommandQueue(
     add({
       id: 'cash-debt',
       label: 'CASH',
-      title: 'Settle partner cash fee debt',
+      title: 'Settle Partner cash fee debt',
       detail:
         'Cash service fee debt blocks marketplace alerts, participation, and payout release until the company fee is settled.',
       owner: 'Finance operator',
@@ -214,7 +214,7 @@ export function bookingOperatorCommandQueue(
       label: 'NO-SHOW',
       title: 'No-show action available',
       detail:
-        'Use only after confirming the customer or partner did not proceed and communication is retained.',
+        'Use only after confirming the customer or Partner did not proceed and communication is retained.',
       owner: 'Support operator',
       tone: 'pill-neutral',
       action: { type: 'link', href: '#no-show-handling', label: 'Open action' },
@@ -271,7 +271,7 @@ export function bookingOperatorCommandQueue(
       {
         label: 'Partner',
         value: input.partnerLabel,
-        helper: input.hasFinalPartner ? 'Preferred/final partner context.' : 'No partner is selected yet.',
+        helper: input.hasFinalPartner ? 'Preferred/final Partner context.' : 'No Partner is selected yet.',
       },
       {
         label: 'Chat',

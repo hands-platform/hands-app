@@ -189,9 +189,9 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <div className="muted admin-mt-8">{row.customerVisibleStateLabel}</div>
         <div className="muted">{row.selection.pathLabel}</div>
         {row.finalPartnerLabel ? (
-          <div className="muted">Final partner: {row.finalPartnerLabel}</div>
+          <div className="muted">Final Partner: {row.finalPartnerLabel}</div>
         ) : (
-          <div className="muted">Final partner: waiting for customer choice</div>
+          <div className="muted">Final Partner: waiting for customer choice</div>
         )}
         <div className="muted">{row.backupAlert.label}</div>
       </td>
