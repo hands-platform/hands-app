@@ -24,7 +24,9 @@ describe('operations policy page model', () => {
       key: 'notification.partner_alert_channel',
       label: 'Notification / partner alert channel',
       policyContext: 'Controls partner booking alert delivery route',
+      previousValue: 'In App With Push Later',
       reason: 'FCM rollout',
+      value: 'FCM For All Bookings',
     });
   });
 
@@ -45,5 +47,27 @@ describe('operations policy page model', () => {
     ]);
 
     expect(rows[0]?.reason).toBe('Automated smoke coverage for Matching / marketplace open mode');
+  });
+
+  it('humanizes internal enum values in policy audit rows', () => {
+    const rows = operationalPolicyAuditRows([
+      {
+        action: 'operational_policy.update',
+        actor: { fullName: 'Ops Lead' },
+        createdAt: '2026-06-13T03:05:00.000Z',
+        id: 'audit-policy-3',
+        metadata: {
+          key: 'decision.admin_fee_after_match',
+          previousValue: 'ADMIN_FEE_REVIEW_AFTER_MATCH',
+          value: 'ADMIN_REVIEW_FOR_MVP',
+        },
+        target: 'operational_policy:decision.admin_fee_after_match',
+      },
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      previousValue: 'Admin Fee Review After Match',
+      value: 'Admin Review For MVP',
+    });
   });
 });

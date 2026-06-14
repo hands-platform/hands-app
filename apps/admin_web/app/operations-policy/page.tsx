@@ -3075,7 +3075,29 @@ function compactAuditValue(value: unknown) {
   if (typeof value === 'object') {
     return displayOperationalWording(JSON.stringify(value));
   }
-  return displayOperationalWording(String(value));
+  return displayOperationalWording(policyAuditValueText(String(value)));
+}
+
+function policyAuditValueText(value: string) {
+  if (!/^[A-Z0-9_]+$/.test(value) || !value.includes('_')) {
+    return value;
+  }
+  return value
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map(policyAuditValueWord)
+    .join(' ');
+}
+
+function policyAuditValueWord(part: string) {
+  const acronyms: Record<string, string> = {
+    api: 'API',
+    fcm: 'FCM',
+    mvp: 'MVP',
+    sms: 'SMS',
+  };
+  return acronyms[part] ?? part.charAt(0).toUpperCase() + part.slice(1);
 }
 
 function buildOwnerDecisionPressure(
