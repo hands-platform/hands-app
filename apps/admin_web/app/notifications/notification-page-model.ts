@@ -38,6 +38,7 @@ import {
   notificationDeliveryFailureReason,
   notificationDeliveryRecoveryHint,
 } from './notification-delivery-response';
+import { notificationFailureCodeLabel } from './notification-failure-copy';
 import type { NotificationDeliveryRow } from './notification-delivery-cell';
 import type { NotificationDeliveryOpsQueueItem } from './notification-delivery-ops-queue-section';
 import type { NotificationTableRow } from './notification-table-row';
@@ -559,7 +560,7 @@ function buildNotificationDeliveryRows(
       delivery.pushDevice?.enabled === false && delivery.pushDevice.id
         ? enablePushDeviceConfirmHref(delivery.pushDevice.id, actionContext)
         : null,
-    failureCodeLabel: notificationDeliveryFailureCode(delivery) ?? '-',
+    failureCodeLabel: deliveryFailureCodeLabel(delivery),
     failureReasonLabel: notificationDeliveryFailureReason(delivery) ?? '-',
     httpStatusLabel: String(delivery.response?.statusCode ?? '-'),
     id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
@@ -569,6 +570,11 @@ function buildNotificationDeliveryRows(
     status: delivery.status,
     statusClassName: deliveryStatusClassName(delivery.status),
   }));
+}
+
+function deliveryFailureCodeLabel(delivery: AdminNotificationDelivery) {
+  const failureCode = notificationDeliveryFailureCode(delivery);
+  return failureCode ? notificationFailureCodeLabel(failureCode) : '-';
 }
 
 function countDeliveries(notifications: readonly AdminNotification[], status: string) {

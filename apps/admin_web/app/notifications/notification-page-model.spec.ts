@@ -806,12 +806,52 @@ describe('notification page model', () => {
     ]);
 
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
-      failureCodeLabel: 'messaging/mismatched-credential',
+      failureCodeLabel: 'Firebase project mismatch',
       failureReasonLabel: 'registration token [masked]',
       provider: 'FCM',
       recoveryHintLabel:
         'Install Firebase Admin SDK JSON from the same Firebase project as the mobile app configs before retrying.',
       status: 'FAILED',
+      statusClassName: 'pill pill-warn',
+    });
+  });
+
+  it('labels API-stored FCM token failure metadata for failed queue review', () => {
+    const rows = buildNotificationTableRows([
+      notification({
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-token-failed',
+            provider: 'FCM',
+            pushDevice: {
+              enabled: true,
+              id: 'device-token',
+              lastSeenAt: '2026-06-01T10:02:00.000Z',
+              platform: 'android',
+            },
+            response: {
+              failureCode: 'messaging/registration-token-not-registered',
+              reason: 'registration token [masked] is not registered',
+              statusCode: 404,
+            },
+            status: 'FAILED',
+          },
+        ],
+        id: 'notification-token-failed',
+        type: 'payment.updated',
+      }),
+    ]);
+
+    expect(rows[0]).toMatchObject({
+      opsSignal: 'Retry needed',
+      signalClassName: 'signal signal-warn',
+    });
+    expect(rows[0]?.deliveryRows[0]).toMatchObject({
+      failureCodeLabel: 'FCM token needs refresh',
+      failureReasonLabel: 'registration token [masked] is not registered',
+      httpStatusLabel: '404',
+      recoveryHintLabel: 'Ask the user to reopen the app so it can register a fresh FCM token before retrying.',
       statusClassName: 'pill pill-warn',
     });
   });

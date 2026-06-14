@@ -11,7 +11,7 @@ export function notificationFailureCodeLabel(failureCode: string) {
   if (failureCode === 'PUSH_PROVIDER_NOT_CONFIGURED') {
     return 'FCM credentials missing';
   }
-  return `Failure ${failureCode}`;
+  return failureCode;
 }
 
 export function notificationFailureCodeClassName(failureCode: string) {
