@@ -15,6 +15,19 @@ type MatchingStageImpactStats = {
   overdue: number;
 };
 
+type MatchingStagePolicy = {
+  readonly responseWindowMinutes: number;
+  readonly backupRadiusMeters: number;
+  readonly freshnessMinutes: number;
+  readonly hardWalletBlock: boolean;
+};
+
+type MatchingStageOptions = {
+  readonly responseOptions: readonly number[];
+  readonly radiusOptions: readonly number[];
+  readonly freshnessOptions: readonly number[];
+};
+
 export type MatchingStageImpactPreview = {
   currentPolicyLabel: string;
   summary: Array<{ label: string; value: string; helper: string }>;
@@ -38,134 +51,124 @@ export function buildMatchingStageImpactPreview(
   providers: AdminProvider[],
   now = Date.now(),
 ): MatchingStageImpactPreview {
-  const livePolicy = buildAdminLiveOperationsPolicy(settings);
-  const responseWindowMinutes = livePolicy.providerResponseWindowMinutes;
-  const backupRadiusMeters = livePolicy.marketplaceRadiusMeters;
-  const freshnessMinutes = livePolicy.marketplaceLocationFreshnessMinutes;
-  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(livePolicy.walletNegativeGate);
+  const policy = readMatchingStagePolicy(settings);
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   );
-  const baseline = matchingStageImpactStats(
+  const baseline = matchingStageImpactStats(bookings, providers, policy, now);
+  const rows = buildMatchingStageImpactRows(
     bookings,
     providers,
-    {
-      responseWindowMinutes,
-      backupRadiusMeters,
-      freshnessMinutes,
-      hardWalletBlock,
-    },
+    policy,
+    buildMatchingStageOptions(policy),
+    baseline,
     now,
   );
-  const responseOptions = uniqueNumbers([5, responseWindowMinutes, 10, 15]).sort(
-    (left, right) => left - right,
-  );
-  const radiusOptions = uniqueNumbers([5000, backupRadiusMeters, 10000, 15000]).sort(
-    (left, right) => left - right,
-  );
-  const freshnessOptions = uniqueNumbers([15, freshnessMinutes, 30, 60]).sort((left, right) => left - right);
-
-  const rows = [
-    ...responseOptions.map((value) => {
-      const stats = matchingStageImpactStats(
-        bookings,
-        providers,
-        {
-          responseWindowMinutes: value,
-          backupRadiusMeters,
-          freshnessMinutes,
-          hardWalletBlock,
-        },
-        now,
-      );
-      return matchingStageImpactRow(
-        'Response window',
-        `${value} min`,
-        stats,
-        baseline,
-        value === responseWindowMinutes,
-      );
-    }),
-    ...radiusOptions.map((value) => {
-      const stats = matchingStageImpactStats(
-        bookings,
-        providers,
-        {
-          responseWindowMinutes,
-          backupRadiusMeters: value,
-          freshnessMinutes,
-          hardWalletBlock,
-        },
-        now,
-      );
-      return matchingStageImpactRow(
-        'Marketplace policy',
-        formatDistance(value),
-        stats,
-        baseline,
-        value === backupRadiusMeters,
-      );
-    }),
-    ...freshnessOptions.map((value) => {
-      const stats = matchingStageImpactStats(
-        bookings,
-        providers,
-        {
-          responseWindowMinutes,
-          backupRadiusMeters,
-          freshnessMinutes: value,
-          hardWalletBlock,
-        },
-        now,
-      );
-      return matchingStageImpactRow(
-        'Location freshness',
-        `${value} min`,
-        stats,
-        baseline,
-        value === freshnessMinutes,
-      );
-    }),
-  ];
 
   return {
-    currentPolicyLabel: `${responseWindowMinutes}m / ${formatDistance(backupRadiusMeters)} / ${freshnessMinutes}m fresh`,
-    summary: [
-      {
-        label: 'Open matching sample',
-        value: openBookings.length.toString(),
-        helper: 'Bookings currently waiting inside Stage 1, Stage 2, or Stage 3.',
-      },
-      {
-        label: 'Current Stage 2 marketplace',
-        value: baseline.stage2.toString(),
-        helper: 'Open bookings with usable marketplace partner supply under the current policy.',
-      },
-      {
-        label: 'Current no supply',
-        value: baseline.noSupply.toString(),
-        helper: 'Open bookings that would show customer waiting without usable marketplace supply.',
-      },
-      {
-        label: 'Stage 4 repair',
-        value: baseline.repair.toString(),
-        helper: `${liveHandoff.length} matched/live booking(s) checked for missing chat handoff.`,
-      },
-    ],
+    currentPolicyLabel: `${policy.responseWindowMinutes}m / ${formatDistance(policy.backupRadiusMeters)} / ${policy.freshnessMinutes}m fresh`,
+    summary: buildMatchingStageImpactSummary(openBookings, liveHandoff, baseline),
     rows,
   };
+}
+
+function readMatchingStagePolicy(settings: AdminOperationalPolicySetting[]): MatchingStagePolicy {
+  const livePolicy = buildAdminLiveOperationsPolicy(settings);
+  return {
+    responseWindowMinutes: livePolicy.providerResponseWindowMinutes,
+    backupRadiusMeters: livePolicy.marketplaceRadiusMeters,
+    freshnessMinutes: livePolicy.marketplaceLocationFreshnessMinutes,
+    hardWalletBlock: adminWalletGateBlocksMarketplaceParticipation(livePolicy.walletNegativeGate),
+  };
+}
+
+function buildMatchingStageOptions(policy: MatchingStagePolicy): MatchingStageOptions {
+  return {
+    responseOptions: uniqueNumbers([5, policy.responseWindowMinutes, 10, 15]).sort(
+      (left, right) => left - right,
+    ),
+    radiusOptions: uniqueNumbers([5000, policy.backupRadiusMeters, 10000, 15000]).sort(
+      (left, right) => left - right,
+    ),
+    freshnessOptions: uniqueNumbers([15, policy.freshnessMinutes, 30, 60]).sort(
+      (left, right) => left - right,
+    ),
+  };
+}
+
+function buildMatchingStageImpactRows(
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+  policy: MatchingStagePolicy,
+  options: MatchingStageOptions,
+  baseline: MatchingStageImpactStats,
+  now: number,
+): MatchingStageImpactPreview['rows'] {
+  return [
+    ...options.responseOptions.map((value) =>
+      matchingStageImpactRow(
+        'Response window',
+        `${value} min`,
+        matchingStageImpactStats(bookings, providers, { ...policy, responseWindowMinutes: value }, now),
+        baseline,
+        value === policy.responseWindowMinutes,
+      ),
+    ),
+    ...options.radiusOptions.map((value) =>
+      matchingStageImpactRow(
+        'Marketplace policy',
+        formatDistance(value),
+        matchingStageImpactStats(bookings, providers, { ...policy, backupRadiusMeters: value }, now),
+        baseline,
+        value === policy.backupRadiusMeters,
+      ),
+    ),
+    ...options.freshnessOptions.map((value) =>
+      matchingStageImpactRow(
+        'Location freshness',
+        `${value} min`,
+        matchingStageImpactStats(bookings, providers, { ...policy, freshnessMinutes: value }, now),
+        baseline,
+        value === policy.freshnessMinutes,
+      ),
+    ),
+  ];
+}
+
+function buildMatchingStageImpactSummary(
+  openBookings: readonly AdminBooking[],
+  liveHandoff: readonly AdminBooking[],
+  baseline: MatchingStageImpactStats,
+): MatchingStageImpactPreview['summary'] {
+  return [
+    {
+      label: 'Open matching sample',
+      value: openBookings.length.toString(),
+      helper: 'Bookings currently waiting inside Stage 1, Stage 2, or Stage 3.',
+    },
+    {
+      label: 'Current Stage 2 marketplace',
+      value: baseline.stage2.toString(),
+      helper: 'Open bookings with usable marketplace partner supply under the current policy.',
+    },
+    {
+      label: 'Current no supply',
+      value: baseline.noSupply.toString(),
+      helper: 'Open bookings that would show customer waiting without usable marketplace supply.',
+    },
+    {
+      label: 'Stage 4 repair',
+      value: baseline.repair.toString(),
+      helper: `${liveHandoff.length} matched/live booking(s) checked for missing chat handoff.`,
+    },
+  ];
 }
 
 function matchingStageImpactStats(
   bookings: AdminBooking[],
   providers: AdminProvider[],
-  policy: {
-    responseWindowMinutes: number;
-    backupRadiusMeters: number;
-    freshnessMinutes: number;
-    hardWalletBlock: boolean;
-  },
+  policy: MatchingStagePolicy,
   now: number,
 ): MatchingStageImpactStats {
   return bookings.reduce<MatchingStageImpactStats>(
