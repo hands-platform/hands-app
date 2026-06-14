@@ -50,6 +50,9 @@ describe('setup command groups', () => {
     expect(groups.find((group) => group.title === 'Review queues and evidence')?.detail).toContain(
       'pending for worker backlog',
     );
+    expect(groups.find((group) => group.title === 'API preflight')?.detail).toContain(
+      'post-send retry audit freshness',
+    );
     expect(groups.find((group) => group.title === 'Review queues and evidence')?.commands).toEqual([
       'Open http://localhost:3101/notifications?review=fcm',
       'Open http://localhost:3101/operations-handoff',

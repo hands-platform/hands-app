@@ -58,7 +58,7 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
     {
       title: 'API preflight',
       detail:
-        'Check API readiness, Firebase project alignment, notification availability, registered device state, and partner-alert policy without sending FCM.',
+        'Check API readiness, Firebase project alignment, notification availability, registered device state, Partner alert policy, and post-send retry audit freshness without sending FCM.',
       commands: commands.filter(
         (command) => command.includes('--preflight') && !command.includes('FCM_SMOKE_NOTIFICATION_ID'),
       ),

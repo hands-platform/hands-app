@@ -347,7 +347,7 @@ describe('notification action confirmation', () => {
     );
   });
 
-  it('keeps FCM setup guidance when retrying from the recovery queue', () => {
+  it('keeps FCM setup guidance when retrying from the token recovery path', () => {
     const confirmation = buildNotificationActionConfirmation([notification], 'retry', {
       notificationId: notification.id,
       pushDeviceId: '',

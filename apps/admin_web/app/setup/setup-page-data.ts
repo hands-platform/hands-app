@@ -220,6 +220,7 @@ export const setupOrder = [
       'Run fcm:token-recovery-smoke after token registration changes; it verifies disabled-token re-enable and replacement-token behavior without contacting FCM.',
       'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
       'Run fcm:push-smoke -- --preflight to check API readiness, Firebase project alignment, notification availability, and registered device readiness without sending FCM.',
+      'After a live fcm:push-smoke, rerun fcm:push-smoke -- --preflight and confirm retryAuditPreflight.evidence is HAS_PUSH_DEVICE_LAST_SEEN_AT before relying on stale-token decisions.',
       'If the latest Partner alert is blocked by notification.partner_alert_channel, FCM smoke auto-selects or suggests a standard-notification id instead of changing policy just for testing.',
       'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
       'Use the notification board to separate credential or delivery failures, disabled tokens, stale tokens, and pending worker queue issues before retry.',

@@ -96,6 +96,7 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('disabled-token recovery');
     expect(rendered).toContain('without sending FCM push');
     expect(rendered).toContain('API preflight');
+    expect(rendered).toContain('post-send retry audit freshness');
     expect(rendered).toContain('without sending FCM');
     expect(rendered).toContain('Partner alert policy fallback');
     expect(rendered).toContain('When Partner alert preflight is routed to in-app delivery');
