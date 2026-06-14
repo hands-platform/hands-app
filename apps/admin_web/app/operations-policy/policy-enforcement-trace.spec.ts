@@ -26,8 +26,8 @@ describe('policy enforcement trace', () => {
     ]);
     expect(trace[0]).toMatchObject({
       title: '12 minute first-pick timer',
-      api: 'POST /customer/bookings',
-      server: 'BookingsService.createBooking -> MatchingService.openBooking',
+      api: 'Customer booking creation endpoint',
+      server: 'Booking creation flow -> matching open flow',
     });
     expect(trace[1]).toMatchObject({
       title: '15 km marketplace alert policy',
@@ -37,5 +37,7 @@ describe('policy enforcement trace', () => {
     expect(trace[3].title).toBe('Customer final selection policy conflict');
     expect(trace[4].title).toBe('Legacy delayed value normalized to immediate marketplace');
     expect(trace[5].title).toBe('Negative wallet gates marketplace alerts and participation');
+    expect(trace.map((row) => `${row.api} ${row.server}`).join(' ')).not.toContain('/provider');
+    expect(trace.map((row) => `${row.api} ${row.server}`).join(' ')).not.toContain('select-provider');
   });
 });

@@ -56,8 +56,8 @@ export function buildPolicyEnforcementTrace(
       title: `${responseWindowMinutes} minute first-pick timer`,
       detail:
         'New direct bookings store the current response-window policy in booking metadata and expiry time.',
-      api: 'POST /customer/bookings',
-      server: 'BookingsService.createBooking -> MatchingService.openBooking',
+      api: 'Customer booking creation endpoint',
+      server: 'Booking creation flow -> matching open flow',
       verify:
         'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
     },
@@ -66,7 +66,7 @@ export function buildPolicyEnforcementTrace(
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail:
         'Marketplace Partners are prioritized by booking-address distance before alerts and operator review.',
-      api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
+      api: 'Partner open-request list and marketplace join endpoints',
       server: 'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
@@ -75,8 +75,8 @@ export function buildPolicyEnforcementTrace(
       title: `${backupLocationFreshnessMinutes} minute location freshness`,
       detail:
         'Partners with stale or missing last location are flagged before marketplace alerts, participation, and shown as dispatch checks.',
-      api: 'POST /provider/location, GET /provider/bookings/open',
-      server: 'Marketplace eligibility pipeline -> providerLocationFreshEnough',
+      api: 'Partner location heartbeat and open-request list endpoints',
+      server: 'Marketplace eligibility pipeline -> location freshness guard',
       verify:
         'Verify by opening App Sessions and Partner Controls after a partner app sends or misses a location heartbeat.',
     },
@@ -88,8 +88,8 @@ export function buildPolicyEnforcementTrace(
           : 'Customer final selection policy conflict',
       detail:
         'The first-pick Partner can match first under API rules; otherwise the customer selects from participating Partners. Treat policies that remove the fallback as an operations conflict.',
-      api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider',
-      server: 'BookingsService.updateParticipant -> BookingsService.selectProvider',
+      api: 'Partner accept endpoint and customer final-choice endpoint',
+      server: 'Participant response flow -> customer final-choice guard',
       verify:
         'Verify by creating a direct booking, sending the partner response in the Partner app, then checking the customer waiting screen.',
     },
@@ -97,8 +97,8 @@ export function buildPolicyEnforcementTrace(
       scope: 'Marketplace timing',
       title: marketplaceTimingTitle,
       detail: marketplaceTimingDetail,
-      api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
-      server: 'BookingsService.isBackupWindowOpen',
+      api: 'Partner open-request list and marketplace join endpoints',
+      server: 'Marketplace timing guard',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',
     },
     {
@@ -108,8 +108,8 @@ export function buildPolicyEnforcementTrace(
         : 'Historical exception mode is not active for MVP',
       detail:
         'Cash-service company fee debt is enforced before marketplace alerts, participation, and payout release.',
-      api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
-      server: 'BookingsService.joinBooking wallet guard -> EarningsService wallet release guards',
+      api: 'Partner marketplace join endpoint and admin payout batch endpoint',
+      server: 'Booking join wallet guard -> earnings payout release guards',
       verify:
         'Verify from Cash Settlements, Partner Controls, and a blocked marketplace participation attempt in the partner app.',
     },

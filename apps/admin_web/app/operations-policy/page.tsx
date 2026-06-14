@@ -689,8 +689,8 @@ export default async function OperationsPolicyPage({
               <span className="pill pill-success">{item.scope}</span>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
-              <small>{`API route: ${item.api}`}</small>
-              <small>{`Server path: ${item.server}`}</small>
+              <small>{`API touchpoint: ${item.api}`}</small>
+              <small>{`Server owner: ${item.server}`}</small>
               <small>{item.verify}</small>
             </div>
           ))}
