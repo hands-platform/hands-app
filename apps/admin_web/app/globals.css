@@ -1212,6 +1212,37 @@ textarea:focus-visible {
   outline-offset: -2px;
 }
 
+.notification-table-shell {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.notification-table-shell .admin-table-scroll {
+  min-width: 0;
+  width: 100%;
+}
+
+.notification-table-shell .table {
+  min-width: 860px;
+}
+
+.notification-table-shell .table th:nth-child(4),
+.notification-table-shell .table td:nth-child(4) {
+  min-width: 180px;
+}
+
+.notification-table-shell .table th:nth-child(5),
+.notification-table-shell .table td:nth-child(5) {
+  min-width: 180px;
+}
+
+.notification-table-shell .table th:nth-child(6),
+.notification-table-shell .table td:nth-child(6) {
+  min-width: 260px;
+}
+
 .notification-delivery-summary {
   align-items: center;
   cursor: pointer;
@@ -1219,6 +1250,11 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 6px;
   max-width: 360px;
+  overflow-wrap: anywhere;
+}
+
+.notification-delivery-summary .muted {
+  overflow-wrap: anywhere;
 }
 
 .notification-delivery-disclosure[open] .notification-delivery-summary {
@@ -1227,6 +1263,7 @@ textarea:focus-visible {
 
 .notification-delivery-attempt {
   max-width: 380px;
+  overflow-wrap: anywhere;
 }
 
 .notification-delivery-attempt:last-child {

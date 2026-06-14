@@ -10,16 +10,18 @@ type NotificationsTableSectionProps = {
 
 export function NotificationsTableSection({ emptyMessage, rows }: NotificationsTableSectionProps) {
   return (
-    <AdminTableScroll>
-      <AdminDataTable
-        emptyMessage={emptyMessage}
-        headers={['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action']}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <NotificationTableRowItem key={row.id} row={row} />
-        ))}
-      </AdminDataTable>
-    </AdminTableScroll>
+    <div className="notification-table-shell">
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={emptyMessage}
+          headers={['Time', 'User', 'Type', 'Title', 'Ops record', 'Delivery', 'Action']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <NotificationTableRowItem key={row.id} row={row} />
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </div>
   );
 }

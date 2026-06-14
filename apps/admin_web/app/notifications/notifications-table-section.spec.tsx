@@ -42,6 +42,7 @@ describe('NotificationsTableSection', () => {
     expect(rendered).toContain('Re-enable device');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'notification-table-shell',
         'admin-table-scroll',
         'notification-delivery-attempt admin-mb-10',
         'pill pill-warn',
