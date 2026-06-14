@@ -11,19 +11,19 @@ export function emptyBookingMessage(view: BookingPageView) {
     return 'No matching escalation bookings match this queue. First-pick, marketplace supply, customer selection, and chat handoff are clear.';
   }
   if (view === 'first-pick') {
-    return 'No Stage 1 first-pick bookings are waiting. The direct partner response window is clear.';
+    return 'No Stage 1 first-pick bookings are waiting. The direct Partner response window is clear.';
   }
   if (view === 'marketplace') {
-    return 'No Stage 2 marketplace bookings need partner participation review right now.';
+    return 'No Stage 2 marketplace bookings need Partner participation review right now.';
   }
   if (view === 'customer-choice') {
-    return 'No Stage 3 customer choice bookings are waiting. Participating/accepted partners are not blocked on customer selection.';
+    return 'No Stage 3 customer choice bookings are waiting. Participating/accepted Partners are not blocked on customer selection.';
   }
   if (view === 'handoff-repair') {
     return 'No Stage 4 handoff repair bookings are missing chat.';
   }
   if (view === 'no-supply') {
-    return 'No open matching booking is waiting without partner supply.';
+    return 'No open matching booking is waiting without Partner supply.';
   }
   if (view === 'blocked-create') {
     return 'Blocked booking create attempts are listed above. No booking row exists because payment and matching did not start.';
@@ -35,10 +35,10 @@ export function emptyBookingMessage(view: BookingPageView) {
     return 'No manual-decision bookings need review. Cancellation, no-show, refund/release, cash debt, and completed closeout queues are clear.';
   }
   if (view === 'payment') {
-    return 'No payment-check bookings match this queue. Capture, release, refund, cash, and partner refs are clear.';
+    return 'No payment-check bookings match this queue. Capture, release, refund, cash, and Partner refs are clear.';
   }
   if (view === 'cash-debt') {
-    return 'No cash booking currently has open partner fee/tax debt.';
+    return 'No cash booking currently has open Partner fee/tax debt.';
   }
   if (view === 'closeout') {
     return 'No completed closeout-check bookings match this queue. Capture, earning, tax, fee, and wallet records are aligned.';
@@ -50,7 +50,7 @@ export function emptyBookingMessage(view: BookingPageView) {
     return 'No location-check bookings match this queue. Live service location records look acceptable.';
   }
   if (view === 'chat') {
-    return 'No chat-live bookings match this queue. No active customer/partner conversation needs review.';
+    return 'No chat-live bookings match this queue. No active customer/Partner conversation needs review.';
   }
   if (view === 'chat-repair') {
     return 'No matched or active booking is missing chat right now.';

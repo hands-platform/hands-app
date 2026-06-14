@@ -7,7 +7,7 @@ describe('booking empty messages', () => {
       'Blocked booking create attempts are listed above. No booking row exists because payment and matching did not start.',
     );
     expect(emptyBookingMessage('customer-choice')).toBe(
-      'No Stage 3 customer choice bookings are waiting. Participating/accepted partners are not blocked on customer selection.',
+      'No Stage 3 customer choice bookings are waiting. Participating/accepted Partners are not blocked on customer selection.',
     );
   });
 
