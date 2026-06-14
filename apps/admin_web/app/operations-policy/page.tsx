@@ -44,6 +44,7 @@ import {
   summarizeSnapshotValues,
 } from './policy-snapshot';
 import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
+import { OperationsPolicyActionGateChecklistSection } from './operations-policy-action-gate-checklist-section';
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -163,47 +164,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyAuthorityBaselineSection />
 
-      <section className="card admin-mb-16" id="action-gate-policy-checklist">
-        <div className="ops-section-header">
-          <div>
-            <h2>Action gate policy checklist</h2>
-            <p className="muted">
-              These admin-editable policies explain which evidence operators should check before booking
-              capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed
-              closeout actions.
-            </p>
-          </div>
-          <span
-            className={`pill ${
-              actionGatePolicyChecklist.alignedCount === actionGatePolicyChecklist.totalCount
-                ? 'pill-success'
-                : 'pill-warn'
-            }`}
-          >
-            {actionGatePolicyChecklist.alignedCount}/{actionGatePolicyChecklist.totalCount} recommended
-          </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {actionGatePolicyChecklist.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {actionGatePolicyChecklist.cards.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <span className={`pill ${item.pillClass}`}>{item.status}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <small>Current: {item.current}</small>
-              <small>{item.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyActionGateChecklistSection checklist={actionGatePolicyChecklist} />
 
       <section className="card admin-mb-16">
         <div className="ops-section-header">
