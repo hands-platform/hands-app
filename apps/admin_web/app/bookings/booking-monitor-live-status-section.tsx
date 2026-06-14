@@ -19,7 +19,7 @@ export function BookingMonitorLiveStatusSection({
         {summary.map(([label, value]) => (
           <div className="card" key={label}>
             <p>{label}</p>
-            <h2>{value}</h2>
+            <strong className="admin-summary-card-value">{value}</strong>
           </div>
         ))}
       </section>
