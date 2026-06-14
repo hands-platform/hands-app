@@ -93,6 +93,9 @@ describe('booking participant ledger', () => {
       choiceState: 'Customer final choice',
       eligibilityLabel: 'Final selected by customer',
     });
+    expect(ledger.lifecycleRows.find((row) => row.stage === '3. Customer final choice')).toMatchObject({
+      evidence: 'Selected Partner is saved as the selected Partner.',
+    });
     expect(ledger.rows.find((row) => row.id === 'participant-selected')?.facts).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: 'Source', value: 'Final Partner', tone: 'pill-success' }),

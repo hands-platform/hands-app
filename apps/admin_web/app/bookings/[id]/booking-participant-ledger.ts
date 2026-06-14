@@ -231,7 +231,7 @@ export function bookingParticipantLedger(
             ? 'pill-warn'
             : 'pill-neutral',
         evidence: finalPartnerRecorded
-          ? `${finalPartner.label} is saved as selectedProvider.`
+          ? `${finalPartner.label} is saved as the selected Partner.`
           : `${customerSelectableParticipants.length} customer-selectable Partner(s) available.`,
         operatorUse:
           'If final Partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
