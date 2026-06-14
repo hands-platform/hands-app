@@ -330,9 +330,11 @@ export default async function OperationsPolicyPage({
             {bookingCreateGateReview.recentAttempts.map((attempt) => (
               <article className="ops-task-card" key={attempt.id}>
                 <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
-                <h3>{shortId(attempt.id)}</h3>
+                <h3>Blocked booking create attempt</h3>
                 <p>{attempt.detail}</p>
-                <small>Recorded {formatDate(attempt.createdAt)}</small>
+                <small>
+                  Attempt {shortId(attempt.id)} - Recorded {formatDate(attempt.createdAt)}
+                </small>
                 <div className="actions admin-mt-10">
                   <Link className="text-link" href={attempt.href}>
                     Open evidence
