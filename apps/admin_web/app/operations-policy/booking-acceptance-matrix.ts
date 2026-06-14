@@ -21,12 +21,46 @@ import {
 } from '../../lib/operations-policy';
 import { formatDistance } from './policy-simulation';
 
+type BookingAcceptancePolicy = {
+  readonly backupLocationFreshnessMinutes: number;
+  readonly backupRadiusMeters: number;
+  readonly customerFinalChoice: boolean;
+  readonly hardWalletBlock: boolean;
+  readonly immediateBackup: boolean;
+  readonly pushReady: boolean;
+  readonly responseWindowMinutes: number;
+};
+
+type BookingAcceptanceBaseline = {
+  readonly locationFreshness: boolean;
+  readonly radius: boolean;
+  readonly timer: boolean;
+};
+
 export function buildBookingAcceptanceMatrix(
   settings: readonly AdminOperationalPolicySetting[],
   providers: readonly AdminProvider[],
 ) {
-  const policySettings = [...settings];
   const providerRows = [...providers];
+  const policy = readBookingAcceptancePolicy(settings);
+  const cards = buildBookingAcceptanceCards(policy, baselineForPolicy(policy));
+  const impact = buildPartnerAcceptancePolicyImpact(providerRows, {
+    backupLocationFreshnessMinutes: policy.backupLocationFreshnessMinutes,
+    hardWalletBlock: policy.hardWalletBlock,
+  });
+
+  return {
+    blockingCount: cards.filter((card) => card.blocking).length,
+    summary: buildBookingAcceptanceSummary(policy),
+    cards,
+    impact,
+  };
+}
+
+function readBookingAcceptancePolicy(
+  settings: readonly AdminOperationalPolicySetting[],
+): BookingAcceptancePolicy {
+  const policySettings = [...settings];
   const responseWindowMinutes =
     readPolicyNumber(policySettings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes;
@@ -52,138 +86,146 @@ export function buildBookingAcceptanceMatrix(
     readPolicyString(policySettings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
 
-  const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const immediateBackup = marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
-  const pushReady = adminPartnerAlertChannelRoutesToFcm(alertChannel);
-  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
-  const baselineRadius = backupRadiusMeters === 10000;
-  const baselineTimer = responseWindowMinutes === 10;
-  const baselineLocationFreshness = backupLocationFreshnessMinutes === 30;
+  return {
+    backupLocationFreshnessMinutes,
+    backupRadiusMeters,
+    customerFinalChoice: preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+    hardWalletBlock: adminWalletGateBlocksMarketplaceParticipation(walletGate),
+    immediateBackup: marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW',
+    pushReady: adminPartnerAlertChannelRoutesToFcm(alertChannel),
+    responseWindowMinutes,
+  };
+}
 
-  const cards = [
+function baselineForPolicy(policy: BookingAcceptancePolicy): BookingAcceptanceBaseline {
+  return {
+    locationFreshness: policy.backupLocationFreshnessMinutes === 30,
+    radius: policy.backupRadiusMeters === 10000,
+    timer: policy.responseWindowMinutes === 10,
+  };
+}
+
+function buildBookingAcceptanceCards(
+  policy: BookingAcceptancePolicy,
+  baseline: BookingAcceptanceBaseline,
+) {
+  return [
     {
       title: 'First-pick response window',
-      status: baselineTimer ? 'HANDS baseline' : 'Owner override',
-      detail: `The first selected partner has ${responseWindowMinutes} minute(s) before the request needs operator attention.`,
-      operatorAction: baselineTimer
+      status: baseline.timer ? 'HANDS baseline' : 'Owner override',
+      detail: `The first selected partner has ${policy.responseWindowMinutes} minute(s) before the request needs operator attention.`,
+      operatorAction: baseline.timer
         ? 'Keep this at 10 minutes until live response-rate data says otherwise.'
         : 'Monitor customer wait complaints and first-pick acceptance rate before keeping this override.',
-      className: baselineTimer ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: baselineTimer ? 'pill-success' : 'pill-warn',
-      blocking: !baselineTimer,
+      className: baseline.timer ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baseline.timer ? 'pill-success' : 'pill-warn',
+      blocking: !baseline.timer,
     },
     {
       title: 'Marketplace Partner pool',
-      status: baselineRadius ? 'Default policy' : 'Custom policy',
-      detail: `Marketplace participation currently uses ${formatDistance(backupRadiusMeters)} as an operating alert and distance-ordering policy.`,
-      operatorAction: baselineRadius
+      status: baseline.radius ? 'Default policy' : 'Custom policy',
+      detail: `Marketplace participation currently uses ${formatDistance(policy.backupRadiusMeters)} as an operating alert and distance-ordering policy.`,
+      operatorAction: baseline.radius
         ? 'This matches the current operating baseline for partner participation alerts.'
         : 'Review city supply, arrival time, and ignored marketplace alerts before changing policy.',
-      className: baselineRadius ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: baselineRadius ? 'pill-success' : 'pill-warn',
-      blocking: !baselineRadius,
+      className: baseline.radius ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baseline.radius ? 'pill-success' : 'pill-warn',
+      blocking: !baseline.radius,
     },
     {
       title: 'Marketplace location freshness',
-      status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
-      detail: `Marketplace Partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
-      operatorAction: baselineLocationFreshness
+      status: baseline.locationFreshness ? '30m default' : 'Custom freshness',
+      detail: `Marketplace Partner location freshness is checked at ${policy.backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
+      operatorAction: baseline.locationFreshness
         ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
         : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
-      className: baselineLocationFreshness ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: baselineLocationFreshness ? 'pill-success' : 'pill-warn',
-      blocking: !baselineLocationFreshness,
+      className: baseline.locationFreshness ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baseline.locationFreshness ? 'pill-success' : 'pill-warn',
+      blocking: !baseline.locationFreshness,
     },
     {
       title: 'Marketplace visibility timing',
-      status: immediateBackup ? 'Visible during wait' : 'Legacy value review',
-      detail: immediateBackup
+      status: policy.immediateBackup ? 'Visible during wait' : 'Legacy value review',
+      detail: policy.immediateBackup
         ? 'Nearby Partners can participate while the first-pick Partner is still deciding.'
         : 'Custom marketplace timing values need API review before rollout.',
-      operatorAction: immediateBackup
+      operatorAction: policy.immediateBackup
         ? 'This best matches the customer waiting screen where available marketplace Partners appear early.'
         : 'Keep immediate marketplace participation unless a new approved policy is added.',
-      className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
-      blocking: !immediateBackup,
+      className: policy.immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: policy.immediateBackup ? 'pill-success' : 'pill-warn',
+      blocking: !policy.immediateBackup,
     },
     {
       title: 'Customer final selection',
-      status: customerFinalChoice ? 'Customer controls' : 'Customer-choice conflict',
-      detail: customerFinalChoice
+      status: policy.customerFinalChoice ? 'Customer controls' : 'Customer-choice conflict',
+      detail: policy.customerFinalChoice
         ? 'Customer fallback selection applies when first-pick does not validly match first.'
         : 'This setting would remove the customer fallback choice step.',
-      operatorAction: customerFinalChoice
+      operatorAction: policy.customerFinalChoice
         ? 'Keep first-pick priority with customer fallback before production rollout.'
         : 'Return this policy to customer-confirm mode before production use.',
-      className: customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: customerFinalChoice ? 'pill-success' : 'pill-danger',
-      blocking: !customerFinalChoice,
+      className: policy.customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: policy.customerFinalChoice ? 'pill-success' : 'pill-danger',
+      blocking: !policy.customerFinalChoice,
     },
     {
       title: 'Partner alert delivery',
-      status: pushReady ? 'Push enabled' : 'In-app first',
-      detail: pushReady
+      status: policy.pushReady ? 'Push enabled' : 'In-app first',
+      detail: policy.pushReady
         ? 'Partner booking and marketplace participation alerts are ready to route through FCM.'
         : 'Booking notifications are recorded in-app until FCM production setup is fully ready.',
-      operatorAction: pushReady
+      operatorAction: policy.pushReady
         ? 'Monitor delivery failures and disabled devices on the Notifications board.'
         : 'Keep this until FCM and production SMS credentials/monitoring are complete.',
-      className: pushReady ? 'ops-task-done' : 'ops-task-pending',
-      pillClass: pushReady ? 'pill-success' : 'pill-info',
+      className: policy.pushReady ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: policy.pushReady ? 'pill-success' : 'pill-info',
       blocking: false,
     },
     {
       title: 'Negative wallet gate',
-      status: hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
-      detail: hardWalletBlock
+      status: policy.hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
+      detail: policy.hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance, service start, and payout release wait for settlement.'
         : 'Historical exception mode is retained for audit only. Final acceptance, service start, and payout release should remain blocked until settlement.',
-      operatorAction: hardWalletBlock
+      operatorAction: policy.hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
         : 'Reset to the marketplace hold policy after reviewing the saved setting.',
-      className: hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: hardWalletBlock ? 'pill-success' : 'pill-danger',
-      blocking: !hardWalletBlock,
+      className: policy.hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: policy.hardWalletBlock ? 'pill-success' : 'pill-danger',
+      blocking: !policy.hardWalletBlock,
     },
   ];
-  const impact = buildPartnerAcceptancePolicyImpact(providerRows, {
-    backupLocationFreshnessMinutes,
-    hardWalletBlock,
-  });
+}
 
-  return {
-    blockingCount: cards.filter((card) => card.blocking).length,
-    summary: [
-      {
-        label: 'First-pick timer',
-        value: `${responseWindowMinutes} min`,
-        helper: 'Partner accepts or the request needs operator attention.',
-      },
-      {
-        label: 'Marketplace policy',
-        value: formatDistance(backupRadiusMeters),
-        helper: 'Nearby partners who can participate.',
-      },
-      {
-        label: 'Location freshness',
-        value: `${backupLocationFreshnessMinutes} min`,
-        helper: 'Marketplace alerts flag older partner locations.',
-      },
-      {
-        label: 'Marketplace timing',
-        value: immediateBackup ? 'Immediate' : 'Delayed',
-        helper: 'Visibility during first-pick wait.',
-      },
-      {
-        label: 'Final match',
-        value: customerFinalChoice ? 'Customer chooses' : 'Policy conflict',
-        helper: 'Customer fallback selection remains available unless first-pick validly matches first.',
-      },
-    ],
-    cards,
-    impact,
-  };
+function buildBookingAcceptanceSummary(policy: BookingAcceptancePolicy) {
+  return [
+    {
+      label: 'First-pick timer',
+      value: `${policy.responseWindowMinutes} min`,
+      helper: 'Partner accepts or the request needs operator attention.',
+    },
+    {
+      label: 'Marketplace policy',
+      value: formatDistance(policy.backupRadiusMeters),
+      helper: 'Nearby partners who can participate.',
+    },
+    {
+      label: 'Location freshness',
+      value: `${policy.backupLocationFreshnessMinutes} min`,
+      helper: 'Marketplace alerts flag older partner locations.',
+    },
+    {
+      label: 'Marketplace timing',
+      value: policy.immediateBackup ? 'Immediate' : 'Delayed',
+      helper: 'Visibility during first-pick wait.',
+    },
+    {
+      label: 'Final match',
+      value: policy.customerFinalChoice ? 'Customer chooses' : 'Policy conflict',
+      helper: 'Customer fallback selection remains available unless first-pick validly matches first.',
+    },
+  ];
 }
 
 function buildPartnerAcceptancePolicyImpact(
