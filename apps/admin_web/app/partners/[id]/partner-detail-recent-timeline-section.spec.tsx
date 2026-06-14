@@ -39,6 +39,29 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('No partner event matched this filter');
     expect(rendered).toContain('Clear the date filter or choose a wider period.');
   });
+
+  it('normalizes internal provider wording in timeline titles and details', () => {
+    const section = PartnerDetailRecentTimelineSection({
+      formatDate: (value) => value,
+      records: [
+        {
+          at: '2026-06-01T10:00:00.000Z',
+          detail: 'System / {"providerProfileId":"provider-1"}',
+          href: '#app-activity',
+          id: 'event-2',
+          title: 'provider.supabase_role_sync.skipped',
+          type: 'OPS',
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('partner.supabase_role_sync.skipped');
+    expect(rendered).toContain('partnerProfileId');
+    expect(rendered).not.toContain('provider.');
+    expect(rendered).not.toContain('providerProfileId');
+  });
 });
 
 function textContent(value: unknown): string {

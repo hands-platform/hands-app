@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
+
 export type PartnerDetailRecentTimelineRecord = {
   readonly at: string;
   readonly detail: string;
@@ -42,9 +44,9 @@ export function PartnerDetailRecentTimelineSection({
               <span>{record.type}</span>
               <div>
                 <Link className="text-link" href={record.href}>
-                  <strong>{record.title}</strong>
+                  <strong>{marketplaceDisplayText(record.title)}</strong>
                 </Link>
-                <p className="muted">{record.detail}</p>
+                <p className="muted">{marketplaceDisplayText(record.detail)}</p>
               </div>
               <small>{formatDate(record.at)}</small>
             </div>
