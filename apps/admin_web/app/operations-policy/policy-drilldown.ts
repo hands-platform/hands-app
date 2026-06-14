@@ -8,80 +8,16 @@ import {
   byNewestBooking,
   shortId,
 } from './policy-booking-format';
-import type { PolicyDrilldownListView } from './operations-policy-drilldown-section';
+import type { PolicyDrilldownListView, PolicyDrilldownRow } from './operations-policy-drilldown-section';
 import { bookingPolicySnapshotDrift } from './policy-snapshot';
 
 export function buildPolicyDrilldown(
   bookings: readonly AdminBooking[],
   settings: AdminOperationalPolicySetting[],
 ) {
-  const openMatchingRows = bookings
-    .filter((booking) => booking.status === 'OPEN_MATCHING')
-    .sort(byNewestBooking)
-    .slice(0, 6)
-    .map((booking) => {
-      const participantCount = booking.participants?.length ?? 0;
-      return {
-        id: booking.id,
-        href: `/bookings/${booking.id}`,
-        title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
-        subtitle: `${bookingPartnerLabel(booking)} / ${bookingCustomerLabel(booking)}`,
-        pills: [
-          { label: booking.status, className: 'pill-warn' },
-          {
-            label: `${participantCount} participant(s)`,
-            className: participantCount ? 'pill-info' : 'pill-neutral',
-          },
-          {
-            label: booking.expiresAt
-              ? `expires ${formatRelativeTime(booking.expiresAt, { justNow: 'Just now', includeFuture: true })}`
-              : 'no expiry',
-            className: 'pill-info',
-          },
-        ],
-        operatorAction:
-          'Review this booking before changing response-window, marketplace-radius, or marketplace-open policy.',
-      };
-    });
-
-  const driftRows = bookings
-    .map((booking) => ({ booking, drift: bookingPolicySnapshotDrift(booking, settings) }))
-    .filter(({ drift }) => drift.length > 0)
-    .sort((left, right) => byNewestBooking(left.booking, right.booking))
-    .slice(0, 6)
-    .map(({ booking, drift }) => ({
-      id: booking.id,
-      href: `/bookings/${booking.id}`,
-      title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
-      subtitle: `${booking.status} / ${bookingPartnerLabel(booking)}`,
-      pills: drift.slice(0, 3).map((item) => ({
-        label: item.label,
-        className: 'pill-warn',
-      })),
-      operatorAction:
-        drift.length > 3
-          ? `${drift.length} policy values differ. Use the booking detail snapshot before manual action.`
-          : 'Saved booking policy differs from live policy. Check the booking detail snapshot first.',
-    }));
-
-  const walletRows = bookings
-    .map((booking) => ({ booking, recentWalletTotal: bookingWalletLedgerTotal(booking) }))
-    .filter(({ recentWalletTotal }) => recentWalletTotal < 0)
-    .sort((left, right) => left.recentWalletTotal - right.recentWalletTotal)
-    .slice(0, 6)
-    .map(({ booking, recentWalletTotal }) => ({
-      id: booking.id,
-      href: `/bookings/${booking.id}`,
-      title: `${bookingPartnerLabel(booking)} / ${shortId(booking.id)}`,
-      subtitle: `${bookingServiceLabel(booking)} / ${booking.payment?.method ?? 'payment unknown'}`,
-      pills: [
-        { label: formatMoney(recentWalletTotal), className: 'pill-danger' },
-        { label: booking.payment?.status ?? 'payment unknown', className: 'pill-warn' },
-        { label: booking.status, className: 'pill-neutral' },
-      ],
-      operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before marketplace alerts, participation, or payout release.',
-    }));
+  const openMatchingRows = buildOpenMatchingRows(bookings);
+  const driftRows = buildSnapshotDriftRows(bookings, settings);
+  const walletRows = buildWalletGateRows(bookings);
 
   const lists: PolicyDrilldownListView[] = [
     {
@@ -118,4 +54,81 @@ export function buildPolicyDrilldown(
     totalCount: lists.reduce((total, list) => total + list.rows.length, 0),
     lists,
   };
+}
+
+function buildOpenMatchingRows(bookings: readonly AdminBooking[]): PolicyDrilldownRow[] {
+  return bookings
+    .filter((booking) => booking.status === 'OPEN_MATCHING')
+    .sort(byNewestBooking)
+    .slice(0, 6)
+    .map((booking) => {
+      const participantCount = booking.participants?.length ?? 0;
+      return {
+        id: booking.id,
+        href: `/bookings/${booking.id}`,
+        title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
+        subtitle: `${bookingPartnerLabel(booking)} / ${bookingCustomerLabel(booking)}`,
+        pills: [
+          { label: booking.status, className: 'pill-warn' },
+          {
+            label: `${participantCount} participant(s)`,
+            className: participantCount ? 'pill-info' : 'pill-neutral',
+          },
+          {
+            label: booking.expiresAt
+              ? `expires ${formatRelativeTime(booking.expiresAt, { justNow: 'Just now', includeFuture: true })}`
+              : 'no expiry',
+            className: 'pill-info',
+          },
+        ],
+        operatorAction:
+          'Review this booking before changing response-window, marketplace-radius, or marketplace-open policy.',
+      };
+    });
+}
+
+function buildSnapshotDriftRows(
+  bookings: readonly AdminBooking[],
+  settings: AdminOperationalPolicySetting[],
+): PolicyDrilldownRow[] {
+  return bookings
+    .map((booking) => ({ booking, drift: bookingPolicySnapshotDrift(booking, settings) }))
+    .filter(({ drift }) => drift.length > 0)
+    .sort((left, right) => byNewestBooking(left.booking, right.booking))
+    .slice(0, 6)
+    .map(({ booking, drift }) => ({
+      id: booking.id,
+      href: `/bookings/${booking.id}`,
+      title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
+      subtitle: `${booking.status} / ${bookingPartnerLabel(booking)}`,
+      pills: drift.slice(0, 3).map((item) => ({
+        label: item.label,
+        className: 'pill-warn',
+      })),
+      operatorAction:
+        drift.length > 3
+          ? `${drift.length} policy values differ. Use the booking detail snapshot before manual action.`
+          : 'Saved booking policy differs from live policy. Check the booking detail snapshot first.',
+    }));
+}
+
+function buildWalletGateRows(bookings: readonly AdminBooking[]): PolicyDrilldownRow[] {
+  return bookings
+    .map((booking) => ({ booking, recentWalletTotal: bookingWalletLedgerTotal(booking) }))
+    .filter(({ recentWalletTotal }) => recentWalletTotal < 0)
+    .sort((left, right) => left.recentWalletTotal - right.recentWalletTotal)
+    .slice(0, 6)
+    .map(({ booking, recentWalletTotal }) => ({
+      id: booking.id,
+      href: `/bookings/${booking.id}`,
+      title: `${bookingPartnerLabel(booking)} / ${shortId(booking.id)}`,
+      subtitle: `${bookingServiceLabel(booking)} / ${booking.payment?.method ?? 'payment unknown'}`,
+      pills: [
+        { label: formatMoney(recentWalletTotal), className: 'pill-danger' },
+        { label: booking.payment?.status ?? 'payment unknown', className: 'pill-warn' },
+        { label: booking.status, className: 'pill-neutral' },
+      ],
+      operatorAction:
+        'Recent wallet entries are negative. Confirm settlement before marketplace alerts, participation, or payout release.',
+    }));
 }
