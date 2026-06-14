@@ -45,7 +45,7 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
         {marketplaceOperationsCards.map((card) => (
           <Link className="ops-task-card" href={card.href} key={card.title}>
             <span className={`signal ${card.tone}`}>{card.title}</span>
-            <h3>{card.value}</h3>
+            <strong className="ops-task-card-value">{card.value}</strong>
             <p>{card.detail}</p>
           </Link>
         ))}
