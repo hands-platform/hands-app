@@ -49,6 +49,7 @@ import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-au
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
+import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -175,91 +176,7 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyFinalPartnerChoiceSection matrix={acceptanceMatrix} />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Policy sensitivity preview</h2>
-            <p className="muted">
-              Before changing radius or location freshness, compare how many partners would remain usable
-              around the latest customer coordinate. This keeps policy choices tied to real supply instead of
-              guesswork.
-            </p>
-          </div>
-          <span className="pill pill-info">{supplySensitivity.currentPolicyLabel}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {supplySensitivity.summary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="detail-grid admin-mt-14">
-          <div className="admin-scroll-x">
-            <h3>Marketplace supply sensitivity</h3>
-            <p className="muted">
-              Reference point: {supplySensitivity.referenceLabel}. Marketplace blockers include account,
-              identity, and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout
-              hold.
-            </p>
-            <table className="table service-trace">
-              <thead>
-                <tr>
-                  <th>Radius</th>
-                  <th>Visible partners</th>
-                  <th>Fresh location</th>
-                  <th>Marketplace/payout held</th>
-                  <th>Operator read</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplySensitivity.radiusRows.map((row) => (
-                  <tr key={row.radiusLabel}>
-                    <td>
-                      <span className={`pill ${row.pillClass}`}>{row.radiusLabel}</span>
-                    </td>
-                    <td>{row.eligible}</td>
-                    <td>{row.fresh}</td>
-                    <td>{row.finalGateHeld}</td>
-                    <td>{row.operatorRead}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="admin-scroll-x">
-            <h3>Location freshness sensitivity</h3>
-            <p className="muted">
-              Shows how strict or loose freshness rules affect marketplace matching without real-time
-              tracking.
-            </p>
-            <table className="table service-trace">
-              <thead>
-                <tr>
-                  <th>Freshness</th>
-                  <th>Eligible partners</th>
-                  <th>Stale excluded</th>
-                  <th>Operator read</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplySensitivity.freshnessRows.map((row) => (
-                  <tr key={row.freshnessLabel}>
-                    <td>
-                      <span className={`pill ${row.pillClass}`}>{row.freshnessLabel}</span>
-                    </td>
-                    <td>{row.eligible}</td>
-                    <td>{row.staleExcluded}</td>
-                    <td>{row.operatorRead}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <OperationsPolicySensitivityPreviewSection sensitivity={supplySensitivity} />
 
       <section className="card admin-mb-16" id="matching-stage-impact">
         <div className="ops-section-header">
