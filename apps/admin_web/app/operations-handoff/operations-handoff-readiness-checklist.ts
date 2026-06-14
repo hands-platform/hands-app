@@ -31,11 +31,52 @@ type ReadinessChecklistOptions = {
   readonly nowMs?: number;
 };
 
+type ReadinessChecklistContext = {
+  readonly chatMissingCount: number;
+  readonly completedWithoutEvidenceCount: number;
+  readonly hasFreshHandoffNote: boolean;
+  readonly latestNote: OperatorNoteSummary | null;
+};
+
+type ReadinessChecklistBaseRow = {
+  readonly id: string;
+  readonly owner: string;
+  readonly title: string;
+  readonly detail: string;
+  readonly href: string;
+  readonly count: number;
+  readonly countLabel: string;
+  readonly status: string;
+  readonly operatorAction: string;
+  readonly tone: ChecklistTone;
+};
+
 export function buildHandoffReadinessChecklist(
   input: ReadinessChecklistInput,
   options: ReadinessChecklistOptions = {},
 ) {
-  const nowMs = options.nowMs ?? Date.now();
+  const context = buildReadinessChecklistContext(input, options.nowMs ?? Date.now());
+
+  return sortChecklistRows(
+    buildReadinessChecklistBaseRows(input, context).map((row) => ({
+      ...row,
+      badgeClass: checklistToneClass(row.tone),
+    })),
+  );
+}
+
+export function countOpenHandoffChecklistItems(
+  rows: ReturnType<typeof buildHandoffReadinessChecklist>,
+) {
+  return rows.filter((item) => item.tone !== 'success').length;
+}
+
+export type HandoffReadinessChecklistRow = ReturnType<typeof buildHandoffReadinessChecklist>[number];
+
+function buildReadinessChecklistContext(
+  input: ReadinessChecklistInput,
+  nowMs: number,
+): ReadinessChecklistContext {
   const chatMissing = bookingsMissingChatHandoffEvidence(input.bookings);
   const completedWithoutEvidence = bookingsMissingCloseoutEvidence(input.bookings);
   const latestNote = input.operatorNotes[0] ?? null;
@@ -43,7 +84,19 @@ export function buildHandoffReadinessChecklist(
     latestNote && recentlyChangedWithin(latestNote.createdAt, nowMs, 480),
   );
 
-  const rows = [
+  return {
+    chatMissingCount: chatMissing.length,
+    completedWithoutEvidenceCount: completedWithoutEvidence.length,
+    hasFreshHandoffNote,
+    latestNote,
+  };
+}
+
+function buildReadinessChecklistBaseRows(
+  input: ReadinessChecklistInput,
+  context: ReadinessChecklistContext,
+): ReadinessChecklistBaseRow[] {
+  return [
     {
       id: 'live-matching-reviewed',
       owner: 'Dispatch',
@@ -75,11 +128,11 @@ export function buildHandoffReadinessChecklist(
       title: 'Chat continuity reviewed',
       detail: 'Matched and active bookings should have a retained chat room for admin archive and support.',
       href: '/bookings?view=chat-repair',
-      count: chatMissing.length,
-      countLabel: `${chatMissing.length} missing`,
-      status: chatMissing.length ? 'Repair' : 'Ready',
+      count: context.chatMissingCount,
+      countLabel: `${context.chatMissingCount} missing`,
+      status: context.chatMissingCount ? 'Repair' : 'Ready',
       operatorAction: 'Repair or inspect rows where the booking is matched but no chat room exists.',
-      tone: chatMissing.length ? 'danger' : 'success',
+      tone: context.chatMissingCount ? 'danger' : 'success',
     },
     {
       id: 'cash-settlement-reviewed',
@@ -99,11 +152,11 @@ export function buildHandoffReadinessChecklist(
       title: 'Completed closeout reviewed',
       detail: 'Completed bookings should retain payment, earning, tax/wallet, and chat evidence.',
       href: '/bookings?view=closeout',
-      count: completedWithoutEvidence.length,
-      countLabel: `${completedWithoutEvidence.length} row(s)`,
-      status: completedWithoutEvidence.length ? 'Check' : 'Ready',
+      count: context.completedWithoutEvidenceCount,
+      countLabel: `${context.completedWithoutEvidenceCount} row(s)`,
+      status: context.completedWithoutEvidenceCount ? 'Check' : 'Ready',
       operatorAction: 'Open completed rows that do not yet show all closeout evidence.',
-      tone: completedWithoutEvidence.length ? 'warn' : 'success',
+      tone: context.completedWithoutEvidenceCount ? 'warn' : 'success',
     },
     {
       id: 'failed-alerts-reviewed',
@@ -146,44 +199,26 @@ export function buildHandoffReadinessChecklist(
       id: 'handoff-note-written',
       owner: 'Handoff',
       title: 'Written note prepared',
-      detail: latestNote
-        ? `Latest note: ${relativeTime(latestNote.createdAt)} by ${latestNote.actor}.`
+      detail: context.latestNote
+        ? `Latest note: ${relativeTime(context.latestNote.createdAt)} by ${context.latestNote.actor}.`
         : 'No handoff note has been written yet.',
       href: '/operations-handoff',
-      count: hasFreshHandoffNote ? 1 : 0,
-      countLabel: hasFreshHandoffNote ? 'fresh note' : 'needs note',
-      status: hasFreshHandoffNote ? 'Ready' : 'Write note',
+      count: context.hasFreshHandoffNote ? 1 : 0,
+      countLabel: context.hasFreshHandoffNote ? 'fresh note' : 'needs note',
+      status: context.hasFreshHandoffNote ? 'Ready' : 'Write note',
       operatorAction: 'Write a short factual note before ending the shift if open work remains.',
-      tone: hasFreshHandoffNote ? 'success' : 'warn',
+      tone: context.hasFreshHandoffNote ? 'success' : 'warn',
     },
-  ] satisfies Array<{
-    readonly id: string;
-    readonly owner: string;
-    readonly title: string;
-    readonly detail: string;
-    readonly href: string;
-    readonly count: number;
-    readonly countLabel: string;
-    readonly status: string;
-    readonly operatorAction: string;
-    readonly tone: ChecklistTone;
-  }>;
-
-  return rows
-    .map((row) => ({
-      ...row,
-      badgeClass: checklistToneClass(row.tone),
-    }))
-    .sort((a, b) => checklistToneWeight(b.tone) - checklistToneWeight(a.tone) || b.count - a.count);
+  ];
 }
 
-export function countOpenHandoffChecklistItems(
-  rows: ReturnType<typeof buildHandoffReadinessChecklist>,
+function sortChecklistRows<T extends { readonly count: number; readonly tone: ChecklistTone }>(
+  rows: readonly T[],
 ) {
-  return rows.filter((item) => item.tone !== 'success').length;
+  return [...rows].sort(
+    (a, b) => checklistToneWeight(b.tone) - checklistToneWeight(a.tone) || b.count - a.count,
+  );
 }
-
-export type HandoffReadinessChecklistRow = ReturnType<typeof buildHandoffReadinessChecklist>[number];
 
 function checklistToneClass(tone: ChecklistTone) {
   if (tone === 'danger') return 'pill pill-danger';
