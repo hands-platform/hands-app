@@ -1,4 +1,4 @@
-import { marketplaceDisplayText, partnerDisplayText } from './admin-copy';
+import { adminActionTitleText, marketplaceDisplayText, partnerDisplayText } from './admin-copy';
 
 describe('admin visible copy helpers', () => {
   it('keeps visible operations copy partner-led while preserving internal payload names elsewhere', () => {
@@ -24,5 +24,15 @@ describe('admin visible copy helpers', () => {
     expect(marketplaceDisplayText('false penalties can create customer or partner penalties')).toBe(
       'incorrect automatic decisions can create customer or partner closeout decisions',
     );
+  });
+
+  it('humanizes internal action slugs for operator titles', () => {
+    expect(adminActionTitleText('provider.supabase_role_sync.skipped')).toBe(
+      'Partner Supabase Role Sync Skipped',
+    );
+    expect(adminActionTitleText('booking.matched.first_pick_accepted')).toBe(
+      'Booking Matched First Pick Accepted',
+    );
+    expect(adminActionTitleText('First-pick accepted')).toBe('First-pick accepted');
   });
 });

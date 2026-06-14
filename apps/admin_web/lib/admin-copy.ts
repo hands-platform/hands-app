@@ -60,3 +60,16 @@ export function marketplaceDisplayText(value?: string | null) {
       .replaceAll('penalty', 'closeout decision'),
   );
 }
+
+export function adminActionTitleText(value?: string | null) {
+  const displayText = marketplaceDisplayText(value);
+  if (!/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/.test(displayText)) {
+    return displayText;
+  }
+
+  return displayText
+    .split(/[._-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}

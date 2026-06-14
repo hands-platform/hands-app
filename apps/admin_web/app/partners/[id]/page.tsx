@@ -18,7 +18,7 @@ import {
   bookingRecordCreatedAt,
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 import { isWithinDetailDateFilter, readDetailDateFilters } from '../../../lib/detail-date-filter';
 import {
   detailActivityTypeLabel,
@@ -4831,7 +4831,7 @@ function buildPartnerReviewHistoryRows(provider: ProviderDetail): PartnerReviewH
     id: log.id,
     preview: metadataPreview(log.metadata),
     statusLabel: statusTransition(log),
-    title: humanizeProviderLogAction(log.action),
+    title: adminActionTitleText(log.action),
   }));
 }
 
@@ -4966,14 +4966,6 @@ function cashFeeDebtAmount(provider: ProviderDetail) {
   return (provider.earnings ?? [])
     .filter(isCashFeeDebt)
     .reduce((total, earning) => total + Math.abs(amountValue(earning.netAmount)), 0);
-}
-
-function humanizeProviderLogAction(action: string) {
-  return action
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
 }
 
 function statusTransition(log: NonNullable<ProviderDetail['verificationLogs']>[number]) {
