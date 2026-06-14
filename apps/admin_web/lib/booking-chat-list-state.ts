@@ -26,7 +26,7 @@ export function bookingChatListStateFromFacts(
   if (chatRequiredStatuses.some((status) => status === input.status)) {
     return {
       label: 'Chat missing',
-      detail: 'Customer and partner are matched, but no chat room is linked yet.',
+      detail: 'Customer and Partner are matched, but no chat room is linked yet.',
       tone: 'pill-danger',
     };
   }
@@ -41,7 +41,7 @@ export function bookingChatListStateFromFacts(
 
   return {
     label: 'Chat pending',
-    detail: 'Chat opens after the customer locks a final partner.',
+    detail: 'Chat opens after the customer locks a final Partner.',
     tone: 'pill-neutral',
   };
 }

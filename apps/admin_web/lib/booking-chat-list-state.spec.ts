@@ -29,7 +29,7 @@ describe('bookingChatListStateFromFacts', () => {
     (status) => {
       expect(bookingChatListStateFromFacts({ ...baseInput, status })).toEqual({
         label: 'Chat missing',
-        detail: 'Customer and partner are matched, but no chat room is linked yet.',
+        detail: 'Customer and Partner are matched, but no chat room is linked yet.',
         tone: 'pill-danger',
       });
     },
@@ -43,10 +43,10 @@ describe('bookingChatListStateFromFacts', () => {
     });
   });
 
-  it('returns pending state before final partner chat handoff', () => {
+  it('returns pending state before final Partner chat handoff', () => {
     expect(bookingChatListStateFromFacts(baseInput)).toEqual({
       label: 'Chat pending',
-      detail: 'Chat opens after the customer locks a final partner.',
+      detail: 'Chat opens after the customer locks a final Partner.',
       tone: 'pill-neutral',
     });
   });

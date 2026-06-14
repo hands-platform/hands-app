@@ -18,7 +18,7 @@ const baseInput: BookingFinalGateReasonInput = {
 };
 
 describe('bookingFinalGateReason', () => {
-  it('blocks operations when partner wallet debt is active', () => {
+  it('blocks operations when Partner wallet debt is active', () => {
     const result = bookingFinalGateReason({
       ...baseInput,
       cashDebt: true,
@@ -46,7 +46,7 @@ describe('bookingFinalGateReason', () => {
     });
   });
 
-  it('keeps first-pick visible while the preferred partner response window is active', () => {
+  it('keeps first-pick visible while the preferred Partner response window is active', () => {
     const result = bookingFinalGateReason({
       ...baseInput,
       bookingStatus: 'OPEN_MATCHING',
@@ -94,7 +94,7 @@ describe('bookingFinalGateReason', () => {
     });
   });
 
-  it('marks matched bookings with chat as locked to the final partner', () => {
+  it('marks matched bookings with chat as locked to the final Partner', () => {
     const result = bookingFinalGateReason({
       ...baseInput,
       bookingStatus: 'MATCHED',

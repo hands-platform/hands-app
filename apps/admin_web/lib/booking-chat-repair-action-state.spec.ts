@@ -75,7 +75,7 @@ describe('booking chat repair action state', () => {
     });
   });
 
-  it('locks repair when final partner is missing', () => {
+  it('locks repair when final Partner is missing', () => {
     expect(
       bookingChatRepairActionState({
         status: 'MATCHED',
@@ -85,7 +85,7 @@ describe('booking chat repair action state', () => {
       }),
     ).toMatchObject({
       canSubmit: false,
-      status: 'Final partner missing',
+      status: 'Final Partner missing',
       tone: 'pill-warn',
       helper: 'Repair is locked until first-pick match or customer final selection is recorded.',
     });
@@ -107,7 +107,7 @@ describe('booking chat repair action state', () => {
     });
   });
 
-  it('opens repair when final partner exists but retained chat is missing', () => {
+  it('opens repair when final Partner exists but retained chat is missing', () => {
     expect(
       bookingChatRepairActionState({
         status: 'MATCHED',

@@ -57,9 +57,9 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     return {
       title: 'First-pick window',
       detail:
-        'The preferred partner is still inside the first response window. Nearby marketplace partners can express intent, but the system must not auto-assign anyone.',
+        'The preferred Partner is still inside the first response window. Nearby marketplace Partners can express intent, but the system must not auto-assign anyone.',
       operatorRule:
-        'Watch partner alerts and response time; customer final choice remains the only final matching action.',
+        'Watch Partner alerts and response time; customer final choice remains the only final matching action.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
     };
@@ -69,7 +69,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     return {
       title: 'Customer final choice',
       detail: `${input.customerChoiceCandidates} Partner(s) can be selected by the customer, including ${input.marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final Partner.`,
-      operatorRule: 'Support the customer decision step; do not assign a partner automatically.',
+      operatorRule: 'Support the customer decision step; do not assign a Partner automatically.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
     };
@@ -79,7 +79,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     return {
       title: 'Partner supply wait',
       detail:
-        'No participating/accepted partner is selectable yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
+        'No participating/accepted Partner is selectable yet. Check 10km marketplace eligibility, Partner app inbox, push delivery, and latest saved locations.',
       operatorRule: 'Use factual alert, location, and participant records before support follow-up.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
@@ -90,7 +90,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     return {
       title: 'Chat handoff gate',
       detail:
-        'Customer final partner is locked, but the chat room is missing. Service coordination should wait until chat is repaired.',
+        'Customer final Partner is locked, but the chat room is missing. Service coordination should wait until chat is repaired.',
       operatorRule: 'Repair chat creation or open a support record before Partner movement handoff.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
@@ -112,7 +112,7 @@ export function bookingFinalGateReason(input: BookingFinalGateReasonInput): Book
     title: 'Gate clear',
     detail:
       'No marketplace or payout blocker is visible on this booking. Continue using factual payment, chat, location, and closeout records.',
-    operatorRule: 'Keep manual outcomes evidence-based; do not introduce judgment labels or automatic partner assignment.',
+    operatorRule: 'Keep manual outcomes evidence-based; do not introduce judgment labels or automatic Partner assignment.',
     className: 'ops-task-done',
     pillClass: 'pill-success',
   };

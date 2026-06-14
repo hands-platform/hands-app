@@ -77,7 +77,7 @@ export function bookingChatRepairActionState(
   if (!input.hasSelectedPartner) {
     return {
       canSubmit: false,
-      status: 'Final partner missing',
+      status: 'Final Partner missing',
       tone: 'pill-warn',
       helper: 'Repair is locked until first-pick match or customer final selection is recorded.',
     };
@@ -87,6 +87,6 @@ export function bookingChatRepairActionState(
     canSubmit: true,
     status: 'Repair available',
     tone: 'pill-danger',
-    helper: 'Final partner is recorded, but the retained chat room is missing.',
+    helper: 'Final Partner is recorded, but the retained chat room is missing.',
   };
 }
