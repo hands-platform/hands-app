@@ -114,7 +114,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         {
           label: 'Block all new acceptance',
           tradeoff:
-            'Stronger cash-fee control, but can prevent a customer from using a partner they deliberately selected first.',
+            'Stronger cash-fee control, but can prevent a customer from using a Partner they deliberately selected first.',
         },
       ],
       recommendation:
@@ -136,7 +136,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         {
           label: 'Weekly or monthly batch',
           tradeoff:
-            'Predictable for finance and partners, with enough time to review tax, wallet, and bank records.',
+            'Predictable for finance and Partners, with enough time to review tax, wallet, and bank records.',
         },
         {
           label: 'Admin selected day',

@@ -61,24 +61,14 @@ import { OperationsPolicyLiveSimulatorSection } from './operations-policy-live-s
 import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-matching-playbook-section';
 import { OperationsPolicyNextChoicesSection } from './operations-policy-next-choices-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
+import {
+  OperationsPolicyOwnerDecisionBacklogSection,
+  type OwnerDecisionPressure,
+} from './operations-policy-owner-decision-backlog-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-type OwnerDecisionPressure = {
-  alertCount: number;
-  summary: Array<{ label: string; value: string; helper: string }>;
-  cards: Array<{
-    title: string;
-    status: string;
-    detail: string;
-    operatorAction: string;
-    href: string;
-    className: string;
-    pillClass: string;
-  }>;
-};
 type BookingCreateGateReview = {
   currentPolicyLabel: string;
   summary: Array<{ label: string; value: string; helper: string }>;
@@ -262,78 +252,10 @@ export default async function OperationsPolicyPage({
 
       <OperationsPolicyNextChoicesSection />
 
-      <section className="card admin-mt-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Owner decision backlog</h2>
-            <p className="muted">
-              Product and operations choices that should be reviewed before HANDS turns each policy into
-              stricter automation. Keep the decision in Admin first, then automate after real operating data.
-            </p>
-          </div>
-          <span className="pill pill-info">Review weekly</span>
-        </div>
-        <div className="ops-task-note admin-mt-14">
-          <div className="ops-section-header">
-            <div>
-              <h3>Current decision pressure</h3>
-              <p className="muted">
-                Data-driven records that tell the owner which policy choice deserves attention first. This
-                keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence.
-              </p>
-            </div>
-            <span className={`pill ${ownerDecisionPressure.alertCount ? 'pill-warn' : 'pill-success'}`}>
-              {ownerDecisionPressure.alertCount} active record(s)
-            </span>
-          </div>
-          <div className="service-trace-summary admin-mt-12">
-            {ownerDecisionPressure.summary.map((item) => (
-              <div key={item.label}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <small>{item.helper}</small>
-              </div>
-            ))}
-          </div>
-          <div className="ops-task-grid admin-mt-14">
-            {ownerDecisionPressure.cards.map((item) => (
-              <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-                <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                <h3>{item.title}</h3>
-                <p>{item.detail}</p>
-                <small>{item.operatorAction}</small>
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {ownerDecisionBacklog.map((item) => (
-            <div className={`ops-task-card ${item.className}`} key={item.title}>
-              <span className={`pill ${item.pillClass}`}>{item.owner}</span>
-              <h3>{item.title}</h3>
-              <p>{item.question}</p>
-              <small>{item.evidence}</small>
-              <div className="booking-radar admin-mt-12">
-                {item.options.map((option) => (
-                  <div className="insight-card" key={option.label}>
-                    <strong>{displayOperationalWording(option.label)}</strong>
-                    <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="ops-task-note admin-mt-12">
-                <strong>Recommended direction</strong>
-                <p className="muted">{item.recommendation}</p>
-                <strong>Decision trigger</strong>
-                <p className="muted">{item.decisionTrigger}</p>
-                <Link className="text-link" href={item.href}>
-                  Review data
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyOwnerDecisionBacklogSection
+        backlog={ownerDecisionBacklog}
+        pressure={ownerDecisionPressure}
+      />
     </>
   );
 }
@@ -2291,11 +2213,11 @@ function buildOwnerDecisionPressure(
     {
       title: 'Marketplace policy and supply',
       status: currentVisibleSupply > 0 ? 'Supply visible' : 'Supply thin',
-      detail: `${currentVisibleSupply} visible partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
+      detail: `${currentVisibleSupply} visible Partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
       operatorAction:
         currentVisibleSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
-          : 'Refresh partner locations or consider city/service supply rules before launch.',
+          : 'Refresh Partner locations or consider city/service supply rules before launch.',
       href: '/partners?review=marketplace-ready',
       className: currentVisibleSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: currentVisibleSupply > 0 ? 'pill-success' : 'pill-danger',
@@ -2303,9 +2225,9 @@ function buildOwnerDecisionPressure(
     {
       title: 'Location freshness rule',
       status: staleExcluded ? 'Refresh needed' : 'Fresh enough',
-      detail: `${staleExcluded} partner(s) are excluded only because their saved location is stale under the current freshness window.`,
+      detail: `${staleExcluded} Partner(s) are excluded only because their saved location is stale under the current freshness window.`,
       operatorAction: staleExcluded
-        ? 'Ask partners to open the app and send location before loosening freshness rules.'
+        ? 'Ask Partners to open the app and send location before loosening freshness rules.'
         : 'Current location freshness is not excluding supply in the sample.',
       href: '/partners?review=location',
       className: staleExcluded ? 'ops-task-pending' : 'ops-task-done',
@@ -2314,9 +2236,9 @@ function buildOwnerDecisionPressure(
     {
       title: 'Wallet and marketplace holds',
       status: finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${finalGatePressure} partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
+      detail: `${finalGatePressure} Partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
       operatorAction: finalGatePressure
-        ? 'Keep marketplace visibility open while finance and partner controls clear marketplace and payout holds.'
+        ? 'Keep marketplace visibility open while finance and Partner controls clear marketplace and payout holds.'
         : 'No current sample pressure to relax marketplace gates.',
       href: finalGatePressure ? '/partners?review=marketplace-held' : '/partner-controls',
       className: finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
@@ -2325,7 +2247,7 @@ function buildOwnerDecisionPressure(
     {
       title: 'Partner FCM readiness',
       status: pushGap ? 'Push gap' : 'Ready',
-      detail: `${enabledPushPartners}/${onlinePartners} online partner(s) have enabled push devices in the current snapshot.`,
+      detail: `${enabledPushPartners}/${onlinePartners} online Partner(s) have enabled push devices in the current snapshot.`,
       operatorAction: pushGap
         ? 'Keep in-app request listing as the fallback until FCM device coverage is reliable.'
         : 'Push coverage is ready enough for production-device testing.',
@@ -2341,7 +2263,7 @@ function buildOwnerDecisionPressure(
       {
         label: 'Open matching',
         value: String(openMatching.length),
-        helper: 'Bookings where customers are waiting for partner response or final choice.',
+        helper: 'Bookings where customers are waiting for Partner response or final choice.',
       },
       {
         label: 'Active service flow',
