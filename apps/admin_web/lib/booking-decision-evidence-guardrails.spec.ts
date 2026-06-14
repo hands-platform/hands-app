@@ -6,7 +6,7 @@ const baseInput = {
   addressSnapshotLabel: 'District 1, Ho Chi Minh City',
   addressPinLabel: '10.7769, 106.7009',
   hasSelectedPartner: false,
-  selectedPartnerLabel: 'No selected partner',
+  selectedPartnerLabel: 'No selected Partner',
   participantCount: 0,
   preferredPartnerLabel: 'Linh Wellness',
   hasChatRoom: false,
@@ -27,7 +27,7 @@ const baseInput = {
   walletLedgerLabel: 'No wallet movement',
   closeoutOpenItemLabels: [],
   financeLedgerRowCount: 0,
-  partnerPayoutLabel: 'No partner payout',
+  partnerPayoutLabel: 'No Partner payout',
 };
 
 describe('bookingDecisionEvidenceGuardrails', () => {
@@ -47,7 +47,7 @@ describe('bookingDecisionEvidenceGuardrails', () => {
     });
   });
 
-  it('keeps open matching visible without auto-selecting a partner', () => {
+  it('keeps open matching visible without auto-selecting a Partner', () => {
     const rows = bookingDecisionEvidenceGuardrails({
       ...baseInput,
       bookingStatus: 'OPEN_MATCHING',
@@ -87,14 +87,14 @@ describe('bookingDecisionEvidenceGuardrails', () => {
       cashFeeDebtNeedsSettlement: true,
       platformFeeLabel: '80.000 VND',
       withholdingLabel: '20.000 VND',
-      walletLedgerLabel: '-80.000 VND partner wallet',
+      walletLedgerLabel: '-80.000 VND Partner wallet',
     });
 
     expect(rows[5]).toMatchObject({
       id: 'finance-cash-debt',
       status: 'Settlement required',
       tone: 'pill-danger',
-      evidence: '80.000 VND HANDS fee / 20.000 VND withholding / -80.000 VND partner wallet',
+      evidence: '80.000 VND HANDS fee / 20.000 VND withholding / -80.000 VND Partner wallet',
       href: '/cash-settlements',
     });
   });

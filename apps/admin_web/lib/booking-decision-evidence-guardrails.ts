@@ -150,7 +150,7 @@ export function bookingDecisionEvidenceGuardrails(
       id: 'finance-cash-debt',
       title: 'Finance: cash fee debt gate',
       scope:
-        'Cash bookings can create partner fee debt; negative wallet blocks marketplace alerts, participation, and payout release.',
+        'Cash bookings can create Partner fee debt; negative wallet blocks marketplace alerts, participation, and payout release.',
       status: input.cashFeeDebtNeedsSettlement
         ? 'Settlement required'
         : input.paymentMethod === 'CASH'
@@ -178,7 +178,7 @@ export function bookingDecisionEvidenceGuardrails(
       tone: hasCloseoutBlockers ? 'pill-warn' : 'pill-success',
       evidence: hasCloseoutBlockers
         ? input.closeoutOpenItemLabels.join(', ')
-        : `${input.financeLedgerRowCount} finance ledger row(s) / ${input.partnerPayoutLabel} partner payout`,
+        : `${input.financeLedgerRowCount} finance ledger row(s) / ${input.partnerPayoutLabel} Partner payout`,
       nextStep: hasCloseoutBlockers
         ? 'Clear the listed records before completed-service closeout.'
         : 'Finance records are aligned for this booking stage.',

@@ -55,7 +55,7 @@ describe('bookingEvidenceBundleRows', () => {
     ]);
   });
 
-  it('links missing address and pending partner selection to the right operation anchors', () => {
+  it('links missing address and pending Partner selection to the right operation anchors', () => {
     const rows = bookingEvidenceBundleRows({
       ...baseInput,
       addressReady: false,

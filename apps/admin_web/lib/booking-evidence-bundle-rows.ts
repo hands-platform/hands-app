@@ -107,7 +107,7 @@ export function bookingEvidenceBundleRows(
       recordLabel: input.paymentShortId ?? 'No payment row',
       status: input.hasMoneyTrace ? input.moneyStatus : 'Missing',
       tone: input.hasMoneyTrace ? 'pill-info' : 'pill-warn',
-      evidence: `${input.paymentMethod} / customer ${input.customerPriceLabel} / partner ${input.partnerPayoutLabel} / wallet ${input.walletLedgerLabel}`,
+      evidence: `${input.paymentMethod} / customer ${input.customerPriceLabel} / Partner ${input.partnerPayoutLabel} / wallet ${input.walletLedgerLabel}`,
       operatorUse: 'Check payment, earning, tax, fee, refund, payout, and cash settlement records together.',
       href: '#finance',
     },
@@ -130,9 +130,9 @@ export function bookingEvidenceBundleRows(
         : input.notificationCount
           ? 'pill-info'
           : 'pill-neutral',
-      evidence: `${input.partnerAlertCount} partner alert(s), ${input.marketplaceBatchCount} marketplace batch(es)`,
+      evidence: `${input.partnerAlertCount} Partner alert(s), ${input.marketplaceBatchCount} marketplace batch(es)`,
       operatorUse:
-        'Check whether customer and partner app notifications were created, delivered, read, or retried.',
+        'Check whether customer and Partner app notifications were created, delivered, read, or retried.',
       href: `/notifications?booking=${encodeURIComponent(input.bookingId)}`,
     },
     {

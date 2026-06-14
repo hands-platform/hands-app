@@ -58,7 +58,7 @@ export function bookingDecisionNotePresets(
       title: 'Chat evidence is empty',
       detail: 'Use when a manual outcome is being reviewed but no customer/Partner messages are loaded.',
       preset:
-        'Manual decision evidence note: chat archive is present/checked but has no retained customer or partner messages for this booking.',
+        'Manual decision evidence note: chat archive is present/checked but has no retained customer or Partner messages for this booking.',
     });
   }
 
@@ -79,9 +79,9 @@ export function bookingDecisionNotePresets(
       id: 'alert-empty-note',
       label: 'Alerts',
       title: 'Notification trail is empty',
-      detail: 'Use when partner/customer alert records are not available for this booking.',
+      detail: 'Use when customer/Partner alert records are not available for this booking.',
       preset:
-        'Manual decision evidence note: no customer or partner notification delivery rows are loaded for this booking.',
+        'Manual decision evidence note: no customer or Partner notification delivery rows are loaded for this booking.',
     });
   }
 
@@ -112,9 +112,9 @@ export function bookingDecisionNotePresets(
       label: 'Cash',
       title: 'Cash fee settlement needed',
       detail:
-        'Use when cash collection created a partner wallet debt that should be cleared by deposit or offset.',
+        'Use when cash collection created a Partner wallet debt that should be cleared by deposit or offset.',
       preset:
-        'Cash settlement note: partner cash-fee debt remains open; marketplace alerts, participation, and payout release should stay blocked until company deposit or admin offset is verified.',
+        'Cash settlement note: Partner cash-fee debt remains open; marketplace alerts, participation, and payout release should stay blocked until company deposit or admin offset is verified.',
     });
   }
 
