@@ -9,79 +9,145 @@ import { policyDisplayValue } from './policy-value-display';
 
 export type PolicyRecommendationReview = {
   readonly warningCount: number;
-  readonly summary: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
-  readonly cards: readonly {
-    readonly key: string;
-    readonly label: string;
-    readonly status: string;
-    readonly detail: string;
-    readonly operatorAction: string;
-    readonly className: string;
-    readonly pillClass: string;
-  }[];
+  readonly summary: readonly PolicyRecommendationSummaryItem[];
+  readonly cards: readonly PolicyRecommendationCard[];
 };
+
+type PolicyRecommendationSummaryItem = {
+  readonly label: string;
+  readonly value: string;
+  readonly helper: string;
+};
+
+type PolicyRecommendationCard = {
+  readonly key: string;
+  readonly label: string;
+  readonly status: string;
+  readonly detail: string;
+  readonly operatorAction: string;
+  readonly className: string;
+  readonly pillClass: string;
+};
+
+type PolicyRecommendationInternalCard = PolicyRecommendationCard & {
+  readonly aligned: boolean;
+  readonly enforced: boolean;
+};
+
+type PolicyRecommendationContext = {
+  readonly activeBookingCount: number;
+  readonly openMatchingCount: number;
+};
+
+const ACTIVE_BOOKING_STATUSES = new Set([
+  'OPEN_MATCHING',
+  'MATCHED',
+  'PROVIDER_ON_THE_WAY',
+  'ARRIVED',
+  'IN_SERVICE',
+]);
 
 export function buildPolicyRecommendationReview(
   settings: AdminOperationalPolicySetting[],
   bookings: AdminBooking[],
 ): PolicyRecommendationReview {
-  const openMatchingCount = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
-  const activeBookingCount = bookings.filter((booking) =>
-    ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
-  ).length;
-  const reviewable = settings.filter(
-    (setting) => setting.recommendedValue !== null && setting.recommendedValue !== undefined,
-  );
-  const cards = reviewable.map((setting) => {
-    const aligned = String(setting.value) === String(setting.recommendedValue);
-    const posture = policyRecommendationPosture(setting, { openMatchingCount, activeBookingCount });
-    return {
-      key: setting.key,
-      label: displayOperationalWording(setting.label),
-      status: aligned ? 'Recommended' : posture.status,
-      detail: aligned
-        ? `Current value matches the recommended baseline: ${policyDisplayValue(setting)}.`
-        : `Current value is ${policyDisplayValue(setting)}; recommended is ${policyDisplayValue(setting, true)}. ${posture.detail}`,
-      operatorAction: aligned ? posture.alignedAction : posture.operatorAction,
-      className: aligned ? 'ops-task-done' : posture.className,
-      pillClass: aligned ? 'pill-success' : posture.pillClass,
-      aligned,
-      enforced: setting.enforced,
-    };
-  });
+  const context = buildPolicyRecommendationContext(bookings);
+  const reviewable = policyRecommendationReviewableSettings(settings);
+  const cards = buildPolicyRecommendationCards(reviewable, context);
   const warningCount = cards.filter((card) => !card.aligned).length;
   const enforcedWarningCount = cards.filter((card) => !card.aligned && card.enforced).length;
+
   return {
     warningCount,
-    summary: [
-      {
-        label: 'Compared policies',
-        value: String(reviewable.length),
-        helper: 'Policies with an explicit recommended baseline.',
-      },
-      {
-        label: 'Owner choices',
-        value: String(warningCount),
-        helper: 'Current values intentionally different from recommendation.',
-      },
-      {
-        label: 'Live deviations',
-        value: String(enforcedWarningCount),
-        helper: 'Differences that can affect live booking behavior.',
-      },
-      {
-        label: 'Active bookings',
-        value: String(activeBookingCount),
-        helper: 'Bookings to consider before changing enforced values.',
-      },
-    ],
+    summary: buildPolicyRecommendationSummary({
+      activeBookingCount: context.activeBookingCount,
+      enforcedWarningCount,
+      reviewableCount: reviewable.length,
+      warningCount,
+    }),
     cards,
   };
 }
 
+function buildPolicyRecommendationContext(
+  bookings: readonly AdminBooking[],
+): PolicyRecommendationContext {
+  return {
+    activeBookingCount: bookings.filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)).length,
+    openMatchingCount: bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length,
+  };
+}
+
+function policyRecommendationReviewableSettings(
+  settings: readonly AdminOperationalPolicySetting[],
+) {
+  return settings.filter(
+    (setting) => setting.recommendedValue !== null && setting.recommendedValue !== undefined,
+  );
+}
+
+function buildPolicyRecommendationCards(
+  settings: readonly AdminOperationalPolicySetting[],
+  context: PolicyRecommendationContext,
+): PolicyRecommendationInternalCard[] {
+  return settings.map((setting) => buildPolicyRecommendationCard(setting, context));
+}
+
+function buildPolicyRecommendationCard(
+  setting: AdminOperationalPolicySetting,
+  context: PolicyRecommendationContext,
+): PolicyRecommendationInternalCard {
+  const aligned = String(setting.value) === String(setting.recommendedValue);
+  const posture = policyRecommendationPosture(setting, context);
+
+  return {
+    key: setting.key,
+    label: displayOperationalWording(setting.label),
+    status: aligned ? 'Recommended' : posture.status,
+    detail: aligned
+      ? `Current value matches the recommended baseline: ${policyDisplayValue(setting)}.`
+      : `Current value is ${policyDisplayValue(setting)}; recommended is ${policyDisplayValue(setting, true)}. ${posture.detail}`,
+    operatorAction: aligned ? posture.alignedAction : posture.operatorAction,
+    className: aligned ? 'ops-task-done' : posture.className,
+    pillClass: aligned ? 'pill-success' : posture.pillClass,
+    aligned,
+    enforced: setting.enforced,
+  };
+}
+
+function buildPolicyRecommendationSummary(input: {
+  readonly activeBookingCount: number;
+  readonly enforcedWarningCount: number;
+  readonly reviewableCount: number;
+  readonly warningCount: number;
+}): PolicyRecommendationReview['summary'] {
+  return [
+    {
+      label: 'Compared policies',
+      value: String(input.reviewableCount),
+      helper: 'Policies with an explicit recommended baseline.',
+    },
+    {
+      label: 'Owner choices',
+      value: String(input.warningCount),
+      helper: 'Current values intentionally different from recommendation.',
+    },
+    {
+      label: 'Live deviations',
+      value: String(input.enforcedWarningCount),
+      helper: 'Differences that can affect live booking behavior.',
+    },
+    {
+      label: 'Active bookings',
+      value: String(input.activeBookingCount),
+      helper: 'Bookings to consider before changing enforced values.',
+    },
+  ];
+}
+
 function policyRecommendationPosture(
   setting: AdminOperationalPolicySetting,
-  context: { openMatchingCount: number; activeBookingCount: number },
+  context: PolicyRecommendationContext,
 ) {
   const value = String(setting.value);
   const recommended = String(setting.recommendedValue);
