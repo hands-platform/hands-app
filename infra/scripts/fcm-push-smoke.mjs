@@ -789,7 +789,7 @@ function retryAuditPreflightOperatorAction(evidence) {
     return 'No retry audit exists yet. Run live retry only after confirming FCM side effects are intended.';
   }
   if (evidence === 'LEGACY_AUDIT_WITHOUT_PUSH_DEVICE_LAST_SEEN_AT') {
-    return 'Latest retry audit is from older metadata. Restart the API before relying on stale-token retry risk.';
+    return 'Latest retry audit is from older metadata. Restart the API if this build is not running yet; otherwise only a new live retry will create fresh stale-token evidence.';
   }
   if (evidence === 'NO_DELIVERY_EVIDENCE') {
     return 'Confirm notification workers and queue processing before retrying.';
