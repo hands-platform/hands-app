@@ -33,7 +33,7 @@ export function BookingMonitorBlockedCreateSection({
           <h2>Blocked booking attempts</h2>
           <p className="muted">
             Booking create requests stopped before payment authorization and matching. These records are
-            evidence for support follow-up, not customer or partner priority decisions.
+            evidence for support follow-up, not customer or Partner priority decisions.
           </p>
         </div>
         <Link className="text-link" href="/audit-log?query=booking.create.rejected">

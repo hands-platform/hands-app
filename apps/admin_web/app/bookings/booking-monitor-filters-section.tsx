@@ -70,12 +70,12 @@ export function BookingMonitorFiltersSection({
       </div>
       <div className="ops-filter-grid admin-mb-14">
         <label>
-          Search booking/customer/partner
+          Search booking/customer/Partner
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="Booking ID, phone, partner, customer, service"
+            placeholder="Booking ID, phone, Partner, customer, service"
           />
         </label>
         <label>

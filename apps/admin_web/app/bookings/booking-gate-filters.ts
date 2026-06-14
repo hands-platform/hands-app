@@ -51,7 +51,7 @@ export const bookingGateFilterOptions: BookingGateFilterOption[] = [
   {
     value: 'first-pick-distance',
     label: 'First-pick distance',
-    operatorHint: 'Selected partner is outside the first-pick distance gate for this service address.',
+    operatorHint: 'Selected Partner is outside the first-pick distance gate for this service address.',
   },
   {
     value: 'unknown',

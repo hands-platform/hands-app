@@ -63,7 +63,7 @@ describe('BookingMonitorMatchingEscalationSection', () => {
       matchingFlowTimeline: [
         {
           bookings: [booking],
-          detail: 'Customer selected a preferred partner.',
+          detail: 'Customer selected a preferred Partner.',
           href: '/bookings?view=matching',
           metrics: [{ label: 'waiting', value: '1' }],
           operatorAction: 'Monitor response window.',

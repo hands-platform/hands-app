@@ -184,9 +184,9 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
   {
     view: 'no-show',
     label: 'No-show',
-    description: 'bookings closed as no-show but still needing payment, customer, or partner review.',
+    description: 'bookings closed as no-show but still needing payment, customer, or Partner review.',
     operatorHint:
-      'Use this after marking no-show to confirm payment outcome, partner debt, and customer communication.',
+      'Use this after marking no-show to confirm payment outcome, Partner debt, and customer communication.',
   },
   {
     view: 'all',

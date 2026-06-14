@@ -16,7 +16,7 @@ export function BookingMonitorToolbarSection({
       <div>
         <h1>Booking Monitor</h1>
         <p className="muted">
-          Live operational view for matching, partner selection, chat, and payment readiness.
+          Live operational view for matching, Partner selection, chat, and payment readiness.
         </p>
       </div>
       <div className="actions">

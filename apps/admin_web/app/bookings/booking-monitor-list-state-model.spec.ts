@@ -30,13 +30,13 @@ describe('booking monitor list state model', () => {
         status: 'MATCHED',
       } as AdminBooking),
     ).toEqual({
-      detail: 'Customer and partner are matched, but no chat room is linked yet.',
+      detail: 'Customer and Partner are matched, but no chat room is linked yet.',
       label: 'Chat missing',
       tone: 'pill-danger',
     });
   });
 
-  it('builds partner location labels from selected partner coordinates', () => {
+  it('builds Partner location labels from selected Partner coordinates', () => {
     expect(
       buildBookingMonitorListLocation(
         {

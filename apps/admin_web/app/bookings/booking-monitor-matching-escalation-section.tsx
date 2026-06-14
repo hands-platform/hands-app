@@ -132,7 +132,7 @@ export function BookingMonitorMatchingEscalationSection({
         </div>
       </div>
       <div className="admin-mt-16">
-        <h3>Dispatch partner repair shortcuts</h3>
+        <h3>Dispatch Partner repair shortcuts</h3>
         <p className="muted">
           Use these when a matching booking needs Partner supply, Partner acceptance repair, cash-fee
           cleanup, or policy adjustment.

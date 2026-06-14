@@ -40,7 +40,7 @@ export function bookingCustomerProtectionBoardFromFacts<TBooking>(
       tone: facts.expiredUnresolved.length ? 'danger' : 'ok',
       detail:
         facts.expiredUnresolved.length > 0
-          ? 'Matching expired before final partner selection, but payment still needs an outcome.'
+          ? 'Matching expired before final Partner selection, but payment still needs an outcome.'
           : 'Expired bookings have payment release/refund state aligned.',
       operatorAction: 'Release the hold, confirm customer notification, and check retry/alert history.',
       href: '/bookings?view=expired',
