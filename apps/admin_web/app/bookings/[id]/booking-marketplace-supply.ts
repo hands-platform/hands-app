@@ -102,11 +102,11 @@ export function bookingMarketplacePartnerSupply(
 
           const role =
             provider.id === selectedProviderId
-              ? 'Selected partner'
+              ? 'Selected Partner'
               : provider.id === preferredProviderId
                 ? 'Preferred Partner'
                 : participantProviderIds.has(provider.id)
-                  ? 'Shortlist partner'
+                  ? 'Shortlist Partner'
                   : 'Marketplace candidate';
 
           return {
@@ -180,13 +180,13 @@ export function bookingMarketplacePartnerSupply(
     decisionTitle: hasCustomerPin
       ? eligibleCount
         ? 'Marketplace matching has usable nearby supply'
-        : 'No evaluated partner can participate under current policy'
-      : 'Service address pin is required before partner radius can be checked',
+        : 'No evaluated Partner can participate under current policy'
+      : 'Service address pin is required before Partner radius can be checked',
     decisionDetail: hasCustomerPin
       ? eligibleCount
-        ? 'Operators can use the eligible partners as marketplace participants while the customer waits.'
-        : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
-      : 'Ask the customer to confirm the service address pin before dispatching partners.',
+        ? 'Operators can use the eligible Partners as marketplace participants while the customer waits.'
+        : 'Review radius, Partner online status, location freshness, and verification before extending the waiting window.'
+      : 'Ask the customer to confirm the service address pin before dispatching Partners.',
     metrics: [
       {
         label: 'Radius pin',
@@ -194,7 +194,7 @@ export function bookingMarketplacePartnerSupply(
         helper: `${policyPin.source} is used for marketplace distance checks.`,
       },
       {
-        label: 'Eligible partners',
+        label: 'Eligible Partners',
         value: eligibleCount.toString(),
         helper: `Online, verified, fresh location, and within ${formatDistanceMeters(radiusMeters)}.`,
       },
@@ -217,7 +217,7 @@ export function bookingMarketplacePartnerSupply(
         label: 'Wallet gate boundary',
         value: 'Finance lane',
         helper:
-          'Wallet-debt partners are not listed as booking candidates; debt repair is handled from Partner and Finance views.',
+          'Wallet-debt Partners are not listed as booking candidates; debt repair is handled from Partner and Finance views.',
       },
       {
         label: 'Invite cap',
@@ -316,7 +316,7 @@ function bookingMarketplaceCandidateCommand(input: {
       tone: 'pill-danger',
       title: 'Customer location must be confirmed first',
       detail:
-        'Distance, marketplace eligibility, and partner exclusion reasons cannot be confirmed without a booking pin.',
+        'Distance, marketplace eligibility, and Partner exclusion reasons cannot be confirmed without a booking pin.',
       href: '/bookings',
       action: 'Open bookings',
     };
@@ -335,7 +335,7 @@ function bookingMarketplaceCandidateCommand(input: {
     return {
       status: 'REPAIR SUPPLY',
       tone: 'pill-warn',
-      title: 'Nearby partners need supply repair',
+      title: 'Nearby Partners need supply repair',
       detail:
         'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
       href: '/partners?review=marketplace-blocked',
