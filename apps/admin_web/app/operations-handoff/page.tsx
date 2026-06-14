@@ -181,7 +181,7 @@ export default async function OperationsHandoffPage({
     <>
       <h1>Operations Handoff</h1>
       <p className="muted">
-        One shift handoff board for factual customer, partner, booking, chat, wallet, and app activity. Use
+        One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app activity. Use
         this before changing operators so open work keeps context.
       </p>
 
@@ -315,7 +315,7 @@ export default async function OperationsHandoffPage({
           <div className="toolbar">
             <div>
               <h2>Latest operator notes</h2>
-              <p className="muted">Shift, customer, partner, and booking notes written by admins.</p>
+              <p className="muted">Shift, Customer, Partner, and booking notes written by admins.</p>
             </div>
             <Link className="text-link" href="/audit-log">
               Open audit log
@@ -450,7 +450,7 @@ export default async function OperationsHandoffPage({
           <div>
             <h2>Booking handoff queue</h2>
             <p className="muted">
-              Open and recently changed bookings with payment, chat, partner, and next action.
+              Open and recently changed bookings with payment, chat, Partner, and next action.
             </p>
           </div>
           <div className="actions">
@@ -650,7 +650,7 @@ function buildHandoffReadinessChecklist(input: {
       owner: 'Dispatch',
       title: 'Live matching reviewed',
       detail:
-        'Open matching rows need partner response, marketplace participant, and customer final-choice continuity.',
+        'Open matching rows need Partner response, marketplace participant, and customer final-choice continuity.',
       href: '/bookings?view=matching',
       count: input.matchingBookings.length,
       countLabel: `${input.matchingBookings.length} open`,
@@ -662,7 +662,7 @@ function buildHandoffReadinessChecklist(input: {
       id: 'active-service-reviewed',
       owner: 'Dispatch',
       title: 'Active service reviewed',
-      detail: 'In-service bookings keep chat visible until the partner completes the work.',
+      detail: 'In-service bookings keep chat visible until the Partner completes the work.',
       href: '/bookings?view=closeout',
       count: input.inServiceBookings.length,
       countLabel: `${input.inServiceBookings.length} active`,
@@ -686,10 +686,10 @@ function buildHandoffReadinessChecklist(input: {
       id: 'cash-settlement-reviewed',
       owner: 'Finance',
       title: 'Cash settlement reviewed',
-      detail: 'Cash bookings can leave partner wallet fee debt until deposit or offset evidence is recorded.',
+      detail: 'Cash bookings can leave Partner wallet fee debt until deposit or offset evidence is recorded.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
-      countLabel: `${input.cashSummary.providerCount} partner(s)`,
+      countLabel: `${input.cashSummary.providerCount} Partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
       operatorAction: 'Check cash fee debt, missing payment evidence, and settlement notes.',
       tone: input.cashSummary.providerCount ? 'danger' : 'success',
@@ -710,7 +710,7 @@ function buildHandoffReadinessChecklist(input: {
       id: 'failed-alerts-reviewed',
       owner: 'Alerts',
       title: 'Failed alerts reviewed',
-      detail: 'Failed delivery rows can hide customer status changes or partner booking requests.',
+      detail: 'Failed delivery rows can hide customer status changes or Partner booking requests.',
       href: '/notifications?review=failed',
       count: input.failedNotifications.length,
       countLabel: `${input.failedNotifications.length} failed`,
@@ -727,7 +727,7 @@ function buildHandoffReadinessChecklist(input: {
       count: input.partnerSignals.attentionCount,
       countLabel: `${input.partnerSignals.attentionCount} fact(s)`,
       status: input.partnerSignals.attentionCount ? 'Review' : 'Clear',
-      operatorAction: 'Open partner filters only for factual follow-up, not personal evaluation.',
+      operatorAction: 'Open Partner filters only for factual follow-up, not personal evaluation.',
       tone: input.partnerSignals.attentionCount ? 'warn' : 'success',
     },
     {
@@ -808,13 +808,13 @@ function buildImmediateActionQueue(input: {
       owner: 'Dispatch',
       title: 'Open matching windows',
       detail:
-        'Customers are waiting while first-pick and nearby partner participation windows are still open.',
+        'Customers are waiting while first-pick and nearby Partner participation windows are still open.',
       href: '/bookings?view=matching',
       count: input.matchingBookings.length,
       countLabel: `${input.matchingBookings.length} booking(s)`,
       status: input.matchingBookings.length ? 'Monitor now' : 'Clear',
       nextAction:
-        'Open the matching board and check partner response, participant list, and customer choice.',
+        'Open the matching board and check Partner response, participant list, and customer choice.',
       className: input.matchingBookings.length ? 'signal signal-warn' : 'signal signal-ok',
       statusClass: input.matchingBookings.length ? 'pill pill-warn' : 'pill pill-success',
     },
@@ -852,7 +852,7 @@ function buildImmediateActionQueue(input: {
         'Partners with negative wallet from cash bookings can stay visible, but marketplace alerts, participation, and payout release wait for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
-      countLabel: `${input.cashSummary.providerCount} partner(s)`,
+      countLabel: `${input.cashSummary.providerCount} Partner(s)`,
       status: input.cashSummary.providerCount ? 'Collect/offset' : 'Clear',
       nextAction:
         'Open cash settlements and record deposit or offset before future marketplace participation.',
@@ -863,7 +863,7 @@ function buildImmediateActionQueue(input: {
       id: 'notification-delivery',
       owner: 'Alerts',
       title: 'Notification delivery failures',
-      detail: 'Failed delivery rows can hide booking requests, partner updates, or customer status changes.',
+      detail: 'Failed delivery rows can hide booking requests, Partner updates, or customer status changes.',
       href: '/notifications?review=failed',
       count: input.failedNotifications.length,
       countLabel: `${input.failedNotifications.length} failed`,
@@ -880,9 +880,9 @@ function buildImmediateActionQueue(input: {
         'Partner list groups KYC, bank, wallet, location, app session, marketplace, and payout gate facts.',
       href: '/partners',
       count: input.partnerSignals.attentionCount,
-      countLabel: `${input.partnerSignals.attentionCount} partner fact(s)`,
+      countLabel: `${input.partnerSignals.attentionCount} Partner fact(s)`,
       status: input.partnerSignals.attentionCount ? 'Review' : 'Clear',
-      nextAction: 'Open partner list and continue from the relevant factual filter.',
+      nextAction: 'Open Partner list and continue from the relevant factual filter.',
       className: input.partnerSignals.attentionCount ? 'signal signal-warn' : 'signal signal-ok',
       statusClass: input.partnerSignals.attentionCount ? 'pill pill-warn' : 'pill pill-success',
     },
@@ -903,7 +903,7 @@ function buildImmediateActionQueue(input: {
       id: 'recent-operator-notes',
       owner: 'Handoff',
       title: 'Recent written notes',
-      detail: 'New customer, partner, or booking notes should be read before taking over the shift.',
+      detail: 'New Customer, Partner, or booking notes should be read before taking over the shift.',
       href: '/audit-log',
       count: recentNotes.length,
       countLabel: `${recentNotes.length} recent note(s)`,
@@ -995,7 +995,7 @@ function buildFinanceHandoffActionMap(input: {
       detail: `${formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency)} open HANDS fee debt from cash bookings.`,
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
-      countLabel: `${input.cashSummary.providerCount} partner(s)`,
+      countLabel: `${input.cashSummary.providerCount} Partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
       nextAction:
         'Record deposit reference or approved offset before marketplace alerts, participation, or payout release reopens.',
@@ -1284,22 +1284,22 @@ function buildShiftBriefItems(input: {
       owner: 'Dispatch',
       title: `${input.matchingBookings} matching wait`,
       detail: `${input.activeBookings} active booking(s) need status continuity across the shift.`,
-      action: 'Open booking monitor and check the 10-minute partner response window first.',
+      action: 'Open booking monitor and check the 10-minute Partner response window first.',
       href: '/bookings?view=matching',
       className: input.matchingBookings ? 'signal signal-warn' : 'signal signal-ok',
     },
     {
       owner: 'Partner Ops',
-      title: `${input.partnerIssueCount} partner facts to check`,
-      detail: 'KYC, wallet, location, push device, and app session facts are grouped on partner detail.',
-      action: 'Open partner list with operational filters.',
+      title: `${input.partnerIssueCount} Partner facts to check`,
+      detail: 'KYC, wallet, location, push device, and app session facts are grouped on Partner detail.',
+      action: 'Open Partner list with operational filters.',
       href: '/partners',
       className: input.partnerIssueCount ? 'signal signal-warn' : 'signal signal-ok',
     },
     {
       owner: 'Finance',
       title: `${input.cashDebtPartners} cash wallet gate(s)`,
-      detail: 'Cash bookings can create negative partner wallet rows until HANDS fee settlement is posted.',
+      detail: 'Cash bookings can create negative Partner wallet rows until HANDS fee settlement is posted.',
       action: 'Open cash settlement queue before approving more cash work.',
       href: '/cash-settlements',
       className: input.cashDebtPartners ? 'signal signal-danger' : 'signal signal-ok',
@@ -1434,7 +1434,7 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
         action: hasCashDebt
           ? 'Open cash settlement before marketplace alerts, participation, or payout release.'
           : hasKycPending
-            ? 'Open partner documents for review.'
+            ? 'Open Partner documents for review.'
             : hasBankPending
               ? 'Open payout account review.'
               : 'Continue normal operational watch.',
@@ -1466,10 +1466,10 @@ function participantNames(booking: AdminBooking) {
 }
 
 function bookingNextAction(booking: AdminBooking) {
-  if (booking.status === 'OPEN_MATCHING') return 'Monitor partner response window and customer choice list.';
+  if (booking.status === 'OPEN_MATCHING') return 'Monitor Partner response window and customer choice list.';
   if (booking.status === 'MATCHED')
-    return 'Confirm partner starts service when ready; chat should be available.';
-  if (booking.status === 'IN_SERVICE') return 'Keep chat visible until partner completion.';
+    return 'Confirm Partner starts service when ready; chat should be available.';
+  if (booking.status === 'IN_SERVICE') return 'Keep chat visible until Partner completion.';
   if (booking.status === 'COMPLETED')
     return 'Check payment, earning, tax, wallet, and chat archive closeout.';
   if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED')

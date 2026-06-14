@@ -51,13 +51,13 @@ export function OperationsHandoffMetricGridSection({
       <MetricCard
         label="In service"
         value={inServiceBookingCount}
-        helper="Chat should be live until partner completion"
+        helper="Chat should be live until Partner completion"
         href="/bookings?view=closeout"
       />
       <MetricCard
         label="Cash fee debt"
         value={cashSummary.providerCount}
-        helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across partner wallet gates`}
+        helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across Partner wallet gates`}
         href="/cash-settlements"
       />
       <MetricCard
@@ -69,7 +69,7 @@ export function OperationsHandoffMetricGridSection({
       <MetricCard
         label="Partner app online"
         value={presence.partnerLive}
-        helper={`${presence.partnerRecent} partner session(s) seen recently`}
+        helper={`${presence.partnerRecent} Partner session(s) seen recently`}
         href="/app-sessions?role=PROVIDER&state=live"
       />
       <MetricCard

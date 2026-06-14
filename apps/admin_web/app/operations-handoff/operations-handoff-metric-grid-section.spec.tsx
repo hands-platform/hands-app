@@ -45,7 +45,7 @@ describe('OperationsHandoffMetricGridSection', () => {
     expect(section.type).toBe('section');
     expect(rendered).toContain('Active bookings');
     expect(rendered).toContain('Cash fee debt');
-    expect(rendered).toContain('125.000 VND across partner wallet gates');
+    expect(rendered).toContain('125.000 VND across Partner wallet gates');
     expect(rendered).toContain('11');
     expect(rendered).toContain('Recent FCM sent');
     expect(rendered).toContain('13 Jun 2026, 17:09');
