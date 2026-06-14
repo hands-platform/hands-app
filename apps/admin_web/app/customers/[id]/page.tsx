@@ -212,13 +212,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       tone: lastCompletedBooking ? 'pill-success' : 'pill-neutral',
     },
     {
-      label: 'Latest partner link',
+      label: 'Latest Partner link',
       value: latestPartnerBooking
         ? shortId(latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId ?? '')
         : 'None',
       detail: latestPartnerBooking
         ? `${bookingPartnerDisplayName(latestPartnerBooking)} / booking ${shortId(latestPartnerBooking.id)}`
-        : 'No preferred or final partner is attached to the loaded booking records.',
+        : 'No preferred or final Partner is attached to the loaded booking records.',
       href:
         latestPartnerBooking?.selectedProviderId || latestPartnerBooking?.preferredProviderId
           ? `/partners/${latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId}`
@@ -230,7 +230,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       value: `${chatMessageCount} message(s)`,
       detail: latestChatBooking
         ? `Latest room ${shortId(latestChatBooking.chatRoom?.id)} / ${chatRooms.length} retained room(s).`
-        : 'No customer-partner chat archive is attached yet.',
+        : 'No customer and Partner chat archive is attached yet.',
       href: latestChatBooking
         ? `/chat-archive?q=${encodeURIComponent(latestChatBooking.id)}`
         : `/chat-archive?q=${encodeURIComponent(customer.id)}`,
@@ -495,7 +495,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         <MetricCard
           label="Closed bookings"
           value={bookingStats.closed.toString()}
-          helper={`Customer ${bookingStats.customerClosed} / admin ${bookingStats.adminClosed} / partner ${bookingStats.partnerClosed} / no-show ${bookingStats.noShow}`}
+          helper={`Customer ${bookingStats.customerClosed} / admin ${bookingStats.adminClosed} / Partner ${bookingStats.partnerClosed} / no-show ${bookingStats.noShow}`}
         />
         <MetricCard
           label="Captured spend"
@@ -717,7 +717,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <h2>Customer booking evidence bundles</h2>
             <p className="muted">
               Booking-by-booking operating bundle for customer desk review. Each row connects the
-              selected address snapshot, partner state, chat archive, payment, refund, earning, wallet, tax,
+              selected address snapshot, Partner state, chat archive, payment, refund, earning, wallet, tax,
               and staff task records as factual history only.
             </p>
           </div>
@@ -1259,7 +1259,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Booking and cancellation history</h2>
             <p className="muted">
-              All loaded bookings with partner, service, payment, refund, review, and chat state.
+              All loaded bookings with Partner, service, payment, refund, review, and chat state.
             </p>
           </div>
           <span className="pill pill-info">{filteredBookings.length} bookings</span>
@@ -1485,7 +1485,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Chat history</h2>
             <p className="muted">
-              Admin archive for every matched booking. Customer and partner apps hide the chat after
+              Admin archive for every matched booking. Customer and Partner apps hide the chat after
               completion, but operations keeps the full message history here.
             </p>
           </div>
@@ -1975,7 +1975,7 @@ function buildCustomerOperatorCommandQueue({
       title: 'Open the current customer booking',
       detail: `${activeBooking.status} / ${bookingServiceLabel(
         activeBooking,
-      )}. Check partner, payment, location, and chat records from the booking detail page.`,
+      )}. Check Partner, payment, location, and chat records from the booking detail page.`,
       owner: 'Dispatch / Customer desk',
       tone: 'info',
       action: { type: 'link', href: `/bookings/${activeBooking.id}`, label: 'Open booking' },
@@ -1989,7 +1989,7 @@ function buildCustomerOperatorCommandQueue({
       label: 'Chat required',
       title: 'Matched booking has no chat room row',
       detail:
-        'Matching should create a customer-partner chat. Open the booking and verify chat creation before service continues.',
+        'Matching should create a customer and Partner chat. Open the booking and verify chat creation before service continues.',
       owner: 'Realtime / Support',
       tone: 'warn',
       action: { type: 'link', href: `/bookings/${booking.id}#chat`, label: 'Inspect chat' },
@@ -2002,7 +2002,7 @@ function buildCustomerOperatorCommandQueue({
       label: 'Chat quiet',
       title: 'Chat exists but no messages are archived yet',
       detail:
-        'The room is open. Leave a factual note if staff confirms the customer and partner are communicating outside chat.',
+        'The room is open. Leave a factual note if staff confirms the customer and Partner are communicating outside chat.',
       owner: 'Customer desk',
       tone: 'info',
       action: {
@@ -2048,7 +2048,7 @@ function buildCustomerOperatorCommandQueue({
       label: 'Address',
       title: 'No saved service address is loaded',
       detail:
-        'Ask the customer to confirm a map pin or saved address before dispatch so partner distance and service location stay clear.',
+        'Ask the customer to confirm a map pin or saved address before dispatch so Partner distance and service location stay clear.',
       owner: 'Customer desk',
       tone: 'warn',
       action: {
@@ -2248,9 +2248,9 @@ function buildCustomerAccountFacts(
       helper: 'Calculated from loaded booking history only',
     },
     {
-      label: 'Preferred partner',
+      label: 'Preferred Partner',
       value: frequentPartner ?? 'Not enough bookings',
-      helper: 'Most repeated selected or preferred partner in this archive',
+      helper: 'Most repeated selected or preferred Partner in this archive',
     },
     {
       label: 'Last payment',
@@ -2723,7 +2723,7 @@ function buildCustomerActivityRecords(
       type: 'BOOKING',
       at: bookingRecordCreatedAt(booking) ?? '',
       title: `${booking.status} booking ${shortId(booking.id)}`,
-      detail: `${bookingServiceLabel(booking)} / partner ${bookingPartnerDisplayName(
+      detail: `${bookingServiceLabel(booking)} / Partner ${bookingPartnerDisplayName(
         booking,
       )} / opened ${formatDate(bookingRequestOpenedAt(booking))}${
         isClosedCustomerBooking(booking) ? ` / ${bookingClosureLabel(booking)}` : ''
@@ -2768,7 +2768,7 @@ function buildCustomerActivityRecords(
         id: booking.earning.id,
         type: 'PAYMENT',
         at: booking.earning.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-        title: `${booking.earning.status} partner earning`,
+        title: `${booking.earning.status} Partner earning`,
         detail: `Gross ${formatMoney(Number(booking.earning.grossAmount ?? 0))} / platform fee ${formatMoney(
           Number(booking.earning.platformFee ?? 0),
         )} / net ${formatMoney(Number(booking.earning.netAmount ?? 0))}`,
@@ -2835,7 +2835,7 @@ function buildCustomerActivityRecords(
         id: participant.id,
         type: 'BOOKING',
         at: participant.respondedAt ?? participant.joinedAt ?? booking.createdAt ?? '',
-        title: `${participant.status} partner participant`,
+        title: `${participant.status} Partner participant`,
         detail: `${participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName ?? 'Partner'} / ${
           participant.distanceMeters != null ? `${participant.distanceMeters}m` : 'distance not stored'
         }`,
@@ -2953,7 +2953,7 @@ function buildCustomerActivityRecords(
       id: review.id,
       type: 'REVIEW',
       at: review.createdAt ?? '',
-      title: `Service feedback left for ${review.providerProfile?.displayName ?? 'partner'}`,
+      title: `Service feedback left for ${review.providerProfile?.displayName ?? 'Partner'}`,
       detail: `Feedback record / ${reviewBookingServiceLabel(review.booking)}`,
       href: '/reviews',
     });
@@ -3088,7 +3088,7 @@ function buildCustomerBookingGateAttemptRows(
           ? `Optional GPS evidence: ${formatDate(currentLocationRecordedAt)}`
           : 'No optional GPS timestamp',
         serviceId ? `Service ${shortId(serviceId)}` : null,
-        preferredProviderId ? `First-pick partner ${shortId(preferredProviderId)}` : null,
+        preferredProviderId ? `First-pick Partner ${shortId(preferredProviderId)}` : null,
       ].filter(Boolean);
 
       return {
@@ -3138,7 +3138,7 @@ function customerBookingGateReasonLabel(reasonCode: string) {
     return 'Optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick partner is outside the service address radius';
+    return 'First-pick Partner is outside the service address radius';
   }
   if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'Selected service address is outside enabled service area';
@@ -3194,12 +3194,12 @@ function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): Custo
       addressStatus: hasAddressSnapshot ? 'Snapshot saved' : 'No address snapshot',
       addressDetail: addressText,
       partnerStatus: booking.selectedProviderId
-        ? 'Final partner selected'
+        ? 'Final Partner selected'
         : booking.preferredProviderId
-          ? 'Preferred partner first-pick'
+          ? 'Preferred Partner first-pick'
           : participantCount
             ? 'Marketplace participation'
-            : 'No partner participation',
+            : 'No Partner participation',
       partnerDetail: `${bookingPartnerDisplayName(booking)} / ${participantCount} participant(s), ${acceptedParticipants} accepted/selected`,
       chatStatus: booking.chatRoom ? `${chatMessages.length} message(s)` : 'No chat room',
       chatDetail: booking.chatRoom
@@ -3393,7 +3393,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
         ? `Room ${shortId(booking.chatRoom.id)} / ${bookingChatArchiveLabel(booking)}`
         : requiresRoom
           ? 'Matched or service-stage booking should have a retained chat room.'
-          : 'Pre-match bookings do not open customer-partner chat yet.',
+          : 'Pre-match bookings do not open customer and Partner chat yet.',
       latestSender,
       latestMessage: latestMessage ? compactText(latestMessage.body, 120) : 'No retained message loaded',
       latestMessageAt: latestMessage?.createdAt,
@@ -3403,7 +3403,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
           ? 'Visible while service is active'
           : 'Not visible yet',
       mobileVisibilityDetail: mobileHidden
-        ? 'Customer and partner apps may hide completed or closed chats, but admin keeps the archive.'
+        ? 'Customer and Partner apps may hide completed or closed chats, but admin keeps the archive.'
         : booking.chatRoom
           ? 'Room should remain visible until the service is completed or closed.'
           : 'Chat opens after first-pick match or customer final selection.',
@@ -3416,7 +3416,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
         ? 'Use the archive link for full message evidence.'
         : requiresRoom
           ? 'Open the booking detail to repair or investigate the missing room.'
-          : 'No customer-partner chat evidence is expected before matching.',
+          : 'No customer and Partner chat evidence is expected before matching.',
       bookingHref: `/bookings/${booking.id}`,
       chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
       hasRoom: Boolean(booking.chatRoom),
@@ -3558,7 +3558,7 @@ function bookingClosureLabel(booking: AdminBookingDetail) {
     booking.closedByRole === 'CUSTOMER'
       ? 'customer'
       : booking.closedByRole === 'PROVIDER'
-        ? 'partner'
+        ? 'Partner'
         : booking.closedByRole === 'ADMIN'
           ? 'admin'
           : 'system';
@@ -3571,7 +3571,7 @@ function bookingChatArchiveLabel(booking: AdminBookingDetail) {
   if (booking.chatRoom) {
     if (booking.status === 'COMPLETED') return 'Archived for admin after completion';
     if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
-      return 'Live customer-partner room';
+      return 'Live customer and Partner room';
     }
     return 'Chat room retained';
   }

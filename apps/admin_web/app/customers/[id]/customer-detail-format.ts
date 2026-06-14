@@ -44,7 +44,7 @@ export function bookingPartnerDisplayName(booking: AdminBookingDetail) {
       booking.preferredProvider?.displayName ??
       booking.selectedProvider?.user?.fullName ??
       booking.preferredProvider?.user?.fullName ??
-      'No partner',
+      'No Partner',
   );
 }
 
