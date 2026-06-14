@@ -1,31 +1,7 @@
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
-
-type PolicyChangeImpactDashboard = {
-  readonly metrics: readonly { readonly label: string; readonly value: string; readonly helper: string }[];
-  readonly snapshotSummary: readonly {
-    readonly scope: string;
-    readonly label: string;
-    readonly value: string;
-    readonly helper: string;
-  }[];
-  readonly snapshotRows: readonly {
-    readonly policy: string;
-    readonly scope: string;
-    readonly liveValue: string;
-    readonly savedValue: string;
-    readonly operatorMeaning: string;
-  }[];
-  readonly cards: readonly {
-    readonly scope: string;
-    readonly title: string;
-    readonly detail: string;
-    readonly operatorAction: string;
-    readonly className: string;
-    readonly pillClass: string;
-  }[];
-};
+import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
 
 type OperationsPolicyChangeImpactSectionProps = {
   readonly dashboard: PolicyChangeImpactDashboard;
