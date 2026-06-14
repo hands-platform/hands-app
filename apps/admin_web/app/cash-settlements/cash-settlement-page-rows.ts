@@ -35,7 +35,7 @@ export function buildCashSettlementRows(earnings: readonly AdminEarning[]): Cash
         debtOrigin: cashDebtOriginLabel(earning),
         earning,
         lastLedgerRef: earning.walletLedgerEntries?.[0]?.reference ?? null,
-        nextAction: `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
+        nextAction: `Confirm Partner deposit or approved offset before settling ${settlementReference}.`,
         paymentMethod: earning.booking?.payment?.method ?? 'CASH',
         platformFee: earning.platformFee,
         providerName: providerDisplayName(earning),
@@ -172,7 +172,7 @@ export function cashSettlementActionExecutionMap(
     {
       action: 'Aging follow-up',
       operatorRule: isOldDebt
-        ? 'Prioritize partner deposit confirmation or admin offset review.'
+        ? 'Prioritize Partner deposit confirmation or admin offset review.'
         : 'Keep in the normal settlement queue.',
       pillClass: isOldDebt ? 'pill-warn' : 'pill-success',
       reason: isOldDebt

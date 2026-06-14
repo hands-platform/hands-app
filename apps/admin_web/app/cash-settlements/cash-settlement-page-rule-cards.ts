@@ -36,7 +36,7 @@ export function buildCashSettlementRuleCards(summary: CashSettlementSummary): Co
     {
       action: 'Do not create customer labels or negative wallet balances for this settlement flow.',
       className: 'ops-task-done',
-      detail: 'Customers do not carry partner cash-fee debt. Customer browsing, booking, and chat history stay factual.',
+      detail: 'Customers do not carry Partner cash-fee debt. Customer browsing, booking, and chat history stay factual.',
       pillClass: 'pill-success',
       status: 'Never negative',
       title: 'Customer wallet rule',
@@ -45,7 +45,7 @@ export function buildCashSettlementRuleCards(summary: CashSettlementSummary): Co
       action: 'Use a bank deposit reference or approved admin offset memo; do not clear debt from a verbal promise.',
       className: summary.missingPaymentEvidenceCount ? 'ops-task-pending' : 'ops-task-done',
       detail: summary.missingPaymentEvidenceCount
-        ? 'Some rows need payment evidence review before finance should clear the partner wallet.'
+        ? 'Some rows need payment evidence review before finance should clear the Partner wallet.'
         : 'Visible rows have enough linked payment evidence for finance review.',
       pillClass: summary.missingPaymentEvidenceCount ? 'pill-warn' : 'pill-success',
       status: summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'Evidence ready',
@@ -74,7 +74,7 @@ export function buildAppliedCashSettlementPolicyCards(
       value: humanizePolicyValue(policy.payoutBatchCycle),
     },
     {
-      helper: 'Reopened partners can participate in eligible marketplace bookings inside the booking-address radius.',
+      helper: 'Reopened Partners can participate in eligible marketplace bookings inside the booking-address radius.',
       label: 'Marketplace radius',
       value: formatPolicyDistance(policy.marketplaceRadiusMeters),
     },

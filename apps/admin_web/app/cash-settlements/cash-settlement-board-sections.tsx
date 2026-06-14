@@ -34,7 +34,7 @@ export function CashSettlementExecutionSection({ executionDesk, priorityBoardRow
         <div>
           <h2>Cash settlement execution desk</h2>
           <p className="muted">
-            Operator-first view for clearing partner cash-fee debt. It does not judge partner quality; it only
+            Operator-first view for clearing Partner cash-fee debt. It does not judge Partner quality; it only
             shows what must be evidenced before final acceptance, service start, and payout release reopen.
           </p>
         </div>
@@ -67,7 +67,7 @@ export function CashSettlementRulesSection({ appliedPolicyCards, settlementRuleC
         <div>
           <h2>Cash fee operating rules</h2>
           <p className="muted">
-            Use this as the first read before finance calls a partner or clears a wallet. The rule is factual:
+            Use this as the first read before finance calls a Partner or clears a wallet. The rule is factual:
             cash fee debt gates final acceptance, service start, and payout release, not customer access or
             account status.
           </p>
@@ -111,7 +111,7 @@ export function CashSettlementWorkflowSections({
     <>
       <CommandCardSection
         cards={debtCauseCards}
-        description="Factual breakdown of why partner wallets are negative. Use this before contacting a partner or approving an admin offset."
+        description="Factual breakdown of why Partner wallets are negative. Use this before contacting a Partner or approving an admin offset."
         href="/payments?review=cash-debt"
         linkLabel="Review cash payments"
         title="Debt cause board"
@@ -126,7 +126,7 @@ export function CashSettlementWorkflowSections({
             </p>
           </div>
           <Link className="text-link" href="/partner-controls?review=cash-debt">
-            Open partner controls
+            Open Partner controls
           </Link>
         </div>
         <div className="setup-stage-list admin-mt-12">
@@ -143,7 +143,7 @@ export function CashSettlementWorkflowSections({
         </div>
       </div>
       <LinkedCardSection
-        description="Follow a cash booking from customer payment evidence to partner wallet reopening and payout release. Marketplace viewing attempts are not tracked; actual marketplace participants remain on the booking record."
+        description="Follow a cash booking from customer payment evidence to Partner wallet reopening and payout release. Marketplace viewing attempts are not tracked; actual marketplace participants remain on the booking record."
         href="/bookings?view=cash-debt"
         items={settlementHandoff}
         linkLabel="Booking cash debt queue"
@@ -151,7 +151,7 @@ export function CashSettlementWorkflowSections({
       />
       <CommandCardSection
         cards={commandCards}
-        description="Work from the highest debt and oldest debt first. Every settlement needs an auditable reference before the partner wallet can reopen."
+        description="Work from the highest debt and oldest debt first. Every settlement needs an auditable reference before the Partner wallet can reopen."
         href="/earnings"
         linkLabel="Open earnings"
         title="Settlement command queue"

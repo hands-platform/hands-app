@@ -20,13 +20,13 @@ export function buildWalletRecoverySteps(
   return [
     {
       detail: hasOpenDebt
-        ? `${summary.providerCount} partner wallet(s) are negative because cash bookings created ${formatMoney(
+        ? `${summary.providerCount} Partner wallet(s) are negative because cash bookings created ${formatMoney(
             summary.debtAmount,
             summary.currency,
           )} of unpaid HANDS fee or withholding debt.`
-        : 'No partner wallet is currently negative because of cash-fee debt.',
+        : 'No Partner wallet is currently negative because of cash-fee debt.',
       operatorRule:
-        'Use booking, payment, earning, and chat evidence. Record facts only; do not turn this into a partner or customer label.',
+        'Use booking, payment, earning, and chat evidence. Record facts only; do not turn this into a Partner or customer label.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
       status: hasOpenDebt ? `${summary.rowCount} open` : 'Clear',
       title: '1. Confirm why the wallet is negative',
@@ -36,7 +36,7 @@ export function buildWalletRecoverySteps(
         ? 'Some rows need payment evidence review before finance should clear the wallet.'
         : 'Visible rows have the minimum booking/payment evidence needed for settlement review.',
       operatorRule:
-        'Use a bank transfer reference when the partner pays HANDS, or an admin offset memo when finance deducts from future earnings.',
+        'Use a bank transfer reference when the Partner pays HANDS, or an admin offset memo when finance deducts from future earnings.',
       pillClass: missingEvidenceRows.length ? 'pill-warn' : 'pill-success',
       status: missingEvidenceRows.length ? `${missingEvidenceRows.length} check` : 'Evidence ready',
       title: '2. Collect deposit or approve offset',
@@ -85,7 +85,7 @@ export function buildCashSettlementHandoffMap(
         ? `${formatMoney(
             cashRows.reduce((sum, row) => sum + row.bookingAmount, 0),
             summary.currency,
-          )} was collected by partners as customer cash.`
+          )} was collected by Partners as customer cash.`
         : 'No visible row is currently linked to a CASH payment method.',
       href: '/bookings?view=cash-debt',
       operatorRule: 'Use booking detail for payment, chat, and marketplace participant evidence.',
@@ -100,9 +100,9 @@ export function buildCashSettlementHandoffMap(
             highestDebt.debtAmount,
             highestDebt.currency,
           )}.`
-        : 'No partner wallet has cash-fee debt in the current queue.',
+        : 'No Partner wallet has cash-fee debt in the current queue.',
       href: '/partner-controls?review=cash-debt',
-      operatorRule: 'Negative wallet applies only to partners; customers never carry negative wallet debt.',
+      operatorRule: 'Negative wallet applies only to Partners; customers never carry negative wallet debt.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
       status: hasOpenDebt ? `${summary.providerCount} wallet(s)` : 'Clear',
       title: 'Partner wallet debt',

@@ -46,7 +46,7 @@ function buildRow(): CashSettlementOpenDebtTableRow {
     debtOrigin: 'Partner collected customer cash; HANDS fee/tax is still unpaid.',
     earningId: 'earning-1',
     lastLedgerRef: 'ledger-1',
-    nextAction: 'Confirm partner deposit before settling.',
+    nextAction: 'Confirm Partner deposit before settling.',
     partnerHref: '/partners/partner-1',
     paymentMethod: 'CASH',
     platformFeeLabel: '400.000 VND',

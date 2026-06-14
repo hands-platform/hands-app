@@ -46,7 +46,7 @@ export function CashSettlementOpenDebtTableSection({ rows }: CashSettlementOpenD
         <div>
           <h2>Open cash fee debt rows</h2>
           <p className="muted">
-            Settle only after confirming a partner deposit or a documented admin offset. The backend rejects missing
+            Settle only after confirming a Partner deposit or a documented admin offset. The backend rejects missing
             references.
           </p>
         </div>

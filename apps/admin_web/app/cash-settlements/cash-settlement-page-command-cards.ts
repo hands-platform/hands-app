@@ -26,14 +26,14 @@ export function buildCashSettlementExecutionDesk(
       title: 'Deposit or offset evidence',
     },
     {
-      action: 'Contact highest debt first, then oldest debt. Record facts only; do not create a partner label.',
+      action: 'Contact highest debt first, then oldest debt. Record facts only; do not create a Partner label.',
       className: highestDebt ? 'ops-task-pending' : 'ops-task-done',
       detail: highestDebt
         ? `${highestDebt.providerName} is first in the queue at ${formatMoney(
             highestDebt.debtAmount,
             highestDebt.currency,
           )}, open since ${highestDebt.oldestOpenLabel}.`
-        : 'There is no partner cash-fee debt waiting for contact.',
+        : 'There is no Partner cash-fee debt waiting for contact.',
       pillClass: highestDebt ? 'pill-warn' : 'pill-success',
       status: highestDebt ? 'Debt first' : 'No queue',
       title: 'Partner contact order',
@@ -89,7 +89,7 @@ export function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
-      status: `${summary.providerCount} PARTNER(S)`,
+      status: `${summary.providerCount} Partner(s)`,
       title: 'Marketplace-held wallets',
     },
     {
@@ -102,13 +102,13 @@ export function buildCommandCards(
             .slice(0, 2)
             .map((provider) => `${provider.providerName}: ${formatMoney(provider.debtAmount, provider.currency)}`)
             .join(' / ')
-        : 'No partner is above the high-debt review threshold.',
+        : 'No Partner is above the high-debt review threshold.',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
       status: `${summary.highDebtProviderCount} HIGH`,
       title: 'High debt priority',
     },
     {
-      action: summary.staleDebtRowCount ? 'Contact partner and record deposit or offset evidence.' : 'No aging escalation needed.',
+      action: summary.staleDebtRowCount ? 'Contact Partner and record deposit or offset evidence.' : 'No aging escalation needed.',
       className: summary.staleDebtRowCount ? 'ops-task-pending' : 'ops-task-done',
       detail: summary.staleDebtRowCount
         ? 'One or more cash debts have been open longer than 24 hours.'
@@ -149,7 +149,7 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
       )} customer cash was collected outside the platform and needs HANDS fee reconciliation.`,
       pillClass: cashRows.length ? 'pill-warn' : 'pill-success',
       status: `${cashRows.length} ROW(S)`,
-      title: 'Cash collected by partner',
+      title: 'Cash collected by Partner',
     },
     {
       action: 'This is the main reason final acceptance and service start are blocked while the wallet is negative.',
@@ -184,7 +184,7 @@ export function buildDebtCauseCards(rows: readonly CashSettlementRow[], summary:
       title: 'Evidence gaps',
     },
     {
-      action: staleRows.length ? 'Prioritize partner contact and evidence collection.' : 'Normal settlement cadence is enough.',
+      action: staleRows.length ? 'Prioritize Partner contact and evidence collection.' : 'Normal settlement cadence is enough.',
       className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
       detail: staleRows.length
         ? `${formatMoney(

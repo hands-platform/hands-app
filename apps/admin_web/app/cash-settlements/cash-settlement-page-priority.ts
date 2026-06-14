@@ -108,6 +108,6 @@ function settlementUnlockResult(row: CashSettlementRow) {
   return [
     'Final acceptance, service start, and payout release unlock only after wallet balance is no longer negative.',
     'Payout release returns to batch review after settlement.',
-    `Customer wallet stays unchanged; this is partner cash-fee debt for booking ${shortRecordId(row.earning.bookingId)}.`,
+    `Customer wallet stays unchanged; this is Partner cash-fee debt for booking ${shortRecordId(row.earning.bookingId)}.`,
   ];
 }

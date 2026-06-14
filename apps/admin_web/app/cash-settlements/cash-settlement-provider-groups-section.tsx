@@ -44,7 +44,7 @@ export function CashSettlementProviderGroupsSection({ providers }: CashSettlemen
           ))}
         </div>
       ) : (
-        <p className="muted">No partner has open cash settlement debt.</p>
+        <p className="muted">No Partner has open cash settlement debt.</p>
       )}
     </div>
   );

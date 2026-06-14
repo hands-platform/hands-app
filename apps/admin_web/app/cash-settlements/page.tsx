@@ -76,7 +76,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     <AdminPageTemplate
       description="Finance queue for cash bookings where the Partner collected customer cash and still owes HANDS platform fee or withholding."
       metrics={[
-        { helper: 'Partners with open cash-fee debt rows.', label: 'Cash debt partners', value: summary.providerCount },
+        { helper: 'Partners with open cash-fee debt rows.', label: 'Partners with cash debt', value: summary.providerCount },
         { helper: 'Visible settlement rows after filters.', label: 'Open debt rows', value: summary.rowCount },
         {
           helper: 'Company fee or tax still owed to HANDS.',

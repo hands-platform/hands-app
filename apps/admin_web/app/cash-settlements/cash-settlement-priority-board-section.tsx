@@ -31,7 +31,7 @@ export function CashSettlementPriorityBoardSection({ rows }: CashSettlementPrior
         <thead>
           <tr>
             <th>Priority</th>
-            <th>Partner / booking</th>
+            <th>Partner / Booking</th>
             <th>Debt reason</th>
             <th>Required evidence</th>
             <th>Unlock result</th>

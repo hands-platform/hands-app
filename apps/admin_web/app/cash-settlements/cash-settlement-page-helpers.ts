@@ -16,7 +16,7 @@ export function isOpenCashDebt(earning: AdminEarning) {
 
 export function providerDisplayName(earning: AdminEarning) {
   return partnerDisplayText(
-    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown partner',
+    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown Partner',
   );
 }
 
@@ -36,7 +36,7 @@ export function cashDebtOriginLabel(earning: AdminEarning) {
   const method = earning.booking?.payment?.method ?? 'CASH';
   const service = bookingServiceLabel(earning);
   if (method === 'CASH') {
-    return `${service}: partner collected customer cash; HANDS fee/tax is still unpaid.`;
+    return `${service}: Partner collected customer cash; HANDS fee/tax is still unpaid.`;
   }
   return `${service}: negative wallet row needs finance review because payment method is ${method}.`;
 }
