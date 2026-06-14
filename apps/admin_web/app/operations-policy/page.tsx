@@ -49,6 +49,11 @@ import { OperationsPolicyAuditTrailSection } from './operations-policy-audit-tra
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { OperationsPolicyChangeImpactSection } from './operations-policy-change-impact-section';
+import {
+  OperationsPolicyDrilldownSection,
+  type PolicyDrilldownListView,
+  type PolicyDrilldownPill,
+} from './operations-policy-drilldown-section';
 import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
@@ -230,23 +235,7 @@ export default async function OperationsPolicyPage({
         sampledBookingCount={bookings.length}
       />
 
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Policy impact drill-down</h2>
-            <p className="muted">
-              Click into the exact bookings and partners operators should review before changing live
-              matching, wallet, or response-window policy.
-            </p>
-          </div>
-          <span className="pill pill-info">{policyDrilldown.totalCount} item(s) to review</span>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {policyDrilldown.lists.map((list) => (
-            <PolicyDrilldownList key={list.key} list={list} />
-          ))}
-        </div>
-      </section>
+      <OperationsPolicyDrilldownSection drilldown={policyDrilldown} />
 
       <OperationsPolicyAuditTrailSection rows={policyAuditRows} />
 
@@ -516,46 +505,6 @@ function PolicyForm({
         </p>
       )}
     </form>
-  );
-}
-
-function PolicyDrilldownList({ list }: { list: PolicyDrilldownListView }) {
-  return (
-    <div className={`ops-task-card ${list.className}`} style={{ minHeight: 0 }}>
-      <div>
-        <span className={`pill ${list.pillClass}`}>{list.rows.length} item(s)</span>
-        <h3>{list.title}</h3>
-        <p>{list.helper}</p>
-      </div>
-      {list.rows.length ? (
-        <div className="ops-task-breakdown">
-          {list.rows.map((row) => (
-            <div className="ops-task-note" key={`${list.key}-${row.id}`}>
-              <a className="text-link" href={row.href}>
-                {row.title}
-              </a>
-              <p className="muted" style={{ margin: '6px 0' }}>
-                {row.subtitle}
-              </p>
-              <div className="participant-list">
-                {row.pills.map((pill) => (
-                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
-                    {pill.label}
-                  </span>
-                ))}
-              </div>
-              <small>{row.operatorAction}</small>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="ops-task-note">
-          <p className="muted" style={{ margin: 0 }}>
-            {list.emptyText}
-          </p>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -1645,30 +1594,6 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
   };
 }
 
-type PolicyDrilldownPill = {
-  label: string;
-  className: string;
-};
-
-type PolicyDrilldownRow = {
-  id: string;
-  href: string;
-  title: string;
-  subtitle: string;
-  pills: PolicyDrilldownPill[];
-  operatorAction: string;
-};
-
-type PolicyDrilldownListView = {
-  key: string;
-  title: string;
-  helper: string;
-  className: string;
-  pillClass: string;
-  emptyText: string;
-  rows: PolicyDrilldownRow[];
-};
-
 function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperationalPolicySetting[]) {
   const openMatchingRows = bookings
     .filter((booking) => booking.status === 'OPEN_MATCHING')
@@ -1742,7 +1667,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'open-matching',
       title: 'Open matching queue',
-      helper: 'Bookings currently waiting for first-pick and marketplace partner decisions.',
+      helper: 'Bookings currently waiting for first-pick and marketplace Partner decisions.',
       className: openMatchingRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: openMatchingRows.length ? 'pill-warn' : 'pill-success',
       emptyText: 'No open matching booking needs policy review right now.',
@@ -1798,7 +1723,7 @@ function bookingPartnerLabel(booking: AdminBooking) {
     partner?.displayName ??
     partner?.user?.fullName ??
     partner?.user?.phone ??
-    (booking.participants?.length ? 'Participating partner' : 'No partner yet')
+    (booking.participants?.length ? 'Participating Partner' : 'No Partner yet')
   );
 }
 
