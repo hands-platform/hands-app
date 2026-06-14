@@ -137,6 +137,8 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
   return rows.sort((a, b) => financeActionWeight(b) - financeActionWeight(a) || b.count - a.count);
 }
 
+export type FinanceHandoffActionRow = ReturnType<typeof buildFinanceHandoffActionMap>[number];
+
 function financeActionWeight(item: { readonly statusClass: string }) {
   if (item.statusClass.includes('danger')) return 4;
   if (item.statusClass.includes('warn')) return 3;

@@ -36,6 +36,7 @@ import { OperationsHandoffBookingQueueSection } from './operations-handoff-booki
 import { OperationsHandoffCustomerPartnerSection } from './operations-handoff-customer-partner-section';
 import { OperationsHandoffDateRangeSection } from './operations-handoff-date-range-section';
 import { buildFinanceHandoffActionMap } from './operations-handoff-finance-actions';
+import { OperationsHandoffFinanceActionSection } from './operations-handoff-finance-action-section';
 import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
 import { buildFinanceRows } from './operations-handoff-finance-rows';
 import { buildImmediateActionQueue } from './operations-handoff-immediate-actions';
@@ -227,34 +228,7 @@ export default async function OperationsHandoffPage({
 
       <OperationsHandoffImmediateActionSection actions={immediateActions} />
 
-      <section className="card admin-mb-16">
-        <div className="toolbar">
-          <div>
-            <h2>Finance handoff action map</h2>
-            <p className="muted">
-              Money-flow lanes the next operator should verify before continuing the shift: payment state,
-              refund rows, cash wallet debt, payout release, and tax/reference trace.
-            </p>
-          </div>
-          <Link className="text-link" href="/finance-closeout">
-            Open Finance Closeout
-          </Link>
-        </div>
-        <div className="ops-task-grid">
-          {financeHandoffActions.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.id}>
-              <span className={item.className}>{item.owner}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className={item.statusClass}>{item.status}</span>
-                <span className="pill">{item.countLabel}</span>
-              </div>
-              <small>{item.nextAction}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <OperationsHandoffFinanceActionSection actions={financeHandoffActions} />
 
       <section className="detail-grid admin-mb-16">
         <OperationsHandoffShiftBriefSection
