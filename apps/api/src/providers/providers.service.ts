@@ -15,7 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
-import { calculateDistanceMeters } from '../bookings/bookings.policy';
+import { safeDistanceMeters } from '../matching/matching.policy';
 
 const REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -111,7 +111,7 @@ export class ProvidersService {
 
     return providers
       .map((provider) => {
-        const distanceMeters = calculateDistanceMeters(
+        const distanceMeters = safeDistanceMeters(
           origin.lat,
           origin.lng,
           provider.currentLat,

@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 
-export { haversineMeters, roundTo100Meters } from './matching.distance';
+export { haversineMeters, roundTo100Meters, safeDistanceMeters } from './matching.distance';
 
 export const DEFAULT_TRAVEL_BUFFER_MINUTES = 30;
 export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;
@@ -506,8 +506,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
 
 export function isFcmPartnerAlertChannel(value: unknown): boolean {
   return (
-    value === PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS ||
-    value === PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS
+    value === PARTNER_ALERT_FCM_FOR_ALL_BOOKINGS || value === PARTNER_ALERT_LEGACY_ONESIGNAL_FOR_ALL_BOOKINGS
   );
 }
 
@@ -765,4 +764,3 @@ function readSnapshotInteger(value: unknown, min: number, max: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : undefined;
 }
-

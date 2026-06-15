@@ -4,8 +4,7 @@ import { BookingStatus, ParticipantStatus, PaymentMethod } from '@prisma/client'
 import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   BACKUP_OPEN_IMMEDIATE,
-  haversineMeters,
-  roundTo100Meters,
+  safeDistanceMeters,
 } from '../matching/matching.policy';
 
 const MINUTE_MS = 60_000;
@@ -38,10 +37,7 @@ export function isCustomerSelectableParticipantForFinalChoice(
   return false;
 }
 
-export function isMarketplacePartnerAction(
-  providerProfileId: string,
-  preferredProviderId?: string | null,
-) {
+export function isMarketplacePartnerAction(providerProfileId: string, preferredProviderId?: string | null) {
   return providerProfileId !== preferredProviderId;
 }
 
@@ -171,17 +167,7 @@ export function calculateDistanceMeters(
   providerLat: unknown,
   providerLng: unknown,
 ) {
-  const lat = parseFiniteCoordinate(providerLat);
-  const lng = parseFiniteCoordinate(providerLng);
-  if (
-    !Number.isFinite(bookingLat) ||
-    !Number.isFinite(bookingLng) ||
-    lat == null ||
-    lng == null
-  ) {
-    return null;
-  }
-  return roundTo100Meters(haversineMeters(bookingLat, bookingLng, lat, lng));
+  return safeDistanceMeters(bookingLat, bookingLng, providerLat, providerLng);
 }
 
 export function formatMatchingRadius(radiusMeters: number) {
