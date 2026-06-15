@@ -103,6 +103,7 @@ const missingGenerated = generatedFiles.filter((file) => !file.exists);
 const ok = failed.length === 0 && missingGenerated.length === 0;
 const { env } = loadMergedEnv('.env');
 const firebasePushReady = firebaseAdminCredentialsConfigured(env) && firebaseProjectAlignment(env).ok;
+const phoneAuthReady = phoneAuthSetupState(env);
 
 console.log(
   JSON.stringify(
@@ -111,7 +112,9 @@ console.log(
       purpose: 'HANDS external setup preflight before filling real console credentials.',
       generatedFiles,
       checks: results,
-      nextSteps: ok ? nextSetupSteps({ firebasePushReady }) : failed.map((result) => result.fix),
+      nextSteps: ok
+        ? nextSetupSteps({ firebasePushReady, phoneAuthReady })
+        : failed.map((result) => result.fix),
     },
     null,
     2,
@@ -147,7 +150,7 @@ function runStep(step) {
   };
 }
 
-function nextSetupSteps({ firebasePushReady }) {
+function nextSetupSteps({ firebasePushReady, phoneAuthReady }) {
   const preparationSteps = [
     'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
     'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
@@ -155,8 +158,7 @@ function nextSetupSteps({ firebasePushReady }) {
   ];
   const followUpSteps = [
     'Run npm.cmd run external:check:supabase for Supabase core values.',
-    'For Phone Auth E2E, create or open the Vonage SMS/Verify dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env.',
-    'Only after those SMS values are present, run npm.cmd run external:check:supabase-auth, npm.cmd run auth:supabase-phone-smoke -- --dry-run, and then the --send/--verify live OTP smoke.',
+    ...phoneAuthNextSteps(phoneAuthReady),
     'Keep npm.cmd run auth:supabase-smoke passing for the API token exchange and role-boundary contract.',
   ];
   const fcmSteps = firebasePushReady
@@ -168,6 +170,53 @@ function nextSetupSteps({ firebasePushReady }) {
       ];
 
   return [...preparationSteps, ...fcmSteps, ...followUpSteps];
+}
+
+function phoneAuthNextSteps({ phoneReady, smsReady }) {
+  if (smsReady && phoneReady) {
+    return [
+      'Supabase Phone Auth SMS values and SUPABASE_PHONE_SMOKE_PHONE are present; run npm.cmd run external:check:supabase-auth, npm.cmd run auth:supabase-phone-smoke -- --dry-run, then use --send/--verify for the live OTP smoke.',
+    ];
+  }
+  if (smsReady) {
+    return [
+      'Supabase Phone Auth SMS values are present; set SUPABASE_PHONE_SMOKE_PHONE to the Vietnam E.164 test device, then run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-phone-smoke -- --dry-run before --send.',
+    ];
+  }
+  return [
+    'For Phone Auth E2E, create or open the Vonage SMS/Verify dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env.',
+    'Only after those SMS values are present, run npm.cmd run external:check:supabase-auth, npm.cmd run auth:supabase-phone-smoke -- --dry-run, and then the --send/--verify live OTP smoke.',
+  ];
+}
+
+function phoneAuthSetupState(sourceEnv) {
+  return {
+    phoneReady: hasVietnamE164Phone(sourceEnv.SUPABASE_PHONE_SMOKE_PHONE),
+    smsReady:
+      isRealSmsProvider(sourceEnv.SMS_PROVIDER) &&
+      ['SMS_API_URL', 'SMS_API_KEY', 'SMS_API_SECRET', 'SMS_SENDER_ID'].every((key) =>
+        hasEnvValue(sourceEnv, key),
+      ),
+  };
+}
+
+function isRealSmsProvider(value) {
+  return ['vonage', 'viettel', 'fpt', 'custom'].includes(
+    String(value ?? '')
+      .trim()
+      .toLowerCase(),
+  );
+}
+
+function hasEnvValue(sourceEnv, key) {
+  return String(sourceEnv[key] ?? '').trim().length > 0;
+}
+
+function hasVietnamE164Phone(value) {
+  const normalized = String(value ?? '')
+    .trim()
+    .replace(/[\s().-]/g, '');
+  return /^\+84\d{8,10}$/.test(normalized);
 }
 
 function compactSuccess(output) {
