@@ -6,10 +6,10 @@ import {
   type DispatchStep,
 } from '../../../lib/booking-dispatch-checklist';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
-import { bookingProviderLocationMetricHelper } from '../../../lib/booking-provider-location-copy';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
+import { bookingDetailProviderLocationMetricHelper } from './booking-provider-location-metric';
 import {
   formatDate,
   isTerminalPayment,
@@ -53,7 +53,7 @@ export function bookingDetailAttentionFlags(booking: AdminBookingDetail): Attent
     activeWithLocationNeed,
     hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
     latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationAgeLabel: providerLocationMetricHelper(booking),
+    providerLocationAgeLabel: bookingDetailProviderLocationMetricHelper(booking),
     messageCount: messages.length,
     refundCount: booking.refunds?.length ?? 0,
     formatMoney: money,
@@ -93,10 +93,6 @@ export function bookingDetailDispatchChecklist(booking: AdminBookingDetail): Dis
     activeWithLocationNeed,
     hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
     latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationAgeLabel: providerLocationMetricHelper(booking),
+    providerLocationAgeLabel: bookingDetailProviderLocationMetricHelper(booking),
   });
-}
-
-function providerLocationMetricHelper(booking: AdminBookingDetail) {
-  return bookingProviderLocationMetricHelper(latestProviderLocation(booking)?.recordedAt);
 }

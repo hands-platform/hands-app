@@ -125,6 +125,10 @@ import { bookingParticipantLedger } from './booking-participant-ledger';
 import { bookingParticipantCounts } from './booking-participant-counts';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
 import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
+import {
+  bookingDetailProviderLocationMetricHelper,
+  bookingDetailProviderLocationMetricValue,
+} from './booking-provider-location-metric';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
 import {
   bookingStatusHint,
@@ -174,10 +178,6 @@ import {
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
-import {
-  bookingProviderLocationMetricHelper,
-  bookingProviderLocationMetricValue,
-} from '../../../lib/booking-provider-location-copy';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 
 type PageProps = {
@@ -400,8 +400,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#location',
       label: 'Location trail',
-      value: providerLocationMetricValue(booking),
-      helper: providerLocationMetricHelper(booking),
+      value: bookingDetailProviderLocationMetricValue(booking),
+      helper: bookingDetailProviderLocationMetricHelper(booking),
     },
     {
       href: '#communication-movement-handoff',
@@ -752,7 +752,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
     finalPartnerRecordLabel: finalPartnerSummary.id ? shortId(finalPartnerSummary.id) : 'Selection pending',
     finalPartnerEvidenceLabel: finalPartnerSummary.selected
-      ? `${finalPartnerSummary.label} / ${providerLocationMetricValue(booking)}`
+      ? `${finalPartnerSummary.label} / ${bookingDetailProviderLocationMetricValue(booking)}`
       : null,
     participantCount: booking.participants?.length ?? 0,
     customerChoiceCandidates,
@@ -772,7 +772,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     walletLedgerLabel: financeTrace.walletLedger,
     hasLocationTrace: Boolean(latestLocation || locationTrail(booking).length),
     latestLocationShortId: latestLocation ? shortId(latestLocation.id) : null,
-    locationStatusLabel: providerLocationMetricValue(booking),
+    locationStatusLabel: bookingDetailProviderLocationMetricValue(booking),
     latestLocationEvidenceLabel: latestLocation
       ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
       : null,
@@ -947,8 +947,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#location',
       label: 'Location',
-      value: providerLocationMetricValue(booking),
-      detail: providerLocationMetricHelper(booking),
+      value: bookingDetailProviderLocationMetricValue(booking),
+      detail: bookingDetailProviderLocationMetricHelper(booking),
     },
     {
       href: '#operator-command-queue',
@@ -1030,8 +1030,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       label: 'Location',
-      value: providerLocationMetricValue(booking),
-      helper: providerLocationMetricHelper(booking),
+      value: bookingDetailProviderLocationMetricValue(booking),
+      helper: bookingDetailProviderLocationMetricHelper(booking),
     },
     {
       label: 'Attention checks',
@@ -1075,7 +1075,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       label: 'Latest pin time',
       value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared',
     },
-    { label: 'Location freshness', value: providerLocationMetricHelper(booking) },
+    { label: 'Location freshness', value: bookingDetailProviderLocationMetricHelper(booking) },
   ];
   const bookingRecordPaymentRows = buildBookingRecordPaymentRows({
     paymentIdLabel: booking.payment?.id ?? 'No payment',
@@ -1280,7 +1280,7 @@ function bookingOperatorCommandQueue({
     messageCount: messages.length,
     hasLatestLocation: Boolean(latestLocation),
     latestLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationHelper: providerLocationMetricHelper(booking),
+    providerLocationHelper: bookingDetailProviderLocationMetricHelper(booking),
     paymentStatus: booking.payment?.status ?? 'NONE',
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     closeoutAvailable: canCloseoutCompletedBooking(booking),
@@ -1293,14 +1293,6 @@ function bookingOperatorCommandQueue({
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
   return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
-}
-
-function providerLocationMetricValue(booking: AdminBookingDetail) {
-  return bookingProviderLocationMetricValue(latestProviderLocationFreshness(booking));
-}
-
-function providerLocationMetricHelper(booking: AdminBookingDetail) {
-  return bookingProviderLocationMetricHelper(latestProviderLocation(booking)?.recordedAt);
 }
 
 function locationTrail(booking: AdminBookingDetail) {

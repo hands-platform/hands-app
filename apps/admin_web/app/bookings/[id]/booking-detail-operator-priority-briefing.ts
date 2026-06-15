@@ -3,19 +3,15 @@ import type { AttentionFlag } from '../../../lib/admin-attention-flags';
 import { bookingOperatorPriorityBriefing as buildBookingOperatorPriorityBriefing } from '../../../lib/booking-operator-priority-briefing';
 import type { BookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
-import {
-  bookingProviderLocationMetricHelper,
-  bookingProviderLocationMetricValue,
-} from '../../../lib/booking-provider-location-copy';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { bookingAddressSnapshotLabel, coordinateLabel } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
 import {
-  latestProviderLocation,
-  latestProviderLocationFreshness,
-} from './booking-status-location';
+  bookingDetailProviderLocationMetricHelper,
+  bookingDetailProviderLocationMetricValue,
+} from './booking-provider-location-metric';
 
 export type BookingDetailOperatorPriorityBriefingInput = {
   booking: AdminBookingDetail;
@@ -51,7 +47,7 @@ export function bookingDetailOperatorPriorityBriefing({
     ? `${booking.payment.method} / ${booking.payment.status}`
     : 'No payment';
   const locationLabel = latestLocation
-    ? bookingProviderLocationMetricValue(latestProviderLocationFreshness(booking))
+    ? bookingDetailProviderLocationMetricValue(booking)
     : activeLocationStatuses.has(booking.status)
       ? 'Missing'
       : 'Not required yet';
@@ -70,8 +66,8 @@ export function bookingDetailOperatorPriorityBriefing({
     messageCount,
     locationLabel,
     locationHelper: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
-      : providerLocationMetricHelper(booking),
+      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${bookingDetailProviderLocationMetricHelper(booking)}`
+      : bookingDetailProviderLocationMetricHelper(booking),
     paymentLabel,
     paymentHint: bookingPaymentHint(booking, {
       cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
@@ -81,8 +77,4 @@ export function bookingDetailOperatorPriorityBriefing({
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
     financeFlagTitles: financeFlags.map((flag) => flag.title),
   });
-}
-
-function providerLocationMetricHelper(booking: AdminBookingDetail) {
-  return bookingProviderLocationMetricHelper(latestProviderLocation(booking)?.recordedAt);
 }
