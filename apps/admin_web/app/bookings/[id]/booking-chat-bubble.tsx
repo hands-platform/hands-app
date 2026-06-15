@@ -1,7 +1,7 @@
-import { AdminChatMessage } from '../../../lib/admin-api';
+import type { AdminChatMessage } from '../../../lib/admin-api';
 import { formatDateTime } from '../../../lib/admin-format';
 
-export function BookingChatBubble({ message }: { message: AdminChatMessage }) {
+export function BookingChatBubble({ message }: BookingChatBubbleProps) {
   return (
     <div className="chat-bubble">
       <strong>{message.body}</strong>
@@ -12,3 +12,7 @@ export function BookingChatBubble({ message }: { message: AdminChatMessage }) {
     </div>
   );
 }
+
+export type BookingChatBubbleProps = {
+  message: AdminChatMessage;
+};
