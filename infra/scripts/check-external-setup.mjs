@@ -34,6 +34,8 @@ const smsApiSecretFix =
   'Copy the selected SMS provider API secret into SMS_API_SECRET before Supabase Phone Auth E2E. Keep it in ignored env files or the secret store only.';
 const smsSenderIdFix =
   'Copy the approved SMS sender ID or brand name into SMS_SENDER_ID before Supabase Phone Auth E2E. Use the sender value issued by the selected Vietnam-capable SMS provider.';
+const supabasePhoneSmokePhoneFix =
+  'Set SUPABASE_PHONE_SMOKE_PHONE to the Vietnam E.164 phone that should receive the live Supabase Phone Auth OTP smoke, for example +84900000001.';
 const storageRequiredEnvKeys = [
   'STORAGE_PROVIDER',
   'S3_ENDPOINT',
@@ -201,6 +203,13 @@ addPhaseRequired(
   hasExpectedValue('AUTH_BACKEND', 'supabase'),
   'Set AUTH_BACKEND=supabase before Supabase Phone Auth E2E.',
   ['supabase-auth', 'production'],
+);
+addPhaseRequired(
+  'supabase',
+  'SUPABASE_PHONE_SMOKE_PHONE for live OTP smoke',
+  hasVietnamE164Phone('SUPABASE_PHONE_SMOKE_PHONE'),
+  supabasePhoneSmokePhoneFix,
+  ['supabase-auth'],
 );
 
 addRecommended(
@@ -435,6 +444,13 @@ function isHttpsUrl(key) {
   } catch {
     return false;
   }
+}
+
+function hasVietnamE164Phone(key) {
+  const value = String(env[key] ?? '')
+    .trim()
+    .replace(/[\s().-]/g, '');
+  return /^\+84\d{8,10}$/.test(value);
 }
 
 function allHaveValue(keys) {

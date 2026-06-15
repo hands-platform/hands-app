@@ -84,6 +84,7 @@ describe('setup page data', () => {
       'SMS_API_KEY',
       'SMS_API_SECRET',
       'SMS_SENDER_ID',
+      'SUPABASE_PHONE_SMOKE_PHONE',
     ]);
     expect(supabaseAuthSetup?.notes).toEqual(
       expect.arrayContaining([
@@ -129,6 +130,7 @@ describe('setup page data', () => {
       'SMS_API_KEY',
       'SMS_API_SECRET',
       'SMS_SENDER_ID',
+      'SUPABASE_PHONE_SMOKE_PHONE',
     ]);
     expect(projectControlSequence.map((item) => item.phase)).toEqual([
       'Phase A',

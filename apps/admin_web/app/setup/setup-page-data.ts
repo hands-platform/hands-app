@@ -120,7 +120,15 @@ export const setupOrder = [
     exitCriteria: 'SMS OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
     purpose:
       'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
-    env: ['AUTH_BACKEND', 'SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY', 'SMS_API_SECRET', 'SMS_SENDER_ID'],
+    env: [
+      'AUTH_BACKEND',
+      'SMS_PROVIDER',
+      'SMS_API_URL',
+      'SMS_API_KEY',
+      'SMS_API_SECRET',
+      'SMS_SENDER_ID',
+      'SUPABASE_PHONE_SMOKE_PHONE',
+    ],
     notes: [
       'Configured credentials are not enough by themselves; live OTP delivery and API token exchange must pass before broad mobile login switching.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
@@ -368,7 +376,15 @@ export const externalRegistrationPlan = [
     owner: 'administration@hands.vn',
     detail:
       'Vonage credentials and sender values are tracked by setup readiness. After the external check passes, run live OTP delivery and API token exchange before switching mobile login broadly.',
-    env: ['AUTH_BACKEND', 'SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY', 'SMS_API_SECRET', 'SMS_SENDER_ID'],
+    env: [
+      'AUTH_BACKEND',
+      'SMS_PROVIDER',
+      'SMS_API_URL',
+      'SMS_API_KEY',
+      'SMS_API_SECRET',
+      'SMS_SENDER_ID',
+      'SUPABASE_PHONE_SMOKE_PHONE',
+    ],
   },
   {
     id: 'fcm',
