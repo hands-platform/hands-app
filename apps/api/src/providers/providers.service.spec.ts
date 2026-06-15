@@ -33,6 +33,19 @@ describe('ProvidersService nearby discovery', () => {
     expect(Object.keys((partners[0].user ?? {}) as Record<string, unknown>)).not.toContain('phone');
   });
 
+  it('skips partners with invalid saved coordinates in public nearby discovery', async () => {
+    const service = createServiceWithNearbyProviders([
+      nearbyProviderFixture({ id: 'partner-invalid', currentLat: 'not-a-coordinate' }),
+      nearbyProviderFixture({ id: 'partner-valid' }),
+    ]);
+
+    const partners = await service.findNearby(10.7769, 106.7009);
+
+    expect(partners).toHaveLength(1);
+    expect(partners[0].id).toBe('partner-valid');
+    expect(Number.isFinite(partners[0].distanceMeters)).toBe(true);
+  });
+
   it('does not expose private review or media storage fields in public partner detail', async () => {
     const service = new ProvidersService(
       {
@@ -107,7 +120,7 @@ function createServiceWithNearbyProviders(providers: unknown[]) {
   );
 }
 
-function nearbyProviderFixture() {
+function nearbyProviderFixture(overrides: Record<string, unknown> = {}) {
   return {
     id: 'partner-hcm',
     displayName: 'Linh Wellness',
@@ -124,5 +137,6 @@ function nearbyProviderFixture() {
     kyc: { status: ProviderKycStatus.APPROVED },
     bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED }],
     documents: [],
+    ...overrides,
   };
 }

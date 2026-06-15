@@ -15,7 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
-import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+import { calculateDistanceMeters } from '../bookings/bookings.policy';
 
 const REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -111,13 +111,11 @@ export class ProvidersService {
 
     return providers
       .map((provider) => {
-        const distanceMeters = roundTo100Meters(
-          haversineMeters(
-            origin.lat,
-            origin.lng,
-            Number(provider.currentLat),
-            Number(provider.currentLng),
-          ),
+        const distanceMeters = calculateDistanceMeters(
+          origin.lat,
+          origin.lng,
+          provider.currentLat,
+          provider.currentLng,
         );
         const currentLocationUpdatedAt = provider.currentLocationUpdatedAt?.toISOString() ?? null;
         const bookableSummary = providerPublicBookableServiceSummary(provider.services);
@@ -135,6 +133,7 @@ export class ProvidersService {
             : false,
         };
       })
+      .filter(hasFiniteDistanceMeters)
       .sort((a, b) => a.distanceMeters - b.distanceMeters || a.status.localeCompare(b.status));
   }
 
@@ -532,6 +531,12 @@ function normalizeBrowseCoordinate(lat: number, lng: number) {
     return { lat, lng };
   }
   return DEFAULT_BROWSE_COORDINATE;
+}
+
+function hasFiniteDistanceMeters<T extends { distanceMeters: number | null }>(
+  provider: T,
+): provider is T & { distanceMeters: number } {
+  return Number.isFinite(provider.distanceMeters);
 }
 
 function assertCoordinate(lat: number, lng: number, message: string) {
