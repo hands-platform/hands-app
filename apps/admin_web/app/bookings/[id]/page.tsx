@@ -34,6 +34,7 @@ import {
   BookingOperationsAuditTraceSection,
   BookingPayoutBatchEligibilitySection,
   BookingServicePricingSnapshotSection,
+  type BookingServicePricingSnapshotSectionProps,
 } from './booking-finance-trace-sections';
 import {
   type BookingOpsCommandCenterProps,
@@ -636,6 +637,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     financeFlags,
     financeSummaryCards,
   };
+  const servicePricingSnapshotProps: BookingServicePricingSnapshotSectionProps = {
+    financeFlags,
+    servicePricingSnapshotRows,
+  };
 
   return (
     <>
@@ -712,10 +717,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingPayoutBatchEligibilitySection payoutBatchEligibility={payoutBatchEligibility} />
 
-      <BookingServicePricingSnapshotSection
-        financeFlags={financeFlags}
-        servicePricingSnapshotRows={servicePricingSnapshotRows}
-      />
+      <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
 
       <BookingActionStatusSections {...actionStatusSectionsProps} />
 

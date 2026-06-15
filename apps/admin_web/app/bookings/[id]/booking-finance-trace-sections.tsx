@@ -344,10 +344,7 @@ export function BookingPayoutBatchEligibilitySection({
 export function BookingServicePricingSnapshotSection({
   financeFlags,
   servicePricingSnapshotRows,
-}: {
-  financeFlags: AttentionFlag[];
-  servicePricingSnapshotRows: SummaryCard[];
-}) {
+}: BookingServicePricingSnapshotSectionProps) {
   return (
     <section className="card admin-mb-16" id="service-pricing-snapshot">
       <div className="ops-section-header">
@@ -374,3 +371,8 @@ export function BookingServicePricingSnapshotSection({
     </section>
   );
 }
+
+export type BookingServicePricingSnapshotSectionProps = {
+  financeFlags: AttentionFlag[];
+  servicePricingSnapshotRows: SummaryCard[];
+};
