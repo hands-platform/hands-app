@@ -411,7 +411,11 @@ describe('NotificationRetryProcessor', () => {
       token: 'fcm-token-1',
       title: 'Booking update',
       body: 'A booking update is available.',
-      data: { chatRoomId: 'chat-1', notificationId: 'notification-1' },
+      data: {
+        chatRoomId: 'chat-1',
+        type: 'chat.message.created',
+        notificationId: 'notification-1',
+      },
       providerOverride: undefined,
     });
     expect(tx.notificationDelivery.create).toHaveBeenCalledWith({
