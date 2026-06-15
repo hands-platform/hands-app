@@ -7,6 +7,7 @@ import {
   buildNotificationFcmSmokeReadiness,
   buildNotificationPageModel,
   buildNotificationPartnerAlertSmokeFallback,
+  buildNotificationReviewState,
   buildNotificationSummary,
   buildNotificationTableRows,
   emptyNotificationMessage,
@@ -1043,6 +1044,23 @@ describe('notification page model', () => {
       title: 'Worker path gate',
     });
     expect(notificationReviewRunbook('unknown')).toBeNull();
+  });
+
+  it('builds shared review state from the active notification queue', () => {
+    expect(buildNotificationReviewState('failed')).toEqual({
+      activeFilter: {
+        href: '/notifications?review=failed',
+        label: 'Failed sends',
+        review: 'failed',
+      },
+      runbook: expect.objectContaining({
+        title: 'Retry gate',
+      }),
+    });
+    expect(buildNotificationReviewState('unknown')).toEqual({
+      activeFilter: undefined,
+      runbook: null,
+    });
   });
 
   it('detects stale push token timestamps without double-counting disabled devices', () => {

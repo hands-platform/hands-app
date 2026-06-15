@@ -197,11 +197,11 @@ export function buildNotificationPageModel({
     operationalPolicies,
   );
   const fcmSmokeReadiness = buildNotificationFcmSmokeReadiness(allNotifications);
-  const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
+  const reviewState = buildNotificationReviewState(filters.review);
 
   return {
     activeBookingId: filters.booking,
-    activeFilter,
+    activeFilter: reviewState.activeFilter,
     allNotifications,
     channelSummary,
     confirmation: buildNotificationActionConfirmation(
@@ -221,8 +221,15 @@ export function buildNotificationPageModel({
     notifications,
     opsQueue: buildNotificationDeliveryOpsQueue(allNotifications),
     partnerAlertSmokeFallback,
-    reviewRunbook: notificationReviewRunbook(filters.review),
+    reviewRunbook: reviewState.runbook,
     summary,
+  };
+}
+
+export function buildNotificationReviewState(review: string) {
+  return {
+    activeFilter: notificationFilterLinks.find((item) => item.review === review),
+    runbook: notificationReviewRunbook(review),
   };
 }
 
