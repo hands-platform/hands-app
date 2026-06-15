@@ -71,7 +71,6 @@ import {
   distanceLabel,
   formatDate,
   isTerminalPayment,
-  minutesSince,
   money,
   compactActivityText,
   providerName,
@@ -92,6 +91,10 @@ import {
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
+import {
+  bookingDetailAttentionFlags,
+  bookingDetailDispatchChecklist,
+} from './booking-detail-dispatch-checks';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -143,7 +146,6 @@ import {
   attentionLevel,
   type AttentionFlag,
 } from '../../../lib/admin-attention-flags';
-import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
 import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -161,10 +163,6 @@ import {
   bookingLocationTrail,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
 } from '../../../lib/booking-status-location-helpers';
-import {
-  bookingDispatchChecklist,
-  type DispatchStep,
-} from '../../../lib/booking-dispatch-checklist';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
 import { bookingFlowStages as buildBookingFlowStages } from '../../../lib/booking-flow-stages';
 import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
@@ -251,10 +249,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const addressPin = booking.addressSnapshot
     ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
     : coordinateLabel(booking.lat, booking.lng);
-  const attentionFlags = bookingAttentionFlags(booking);
+  const attentionFlags = bookingDetailAttentionFlags(booking);
   const attentionSummary = attentionLevel(attentionFlags);
   const liveSignals = liveServiceSignals(booking);
-  const dispatchSteps = dispatchChecklist(booking);
+  const dispatchSteps = bookingDetailDispatchChecklist(booking);
   const opsTaskCards = bookingOpsTaskCards(booking);
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
@@ -1197,7 +1195,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
         })}
         badges={bookingOpsBadges(booking, {
-          attentionFlags: bookingAttentionFlags(booking),
+          attentionFlags: bookingDetailAttentionFlags(booking),
           cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
           locationFreshness: latestProviderLocationFreshness(booking),
         })}
@@ -1446,78 +1444,6 @@ function bookingEvidencePacket({
     activityRecordCount: bookingActivityRecords.length,
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
-  });
-}
-
-function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
-  const paymentStatus = booking.payment?.status;
-  const status = booking.status;
-  const participantCount = booking.participants?.length ?? 0;
-  const messages = booking.chatRoom?.messages ?? [];
-  const openedAge = minutesSince(booking.openedAt ?? booking.createdAt);
-  const expired = booking.expiresAt ? new Date(booking.expiresAt).getTime() < Date.now() : false;
-  const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status);
-  const finalPartner = bookingFinalPartnerSummary(booking);
-
-  return buildBookingAttentionFlags({
-    bookingStatus: status,
-    hasPayment: Boolean(booking.payment),
-    paymentStatus,
-    paymentProviderRef: booking.payment?.providerRef ?? null,
-    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    cashDebtPartnerLabel: finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider),
-    cashDebtAmount: Math.abs(booking.earning?.netAmount ?? 0),
-    cashDebtCurrency: booking.earning?.currency ?? 'VND',
-    matchingWindowExpired: expired,
-    expiresAtLabel: formatDate(booking.expiresAt),
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredPartnerLabel: providerName(booking.preferredProvider),
-    participantCount,
-    openedAgeMinutes: openedAge,
-    hasChatRoom: Boolean(booking.chatRoom),
-    activeWithLocationNeed,
-    hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
-    latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationAgeLabel: providerLocationMetricHelper(booking),
-    messageCount: messages.length,
-    refundCount: booking.refunds?.length ?? 0,
-    formatMoney: money,
-  });
-}
-
-function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
-  const flags = bookingAttentionFlags(booking);
-  const paymentHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : undefined;
-  const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
-  return bookingDispatchChecklist({
-    bookingStatus: booking.status,
-    attentionFlagCount: flags.length,
-    payment: booking.payment
-      ? {
-          id: booking.payment.id,
-          status: booking.payment.status,
-          href: paymentHref,
-          hint: bookingPaymentHint(booking, {
-            cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-          }),
-          terminal: isTerminalPayment(booking.payment.status),
-        }
-      : null,
-    selectedPartner: booking.selectedProvider
-      ? { label: providerName(booking.selectedProvider), phone: booking.selectedProvider.user?.phone }
-      : null,
-    preferredPartner: booking.preferredProvider
-      ? { label: providerName(booking.preferredProvider), phone: booking.preferredProvider.user?.phone }
-      : null,
-    isPreferredAwaitingDecision: isPreferredAwaitingDecision(booking),
-    participantCount: booking.participants?.length ?? 0,
-    hasChatRoom: Boolean(booking.chatRoom),
-    chatRoomId: booking.chatRoom?.id ?? null,
-    messageCount: booking.chatRoom?.messages?.length ?? 0,
-    activeWithLocationNeed,
-    hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
-    latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationAgeLabel: providerLocationMetricHelper(booking),
   });
 }
 
