@@ -26,6 +26,12 @@ function pushCheck(values: Record<string, string> = {}) {
     .checks.find((check) => check.category === 'push');
 }
 
+function smsCheck(values: Record<string, string> = {}) {
+  return service(values)
+    .externalReadiness()
+    .checks.find((check) => check.category === 'sms');
+}
+
 describe('HealthService external storage readiness', () => {
   it('keeps storage blocked when no storage values are configured', () => {
     const check = storageCheck();
@@ -75,6 +81,38 @@ describe('HealthService external storage readiness', () => {
     expect(check?.status).toBe('READY');
     expect(check?.missing).toEqual([]);
     expect(check?.detail).toContain('supabase-storage-s3 storage is configured');
+  });
+});
+
+describe('HealthService external SMS readiness', () => {
+  it('requires the approved sender id before production phone OTP readiness', () => {
+    const check = smsCheck({
+      SMS_PROVIDER: 'vonage',
+      SMS_API_URL: 'https://api.example.test/sms',
+      SMS_API_KEY: 'placeholder-sms-secret',
+    });
+
+    expect(check?.status).toBe('PARTIAL');
+    expect(check?.configured).toEqual(['SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY']);
+    expect(check?.missing).toEqual(['SMS_SENDER_ID']);
+  });
+
+  it('marks production SMS ready when provider, endpoint, secret, and sender id are configured', () => {
+    const check = smsCheck({
+      SMS_PROVIDER: 'vonage',
+      SMS_API_URL: 'https://api.example.test/sms',
+      SMS_API_KEY: 'placeholder-sms-secret',
+      SMS_SENDER_ID: 'HANDS',
+    });
+
+    expect(check?.status).toBe('READY');
+    expect(check?.configured).toEqual([
+      'SMS_PROVIDER',
+      'SMS_API_URL',
+      'SMS_API_KEY',
+      'SMS_SENDER_ID',
+    ]);
+    expect(check?.missing).toEqual([]);
   });
 });
 
