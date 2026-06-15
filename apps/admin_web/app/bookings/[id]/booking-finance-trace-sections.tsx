@@ -266,10 +266,7 @@ export function BookingAttentionChecksSection({
 export function BookingFinanceCommandCenterSection({
   financeFlags,
   financeSummaryCards,
-}: {
-  financeFlags: AttentionFlag[];
-  financeSummaryCards: SummaryCard[];
-}) {
+}: BookingFinanceCommandCenterSectionProps) {
   return (
     <section className="card ops-watch admin-mb-16" id="finance">
       <div className="ops-section-header">
@@ -302,6 +299,11 @@ export function BookingFinanceCommandCenterSection({
     </section>
   );
 }
+
+export type BookingFinanceCommandCenterSectionProps = {
+  financeFlags: AttentionFlag[];
+  financeSummaryCards: SummaryCard[];
+};
 
 export function BookingPayoutBatchEligibilitySection({
   payoutBatchEligibility,

@@ -30,6 +30,7 @@ import {
   BookingAlertTraceSection,
   BookingAttentionChecksSection,
   BookingFinanceCommandCenterSection,
+  type BookingFinanceCommandCenterSectionProps,
   BookingOperationsAuditTraceSection,
   BookingPayoutBatchEligibilitySection,
   BookingServicePricingSnapshotSection,
@@ -631,6 +632,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     records: bookingActivityRecords,
     summary: bookingActivitySummary,
   };
+  const financeCommandCenterProps: BookingFinanceCommandCenterSectionProps = {
+    financeFlags,
+    financeSummaryCards,
+  };
 
   return (
     <>
@@ -703,10 +708,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingAttentionChecksSection attentionFlags={attentionFlags} attentionSummary={attentionSummary} />
 
-      <BookingFinanceCommandCenterSection
-        financeFlags={financeFlags}
-        financeSummaryCards={financeSummaryCards}
-      />
+      <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
 
       <BookingPayoutBatchEligibilitySection payoutBatchEligibility={payoutBatchEligibility} />
 
