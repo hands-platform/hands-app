@@ -68,6 +68,33 @@ describe('notification retry audit metadata', () => {
     });
   });
 
+  it('normalizes missing push device evidence keys for admin and smoke contracts', () => {
+    expect(
+      notificationRetryAuditMetadata('notification-1', {
+        latestDelivery: {
+          attemptedAt: '2026-06-13T10:23:00.000Z',
+          id: 'delivery-1',
+          provider: 'FCM',
+          status: 'FAILED',
+        } as never,
+        retryJob,
+      }),
+    ).toMatchObject({
+      latestDelivery: {
+        attemptedAt: '2026-06-13T10:23:00.000Z',
+        failureCode: null,
+        id: 'delivery-1',
+        provider: 'FCM',
+        pushDeviceEnabled: null,
+        pushDeviceId: null,
+        pushDeviceLastSeenAt: null,
+        pushDevicePlatform: null,
+        status: 'FAILED',
+      },
+      retryRisk: 'FAILED_DELIVERY_RETRY',
+    });
+  });
+
   it('prioritizes disabled device recovery when latest delivery used a disabled device', () => {
     expect(
       notificationRetryAuditMetadata('notification-1', {

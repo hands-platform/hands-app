@@ -35,15 +35,36 @@ export type NotificationRetryAuditRisk =
 const STALE_PUSH_DEVICE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function notificationRetryAuditMetadata(notificationId: string, result: NotificationRetryAuditResult) {
-  const retryRisk = notificationRetryAuditRisk(result.latestDelivery);
+  const latestDelivery = normalizeNotificationRetryAuditLatestDelivery(result.latestDelivery);
+  const retryRisk = notificationRetryAuditRisk(latestDelivery);
 
   return {
     notificationId,
-    latestDelivery: result.latestDelivery,
+    latestDelivery,
     retryJob: result.retryJob,
-    retryAlreadyDelivered: result.latestDelivery?.status === 'SENT',
+    retryAlreadyDelivered: latestDelivery?.status === 'SENT',
     retryRisk,
     operatorAction: notificationRetryAuditOperatorAction(retryRisk),
+  };
+}
+
+function normalizeNotificationRetryAuditLatestDelivery(
+  latestDelivery: NotificationRetryAuditLatestDelivery | null,
+): NotificationRetryAuditLatestDelivery | null {
+  if (!latestDelivery) {
+    return null;
+  }
+
+  return {
+    id: latestDelivery.id,
+    provider: latestDelivery.provider,
+    status: latestDelivery.status,
+    attemptedAt: latestDelivery.attemptedAt,
+    failureCode: latestDelivery.failureCode ?? null,
+    pushDeviceId: latestDelivery.pushDeviceId ?? null,
+    pushDeviceEnabled: latestDelivery.pushDeviceEnabled ?? null,
+    pushDeviceLastSeenAt: latestDelivery.pushDeviceLastSeenAt ?? null,
+    pushDevicePlatform: latestDelivery.pushDevicePlatform ?? null,
   };
 }
 
