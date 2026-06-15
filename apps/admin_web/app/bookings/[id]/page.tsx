@@ -87,6 +87,7 @@ import {
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
+import { bookingDetailFlowStages } from './booking-detail-flow-stages';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import {
   bookingDetailAttentionFlags,
@@ -121,10 +122,7 @@ import { bookingPaymentEvidence } from './booking-payment-evidence';
 import { bookingServicePricingSnapshotRows } from './booking-service-pricing-snapshot-rows';
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import { bookingParticipantCounts } from './booking-participant-counts';
-import {
-  bookingCustomerSelectableParticipantsForFinalChoice,
-  bookingPreferredProviderId,
-} from './booking-participant-rules';
+import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
 import {
   bookingStatusHint,
@@ -162,7 +160,6 @@ import {
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
 } from '../../../lib/booking-status-location-helpers';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
-import { bookingFlowStages as buildBookingFlowStages } from '../../../lib/booking-flow-stages';
 import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
@@ -179,10 +176,7 @@ import {
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
-import {
-  bookingPartnerDecisionLabel,
-  bookingPartnerHint,
-} from '../../../lib/booking-partner-decision-copy';
+import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import {
   bookingProviderLocationMetricHelper,
@@ -1257,7 +1251,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         participantLedger={participantLedger}
         paymentRows={bookingRecordPaymentRows}
         serviceRows={bookingRecordServiceRows}
-        timelineStages={flowStages(booking)}
+        timelineStages={bookingDetailFlowStages(booking)}
       />
 
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
@@ -1303,27 +1297,6 @@ function bookingOperatorCommandQueue({
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
   return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
-}
-
-function flowStages(booking: AdminBookingDetail) {
-  const finalPartner = bookingFinalPartnerSummary(booking);
-  return buildBookingFlowStages({
-    createdAtLabel: formatDate(booking.createdAt),
-    openedAtLabel: booking.openedAt ? formatDate(booking.openedAt) : null,
-    hasOpened: Boolean(booking.openedAt),
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    partnerDecisionLabel: bookingPartnerDecisionLabel(booking, bookingPreferredProviderId(booking)),
-    partnerHint: bookingPartnerHint(booking),
-    participantCount: booking.participants?.length ?? 0,
-    bookingStatus: booking.status,
-    selectedPartnerLabel: finalPartner.label,
-    hasSelectedPartner: finalPartner.selected,
-    hasChatRoom: Boolean(booking.chatRoom),
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    paymentHint: bookingPaymentHint(booking, {
-      cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    }),
-  });
 }
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
