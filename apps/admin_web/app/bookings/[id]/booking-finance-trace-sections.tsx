@@ -105,10 +105,7 @@ function BookingAttentionItem({ flag }: { flag: AttentionFlag }) {
 export function BookingAlertTraceSection({
   bookingId,
   notificationTrace,
-}: {
-  bookingId: string;
-  notificationTrace: NotificationTrace;
-}) {
+}: BookingAlertTraceSectionProps) {
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -170,6 +167,11 @@ export function BookingAlertTraceSection({
     </section>
   );
 }
+
+export type BookingAlertTraceSectionProps = {
+  bookingId: string;
+  notificationTrace: NotificationTrace;
+};
 
 export function BookingOperationsAuditTraceSection({
   bookingId,

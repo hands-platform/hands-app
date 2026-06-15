@@ -28,6 +28,7 @@ import {
 } from './booking-command-briefing-sections';
 import {
   BookingAlertTraceSection,
+  type BookingAlertTraceSectionProps,
   BookingAttentionChecksSection,
   BookingFinanceCommandCenterSection,
   type BookingFinanceCommandCenterSectionProps,
@@ -641,6 +642,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     financeFlags,
     servicePricingSnapshotRows,
   };
+  const alertTraceProps: BookingAlertTraceSectionProps = {
+    bookingId: booking.id,
+    notificationTrace,
+  };
 
   return (
     <>
@@ -707,7 +712,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingMarketplaceSupplySection marketplaceSupply={marketplaceSupply} />
 
-      <BookingAlertTraceSection bookingId={booking.id} notificationTrace={notificationTrace} />
+      <BookingAlertTraceSection {...alertTraceProps} />
 
       <BookingOperationsAuditTraceSection bookingId={booking.id} operationsTrace={operationsTrace} />
 
