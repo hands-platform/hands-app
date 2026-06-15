@@ -125,8 +125,8 @@ addPhaseRequired(
 addRecommended(
   'supabase',
   'AUTH_BACKEND',
-  hasExpectedValue('AUTH_BACKEND', 'supabase'),
-  'Set AUTH_BACKEND=supabase when running the real Supabase mobile OTP flow.',
+  hasOneOfExpectedValues('AUTH_BACKEND', ['nest', 'supabase']),
+  'Keep AUTH_BACKEND=nest for local/dev OTP; switch to AUTH_BACKEND=supabase only for the real Supabase Phone Auth E2E phase.',
 );
 addRecommended(
   'supabase',
@@ -350,6 +350,11 @@ function hasExpectedValue(key, expected) {
       .trim()
       .toLowerCase() === expected.toLowerCase()
   );
+}
+
+function hasOneOfExpectedValues(key, expectedValues) {
+  const actual = String(env[key] ?? '').trim().toLowerCase();
+  return expectedValues.some((expected) => actual === expected.toLowerCase());
 }
 
 function hasSecretLikeValue(key) {
