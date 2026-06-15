@@ -56,10 +56,7 @@ export function BookingFullRecordIndex({
 export function BookingActivityPanel({
   records,
   summary,
-}: {
-  records: BookingActivityRecord[];
-  summary: BookingActivitySummaryItem[];
-}) {
+}: BookingActivityPanelProps) {
   return (
     <section className="card admin-mt-16" id="booking-activity">
       <div className="ops-section-header">
@@ -114,3 +111,8 @@ export function BookingActivityPanel({
     </section>
   );
 }
+
+export type BookingActivityPanelProps = {
+  records: BookingActivityRecord[];
+  summary: BookingActivitySummaryItem[];
+};

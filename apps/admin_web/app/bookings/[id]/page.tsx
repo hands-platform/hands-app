@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import {
   BookingActivityPanel,
+  type BookingActivityPanelProps,
   BookingFullRecordIndex,
   type BookingFullRecordIndexProps,
 } from './booking-activity-panel';
@@ -626,6 +627,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     serviceRows: bookingRecordServiceRows,
     timelineStages: bookingDetailFlowStages(booking),
   };
+  const activityPanelProps: BookingActivityPanelProps = {
+    records: bookingActivityRecords,
+    summary: bookingActivitySummary,
+  };
 
   return (
     <>
@@ -714,7 +719,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingRecordDetailSections {...recordDetailSectionsProps} />
 
-      <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
+      <BookingActivityPanel {...activityPanelProps} />
     </>
   );
 }
