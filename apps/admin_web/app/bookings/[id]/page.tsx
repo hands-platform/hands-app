@@ -53,6 +53,7 @@ import {
   BookingCommunicationMovementHandoffSection,
   BookingHandoffChecklistSection,
   BookingMarketplaceWalletEvidenceSection,
+  type BookingMarketplaceWalletEvidenceSectionProps,
   BookingOperatingLedgerSection,
   type BookingOperatingLedgerSectionProps,
   BookingOperatingSnapshotSection,
@@ -669,6 +670,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operatingLedgerProps: BookingOperatingLedgerSectionProps = {
     operatingLedger,
   };
+  const marketplaceWalletEvidenceProps: BookingMarketplaceWalletEvidenceSectionProps = {
+    marketplaceWalletEvidence,
+  };
 
   return (
     <>
@@ -702,7 +706,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingFullRecordIndex {...fullRecordIndexProps} />
 
-      <BookingMarketplaceWalletEvidenceSection marketplaceWalletEvidence={marketplaceWalletEvidence} />
+      <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
 
       <BookingOperatingLedgerSection {...operatingLedgerProps} />
 

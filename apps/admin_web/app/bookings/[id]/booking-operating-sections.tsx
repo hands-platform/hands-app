@@ -109,9 +109,7 @@ type ChatLifecycle = {
 
 export function BookingMarketplaceWalletEvidenceSection({
   marketplaceWalletEvidence,
-}: {
-  marketplaceWalletEvidence: MarketplaceWalletEvidence;
-}) {
+}: BookingMarketplaceWalletEvidenceSectionProps) {
   return (
     <section className="card admin-mb-16" id="marketplace-wallet-evidence">
       <div className="ops-section-header">
@@ -181,6 +179,10 @@ export function BookingMarketplaceWalletEvidenceSection({
     </section>
   );
 }
+
+export type BookingMarketplaceWalletEvidenceSectionProps = {
+  marketplaceWalletEvidence: MarketplaceWalletEvidence;
+};
 
 export function BookingOperatingLedgerSection({
   operatingLedger,
