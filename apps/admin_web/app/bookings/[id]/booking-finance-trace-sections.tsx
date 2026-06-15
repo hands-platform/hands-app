@@ -241,10 +241,7 @@ export type BookingOperationsAuditTraceSectionProps = {
 export function BookingAttentionChecksSection({
   attentionFlags,
   attentionSummary,
-}: {
-  attentionFlags: AttentionFlag[];
-  attentionSummary: { tone: string; label: string };
-}) {
+}: BookingAttentionChecksSectionProps) {
   return (
     <section className="card ops-watch admin-mb-16">
       <div className="ops-section-header">
@@ -266,6 +263,11 @@ export function BookingAttentionChecksSection({
     </section>
   );
 }
+
+export type BookingAttentionChecksSectionProps = {
+  attentionFlags: AttentionFlag[];
+  attentionSummary: { tone: string; label: string };
+};
 
 export function BookingFinanceCommandCenterSection({
   financeFlags,
