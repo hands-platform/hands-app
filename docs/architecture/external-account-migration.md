@@ -18,10 +18,10 @@ Use this file when moving external services to clean HANDS-owned accounts under 
 | Email      | `administration@hands.vn` can receive mail                                                                | Use as owner/admin email                                 |
 | GitHub     | `hands-platform/hands-app` connected                                                                      | Keep `develop` pushed                                    |
 | Supabase   | `hands-staging` created, SQL applied, storage buckets verified, Phone Auth send smoke reached test device | Capture OTP and finish verify/API exchange smoke         |
-| MapTiler   | HANDS-owned key configured locally                                                                        | Add restrictions later if needed                         |
-| Geoapify   | HANDS-owned key configured locally                                                                        | Add restrictions later if needed                         |
+| MapTiler   | HANDS-owned key configured locally; live style check passes                                               | Add restrictions later if needed                         |
+| Geoapify   | HANDS-owned key configured locally; Vietnam geocoding check passes                                        | Add restrictions later if needed                         |
 | Push       | FCM credentials installed and registered-device live smoke sent a non-payment notification                | Keep rollout gated by audit evidence and token freshness |
-| Storage    | Local MinIO active                                                                                        | Supabase Storage S3/R2 decision later                    |
+| Storage    | Local MinIO upload/read smoke passes                                                                      | Supabase Storage S3/R2 decision later                    |
 | SMS        | Vonage credentials usable for current Phone Auth OTP send path                                            | SMS sender-channel refinement deferred                   |
 | Payments   | Cash active, adapters exist                                                                               | MoMo/VNPay sandbox credentials last                      |
 

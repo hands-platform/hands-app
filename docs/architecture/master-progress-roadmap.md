@@ -96,7 +96,7 @@ npm.cmd run external:check:production
 | Final authority guard           | Done   | Final MVP rules are documented and protected by `authority:check`.                                                                                                                                                                                                                                                                                                                        | None unless product policy changes.                                                                         |
 | Firebase scope                  | Active | Firebase is allowed only for FCM push. Firebase DB/Auth/Firestore remain outside MVP. Firebase Admin credentials and mobile Android configs are aligned for the current FCM smoke path.                                                                                                                                                                                                   | Decide production FCM rollout timing separately.                                                            |
 | Supabase core                   | Active | Supabase URL, anon, service role, JWT, schema/RLS pack, and Phone Auth OTP send smoke are tracked. NestJS remains business authority.                                                                                                                                                                                                                                                     | Finish OTP verify/API exchange after capturing a 6 digit code; keep SMS sender-channel refinement deferred. |
-| Map/location                    | Active | MapTiler and Geoapify are configured locally; low-cost map path is active.                                                                                                                                                                                                                                                                                                                | Decide when to replace remaining placeholder map visuals with final MapLibre screens.                       |
+| Map/location                    | Active | MapTiler and Geoapify are configured locally; `external:check:maps` and the live style/geocoding check pass.                                                                                                                                                                                                                                                                              | Decide when to replace remaining placeholder map visuals with final MapLibre screens.                       |
 | Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. Date-range `Today` filters use the Vietnam business day. | Continue adding depth inside existing command lanes before creating new top-level pages.                    |
 | Customers admin                 | Active | Customer list/detail exists with factual records. No customer scoring.                                                                                                                                                                                                                                                                                                                    | Decide which fields are must-show above the fold.                                                           |
 | Partners admin                  | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. Legacy `/providers` routes stay as redirects only.                                                                                                                                                                                                                                | Continue improving partner list/detail depth without rebuilding separate partner-risk pages.                |
@@ -145,14 +145,14 @@ These items should be proposed to the owner before implementation.
 
 Configured or locally usable:
 
-- MapTiler API key
-- Geoapify API key
+- MapTiler API key with live style check passing
+- Geoapify API key with Vietnam geocoding check passing
 - Supabase core values
 - Supabase Phone Auth OTP send path with `AUTH_BACKEND=supabase`
 - Vonage credentials for the current Phone Auth OTP send smoke
 - FCM project config, Firebase Admin server credentials, and Android client configs
 - Registered-device FCM live smoke for a non-payment notification
-- Local MinIO/S3-compatible storage path
+- Local MinIO/S3-compatible storage upload/read smoke passing
 - Local in-app notifications
 - Local/dev OTP path
 

@@ -27,12 +27,12 @@ Canonical operator order:
 | --------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | GitHub          | Connected to HANDS org repo                                                     | Keep pushing `develop`                                              |
 | Supabase        | Staging project created, SQL applied, Phone Auth send smoke reached test device | Capture OTP and finish verify/API exchange smoke                    |
-| MapTiler        | Local/staging key configured                                                    | Keep key out of Git                                                 |
-| Geoapify        | Local/staging key configured                                                    | Keep key out of Git                                                 |
+| MapTiler        | Local/staging key configured and live style check passes                        | Keep key out of Git                                                 |
+| Geoapify        | Local/staging key configured and Vietnam geocoding check passes                 | Keep key out of Git                                                 |
 | Firebase        | FCM allowed for push only                                                       | Do not use Firebase DB/Auth/Firestore                               |
 | Push            | Server-side FCM path live-smoked with a registered device                       | Keep broad rollout behind audit evidence and token freshness checks |
 | SMS             | Vonage credentials send OTP through current provider route                      | SMS sender-channel refinement deferred                              |
-| Storage         | Local MinIO works                                                               | Supabase Storage S3/R2 production choice later                      |
+| Storage         | Local MinIO upload/read smoke passes                                            | Supabase Storage S3/R2 production choice later                      |
 | Android signing | Local helper ready                                                              | Production keystores stay in secrets folder                         |
 | Payments        | Cash active, MoMo/VNPay adapters exist                                          | Merchant sandbox credentials last                                   |
 
