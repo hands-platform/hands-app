@@ -87,6 +87,7 @@ import {
 } from './booking-chat-repair-state';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
+import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summary-cards';
 import { bookingDetailFlowStages } from './booking-detail-flow-stages';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import {
@@ -159,7 +160,6 @@ import {
   bookingLocationTrail,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
 } from '../../../lib/booking-status-location-helpers';
-import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
@@ -241,7 +241,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const dispatchSteps = bookingDetailDispatchChecklist(booking);
   const opsTaskCards = bookingOpsTaskCards(booking);
   const financeTrace = bookingFinanceTrace(booking);
-  const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
+  const financeSummaryCards = bookingDetailFinanceSummaryCards(financeTrace);
   const financeFlags = bookingDetailFinanceFlags(booking, financeTrace);
   const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
   const paymentEvidence = bookingPaymentEvidence(booking);
@@ -1296,10 +1296,6 @@ function bookingOperatorCommandQueue({
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
   return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
-}
-
-function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
-  return buildBookingFinanceSummaryCards(financeTrace, { money });
 }
 
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
