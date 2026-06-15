@@ -1,8 +1,11 @@
+import { CommandCopyRow } from '../../components/command-copy-row';
+
 type SetupExternalBacklogItem = {
   readonly groupId: string;
   readonly groupTitle: string;
   readonly name: string;
   readonly reason: string;
+  readonly commands?: readonly string[];
 };
 
 type SetupExternalBacklogSectionProps = {
@@ -27,11 +30,20 @@ export function SetupExternalBacklogSection({ missingCount, backlog }: SetupExte
       </div>
       <div className="setup-backlog">
         {backlog.map((item) => (
-          <a className="setup-backlog-item" href={`#${item.groupId}`} key={`${item.groupId}-${item.name}`}>
+          <div className="setup-backlog-item" key={`${item.groupId}-${item.name}`}>
             <span>{item.groupTitle}</span>
-            <strong>{item.name}</strong>
+            <a className="text-link" href={`#${item.groupId}`}>
+              <strong>{item.name}</strong>
+            </a>
             <p className="muted">{item.reason}</p>
-          </a>
+            {item.commands && item.commands.length > 0 && (
+              <div className="setup-command-list admin-mt-8">
+                {item.commands.slice(0, 2).map((command) => (
+                  <CommandCopyRow command={command} key={`${item.groupId}-${item.name}-${command}`} />
+                ))}
+              </div>
+            )}
+          </div>
         ))}
         {backlog.length === 0 && (
           <p className="muted">All external readiness values are configured for the current environment.</p>

@@ -1,5 +1,5 @@
 import { SetupExternalBacklogSection } from './setup-external-backlog-section';
-import { hrefsIn, textContent } from './setup-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './setup-section-test-utils';
 
 describe('SetupExternalBacklogSection', () => {
   it('renders pending external registration backlog items', () => {
@@ -11,6 +11,7 @@ describe('SetupExternalBacklogSection', () => {
           groupTitle: 'FCM push',
           name: 'FIREBASE_PROJECT_ID',
           reason: 'Required before push delivery smoke.',
+          commands: ['npm.cmd run external:check:push'],
         },
       ],
     });
@@ -22,7 +23,9 @@ describe('SetupExternalBacklogSection', () => {
     expect(rendered).toContain('2 value(s) pending');
     expect(rendered).toContain('FIREBASE_PROJECT_ID');
     expect(rendered).toContain('Required before push delivery smoke.');
+    expect(rendered).toContain('npm.cmd run external:check:push');
     expect(hrefsIn(section)).toContain('#notifications');
+    expect(classNamesIn(section)).toContain('command-copy-row');
   });
 
   it('renders a clear state when there are no backlog items', () => {
