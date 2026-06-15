@@ -30,6 +30,7 @@ import {
   type BookingOperatorFirstReadSectionProps,
   BookingPriorityBriefingSection,
   BookingRecentOperationsTimelineSection,
+  type BookingRecentOperationsTimelineSectionProps,
 } from './booking-command-briefing-sections';
 import {
   BookingAlertTraceSection,
@@ -738,6 +739,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const mvpAuthorityContractProps: BookingMvpAuthorityContractSectionProps = {
     rows: mvpAuthorityContract,
   };
+  const recentOperationsTimelineProps: BookingRecentOperationsTimelineSectionProps = {
+    operatingTimeline,
+  };
 
   return (
     <>
@@ -755,7 +759,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingMvpAuthorityContractSection {...mvpAuthorityContractProps} />
 
-      <BookingRecentOperationsTimelineSection operatingTimeline={operatingTimeline} />
+      <BookingRecentOperationsTimelineSection {...recentOperationsTimelineProps} />
 
       <BookingCommandDecisionStripSection commandDecisionStrip={commandDecisionStrip} />
 

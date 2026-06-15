@@ -319,9 +319,7 @@ export type BookingMvpAuthorityContractSectionProps = {
 
 export function BookingRecentOperationsTimelineSection({
   operatingTimeline,
-}: {
-  operatingTimeline: RecentTimelineItem[];
-}) {
+}: BookingRecentOperationsTimelineSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-recent-operations-timeline">
       <div className="ops-section-header">
@@ -351,6 +349,10 @@ export function BookingRecentOperationsTimelineSection({
     </section>
   );
 }
+
+export type BookingRecentOperationsTimelineSectionProps = {
+  operatingTimeline: RecentTimelineItem[];
+};
 
 export function BookingPriorityBriefingSection({
   operatorPriorityBriefing,
