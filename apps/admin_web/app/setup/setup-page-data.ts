@@ -189,21 +189,6 @@ export const setupOrder = [
     ],
   },
   {
-    id: 'payments',
-    title: 'Vietnam payment gateways',
-    phase: 'Commercial E2E',
-    operatorAction: 'Add MoMo and VNPay sandbox credentials before real payment testing.',
-    exitCriteria: 'Authorization, release, capture, cash fallback, and refund smoke flows pass.',
-    purpose: 'Required for real MoMo/VNPay E2E authorization, capture, release, and refund testing.',
-    env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY', 'VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'],
-    notes: [
-      'Local smoke tests can run without merchant credentials.',
-      'Use gateway sandbox credentials before any production merchant key.',
-      'Keep cash payment available as an operational fallback.',
-    ],
-    commands: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
-  },
-  {
     id: 'notifications',
     title: 'FCM push notifications',
     phase: 'Messaging E2E',
@@ -291,6 +276,21 @@ export const setupOrder = [
       'powershell -ExecutionPolicy Bypass -File .\\infra\\scripts\\verify-local.ps1 -WithServices',
     ],
   },
+  {
+    id: 'payments',
+    title: 'Vietnam payment gateways',
+    phase: 'Commercial E2E',
+    operatorAction: 'Add MoMo and VNPay sandbox credentials before real payment testing.',
+    exitCriteria: 'Authorization, release, capture, cash fallback, and refund smoke flows pass.',
+    purpose: 'Required for real MoMo/VNPay E2E authorization, capture, release, and refund testing.',
+    env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY', 'VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'],
+    notes: [
+      'Local smoke tests can run without merchant credentials.',
+      'Use gateway sandbox credentials before any production merchant key.',
+      'Keep cash payment available as an operational fallback.',
+    ],
+    commands: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
+  },
 ] satisfies readonly SetupOrderItem[];
 
 export const externalRegistrationPlan = [
@@ -377,18 +377,6 @@ export const externalRegistrationPlan = [
     env: fcmEnvKeys,
   },
   {
-    id: 'payments-vn',
-    groupId: 'payments',
-    title: 'Vietnam payment sandbox',
-    provider: 'MoMo + VNPay',
-    owner: 'administration@hands.vn',
-    status: 'Deferred',
-    statusClass: 'pill-neutral',
-    detail:
-      'Cash and local smoke flows can continue. Add gateway sandbox credentials before real payment authorization E2E.',
-    env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'],
-  },
-  {
     id: 'storage-cdn',
     groupId: 'storage',
     title: 'Storage and CDN',
@@ -407,6 +395,18 @@ export const externalRegistrationPlan = [
     detail:
       'Create separate customer/partner signing keys outside Git, then use fingerprints for Android external service consoles.',
     env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
+  },
+  {
+    id: 'payments-vn',
+    groupId: 'payments',
+    title: 'Vietnam payment sandbox',
+    provider: 'MoMo + VNPay',
+    owner: 'administration@hands.vn',
+    status: 'Deferred',
+    statusClass: 'pill-neutral',
+    detail:
+      'Cash and local smoke flows can continue. Add gateway sandbox credentials before real payment authorization E2E.',
+    env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'],
   },
 ] satisfies readonly ExternalRegistrationPlanItem[];
 

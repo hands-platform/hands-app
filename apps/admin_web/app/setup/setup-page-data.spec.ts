@@ -27,6 +27,8 @@ describe('setup page data', () => {
     expect(setupOrder.find((item) => item.id === 'notifications')?.env).toEqual(
       expect.arrayContaining(['PUSH_PROVIDER', 'FIREBASE_PROJECT_ID']),
     );
+    expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('notifications'));
+    expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('storage'));
     const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
@@ -77,9 +79,12 @@ describe('setup page data', () => {
   });
 
   it('keeps external registration and baseline handoff data populated', () => {
-    expect(externalRegistrationPlan.map((item) => item.id)).toEqual(
+    const planIds = externalRegistrationPlan.map((item) => item.id);
+    expect(planIds).toEqual(
       expect.arrayContaining(['github-org', 'operations-policy', 'fcm', 'payments-vn']),
     );
+    expect(planIds.indexOf('payments-vn')).toBeGreaterThan(planIds.indexOf('fcm'));
+    expect(planIds.indexOf('payments-vn')).toBeGreaterThan(planIds.indexOf('storage-cdn'));
     const fcmPlan = externalRegistrationPlan.find((item) => item.id === 'fcm');
     expect(fcmPlan).toMatchObject({
       groupId: 'notifications',
