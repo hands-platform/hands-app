@@ -103,8 +103,8 @@ function buildBookingCreateTraceItem(responseWindowMinutes: number): PolicyEnfor
     title: `${responseWindowMinutes} minute first-pick timer`,
     detail:
       'New direct bookings store the current response-window policy in booking metadata and expiry time.',
-    api: 'Customer booking creation endpoint',
-    server: 'Booking creation flow -> matching open flow',
+    api: 'POST /customer/bookings',
+    server: 'BookingsService.createBooking -> MatchingService.openBooking',
     verify:
       'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
   };

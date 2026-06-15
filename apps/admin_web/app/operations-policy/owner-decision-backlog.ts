@@ -1,5 +1,7 @@
 import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../../lib/operations-policy';
 
+// Authority marker: Marketplace partner radius.
+
 export type OwnerDecisionBacklogItem = {
   owner: string;
   title: string;

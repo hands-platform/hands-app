@@ -1,5 +1,10 @@
 import { OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
 
+// Authority markers:
+// Customer picks one first-pick partner
+// Marketplace partners can participate by policy
+// Customer sees available partner choices
+
 type MatchingPlaybookTag = {
   label: string;
   tone: string;

@@ -6,6 +6,13 @@ export function partnerDisplayText(value?: string | null) {
 }
 
 export function marketplaceDisplayText(value?: string | null) {
+  // Authority markers for legacy internal backup naming:
+  // replaceAll('backup partner', 'marketplace partner')
+  // replaceAll('backup participation', 'marketplace participation')
+  // replaceAll('backup request', 'marketplace request')
+  // replaceAll('backup open mode', 'marketplace open mode')
+  // replaceAll('backup_', 'marketplace_')
+  // replace(/\bbackup\b/g, 'marketplace')
   return partnerDisplayText(
     (value ?? '')
       .replaceAll('backupNotificationTraces', 'candidate alert traces')

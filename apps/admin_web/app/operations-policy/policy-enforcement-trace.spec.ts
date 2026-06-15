@@ -26,8 +26,8 @@ describe('policy enforcement trace', () => {
     ]);
     expect(trace[0]).toMatchObject({
       title: '12 minute first-pick timer',
-      api: 'Customer booking creation endpoint',
-      server: 'Booking creation flow -> matching open flow',
+      api: 'POST /customer/bookings',
+      server: 'BookingsService.createBooking -> MatchingService.openBooking',
     });
     expect(trace[1]).toMatchObject({
       title: '15 km marketplace alert policy',

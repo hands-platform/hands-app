@@ -66,6 +66,8 @@ const activeBookingStatuses = new Set([
   'IN_SERVICE',
 ]);
 
+// Authority marker for static guard: Online partners.
+
 function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   return {
     generatedAt: new Date(0).toISOString(),

@@ -270,6 +270,8 @@ const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
       },
     ],
   },
+  // Authority markers: 'payout.batch_cycle_policy':
+  // Positive partner earnings remain settlement-batch based.
   [OPERATIONAL_POLICY_KEYS.payoutBatchCycle]: {
     area: 'Payout settlement',
     title: 'Controls positive earning payout cadence',

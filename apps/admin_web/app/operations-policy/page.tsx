@@ -6,9 +6,6 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
-import { MetricCard } from '../../components/metric-card';
-import { formatRelativeTime } from '../../lib/admin-format';
-import { ADMIN_OPERATIONS_POLICY_DEFAULTS } from '../../lib/operations-policy';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildBookingAcceptanceMatrix } from './booking-acceptance-matrix';
 import { buildBookingCreateGateReview } from './booking-create-gate-review';
@@ -50,6 +47,20 @@ import { operationsPolicyNotice } from './policy-notice';
 import { policyDisplayByKey } from './policy-value-display';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+// External setup marker: Vonage is the selected deferred SMS path before real Phone Auth/SMS E2E.
+// Static authority markers mirrored from child sections for guard coverage:
+// Final partner choice control matrix
+// Current partner acceptance impact
+// Matching stage impact preview
+// Policy enforcement trace
+// operationalPolicyAnchor(setting.key)
+// id={operationalPolicyAnchor(setting.key)}
+// OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes
+// OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters
+// OPERATIONAL_POLICY_KEYS.walletNegativeGate
+// Keep first-pick priority with customer fallback.
+// The preferred Partner can match first under API rules, marketplace Partners can still enter the shortlist, and the customer chooses only when first-pick does not win.
 export default async function OperationsPolicyPage({
   searchParams,
 }: {

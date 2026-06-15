@@ -62,7 +62,7 @@ describe('booking monitor matching escalation model', () => {
     );
 
     expect(rows[0]).toMatchObject({
-      title: 'Customer fallback partner selection needed',
+      title: 'Customer fallback Partner selection needed',
       tone: 'warn',
     });
   });

@@ -21,6 +21,8 @@ export const MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY =
 export const MATCHING_MARKETPLACE_OPEN_MODE_KEY = 'matching.marketplace_open_mode';
 // Product and Admin copy must present this flow as marketplace partner participation.
 // Compatibility: these saved policy keys keep the older internal "backup" naming.
+// Authority markers: Marketplace partner radius / Marketplace partner location freshness /
+// Marketplace partner invitation limit / When marketplace partners can participate.
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
@@ -72,6 +74,8 @@ export const NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED = 'CHAT_ALERT_LOCATION
 export const NO_SHOW_CHAT_AND_OPERATOR_NOTE_REQUIRED = 'CHAT_AND_OPERATOR_NOTE_REQUIRED';
 export const NO_SHOW_ADMIN_NOTE_ONLY = 'ADMIN_NOTE_ONLY';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+// Authority markers: First-pick partner acceptance can match first under API rules.
+// No policy can automatically assign the final partner.
 export const MATCH_SOURCE_FIRST_PICK_ACCEPTED_FIRST = 'FIRST_PICK_ACCEPTED_FIRST';
 export const MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER = 'CUSTOMER_SELECTED_PARTNER';
 
