@@ -80,6 +80,7 @@ import {
   bookingCashDebtNeedsSettlement,
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
+import { bookingOperatingActivityTimelineItems } from './booking-operating-activity-timeline-items';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
@@ -144,7 +145,6 @@ import {
   attentionLevel,
   type AttentionFlag,
 } from '../../../lib/admin-attention-flags';
-import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
 import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
@@ -1626,54 +1626,8 @@ function bookingOperatingTimeline({
     addItem(item);
   }
 
-  if (booking.review) {
-    addItem({
-      id: `review-${booking.review.id}`,
-      type: 'REVIEW',
-      title: 'Customer service feedback submitted',
-      detail: `Saved numeric input ${booking.review.rating}/5.`,
-      at: booking.review.createdAt,
-      status: 'Feedback',
-    });
-  }
-
-  const relatedNotifications = notifications
-    .filter((notification) => notificationDataBookingId(notification) === booking.id)
-    .sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))
-    .slice(0, 4);
-  for (const notification of relatedNotifications) {
-    addItem({
-      id: `notification-${notification.id}`,
-      type: 'ALERT',
-      title: marketplaceDisplayText(notification.title),
-      detail: `${humanizeNotificationType(notification.type)} / ${marketplaceDisplayText(
-        compactActivityText(notification.body, 90),
-      )}`,
-      at: notification.createdAt,
-      status: 'Alert',
-    });
-  }
-
-  for (const task of booking.opsTasks ?? []) {
-    addItem({
-      id: `ops-task-${task.id}`,
-      type: 'OPS',
-      title: `${humanizeAuditAction(task.type)} / ${task.status}`,
-      detail: task.note ?? 'Operator checklist task updated.',
-      at: task.updatedAt,
-      status: task.status,
-    });
-  }
-
-  for (const log of (booking.auditLogs ?? []).slice(0, 6)) {
-    addItem({
-      id: `audit-${log.id}`,
-      type: 'AUDIT',
-      title: humanizeAuditAction(log.action),
-      detail: auditMetadataSummary(log.metadata) || log.target,
-      at: log.createdAt,
-      status: 'Audit',
-    });
+  for (const item of bookingOperatingActivityTimelineItems({ booking, notifications })) {
+    addItem(item);
   }
 
   return timelineItems.build();
