@@ -25,7 +25,7 @@ describe('notification page model', () => {
     expect(summary).toEqual({
       disabledDevices: 1,
       failed: 1,
-      needsRetry: 2,
+      needsRetry: 3,
       noShow: 1,
       payoutSetup: 1,
       pending: 1,
@@ -920,7 +920,7 @@ describe('notification page model', () => {
   });
 
   it('marks stale push token deliveries as an operator warning even when FCM accepted the send', () => {
-    const rows = buildNotificationTableRows([
+    const notifications = [
       notification({
         data: { bookingId: 'booking-1' },
         deliveries: [
@@ -940,12 +940,15 @@ describe('notification page model', () => {
         id: 'notification-stale',
         type: 'booking.matched',
       }),
-    ]);
+    ];
+    const rows = buildNotificationTableRows(notifications);
 
     expect(rows[0]).toMatchObject({
       opsSignal: 'Stale device',
       signalClassName: 'signal signal-warn',
     });
+    expect(filterNotifications(notifications, { booking: '', review: 'needs-retry' })).toHaveLength(1);
+    expect(buildNotificationSummary(notifications).needsRetry).toBe(1);
     expect(rows[0]?.opsHint).toContain('Push token timestamp is old');
     expect(rows[0]?.actions.find((action) => action.label === 'Retry')).toMatchObject({
       description: 'Refresh the app FCM token before retrying this notification.',

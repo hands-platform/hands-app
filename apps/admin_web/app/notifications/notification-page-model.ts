@@ -639,7 +639,11 @@ function hasStalePushDeviceDelivery(notification: AdminNotification) {
 export { isStaleNotificationPushDeviceDelivery as isStalePushDeviceDelivery };
 
 function hasRetrySignal(notification: AdminNotification) {
-  return hasLatestDeliveryStatus(notification, 'FAILED') || hasCurrentDisabledPushDevice(notification);
+  return (
+    hasLatestDeliveryStatus(notification, 'FAILED') ||
+    hasCurrentDisabledPushDevice(notification) ||
+    hasStalePushDeviceDelivery(notification)
+  );
 }
 
 type NotificationDeliveryHealth = {
