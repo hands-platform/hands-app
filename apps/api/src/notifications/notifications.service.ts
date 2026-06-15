@@ -10,6 +10,7 @@ import { toJson } from './notification-push-payload';
 import type {
   NotificationRetryAuditJobSummary,
   NotificationRetryAuditLatestDelivery,
+  NotificationRetryAuditResult,
 } from './notification-retry-audit';
 import { notificationDataWithTargetRole, type NotificationTargetRole } from './notification-target-role';
 
@@ -20,6 +21,11 @@ type CreateNotificationInput = {
   title: string;
   body: string;
   data?: unknown;
+};
+
+type RetryNotificationResult = NotificationRetryAuditResult & {
+  readonly ok: true;
+  readonly notificationId: string;
 };
 
 @Injectable()
@@ -46,7 +52,7 @@ export class NotificationsService {
     return notification;
   }
 
-  async retry(notificationId: string) {
+  async retry(notificationId: string): Promise<RetryNotificationResult> {
     const notification = await this.prisma.notification.findUniqueOrThrow({
       where: { id: notificationId },
       select: {
