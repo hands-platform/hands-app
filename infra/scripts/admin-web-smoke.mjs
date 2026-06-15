@@ -70,9 +70,21 @@ function notificationConfirmationFollowUp({
     ),
     label,
     markers: [actionMarker, gateMarker, ...supportMarkers, 'Audit trail'],
+    noMatchMarkers: notificationEmptyQueueMarkers(review),
     optional: true,
     supportFollowUps,
   };
+}
+
+function notificationEmptyQueueMarkers(review) {
+  const emptyMarker = 'No notifications currently match this queue';
+  if (review === 'failed') {
+    return [emptyMarker, 'latest delivery attempts that returned an FCM push failure.'];
+  }
+  if (review === 'stale-device') {
+    return [emptyMarker, 'delivery attempts made with old push token timestamps.'];
+  }
+  return [];
 }
 
 const notificationFcmSupportFollowUps = [
@@ -923,6 +935,18 @@ async function runPageFollowUps(page, body) {
     const match = body.match(followUp.hrefPattern);
     if (!match?.[1]) {
       if (followUp.optional) {
+        if (followUp.noMatchMarkers?.length > 0) {
+          const missing = followUp.noMatchMarkers.filter((marker) => !body.includes(marker));
+          if (missing.length > 0) {
+            throw new Error(
+              `${page.path} has no follow-up link for ${followUp.label} and is missing no-match markers: ${missing.join(
+                ', ',
+              )}`,
+            );
+          }
+          console.log(`PASS ${page.path} ${followUp.label}: no matching rows`);
+          continue;
+        }
         console.log(`SKIP ${page.path} ${followUp.label}: no matching link`);
         continue;
       }
