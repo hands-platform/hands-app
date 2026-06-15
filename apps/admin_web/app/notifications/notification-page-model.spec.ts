@@ -635,6 +635,9 @@ describe('notification page model', () => {
       ['No-show alerts', 0],
       ['FCM route', 2],
     ]);
+    expect(model.metrics.find((metric) => metric.label === 'Needs retry')?.helper).toBe(
+      'Failed, disabled, or stale token delivery paths.',
+    );
     expect(model.notifications.map((item) => item.id)).toEqual(['notification-failed']);
     expect(model.notificationRows.map((row) => row.id)).toEqual(['notification-failed']);
     expect(model.reviewRunbook).toMatchObject({ title: 'Retry gate' });

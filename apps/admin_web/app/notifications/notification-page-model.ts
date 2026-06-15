@@ -233,7 +233,11 @@ export function buildNotificationMetrics(
 ): readonly AdminPageMetric[] {
   return [
     { label: 'Total', value: totalCount, helper: 'Notification rows loaded.' },
-    { label: 'Needs retry', value: summary.needsRetry, helper: 'Failed or disabled delivery paths.' },
+    {
+      label: 'Needs retry',
+      value: summary.needsRetry,
+      helper: 'Failed, disabled, or stale token delivery paths.',
+    },
     { label: 'Sent', value: summary.sent, helper: 'Successful push delivery attempts.' },
     { label: 'Skipped', value: summary.skipped, helper: 'Intentionally skipped delivery attempts.' },
     { label: 'Pending', value: summary.pending, helper: 'Rows without delivery attempts.' },
