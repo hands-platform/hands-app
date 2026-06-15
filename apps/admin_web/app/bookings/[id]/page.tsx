@@ -76,6 +76,7 @@ import {
   bookingCashDebtNeedsSettlement,
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
+import { bookingDetailOperatorFirstRead } from './booking-detail-operator-first-read';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
@@ -902,51 +903,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorQueue: operatorCommandQueue,
     activityRecordCount: bookingActivityRecords.length,
   });
-  const bookingOperatorFirstRead = [
-    {
-      href: '#address-radius-contract',
-      label: 'Service address',
-      value: addressPin,
-      detail: addressLine,
-    },
-    {
-      href: '#matching-rule-snapshot',
-      label: 'Matching state',
-      value: matchingRuleSnapshot.status,
-      detail: `${customerWaitPanel.signalStatus} / ${marketplaceSupply.eligibleCount} marketplace Partner(s) in policy.`,
-    },
-    {
-      href: finalPartnerSummary.href,
-      label: 'Customer choice',
-      value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Pending',
-      detail: finalPartnerSummary.selected
-        ? 'Final Partner exists; confirm chat handoff before service coordination.'
-        : 'Customer must choose the final Partner before matched chat opens.',
-    },
-    {
-      href: '#participants',
-      label: 'Marketplace participants',
-      value: `${participantCounts.marketplace} marketplace row(s)`,
-      detail: `${participantCounts.total} total participant row(s). Only actual Partner participation rows are retained for this booking.`,
-    },
-    {
-      href: '#chat',
-      label: 'Chat evidence',
-      value: booking.chatRoom ? `${messages.length} messages` : 'Missing room',
-      detail: booking.chatRoom
-        ? `Room ${shortId(booking.chatRoom.id)} is retained for admin review.`
-        : 'Matched bookings should create a retained chat room.',
-    },
-    {
-      href: bookingCashDebtNeedsSettlement(booking) ? '/cash-settlements' : '#payment',
-      label: 'Money path',
-      value: paymentEvidence.paymentQueueValue,
-      detail:
-        booking.payment?.method === 'CASH'
-          ? `${financeTrace.walletLedger} / ${financeTrace.platformFee} HANDS fee.`
-          : `${paymentEvidence.paymentMethodAmountLabel}.`,
-    },
-  ];
+  const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
+    booking,
+    addressLine,
+    addressPin,
+    matchingRuleStatus: matchingRuleSnapshot.status,
+    customerWaitSignalStatus: customerWaitPanel.signalStatus,
+    eligibleMarketplaceCount: marketplaceSupply.eligibleCount,
+    finalPartnerSummary,
+    participantCounts,
+    messageCount: messages.length,
+    paymentEvidence,
+    financeTrace,
+  });
   const bookingMetricCards = bookingDetailMetricCards({
     booking,
     closureSummary,
