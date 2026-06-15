@@ -11,17 +11,19 @@ type SummaryLinkCard = {
   detail: string;
 };
 
-type MetricSummaryCard = {
+type SummaryMetricRow = {
   label: string;
   value: string;
   helper: string;
 };
 
+type MetricSummaryCard = SummaryMetricRow;
+
 type MatchingRuleSnapshot = {
   status: string;
   tone: string;
   summary: string;
-  rows: Array<{ label: string; value: string; helper: string }>;
+  rows: SummaryMetricRow[];
   actions: Array<{ label: string; href: string }>;
 };
 
@@ -47,7 +49,7 @@ type RecentTimelineItem = {
 type PriorityBriefing = {
   status: string;
   tone: string;
-  rows: Array<{ label: string; value: string; helper: string }>;
+  rows: SummaryMetricRow[];
   steps: Array<{
     id: string;
     label: string;
@@ -177,15 +179,7 @@ export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCar
         </div>
         <span className="pill pill-info">Above-fold summary</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {rows.map((item) => (
-          <a href={item.href} key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.detail}</small>
-          </a>
-        ))}
-      </div>
+      <SummaryLinkGrid rows={rows} />
     </section>
   );
 }
@@ -214,15 +208,7 @@ export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkC
         </div>
         <span className="pill pill-info">{rows.length} shortcuts</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {rows.map((item) => (
-          <a href={item.href} key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.detail}</small>
-          </a>
-        ))}
-      </div>
+      <SummaryLinkGrid rows={rows} />
     </section>
   );
 }
@@ -247,15 +233,7 @@ export function BookingMatchingRuleSnapshotSection({
       <p className="muted admin-mt-8">
         {matchingRuleSnapshot.summary}
       </p>
-      <div className="service-trace-summary admin-mt-12">
-        {matchingRuleSnapshot.rows.map((row) => (
-          <div key={row.label}>
-            <span>{row.label}</span>
-            <strong>{row.value}</strong>
-            <small>{row.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryMetricGrid rows={matchingRuleSnapshot.rows} />
       <div className="actions admin-mt-12">
         {matchingRuleSnapshot.actions.map((action) => (
           <Link className="text-link" href={action.href} key={action.label}>
@@ -371,15 +349,7 @@ export function BookingPriorityBriefingSection({
         </div>
         <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {operatorPriorityBriefing.rows.map((row) => (
-          <div key={row.label}>
-            <span>{row.label}</span>
-            <strong>{row.value}</strong>
-            <small>{row.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryMetricGrid rows={operatorPriorityBriefing.rows} />
       <div className="setup-stage-list admin-mt-12">
         {operatorPriorityBriefing.steps.map((step) => (
           <div className="setup-stage-item" key={step.id}>
@@ -395,5 +365,33 @@ export function BookingPriorityBriefingSection({
         ))}
       </div>
     </section>
+  );
+}
+
+function SummaryLinkGrid({ rows }: { rows: SummaryLinkCard[] }) {
+  return (
+    <div className="service-trace-summary admin-mt-12">
+      {rows.map((item) => (
+        <a href={item.href} key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+          <small>{item.detail}</small>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function SummaryMetricGrid({ rows }: { rows: SummaryMetricRow[] }) {
+  return (
+    <div className="service-trace-summary admin-mt-12">
+      {rows.map((row) => (
+        <div key={row.label}>
+          <span>{row.label}</span>
+          <strong>{row.value}</strong>
+          <small>{row.helper}</small>
+        </div>
+      ))}
+    </div>
   );
 }
