@@ -17,6 +17,7 @@ import {
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import {
   BookingCommandDecisionStripSection,
+  type BookingCommandDecisionStripSectionProps,
   BookingDetailToolbar,
   BookingMatchingRuleSnapshotSection,
   type BookingMatchingRuleSnapshotSectionProps,
@@ -742,6 +743,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const recentOperationsTimelineProps: BookingRecentOperationsTimelineSectionProps = {
     operatingTimeline,
   };
+  const commandDecisionStripProps: BookingCommandDecisionStripSectionProps = {
+    commandDecisionStrip,
+  };
 
   return (
     <>
@@ -761,7 +765,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingRecentOperationsTimelineSection {...recentOperationsTimelineProps} />
 
-      <BookingCommandDecisionStripSection commandDecisionStrip={commandDecisionStrip} />
+      <BookingCommandDecisionStripSection {...commandDecisionStripProps} />
 
       <BookingPriorityBriefingSection operatorPriorityBriefing={operatorPriorityBriefing} />
 

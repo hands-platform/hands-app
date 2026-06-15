@@ -73,9 +73,7 @@ export type BookingDetailToolbarProps = {
 
 export function BookingCommandDecisionStripSection({
   commandDecisionStrip,
-}: {
-  commandDecisionStrip: BookingCommandDecisionStrip;
-}) {
+}: BookingCommandDecisionStripSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-command-decision-strip">
       <div className="ops-section-header">
@@ -104,6 +102,10 @@ export function BookingCommandDecisionStripSection({
     </section>
   );
 }
+
+export type BookingCommandDecisionStripSectionProps = {
+  commandDecisionStrip: BookingCommandDecisionStrip;
+};
 
 export function BookingDetailToolbar({
   bookingId,
