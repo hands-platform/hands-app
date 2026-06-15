@@ -71,18 +71,18 @@ npm.cmd run fcm:push-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --preflight
 ```
 
-7. Payments
-   - Current: Cash plus MoMo/VNPay placeholder adapters.
-   - Needed later: MoMo/VNPay sandbox and merchant credentials.
-
-8. Storage/CDN
+7. Storage/CDN
    - Current: local MinIO.
    - Production candidates: Supabase Storage S3, Cloudflare R2, or another S3-compatible provider.
    - Private KYC files and public profile media must use separate access policies.
 
-9. Android release signing
+8. Android release signing
    - Helper: `npm.cmd run android:signing:create`.
    - Keystores must stay under `C:\dev\hands-secrets`.
+
+9. Payments
+   - Current: Cash plus MoMo/VNPay placeholder adapters.
+   - Needed last: MoMo/VNPay sandbox and merchant credentials.
 
 ## Generated Handoff Pack
 

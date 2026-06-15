@@ -200,43 +200,6 @@ const registrationItems = [
   },
   {
     order: 7,
-    category: 'Payments',
-    account: 'MoMo merchant sandbox',
-    purpose: 'Vietnam wallet authorization, release, capture, and refund testing.',
-    consolePath: 'MoMo Merchant Portal > Integration credentials',
-    env: [
-      envItem('MOMO_PARTNER_CODE', '<momo-partner-code>', hasValue(env.MOMO_PARTNER_CODE)),
-      envItem('MOMO_ACCESS_KEY', '<momo-access-key>', hasValue(env.MOMO_ACCESS_KEY)),
-      envItem('MOMO_SECRET_KEY', '<momo-secret-key>', hasValue(env.MOMO_SECRET_KEY)),
-    ],
-    setup: [
-      'Start with sandbox credentials.',
-      'Register local callback http://localhost:3000/api/payments/MOMO/callback for local E2E.',
-      'Register production callback https://api.hands.vn/api/payments/MOMO/callback after API hosting is ready.',
-      'Keep cash payment enabled as operational fallback.',
-    ],
-    verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
-  },
-  {
-    order: 8,
-    category: 'Payments',
-    account: 'VNPay merchant sandbox',
-    purpose: 'Vietnam card/bank payment authorization and refund testing.',
-    consolePath: 'VNPay Merchant Portal > Integration credentials',
-    env: [
-      envItem('VNPAY_TMN_CODE', '<vnpay-tmn-code>', hasValue(env.VNPAY_TMN_CODE)),
-      envItem('VNPAY_HASH_SECRET', '<vnpay-hash-secret>', hasValue(env.VNPAY_HASH_SECRET)),
-    ],
-    setup: [
-      'Start with sandbox credentials.',
-      'Register local callback http://localhost:3000/api/payments/VNPAY/callback for local E2E.',
-      'Register production callback https://api.hands.vn/api/payments/VNPAY/callback after API hosting is ready.',
-      'Confirm return URLs after domains are chosen.',
-    ],
-    verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
-  },
-  {
-    order: 9,
     category: 'Storage',
     account: 'Supabase Storage S3, R2, or S3-compatible bucket',
     purpose: 'Provider verification files, public profile media, and moderation evidence.',
@@ -268,7 +231,7 @@ const registrationItems = [
     ],
   },
   {
-    order: 10,
+    order: 8,
     category: 'Push',
     account: 'Firebase Cloud Messaging',
     purpose: 'Android/iOS FCM push. Firebase DB/Auth/Firestore are not part of HANDS MVP.',
@@ -335,7 +298,7 @@ const registrationItems = [
     ],
   },
   {
-    order: 11,
+    order: 9,
     category: 'SMS',
     account: 'Vietnam-capable SMS provider',
     purpose: 'Real OTP delivery for Supabase Phone Auth or backend OTP after deferred SMS setup.',
@@ -354,7 +317,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:production'],
   },
   {
-    order: 12,
+    order: 10,
     category: 'Mobile release',
     account: 'Android Play Console signing',
     purpose: 'Separate customer/partner upload keys and fingerprints for production Android distribution.',
@@ -386,6 +349,43 @@ const registrationItems = [
       'cd apps/customer_app && flutter build apk --release',
       'cd apps/provider_app && flutter build apk --release',
     ],
+  },
+  {
+    order: 11,
+    category: 'Payments',
+    account: 'MoMo merchant sandbox',
+    purpose: 'Vietnam wallet authorization, release, capture, and refund testing.',
+    consolePath: 'MoMo Merchant Portal > Integration credentials',
+    env: [
+      envItem('MOMO_PARTNER_CODE', '<momo-partner-code>', hasValue(env.MOMO_PARTNER_CODE)),
+      envItem('MOMO_ACCESS_KEY', '<momo-access-key>', hasValue(env.MOMO_ACCESS_KEY)),
+      envItem('MOMO_SECRET_KEY', '<momo-secret-key>', hasValue(env.MOMO_SECRET_KEY)),
+    ],
+    setup: [
+      'Start with sandbox credentials.',
+      'Register local callback http://localhost:3000/api/payments/MOMO/callback for local E2E.',
+      'Register production callback https://api.hands.vn/api/payments/MOMO/callback after API hosting is ready.',
+      'Keep cash payment enabled as operational fallback.',
+    ],
+    verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
+  },
+  {
+    order: 12,
+    category: 'Payments',
+    account: 'VNPay merchant sandbox',
+    purpose: 'Vietnam card/bank payment authorization and refund testing.',
+    consolePath: 'VNPay Merchant Portal > Integration credentials',
+    env: [
+      envItem('VNPAY_TMN_CODE', '<vnpay-tmn-code>', hasValue(env.VNPAY_TMN_CODE)),
+      envItem('VNPAY_HASH_SECRET', '<vnpay-hash-secret>', hasValue(env.VNPAY_HASH_SECRET)),
+    ],
+    setup: [
+      'Start with sandbox credentials.',
+      'Register local callback http://localhost:3000/api/payments/VNPAY/callback for local E2E.',
+      'Register production callback https://api.hands.vn/api/payments/VNPAY/callback after API hosting is ready.',
+      'Confirm return URLs after domains are chosen.',
+    ],
+    verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
 ];
 

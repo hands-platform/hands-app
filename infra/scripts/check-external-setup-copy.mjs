@@ -53,6 +53,7 @@ for (const file of files) {
       fix: 'Mention Vonage as the selected deferred SMS path so operators do not fill the wrong Supabase Phone Auth settings.',
     });
   }
+  checkPaymentSetupOrder(file, source);
 }
 
 console.log(
@@ -69,4 +70,54 @@ console.log(
 
 if (violations.length > 0) {
   process.exitCode = 1;
+}
+
+function checkPaymentSetupOrder(file, source) {
+  const checks = [
+    {
+      file: 'infra/scripts/external-registration-pack.mjs',
+      before: "category: 'Mobile release'",
+      after: "category: 'Payments'",
+      fix: 'Keep MoMo/VNPay registration items after storage, push, SMS, and mobile release setup.',
+    },
+    {
+      file: 'infra/setup/.generated/hands-external-registration-pack.md',
+      before: 'Mobile release: Android Play Console signing',
+      after: 'Payments: MoMo merchant sandbox',
+      fix: 'Regenerate the handoff pack after moving payment setup to the end.',
+    },
+    {
+      file: 'docs/architecture/operator-registration-plan.md',
+      before: 'Android release signing',
+      after: 'Payments',
+      fix: 'Keep payments last in the operator registration order.',
+    },
+    {
+      file: 'docs/architecture/external-account-migration.md',
+      before: '| SMS |',
+      after: '| Payments',
+      fix: 'Keep payments after SMS/storage/push in the external account migration table.',
+    },
+    {
+      file: 'docs/architecture/external-setup-checklist.md',
+      before: '| Android signing',
+      after: '| Payments',
+      fix: 'Keep payments last in the external setup status table.',
+    },
+  ];
+  const check = checks.find((candidate) => candidate.file === file);
+  if (!check) {
+    return;
+  }
+
+  const beforeIndex = source.indexOf(check.before);
+  const afterIndex = source.indexOf(check.after);
+  if (beforeIndex === -1 || afterIndex === -1 || afterIndex < beforeIndex) {
+    violations.push({
+      file,
+      label: 'payment setup should be last',
+      match: afterIndex === -1 ? null : check.after,
+      fix: check.fix,
+    });
+  }
 }

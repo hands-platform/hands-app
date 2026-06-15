@@ -32,9 +32,9 @@ Canonical operator order:
 | Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore                  |
 | Push            | Server-side FCM path testable           | Confirm same-session app token delivery before rollout |
 | SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                        |
-| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials later                     |
 | Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later         |
 | Android signing | Local helper ready                      | Production keystores stay in secrets folder            |
+| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials last                      |
 
 ## Required Env Groups
 
@@ -77,14 +77,6 @@ SMS_PROVIDER=dev
 DEV_OTP=123456
 ```
 
-```dotenv
-MOMO_PARTNER_CODE=
-MOMO_ACCESS_KEY=
-MOMO_SECRET_KEY=
-VNPAY_TMN_CODE=
-VNPAY_HASH_SECRET=
-```
-
 ## Verification Commands
 
 ```powershell
@@ -116,6 +108,16 @@ Partner alert notifications are controlled by `notification.partner_alert_channe
 For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `docker-compose.prod.yml` mounts that host file into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
+
+Payment gateway credentials are intentionally last in the external setup order:
+
+```dotenv
+MOMO_PARTNER_CODE=
+MOMO_ACCESS_KEY=
+MOMO_SECRET_KEY=
+VNPAY_TMN_CODE=
+VNPAY_HASH_SECRET=
+```
 
 ## Production Notes
 

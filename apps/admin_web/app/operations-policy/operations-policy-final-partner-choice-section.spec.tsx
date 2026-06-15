@@ -36,10 +36,10 @@ describe('OperationsPolicyFinalPartnerChoiceSection', () => {
     const rendered = normalizedTextContent(section);
 
     expect(section.type).toBe('section');
-    expect(rendered).toContain('Final Partner choice control matrix');
+    expect(rendered).toContain('Final partner choice control matrix');
     expect(rendered).toContain('2 control choice(s)');
     expect(rendered).toContain('Direct booking window');
-    expect(rendered).toContain('Current Partner acceptance impact');
+    expect(rendered).toContain('Current partner acceptance impact');
     expect(rendered).toContain('Open Partner queue');
     expect(hrefsIn(section)).toContain('/partners');
   });

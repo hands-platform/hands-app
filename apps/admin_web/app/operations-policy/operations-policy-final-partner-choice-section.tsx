@@ -25,7 +25,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
     <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
-          <h2>Final Partner choice control matrix</h2>
+          <h2>Final partner choice control matrix</h2>
           <p className="muted">
             Current owner choices for the direct booking window, marketplace participation, Partner push
             reach, and the negative wallet marketplace/payout gate. This is the screen operators should
@@ -57,7 +57,7 @@ export function OperationsPolicyFinalPartnerChoiceSection({
       </div>
       <div className="ops-section-header admin-mt-18">
         <div>
-          <h3>Current Partner acceptance impact</h3>
+          <h3>Current partner acceptance impact</h3>
           <p className="muted">
             Applies the policy posture to the current Partner snapshot so operators can see who can pass
             marketplace and payout gates, who needs account or identity follow-up, and who only needs
