@@ -92,6 +92,7 @@ import {
   bookingDetailAttentionFlags,
   bookingDetailDispatchChecklist,
 } from './booking-detail-dispatch-checks';
+import { bookingDetailOperatorActionMatrix } from './booking-detail-operator-action-matrix';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
@@ -178,7 +179,6 @@ import {
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
-import { bookingOperatorActionMatrix as buildBookingOperatorActionMatrix } from '../../../lib/booking-operator-action-matrix';
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import { bookingOperatorPriorityBriefing as buildBookingOperatorPriorityBriefing } from '../../../lib/booking-operator-priority-briefing';
 import {
@@ -559,7 +559,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     latestLocation,
   });
-  const operatorActionMatrix = bookingOperatorActionMatrix(booking);
+  const operatorActionMatrix = bookingDetailOperatorActionMatrix(booking);
   const operatorPriorityBriefing = bookingOperatorPriorityBriefing({
     booking,
     operatorCommandQueue,
@@ -1303,31 +1303,6 @@ function bookingOperatorCommandQueue({
     canMarkNoShow: canMarkNoShow(booking.status),
     attentionFlagCount: attentionFlags.length,
     pendingTask: pendingTasks[0] ?? null,
-  });
-}
-
-function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
-  const paymentStatus = booking.payment?.status ?? 'NONE';
-  const paymentIsTerminal = isTerminalPayment(paymentStatus);
-  const cashDebt = bookingCashDebtNeedsSettlement(booking);
-  const paymentEvidence = bookingPaymentEvidence(booking);
-  return buildBookingOperatorActionMatrix({
-    bookingStatus: booking.status,
-    paymentStatus,
-    hasPayment: Boolean(booking.payment?.id),
-    paymentIsTerminal,
-    paymentProviderRef: booking.payment?.providerRef ?? null,
-    paymentAmountLabel: money(booking.payment?.amount, booking.payment?.currency),
-    paymentMethod: booking.payment?.method ?? null,
-    cashDebtNeedsSettlement: cashDebt,
-    cashDebtAmountLabel: money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency),
-    closeoutAvailable: canCloseoutCompletedBooking(booking),
-    closeoutLabel: completedCloseoutLabel(booking),
-    expireAvailable: canExpireBooking(booking.status),
-    expiresAtLabel: formatDate(booking.expiresAt),
-    noShowAvailable: canMarkNoShow(booking.status),
-    refundRowCount: paymentEvidence.refundCount,
-    noteLineCount: bookingOperatorNoteLines(booking.notes).length,
   });
 }
 
