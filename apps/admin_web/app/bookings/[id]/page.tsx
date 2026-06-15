@@ -92,6 +92,9 @@ import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
+import {
+  createBookingOperatingTimelineCollector,
+} from './booking-operating-timeline-items';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
@@ -1454,15 +1457,6 @@ function bookingEvidencePacket({
   });
 }
 
-type BookingOperatingTimelineItem = {
-  id: string;
-  type: string;
-  title: string;
-  detail: string;
-  at?: string | null;
-  status: string;
-};
-
 function bookingOperatingTimeline({
   booking,
   addressLine,
@@ -1478,22 +1472,9 @@ function bookingOperatingTimeline({
   messages: AdminChatMessage[];
   notifications: AdminNotification[];
 }) {
-  const items: BookingOperatingTimelineItem[] = [];
-  const pendingItems: BookingOperatingTimelineItem[] = [];
-  const seenItemIds = new Set<string>();
+  const timelineItems = createBookingOperatingTimelineCollector();
+  const addItem = timelineItems.addItem;
   const paymentCurrency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
-
-  const addItem = (item: BookingOperatingTimelineItem) => {
-    if (seenItemIds.has(item.id)) {
-      return;
-    }
-    seenItemIds.add(item.id);
-    if (item.at) {
-      items.push(item);
-      return;
-    }
-    pendingItems.push(item);
-  };
 
   addItem({
     id: `created-${booking.id}`,
@@ -1808,8 +1789,7 @@ function bookingOperatingTimeline({
     });
   }
 
-  const sorted = items.sort((left, right) => safeTime(right.at) - safeTime(left.at));
-  return [...sorted.slice(0, 18), ...pendingItems].slice(0, 22);
+  return timelineItems.build();
 }
 
 type CommunicationMovementEvent = {
