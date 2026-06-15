@@ -104,6 +104,7 @@ const ok = failed.length === 0 && missingGenerated.length === 0;
 const { env } = loadMergedEnv('.env');
 const firebasePushReady = firebaseAdminCredentialsConfigured(env) && firebaseProjectAlignment(env).ok;
 const phoneAuthReady = phoneAuthSetupState(env);
+const externalReady = externalSetupState(env);
 
 console.log(
   JSON.stringify(
@@ -113,7 +114,7 @@ console.log(
       generatedFiles,
       checks: results,
       nextSteps: ok
-        ? nextSetupSteps({ firebasePushReady, phoneAuthReady })
+        ? nextSetupSteps({ firebasePushReady, phoneAuthReady, externalReady })
         : failed.map((result) => result.fix),
     },
     null,
@@ -150,14 +151,17 @@ function runStep(step) {
   };
 }
 
-function nextSetupSteps({ firebasePushReady, phoneAuthReady }) {
+function nextSetupSteps({ firebasePushReady, phoneAuthReady, externalReady }) {
   const preparationSteps = [
-    'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
-    'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
-    'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
+    'Open infra/setup/.generated/hands-external-registration-pack.md only when creating or rotating external accounts.',
+    externalReady.supabaseCoreReady
+      ? 'Supabase core env values are present; rerun npm.cmd run external:check:supabase after Supabase URL/key changes.'
+      : 'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready, then run npm.cmd run external:check:supabase.',
+    'Keep infra/supabase/.generated/hands-staging-setup.sql as the SQL rebuild reference; paste it only when provisioning or rebuilding Supabase staging.',
   ];
   const followUpSteps = [
-    'Run npm.cmd run external:check:supabase for Supabase core values.',
+    ...mapsNextSteps(externalReady),
+    ...storageNextSteps(externalReady),
     ...phoneAuthNextSteps(phoneAuthReady),
     'Keep npm.cmd run auth:supabase-smoke passing for the API token exchange and role-boundary contract.',
   ];
@@ -175,7 +179,8 @@ function nextSetupSteps({ firebasePushReady, phoneAuthReady }) {
 function phoneAuthNextSteps({ phoneReady, smsReady }) {
   if (smsReady && phoneReady) {
     return [
-      'Supabase Phone Auth SMS values and SUPABASE_PHONE_SMOKE_PHONE are present; run npm.cmd run external:check:supabase-auth, npm.cmd run auth:supabase-phone-smoke -- --dry-run, then use --send/--verify for the live OTP smoke.',
+      'Supabase Phone Auth values and SUPABASE_PHONE_SMOKE_PHONE are present; run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-phone-smoke -- --dry-run, use --send only for an intentional OTP resend, and run --verify only with a fresh 6 digit OTP.',
+      'Keep SMS sender-channel refinement deferred unless operators need OTP as SMS instead of the provider fallback route.',
     ];
   }
   if (smsReady) {
@@ -189,6 +194,37 @@ function phoneAuthNextSteps({ phoneReady, smsReady }) {
   ];
 }
 
+function mapsNextSteps({ mapsReady }) {
+  return mapsReady
+    ? [
+        'MapTiler and Geoapify values are present; rerun npm.cmd run external:check:maps after map-provider key changes.',
+      ]
+    : ['Set MAPTILER_API_KEY and GEOAPIFY_API_KEY in ignored env, then run npm.cmd run external:check:maps.'];
+}
+
+function storageNextSteps({ storageReady }) {
+  return storageReady
+    ? [
+        'S3-compatible storage values are present; rerun npm.cmd run external:check:storage and npm.cmd run storage:smoke after storage or bucket changes.',
+      ]
+    : [
+        'Set S3-compatible storage values, including either S3_BUCKET or both S3_PRIVATE_BUCKET/S3_PUBLIC_BUCKET, then run npm.cmd run external:check:storage.',
+      ];
+}
+
+function externalSetupState(sourceEnv) {
+  return {
+    mapsReady: allEnvValues(sourceEnv, ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY']),
+    storageReady: storageSetupReady(sourceEnv),
+    supabaseCoreReady: allEnvValues(sourceEnv, [
+      'SUPABASE_URL',
+      'SUPABASE_ANON_KEY',
+      'SUPABASE_JWT_SECRET',
+      'SUPABASE_SERVICE_ROLE_KEY',
+    ]),
+  };
+}
+
 function phoneAuthSetupState(sourceEnv) {
   return {
     phoneReady: hasVietnamE164Phone(sourceEnv.SUPABASE_PHONE_SMOKE_PHONE),
@@ -198,6 +234,21 @@ function phoneAuthSetupState(sourceEnv) {
         hasEnvValue(sourceEnv, key),
       ),
   };
+}
+
+function storageSetupReady(sourceEnv) {
+  return (
+    allEnvValues(sourceEnv, [
+      'STORAGE_PROVIDER',
+      'S3_ENDPOINT',
+      'S3_REGION',
+      'S3_ACCESS_KEY',
+      'S3_SECRET_KEY',
+      'S3_PUBLIC_BASE_URL',
+    ]) &&
+    (hasEnvValue(sourceEnv, 'S3_BUCKET') ||
+      allEnvValues(sourceEnv, ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET']))
+  );
 }
 
 function isRealSmsProvider(value) {
@@ -210,6 +261,10 @@ function isRealSmsProvider(value) {
 
 function hasEnvValue(sourceEnv, key) {
   return String(sourceEnv[key] ?? '').trim().length > 0;
+}
+
+function allEnvValues(sourceEnv, keys) {
+  return keys.every((key) => hasEnvValue(sourceEnv, key));
 }
 
 function hasVietnamE164Phone(value) {
