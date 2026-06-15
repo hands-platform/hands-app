@@ -37,6 +37,8 @@ For a smaller FCM-push-only check after Firebase Admin credentials and a real de
 $env:API_BASE_URL='http://localhost:3000/api'
 npm.cmd run external:check:push
 npm.cmd run security:secrets
+npm.cmd run notifications:push-data-contract
+npm.cmd run notifications:retry-audit-contract
 npm.cmd run fcm:credentials-check
 npm.cmd run docker:contract
 npm.cmd run fcm:token-smoke
