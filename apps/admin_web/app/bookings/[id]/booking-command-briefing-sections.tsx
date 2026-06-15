@@ -190,7 +190,7 @@ export type BookingOperatorFirstReadSectionProps = {
   rows: SummaryLinkCard[];
 };
 
-export function BookingMetricGridSection({ metrics }: { metrics: MetricSummaryCard[] }) {
+export function BookingMetricGridSection({ metrics }: BookingMetricGridSectionProps) {
   return (
     <section className="grid admin-mb-16">
       {metrics.map((metric) => (
@@ -199,6 +199,10 @@ export function BookingMetricGridSection({ metrics }: { metrics: MetricSummaryCa
     </section>
   );
 }
+
+export type BookingMetricGridSectionProps = {
+  metrics: MetricSummaryCard[];
+};
 
 export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkCard[] }) {
   return (

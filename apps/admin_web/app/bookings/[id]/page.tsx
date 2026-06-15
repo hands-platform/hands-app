@@ -20,6 +20,7 @@ import {
   BookingDetailToolbar,
   BookingMatchingRuleSnapshotSection,
   BookingMetricGridSection,
+  type BookingMetricGridSectionProps,
   BookingMvpAuthorityContractSection,
   BookingOperationsQuickRailSection,
   BookingOperatorFirstReadSection,
@@ -722,6 +723,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operatorFirstReadProps: BookingOperatorFirstReadSectionProps = {
     rows: bookingOperatorFirstRead,
   };
+  const metricGridProps: BookingMetricGridSectionProps = {
+    metrics: bookingMetricCards,
+  };
 
   return (
     <>
@@ -731,7 +735,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
 
-      <BookingMetricGridSection metrics={bookingMetricCards} />
+      <BookingMetricGridSection {...metricGridProps} />
 
       <BookingOperationsQuickRailSection rows={bookingOperationsQuickRail} />
 
