@@ -114,6 +114,19 @@ describe('HealthService external SMS readiness', () => {
     ]);
     expect(check?.missing).toEqual([]);
   });
+
+  it('blocks production SMS readiness when the provider value is not approved', () => {
+    const check = smsCheck({
+      SMS_PROVIDER: 'typo-provider',
+      SMS_API_URL: 'https://api.example.test/sms',
+      SMS_API_KEY: 'placeholder-sms-secret',
+      SMS_SENDER_ID: 'HANDS',
+    });
+
+    expect(check?.status).toBe('PARTIAL');
+    expect(check?.configured).toEqual(['SMS_API_URL', 'SMS_API_KEY', 'SMS_SENDER_ID']);
+    expect(check?.invalid).toEqual(['SMS_PROVIDER']);
+  });
 });
 
 describe('HealthService external push readiness', () => {

@@ -75,7 +75,7 @@ export class HealthService {
       ]),
       this.storageExternalReadiness(),
       this.externalGroup('Production SMS', 'sms', [
-        { key: 'SMS_PROVIDER' },
+        { key: 'SMS_PROVIDER', validator: 'sms-provider' },
         { key: 'SMS_API_URL' },
         { key: 'SMS_API_KEY', validator: 'secret' },
         { key: 'SMS_SENDER_ID' },
@@ -406,7 +406,11 @@ export class HealthService {
   private externalGroup(
     name: string,
     category: string,
-    requirements: Array<{ key: string; validator?: 'https-url' | 'secret'; expected?: string }>,
+    requirements: Array<{
+      key: string;
+      validator?: 'https-url' | 'secret' | 'sms-provider';
+      expected?: string;
+    }>,
   ) {
     const configured: string[] = [];
     const missing: string[] = [];
@@ -430,6 +434,11 @@ export class HealthService {
       }
 
       if (requirement.validator === 'secret' && !isSecretLikeValue(value)) {
+        invalid.push(requirement.key);
+        continue;
+      }
+
+      if (requirement.validator === 'sms-provider' && !isSupportedSmsProvider(value)) {
         invalid.push(requirement.key);
         continue;
       }
@@ -498,6 +507,10 @@ function isHttpsUrl(value: string) {
 
 function isSecretLikeValue(value: string) {
   return value.length >= 16 && !/^change-me$/i.test(value);
+}
+
+function isSupportedSmsProvider(value: string) {
+  return ['vonage', 'viettel', 'fpt', 'custom'].includes(value.trim().toLowerCase());
 }
 
 function isDeferredExternalCategory(category: string) {

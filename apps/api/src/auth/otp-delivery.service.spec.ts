@@ -66,4 +66,17 @@ describe('OtpDeliveryService', () => {
       to: '+84900000001',
     });
   });
+
+  it('rejects unsupported SMS provider values instead of silently using dev OTP', async () => {
+    const fetchMock = mockFetch();
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'typo-provider',
+        SMS_API_URL: 'https://api.example.test/sms',
+        SMS_API_KEY: 'test-sms-api-key',
+      }).deliverOtp('+84900000001', '123456'),
+    ).rejects.toThrow('Unsupported SMS provider');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

@@ -19,6 +19,7 @@ const checks = [];
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
 const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
+const supportedSmsProviders = new Set(['vonage', 'viettel', 'fpt', 'custom']);
 const momoCredentialsFix =
   'Create or open the MoMo Merchant Portal sandbox integration, copy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/MOMO/callback. Production callback: https://api.hands.vn/api/payments/MOMO/callback.';
 const vnpayCredentialsFix =
@@ -427,7 +428,7 @@ function allHaveValue(keys) {
 
 function hasRealSmsProvider() {
   const provider = String(env.SMS_PROVIDER ?? '').trim().toLowerCase();
-  return provider.length > 0 && provider !== 'dev';
+  return supportedSmsProviders.has(provider);
 }
 
 function pathExists(key) {

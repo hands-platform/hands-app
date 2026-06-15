@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 
 type SmsProvider = 'dev' | 'http';
 
+const supportedHttpSmsProviders = new Set(['http', 'vonage', 'viettel', 'fpt', 'custom']);
+
 @Injectable()
 export class OtpDeliveryService {
   private readonly logger = new Logger(OtpDeliveryService.name);
@@ -52,6 +54,12 @@ export class OtpDeliveryService {
 
   private provider(): SmsProvider {
     const configured = this.config.get<string>('SMS_PROVIDER')?.toLowerCase();
-    return configured && configured !== 'dev' ? 'http' : 'dev';
+    if (!configured || configured === 'dev') {
+      return 'dev';
+    }
+    if (supportedHttpSmsProviders.has(configured)) {
+      return 'http';
+    }
+    throw new ServiceUnavailableException('Unsupported SMS provider');
   }
 }

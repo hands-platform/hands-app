@@ -22,6 +22,7 @@ const firebaseAlignment = firebaseProjectAlignment(env, { repoRoot });
 const firebasePushReady = firebaseAdminReady && firebaseAlignment.ok;
 const storageUsesSplitBuckets = hasValue(env.S3_PRIVATE_BUCKET) && hasValue(env.S3_PUBLIC_BUCKET);
 const storageUsesFallbackBucket = hasValue(env.S3_BUCKET);
+const supportedSmsProviders = new Set(['vonage', 'viettel', 'fpt', 'custom']);
 const realSmsProviderConfigured = hasRealSmsProvider(env.SMS_PROVIDER);
 const storageReady =
   hasValue(env.STORAGE_PROVIDER) &&
@@ -537,7 +538,7 @@ function hasValue(value) {
 
 function hasRealSmsProvider(value) {
   const provider = String(value ?? '').trim().toLowerCase();
-  return provider.length > 0 && provider !== 'dev';
+  return supportedSmsProviders.has(provider);
 }
 
 function isSecretLikeValue(value) {
