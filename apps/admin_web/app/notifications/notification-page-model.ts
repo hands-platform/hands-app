@@ -447,7 +447,8 @@ export function buildNotificationPartnerAlertSmokeFallback(
       (notification) =>
         notification.id !== partnerAlert.id &&
         isSameNotificationUser(notification, partnerAlert) &&
-        !isPartnerAlertType(notification.type),
+        !isPartnerAlertType(notification.type) &&
+        !isDeferredPaymentNotification(notification),
     ),
   )[0];
 
@@ -502,6 +503,21 @@ export function buildNotificationFcmSmokeReadiness(
   }
 
   if (notifications.some((notification) => hasDeliveryProvider(notification, 'FCM'))) {
+    if (hasReusableDeferredPaymentFcmDelivery(notifications)) {
+      return {
+        detail:
+          'Reusable FCM delivery exists only on deferred payment notifications. Select or create a non-payment FCM notification before running registered-device preflight.',
+        deviceWarningLabel: null,
+        latestAttemptLabel: null,
+        preflightCommand: null,
+        pushDeviceLabel: null,
+        selectedNotificationId: null,
+        selectedNotificationLabel: null,
+        status: 'needs-notification',
+        statusLabel: 'Needs non-payment FCM delivery',
+      };
+    }
+
     return {
       detail:
         'FCM delivery attempts exist, but no enabled push device with a phone number is available for registered-device preflight.',
@@ -916,6 +932,10 @@ function isPartnerAlertType(type: string) {
   return PARTNER_ALERT_TYPE_SET.has(type);
 }
 
+function isDeferredPaymentNotification(notification: AdminNotification) {
+  return notification.type.toLowerCase().startsWith('payment.');
+}
+
 function isProviderNotification(notification: AdminNotification) {
   return (
     Boolean(notification.user?.providerProfile) ||
@@ -954,6 +974,7 @@ function smokeFallbackPreflightCommand(
 
 function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
   return notifications
+    .filter((notification) => !isDeferredPaymentNotification(notification))
     .flatMap((notification) =>
       notificationDeliveries(notification)
         .filter(isReusableFcmDelivery)
@@ -961,6 +982,15 @@ function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {
         .map((delivery) => ({ delivery, notification })),
     )
     .sort((left, right) => deliveryAttemptMs(right.delivery) - deliveryAttemptMs(left.delivery));
+}
+
+function hasReusableDeferredPaymentFcmDelivery(notifications: readonly AdminNotification[]) {
+  return notifications.some(
+    (notification) =>
+      isDeferredPaymentNotification(notification) &&
+      Boolean(notification.user?.phone) &&
+      notificationDeliveries(notification).some(isReusableFcmDelivery),
+  );
 }
 
 function isReusableFcmDelivery(delivery: AdminNotificationDelivery) {

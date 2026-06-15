@@ -204,6 +204,48 @@ describe('notification page model', () => {
     });
   });
 
+  it('does not use deferred payment notifications for partner alert FCM smoke fallback', () => {
+    const fallback = buildNotificationPartnerAlertSmokeFallback(
+      [
+        notification({
+          createdAt: '2026-06-01T10:00:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:01:00.000Z',
+              id: 'delivery-in-app',
+              provider: 'IN_APP_ONLY',
+              status: 'SKIPPED',
+            },
+          ],
+          id: 'notification-partner-alert',
+          type: 'provider.payout_batch.updated',
+          user: providerUser('provider-user-1'),
+        }),
+        notification({
+          createdAt: '2026-06-01T10:02:00.000Z',
+          deliveries: [
+            {
+              attemptedAt: '2026-06-01T10:03:00.000Z',
+              id: 'delivery-payment',
+              provider: 'FCM',
+              pushDevice: { enabled: true, id: 'device-provider', platform: 'android' },
+              status: 'SENT',
+            },
+          ],
+          id: 'notification-payment',
+          type: 'payment.updated',
+          user: providerUser('provider-user-1'),
+        }),
+      ],
+      [],
+    );
+
+    expect(fallback).toMatchObject({
+      preflightCommand: null,
+      suggestedNotificationId: null,
+    });
+  });
+
   it('does not suggest a partner-alert fallback when policy already routes partner alerts to FCM', () => {
     expect(
       buildNotificationPartnerAlertSmokeFallback(
@@ -311,6 +353,78 @@ describe('notification page model', () => {
     expect(readiness.preflightCommand).toContain('npm.cmd run fcm:push-smoke -- --preflight');
   });
 
+  it('skips deferred payment notifications when choosing an FCM preflight candidate', () => {
+    const readiness = buildNotificationFcmSmokeReadiness([
+      notification({
+        createdAt: '2026-06-01T10:00:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:01:00.000Z',
+            id: 'delivery-service',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-service', platform: 'android', role: 'CUSTOMER' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-service',
+        type: 'service.completed',
+        user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+      }),
+      notification({
+        createdAt: '2026-06-01T10:04:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:05:00.000Z',
+            id: 'delivery-payment',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-payment', platform: 'android', role: 'CUSTOMER' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-payment',
+        type: 'payment.updated',
+        user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+      }),
+    ]);
+
+    expect(readiness).toMatchObject({
+      selectedNotificationId: 'notification-service',
+      selectedNotificationLabel: 'Service Completed notifica',
+      status: 'ready',
+    });
+    expect(readiness.preflightCommand).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-service"');
+    expect(readiness.preflightCommand).not.toContain('notification-payment');
+  });
+
+  it('asks for a non-payment FCM notification when only deferred payment candidates are reusable', () => {
+    const readiness = buildNotificationFcmSmokeReadiness([
+      notification({
+        createdAt: '2026-06-01T10:04:00.000Z',
+        deliveries: [
+          {
+            attemptedAt: '2026-06-01T10:05:00.000Z',
+            id: 'delivery-payment',
+            provider: 'FCM',
+            pushDevice: { enabled: true, id: 'device-payment', platform: 'android', role: 'CUSTOMER' },
+            status: 'SENT',
+          },
+        ],
+        id: 'notification-payment',
+        type: 'payment.updated',
+        user: { id: 'customer-user-1', phone: '+84900000001', roles: ['CUSTOMER'] },
+      }),
+    ]);
+
+    expect(readiness).toMatchObject({
+      detail:
+        'Reusable FCM delivery exists only on deferred payment notifications. Select or create a non-payment FCM notification before running registered-device preflight.',
+      preflightCommand: null,
+      selectedNotificationId: null,
+      status: 'needs-notification',
+      statusLabel: 'Needs non-payment FCM delivery',
+    });
+  });
+
   it('summarizes the latest FCM SENT delivery for the channel card', () => {
     const summary = buildNotificationChannelSummary(
       [
@@ -374,7 +488,7 @@ describe('notification page model', () => {
           },
         ],
         id: 'notification-live-smoke',
-        type: 'payment.updated',
+        type: 'service.completed',
         user: {
           id: 'customer-user-1',
           phone: '+84900000001',
@@ -889,7 +1003,8 @@ describe('notification page model', () => {
       failureCodeLabel: 'FCM token needs refresh',
       failureReasonLabel: 'registration token [masked] is not registered',
       httpStatusLabel: '404',
-      recoveryHintLabel: 'Ask the user to reopen the app so it can register a fresh FCM token before retrying.',
+      recoveryHintLabel:
+        'Ask the user to reopen the app so it can register a fresh FCM token before retrying.',
       statusClassName: 'pill pill-warn',
     });
   });

@@ -8,7 +8,7 @@ describe('NotificationChannelPolicySection', () => {
       fcmDeliveries: 2,
       fcmSmokeReadiness: fcmSmokeReadiness(),
       latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
-      latestFcmSentDetail: 'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Service Completed notifica / device push-dev',
       partnerAlertCount: 5,
       partnerAlertSmokeFallback: null,
       policyLabel: 'In-app first',
@@ -26,10 +26,10 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('2');
     expect(rendered).toContain('Recent FCM SENT: 13 Jun 2026, 17:09');
     expect(rendered).toContain(
-      'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
+      'Customer +84900000001 / android / Service Completed notifica / device push-dev',
     );
     expect(rendered).toContain('Live preflight ready');
-    expect(rendered).toContain('Payment Updated notifica');
+    expect(rendered).toContain('Service Completed notifica');
     expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"');
     expect(rendered).toContain('Credential issue: check setup.');
     expect(rendered).toContain('Disabled tokens');
@@ -119,7 +119,7 @@ describe('NotificationChannelPolicySection', () => {
           'Newer Customer android device device-new is disabled; preflight reuses older enabled device device-old. Refresh the app FCM token before broad push.',
       }),
       latestFcmSentAttemptLabel: '13 Jun 2026, 17:09',
-      latestFcmSentDetail: 'Customer +84900000001 / android / Payment Updated notifica / device push-dev',
+      latestFcmSentDetail: 'Customer +84900000001 / android / Service Completed notifica / device push-dev',
       partnerAlertCount: 1,
       partnerAlertSmokeFallback: null,
       policyLabel: 'FCM for all bookings',
@@ -143,7 +143,7 @@ function fcmSmokeReadiness(
       '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"; npm.cmd run fcm:push-smoke -- --preflight',
     pushDeviceLabel: 'android push-dev',
     selectedNotificationId: 'notification-row-123456',
-    selectedNotificationLabel: 'Payment Updated notifica',
+    selectedNotificationLabel: 'Service Completed notifica',
     status: 'ready',
     statusLabel: 'Live preflight ready',
     ...overrides,
