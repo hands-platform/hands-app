@@ -33,6 +33,7 @@ import {
   BookingFinanceCommandCenterSection,
   type BookingFinanceCommandCenterSectionProps,
   BookingOperationsAuditTraceSection,
+  type BookingOperationsAuditTraceSectionProps,
   BookingPayoutBatchEligibilitySection,
   BookingServicePricingSnapshotSection,
   type BookingServicePricingSnapshotSectionProps,
@@ -646,6 +647,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     bookingId: booking.id,
     notificationTrace,
   };
+  const operationsAuditTraceProps: BookingOperationsAuditTraceSectionProps = {
+    bookingId: booking.id,
+    operationsTrace,
+  };
 
   return (
     <>
@@ -714,7 +719,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingAlertTraceSection {...alertTraceProps} />
 
-      <BookingOperationsAuditTraceSection bookingId={booking.id} operationsTrace={operationsTrace} />
+      <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
 
       <BookingAttentionChecksSection attentionFlags={attentionFlags} attentionSummary={attentionSummary} />
 

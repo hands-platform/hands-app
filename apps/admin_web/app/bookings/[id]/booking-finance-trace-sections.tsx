@@ -176,10 +176,7 @@ export type BookingAlertTraceSectionProps = {
 export function BookingOperationsAuditTraceSection({
   bookingId,
   operationsTrace,
-}: {
-  bookingId: string;
-  operationsTrace: OperationsTrace;
-}) {
+}: BookingOperationsAuditTraceSectionProps) {
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -235,6 +232,11 @@ export function BookingOperationsAuditTraceSection({
     </section>
   );
 }
+
+export type BookingOperationsAuditTraceSectionProps = {
+  bookingId: string;
+  operationsTrace: OperationsTrace;
+};
 
 export function BookingAttentionChecksSection({
   attentionFlags,
