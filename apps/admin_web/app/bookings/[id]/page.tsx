@@ -215,11 +215,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
+  const messageCount = messages.length;
   const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
   const participantCounts = bookingParticipantCounts(booking);
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const latestLocation = latestProviderLocation(booking);
+  const locationFreshness = latestProviderLocationFreshness(booking);
   const locationTrailSnapshots = bookingDetailLocationTrail(booking);
+  const locationTrailCount = locationTrailSnapshots.length;
   const addressLine = bookingAddressSnapshotLabel(booking);
   const addressPin = booking.addressSnapshot
     ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
@@ -236,6 +240,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const paymentEvidence = bookingPaymentEvidence(booking);
   const refundLedgerRows = paymentEvidence.refundRows;
   const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
+  const operatorNoteCount = operatorNoteLines.length;
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = bookingServicePricingSnapshotRows(financeTrace);
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
@@ -246,13 +251,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     booking,
     operationalPolicies,
     marketplaceSupply,
-    messageCount: messages.length,
+    messageCount,
     financeTrace,
     walletDebt: bookingCashDebtNeedsSettlement(booking),
     terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
   });
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, marketplaceSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
+  const notificationCount = notificationTrace.rows.length;
+  const marketplaceAlertBatchCount = notificationTrace.backupBatches.length;
   const matchingRuleSnapshot = bookingDetailMatchingRuleSnapshot({
     booking,
     marketplaceSupply,
@@ -281,15 +288,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     walletDebt: bookingCashDebtNeedsSettlement(booking),
   });
   const participantLedger = bookingParticipantLedger(booking, marketplaceSupply, notificationTrace);
-  const chatLifecycle = bookingChatLifecycle(booking, messages.length);
-  const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
+  const chatLifecycle = bookingChatLifecycle(booking, messageCount);
+  const handoffChecklist = bookingHandoffChecklist(booking, messageCount, latestLocation);
   const chatRepair = bookingChatRepairActionState(booking);
   const closeoutReadiness = bookingCloseoutReadiness({
     booking,
     financeFlags,
     latestLocation,
-    messageCount: messages.length,
-    notificationCount: notificationTrace.rows.length,
+    messageCount,
+    notificationCount,
   });
   const payoutBatchEligibility = buildBookingPayoutBatchEligibilityFromFacts({
     bookingStatus: booking.status,
@@ -317,9 +324,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     addressLine,
     addressPin,
     attentionFlags,
-    messageCount: messages.length,
-    notificationCount: notificationTrace.rows.length,
+    messageCount,
+    notificationCount,
   });
+  const activityRecordCount = bookingActivityRecords.length;
   const operatingTimeline = bookingOperatingTimeline({
     booking,
     addressLine,
@@ -337,7 +345,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingRecordIndexCards = bookingDetailRecordIndexCards({
     booking,
     participantCounts,
-    messageCount: messages.length,
+    messageCount,
     paymentEvidence,
     financeTrace,
     providerLocationMetric: {
@@ -345,24 +353,24 @@ export default async function BookingDetailPage({ params }: PageProps) {
       value: bookingDetailProviderLocationMetricValue(booking),
     },
     communicationMovementStatus: communicationMovementHandoff.status,
-    locationTrailCount: locationTrailSnapshots.length,
-    notificationCount: notificationTrace.rows.length,
-    marketplaceAlertBatchCount: notificationTrace.backupBatches.length,
-    operatorNoteCount: operatorNoteLines.length,
-    activityRecordCount: bookingActivityRecords.length,
+    locationTrailCount,
+    notificationCount,
+    marketplaceAlertBatchCount,
+    operatorNoteCount,
+    activityRecordCount,
   });
   const operatingLedger = bookingDetailOperatingLedger({
     booking,
     finalPartnerSummary,
     participantCounts,
-    messageCount: messages.length,
+    messageCount,
     paymentEvidence,
     financeTrace,
     financeFlagCount: financeFlags.length,
     latestLocation,
     addressPin,
     notificationTrace,
-    activityRecordCount: bookingActivityRecords.length,
+    activityRecordCount,
     operatorNoteLines,
     closureSummary,
   });
@@ -379,18 +387,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
     closeoutReadiness,
     financeFlags,
     latestLocation,
-    messageCount: messages.length,
+    messageCount,
   });
   const commandDecisionStrip = bookingCommandDecisionStrip({
     bookingStatus: booking.status,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressLabel: bookingAddressSnapshotLabel(booking),
+    addressLabel: addressLine,
     participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
+    customerChoiceCandidateCount: customerChoiceCandidates,
     marketplaceEligibleCount: marketplaceSupply.eligibleCount,
     hasFinalPartner: finalPartnerSummary.selected,
     hasChatRoom: Boolean(booking.chatRoom),
-    messageCount: messages.length,
+    messageCount,
     paymentMethod: booking.payment?.method ?? 'NONE',
     paymentStatus: booking.payment?.status ?? 'NONE',
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
@@ -406,13 +414,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
-  const latestMessage = messages[messages.length - 1];
+  const latestMessage = messages[messageCount - 1];
   const chatEvidenceDecisionBoard = buildBookingChatEvidenceDecisionBoard({
     bookingId: booking.id,
     bookingStatus: booking.status,
     hasChatRoom: Boolean(booking.chatRoom),
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    messageCount: messages.length,
+    messageCount,
     latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
     latestMessagePreview: latestMessage
       ? `${messageSenderLabel(latestMessage)}: ${compactActivityText(latestMessage.body, 90)}`
@@ -422,7 +430,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     latestLocationCoordinateLabel: latestLocation
       ? coordinateLabel(latestLocation.lat, latestLocation.lng)
       : null,
-    alertCount: notificationTrace.rows.length,
+    alertCount: notificationCount,
     auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines,
   });
@@ -430,9 +438,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const { manualDecisionReadiness, decisionEvidenceGuardrails } = bookingDetailDecisionReadiness({
     booking,
     latestLocation,
-    messageCount: messages.length,
-    notificationCount: notificationTrace.rows.length,
-    operatorNoteCount: operatorNoteLines.length,
+    messageCount,
+    notificationCount,
+    operatorNoteCount,
     refundRowCount: refundLedgerRows.length,
     refundEvidence: paymentEvidence.refundEvidence,
     cashFeeDebtNeedsSettlement,
@@ -443,12 +451,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const connectedRecordLinks = bookingDetailConnectedRecordLinks({
     booking,
     finalPartnerSummary,
-    messageCount: messages.length,
-    notificationCount: notificationTrace.rows.length,
+    messageCount,
+    notificationCount,
     paymentEvidence,
     financeTrace,
   });
-  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),
   ).length;
@@ -456,7 +463,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     booking,
     messages,
     latestLocation,
-    locationTrailCount: locationTrailSnapshots.length,
+    locationTrailCount,
     notificationTrace,
     financeTrace,
     refundLedgerCount: refundLedgerRows.length,
@@ -498,9 +505,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const { finalGateReason, decisionNotePresets } = bookingDetailGateAndNotes({
     booking,
     latestLocation,
-    messageCount: messages.length,
-    notificationCount: notificationTrace.rows.length,
-    operatorNoteCount: operatorNoteLines.length,
+    messageCount,
+    notificationCount,
+    operatorNoteCount,
     refundRowCount: refundLedgerRows.length,
     customerChoiceCandidates,
     marketplaceParticipants: participantCounts.marketplace,
@@ -514,13 +521,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
     evidenceLaneCount: bookingEvidenceBundleRows.length,
     connectedRecordCount: connectedRecordLinks.length,
     participantCounts,
-    messageCount: messages.length,
+    messageCount,
     paymentEvidence,
     financeTrace,
     addressLine,
     addressPin,
     operatorQueue: operatorCommandQueue,
-    activityRecordCount: bookingActivityRecords.length,
+    activityRecordCount,
   });
   const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
     booking,
@@ -531,14 +538,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
     eligibleMarketplaceCount: marketplaceSupply.eligibleCount,
     finalPartnerSummary,
     participantCounts,
-    messageCount: messages.length,
+    messageCount,
     paymentEvidence,
     financeTrace,
   });
   const bookingMetricCards = bookingDetailMetricCards({
     booking,
     closureSummary,
-    messageCount: messages.length,
+    messageCount,
     attentionSummary,
   });
   const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
@@ -632,7 +639,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         bookingId={booking.id}
         cards={bookingRecordIndexCards}
         csvHref={bookingActivityCsvHref}
-        eventCount={bookingActivityRecords.length}
+        eventCount={activityRecordCount}
       />
 
       <BookingMarketplaceWalletEvidenceSection marketplaceWalletEvidence={marketplaceWalletEvidence} />
@@ -652,7 +659,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         communicationMovementHandoff={communicationMovementHandoff}
       />
 
-      <BookingChatLifecycleSection chatLifecycle={chatLifecycle} messageCount={messages.length} />
+      <BookingChatLifecycleSection chatLifecycle={chatLifecycle} messageCount={messageCount} />
 
       <BookingOpsCommandCenter
         booking={booking}
@@ -660,9 +667,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
         })}
         badges={bookingOpsBadges(booking, {
-          attentionFlags: bookingDetailAttentionFlags(booking),
+          attentionFlags,
           cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-          locationFreshness: latestProviderLocationFreshness(booking),
+          locationFreshness,
         })}
         finalGateReason={finalGateReason}
         actionEvidenceGate={actionEvidenceGate}
