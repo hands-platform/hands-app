@@ -35,6 +35,10 @@ const steps = [
     command: ['infra/scripts/check-external-setup-copy.mjs'],
   },
   {
+    name: 'secret leak guard',
+    command: ['infra/scripts/check-secret-leaks.mjs'],
+  },
+  {
     name: 'docker compose contract',
     command: ['infra/scripts/check-docker-compose-contract.mjs'],
   },
