@@ -239,8 +239,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeSummaryCards = bookingDetailFinanceSummaryCards(financeTrace);
   const financeFlags = bookingDetailFinanceFlags(booking, financeTrace);
   const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
+  const cashFeeDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
   const paymentEvidence = bookingPaymentEvidence(booking);
   const refundLedgerRows = paymentEvidence.refundRows;
+  const refundLedgerCount = refundLedgerRows.length;
   const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
   const operatorNoteCount = operatorNoteLines.length;
   const closureSummary = bookingClosureSummary(booking);
@@ -255,7 +257,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     marketplaceSupply,
     messageCount,
     financeTrace,
-    walletDebt: bookingCashDebtNeedsSettlement(booking),
+    walletDebt: cashFeeDebtNeedsSettlement,
     terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
   });
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, marketplaceSupply);
@@ -267,7 +269,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     marketplaceSupply,
     customerWaitPanel,
     notificationTrace,
-    walletBlocked: bookingCashDebtNeedsSettlement(booking),
+    walletBlocked: cashFeeDebtNeedsSettlement,
   });
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
   const bookingActivityRecords = buildBookingActivityRecords({
@@ -287,7 +289,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     marketplaceSupply,
     financeTrace,
     notificationTrace,
-    walletDebt: bookingCashDebtNeedsSettlement(booking),
+    walletDebt: cashFeeDebtNeedsSettlement,
   });
   const participantLedger = bookingParticipantLedger(booking, marketplaceSupply, notificationTrace);
   const chatLifecycle = bookingChatLifecycle(booking, messageCount);
@@ -315,7 +317,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       (booking.earning?.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0,
     hasWalletLedger:
       (booking.earning?.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0,
-    cashDebt: bookingCashDebtNeedsSettlement(booking),
+    cashDebt: cashFeeDebtNeedsSettlement,
     walletLedgerLabel: financeTrace.walletLedger,
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
     financeFlagTitles: financeFlags.map((flag) => flag.title),
@@ -403,7 +405,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messageCount,
     paymentMethod: booking.payment?.method ?? 'NONE',
     paymentStatus: booking.payment?.status ?? 'NONE',
-    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
   });
   const evidencePacket = bookingDetailEvidencePacket({
@@ -436,14 +438,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
     auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines,
   });
-  const cashFeeDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
   const { manualDecisionReadiness, decisionEvidenceGuardrails } = bookingDetailDecisionReadiness({
     booking,
     latestLocation,
     messageCount,
     notificationCount,
     operatorNoteCount,
-    refundRowCount: refundLedgerRows.length,
+    refundRowCount: refundLedgerCount,
     refundEvidence: paymentEvidence.refundEvidence,
     cashFeeDebtNeedsSettlement,
     closureStatus: closureSummary.status,
@@ -461,35 +462,27 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),
   ).length;
-  const bookingEvidenceBundleRows = bookingDetailEvidenceBundleRows({
+  const evidenceAndCloseoutFacts = {
     booking,
     messages,
     latestLocation,
-    locationTrailCount,
     notificationTrace,
     financeTrace,
-    refundLedgerCount: refundLedgerRows.length,
+    refundLedgerCount,
     operatorNoteLines,
     bookingActivityRecords,
     finalPartnerSummary,
     customerChoiceCandidates,
     failedAlertCount,
     chatReady,
+  };
+  const bookingEvidenceBundleRows = bookingDetailEvidenceBundleRows({
+    ...evidenceAndCloseoutFacts,
+    locationTrailCount,
   });
   const bookingCloseoutChecklist = bookingDetailCloseoutChecklist({
-    booking,
-    messages,
-    latestLocation,
-    notificationTrace,
-    financeTrace,
-    refundLedgerCount: refundLedgerRows.length,
+    ...evidenceAndCloseoutFacts,
     refundEvidence: paymentEvidence.refundEvidence,
-    operatorNoteLines,
-    bookingActivityRecords,
-    finalPartnerSummary,
-    customerChoiceCandidates,
-    failedAlertCount,
-    chatReady,
     cashFeeDebtNeedsSettlement,
     closeoutReadiness,
   });
@@ -499,8 +492,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     latestLocation,
     notificationTrace,
     operatorNoteLines,
-    refundLedgerCount: refundLedgerRows.length,
-    cashDebt: bookingCashDebtNeedsSettlement(booking),
+    refundLedgerCount,
+    cashDebt: cashFeeDebtNeedsSettlement,
     closeoutReadiness,
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
@@ -510,7 +503,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messageCount,
     notificationCount,
     operatorNoteCount,
-    refundRowCount: refundLedgerRows.length,
+    refundRowCount: refundLedgerCount,
     customerChoiceCandidates,
     marketplaceParticipants: participantCounts.marketplace,
     walletLedgerLabel: financeTrace.walletLedger,
@@ -576,7 +569,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     earningLabel: booking.earning
       ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
       : 'Not created',
-    cashFeeDebtLabel: bookingCashDebtNeedsSettlement(booking)
+    cashFeeDebtLabel: cashFeeDebtNeedsSettlement
       ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / Partner blocked`
       : null,
     serviceFeedbackLabel: booking.review ? 'Submitted' : 'Not submitted',
@@ -666,17 +659,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingOpsCommandCenter
         booking={booking}
         instruction={primaryBookingOpsInstruction(booking, {
-          cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+          cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
         })}
         badges={bookingOpsBadges(booking, {
           attentionFlags,
-          cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+          cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
           locationFreshness,
         })}
         finalGateReason={finalGateReason}
         actionEvidenceGate={actionEvidenceGate}
         actionGateByAction={actionGateByAction}
-        cashDebtNeedsSettlement={bookingCashDebtNeedsSettlement(booking)}
+        cashDebtNeedsSettlement={cashFeeDebtNeedsSettlement}
       />
 
       <BookingStageSnapshotSection stageSnapshot={stageSnapshot} />
