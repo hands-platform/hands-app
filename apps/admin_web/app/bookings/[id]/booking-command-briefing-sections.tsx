@@ -204,7 +204,7 @@ export type BookingMetricGridSectionProps = {
   metrics: MetricSummaryCard[];
 };
 
-export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkCard[] }) {
+export function BookingOperationsQuickRailSection({ rows }: BookingOperationsQuickRailSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-operations-quick-rail">
       <div className="ops-section-header">
@@ -222,6 +222,10 @@ export function BookingOperationsQuickRailSection({ rows }: { rows: SummaryLinkC
     </section>
   );
 }
+
+export type BookingOperationsQuickRailSectionProps = {
+  rows: SummaryLinkCard[];
+};
 
 export function BookingMatchingRuleSnapshotSection({
   matchingRuleSnapshot,
