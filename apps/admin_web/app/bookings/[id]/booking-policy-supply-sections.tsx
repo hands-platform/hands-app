@@ -121,27 +121,13 @@ export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: 
         </div>
         <span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {stageSnapshot.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid cards={stageSnapshot.metrics} />
       <div className={`ops-task-note ${stageSnapshot.noteClassName} admin-mt-14`}>
         <div className="ops-row">
           <div>
             <strong>{stageSnapshot.headline}</strong>
             <p className="muted">{stageSnapshot.detail}</p>
-            <div className="participant-list admin-mt-8">
-              {stageSnapshot.badges.map((badge) => (
-                <span className={`pill ${badge.tone}`} key={badge.label}>
-                  {badge.label}
-                </span>
-              ))}
-            </div>
+            <PillBadgeList badges={stageSnapshot.badges} />
           </div>
           <Link className="text-link" href={stageSnapshot.actionHref}>
             {stageSnapshot.actionLabel}
@@ -174,29 +160,14 @@ export function BookingCustomerWaitPanelSection({
           <div>
             <strong>{customerWaitPanel.headline}</strong>
             <p className="muted">{customerWaitPanel.detail}</p>
-            <div className="participant-list admin-mt-8">
-              {customerWaitPanel.badges.map((badge) => (
-                <span className={`pill ${badge.tone}`} key={badge.label} title={badge.detail}>
-                  {badge.label}
-                </span>
-              ))}
-            </div>
+            <PillBadgeList badges={customerWaitPanel.badges} showDetailTitle />
           </div>
           <Link className="text-link" href={customerWaitPanel.nextActionHref}>
             {customerWaitPanel.nextActionLabel}
           </Link>
         </div>
       </div>
-      <div className="ops-task-grid admin-mt-14">
-        {customerWaitPanel.cards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <span className={`pill ${card.pillClass}`}>{card.status}</span>
-            <h3>{card.title}</h3>
-            <p>{card.detail}</p>
-            <small>{card.action}</small>
-          </div>
-        ))}
-      </div>
+      <OpsTaskCardGrid cards={customerWaitPanel.cards} />
     </section>
   );
 }
@@ -216,15 +187,7 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
           Open policy
         </Link>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {policySnapshot.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid cards={policySnapshot.metrics} />
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
@@ -267,25 +230,8 @@ export function BookingAddressRadiusContractSection({
         </div>
         <span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {addressRadiusContract.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
-      <div className="ops-task-grid admin-mt-14">
-        {addressRadiusContract.cards.map((card) => (
-          <div className={`ops-task-card ${card.className}`} key={card.title}>
-            <span className={`pill ${card.pillClass}`}>{card.status}</span>
-            <h3>{card.title}</h3>
-            <p>{card.detail}</p>
-            <small>{card.action}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid cards={addressRadiusContract.metrics} />
+      <OpsTaskCardGrid cards={addressRadiusContract.cards} />
     </section>
   );
 }
@@ -402,15 +348,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
           {marketplaceSupply.eligibleCount} eligible
         </span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {marketplaceSupply.metrics.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </div>
-        ))}
-      </div>
+      <SummaryCardGrid cards={marketplaceSupply.metrics} />
       <div className="ops-task-note admin-mt-14">
         <div className="ops-row">
           <div>
@@ -453,5 +391,52 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
         ) : null}
       </div>
     </section>
+  );
+}
+
+function SummaryCardGrid({ cards }: { cards: SummaryCard[] }) {
+  return (
+    <div className="service-trace-summary admin-mt-12">
+      {cards.map((item) => (
+        <div key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+          <small>{item.helper}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PillBadgeList({
+  badges,
+  showDetailTitle = false,
+}: {
+  badges: PillBadge[];
+  showDetailTitle?: boolean;
+}) {
+  return (
+    <div className="participant-list admin-mt-8">
+      {badges.map((badge) => (
+        <span className={`pill ${badge.tone}`} key={badge.label} title={showDetailTitle ? badge.detail : undefined}>
+          {badge.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function OpsTaskCardGrid({ cards }: { cards: OpsTaskCard[] }) {
+  return (
+    <div className="ops-task-grid admin-mt-14">
+      {cards.map((card) => (
+        <div className={`ops-task-card ${card.className}`} key={card.title}>
+          <span className={`pill ${card.pillClass}`}>{card.status}</span>
+          <h3>{card.title}</h3>
+          <p>{card.detail}</p>
+          <small>{card.action}</small>
+        </div>
+      ))}
+    </div>
   );
 }
