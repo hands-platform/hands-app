@@ -331,6 +331,8 @@ const registrationItems = [
     ],
     setup: [
       'Create SMS service credentials under administration@hands.vn when SMS E2E starts.',
+      'For Vonage, create or open the SMS/Verify product in the dashboard and copy the selected endpoint/credential pair into ignored env only.',
+      'Set SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, and SMS_SENDER_ID before switching AUTH_BACKEND=supabase for Phone Auth E2E.',
       'Confirm Vietnam delivery rates and sender ID rules.',
       'Define OTP resend and abuse limits.',
     ],
