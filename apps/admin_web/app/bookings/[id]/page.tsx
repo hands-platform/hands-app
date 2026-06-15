@@ -82,9 +82,9 @@ import { bookingAddressRadiusContract } from './booking-address-radius-contract'
 import { bookingChatReady } from './booking-chat-evidence';
 import {
   bookingChatRepairActionState,
-  bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
 import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
+import { bookingDetailEvidenceBundleRows } from './booking-detail-evidence-bundle-rows';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
 import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summary-cards';
@@ -124,7 +124,6 @@ import {
 } from './booking-operations-trace';
 import {
   bookingMarketplacePartnerSupply,
-  bookingDispatchPin,
 } from './booking-marketplace-supply';
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
 import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snapshot';
@@ -163,7 +162,6 @@ import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
 import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
 import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
-import { bookingEvidenceBundleRows as buildBookingEvidenceBundleRowsFromFacts } from '../../../lib/booking-evidence-bundle-rows';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
@@ -522,57 +520,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),
   ).length;
-  const latestActivity = bookingActivityRecords[0];
-  const dispatchPin = bookingDispatchPin(booking);
-  const bookingEvidenceBundleRows = buildBookingEvidenceBundleRowsFromFacts({
-    bookingId: booking.id,
-    customerProfileId: booking.customerProfile?.id ?? null,
-    customerRecordLabel: booking.customerProfile?.id
-      ? shortId(booking.customerProfile.id)
-      : 'Profile missing',
-    customerEvidenceLabel: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
-      booking.customerProfile?.user?.phone ?? 'No phone'
-    }`,
-    addressReady: Boolean(booking.addressSnapshot),
-    addressLabel: bookingAddressSnapshotLabel(booking),
-    addressSourceLabel: dispatchPin.source,
-    finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
-    finalPartnerRecordLabel: finalPartnerSummary.id ? shortId(finalPartnerSummary.id) : 'Selection pending',
-    finalPartnerEvidenceLabel: finalPartnerSummary.selected
-      ? `${finalPartnerSummary.label} / ${bookingDetailProviderLocationMetricValue(booking)}`
-      : null,
-    participantCount: booking.participants?.length ?? 0,
+  const bookingEvidenceBundleRows = bookingDetailEvidenceBundleRows({
+    booking,
+    messages,
+    latestLocation,
+    locationTrailCount: locationTrailSnapshots.length,
+    notificationTrace,
+    financeTrace,
+    refundLedgerCount: refundLedgerRows.length,
+    operatorNoteLines,
+    bookingActivityRecords,
+    finalPartnerSummary,
     customerChoiceCandidates,
-    chatReady,
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    chatMessageCount: messages.length,
-    latestChatMessageAtLabel: messages[messages.length - 1]?.createdAt
-      ? formatDate(messages[messages.length - 1].createdAt)
-      : null,
-    chatRepairNeeded: bookingChatRepairNeedsOps(booking),
-    hasMoneyTrace: Boolean(booking.payment || booking.earning || refundLedgerRows.length),
-    paymentShortId: booking.payment?.id ? shortId(booking.payment.id) : null,
-    moneyStatus: booking.payment?.status ?? booking.earning?.status ?? 'Trace loaded',
-    paymentMethod: booking.payment?.method ?? 'NONE',
-    customerPriceLabel: financeTrace.customerPrice,
-    partnerPayoutLabel: financeTrace.providerPayout,
-    walletLedgerLabel: financeTrace.walletLedger,
-    hasLocationTrace: Boolean(latestLocation || locationTrailSnapshots.length),
-    latestLocationShortId: latestLocation ? shortId(latestLocation.id) : null,
-    locationStatusLabel: bookingDetailProviderLocationMetricValue(booking),
-    latestLocationEvidenceLabel: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-      : null,
-    serviceAddressPinLabel: dispatchPin.label,
-    notificationCount: notificationTrace.rows.length,
     failedAlertCount,
-    partnerAlertCount: notificationTrace.rows.filter((row) => row.isPartnerAlert).length,
-    marketplaceBatchCount: notificationTrace.backupBatches.length,
-    activityRecordCount: bookingActivityRecords.length,
-    latestActivityEvidenceLabel: latestActivity
-      ? `${latestActivity.title} / ${formatDate(latestActivity.at)}`
-      : null,
-    latestOperatorNote: operatorNoteLines[operatorNoteLines.length - 1] ?? null,
+    chatReady,
   });
   const bookingCloseoutChecklist = buildBookingCloseoutChecklistRowsFromFacts({
     bookingId: booking.id,
