@@ -313,9 +313,7 @@ export type BookingFinanceCommandCenterSectionProps = {
 
 export function BookingPayoutBatchEligibilitySection({
   payoutBatchEligibility,
-}: {
-  payoutBatchEligibility: PayoutBatchEligibility;
-}) {
+}: BookingPayoutBatchEligibilitySectionProps) {
   return (
     <section className="card admin-mb-16" id="payout-batch-eligibility">
       <div className="ops-section-header">
@@ -346,6 +344,10 @@ export function BookingPayoutBatchEligibilitySection({
     </section>
   );
 }
+
+export type BookingPayoutBatchEligibilitySectionProps = {
+  payoutBatchEligibility: PayoutBatchEligibility;
+};
 
 export function BookingServicePricingSnapshotSection({
   financeFlags,
