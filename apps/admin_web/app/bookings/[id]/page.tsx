@@ -9,7 +9,7 @@ import {
   buildBookingActivitySummary,
 } from './booking-activity-records';
 import { BookingActionStatusSections } from './booking-action-status-sections';
-import { BookingCloseoutSections } from './booking-closeout-sections';
+import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import {
   BookingCommandDecisionStripSection,
   BookingDetailToolbar,
@@ -504,6 +504,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     evidencePacket,
     manualDecisionReadiness,
   };
+  const closeoutSectionsProps: BookingCloseoutSectionsProps = {
+    bookingCloseoutChecklist,
+    connectedRecordLinks,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -585,10 +589,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingEvidenceSections {...evidenceSectionsProps} />
 
-      <BookingCloseoutSections
-        bookingCloseoutChecklist={bookingCloseoutChecklist}
-        connectedRecordLinks={connectedRecordLinks}
-      />
+      <BookingCloseoutSections {...closeoutSectionsProps} />
 
       <BookingOperatorQueueSections
         bookingId={booking.id}

@@ -18,7 +18,7 @@ export type ConnectedRecordLink = {
   tone: string;
 };
 
-type BookingCloseoutSectionsProps = {
+export type BookingCloseoutSectionsProps = {
   bookingCloseoutChecklist: CloseoutChecklistItem[];
   connectedRecordLinks: ConnectedRecordLink[];
 };
