@@ -551,6 +551,36 @@ const pages = [
     path: '/payments?range=7d',
     markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Last 7 days'],
   },
+  {
+    path: '/payments?review=missing-ref',
+    markers: [
+      'Payments',
+      'Payment operation filters',
+      'Missing refs',
+      'authorized payments that do not yet have a gateway reference.',
+      'Payment callback attempt ledger',
+    ],
+  },
+  {
+    path: '/payments?review=callback-review',
+    markers: [
+      'Payments',
+      'Payment operation filters',
+      'Callback review',
+      'Callbacks without verified gateway evidence.',
+      'Payment callback attempt ledger',
+    ],
+  },
+  {
+    path: '/payments?review=callback-verified',
+    markers: [
+      'Payments',
+      'Payment operation filters',
+      'Callback verified',
+      'Accepted callbacks with gateway evidence.',
+      'Payment callback attempt ledger',
+    ],
+  },
   { path: '/refunds', markers: ['Refunds', 'Refund command board', 'Refund action execution map'] },
   {
     path: '/refunds?range=7d',
