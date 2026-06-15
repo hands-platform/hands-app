@@ -101,6 +101,7 @@ import {
 } from './booking-detail-operator-command-queue';
 import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
 import { bookingDetailMetricCards } from './booking-detail-metric-cards';
+import { bookingDetailOperationsQuickRail } from './booking-detail-operations-quick-rail';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -886,80 +887,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
     cashFeeDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
-  const bookingOperationsQuickRail = [
-    {
-      href: '#booking-priority-briefing',
-      label: 'Priority',
-      value: operatorPriorityBriefing.status,
-      detail: 'First-screen booking state for handoff, chat, location, payment, and closeout.',
-    },
-    {
-      href: '#matching-rule-snapshot',
-      label: 'Matching rules',
-      value: matchingRuleSnapshot.status,
-      detail: 'First-pick, booking-address marketplace radius, customer choice, and wallet gate.',
-    },
-    {
-      href: '#booking-full-evidence-bundle',
-      label: 'Evidence bundle',
-      value: `${bookingEvidenceBundleRows.length} lanes`,
-      detail: 'Customer, Partner, address, chat, payment, finance, location, alerts, and notes.',
-    },
-    {
-      href: '#connected-operations-records',
-      label: 'Linked records',
-      value: `${connectedRecordLinks.length} links`,
-      detail: 'Open customer, Partner, chat archive, notifications, payment, refund, and settlement.',
-    },
-    {
-      href: '#participants',
-      label: 'Marketplace',
-      value: `${participantCounts.marketplace} marketplace row(s)`,
-      detail: `${participantCounts.total} total participant row(s). First-pick and marketplace rows are separated for operator review.`,
-    },
-    {
-      href: '#chat',
-      label: 'Chat',
-      value: booking.chatRoom ? `${messages.length} messages` : 'Missing room',
-      detail: 'Matched-booking transcript retained for admin even after mobile hides completed chats.',
-    },
-    {
-      href: '#payment',
-      label: 'Payment',
-      value: paymentEvidence.paymentStatus,
-      detail: paymentEvidence.readablePaymentMethodAmountLabel,
-    },
-    {
-      href: '#finance',
-      label: 'Fees and tax',
-      value: financeTrace.platformFee,
-      detail: `${financeTrace.withholding} withholding / ${financeTrace.netHandsFee} net HANDS fee.`,
-    },
-    {
-      href: '#address-radius-contract',
-      label: 'Address',
-      value: addressPin,
-      detail: addressLine,
-    },
-    {
-      href: '#location',
-      label: 'Location',
-      value: bookingDetailProviderLocationMetricValue(booking),
-      detail: bookingDetailProviderLocationMetricHelper(booking),
-    },
-    {
-      href: '#operator-command-queue',
-      label: 'Operator queue',
-      value: operatorCommandQueue.status,
-      detail: `${operatorCommandQueue.commands.length} same-shift command(s).`,
-    },
-    {
-      href: '#booking-activity',
-      label: 'Activity',
-      value: `${bookingActivityRecords.length}`,
-      detail: 'Date-ordered booking, chat, payment, alert, location, and audit events.',
-    },
-  ];
+  const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
+    booking,
+    operatorPriorityStatus: operatorPriorityBriefing.status,
+    matchingRuleStatus: matchingRuleSnapshot.status,
+    evidenceLaneCount: bookingEvidenceBundleRows.length,
+    connectedRecordCount: connectedRecordLinks.length,
+    participantCounts,
+    messageCount: messages.length,
+    paymentEvidence,
+    financeTrace,
+    addressLine,
+    addressPin,
+    operatorQueue: operatorCommandQueue,
+    activityRecordCount: bookingActivityRecords.length,
+  });
   const bookingOperatorFirstRead = [
     {
       href: '#address-radius-contract',
