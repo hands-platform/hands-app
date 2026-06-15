@@ -90,6 +90,7 @@ import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summa
 import { bookingDetailFlowStages } from './booking-detail-flow-stages';
 import { bookingDetailLocationTrail } from './booking-detail-location-trail';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
+import { bookingDetailOperatingLedger } from './booking-detail-operating-ledger';
 import { bookingDetailRecordIndexCards } from './booking-detail-record-index-cards';
 import {
   bookingDetailAttentionFlags,
@@ -358,116 +359,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteCount: operatorNoteLines.length,
     activityRecordCount: bookingActivityRecords.length,
   });
-  const operatingLedger = [
-    {
-      area: 'Customer',
-      status: booking.customerProfile?.id ? 'Linked' : 'Missing profile',
-      evidence: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
-        booking.customerProfile?.user?.phone ?? 'No phone'
-      }`,
-      href: '#customer',
-    },
-    {
-      area: 'Partner',
-      status: finalPartnerSummary.selected ? 'Linked' : 'Not selected',
-      evidence: finalPartnerSummary.selected
-        ? finalPartnerSummary.label
-        : `${participantCounts.marketplace} marketplace / ${participantCounts.total} total participant row(s)`,
-      href: '#handoff',
-    },
-    {
-      area: 'Chat',
-      status: booking.chatRoom ? 'Archived' : 'Missing',
-      evidence: booking.chatRoom
-        ? `Room ${shortId(booking.chatRoom.id)} / ${messages.length} message(s)`
-        : 'Matched bookings should create a retained chat room.',
-      href: '#chat',
-    },
-    {
-      area: 'Service/Pricing',
-      status: financeTrace.payoutRuleStatus,
-      evidence: `${financeTrace.serviceOption} / customer ${financeTrace.customerPrice} / Partner ${financeTrace.providerPayout}`,
-      href: '#service',
-    },
-    {
-      area: 'Payment',
-      status: paymentEvidence.paymentStatus,
-      evidence: paymentEvidence.readablePaymentMethodAmountLabel,
-      href: '#payment',
-    },
-    {
-      area: 'Refund',
-      status: paymentEvidence.refundRecordStatus,
-      evidence: paymentEvidence.refundEvidence,
-      href: '#payment',
-    },
-    {
-      area: 'Finance',
-      status: financeFlags.length ? `${financeFlags.length} check(s)` : 'Trace ready',
-      evidence: `${financeTrace.providerPayout} Partner payout / ${financeTrace.platformFee} platform fee`,
-      href: '#finance',
-    },
-    {
-      area: 'Tax',
-      status: (booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0) ? 'Logged' : 'Not logged',
-      evidence: financeTrace.withholding,
-      href: '#finance',
-    },
-    {
-      area: 'Wallet',
-      status: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'No cash debt block',
-      evidence: financeTrace.walletLedger,
-      href: '#finance',
-    },
-    {
-      area: 'Cash settlement',
-      status: bookingCashDebtNeedsSettlement(booking)
-        ? 'Partner blocked until settled'
-        : booking.payment?.method === 'CASH'
-          ? 'Cash ledger clear'
-          : 'Not a cash booking',
-      evidence:
-        booking.payment?.method === 'CASH'
-          ? `${financeTrace.platformFee} HANDS fee / ${financeTrace.withholding} withholding`
-          : `${booking.payment?.method ?? 'No method'} payment path`,
-      href: '#payment',
-    },
-    {
-      area: 'Location',
-      status: latestLocation ? 'Partner pin saved' : 'No Partner pin',
-      evidence: latestLocation
-        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-        : addressPin,
-      href: '#location',
-    },
-    {
-      area: 'Alerts',
-      status: `${notificationTrace.rows.length} notification(s)`,
-      evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} Partner alert(s) / ${
-        notificationTrace.backupBatches.length
-      } marketplace alert batch(es)`,
-      href: '#alerts',
-    },
-    {
-      area: 'Audit',
-      status: `${bookingActivityRecords.length} event(s)`,
-      evidence: `${booking.auditLogs?.length ?? 0} audit row(s) / ${booking.opsTasks?.length ?? 0} task row(s)`,
-      href: '#booking-activity',
-    },
-    {
-      area: 'Operator notes',
-      status: operatorNoteLines.length ? `${operatorNoteLines.length} note line(s)` : 'No notes',
-      evidence:
-        operatorNoteLines[operatorNoteLines.length - 1] ?? 'No internal handling note has been added.',
-      href: '#operator-notes',
-    },
-    {
-      area: 'Closure',
-      status: closureSummary.status,
-      evidence: closureSummary.detail,
-      href: '#booking-activity',
-    },
-  ];
+  const operatingLedger = bookingDetailOperatingLedger({
+    booking,
+    finalPartnerSummary,
+    participantCounts,
+    messageCount: messages.length,
+    paymentEvidence,
+    financeTrace,
+    financeFlagCount: financeFlags.length,
+    latestLocation,
+    addressPin,
+    notificationTrace,
+    activityRecordCount: bookingActivityRecords.length,
+    operatorNoteLines,
+    closureSummary,
+  });
   const operatorCommandQueue = bookingDetailOperatorCommandQueue({
     booking,
     attentionFlags,

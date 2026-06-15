@@ -24,7 +24,7 @@ type MarketplaceWalletEvidence = {
   }>;
 };
 
-type OperatingLedgerRow = {
+export type OperatingLedgerRow = {
   area: string;
   status: string;
   evidence: string;
