@@ -54,6 +54,7 @@ import {
   BookingCommunicationMovementHandoffSection,
   type BookingCommunicationMovementHandoffSectionProps,
   BookingHandoffChecklistSection,
+  type BookingHandoffChecklistSectionProps,
   BookingMarketplaceWalletEvidenceSection,
   type BookingMarketplaceWalletEvidenceSectionProps,
   BookingOperatingLedgerSection,
@@ -677,6 +678,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const marketplaceWalletEvidenceProps: BookingMarketplaceWalletEvidenceSectionProps = {
     marketplaceWalletEvidence,
   };
+  const handoffChecklistProps: BookingHandoffChecklistSectionProps = {
+    handoffChecklist,
+  };
   const operatingSnapshotProps: BookingOperatingSnapshotSectionProps = {
     operatingSnapshot,
   };
@@ -719,7 +723,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
 
-      <BookingHandoffChecklistSection handoffChecklist={handoffChecklist} />
+      <BookingHandoffChecklistSection {...handoffChecklistProps} />
 
       <BookingFullRecordIndex {...fullRecordIndexProps} />
 

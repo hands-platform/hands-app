@@ -400,9 +400,7 @@ export type BookingOperatingTimelineSectionProps = {
 
 export function BookingHandoffChecklistSection({
   handoffChecklist,
-}: {
-  handoffChecklist: BookingHandoffChecklistItem[];
-}) {
+}: BookingHandoffChecklistSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-handoff-checklist">
       <div className="ops-section-header">
@@ -436,6 +434,10 @@ export function BookingHandoffChecklistSection({
     </section>
   );
 }
+
+export type BookingHandoffChecklistSectionProps = {
+  handoffChecklist: BookingHandoffChecklistItem[];
+};
 
 export function BookingCommunicationMovementHandoffSection({
   communicationMovementHandoff,
