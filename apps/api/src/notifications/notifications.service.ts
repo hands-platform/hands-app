@@ -7,6 +7,10 @@ import { notificationDeliveryFailureCode } from './notification-delivery-failure
 import { pushDeviceDisableInput, pushDeviceRegistrationInput } from './notification-device-token';
 import { NOTIFICATION_SEND_QUEUE_NAME, notificationSendJob } from './notification-send.queue';
 import { toJson } from './notification-push-payload';
+import type {
+  NotificationRetryAuditJobSummary,
+  NotificationRetryAuditLatestDelivery,
+} from './notification-retry-audit';
 import { notificationDataWithTargetRole, type NotificationTargetRole } from './notification-target-role';
 
 type CreateNotificationInput = {
@@ -16,26 +20,6 @@ type CreateNotificationInput = {
   title: string;
   body: string;
   data?: unknown;
-};
-
-type RetryNotificationLatestDelivery = {
-  id: string;
-  provider: string;
-  status: string;
-  attemptedAt: string;
-  failureCode: string | null;
-  pushDeviceId: string | null;
-  pushDeviceEnabled: boolean | null;
-  pushDeviceLastSeenAt: string | null;
-  pushDevicePlatform: string | null;
-};
-
-type RetryNotificationJobSummary = {
-  queueName: string;
-  jobName: string;
-  attempts: number;
-  backoffMs: number | null;
-  queuedJobId: string | null;
 };
 
 @Injectable()
@@ -112,7 +96,7 @@ export class NotificationsService {
     return { ok: result.count > 0, disabled: result.count };
   }
 
-  private async enqueueNotificationSend(notificationId: string): Promise<RetryNotificationJobSummary> {
+  private async enqueueNotificationSend(notificationId: string): Promise<NotificationRetryAuditJobSummary> {
     const job = notificationSendJob(notificationId);
     const queuedJob = await this.notificationQueue.add(job.name, job.data, job.options);
 
@@ -142,7 +126,7 @@ function summarizeRetryLatestDelivery(
         pushDevice: { enabled: boolean; lastSeenAt: Date | null; platform: string } | null;
       }
     | undefined,
-): RetryNotificationLatestDelivery | null {
+): NotificationRetryAuditLatestDelivery | null {
   if (!delivery) {
     return null;
   }

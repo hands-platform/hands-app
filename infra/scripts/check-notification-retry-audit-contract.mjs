@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 const repoRoot = resolve(import.meta.dirname, '..', '..');
 const apiRetryAudit = readSource('apps/api/src/notifications/notification-retry-audit.ts');
+const apiNotificationsService = readSource('apps/api/src/notifications/notifications.service.ts');
 const adminAuditLog = readSource('apps/admin_web/app/audit-log/page.tsx');
 const fcmPushSmoke = readSource('infra/scripts/fcm-push-smoke.mjs');
 
@@ -28,6 +29,7 @@ const latestDeliveryKeys = [
 ];
 
 const retryJobKeys = ['queueName', 'jobName', 'attempts', 'backoffMs', 'queuedJobId'];
+const serviceSharedTypeKeys = ['NotificationRetryAuditLatestDelivery', 'NotificationRetryAuditJobSummary'];
 
 const apiRequiredKeys = [...retryAuditMetadataKeys, ...latestDeliveryKeys, ...retryJobKeys];
 const adminRequiredKeys = [
@@ -78,6 +80,7 @@ const adminRetryDecisionOrder = [
 const result = {
   ok: true,
   apiMissingKeys: missingKeys(apiRetryAudit, apiRequiredKeys),
+  apiServiceMissingSharedTypes: missingKeys(apiNotificationsService, serviceSharedTypeKeys),
   adminMissingKeys: missingKeys(adminAuditLog, adminRequiredKeys),
   smokeMissingKeys: missingKeys(fcmPushSmoke, smokeRequiredKeys),
   duplicateMetadataKeys: duplicates(retryAuditMetadataKeys),
@@ -92,6 +95,7 @@ const result = {
 
 result.ok =
   result.apiMissingKeys.length === 0 &&
+  result.apiServiceMissingSharedTypes.length === 0 &&
   result.adminMissingKeys.length === 0 &&
   result.smokeMissingKeys.length === 0 &&
   result.duplicateMetadataKeys.length === 0 &&

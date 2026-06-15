@@ -10,7 +10,7 @@ export type NotificationRetryAuditLatestDelivery = {
   readonly pushDevicePlatform: string | null;
 };
 
-type NotificationRetryAuditJobSummary = {
+export type NotificationRetryAuditJobSummary = {
   readonly queueName: string;
   readonly jobName: string;
   readonly attempts: number;
@@ -18,7 +18,7 @@ type NotificationRetryAuditJobSummary = {
   readonly queuedJobId: string | null;
 };
 
-type NotificationRetryAuditResult = {
+export type NotificationRetryAuditResult = {
   readonly latestDelivery: NotificationRetryAuditLatestDelivery | null;
   readonly retryJob: NotificationRetryAuditJobSummary;
 };
