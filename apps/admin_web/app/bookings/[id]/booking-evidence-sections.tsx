@@ -80,7 +80,7 @@ type EvidenceBundleRow = {
   href: string;
 };
 
-type BookingEvidenceSectionsProps = {
+export type BookingEvidenceSectionsProps = {
   bookingId: string;
   decisionEvidenceGuardrails: DecisionGuardrailRow[];
   evidencePacket: EvidencePacket;

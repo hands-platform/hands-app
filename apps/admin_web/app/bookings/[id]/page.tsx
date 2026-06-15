@@ -60,7 +60,7 @@ import {
   coordinateLabel,
   shortId,
 } from './booking-formatters';
-import { BookingEvidenceSections } from './booking-evidence-sections';
+import { BookingEvidenceSections, type BookingEvidenceSectionsProps } from './booking-evidence-sections';
 import {
   bookingCashDebtNeedsSettlement,
   bookingCashFeeSettlementPath,
@@ -495,6 +495,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     walletLedgerLabel: financeTrace.walletLedger,
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
+  const evidenceSectionsProps: BookingEvidenceSectionsProps = {
+    bookingId: booking.id,
+    bookingEvidenceBundleRows,
+    chatEvidenceDecisionBoard,
+    decisionEvidenceGuardrails,
+    decisionNotePresets,
+    evidencePacket,
+    manualDecisionReadiness,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -574,15 +583,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingPriorityBriefingSection operatorPriorityBriefing={operatorPriorityBriefing} />
 
-      <BookingEvidenceSections
-        bookingId={booking.id}
-        decisionEvidenceGuardrails={decisionEvidenceGuardrails}
-        evidencePacket={evidencePacket}
-        chatEvidenceDecisionBoard={chatEvidenceDecisionBoard}
-        manualDecisionReadiness={manualDecisionReadiness}
-        decisionNotePresets={decisionNotePresets}
-        bookingEvidenceBundleRows={bookingEvidenceBundleRows}
-      />
+      <BookingEvidenceSections {...evidenceSectionsProps} />
 
       <BookingCloseoutSections
         bookingCloseoutChecklist={bookingCloseoutChecklist}
