@@ -47,6 +47,7 @@
     "shared:source-only-check": "node infra/scripts/check-shared-types-runtime-imports.mjs",
     "notifications:partner-alert-contract": "npm run shared:source-only-check && node infra/scripts/check-notification-partner-alert-contract.mjs",
     "notifications:push-data-contract": "node infra/scripts/check-notification-push-data-contract.mjs",
+    "notifications:retry-audit-contract": "node infra/scripts/check-notification-retry-audit-contract.mjs",
     "notifications:role-audit": "node infra/scripts/notification-role-routing-audit.mjs",
     "notifications:role-repair": "node infra/scripts/notification-role-routing-repair.mjs",
     "api:test": "npm run test --workspace @massage-vn/api",
