@@ -113,15 +113,16 @@ function buildRetryConfirmation(
   const latestDelivery = latestNotificationDelivery(notification);
   const reviewGuidance = notificationReviewGuidanceText(values.review);
   const copy = retryConfirmationCopy(notification, latestDelivery, evidence, reviewGuidance);
+  const returnHref = notificationReturnHref(values);
 
   return {
     action: 'retry',
-    cancelHref: notificationReturnHref(values),
+    cancelHref: returnHref,
     confirmLabel: copy.confirmLabel,
     description: copy.description,
     hiddenInputs: [
       { name: 'notificationId', value: notification.id },
-      { name: 'returnHref', value: notificationReturnHref(values) },
+      { name: 'returnHref', value: returnHref },
     ],
     id: notification.id,
     supportingLinks: [
@@ -211,10 +212,11 @@ function buildEnableDeviceConfirmation(
     return null;
   }
   const reviewGuidance = notificationReviewGuidanceText(values.review);
+  const returnHref = notificationReturnHref(values);
 
   return {
     action: 'enable-device',
-    cancelHref: notificationReturnHref(values),
+    cancelHref: returnHref,
     confirmLabel: 'Re-enable device',
     description: `Re-enable ${match.platform} push device ${shortId(
       match.pushDeviceId,
@@ -223,7 +225,7 @@ function buildEnableDeviceConfirmation(
     )}.${reviewGuidance}`,
     hiddenInputs: [
       { name: 'pushDeviceId', value: match.pushDeviceId },
-      { name: 'returnHref', value: notificationReturnHref(values) },
+      { name: 'returnHref', value: returnHref },
     ],
     id: match.pushDeviceId,
     supportingLinks: [
