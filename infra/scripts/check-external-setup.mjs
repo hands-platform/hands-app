@@ -217,13 +217,13 @@ addPhaseRequired(
 addRecommended(
   'sms',
   'SMS_API_URL',
-  hasValue('SMS_API_URL'),
+  isHttpsUrl('SMS_API_URL'),
   'Deferred: fill the chosen SMS provider values before real OTP launch.',
 );
 addPhaseRequired(
   'sms',
   'SMS_API_URL for Phone Auth',
-  hasValue('SMS_API_URL'),
+  isHttpsUrl('SMS_API_URL'),
   smsApiUrlFix,
   ['supabase-auth', 'production'],
 );

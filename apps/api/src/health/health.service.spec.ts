@@ -127,6 +127,19 @@ describe('HealthService external SMS readiness', () => {
     expect(check?.configured).toEqual(['SMS_API_URL', 'SMS_API_KEY', 'SMS_SENDER_ID']);
     expect(check?.invalid).toEqual(['SMS_PROVIDER']);
   });
+
+  it('blocks production SMS readiness when the endpoint is not an HTTPS URL', () => {
+    const check = smsCheck({
+      SMS_PROVIDER: 'vonage',
+      SMS_API_URL: 'not-a-url',
+      SMS_API_KEY: 'placeholder-sms-secret',
+      SMS_SENDER_ID: 'HANDS',
+    });
+
+    expect(check?.status).toBe('PARTIAL');
+    expect(check?.configured).toEqual(['SMS_PROVIDER', 'SMS_API_KEY', 'SMS_SENDER_ID']);
+    expect(check?.invalid).toEqual(['SMS_API_URL']);
+  });
 });
 
 describe('HealthService external push readiness', () => {

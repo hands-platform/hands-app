@@ -101,7 +101,7 @@ const registrationItems = [
         ['nest', 'supabase'].includes(String(env.AUTH_BACKEND ?? '').toLowerCase()),
       ),
       envItem('SMS_PROVIDER', 'vonage | viettel | fpt | custom', realSmsProviderConfigured),
-      envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
+      envItem('SMS_API_URL', 'https://<sms-provider-api>', isHttpsUrl(env.SMS_API_URL)),
       envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
       envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
     ],
@@ -328,7 +328,7 @@ const registrationItems = [
     consolePath: 'Vonage, Viettel, FPT, or selected SMS provider dashboard',
     env: [
       envItem('SMS_PROVIDER', 'vonage | viettel | fpt | custom', realSmsProviderConfigured),
-      envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
+      envItem('SMS_API_URL', 'https://<sms-provider-api>', isHttpsUrl(env.SMS_API_URL)),
       envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
       envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
     ],

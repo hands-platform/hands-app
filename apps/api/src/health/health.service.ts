@@ -76,7 +76,7 @@ export class HealthService {
       this.storageExternalReadiness(),
       this.externalGroup('Production SMS', 'sms', [
         { key: 'SMS_PROVIDER', validator: 'sms-provider' },
-        { key: 'SMS_API_URL' },
+        { key: 'SMS_API_URL', validator: 'https-url' },
         { key: 'SMS_API_KEY', validator: 'secret' },
         { key: 'SMS_SENDER_ID' },
       ]),
