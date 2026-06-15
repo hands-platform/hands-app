@@ -229,9 +229,7 @@ export type BookingOperationsQuickRailSectionProps = {
 
 export function BookingMatchingRuleSnapshotSection({
   matchingRuleSnapshot,
-}: {
-  matchingRuleSnapshot: MatchingRuleSnapshot;
-}) {
+}: BookingMatchingRuleSnapshotSectionProps) {
   return (
     <section className="card admin-mb-16" id="matching-rule-snapshot">
       <div className="ops-section-header">
@@ -258,6 +256,10 @@ export function BookingMatchingRuleSnapshotSection({
     </section>
   );
 }
+
+export type BookingMatchingRuleSnapshotSectionProps = {
+  matchingRuleSnapshot: MatchingRuleSnapshot;
+};
 
 export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityContractRow[] }) {
   return (
