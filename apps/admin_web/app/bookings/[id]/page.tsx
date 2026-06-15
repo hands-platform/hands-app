@@ -84,6 +84,7 @@ import {
   bookingChatRepairActionState,
 } from './booking-chat-repair-state';
 import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
+import { bookingDetailCloseoutChecklist } from './booking-detail-closeout-checklist';
 import { bookingDetailEvidenceBundleRows } from './booking-detail-evidence-bundle-rows';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
@@ -155,9 +156,6 @@ import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
-import {
-  bookingCloseoutChecklistRows as buildBookingCloseoutChecklistRowsFromFacts,
-} from '../../../lib/booking-closeout-checklist-rows';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
 import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
@@ -535,43 +533,22 @@ export default async function BookingDetailPage({ params }: PageProps) {
     failedAlertCount,
     chatReady,
   });
-  const bookingCloseoutChecklist = buildBookingCloseoutChecklistRowsFromFacts({
-    bookingId: booking.id,
-    bookingStatus: booking.status,
-    addressReady: Boolean(booking.addressSnapshot),
-    addressLabel: bookingAddressSnapshotLabel(booking),
-    finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
-    finalPartnerLabel: finalPartnerSummary.selected ? finalPartnerSummary.label : null,
-    customerChoiceCandidates,
-    chatNeeded: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-      booking.status,
-    ),
-    chatReady,
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    chatMessageCount: messages.length,
-    latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
-    cashDebt: cashFeeDebtNeedsSettlement,
-    paymentStatus: booking.payment?.status ?? null,
-    paymentMethod: booking.payment?.method ?? 'NONE',
-    customerPriceLabel: financeTrace.customerPrice,
-    partnerPayoutLabel: financeTrace.providerPayout,
-    walletLedgerLabel: financeTrace.walletLedger,
-    terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
+  const bookingCloseoutChecklist = bookingDetailCloseoutChecklist({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    financeTrace,
     refundLedgerCount: refundLedgerRows.length,
     refundEvidence: paymentEvidence.refundEvidence,
-    alertCount: notificationTrace.rows.length,
+    operatorNoteLines,
+    bookingActivityRecords,
+    finalPartnerSummary,
+    customerChoiceCandidates,
     failedAlertCount,
-    closeoutStatus: closeoutReadiness.status,
-    closeoutTone: closeoutReadiness.tone,
-    closeoutHelper: closeoutReadiness.helper,
-    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
-    taxRows: booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0,
-    operatorTrailCount:
-      operatorNoteLines.length + bookingActivityRecords.length + (booking.auditLogs?.length ?? 0),
-    latestLocationLabel: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-      : null,
-    notificationCount: notificationTrace.rows.length,
+    chatReady,
+    cashFeeDebtNeedsSettlement,
+    closeoutReadiness,
   });
   const manualOutcomeEvidenceLabel = [
     messages.length ? `${messages.length} chat message(s)` : null,
