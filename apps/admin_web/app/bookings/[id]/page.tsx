@@ -84,6 +84,7 @@ import {
   bookingChatRepairActionState,
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
+import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
 import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summary-cards';
@@ -509,64 +510,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
       (booking.earning?.walletLedgerEntries?.length ?? 0),
     partnerPayoutLabel: financeTrace.providerPayout,
   });
-  const connectedRecordLinks = [
-    {
-      label: 'Customer record',
-      value: booking.customerProfile?.id ? 'Linked' : 'Profile missing',
-      detail: booking.customerProfile?.user?.phone ?? 'Open the in-page customer evidence block.',
-      href: booking.customerProfile?.id ? `/customers/${booking.customerProfile.id}` : '#customer',
-      tone: booking.customerProfile?.id ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Preferred Partner',
-      value: booking.preferredProvider?.id ? providerName(booking.preferredProvider) : 'Not selected',
-      detail: 'First-pick Partner record and booking gate state.',
-      href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : '#handoff',
-      tone: booking.preferredProvider?.id ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Final Partner',
-      value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Customer choice pending',
-      detail: 'Final selected Partner, location, payout, and service records.',
-      href: finalPartnerSummary.href,
-      tone: finalPartnerSummary.selected ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Chat archive',
-      value: booking.chatRoom ? `${messages.length} message(s)` : 'No room',
-      detail: 'Admin-retained transcript for completion, cancellation, and no-show context.',
-      href: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : '#chat',
-      tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Notification trace',
-      value: `${notificationTrace.rows.length} alert(s)`,
-      detail: 'Partner alerts, customer updates, delivery status, and retry context.',
-      href: `/notifications?booking=${encodeURIComponent(booking.id)}`,
-      tone: notificationTrace.rows.length ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Payment queue',
-      value: paymentEvidence.paymentQueueValue,
-      detail: paymentEvidence.paymentMethodAmountLabel,
-      href: paymentEvidence.paymentQueueHref,
-      tone: paymentEvidence.paymentTone,
-    },
-    {
-      label: 'Refund queue',
-      value: paymentEvidence.refundCountLabel,
-      detail: paymentEvidence.refundEvidence,
-      href: paymentEvidence.refundHref,
-      tone: paymentEvidence.refundTone,
-    },
-    {
-      label: 'Cash settlement',
-      value: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear',
-      detail: financeTrace.walletLedger,
-      href: bookingCashDebtNeedsSettlement(booking) ? '/cash-settlements' : '#finance',
-      tone: bookingCashDebtNeedsSettlement(booking) ? 'pill-danger' : 'pill-success',
-    },
-  ];
+  const connectedRecordLinks = bookingDetailConnectedRecordLinks({
+    booking,
+    finalPartnerSummary,
+    messageCount: messages.length,
+    notificationCount: notificationTrace.rows.length,
+    paymentEvidence,
+    financeTrace,
+  });
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),

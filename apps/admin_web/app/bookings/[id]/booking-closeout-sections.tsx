@@ -10,7 +10,7 @@ type CloseoutChecklistItem = {
   pillClass: string;
 };
 
-type ConnectedRecordLink = {
+export type ConnectedRecordLink = {
   label: string;
   value: string;
   detail: string;
