@@ -209,7 +209,12 @@ const registrationItems = [
       envItem('MOMO_ACCESS_KEY', '<momo-access-key>', hasValue(env.MOMO_ACCESS_KEY)),
       envItem('MOMO_SECRET_KEY', '<momo-secret-key>', hasValue(env.MOMO_SECRET_KEY)),
     ],
-    setup: ['Start with sandbox credentials.', 'Keep cash payment enabled as operational fallback.'],
+    setup: [
+      'Start with sandbox credentials.',
+      'Register local callback http://localhost:3000/api/payments/MOMO/callback for local E2E.',
+      'Register production callback https://api.hands.vn/api/payments/MOMO/callback after API hosting is ready.',
+      'Keep cash payment enabled as operational fallback.',
+    ],
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
@@ -222,7 +227,12 @@ const registrationItems = [
       envItem('VNPAY_TMN_CODE', '<vnpay-tmn-code>', hasValue(env.VNPAY_TMN_CODE)),
       envItem('VNPAY_HASH_SECRET', '<vnpay-hash-secret>', hasValue(env.VNPAY_HASH_SECRET)),
     ],
-    setup: ['Start with sandbox credentials.', 'Confirm callback and return URLs after domains are chosen.'],
+    setup: [
+      'Start with sandbox credentials.',
+      'Register local callback http://localhost:3000/api/payments/VNPAY/callback for local E2E.',
+      'Register production callback https://api.hands.vn/api/payments/VNPAY/callback after API hosting is ready.',
+      'Confirm return URLs after domains are chosen.',
+    ],
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
