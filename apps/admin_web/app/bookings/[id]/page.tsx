@@ -23,6 +23,7 @@ import {
   BookingMvpAuthorityContractSection,
   BookingOperationsQuickRailSection,
   BookingOperatorFirstReadSection,
+  type BookingOperatorFirstReadSectionProps,
   BookingPriorityBriefingSection,
   BookingRecentOperationsTimelineSection,
 } from './booking-command-briefing-sections';
@@ -718,6 +719,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const marketplaceSupplyProps: BookingMarketplaceSupplySectionProps = {
     marketplaceSupply,
   };
+  const operatorFirstReadProps: BookingOperatorFirstReadSectionProps = {
+    rows: bookingOperatorFirstRead,
+  };
 
   return (
     <>
@@ -725,7 +729,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingDetailToolbar {...toolbarProps} />
 
-      <BookingOperatorFirstReadSection rows={bookingOperatorFirstRead} />
+      <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
 
       <BookingMetricGridSection metrics={bookingMetricCards} />
 

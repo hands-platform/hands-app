@@ -169,7 +169,7 @@ export function BookingDetailToolbar({
   );
 }
 
-export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCard[] }) {
+export function BookingOperatorFirstReadSection({ rows }: BookingOperatorFirstReadSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-operator-first-read">
       <div className="ops-section-header">
@@ -185,6 +185,10 @@ export function BookingOperatorFirstReadSection({ rows }: { rows: SummaryLinkCar
     </section>
   );
 }
+
+export type BookingOperatorFirstReadSectionProps = {
+  rows: SummaryLinkCard[];
+};
 
 export function BookingMetricGridSection({ metrics }: { metrics: MetricSummaryCard[] }) {
   return (
