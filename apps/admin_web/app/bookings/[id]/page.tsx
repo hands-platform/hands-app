@@ -91,6 +91,7 @@ import {
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
+import { bookingOperatingSnapshot } from './booking-operating-snapshot';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
@@ -347,6 +348,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     booking,
     addressLine,
     addressPin,
+    attentionFlags,
     messageCount: messages.length,
     notificationCount: notificationTrace.rows.length,
   });
@@ -1979,101 +1981,6 @@ function messageSenderLabel(message: AdminChatMessage) {
     return `Admin: ${message.sender.fullName ?? message.sender.phone ?? 'Unknown'}`;
   }
   return message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender';
-}
-
-function bookingOperatingSnapshot({
-  booking,
-  addressLine,
-  addressPin,
-  messageCount,
-  notificationCount,
-}: {
-  booking: AdminBookingDetail;
-  addressLine: string;
-  addressPin: string;
-  messageCount: number;
-  notificationCount: number;
-}) {
-  const participantCounts = bookingParticipantCounts(booking);
-  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
-  const preferredState = preferredParticipantState(booking);
-  const paymentLabel = booking.payment
-    ? `${booking.payment.method} / ${booking.payment.status}`
-    : 'No payment';
-  const walletLabel = bookingCashDebtNeedsSettlement(booking)
-    ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
-    : booking.earning
-      ? `Ledger ${money(booking.earning.netAmount, booking.earning.currency)}`
-      : 'No earning yet';
-  const finalPartnerLabel = booking.selectedProvider
-    ? providerName(booking.selectedProvider)
-    : booking.status === 'MATCHED'
-      ? providerName(booking.preferredProvider)
-      : 'Customer selection pending';
-  const addressSource = booking.addressSnapshot
-    ? `${booking.addressSnapshot.source ?? 'booking_confirmation'} / ${formatDate(booking.addressSnapshot.createdAt)}`
-    : 'Stored booking address';
-  const next = bookingOperatingNextAction(booking);
-  const checks = bookingAttentionFlags(booking);
-  const tone = checks.some((check) => check.severity === 'high')
-    ? 'pill-danger'
-    : checks.length
-      ? 'pill-warn'
-      : booking.status === 'COMPLETED'
-        ? 'pill-success'
-        : 'pill-info';
-
-  return {
-    status: booking.status,
-    tone,
-    noteClassName: checks.some((check) => check.severity === 'high')
-      ? 'ops-task-danger'
-      : checks.length
-        ? 'ops-task-warning'
-        : 'ops-task-info',
-    nextAction: next.title,
-    nextDetail: next.detail,
-    href: next.href,
-    hrefLabel: next.hrefLabel,
-    facts: [
-      {
-        label: 'Confirmed address',
-        value: compactActivityText(addressLine, 42),
-        helper: `${addressPin} / ${addressSource}`,
-      },
-      {
-        label: 'Customer final choice',
-        value: compactActivityText(finalPartnerLabel, 34),
-        helper: booking.selectedProvider
-          ? 'Customer-selected final Partner is recorded.'
-          : 'Customer choice remains the source of truth.',
-      },
-      {
-        label: 'Preferred Partner',
-        value: compactActivityText(providerName(booking.preferredProvider), 34),
-        helper: preferredState
-          ? `${preferredState.status} / ${distanceLabel(preferredState.distanceMeters)}`
-          : booking.preferredProvider
-            ? 'Waiting for first Partner response.'
-            : 'No first-pick Partner on this booking.',
-      },
-      {
-        label: 'Marketplace supply',
-        value: `${participantCounts.marketplace} marketplace / ${customerChoiceCandidates.length} selectable`,
-        helper: `${participantCounts.total} total participant row(s). Actual rows stay as evidence; customer choices are deduped by Partner.`,
-      },
-      {
-        label: 'Chat and alerts',
-        value: booking.chatRoom ? `${messageCount} message(s)` : 'Chat not ready',
-        helper: `${notificationCount} notification record(s) linked to this booking.`,
-      },
-      {
-        label: 'Payment and wallet',
-        value: paymentLabel,
-        helper: walletLabel,
-      },
-    ],
-  };
 }
 
 function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
