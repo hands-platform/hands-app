@@ -51,6 +51,7 @@ import {
   BookingCloseoutReadinessSection,
   type BookingCloseoutReadinessSectionProps,
   BookingCommunicationMovementHandoffSection,
+  type BookingCommunicationMovementHandoffSectionProps,
   BookingHandoffChecklistSection,
   BookingMarketplaceWalletEvidenceSection,
   type BookingMarketplaceWalletEvidenceSectionProps,
@@ -681,6 +682,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operatingTimelineProps: BookingOperatingTimelineSectionProps = {
     operatingTimeline,
   };
+  const communicationMovementHandoffProps: BookingCommunicationMovementHandoffSectionProps = {
+    communicationMovementHandoff,
+  };
 
   return (
     <>
@@ -724,9 +728,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOperatingTimelineSection {...operatingTimelineProps} />
 
-      <BookingCommunicationMovementHandoffSection
-        communicationMovementHandoff={communicationMovementHandoff}
-      />
+      <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
 
       <BookingChatLifecycleSection chatLifecycle={chatLifecycle} messageCount={messageCount} />
 

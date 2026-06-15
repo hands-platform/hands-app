@@ -439,9 +439,7 @@ export function BookingHandoffChecklistSection({
 
 export function BookingCommunicationMovementHandoffSection({
   communicationMovementHandoff,
-}: {
-  communicationMovementHandoff: CommunicationMovementHandoff;
-}) {
+}: BookingCommunicationMovementHandoffSectionProps) {
   return (
     <section className="card admin-mb-16" id="communication-movement-handoff">
       <div className="ops-section-header">
@@ -495,6 +493,10 @@ export function BookingCommunicationMovementHandoffSection({
     </section>
   );
 }
+
+export type BookingCommunicationMovementHandoffSectionProps = {
+  communicationMovementHandoff: CommunicationMovementHandoff;
+};
 
 export function BookingChatLifecycleSection({
   chatLifecycle,
