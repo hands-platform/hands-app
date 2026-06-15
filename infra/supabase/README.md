@@ -61,7 +61,18 @@ npm.cmd run external:check:supabase
 npm.cmd run external:check:supabase-auth
 ```
 
-After the API is running with `SUPABASE_JWT_SECRET`:
+After Supabase Phone Auth is enabled and SMS values are configured, run a config-only dry run before
+sending a live SMS:
+
+```powershell
+npm.cmd run auth:supabase-phone-smoke -- --dry-run
+$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"
+npm.cmd run auth:supabase-phone-smoke -- --send
+$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"
+npm.cmd run auth:supabase-phone-smoke -- --verify
+```
+
+After the API is running with `SUPABASE_JWT_SECRET`, keep the local JWT/exchange smoke passing too:
 
 ```powershell
 npm.cmd run auth:supabase-smoke

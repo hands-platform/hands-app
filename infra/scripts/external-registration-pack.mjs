@@ -111,7 +111,13 @@ const registrationItems = [
       'Vonage is the selected SMS path for the next Phone Auth E2E pass; evaluate Viettel/FPT or a custom Vietnam SMS backend only if delivery or cost requires it.',
       'After real OTP works, keep AUTH_BACKEND=supabase for the dedicated auth migration pass; roll back to nest if the E2E check fails.',
     ],
-    verify: ['npm.cmd run external:check:supabase-auth', 'npm.cmd run auth:supabase-smoke'],
+    verify: [
+      'npm.cmd run external:check:supabase-auth',
+      'npm.cmd run auth:supabase-phone-smoke -- --dry-run',
+      'npm.cmd run auth:supabase-phone-smoke -- --send',
+      'npm.cmd run auth:supabase-phone-smoke -- --verify',
+      'npm.cmd run auth:supabase-smoke',
+    ],
   },
   {
     order: 4,
@@ -539,7 +545,9 @@ function hasValue(value) {
 }
 
 function hasRealSmsProvider(value) {
-  const provider = String(value ?? '').trim().toLowerCase();
+  const provider = String(value ?? '')
+    .trim()
+    .toLowerCase();
   return supportedSmsProviders.has(provider);
 }
 

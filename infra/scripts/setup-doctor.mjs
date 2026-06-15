@@ -156,7 +156,8 @@ function nextSetupSteps({ firebasePushReady }) {
   const followUpSteps = [
     'Run npm.cmd run external:check:supabase for Supabase core values.',
     'For Phone Auth E2E, create or open the Vonage SMS/Verify dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env.',
-    'Only after those SMS values are present, set AUTH_BACKEND=supabase and run npm.cmd run external:check:supabase-auth followed by npm.cmd run auth:supabase-smoke.',
+    'Only after those SMS values are present, run npm.cmd run external:check:supabase-auth, npm.cmd run auth:supabase-phone-smoke -- --dry-run, and then the --send/--verify live OTP smoke.',
+    'Keep npm.cmd run auth:supabase-smoke passing for the API token exchange and role-boundary contract.',
   ];
   const fcmSteps = firebasePushReady
     ? [

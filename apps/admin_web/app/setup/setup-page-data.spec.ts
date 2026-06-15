@@ -89,6 +89,14 @@ describe('setup page data', () => {
       expect.arrayContaining([
         'For Supabase Phone Auth E2E, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID into ignored env only.',
         'For Vonage, use the dashboard owned by administration@hands.vn and choose the endpoint/credential pair for the selected SMS or Verify product.',
+        'Live OTP smoke is split into --send and --verify so operators do not send SMS by accident.',
+      ]),
+    );
+    expect(supabaseAuthSetup?.commands).toEqual(
+      expect.arrayContaining([
+        'npm.cmd run auth:supabase-phone-smoke -- --dry-run',
+        '$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"; npm.cmd run auth:supabase-phone-smoke -- --send',
+        '$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"; npm.cmd run auth:supabase-phone-smoke -- --verify',
       ]),
     );
   });

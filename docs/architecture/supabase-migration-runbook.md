@@ -56,6 +56,7 @@ Provider migration options:
 1. Preferred for MVP migration: keep provider onboarding/approval in the Nest admin flow first, then let Supabase OTP link by phone number.
 2. Later production option: set partner role metadata through the trusted admin action `POST /api/admin/partners/:id/sync-supabase-role` after verification. Do not let the mobile client self-assign partner role metadata.
 3. Run `npm.cmd run auth:supabase-smoke` after configuring `SUPABASE_JWT_SECRET`; the smoke test checks customer mapping, provider mapping, invalid audience rejection, and provider role escalation rejection.
+4. Run `npm.cmd run auth:supabase-phone-smoke -- --dry-run` before sending a live SMS. Use `--send` only after setting `SUPABASE_PHONE_SMOKE_PHONE`, then set `SUPABASE_PHONE_SMOKE_OTP` and run `--verify` after the code arrives.
 
 Provider role metadata sync:
 
@@ -89,6 +90,15 @@ $env:API_BASE_URL="http://localhost:3000/api"
 $env:SUPABASE_JWT_SECRET="your-project-jwt-secret"
 $env:SUPABASE_JWT_AUDIENCE="authenticated"
 npm.cmd run auth:supabase-smoke
+```
+
+To test the real Supabase Phone Auth OTP delivery and exchange path:
+
+```powershell
+$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"
+npm.cmd run auth:supabase-phone-smoke -- --send
+$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"
+npm.cmd run auth:supabase-phone-smoke -- --verify
 ```
 
 The emulator/device scripts pass these values from shell environment variables when present:
