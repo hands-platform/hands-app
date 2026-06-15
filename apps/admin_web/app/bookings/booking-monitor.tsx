@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
@@ -88,6 +88,10 @@ export function BookingMonitor({
   const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>(initialEvidenceFilter);
   const [gateFilter, setGateFilter] = useState<BookingGateFilter>(initialGateFilter);
   const currentTimeMs = nowMs ?? 0;
+  const markRefreshed = useCallback((refreshedAt: Date) => {
+    setLastRefreshLabel(formatClockTime(refreshedAt));
+    setNowMs(refreshedAt.getTime());
+  }, []);
 
   const orderedBookings = useMemo(
     () =>
@@ -215,23 +219,42 @@ export function BookingMonitor({
 
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
-  const commandRouteModel = buildBookingMonitorCommandRouteModel({
-    activeView,
-    blockedCreateCount: orderedBookingCreateRejections.length,
-    blockedCreateDetail: bookingGateRejectionLane.detail,
-    bookingViewCounts,
-    commandCenter,
-    topNextAction: nextActions[0],
-    view,
-    visibleBookingCount: visibleBookings.length,
-  });
+  const commandRouteModel = useMemo(
+    () =>
+      buildBookingMonitorCommandRouteModel({
+        activeView,
+        blockedCreateCount: orderedBookingCreateRejections.length,
+        blockedCreateDetail: bookingGateRejectionLane.detail,
+        bookingViewCounts,
+        commandCenter,
+        topNextAction: nextActions[0],
+        view,
+        visibleBookingCount: visibleBookings.length,
+      }),
+    [
+      activeView,
+      bookingGateRejectionLane.detail,
+      bookingViewCounts,
+      commandCenter,
+      nextActions,
+      orderedBookingCreateRejections.length,
+      view,
+      visibleBookings.length,
+    ],
+  );
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setPaymentFilter('all');
+    setEvidenceFilter('all');
+    setGateFilter('all');
+  }, []);
 
   useEffect(() => {
     const mountTimer = window.setTimeout(() => {
       const mountedAt = new Date();
       setHasMounted(true);
-      setLastRefreshLabel(formatClockTime(mountedAt));
-      setNowMs(mountedAt.getTime());
+      markRefreshed(mountedAt);
     }, 0);
 
     if (!autoRefresh) {
@@ -241,9 +264,7 @@ export function BookingMonitor({
     const timer = window.setInterval(() => {
       startTransition(() => {
         router.refresh();
-        const refreshedAt = new Date();
-        setLastRefreshLabel(formatClockTime(refreshedAt));
-        setNowMs(refreshedAt.getTime());
+        markRefreshed(new Date());
       });
     }, 10000);
 
@@ -251,14 +272,12 @@ export function BookingMonitor({
       window.clearTimeout(mountTimer);
       window.clearInterval(timer);
     };
-  }, [autoRefresh, router]);
+  }, [autoRefresh, markRefreshed, router]);
 
   const refreshNow = () => {
     startTransition(() => {
       router.refresh();
-      const refreshedAt = new Date();
-      setLastRefreshLabel(formatClockTime(refreshedAt));
-      setNowMs(refreshedAt.getTime());
+      markRefreshed(new Date());
     });
   };
   const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
@@ -317,13 +336,7 @@ export function BookingMonitor({
         baseVisibleBookingCount={visibleBookingModel.baseVisibleBookingCount}
         evidenceFilter={evidenceFilter}
         evidenceFilterOptions={bookingEvidenceFilterOptions}
-        onClearFilters={() => {
-          setSearchQuery('');
-          setStatusFilter('all');
-          setPaymentFilter('all');
-          setEvidenceFilter('all');
-          setGateFilter('all');
-        }}
+        onClearFilters={clearFilters}
         onEvidenceFilterChange={setEvidenceFilter}
         onPaymentFilterChange={setPaymentFilter}
         onSearchQueryChange={setSearchQuery}
