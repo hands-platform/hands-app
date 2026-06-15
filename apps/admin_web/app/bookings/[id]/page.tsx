@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import {
   BookingActivityPanel,
   BookingFullRecordIndex,
@@ -128,6 +127,11 @@ import { bookingPaymentEvidence } from './booking-payment-evidence';
 import { bookingServicePricingSnapshotRows } from './booking-service-pricing-snapshot-rows';
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import { bookingParticipantCounts } from './booking-participant-counts';
+import {
+  bookingDetailCustomerRows,
+  bookingDetailHandoffRows,
+  bookingDetailLocationTrailRows,
+} from './booking-detail-record-rows';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
 import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
 import {
@@ -1037,19 +1041,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
       helper: attentionSummary.helper,
     },
   ];
-  const locationTrailRows = locationTrailSnapshots.map((snapshot) => ({
-    id: snapshot.id,
-    coordinate: coordinateLabel(snapshot.lat, snapshot.lng),
-    recordedAt: formatDate(snapshot.recordedAt),
-  }));
-  const bookingRecordCustomerRows = [
-    { label: 'Name', value: booking.customerProfile?.user?.fullName ?? 'Customer' },
-    { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
-    { label: 'Address', value: addressLine },
-    { label: 'Pin', value: addressPin },
-    { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
-    { label: 'Expires', value: formatDate(booking.expiresAt) },
-  ];
+  const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
+  const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
   const bookingRecordServiceRows = buildBookingRecordServiceRows({
     optionLabel: bookingServiceOptionLabel(booking),
     serviceName: service?.service?.name ?? 'Service pending',
@@ -1061,20 +1054,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
     createdLabel: formatDate(booking.createdAt),
     updatedLabel: formatDate(booking.updatedAt),
   });
-  const bookingRecordHandoffRows = [
-    { label: 'Preferred', value: providerName(booking.preferredProvider) },
-    { label: 'Final', value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not selected' },
-    { label: 'Final phone', value: booking.selectedProvider?.user?.phone ?? 'No phone' },
-    {
-      label: 'Latest Partner pin',
-      value: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet',
-    },
-    {
-      label: 'Latest pin time',
-      value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared',
-    },
-    { label: 'Location freshness', value: bookingDetailProviderLocationMetricHelper(booking) },
-  ];
+  const bookingRecordHandoffRows = bookingDetailHandoffRows({
+    booking,
+    finalPartnerSummary,
+    latestLocation,
+  });
   const bookingRecordPaymentRows = buildBookingRecordPaymentRows({
     paymentIdLabel: booking.payment?.id ?? 'No payment',
     paymentMethodLabel: paymentEvidence.paymentMethod,
