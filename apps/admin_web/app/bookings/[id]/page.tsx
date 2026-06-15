@@ -75,6 +75,7 @@ import {
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
 import { bookingDetailActionEvidenceGate } from './booking-detail-action-evidence-gate';
+import { bookingDetailGateAndNotes } from './booking-detail-gate-and-notes';
 import { bookingDetailOperatorFirstRead } from './booking-detail-operator-first-read';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
@@ -138,7 +139,6 @@ import {
   bookingDetailLocationTrailRows,
 } from './booking-detail-record-rows';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
-import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
 import {
   bookingDetailProviderLocationMetricHelper,
   bookingDetailProviderLocationMetricValue,
@@ -158,8 +158,6 @@ import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
-import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
-import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
@@ -560,29 +558,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
     closeoutReadiness,
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
-  const marketplaceParticipants = participantCounts.marketplace;
-  const finalGateReason = buildBookingFinalGateReasonFromFacts({
-    cashDebt: bookingCashDebtNeedsSettlement(booking),
-    walletLedgerLabel: financeTrace.walletLedger,
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    bookingStatus: booking.status,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: bookingPreferredAwaitingDecision(booking),
-    customerChoiceCandidates,
-    marketplaceParticipants,
-    selected: bookingFinalPartnerSummary(booking).selected,
-    hasChatRoom: Boolean(booking.chatRoom),
-  });
-  const decisionNotePresets = buildBookingDecisionNotePresets({
-    bookingStatus: booking.status,
+  const { finalGateReason, decisionNotePresets } = bookingDetailGateAndNotes({
+    booking,
+    latestLocation,
     messageCount: messages.length,
-    hasLatestLocation: Boolean(latestLocation),
     notificationCount: notificationTrace.rows.length,
     operatorNoteCount: operatorNoteLines.length,
-    paymentMethod: booking.payment?.method ?? 'NONE',
-    paymentStatus: booking.payment?.status ?? 'NONE',
     refundRowCount: refundLedgerRows.length,
-    cashFeeDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    customerChoiceCandidates,
+    marketplaceParticipants: participantCounts.marketplace,
+    walletLedgerLabel: financeTrace.walletLedger,
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
