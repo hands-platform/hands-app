@@ -245,6 +245,8 @@ export function BookingRecordDetailSections({
 }
 
 function ParticipantLedgerSection({ participantLedger }: { participantLedger: ParticipantLedger }) {
+  const { boundary, cards, lifecycleRows, rows, selectionTrace, status, tone } = participantLedger;
+
   return (
     <div className="card" id="participants">
       <div className="ops-section-header">
@@ -256,62 +258,101 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
             gates stop blocked Partners before a participant row is created.
           </p>
         </div>
-        <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
+        <span className={`pill ${tone}`}>{status}</span>
       </div>
-      <div className="participant-list admin-mt-12">
-        {participantLedger.boundary.pills.map((pill, index) => (
-          <span className={index === 1 ? 'pill pill-warn' : index === 0 ? 'pill pill-info' : 'pill'} key={pill}>
-            {pill}
-          </span>
-        ))}
-      </div>
-      <p className="muted admin-mt-10">
-        {participantLedger.boundary.helper}
-      </p>
-      <SummaryCards cards={participantLedger.cards} />
-      <div className="setup-stage-list admin-mt-14">
-        {participantLedger.selectionTrace.map((item) => (
-          <div className="setup-stage-item" key={item.label}>
-            <span>{item.label}</span>
-            <div>
-              <strong>{item.value}</strong>
-              <p className="muted">{item.helper}</p>
-            </div>
-            <span className={`pill ${item.tone}`}>{item.status}</span>
-          </div>
-        ))}
-      </div>
-      <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Lifecycle stage</th>
-              <th>Current evidence</th>
-              <th>Operator check</th>
-            </tr>
-          </thead>
-          <tbody>
-            {participantLedger.lifecycleRows.map((row) => (
-              <tr key={row.stage}>
-                <td>
-                  <strong>{row.stage}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                  <p className="muted">{row.evidence}</p>
-                </td>
-                <td>{row.operatorUse}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </AdminTableScroll>
+      <ParticipantBoundary boundary={boundary} />
+      <SummaryCards cards={cards} />
+      <ParticipantSelectionTrace rows={selectionTrace} />
+      <ParticipantLifecycleTable rows={lifecycleRows} />
       <h3 className="admin-mt-18">Customer eligibility matrix</h3>
       <p className="muted">
         Shows who participated, who is customer-selectable, the Customer-selectable reason, and Why not
         selectable for evidence-only rows.
       </p>
+      <ParticipantEligibilityMatrix rows={rows} />
+      <ParticipantRecordsTable rows={rows} />
+    </div>
+  );
+}
+
+function ParticipantBoundary({ boundary }: { boundary: ParticipantLedger['boundary'] }) {
+  return (
+    <>
+      <div className="participant-list admin-mt-12">
+        {boundary.pills.map((pill, index) => (
+          <span className={getParticipantBoundaryPillClass(index)} key={pill}>
+            {pill}
+          </span>
+        ))}
+      </div>
+      <p className="muted admin-mt-10">{boundary.helper}</p>
+    </>
+  );
+}
+
+function getParticipantBoundaryPillClass(index: number) {
+  if (index === 0) {
+    return 'pill pill-info';
+  }
+
+  if (index === 1) {
+    return 'pill pill-warn';
+  }
+
+  return 'pill';
+}
+
+function ParticipantSelectionTrace({ rows }: { rows: SelectionTraceRow[] }) {
+  return (
+    <div className="setup-stage-list admin-mt-14">
+      {rows.map((item) => (
+        <div className="setup-stage-item" key={item.label}>
+          <span>{item.label}</span>
+          <div>
+            <strong>{item.value}</strong>
+            <p className="muted">{item.helper}</p>
+          </div>
+          <span className={`pill ${item.tone}`}>{item.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ParticipantLifecycleTable({ rows }: { rows: ParticipantLifecycleRow[] }) {
+  return (
+    <AdminTableScroll>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Lifecycle stage</th>
+            <th>Current evidence</th>
+            <th>Operator check</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.stage}>
+              <td>
+                <strong>{row.stage}</strong>
+                <p className="muted">{row.scope}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.tone}`}>{row.status}</span>
+                <p className="muted">{row.evidence}</p>
+              </td>
+              <td>{row.operatorUse}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </AdminTableScroll>
+  );
+}
+
+function ParticipantEligibilityMatrix({ rows }: { rows: ParticipantRow[] }) {
+  return (
+    <AdminTableScroll>
       <table className="table admin-mt-10">
         <thead>
           <tr>
@@ -323,7 +364,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
           </tr>
         </thead>
         <tbody>
-          {participantLedger.rows.map((row) => (
+          {rows.map((row) => (
             <tr key={`eligibility-${row.id}`}>
               <td>
                 <strong>{row.partner}</strong>
@@ -347,79 +388,82 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
               </td>
             </tr>
           ))}
-          {participantLedger.rows.length === 0 && (
+          {rows.length === 0 && (
             <tr>
               <td colSpan={5}>No participant eligibility rows are available yet.</td>
             </tr>
           )}
         </tbody>
       </table>
-      <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Partner</th>
-              <th>Participation evidence</th>
-              <th>Role and status</th>
-              <th>Timing and distance</th>
-              <th>Operations record</th>
+    </AdminTableScroll>
+  );
+}
+
+function ParticipantRecordsTable({ rows }: { rows: ParticipantRow[] }) {
+  return (
+    <AdminTableScroll>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Partner</th>
+            <th>Participation evidence</th>
+            <th>Role and status</th>
+            <th>Timing and distance</th>
+            <th>Operations record</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td>
+                <strong>{row.partner}</strong>
+                <p className="muted">{row.identity}</p>
+                {row.href && (
+                  <Link className="text-link" href={row.href}>
+                    Open Partner record
+                  </Link>
+                )}
+              </td>
+              <td>
+                <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+                <p className="muted">{row.evidenceDetail}</p>
+              </td>
+              <td>
+                <div className="filter-row">
+                  <span className={`pill ${row.roleTone}`}>{row.role}</span>
+                  <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                  <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
+                </div>
+                <p className="muted">{row.decision}</p>
+              </td>
+              <td>
+                <strong>{row.distance}</strong>
+                <div className="filter-row admin-mt-6">
+                  <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+                </div>
+                <p className="muted">{row.distancePolicyHelper}</p>
+                <p className="muted">{row.timing}</p>
+              </td>
+              <td>
+                <div className="filter-row">
+                  {row.facts.map((fact) => (
+                    <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                      {fact.label}: {fact.value}
+                    </span>
+                  ))}
+                </div>
+                <p className="muted admin-mt-8">{row.operatorUse}</p>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {participantLedger.rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.partner}</strong>
-                  <p className="muted">{row.identity}</p>
-                  {row.href && (
-                    <Link className="text-link" href={row.href}>
-                      Open Partner record
-                    </Link>
-                  )}
-                </td>
-                <td>
-                  <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                  <p className="muted">{row.evidenceDetail}</p>
-                </td>
-                <td>
-                  <div className="filter-row">
-                    <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                    <span className={`pill ${row.statusTone}`}>{row.status}</span>
-                    <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
-                  </div>
-                  <p className="muted">{row.decision}</p>
-                </td>
-                <td>
-                  <strong>{row.distance}</strong>
-                  <div className="filter-row admin-mt-6">
-                    <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
-                  </div>
-                  <p className="muted">{row.distancePolicyHelper}</p>
-                  <p className="muted">{row.timing}</p>
-                </td>
-                <td>
-                  <div className="filter-row">
-                    {row.facts.map((fact) => (
-                      <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
-                        {fact.label}: {fact.value}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="muted admin-mt-8">
-                    {row.operatorUse}
-                  </p>
-                </td>
-              </tr>
-            ))}
-            {participantLedger.rows.length === 0 && (
-              <tr>
-                <td colSpan={5}>No Partner participation has been recorded for this booking yet.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </AdminTableScroll>
-    </div>
+          ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={5}>No Partner participation has been recorded for this booking yet.</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </AdminTableScroll>
   );
 }
 
