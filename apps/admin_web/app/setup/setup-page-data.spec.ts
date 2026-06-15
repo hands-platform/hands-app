@@ -77,6 +77,13 @@ describe('setup page data', () => {
       ]),
     );
     const supabaseAuthSetup = setupOrder.find((item) => item.id === 'supabase-auth');
+    expect(supabaseAuthSetup?.env).toEqual([
+      'AUTH_BACKEND',
+      'SMS_PROVIDER',
+      'SMS_API_URL',
+      'SMS_API_KEY',
+      'SMS_SENDER_ID',
+    ]);
     expect(supabaseAuthSetup?.notes).toEqual(
       expect.arrayContaining([
         'Before switching AUTH_BACKEND=supabase, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, and SMS_SENDER_ID into ignored env only.',
