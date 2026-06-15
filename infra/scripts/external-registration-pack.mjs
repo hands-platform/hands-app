@@ -20,6 +20,16 @@ const { env } = loadMergedEnv(envFile);
 const firebaseAdminReady = firebaseAdminCredentialsConfigured(env);
 const firebaseAlignment = firebaseProjectAlignment(env, { repoRoot });
 const firebasePushReady = firebaseAdminReady && firebaseAlignment.ok;
+const storageUsesSplitBuckets = hasValue(env.S3_PRIVATE_BUCKET) && hasValue(env.S3_PUBLIC_BUCKET);
+const storageUsesFallbackBucket = hasValue(env.S3_BUCKET);
+const storageReady =
+  hasValue(env.STORAGE_PROVIDER) &&
+  hasValue(env.S3_ENDPOINT) &&
+  hasValue(env.S3_REGION) &&
+  hasValue(env.S3_ACCESS_KEY) &&
+  hasValue(env.S3_SECRET_KEY) &&
+  hasValue(env.S3_PUBLIC_BASE_URL) &&
+  (storageUsesFallbackBucket || storageUsesSplitBuckets);
 
 const registrationItems = [
   {
@@ -204,6 +214,12 @@ const registrationItems = [
     account: 'Supabase Storage S3, R2, or S3-compatible bucket',
     purpose: 'Provider verification files, public profile media, and moderation evidence.',
     consolePath: 'Supabase Storage / Cloudflare R2 / S3-compatible console',
+    ready: storageReady,
+    statusNote: storageReady
+      ? storageUsesSplitBuckets
+        ? 'Ready via separate private and public buckets.'
+        : 'Ready via S3_BUCKET fallback; split buckets remain a production-hardening step.'
+      : 'Pending until storage provider settings and either S3_BUCKET or split buckets are filled.',
     env: [
       envItem('STORAGE_PROVIDER', 'supabase-storage-s3', hasValue(env.STORAGE_PROVIDER)),
       envItem(
