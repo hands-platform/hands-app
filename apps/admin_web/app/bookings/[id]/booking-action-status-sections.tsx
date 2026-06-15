@@ -56,6 +56,18 @@ type NoShowState = {
   status: string;
 };
 
+export type BookingActionStatusSectionsProps = {
+  bookingId: string;
+  chatRepair: ChatRepairState;
+  closeout: CloseoutState;
+  dispatchSteps: DispatchStep[];
+  liveSignals: LiveSignal[];
+  matchingExpiry: MatchingExpiryState;
+  noShow: NoShowState;
+  notes?: string | null;
+  opsTaskCards: OpsTaskCard[];
+};
+
 export function BookingActionStatusSections({
   bookingId,
   chatRepair,
@@ -66,17 +78,7 @@ export function BookingActionStatusSections({
   noShow,
   notes,
   opsTaskCards,
-}: {
-  bookingId: string;
-  chatRepair: ChatRepairState;
-  closeout: CloseoutState;
-  dispatchSteps: DispatchStep[];
-  liveSignals: LiveSignal[];
-  matchingExpiry: MatchingExpiryState;
-  noShow: NoShowState;
-  notes?: string | null;
-  opsTaskCards: OpsTaskCard[];
-}) {
+}: BookingActionStatusSectionsProps) {
   return (
     <>
       <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />

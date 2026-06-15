@@ -9,7 +9,10 @@ import {
   buildBookingActivityRecords,
   buildBookingActivitySummary,
 } from './booking-activity-records';
-import { BookingActionStatusSections } from './booking-action-status-sections';
+import {
+  BookingActionStatusSections,
+  type BookingActionStatusSectionsProps,
+} from './booking-action-status-sections';
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import {
   BookingCommandDecisionStripSection,
@@ -534,6 +537,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
     csvHref: bookingActivityCsvHref,
     eventCount: activityRecordCount,
   };
+  const actionStatusSectionsProps: BookingActionStatusSectionsProps = {
+    bookingId: booking.id,
+    chatRepair,
+    closeout: {
+      canSubmit: canCloseoutCompletedBooking(booking),
+      label: completedCloseoutLabel(booking),
+      tone: completedCloseoutTone(booking),
+    },
+    dispatchSteps,
+    liveSignals,
+    matchingExpiry: { canSubmit: canExpireBooking(booking.status), status: booking.status },
+    noShow: { canSubmit: canMarkNoShow(booking.status), status: booking.status },
+    notes: booking.notes,
+    opsTaskCards,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -674,21 +692,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         servicePricingSnapshotRows={servicePricingSnapshotRows}
       />
 
-      <BookingActionStatusSections
-        bookingId={booking.id}
-        chatRepair={chatRepair}
-        closeout={{
-          canSubmit: canCloseoutCompletedBooking(booking),
-          label: completedCloseoutLabel(booking),
-          tone: completedCloseoutTone(booking),
-        }}
-        dispatchSteps={dispatchSteps}
-        liveSignals={liveSignals}
-        matchingExpiry={{ canSubmit: canExpireBooking(booking.status), status: booking.status }}
-        noShow={{ canSubmit: canMarkNoShow(booking.status), status: booking.status }}
-        notes={booking.notes}
-        opsTaskCards={opsTaskCards}
-      />
+      <BookingActionStatusSections {...actionStatusSectionsProps} />
 
       <BookingRecordDetailSections
         cashFeeSettlementPath={cashFeeSettlementPath}
