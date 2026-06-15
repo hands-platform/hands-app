@@ -10,17 +10,19 @@ export type BookingRecordIndexCard = {
   helper: string;
 };
 
+export type BookingFullRecordIndexProps = {
+  bookingId: string;
+  csvHref: string;
+  eventCount: number;
+  cards: BookingRecordIndexCard[];
+};
+
 export function BookingFullRecordIndex({
   bookingId,
   csvHref,
   eventCount,
   cards,
-}: {
-  bookingId: string;
-  csvHref: string;
-  eventCount: number;
-  cards: BookingRecordIndexCard[];
-}) {
+}: BookingFullRecordIndexProps) {
   return (
     <section className="card admin-mb-16" id="payment-actions">
       <div className="ops-section-header">

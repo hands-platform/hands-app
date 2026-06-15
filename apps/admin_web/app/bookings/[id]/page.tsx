@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import {
   BookingActivityPanel,
   BookingFullRecordIndex,
+  type BookingFullRecordIndexProps,
 } from './booking-activity-panel';
 import {
   buildBookingActivityCsvHref,
@@ -527,6 +528,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
     finalGateReason,
     instruction: opsCommandCenter.instruction,
   };
+  const fullRecordIndexProps: BookingFullRecordIndexProps = {
+    bookingId: booking.id,
+    cards: bookingRecordIndexCards,
+    csvHref: bookingActivityCsvHref,
+    eventCount: activityRecordCount,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -614,12 +621,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingHandoffChecklistSection handoffChecklist={handoffChecklist} />
 
-      <BookingFullRecordIndex
-        bookingId={booking.id}
-        cards={bookingRecordIndexCards}
-        csvHref={bookingActivityCsvHref}
-        eventCount={activityRecordCount}
-      />
+      <BookingFullRecordIndex {...fullRecordIndexProps} />
 
       <BookingMarketplaceWalletEvidenceSection marketplaceWalletEvidence={marketplaceWalletEvidence} />
 
