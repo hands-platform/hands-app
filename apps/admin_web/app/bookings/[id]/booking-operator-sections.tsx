@@ -65,15 +65,17 @@ type OpsBadge = {
   tone: string;
 };
 
+export type BookingOperatorQueueSectionsProps = {
+  bookingId: string;
+  operatorCommandQueue: OperatorCommandQueue;
+  operatorActionMatrix: OperatorActionMatrixRow[];
+};
+
 export function BookingOperatorQueueSections({
   bookingId,
   operatorCommandQueue,
   operatorActionMatrix,
-}: {
-  bookingId: string;
-  operatorCommandQueue: OperatorCommandQueue;
-  operatorActionMatrix: OperatorActionMatrixRow[];
-}) {
+}: BookingOperatorQueueSectionsProps) {
   return (
     <>
       <section className="card admin-mb-16" id="operator-command-queue">

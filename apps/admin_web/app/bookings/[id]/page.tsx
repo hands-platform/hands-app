@@ -29,7 +29,11 @@ import {
   BookingPayoutBatchEligibilitySection,
   BookingServicePricingSnapshotSection,
 } from './booking-finance-trace-sections';
-import { BookingOperatorQueueSections, BookingOpsCommandCenter } from './booking-operator-sections';
+import {
+  BookingOperatorQueueSections,
+  BookingOpsCommandCenter,
+  type BookingOperatorQueueSectionsProps,
+} from './booking-operator-sections';
 import {
   BookingChatLifecycleSection,
   BookingCloseoutReadinessSection,
@@ -508,6 +512,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
     bookingCloseoutChecklist,
     connectedRecordLinks,
   };
+  const operatorQueueSectionsProps: BookingOperatorQueueSectionsProps = {
+    bookingId: booking.id,
+    operatorActionMatrix,
+    operatorCommandQueue,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -591,11 +600,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingCloseoutSections {...closeoutSectionsProps} />
 
-      <BookingOperatorQueueSections
-        bookingId={booking.id}
-        operatorCommandQueue={operatorCommandQueue}
-        operatorActionMatrix={operatorActionMatrix}
-      />
+      <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
 
       <BookingHandoffChecklistSection handoffChecklist={handoffChecklist} />
 
