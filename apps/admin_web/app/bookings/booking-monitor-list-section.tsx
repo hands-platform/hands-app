@@ -245,87 +245,111 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
           <span className={`pill ${row.location.toneClass}`}>{row.location.pillLabel}</span>
         </div>
       </td>
-      <td>
-        {booking.payment?.status ?? 'NONE'}
-        <div className="muted">
-          {booking.payment
-            ? `${booking.payment.amount} ${booking.payment.currency ?? 'VND'} - ${booking.payment.method}`
-            : 'No payment'}
-        </div>
-        {booking.payment?.id && (
-          <div className="actions admin-mt-8">
-            <Link className="text-link" href={`/bookings/${booking.id}`}>
-              Detail
-            </Link>
-            <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
-              Open payment
-            </Link>
-            {(booking.status === 'REFUNDED' || booking.payment.status === 'REFUNDED') && (
-              <Link className="text-link" href="/refunds">
-                Refund board
-              </Link>
-            )}
-          </div>
-        )}
-        {row.cashDebtNeedsOps && (
-          <div className="admin-mt-8">
-            <span className="pill pill-warn">Partner wallet debt</span>
-          </div>
-        )}
-        {row.cashDebtAmountLabel && (
-          <div className="muted admin-mt-6">Cash fee debt {row.cashDebtAmountLabel}</div>
-        )}
-        {booking.earning?.id && (
-          <div className="actions admin-mt-8">
-            <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
-              Open earning
-            </Link>
-          </div>
-        )}
-      </td>
-      <td>
-        <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>
-        <div className="muted admin-mt-8">{row.checkSignal.helper}</div>
-        {row.firstCheckTitle && <div className="muted">{row.firstCheckTitle}</div>}
-        <div className="admin-mt-8">{row.opsSignal}</div>
-        <div className="muted admin-mt-8">{row.nextActionLabel}</div>
-        <div className="participant-list admin-mt-10">
-          <span className="muted">Primary booking command</span>
-          <Link
-            className={`pill ${row.commandDecisionStrip.tone}`}
-            href={`/bookings/${booking.id}#booking-command-decision-strip`}
-            title={row.commandDecisionStrip.primaryDetail}
-          >
-            {row.commandDecisionStrip.primaryAction}
-          </Link>
-        </div>
-        <div className="muted admin-mt-6">
-          {row.commandDecisionStrip.status}: {row.commandDecisionStrip.primaryDetail}
-        </div>
-        <div className="participant-list admin-mt-10">
-          <span className="muted">Booking gate reason</span>
-          <Link
-            className={`pill ${row.finalGateReason.tone}`}
-            href={row.finalGateReason.href}
-            title={row.finalGateReason.detail}
-          >
-            {row.finalGateReason.label}
-          </Link>
-        </div>
-        <div className="muted admin-mt-6">{row.finalGateReason.detail}</div>
-        <div className="participant-list admin-mt-10">
-          <span className="muted">Action status strip</span>
-          {row.actionChips.map((chip) => (
-            <Link className={`pill ${chip.tone}`} href={chip.href} key={chip.label} title={chip.detail}>
-              {chip.label}
-            </Link>
-          ))}
-        </div>
-        {row.closureState && (
-          <div className="muted admin-mt-8">Closure evidence: {row.closureState.detail}</div>
-        )}
-      </td>
+      <BookingMonitorPaymentWalletCell booking={booking} row={row} />
+      <BookingMonitorOpsCheckCell booking={booking} row={row} />
     </tr>
+  );
+}
+
+function BookingMonitorPaymentWalletCell({
+  booking,
+  row,
+}: {
+  readonly booking: AdminBooking;
+  readonly row: BookingMonitorListRow;
+}) {
+  return (
+    <td>
+      {booking.payment?.status ?? 'NONE'}
+      <div className="muted">
+        {booking.payment
+          ? `${booking.payment.amount} ${booking.payment.currency ?? 'VND'} - ${booking.payment.method}`
+          : 'No payment'}
+      </div>
+      {booking.payment?.id && (
+        <div className="actions admin-mt-8">
+          <Link className="text-link" href={`/bookings/${booking.id}`}>
+            Detail
+          </Link>
+          <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
+            Open payment
+          </Link>
+          {(booking.status === 'REFUNDED' || booking.payment.status === 'REFUNDED') && (
+            <Link className="text-link" href="/refunds">
+              Refund board
+            </Link>
+          )}
+        </div>
+      )}
+      {row.cashDebtNeedsOps && (
+        <div className="admin-mt-8">
+          <span className="pill pill-warn">Partner wallet debt</span>
+        </div>
+      )}
+      {row.cashDebtAmountLabel && (
+        <div className="muted admin-mt-6">Cash fee debt {row.cashDebtAmountLabel}</div>
+      )}
+      {booking.earning?.id && (
+        <div className="actions admin-mt-8">
+          <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
+            Open earning
+          </Link>
+        </div>
+      )}
+    </td>
+  );
+}
+
+function BookingMonitorOpsCheckCell({
+  booking,
+  row,
+}: {
+  readonly booking: AdminBooking;
+  readonly row: BookingMonitorListRow;
+}) {
+  return (
+    <td>
+      <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>
+      <div className="muted admin-mt-8">{row.checkSignal.helper}</div>
+      {row.firstCheckTitle && <div className="muted">{row.firstCheckTitle}</div>}
+      <div className="admin-mt-8">{row.opsSignal}</div>
+      <div className="muted admin-mt-8">{row.nextActionLabel}</div>
+      <div className="participant-list admin-mt-10">
+        <span className="muted">Primary booking command</span>
+        <Link
+          className={`pill ${row.commandDecisionStrip.tone}`}
+          href={`/bookings/${booking.id}#booking-command-decision-strip`}
+          title={row.commandDecisionStrip.primaryDetail}
+        >
+          {row.commandDecisionStrip.primaryAction}
+        </Link>
+      </div>
+      <div className="muted admin-mt-6">
+        {row.commandDecisionStrip.status}: {row.commandDecisionStrip.primaryDetail}
+      </div>
+      <div className="participant-list admin-mt-10">
+        <span className="muted">Booking gate reason</span>
+        <Link
+          className={`pill ${row.finalGateReason.tone}`}
+          href={row.finalGateReason.href}
+          title={row.finalGateReason.detail}
+        >
+          {row.finalGateReason.label}
+        </Link>
+      </div>
+      <div className="muted admin-mt-6">{row.finalGateReason.detail}</div>
+      <div className="participant-list admin-mt-10">
+        <span className="muted">Action status strip</span>
+        {row.actionChips.map((chip) => (
+          <Link className={`pill ${chip.tone}`} href={chip.href} key={chip.label} title={chip.detail}>
+            {chip.label}
+          </Link>
+        ))}
+      </div>
+      {row.closureState && (
+        <div className="muted admin-mt-8">Closure evidence: {row.closureState.detail}</div>
+      )}
+    </td>
   );
 }
 
