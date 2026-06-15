@@ -23,6 +23,12 @@ const momoCredentialsFix =
   'Create or open the MoMo Merchant Portal sandbox integration, copy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/MOMO/callback. Production callback: https://api.hands.vn/api/payments/MOMO/callback.';
 const vnpayCredentialsFix =
   'Create or open the VNPay Merchant Portal sandbox integration, copy VNPAY_TMN_CODE and VNPAY_HASH_SECRET into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/VNPAY/callback. Production callback: https://api.hands.vn/api/payments/VNPAY/callback.';
+const smsProviderFix =
+  'Create or open the Vonage SMS dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER to vonage, viettel, fpt, or custom before Supabase Phone Auth E2E.';
+const smsApiUrlFix =
+  'Copy the selected SMS provider API endpoint into SMS_API_URL before Supabase Phone Auth E2E. For Vonage, use the API endpoint required by the selected SMS/Verify product.';
+const smsApiKeyFix =
+  'Copy the selected SMS provider server-side secret into SMS_API_KEY before Supabase Phone Auth E2E. Keep it in ignored env files or the secret store only.';
 const storageRequiredEnvKeys = [
   'STORAGE_PROVIDER',
   'S3_ENDPOINT',
@@ -198,17 +204,38 @@ addRecommended(
   hasValue('SMS_PROVIDER'),
   'Use SMS_PROVIDER=dev locally; configure the chosen Vietnam-capable SMS provider only when Phone Auth/SMS E2E starts.',
 );
+addPhaseRequired(
+  'sms',
+  'SMS_PROVIDER for Phone Auth',
+  hasRealSmsProvider(),
+  smsProviderFix,
+  ['supabase-auth', 'production'],
+);
 addRecommended(
   'sms',
   'SMS_API_URL',
   hasValue('SMS_API_URL'),
   'Deferred: fill the chosen SMS provider values before real OTP launch.',
 );
+addPhaseRequired(
+  'sms',
+  'SMS_API_URL for Phone Auth',
+  hasValue('SMS_API_URL'),
+  smsApiUrlFix,
+  ['supabase-auth', 'production'],
+);
 addRecommended(
   'sms',
   'SMS_API_KEY',
   hasValue('SMS_API_KEY'),
   'Deferred: fill the chosen SMS provider secret before real OTP launch.',
+);
+addPhaseRequired(
+  'sms',
+  'SMS_API_KEY for Phone Auth',
+  hasValue('SMS_API_KEY'),
+  smsApiKeyFix,
+  ['supabase-auth', 'production'],
 );
 
 addRecommended(
@@ -381,6 +408,11 @@ function isHttpsUrl(key) {
 
 function allHaveValue(keys) {
   return keys.every(hasValue);
+}
+
+function hasRealSmsProvider() {
+  const provider = String(env.SMS_PROVIDER ?? '').trim().toLowerCase();
+  return provider.length > 0 && provider !== 'dev';
 }
 
 function pathExists(key) {
