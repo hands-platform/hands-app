@@ -33,6 +33,29 @@ type LiveSignal = {
   tone: string;
 };
 
+type ChatRepairState = {
+  canSubmit: boolean;
+  status: string;
+  tone: string;
+  helper: string;
+};
+
+type CloseoutState = {
+  canSubmit: boolean;
+  label: string;
+  tone: string;
+};
+
+type MatchingExpiryState = {
+  canSubmit: boolean;
+  status: string;
+};
+
+type NoShowState = {
+  canSubmit: boolean;
+  status: string;
+};
+
 export function BookingActionStatusSections({
   bookingId,
   chatRepair,
@@ -45,12 +68,12 @@ export function BookingActionStatusSections({
   opsTaskCards,
 }: {
   bookingId: string;
-  chatRepair: { canSubmit: boolean; status: string; tone: string; helper: string };
-  closeout: { canSubmit: boolean; label: string; tone: string };
+  chatRepair: ChatRepairState;
+  closeout: CloseoutState;
   dispatchSteps: DispatchStep[];
   liveSignals: LiveSignal[];
-  matchingExpiry: { canSubmit: boolean; status: string };
-  noShow: { canSubmit: boolean; status: string };
+  matchingExpiry: MatchingExpiryState;
+  noShow: NoShowState;
   notes?: string | null;
   opsTaskCards: OpsTaskCard[];
 }) {
@@ -73,7 +96,7 @@ function BookingChatRepairSection({
   chatRepair,
 }: {
   bookingId: string;
-  chatRepair: { canSubmit: boolean; status: string; tone: string; helper: string };
+  chatRepair: ChatRepairState;
 }) {
   return (
     <section className="card ops-command-center admin-mb-16" id="chat-repair">
@@ -229,7 +252,7 @@ function BookingCompletedCloseoutSection({
   closeout,
 }: {
   bookingId: string;
-  closeout: { canSubmit: boolean; label: string; tone: string };
+  closeout: CloseoutState;
 }) {
   return (
     <section className="card ops-command-center admin-mb-16" id="completed-closeout">
@@ -262,7 +285,7 @@ function BookingMatchingExpirySection({
   matchingExpiry,
 }: {
   bookingId: string;
-  matchingExpiry: { canSubmit: boolean; status: string };
+  matchingExpiry: MatchingExpiryState;
 }) {
   return (
     <section className="card ops-command-center admin-mb-16" id="matching-expiry">
@@ -297,7 +320,7 @@ function BookingNoShowHandlingSection({
   noShow,
 }: {
   bookingId: string;
-  noShow: { canSubmit: boolean; status: string };
+  noShow: NoShowState;
 }) {
   return (
     <section className="card ops-command-center admin-mb-16" id="no-show-handling">
