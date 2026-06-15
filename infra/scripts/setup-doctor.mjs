@@ -151,16 +151,12 @@ function nextSetupSteps({ firebasePushReady }) {
   ];
   const followUpSteps = [
     'Run npm.cmd run external:check:supabase for Supabase core values.',
-    'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
+    'For Phone Auth E2E, create or open the Vonage SMS/Verify dashboard, or another approved Vietnam-capable SMS provider, then set SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, and SMS_SENDER_ID in ignored env.',
+    'Only after those SMS values are present, set AUTH_BACKEND=supabase and run npm.cmd run external:check:supabase-auth followed by npm.cmd run auth:supabase-smoke.',
   ];
   const fcmSteps = firebasePushReady
     ? [
-        'Run npm.cmd run fcm:credentials-check before live FCM push smoke.',
-        'Run npm.cmd run security:secrets before live FCM push smoke to confirm Firebase client/admin config files are not tracked.',
-        'Run npm.cmd run docker:contract after FCM credentials are ready to confirm Docker credential mounts and internal service URLs.',
-        'Run npm.cmd run fcm:token-smoke -- --dry-run, then npm.cmd run fcm:token-smoke when API/Docker are ready.',
-        'Run npm.cmd run fcm:push-smoke -- --preflight to confirm notification and device readiness before sending FCM.',
-        'Set FCM_SMOKE_DEVICE_TOKEN for the same app session, or set FCM_SMOKE_USE_REGISTERED_DEVICE=true after that app session registers an enabled device, before running live fcm:push-smoke.',
+        'FCM credentials are configured; rerun npm.cmd run fcm:credentials-check, npm.cmd run docker:contract, and npm.cmd run fcm:push-smoke -- --preflight --use-registered-device only after notification routing or credential changes.',
       ]
     : [
         'After downloading a Firebase service account JSON from the same project as the mobile google-services.json files, run npm.cmd run fcm:credentials:install -- -SourcePath <downloaded-json> -CheckOnly, then install with -UpdateEnv, run npm.cmd run security:secrets, npm.cmd run fcm:credentials-check, and npm.cmd run docker:contract.',
