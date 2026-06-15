@@ -242,6 +242,23 @@ const participantResponseBookingInclude = {
   services: { select: { serviceId: true } },
 } satisfies Prisma.BookingInclude;
 
+const providerBookingReadinessInclude = {
+  verification: true,
+  kyc: true,
+  documents: { where: { deletedAt: null } },
+  bankAccounts: { where: { deletedAt: null } },
+} satisfies Prisma.ProviderProfileInclude;
+
+const preferredProviderBookingReadinessInclude = {
+  user: true,
+  ...providerBookingReadinessInclude,
+} satisfies Prisma.ProviderProfileInclude;
+
+const firstRevenuePayoutSetupProviderInclude = {
+  taxProfile: true,
+  agreements: true,
+} satisfies Prisma.ProviderProfileInclude;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -421,13 +438,7 @@ export class BookingsService {
     const preferredProvider = input.providerId
       ? await this.prisma.providerProfile.findUniqueOrThrow({
           where: { id: input.providerId },
-          include: {
-            user: true,
-            verification: true,
-            kyc: true,
-            documents: { where: { deletedAt: null } },
-            bankAccounts: { where: { deletedAt: null } },
-          },
+          include: preferredProviderBookingReadinessInclude,
         })
       : null;
     const providerService = preferredProvider
@@ -1905,10 +1916,7 @@ export class BookingsService {
       }),
       this.prisma.providerProfile.findUnique({
         where: { id: providerProfileId },
-        include: {
-          taxProfile: true,
-          agreements: true,
-        },
+        include: firstRevenuePayoutSetupProviderInclude,
       }),
     ]);
 
@@ -1938,12 +1946,7 @@ export class BookingsService {
 
     const provider = await this.prisma.providerProfile.findUnique({
       where: { userId },
-      include: {
-        verification: true,
-        kyc: true,
-        documents: { where: { deletedAt: null } },
-        bankAccounts: { where: { deletedAt: null } },
-      },
+      include: providerBookingReadinessInclude,
     });
     if (!provider) {
       throw new NotFoundException('Partner profile not found');
