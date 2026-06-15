@@ -51,6 +51,11 @@ describe('notification action confirmation', () => {
           href: '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
           label: 'Audit trail',
         },
+        {
+          description: 'Open push device recovery and token change audit events before retrying.',
+          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
+          label: 'Device audit',
+        },
       ],
       title: 'Retry notification notifica?',
       tone: 'danger',
@@ -201,6 +206,15 @@ describe('notification action confirmation', () => {
     );
     expect(confirmation?.description).toContain('30+ day token timestamp');
     expect(confirmation?.description).toContain('Runbook: Token freshness gate.');
+    expect(confirmation?.supportingLinks).toEqual(
+      expect.arrayContaining([
+        {
+          description: 'Open push device recovery and token change audit events before retrying.',
+          href: '/audit-log?bucket=Notification&q=push-device-123456&range=all',
+          label: 'Device audit',
+        },
+      ]),
+    );
   });
 
   it('makes retry copy explicit when the latest delivery already succeeded', () => {

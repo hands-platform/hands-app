@@ -130,6 +130,7 @@ function buildRetryConfirmation(
         href: notificationAuditTrailHref(notification.id),
         label: 'Audit trail',
       },
+      ...notificationRetryDeviceSupportingLinks(latestDelivery),
       ...notificationReviewSupportingLinks(values.review),
     ],
     title: `Retry notification ${shortId(notification.id)}?`,
@@ -259,6 +260,25 @@ function notificationHref(entries: readonly (readonly [string, string | undefine
 
 function notificationAuditTrailHref(notificationId: string) {
   return `/audit-log?bucket=Notification&q=${encodeURIComponent(notificationId)}&range=all`;
+}
+
+function notificationRetryDeviceSupportingLinks(latestDelivery: NotificationDelivery | undefined) {
+  const pushDeviceId = latestDelivery?.pushDevice?.id;
+  if (!pushDeviceId || !notificationRetryNeedsDeviceEvidence(latestDelivery)) {
+    return [];
+  }
+
+  return [
+    {
+      description: 'Open push device recovery and token change audit events before retrying.',
+      href: notificationAuditTrailHref(pushDeviceId),
+      label: 'Device audit',
+    },
+  ];
+}
+
+function notificationRetryNeedsDeviceEvidence(latestDelivery: NotificationDelivery) {
+  return latestDelivery.pushDevice?.enabled === false || isStaleNotificationPushDeviceDelivery(latestDelivery);
 }
 
 function notificationReviewGuidanceText(review: string | undefined) {

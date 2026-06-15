@@ -104,6 +104,16 @@ function notificationFcmRetryFollowUp(review, gateMarker, label = `${review} ret
   return notificationRetryFollowUp(review, gateMarker, label, ['FCM setup'], notificationFcmSupportFollowUps);
 }
 
+function notificationFcmStaleRetryFollowUp(review, gateMarker, label = `${review} retry confirmation`) {
+  return notificationRetryFollowUp(
+    review,
+    gateMarker,
+    label,
+    ['FCM setup', 'Device audit'],
+    notificationFcmSupportFollowUps,
+  );
+}
+
 function notificationFcmDeviceFollowUp(review, gateMarker, label = `${review} device confirmation`) {
   return notificationDeviceFollowUp(
     review,
@@ -561,7 +571,7 @@ const pages = [
   {
     path: '/notifications?review=stale-device',
     markers: ['Notifications', 'Stale devices', 'Delivery operations queue', 'Token freshness gate'],
-    followUps: [notificationFcmRetryFollowUp('stale-device', 'Token freshness gate')],
+    followUps: [notificationFcmStaleRetryFollowUp('stale-device', 'Token freshness gate')],
   },
   {
     path: '/notifications?review=needs-retry',
