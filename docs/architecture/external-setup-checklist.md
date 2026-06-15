@@ -75,6 +75,9 @@ FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH=/run/secrets/firebase-admin.json
 ```dotenv
 SMS_PROVIDER=dev
 DEV_OTP=123456
+SMS_API_URL=
+SMS_API_KEY=
+SMS_SENDER_ID=HANDS
 ```
 
 ## Verification Commands

@@ -52,6 +52,6 @@ export class OtpDeliveryService {
 
   private provider(): SmsProvider {
     const configured = this.config.get<string>('SMS_PROVIDER')?.toLowerCase();
-    return configured === 'http' ? 'http' : 'dev';
+    return configured && configured !== 'dev' ? 'http' : 'dev';
   }
 }

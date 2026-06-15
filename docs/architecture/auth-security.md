@@ -21,7 +21,7 @@
 
 ## Next Hardening
 
-- Configure a real Vietnam SMS provider behind `SMS_PROVIDER=http`, `SMS_API_URL`, `SMS_API_KEY`, and `SMS_SENDER_ID`.
+- Configure a real Vietnam SMS provider behind `SMS_PROVIDER=vonage|viettel|fpt|custom`, `SMS_API_URL`, `SMS_API_KEY`, and `SMS_SENDER_ID`.
 - Move rate limiting to Redis or a gateway before horizontal scaling.
 - Store hashed refresh tokens and support revocation.
 - Add ownership checks so customers can only read their own bookings and providers can only update assigned bookings.
