@@ -117,7 +117,8 @@ export const setupOrder = [
     phase: 'Phone Auth E2E',
     operatorAction:
       'Use the configured Vonage/Supabase Phone Auth send path, then capture a 6 digit OTP and run verify/API exchange before switching mobile login broadly.',
-    exitCriteria: 'OTP send, OTP verify, and Supabase access-token exchange into HANDS API tokens pass.',
+    exitCriteria:
+      'OTP send, OTP verify, and Supabase access-token exchange from the verified phone session into HANDS API tokens pass.',
     purpose:
       'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
     env: [
@@ -131,6 +132,7 @@ export const setupOrder = [
     ],
     notes: [
       'Configured credentials are not enough by themselves; OTP send, OTP verify, and API token exchange must pass before broad mobile login switching.',
+      'auth:supabase-smoke passes the synthetic Supabase JWT exchange and role-boundary contract; the real Phone Auth OTP verify path must still produce the Supabase access token before mobile switching.',
       'Current Vonage credentials can send an OTP to the test device; SMS sender-channel refinement is deferred.',
       'Do not switch mobile login broadly until a captured 6 digit OTP verifies and API token exchange passes.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',

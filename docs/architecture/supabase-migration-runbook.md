@@ -201,7 +201,7 @@ Current `hands-staging` status:
 - REST table access: verified with service role
 - Storage buckets: `hands-public`, `hands-private`
 - Local API Supabase auth smoke: passing
-- Mobile OTP switch: Supabase Phone Auth send smoke reached the test device; verify/API exchange waits for a captured 6 digit OTP
+- Mobile OTP switch: Supabase Phone Auth send smoke reached the test device; synthetic API exchange smoke passes; real OTP verify waits for a captured 6 digit code
 - Planned SMS provider path: keep Vonage for the current Phone Auth E2E pass; SMS sender-channel refinement is deferred while provider fallback delivery is acceptable for smoke setup
 
 Rollback during staging is simple: create a fresh staging Supabase project and rerun the generated bundle. Do not run destructive SQL against production-like data until backup/restore has been tested.

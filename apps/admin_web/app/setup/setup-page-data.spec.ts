@@ -100,6 +100,7 @@ describe('setup page data', () => {
     ]);
     expect(supabaseAuthSetup?.notes).toEqual(
       expect.arrayContaining([
+        'auth:supabase-smoke passes the synthetic Supabase JWT exchange and role-boundary contract; the real Phone Auth OTP verify path must still produce the Supabase access token before mobile switching.',
         'Current Vonage credentials can send an OTP to the test device; SMS sender-channel refinement is deferred.',
         'Do not switch mobile login broadly until a captured 6 digit OTP verifies and API token exchange passes.',
         'For Supabase Phone Auth E2E, maintain the configured SMS/Verify credential in the chosen provider console and keep SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env only.',
