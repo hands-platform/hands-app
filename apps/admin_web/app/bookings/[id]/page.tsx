@@ -53,14 +53,11 @@ import {
 } from './booking-policy-supply-sections';
 import {
   bookingCommunicationMovementHandoff,
-  messageSenderLabel,
 } from './booking-communication-movement-handoff';
 import {
   bookingAddressSnapshotLabel,
-  coordinateLabel,
-  formatDate,
   money,
-  compactActivityText,
+  coordinateLabel,
   shortId,
 } from './booking-formatters';
 import { BookingEvidenceSections } from './booking-evidence-sections';
@@ -69,6 +66,7 @@ import {
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
 import { bookingDetailActionEvidenceGate } from './booking-detail-action-evidence-gate';
+import { bookingDetailChatEvidenceDecisionBoard } from './booking-detail-chat-evidence-decision-board';
 import { bookingDetailGateAndNotes } from './booking-detail-gate-and-notes';
 import { bookingDetailOperatorFirstRead } from './booking-detail-operator-first-read';
 import { bookingFinanceTrace } from './booking-finance-trace';
@@ -151,7 +149,6 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
-import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
@@ -414,24 +411,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
-  const latestMessage = messages[messageCount - 1];
-  const chatEvidenceDecisionBoard = buildBookingChatEvidenceDecisionBoard({
-    bookingId: booking.id,
-    bookingStatus: booking.status,
-    hasChatRoom: Boolean(booking.chatRoom),
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    messageCount,
-    latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
-    latestMessagePreview: latestMessage
-      ? `${messageSenderLabel(latestMessage)}: ${compactActivityText(latestMessage.body, 90)}`
-      : null,
-    hasLatestLocation: Boolean(latestLocation),
-    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
-    latestLocationCoordinateLabel: latestLocation
-      ? coordinateLabel(latestLocation.lat, latestLocation.lng)
-      : null,
-    alertCount: notificationCount,
-    auditLogCount: booking.auditLogs?.length ?? 0,
+  const chatEvidenceDecisionBoard = bookingDetailChatEvidenceDecisionBoard({
+    booking,
+    latestLocation,
+    messages,
+    notificationCount,
     operatorNoteLines,
   });
   const { manualDecisionReadiness, decisionEvidenceGuardrails } = bookingDetailDecisionReadiness({
