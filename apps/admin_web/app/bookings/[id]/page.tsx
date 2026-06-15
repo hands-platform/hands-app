@@ -59,6 +59,7 @@ import {
   BookingOperatingSnapshotSection,
   type BookingOperatingSnapshotSectionProps,
   BookingOperatingTimelineSection,
+  type BookingOperatingTimelineSectionProps,
 } from './booking-operating-sections';
 import {
   BookingRecordDetailSections,
@@ -677,6 +678,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operatingSnapshotProps: BookingOperatingSnapshotSectionProps = {
     operatingSnapshot,
   };
+  const operatingTimelineProps: BookingOperatingTimelineSectionProps = {
+    operatingTimeline,
+  };
 
   return (
     <>
@@ -718,7 +722,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
 
-      <BookingOperatingTimelineSection operatingTimeline={operatingTimeline} />
+      <BookingOperatingTimelineSection {...operatingTimelineProps} />
 
       <BookingCommunicationMovementHandoffSection
         communicationMovementHandoff={communicationMovementHandoff}

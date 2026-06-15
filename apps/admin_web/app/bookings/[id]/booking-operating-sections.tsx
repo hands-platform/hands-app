@@ -365,9 +365,7 @@ export type BookingOperatingSnapshotSectionProps = {
 
 export function BookingOperatingTimelineSection({
   operatingTimeline,
-}: {
-  operatingTimeline: OperatingTimelineItem[];
-}) {
+}: BookingOperatingTimelineSectionProps) {
   return (
     <section className="card admin-mb-16" id="operating-timeline">
       <div className="ops-section-header">
@@ -395,6 +393,10 @@ export function BookingOperatingTimelineSection({
     </section>
   );
 }
+
+export type BookingOperatingTimelineSectionProps = {
+  operatingTimeline: OperatingTimelineItem[];
+};
 
 export function BookingHandoffChecklistSection({
   handoffChecklist,
