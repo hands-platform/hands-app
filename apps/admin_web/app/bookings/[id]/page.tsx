@@ -93,9 +93,9 @@ import {
   bookingDetailDispatchChecklist,
 } from './booking-detail-dispatch-checks';
 import { bookingDetailOperatorActionMatrix } from './booking-detail-operator-action-matrix';
+import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
-import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
 import { bookingOperatingTimeline } from './booking-operating-timeline';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
@@ -180,7 +180,6 @@ import {
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
-import { bookingOperatorPriorityBriefing as buildBookingOperatorPriorityBriefing } from '../../../lib/booking-operator-priority-briefing';
 import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
@@ -560,7 +559,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     latestLocation,
   });
   const operatorActionMatrix = bookingDetailOperatorActionMatrix(booking);
-  const operatorPriorityBriefing = bookingOperatorPriorityBriefing({
+  const operatorPriorityBriefing = bookingDetailOperatorPriorityBriefing({
     booking,
     operatorCommandQueue,
     closeoutReadiness,
@@ -1303,64 +1302,6 @@ function bookingOperatorCommandQueue({
     canMarkNoShow: canMarkNoShow(booking.status),
     attentionFlagCount: attentionFlags.length,
     pendingTask: pendingTasks[0] ?? null,
-  });
-}
-
-function bookingOperatorPriorityBriefing({
-  booking,
-  operatorCommandQueue,
-  closeoutReadiness,
-  financeFlags,
-  latestLocation,
-  messageCount,
-}: {
-  booking: AdminBookingDetail;
-  operatorCommandQueue: ReturnType<typeof bookingOperatorCommandQueue>;
-  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
-  financeFlags: AttentionFlag[];
-  latestLocation?: AdminLocationSnapshot;
-  messageCount: number;
-}) {
-  const primaryCommand = operatorCommandQueue.commands[0];
-  const nextAction = bookingOperatingNextAction(booking);
-  const finalPartner = bookingFinalPartnerSummary(booking);
-  const participantCount = booking.participants?.length ?? 0;
-  const customerName = booking.customerProfile?.user?.fullName ?? 'Customer';
-  const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
-  const partnerLabel = finalPartner.selected ? finalPartner.label : 'Not selected';
-  const paymentLabel = booking.payment
-    ? `${booking.payment.method} / ${booking.payment.status}`
-    : 'No payment';
-  const locationLabel = latestLocation
-    ? providerLocationMetricValue(booking)
-    : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
-      ? 'Missing'
-      : 'Not required yet';
-
-  return buildBookingOperatorPriorityBriefing({
-    primaryCommand,
-    nextAction,
-    customerName,
-    customerPhone,
-    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
-    partnerLabel,
-    hasFinalPartner: finalPartner.selected,
-    participantCount,
-    partnerHint: bookingPartnerHint(booking),
-    hasChatRoom: Boolean(booking.chatRoom),
-    messageCount,
-    locationLabel,
-    locationHelper: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
-      : providerLocationMetricHelper(booking),
-    paymentLabel,
-    paymentHint: bookingPaymentHint(booking, {
-      cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    }),
-    closeoutStatus: closeoutReadiness.status,
-    closeoutHelper: closeoutReadiness.helper,
-    closeoutOpenItemCount: closeoutReadiness.openItems.length,
-    financeFlagTitles: financeFlags.map((flag) => flag.title),
   });
 }
 
