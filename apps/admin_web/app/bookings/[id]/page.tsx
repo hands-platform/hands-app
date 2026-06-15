@@ -105,6 +105,7 @@ import {
   bookingDetailOpsTaskCards,
 } from './booking-detail-operator-command-queue';
 import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
+import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailMetricCards } from './booking-detail-metric-cards';
 import { bookingDetailOperationsQuickRail } from './booking-detail-operations-quick-rail';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
@@ -163,13 +164,11 @@ import {
   completedCloseoutLabel,
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
-import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
 import {
   bookingOperatorNoteLines,
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
-import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -497,6 +496,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
     closeoutReadiness,
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
+  const opsCommandCenter = bookingDetailOpsCommandCenter({
+    booking,
+    attentionFlags,
+    cashFeeDebtNeedsSettlement,
+    locationFreshness,
+  });
   const { finalGateReason, decisionNotePresets } = bookingDetailGateAndNotes({
     booking,
     latestLocation,
@@ -658,18 +663,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOpsCommandCenter
         booking={booking}
-        instruction={primaryBookingOpsInstruction(booking, {
-          cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
-        })}
-        badges={bookingOpsBadges(booking, {
-          attentionFlags,
-          cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
-          locationFreshness,
-        })}
+        instruction={opsCommandCenter.instruction}
+        badges={opsCommandCenter.badges}
         finalGateReason={finalGateReason}
         actionEvidenceGate={actionEvidenceGate}
         actionGateByAction={actionGateByAction}
-        cashDebtNeedsSettlement={cashFeeDebtNeedsSettlement}
+        cashDebtNeedsSettlement={opsCommandCenter.cashDebtNeedsSettlement}
       />
 
       <BookingStageSnapshotSection stageSnapshot={stageSnapshot} />
