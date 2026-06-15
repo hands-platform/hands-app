@@ -13,6 +13,7 @@ describe('audit log page model', () => {
             attemptedAt: '2026-06-13T10:23:00.000Z',
             provider: 'FCM',
             pushDeviceEnabled: true,
+            pushDeviceId: 'push-device-123456',
             pushDeviceLastSeenAt: '2026-06-13T10:00:00.000Z',
             pushDevicePlatform: 'android',
             status: 'SENT',
@@ -34,6 +35,9 @@ describe('audit log page model', () => {
       relatedBoardLabel: 'Notification board',
       targetLabel: 'notification:notification-123456',
     });
+    expect(rows[0]?.metadataPreview).toBe(
+      'Notification notifica / Duplicate send risk / Latest FCM SENT / Device android push-dev / Device enabled / Queued notification-send',
+    );
     expect(rows[0]?.metadataHighlights).toEqual([
       { className: 'pill pill-warn', label: 'Duplicate send risk' },
       { className: 'pill pill-success', label: 'FCM sent evidence' },
@@ -41,7 +45,7 @@ describe('audit log page model', () => {
       { className: 'pill pill-info', label: 'Already delivered before retry' },
       { className: 'pill pill-info', label: 'Queued notification-send' },
       { className: 'pill pill-success', label: 'Latest FCM SENT' },
-      { className: 'pill pill-info', label: 'Device android' },
+      { className: 'pill pill-info', label: 'Device android push-dev' },
       { className: 'pill pill-success', label: 'Device enabled' },
     ]);
   });

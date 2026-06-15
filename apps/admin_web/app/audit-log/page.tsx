@@ -522,7 +522,6 @@ function notificationRetryMetadataPreview(metadata: unknown) {
   const retryJob = readRecord(record.retryJob);
   const failureCode = readString(latestDelivery.failureCode);
   const notificationId = readString(record.notificationId);
-  const platform = readString(latestDelivery.pushDevicePlatform);
   const retryJobName = readString(retryJob.jobName);
   const parts = [
     notificationId ? `Notification ${notificationId.slice(0, 8)}` : null,
@@ -530,7 +529,7 @@ function notificationRetryMetadataPreview(metadata: unknown) {
     notificationDeliveryPreview(latestDelivery),
     notificationFailurePreview(failureCode),
     notificationFailureRecoveryActionLabel(failureCode),
-    platform ? `Device ${platform}` : null,
+    notificationPushDevicePreview(latestDelivery),
     latestDelivery.pushDeviceEnabled === true
       ? 'Device enabled'
       : latestDelivery.pushDeviceEnabled === false
@@ -663,7 +662,6 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const highlights: MetadataHighlight[] = [];
   const provider = readString(latestDelivery.provider);
   const status = readString(latestDelivery.status);
-  const platform = readString(latestDelivery.pushDevicePlatform);
   const failureCode = readString(latestDelivery.failureCode);
   const jobName = readString(retryJob.jobName);
   const fcmOutcome = notificationFcmOutcomeHighlight(provider, status);
@@ -691,8 +689,9 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
       className: notificationStatusHighlightClass(status),
     });
   }
-  if (platform) {
-    highlights.push({ label: `Device ${platform}`, className: 'pill pill-info' });
+  const pushDevice = notificationPushDevicePreview(latestDelivery);
+  if (pushDevice) {
+    highlights.push({ label: pushDevice, className: 'pill pill-info' });
   }
   if (failureCode) {
     highlights.push({
@@ -715,6 +714,18 @@ function notificationRetryHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 8);
+}
+
+function notificationPushDevicePreview(latestDelivery: Record<string, unknown>) {
+  const platform = readString(latestDelivery.pushDevicePlatform);
+  const pushDeviceId = readString(latestDelivery.pushDeviceId);
+  if (platform && pushDeviceId) {
+    return `Device ${platform} ${pushDeviceId.slice(0, 8)}`;
+  }
+  if (platform) {
+    return `Device ${platform}`;
+  }
+  return pushDeviceId ? `Device ${pushDeviceId.slice(0, 8)}` : null;
 }
 
 function notificationFcmOutcomeHighlight(
