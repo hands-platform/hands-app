@@ -49,7 +49,10 @@ import {
   BookingOperatingSnapshotSection,
   BookingOperatingTimelineSection,
 } from './booking-operating-sections';
-import { BookingRecordDetailSections } from './booking-record-detail-sections';
+import {
+  BookingRecordDetailSections,
+  type BookingRecordDetailSectionsProps,
+} from './booking-record-detail-sections';
 import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
 import { bookingRecordPaymentRows as buildBookingRecordPaymentRows } from './booking-record-info-rows';
 import {
@@ -608,6 +611,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
     serviceFeedbackLabel: booking.review ? 'Submitted' : 'Not submitted',
   });
   const bookingRecordFinanceRows = buildBookingRecordFinanceRows(financeTrace);
+  const recordDetailSectionsProps: BookingRecordDetailSectionsProps = {
+    cashFeeSettlementPath,
+    chatMessages: messages,
+    customerProfileId: booking.customerProfile?.id,
+    customerRows: bookingRecordCustomerRows,
+    finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
+    financeRows: bookingRecordFinanceRows,
+    hasLatestPartnerLocation: Boolean(latestLocation),
+    handoffRows: bookingRecordHandoffRows,
+    locationTrailRows,
+    participantLedger,
+    paymentRows: bookingRecordPaymentRows,
+    serviceRows: bookingRecordServiceRows,
+    timelineStages: bookingDetailFlowStages(booking),
+  };
 
   return (
     <>
@@ -694,21 +712,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingActionStatusSections {...actionStatusSectionsProps} />
 
-      <BookingRecordDetailSections
-        cashFeeSettlementPath={cashFeeSettlementPath}
-        chatMessages={messages}
-        customerProfileId={booking.customerProfile?.id}
-        customerRows={bookingRecordCustomerRows}
-        finalPartnerId={finalPartnerSummary.selected ? finalPartnerSummary.id : null}
-        financeRows={bookingRecordFinanceRows}
-        hasLatestPartnerLocation={Boolean(latestLocation)}
-        handoffRows={bookingRecordHandoffRows}
-        locationTrailRows={locationTrailRows}
-        participantLedger={participantLedger}
-        paymentRows={bookingRecordPaymentRows}
-        serviceRows={bookingRecordServiceRows}
-        timelineStages={bookingDetailFlowStages(booking)}
-      />
+      <BookingRecordDetailSections {...recordDetailSectionsProps} />
 
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>

@@ -110,7 +110,7 @@ type LocationTrailRow = {
   recordedAt: string;
 };
 
-type BookingRecordDetailSectionsProps = {
+export type BookingRecordDetailSectionsProps = {
   cashFeeSettlementPath: CashSettlementPath;
   chatMessages: AdminChatMessage[];
   customerProfileId?: string | null;
