@@ -219,6 +219,29 @@ const completedBookingInclude = {
   selectedProvider: true,
 } satisfies Prisma.BookingInclude;
 
+const providerBookingHistoryInclude = {
+  services: { include: { service: true } },
+  addressSnapshot: true,
+  participants: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  payment: true,
+  chatRoom: true,
+} satisfies Prisma.BookingInclude;
+
+const joinableBookingForPartnerInclude = {
+  addressSnapshot: true,
+  participants: { select: { providerProfileId: true, status: true } },
+} satisfies Prisma.BookingInclude;
+
+const participantResponseBookingInclude = {
+  customerProfile: true,
+  preferredProvider: true,
+  selectedProvider: true,
+  chatRoom: true,
+  services: { select: { serviceId: true } },
+} satisfies Prisma.BookingInclude;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -1049,15 +1072,7 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     const bookings = await this.prisma.booking.findMany({
       where: providerBookingHistoryWhere(provider.id),
-      include: {
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        participants: true,
-        preferredProvider: true,
-        selectedProvider: true,
-        payment: true,
-        chatRoom: true,
-      },
+      include: providerBookingHistoryInclude,
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
@@ -1068,10 +1083,7 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: {
-        addressSnapshot: true,
-        participants: { select: { providerProfileId: true, status: true } },
-      },
+      include: joinableBookingForPartnerInclude,
     });
     this.assertBookingOpenForPartnerResponse(booking);
     assertProviderCanReceiveBooking(provider);
@@ -1162,13 +1174,7 @@ export class BookingsService {
     }
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: {
-        customerProfile: true,
-        preferredProvider: true,
-        selectedProvider: true,
-        chatRoom: true,
-        services: { select: { serviceId: true } },
-      },
+      include: participantResponseBookingInclude,
     });
     this.assertBookingOpenForPartnerResponse(booking);
 
