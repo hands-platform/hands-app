@@ -70,7 +70,6 @@ import {
   money,
   compactActivityText,
   providerName,
-  readNullableAmount,
   shortId,
 } from './booking-formatters';
 import { BookingEvidenceSections } from './booking-evidence-sections';
@@ -87,6 +86,7 @@ import {
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
+import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
 import { bookingDetailFlowStages } from './booking-detail-flow-stages';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import {
@@ -159,7 +159,6 @@ import {
   bookingLocationTrail,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
 } from '../../../lib/booking-status-location-helpers';
-import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
 import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
@@ -243,7 +242,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const opsTaskCards = bookingOpsTaskCards(booking);
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
-  const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const financeFlags = bookingDetailFinanceFlags(booking, financeTrace);
   const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
   const paymentEvidence = bookingPaymentEvidence(booking);
   const refundLedgerRows = paymentEvidence.refundRows;
@@ -1301,34 +1300,6 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
   return buildBookingFinanceSummaryCards(financeTrace, { money });
-}
-
-function bookingFinanceFlags(
-  booking: AdminBookingDetail,
-  financeTrace: ReturnType<typeof bookingFinanceTrace>,
-): AttentionFlag[] {
-  const bookedService = booking.services?.[0];
-  const paymentAmount = readNullableAmount(booking.payment?.amount);
-  const servicePrice = readNullableAmount(bookedService?.price);
-  const finalPartner = bookingFinalPartnerSummary(booking);
-  return buildBookingFinanceFlags({
-    bookingStatus: booking.status,
-    paymentAmount,
-    servicePrice,
-    hasEarning: Boolean(booking.earning),
-    earningNetAmount: booking.earning?.netAmount ?? null,
-    partnerLabel: finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider),
-    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    financeTrace: {
-      currency: financeTrace.currency,
-      customerPriceAmount: financeTrace.customerPriceAmount,
-      providerPayoutAmount: financeTrace.providerPayoutAmount,
-      payoutRuleMissing: financeTrace.payoutRuleMissing,
-      paymentMethod: financeTrace.paymentMethod,
-      walletTotalAmount: financeTrace.walletTotalAmount,
-    },
-    formatMoney: money,
-  });
 }
 
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
