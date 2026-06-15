@@ -88,9 +88,11 @@ describe('setup page data', () => {
     ]);
     expect(supabaseAuthSetup?.notes).toEqual(
       expect.arrayContaining([
-        'For Supabase Phone Auth E2E, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID into ignored env only.',
-        'For Vonage, use the dashboard owned by administration@hands.vn and choose the endpoint/credential pair for the selected SMS or Verify product.',
-        'Live OTP smoke is split into --send and --verify so operators do not send SMS by accident.',
+        'Current Vonage credentials can send an OTP to the test device; SMS sender-channel refinement is deferred.',
+        'Do not switch mobile login broadly until a captured 6 digit OTP verifies and API token exchange passes.',
+        'For Supabase Phone Auth E2E, maintain the configured SMS/Verify credential in the chosen provider console and keep SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env only.',
+        'For Vonage, use the dashboard owned by administration@hands.vn; only revisit the endpoint, sender, or product choice when SMS delivery is required.',
+        'Live OTP smoke is split into --send and --verify so operators do not send OTP messages by accident.',
       ]),
     );
     expect(supabaseAuthSetup?.commands).toEqual(
@@ -119,7 +121,7 @@ describe('setup page data', () => {
     const phonePlan = externalRegistrationPlan.find((item) => item.id === 'sms-phone-provider');
     expect(phonePlan).toMatchObject({
       groupId: 'supabase-auth',
-      provider: 'Supabase Phone Auth + Vonage SMS',
+      provider: 'Supabase Phone Auth + Vonage',
     });
     expect(phonePlan?.status).toBeUndefined();
     expect(phonePlan?.statusClass).toBeUndefined();

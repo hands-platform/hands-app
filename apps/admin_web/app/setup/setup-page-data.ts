@@ -113,11 +113,11 @@ export const setupOrder = [
   },
   {
     id: 'supabase-auth',
-    title: 'Supabase Phone Auth with SMS service',
+    title: 'Supabase Phone Auth OTP service',
     phase: 'Phone Auth E2E',
     operatorAction:
-      'Run the configured Vonage/Supabase Phone Auth E2E path; keep Nest/dev OTP as the fallback until live OTP delivery and token exchange pass.',
-    exitCriteria: 'SMS OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
+      'Use the configured Vonage/Supabase Phone Auth send path, then capture a 6 digit OTP and run verify/API exchange before switching mobile login broadly.',
+    exitCriteria: 'OTP send, OTP verify, and Supabase access-token exchange into HANDS API tokens pass.',
     purpose:
       'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
     env: [
@@ -130,12 +130,14 @@ export const setupOrder = [
       'SUPABASE_PHONE_SMOKE_PHONE',
     ],
     notes: [
-      'Configured credentials are not enough by themselves; live OTP delivery and API token exchange must pass before broad mobile login switching.',
+      'Configured credentials are not enough by themselves; OTP send, OTP verify, and API token exchange must pass before broad mobile login switching.',
+      'Current Vonage credentials can send an OTP to the test device; SMS sender-channel refinement is deferred.',
+      'Do not switch mobile login broadly until a captured 6 digit OTP verifies and API token exchange passes.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
       'Use dev OTP as the local fallback. Vonage is the selected SMS path for the Phone Auth E2E pass; Viettel/FPT or a custom Vietnam SMS backend remain fallback options if delivery or cost requires it.',
-      'For Supabase Phone Auth E2E, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID into ignored env only.',
-      'For Vonage, use the dashboard owned by administration@hands.vn and choose the endpoint/credential pair for the selected SMS or Verify product.',
-      'Live OTP smoke is split into --send and --verify so operators do not send SMS by accident.',
+      'For Supabase Phone Auth E2E, maintain the configured SMS/Verify credential in the chosen provider console and keep SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID in ignored env only.',
+      'For Vonage, use the dashboard owned by administration@hands.vn; only revisit the endpoint, sender, or product choice when SMS delivery is required.',
+      'Live OTP smoke is split into --send and --verify so operators do not send OTP messages by accident.',
       'Partner role exchange must remain server-verified and must not accept a client-selected role.',
       'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
     ],
@@ -372,10 +374,10 @@ export const externalRegistrationPlan = [
     id: 'sms-phone-provider',
     groupId: 'supabase-auth',
     title: 'Phone OTP service',
-    provider: 'Supabase Phone Auth + Vonage SMS',
+    provider: 'Supabase Phone Auth + Vonage',
     owner: 'administration@hands.vn',
     detail:
-      'Vonage credentials and sender values are tracked by setup readiness. After the external check passes, run live OTP delivery and API token exchange before switching mobile login broadly.',
+      'Vonage credentials can send OTP through the current provider route. Capture a 6 digit OTP, then run verify and API token exchange before switching mobile login broadly. SMS sender-channel refinement stays deferred.',
     env: [
       'AUTH_BACKEND',
       'SMS_PROVIDER',
