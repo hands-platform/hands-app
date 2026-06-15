@@ -8,7 +8,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
   it('renders chat retention summary, row evidence, and archive links', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
-      emptyMessage: 'No partner chat retention row matched this date filter.',
+      emptyMessage: 'No Partner chat retention row matched this date filter.',
       formatLatestMessageAt: (value) => `formatted ${value}`,
       id: 'partner-chat-retention-ledger',
       rows: buildRows(),
@@ -42,7 +42,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
   it('renders an empty message when no chat retention rows match', () => {
     const section = PartnerDetailChatRetentionLedgerSection({
       description: 'Admin keeps the retained transcript for evidence review.',
-      emptyMessage: 'No partner chat retention row matched this date filter.',
+      emptyMessage: 'No Partner chat retention row matched this date filter.',
       formatLatestMessageAt: (value) => value,
       id: 'partner-chat-retention-ledger',
       rows: [],
@@ -54,7 +54,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('0 booking row(s)');
-    expect(rendered).toContain('No partner chat retention row matched this date filter.');
+    expect(rendered).toContain('No Partner chat retention row matched this date filter.');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['muted admin-mt-12']));
   });
 });
@@ -85,7 +85,7 @@ function buildRows(): PartnerChatRetentionRow[] {
       messageCount: 3,
       mobileHidden: true,
       mobileVisibility: 'Hidden in mobile after closeout',
-      mobileVisibilityDetail: 'Customer and partner apps may hide completed or closed chats.',
+      mobileVisibilityDetail: 'Customer and Partner apps may hide completed or closed chats.',
       relation: 'Selected',
       requiresRoom: true,
       roleDetail: 'Customer selected this partner for final service handoff.',

@@ -192,7 +192,7 @@ const bookingDetailAuthoritySourceMarkers = [
   'Communication and movement handoff',
   'Chat lifecycle and retention',
   'All customer chats',
-  'All partner chats',
+  'All Partner chats',
   'Service pricing snapshot',
 ] as const;
 

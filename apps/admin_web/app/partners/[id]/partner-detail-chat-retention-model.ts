@@ -68,7 +68,7 @@ export function buildPartnerChatRetentionRows<TBooking extends PartnerBookingArc
           )}`
         : requiresRoom
           ? 'Matched or service-stage booking should have a retained chat room.'
-          : 'Pre-match bookings do not open customer-partner chat yet.',
+          : 'Pre-match bookings do not open a Customer-Partner chat yet.',
       latestSender,
       latestMessage: latestMessage ? trimText(latestMessage.body, 120) : 'No retained message loaded',
       latestMessageAt: latestMessage?.createdAt,
@@ -78,7 +78,7 @@ export function buildPartnerChatRetentionRows<TBooking extends PartnerBookingArc
           ? 'Visible while service is active'
           : 'Not visible yet',
       mobileVisibilityDetail: mobileHidden
-        ? 'Customer and partner apps may hide completed or closed chats, but admin keeps the archive.'
+        ? 'Customer and Partner apps may hide completed or closed chats, but admin keeps the archive.'
         : booking.chatRoom
           ? 'Room should remain visible until the service is completed or closed.'
           : 'Chat opens after first-pick match or customer final selection.',
@@ -91,7 +91,7 @@ export function buildPartnerChatRetentionRows<TBooking extends PartnerBookingArc
         ? 'Use the archive link for full message evidence.'
         : requiresRoom
           ? 'Open the booking detail to repair or investigate the missing room.'
-          : 'No customer-partner chat evidence is expected before matching.',
+          : 'No Customer-Partner chat evidence is expected before matching.',
       bookingHref: `/bookings/${booking.id}`,
       chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
       hasRoom: Boolean(booking.chatRoom),

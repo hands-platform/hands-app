@@ -495,7 +495,7 @@ function checkAdminPeopleManagementIsFactual() {
   ]);
   requireMarkers('apps/admin_web/app/partners/[id]/page.tsx', partnerDetail, [
     'Partner chat retention ledger',
-    'Customer final selection creates the partner chat',
+    'Customer final selection creates the Partner chat',
     'Mobile apps can hide completed-service chats',
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
@@ -523,7 +523,7 @@ function checkAdminDashboardOperationsCoverage() {
     'No-show records',
     'Customers in app',
     'Partners in app',
-    'Online partners',
+    'Online Partners',
     'Hourly booking demand',
     'Regional booking demand',
     'Shift command briefing',
@@ -566,7 +566,7 @@ function checkBookingDetailIsSourceOfTruth() {
     'Communication and movement handoff',
     'Chat lifecycle and retention',
     'All customer chats',
-    'All partner chats',
+    'All Partner chats',
     'Service pricing snapshot',
   ];
 
