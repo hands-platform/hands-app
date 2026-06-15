@@ -89,6 +89,7 @@ import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
 import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summary-cards';
 import { bookingDetailFlowStages } from './booking-detail-flow-stages';
+import { bookingDetailLocationTrail } from './booking-detail-location-trail';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import {
   bookingDetailAttentionFlags,
@@ -159,7 +160,6 @@ import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '.
 import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
 import { bookingEvidenceBundleRows as buildBookingEvidenceBundleRowsFromFacts } from '../../../lib/booking-evidence-bundle-rows';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
-import { bookingLocationTrail } from '../../../lib/booking-status-location-helpers';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
@@ -225,6 +225,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
   const participantCounts = bookingParticipantCounts(booking);
   const latestLocation = latestProviderLocation(booking);
+  const locationTrailSnapshots = bookingDetailLocationTrail(booking);
   const addressLine = bookingAddressSnapshotLabel(booking);
   const addressPin = booking.addressSnapshot
     ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
@@ -269,7 +270,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivityRecords = buildBookingActivityRecords({
     booking,
     notifications: rawNotifications,
-    locationSnapshots: locationTrail(booking),
+    locationSnapshots: locationTrailSnapshots,
     closureSummary,
     humanizeAuditAction,
     auditMetadataSummary,
@@ -404,7 +405,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#communication-movement-handoff',
       label: 'Communication and movement',
       value: communicationMovementHandoff.status,
-      helper: `${messages.length} message(s), ${locationTrail(booking).length} location row(s).`,
+      helper: `${messages.length} message(s), ${locationTrailSnapshots.length} location row(s).`,
     },
     {
       href: '#alerts',
@@ -767,7 +768,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     customerPriceLabel: financeTrace.customerPrice,
     partnerPayoutLabel: financeTrace.providerPayout,
     walletLedgerLabel: financeTrace.walletLedger,
-    hasLocationTrace: Boolean(latestLocation || locationTrail(booking).length),
+    hasLocationTrace: Boolean(latestLocation || locationTrailSnapshots.length),
     latestLocationShortId: latestLocation ? shortId(latestLocation.id) : null,
     locationStatusLabel: bookingDetailProviderLocationMetricValue(booking),
     latestLocationEvidenceLabel: latestLocation
@@ -1036,7 +1037,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       helper: attentionSummary.helper,
     },
   ];
-  const locationTrailRows = locationTrail(booking).map((snapshot) => ({
+  const locationTrailRows = locationTrailSnapshots.map((snapshot) => ({
     id: snapshot.id,
     coordinate: coordinateLabel(snapshot.lat, snapshot.lng),
     recordedAt: formatDate(snapshot.recordedAt),
@@ -1250,8 +1251,4 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
-}
-
-function locationTrail(booking: AdminBookingDetail) {
-  return bookingLocationTrail(booking.snapshots, latestProviderLocation(booking));
 }
