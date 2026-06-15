@@ -22,6 +22,7 @@ const firebaseAlignment = firebaseProjectAlignment(env, { repoRoot });
 const firebasePushReady = firebaseAdminReady && firebaseAlignment.ok;
 const storageUsesSplitBuckets = hasValue(env.S3_PRIVATE_BUCKET) && hasValue(env.S3_PUBLIC_BUCKET);
 const storageUsesFallbackBucket = hasValue(env.S3_BUCKET);
+const realSmsProviderConfigured = hasRealSmsProvider(env.SMS_PROVIDER);
 const storageReady =
   hasValue(env.STORAGE_PROVIDER) &&
   hasValue(env.S3_ENDPOINT) &&
@@ -98,9 +99,10 @@ const registrationItems = [
         'nest until Phone Auth E2E, then supabase',
         ['nest', 'supabase'].includes(String(env.AUTH_BACKEND ?? '').toLowerCase()),
       ),
-      envItem('SMS_PROVIDER', 'dev | vonage | viettel | fpt | custom', hasValue(env.SMS_PROVIDER)),
+      envItem('SMS_PROVIDER', 'vonage | viettel | fpt | custom', realSmsProviderConfigured),
       envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
       envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
+      envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
     ],
     setup: [
       'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev for current local/product development.',
@@ -324,7 +326,7 @@ const registrationItems = [
     purpose: 'Real OTP delivery for Supabase Phone Auth or backend OTP after deferred SMS setup.',
     consolePath: 'Vonage, Viettel, FPT, or selected SMS provider dashboard',
     env: [
-      envItem('SMS_PROVIDER', 'vonage | viettel | fpt | custom', hasValue(env.SMS_PROVIDER)),
+      envItem('SMS_PROVIDER', 'vonage | viettel | fpt | custom', realSmsProviderConfigured),
       envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
       envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
       envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
@@ -531,6 +533,11 @@ function itemReady(item) {
 
 function hasValue(value) {
   return String(value ?? '').trim().length > 0;
+}
+
+function hasRealSmsProvider(value) {
+  const provider = String(value ?? '').trim().toLowerCase();
+  return provider.length > 0 && provider !== 'dev';
 }
 
 function isSecretLikeValue(value) {
