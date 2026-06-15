@@ -6,12 +6,10 @@ import {
   type DispatchStep,
 } from '../../../lib/booking-dispatch-checklist';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
-import {
-  isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
-} from '../../../lib/booking-status-location-helpers';
 import { bookingProviderLocationMetricHelper } from '../../../lib/booking-provider-location-copy';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
+import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
 import {
   formatDate,
   isTerminalPayment,
@@ -22,7 +20,6 @@ import {
 import {
   latestProviderLocation,
   latestProviderLocationFreshness,
-  preferredParticipantState,
 } from './booking-status-location';
 
 const activeLocationStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
@@ -88,7 +85,7 @@ export function bookingDetailDispatchChecklist(booking: AdminBookingDetail): Dis
     preferredPartner: booking.preferredProvider
       ? { label: providerName(booking.preferredProvider), phone: booking.preferredProvider.user?.phone }
       : null,
-    isPreferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    isPreferredAwaitingDecision: bookingPreferredAwaitingDecision(booking),
     participantCount: booking.participants?.length ?? 0,
     hasChatRoom: Boolean(booking.chatRoom),
     chatRoomId: booking.chatRoom?.id ?? null,
@@ -97,16 +94,6 @@ export function bookingDetailDispatchChecklist(booking: AdminBookingDetail): Dis
     hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
     latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
     providerLocationAgeLabel: providerLocationMetricHelper(booking),
-  });
-}
-
-function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
-  const participant = preferredParticipantState(booking);
-
-  return isPreferredAwaitingDecisionFromStatus({
-    finalSelection: booking.matchingEvidence?.finalSelection,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredParticipantStatus: participant?.status ?? null,
   });
 }
 

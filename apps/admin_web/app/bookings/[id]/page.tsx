@@ -124,12 +124,12 @@ import { bookingServicePricingSnapshotRows } from './booking-service-pricing-sna
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import { bookingParticipantCounts } from './booking-participant-counts';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
+import { bookingPreferredAwaitingDecision } from './booking-preferred-decision';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
 import {
   bookingStatusHint,
   latestProviderLocation,
   latestProviderLocationFreshness,
-  preferredParticipantState,
 } from './booking-status-location';
 import {
   AdminBookingDetail,
@@ -156,10 +156,7 @@ import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '.
 import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
 import { bookingEvidenceBundleRows as buildBookingEvidenceBundleRowsFromFacts } from '../../../lib/booking-evidence-bundle-rows';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
-import {
-  bookingLocationTrail,
-  isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
-} from '../../../lib/booking-status-location-helpers';
+import { bookingLocationTrail } from '../../../lib/booking-status-location-helpers';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
@@ -874,7 +871,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
     bookingStatus: booking.status,
     hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    preferredAwaitingDecision: bookingPreferredAwaitingDecision(booking),
     customerChoiceCandidates,
     marketplaceParticipants,
     selected: bookingFinalPartnerSummary(booking).selected,
@@ -1296,15 +1293,6 @@ function bookingOperatorCommandQueue({
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
   return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
-}
-
-function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
-  const participant = preferredParticipantState(booking);
-  return isPreferredAwaitingDecisionFromStatus({
-    finalSelection: booking.matchingEvidence?.finalSelection,
-    hasPreferredPartner: Boolean(booking.preferredProvider),
-    preferredParticipantStatus: participant?.status ?? null,
-  });
 }
 
 function providerLocationMetricValue(booking: AdminBookingDetail) {
