@@ -30,6 +30,7 @@ import {
   BookingOperatorFirstReadSection,
   type BookingOperatorFirstReadSectionProps,
   BookingPriorityBriefingSection,
+  type BookingPriorityBriefingSectionProps,
   BookingRecentOperationsTimelineSection,
   type BookingRecentOperationsTimelineSectionProps,
 } from './booking-command-briefing-sections';
@@ -746,6 +747,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const commandDecisionStripProps: BookingCommandDecisionStripSectionProps = {
     commandDecisionStrip,
   };
+  const priorityBriefingProps: BookingPriorityBriefingSectionProps = {
+    operatorPriorityBriefing,
+  };
 
   return (
     <>
@@ -767,7 +771,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingCommandDecisionStripSection {...commandDecisionStripProps} />
 
-      <BookingPriorityBriefingSection operatorPriorityBriefing={operatorPriorityBriefing} />
+      <BookingPriorityBriefingSection {...priorityBriefingProps} />
 
       <BookingEvidenceSections {...evidenceSectionsProps} />
 

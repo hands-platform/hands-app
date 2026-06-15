@@ -358,9 +358,7 @@ export type BookingRecentOperationsTimelineSectionProps = {
 
 export function BookingPriorityBriefingSection({
   operatorPriorityBriefing,
-}: {
-  operatorPriorityBriefing: PriorityBriefing;
-}) {
+}: BookingPriorityBriefingSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-priority-briefing">
       <div className="ops-section-header">
@@ -391,6 +389,10 @@ export function BookingPriorityBriefingSection({
     </section>
   );
 }
+
+export type BookingPriorityBriefingSectionProps = {
+  operatorPriorityBriefing: PriorityBriefing;
+};
 
 function SummaryLinkGrid({ rows }: { rows: SummaryLinkCard[] }) {
   return (
