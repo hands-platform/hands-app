@@ -184,9 +184,7 @@ export function BookingMarketplaceWalletEvidenceSection({
 
 export function BookingOperatingLedgerSection({
   operatingLedger,
-}: {
-  operatingLedger: OperatingLedgerRow[];
-}) {
+}: BookingOperatingLedgerSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-operating-ledger">
       <div className="ops-section-header">
@@ -228,6 +226,10 @@ export function BookingOperatingLedgerSection({
     </section>
   );
 }
+
+export type BookingOperatingLedgerSectionProps = {
+  operatingLedger: OperatingLedgerRow[];
+};
 
 export function BookingCloseoutReadinessSection({
   bookingStatus,
