@@ -66,7 +66,6 @@ import {
   formatDate,
   money,
   compactActivityText,
-  providerName,
   shortId,
 } from './booking-formatters';
 import { BookingEvidenceSections } from './booking-evidence-sections';
@@ -86,6 +85,7 @@ import {
 } from './booking-chat-repair-state';
 import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
 import { bookingDetailCloseoutChecklist } from './booking-detail-closeout-checklist';
+import { bookingDetailDecisionReadiness } from './booking-detail-decision-readiness';
 import { bookingDetailEvidenceBundleRows } from './booking-detail-evidence-bundle-rows';
 import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingDetailFinanceFlags } from './booking-detail-finance-flags';
@@ -157,8 +157,6 @@ import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoa
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
-import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
-import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
   canCloseoutCompletedBooking,
@@ -428,80 +426,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
     auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines,
   });
-  const manualDecisionEvidenceSummary = [
-    messages.length > 0 ? `${messages.length} chat message(s)` : 'no chat messages',
-    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : 'no Partner pin',
-    notificationTrace.rows.length > 0
-      ? `${notificationTrace.rows.length} alert row(s)`
-      : 'no alert rows',
-    operatorNoteLines.length > 0
-      ? `${operatorNoteLines.length} operator note(s)`
-      : 'no operator notes',
-  ].join(' / ');
   const cashFeeDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
-  const manualDecisionReadiness = buildBookingManualDecisionReadiness({
-    bookingStatus: booking.status,
-    closureStatus: bookingClosureSummary(booking).status,
-    canMarkNoShow: canMarkNoShow(booking.status),
-    decisionEvidenceReady:
-      messages.length > 0 ||
-      Boolean(latestLocation) ||
-      notificationTrace.rows.length > 0 ||
-      operatorNoteLines.length > 0,
-    evidenceSummary: manualDecisionEvidenceSummary,
-    paymentExists: Boolean(booking.payment),
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    paymentMethod: booking.payment?.method ?? 'NONE',
+  const { manualDecisionReadiness, decisionEvidenceGuardrails } = bookingDetailDecisionReadiness({
+    booking,
+    latestLocation,
+    messageCount: messages.length,
+    notificationCount: notificationTrace.rows.length,
+    operatorNoteCount: operatorNoteLines.length,
     refundRowCount: refundLedgerRows.length,
     refundEvidence: paymentEvidence.refundEvidence,
     cashFeeDebtNeedsSettlement,
-    cashDebtEvidenceLabel: cashFeeDebtNeedsSettlement
-      ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
-      : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
-    closeoutStatus: closeoutReadiness.status,
-    closeoutTone: closeoutReadiness.tone,
-    closeoutHelper: closeoutReadiness.helper,
-    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
-  });
-  const decisionFinalPartner = bookingFinalPartnerSummary(booking);
-  const decisionEvidenceGuardrails = buildBookingDecisionEvidenceGuardrails({
-    bookingStatus: booking.status,
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
-    addressPinLabel: booking.addressSnapshot
-      ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-      : 'No pin',
-    hasSelectedPartner: decisionFinalPartner.selected,
-    selectedPartnerLabel: decisionFinalPartner.label,
-    participantCount: booking.participants?.length ?? 0,
-    preferredPartnerLabel: providerName(booking.preferredProvider),
-    hasChatRoom: Boolean(booking.chatRoom),
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    messageCount: messages.length,
-    hasLatestLocation: Boolean(latestLocation),
-    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
-    notificationCount: notificationTrace.rows.length,
-    operatorNoteCount: operatorNoteLines.length,
-    hasOpsTrail: (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0,
-    paymentStatus: booking.payment?.status ?? null,
-    paymentMethod: booking.payment?.method ?? null,
-    paymentAmountLabel: booking.payment
-      ? money(booking.payment.amount, booking.payment.currency)
-      : 'No payment amount',
-    refundRowCount: refundLedgerRows.length,
-    cashFeeDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    platformFeeLabel: financeTrace.platformFee,
-    withholdingLabel: financeTrace.withholding,
-    walletLedgerLabel: financeTrace.walletLedger,
-    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
-    financeLedgerRowCount:
-      (booking.platformFeeLogs?.length ?? 0) +
-      (booking.taxLogs?.length ?? 0) +
-      (booking.walletLedgerEntries?.length ?? 0) +
-      (booking.earning?.platformFeeLogs?.length ?? 0) +
-      (booking.earning?.taxLogs?.length ?? 0) +
-      (booking.earning?.walletLedgerEntries?.length ?? 0),
-    partnerPayoutLabel: financeTrace.providerPayout,
+    closureStatus: closureSummary.status,
+    closeoutReadiness,
+    financeTrace,
   });
   const connectedRecordLinks = bookingDetailConnectedRecordLinks({
     booking,
