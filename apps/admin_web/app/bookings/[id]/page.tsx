@@ -175,6 +175,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
+type BookingDetailPageData = {
+  booking: AdminBookingDetail | null;
+  operationalPolicies: AdminOperationalPolicySetting[];
+  rawNotifications: AdminNotification[];
+  providers: AdminProvider[];
+};
+
 const bookingDetailAuthoritySourceMarkers = [
   'MVP authority contract',
   'NestJS business authority',
@@ -200,12 +207,7 @@ const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
-    adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
-    adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
-  ]);
+  const { booking, operationalPolicies, providers, rawNotifications } = await loadBookingDetailPageData(id);
 
   if (!booking) {
     notFound();
@@ -742,4 +744,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
+}
+
+async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageData> {
+  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
+    adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
+  ]);
+
+  return {
+    booking,
+    operationalPolicies,
+    providers,
+    rawNotifications,
+  };
 }
