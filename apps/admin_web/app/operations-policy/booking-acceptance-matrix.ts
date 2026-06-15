@@ -105,10 +105,7 @@ function baselineForPolicy(policy: BookingAcceptancePolicy): BookingAcceptanceBa
   };
 }
 
-function buildBookingAcceptanceCards(
-  policy: BookingAcceptancePolicy,
-  baseline: BookingAcceptanceBaseline,
-) {
+function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: BookingAcceptanceBaseline) {
   return [
     {
       title: 'First-pick response window',
@@ -174,10 +171,10 @@ function buildBookingAcceptanceCards(
       status: policy.pushReady ? 'Push enabled' : 'In-app first',
       detail: policy.pushReady
         ? 'Partner booking and marketplace participation alerts are ready to route through FCM.'
-        : 'Partner booking and marketplace alerts stay in-app until live FCM smoke, token recovery, and fallback queues are clean.',
+        : 'FCM live smoke and token recovery passed; Partner booking and marketplace alerts stay in-app until monitoring stays clean and the owner enables push routing.',
       operatorAction: policy.pushReady
         ? 'Monitor delivery failures, disabled devices, stale tokens, and retry audit evidence on the Notifications board.'
-        : 'Keep this on in-app-first until live FCM smoke, token recovery, and notification monitoring pass; SMS stays under the deferred Phone Auth step.',
+        : 'Keep this on in-app-first while operators watch notification monitoring and retry audit evidence; SMS stays under the deferred Phone Auth step.',
       className: policy.pushReady ? 'ops-task-done' : 'ops-task-pending',
       pillClass: policy.pushReady ? 'pill-success' : 'pill-info',
       blocking: false,
@@ -252,8 +249,7 @@ function buildPartnerAcceptancePolicyImpact(
       !adminPartnerCanCompleteFinalGate(provider, {
         freshnessMinutes: policy.backupLocationFreshnessMinutes,
         hardWalletBlock: policy.hardWalletBlock,
-      }) &&
-      !adminPartnerFinalGateHeld(provider, { hardWalletBlock: policy.hardWalletBlock }),
+      }) && !adminPartnerFinalGateHeld(provider, { hardWalletBlock: policy.hardWalletBlock }),
   );
 
   return [
@@ -265,7 +261,9 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Marketplace held',
       value: providers
-        .filter((provider) => adminPartnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }))
+        .filter((provider) =>
+          adminPartnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }),
+        )
         .length.toString(),
       helper:
         'Account controls, identity failure, missing approved bank, or negative wallet can hold marketplace alerts and participation.',

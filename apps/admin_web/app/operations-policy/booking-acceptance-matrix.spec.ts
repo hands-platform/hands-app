@@ -105,9 +105,9 @@ describe('booking acceptance matrix builder', () => {
         expect.objectContaining({ status: 'Customer-choice conflict', title: 'Customer final selection' }),
         expect.objectContaining({
           detail:
-            'Partner booking and marketplace alerts stay in-app until live FCM smoke, token recovery, and fallback queues are clean.',
+            'FCM live smoke and token recovery passed; Partner booking and marketplace alerts stay in-app until monitoring stays clean and the owner enables push routing.',
           operatorAction:
-            'Keep this on in-app-first until live FCM smoke, token recovery, and notification monitoring pass; SMS stays under the deferred Phone Auth step.',
+            'Keep this on in-app-first while operators watch notification monitoring and retry audit evidence; SMS stays under the deferred Phone Auth step.',
           status: 'In-app first',
           title: 'Partner alert delivery',
         }),
