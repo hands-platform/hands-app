@@ -89,6 +89,8 @@ export const setupOrder = [
     env: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_JWT_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'],
     notes: [
       'Supabase organization/workspace is HANDS and the staging project is hands-staging.',
+      'Project ref is adzpstrkpzwpukuboxzj; use SUPABASE_URL=https://adzpstrkpzwpukuboxzj.supabase.co.',
+      'If the Supabase dashboard shows the project as paused or inactive, resume it before expecting key and API checks to pass.',
       'The generated SQL bundle has been applied successfully.',
       'Use infra/env/hands-staging.env.example as the operator fill-in checklist.',
       'Copy the project URL and anon key from Supabase project settings.',
@@ -138,6 +140,7 @@ export const setupOrder = [
     env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
     notes: [
       'MapTiler and Geoapify keys are configured locally in ignored environment files.',
+      'Set both keys in the ignored .env file, then restart local API/Admin so /setup reads the updated process environment.',
       'Use MapTiler only for map tiles.',
       'Use Geoapify only for geocoding/search.',
       'No routing, directions, or realtime streaming API is needed for MVP cost control.',
