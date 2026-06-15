@@ -30,6 +30,7 @@ import {
   BookingServicePricingSnapshotSection,
 } from './booking-finance-trace-sections';
 import {
+  type BookingOpsCommandCenterProps,
   BookingOperatorQueueSections,
   BookingOpsCommandCenter,
   type BookingOperatorQueueSectionsProps,
@@ -517,6 +518,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorActionMatrix,
     operatorCommandQueue,
   };
+  const opsCommandCenterProps: BookingOpsCommandCenterProps = {
+    actionEvidenceGate,
+    actionGateByAction,
+    badges: opsCommandCenter.badges,
+    booking,
+    cashDebtNeedsSettlement: opsCommandCenter.cashDebtNeedsSettlement,
+    finalGateReason,
+    instruction: opsCommandCenter.instruction,
+  };
   const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
     booking,
     operatorPriorityStatus: operatorPriorityBriefing.status,
@@ -630,15 +640,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingChatLifecycleSection chatLifecycle={chatLifecycle} messageCount={messageCount} />
 
-      <BookingOpsCommandCenter
-        booking={booking}
-        instruction={opsCommandCenter.instruction}
-        badges={opsCommandCenter.badges}
-        finalGateReason={finalGateReason}
-        actionEvidenceGate={actionEvidenceGate}
-        actionGateByAction={actionGateByAction}
-        cashDebtNeedsSettlement={opsCommandCenter.cashDebtNeedsSettlement}
-      />
+      <BookingOpsCommandCenter {...opsCommandCenterProps} />
 
       <BookingStageSnapshotSection stageSnapshot={stageSnapshot} />
 

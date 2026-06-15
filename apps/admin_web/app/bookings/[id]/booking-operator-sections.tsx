@@ -71,6 +71,16 @@ export type BookingOperatorQueueSectionsProps = {
   operatorActionMatrix: OperatorActionMatrixRow[];
 };
 
+export type BookingOpsCommandCenterProps = {
+  booking: AdminBookingDetail;
+  instruction: string;
+  badges: OpsBadge[];
+  finalGateReason: FinalGateReason;
+  actionEvidenceGate: ActionEvidenceGate;
+  actionGateByAction: Map<string, PaymentActionReadout>;
+  cashDebtNeedsSettlement: boolean;
+};
+
 export function BookingOperatorQueueSections({
   bookingId,
   operatorCommandQueue,
@@ -167,15 +177,7 @@ export function BookingOpsCommandCenter({
   actionEvidenceGate,
   actionGateByAction,
   cashDebtNeedsSettlement,
-}: {
-  booking: AdminBookingDetail;
-  instruction: string;
-  badges: OpsBadge[];
-  finalGateReason: FinalGateReason;
-  actionEvidenceGate: ActionEvidenceGate;
-  actionGateByAction: Map<string, PaymentActionReadout>;
-  cashDebtNeedsSettlement: boolean;
-}) {
+}: BookingOpsCommandCenterProps) {
   return (
     <section className="card ops-command-center admin-mb-16" id="booking-ops">
       <div>
