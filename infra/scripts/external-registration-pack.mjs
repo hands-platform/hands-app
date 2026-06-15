@@ -236,6 +236,10 @@ const registrationItems = [
     account: 'Firebase Cloud Messaging',
     purpose: 'Android/iOS FCM push. Firebase DB/Auth/Firestore are not part of HANDS MVP.',
     consolePath: 'Firebase Console > Project settings > Service accounts and Cloud Messaging',
+    ready: firebasePushReady,
+    statusNote: firebasePushReady
+      ? 'Ready via Firebase Admin credentials and Firebase project alignment.'
+      : 'Pending until one Firebase Admin credential mode and mobile project alignment pass.',
     env: [
       envItem('PUSH_PROVIDER', 'fcm', env.PUSH_PROVIDER === 'fcm'),
       envItem('FIREBASE_PROJECT_ID', '<firebase-project-id>', hasValue(env.FIREBASE_PROJECT_ID)),
@@ -410,8 +414,8 @@ const output = {
   },
   summary: {
     total: registrationItems.length,
-    ready: registrationItems.filter((item) => item.env.every((entry) => entry.configured)).length,
-    pending: registrationItems.filter((item) => item.env.some((entry) => !entry.configured)).length,
+    ready: registrationItems.filter(itemReady).length,
+    pending: registrationItems.filter((item) => !itemReady(item)).length,
   },
   registrationItems,
 };
@@ -471,6 +475,10 @@ function toMarkdown(pack) {
     lines.push(`Purpose: ${item.purpose}`);
     lines.push('');
     lines.push(`Console: ${item.consolePath}`);
+    if (item.statusNote) {
+      lines.push('');
+      lines.push(`Status note: ${item.statusNote}`);
+    }
     lines.push('');
     lines.push('Environment values:');
     for (const entry of item.env) {
@@ -494,6 +502,13 @@ function toMarkdown(pack) {
 
 function envItem(name, example, configured) {
   return { name, example, configured };
+}
+
+function itemReady(item) {
+  if (typeof item.ready === 'boolean') {
+    return item.ready;
+  }
+  return item.env.every((entry) => entry.configured);
 }
 
 function hasValue(value) {
