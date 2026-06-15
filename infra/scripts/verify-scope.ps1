@@ -118,6 +118,7 @@ function Invoke-Api {
   Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npx.cmd prisma validate --schema apps/api/prisma/schema.prisma"
   Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
+  Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
   Invoke-Check "realtime event contract" "npm.cmd run realtime:contract"
   Invoke-Check "api test" "npm.cmd run api:test"
   Invoke-Check "api typecheck" "npm.cmd run typecheck --workspace @massage-vn/api"
@@ -132,6 +133,7 @@ function Invoke-Api {
 function Invoke-Admin {
   Invoke-Check "fcm env contract" "npm.cmd run fcm:env-contract"
   Invoke-Check "notification partner alert contract" "npm.cmd run notifications:partner-alert-contract"
+  Invoke-Check "notification retry audit contract" "npm.cmd run notifications:retry-audit-contract"
   Invoke-Check "admin test" "npm.cmd run test --workspace @massage-vn/admin-web"
   Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
   Invoke-Check "admin lint" "npm.cmd run lint --workspace @massage-vn/admin-web"
@@ -165,6 +167,7 @@ function Invoke-Harness {
   Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\check-admin-visible-copy.mjs"
   Invoke-Check "script syntax: shared types source guard" "node --check infra\scripts\check-shared-types-runtime-imports.mjs"
   Invoke-Check "script syntax: notification partner alert contract" "node --check infra\scripts\check-notification-partner-alert-contract.mjs"
+  Invoke-Check "script syntax: notification retry audit contract" "node --check infra\scripts\check-notification-retry-audit-contract.mjs"
   Invoke-Check "script syntax: fcm env contract" "node --check infra\scripts\check-fcm-env-contract.mjs"
   Invoke-Check "script syntax: fcm credentials check" "node --check infra\scripts\check-firebase-admin-credentials.mjs"
   Invoke-Check "script syntax: fcm credentials install" "powershell -NoProfile -Command `"[void][scriptblock]::Create([System.IO.File]::ReadAllText((Resolve-Path '.\infra\scripts\install-firebase-admin-credentials.ps1')))`""
