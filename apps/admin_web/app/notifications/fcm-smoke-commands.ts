@@ -1,6 +1,7 @@
 export const FCM_EXTERNAL_CHECK_COMMAND = 'npm.cmd run external:check:push';
 export const FCM_ENV_CONTRACT_COMMAND = 'npm.cmd run fcm:env-contract';
 export const FCM_PUSH_DATA_CONTRACT_COMMAND = 'npm.cmd run notifications:push-data-contract';
+export const FCM_RETRY_AUDIT_CONTRACT_COMMAND = 'npm.cmd run notifications:retry-audit-contract';
 export const FCM_CREDENTIALS_INSTALL_CHECK_COMMAND =
   'npm.cmd run fcm:credentials:install -- -SourcePath C:\\Users\\<you>\\Downloads\\<firebase-admin-key>.json -CheckOnly';
 export const FCM_CREDENTIALS_INSTALL_UPDATE_COMMAND =
@@ -18,6 +19,7 @@ export const FCM_SETUP_READINESS_COMMANDS = [
   FCM_EXTERNAL_CHECK_COMMAND,
   FCM_ENV_CONTRACT_COMMAND,
   FCM_PUSH_DATA_CONTRACT_COMMAND,
+  FCM_RETRY_AUDIT_CONTRACT_COMMAND,
   FCM_CREDENTIALS_INSTALL_CHECK_COMMAND,
   FCM_SECURITY_SECRETS_COMMAND,
   FCM_CREDENTIALS_CHECK_COMMAND,

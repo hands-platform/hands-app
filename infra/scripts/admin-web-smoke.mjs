@@ -794,6 +794,7 @@ const pages = [
       'External setup',
       'FCM push notifications',
       'npm.cmd run notifications:push-data-contract',
+      'npm.cmd run notifications:retry-audit-contract',
       'npm.cmd run fcm:token-recovery-smoke',
     ],
   },

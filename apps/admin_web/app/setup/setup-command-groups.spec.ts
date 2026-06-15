@@ -24,6 +24,7 @@ describe('setup command groups', () => {
     const groups = setupCommandGroups('notifications', [
       'npm.cmd run external:check:push',
       'npm.cmd run notifications:push-data-contract',
+      'npm.cmd run notifications:retry-audit-contract',
       'npm.cmd run fcm:push-smoke -- --preflight',
       'npm.cmd run fcm:token-smoke',
       'npm.cmd run fcm:token-recovery-smoke',
@@ -67,6 +68,9 @@ describe('setup command groups', () => {
     ]);
     expect(groups.find((group) => group.title === 'Dry-run readiness')?.commands).toContain(
       'npm.cmd run notifications:push-data-contract',
+    );
+    expect(groups.find((group) => group.title === 'Dry-run readiness')?.commands).toContain(
+      'npm.cmd run notifications:retry-audit-contract',
     );
   });
 });
