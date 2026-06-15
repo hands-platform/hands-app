@@ -250,9 +250,7 @@ export type BookingAddressRadiusContractSectionProps = {
 
 export function BookingDispatchCandidateDecisionMatrixSection({
   marketplaceSupply,
-}: {
-  marketplaceSupply: MarketplaceSupply;
-}) {
+}: BookingDispatchCandidateDecisionMatrixSectionProps) {
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -344,6 +342,10 @@ export function BookingDispatchCandidateDecisionMatrixSection({
     </section>
   );
 }
+
+export type BookingDispatchCandidateDecisionMatrixSectionProps = {
+  marketplaceSupply: MarketplaceSupply;
+};
 
 export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketplaceSupply: MarketplaceSupply }) {
   return (

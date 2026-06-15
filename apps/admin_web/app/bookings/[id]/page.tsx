@@ -78,6 +78,7 @@ import {
   BookingCustomerWaitPanelSection,
   type BookingCustomerWaitPanelSectionProps,
   BookingDispatchCandidateDecisionMatrixSection,
+  type BookingDispatchCandidateDecisionMatrixSectionProps,
   BookingMarketplaceSupplySection,
   BookingStageSnapshotSection,
   type BookingStageSnapshotSectionProps,
@@ -710,6 +711,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const addressRadiusContractProps: BookingAddressRadiusContractSectionProps = {
     addressRadiusContract,
   };
+  const dispatchCandidateDecisionMatrixProps: BookingDispatchCandidateDecisionMatrixSectionProps = {
+    marketplaceSupply,
+  };
 
   return (
     <>
@@ -767,7 +771,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
 
-      <BookingDispatchCandidateDecisionMatrixSection marketplaceSupply={marketplaceSupply} />
+      <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
 
       <BookingMarketplaceSupplySection marketplaceSupply={marketplaceSupply} />
 
