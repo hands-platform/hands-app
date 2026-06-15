@@ -4,6 +4,7 @@ import {
   bookingDetailCustomerRows,
   bookingDetailHandoffRows,
   bookingDetailLocationTrailRows,
+  bookingDetailServiceRows,
 } from './booking-detail-record-rows';
 
 function booking(input: Partial<AdminBookingDetail>): AdminBookingDetail {
@@ -82,6 +83,45 @@ describe('booking detail record rows', () => {
       { label: 'Latest Partner pin', value: '10.7627, 106.6603' },
       { label: 'Latest pin time', value: '1 Jan 2999, 07:00' },
       { label: 'Location freshness', value: 'Updated just now' },
+    ]);
+  });
+
+  it('builds service rows from the loaded booking service snapshot', () => {
+    const rows = bookingDetailServiceRows(
+      booking({
+        notes: 'Customer prefers quiet room',
+        payment: { amount: 500000, currency: 'VND' } as AdminBookingDetail['payment'],
+        services: [
+          {
+            price: 500000,
+            service: {
+              basePrice: 400000,
+              durationMin: 90,
+              name: 'Aromatherapy',
+              payoutRules: [
+                {
+                  customerPrice: 500000,
+                  providerPayoutAmount: 350000,
+                  currency: 'VND',
+                },
+              ],
+            },
+          },
+        ] as AdminBookingDetail['services'],
+        updatedAt: '2026-06-14T02:30:00.000Z',
+      }),
+    );
+
+    expect(rows).toEqual([
+      { label: 'Option', value: 'Aromatherapy / 90 min' },
+      { label: 'Name', value: 'Aromatherapy' },
+      { label: 'Duration', value: '90 min' },
+      { label: 'Booking price', value: '500.000 VND' },
+      { label: 'Admin minimum', value: '400.000 VND' },
+      { label: 'Partner payout rule', value: '350.000 VND payout / 150.000 VND fee' },
+      { label: 'Notes', value: 'Customer prefers quiet room' },
+      { label: 'Created', value: '14 Jun 2026, 08:00' },
+      { label: 'Updated', value: '14 Jun 2026, 09:30' },
     ]);
   });
 

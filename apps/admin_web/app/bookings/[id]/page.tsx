@@ -42,10 +42,7 @@ import {
 } from './booking-operating-sections';
 import { BookingRecordDetailSections } from './booking-record-detail-sections';
 import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
-import {
-  bookingRecordPaymentRows as buildBookingRecordPaymentRows,
-  bookingRecordServiceRows as buildBookingRecordServiceRows,
-} from './booking-record-info-rows';
+import { bookingRecordPaymentRows as buildBookingRecordPaymentRows } from './booking-record-info-rows';
 import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
@@ -61,7 +58,6 @@ import {
 import {
   bookingAddressSnapshotLabel,
   bookingServiceOptionLabel,
-  bookingServicePayoutRuleLabel,
   coordinateLabel,
   formatDate,
   money,
@@ -138,6 +134,7 @@ import {
   bookingDetailCustomerRows,
   bookingDetailHandoffRows,
   bookingDetailLocationTrailRows,
+  bookingDetailServiceRows,
 } from './booking-detail-record-rows';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
 import {
@@ -212,7 +209,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const service = booking.services?.[0];
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
@@ -550,17 +546,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   });
   const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
   const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
-  const bookingRecordServiceRows = buildBookingRecordServiceRows({
-    optionLabel: bookingServiceOptionLabel(booking),
-    serviceName: service?.service?.name ?? 'Service pending',
-    durationLabel: `${service?.service?.durationMin ?? '-'} min`,
-    bookingPriceLabel: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
-    adminMinimumLabel: money(service?.service?.basePrice, booking.payment?.currency),
-    payoutRuleLabel: bookingServicePayoutRuleLabel(booking),
-    notesLabel: booking.notes ?? 'No notes',
-    createdLabel: formatDate(booking.createdAt),
-    updatedLabel: formatDate(booking.updatedAt),
-  });
+  const bookingRecordServiceRows = bookingDetailServiceRows(booking);
   const bookingRecordHandoffRows = bookingDetailHandoffRows({
     booking,
     finalPartnerSummary,

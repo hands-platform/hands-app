@@ -1,8 +1,16 @@
 import { bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
-import { coordinateLabel, formatDate, providerName } from './booking-formatters';
+import {
+  bookingServiceOptionLabel,
+  bookingServicePayoutRuleLabel,
+  coordinateLabel,
+  formatDate,
+  money,
+  providerName,
+} from './booking-formatters';
 import { bookingDetailProviderLocationMetricHelper } from './booking-provider-location-metric';
+import { bookingRecordServiceRows as buildBookingRecordServiceRows } from './booking-record-info-rows';
 
 export function bookingDetailCustomerRows({
   booking,
@@ -21,6 +29,22 @@ export function bookingDetailCustomerRows({
     { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
     { label: 'Expires', value: formatDate(booking.expiresAt) },
   ];
+}
+
+export function bookingDetailServiceRows(booking: AdminBookingDetail) {
+  const service = booking.services?.[0];
+
+  return buildBookingRecordServiceRows({
+    optionLabel: bookingServiceOptionLabel(booking),
+    serviceName: service?.service?.name ?? 'Service pending',
+    durationLabel: `${service?.service?.durationMin ?? '-'} min`,
+    bookingPriceLabel: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
+    adminMinimumLabel: money(service?.service?.basePrice, booking.payment?.currency),
+    payoutRuleLabel: bookingServicePayoutRuleLabel(booking),
+    notesLabel: booking.notes ?? 'No notes',
+    createdLabel: formatDate(booking.createdAt),
+    updatedLabel: formatDate(booking.updatedAt),
+  });
 }
 
 export function bookingDetailHandoffRows({
