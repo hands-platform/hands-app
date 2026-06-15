@@ -108,7 +108,7 @@ type MarketplaceSupply = {
   }>;
 };
 
-export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: StageSnapshot }) {
+export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnapshotSectionProps) {
   return (
     <section className="card admin-mb-16" id="alerts">
       <div className="ops-section-header">
@@ -137,6 +137,10 @@ export function BookingStageSnapshotSection({ stageSnapshot }: { stageSnapshot: 
     </section>
   );
 }
+
+export type BookingStageSnapshotSectionProps = {
+  stageSnapshot: StageSnapshot;
+};
 
 export function BookingCustomerWaitPanelSection({
   customerWaitPanel,

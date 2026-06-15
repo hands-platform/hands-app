@@ -77,6 +77,7 @@ import {
   BookingDispatchCandidateDecisionMatrixSection,
   BookingMarketplaceSupplySection,
   BookingStageSnapshotSection,
+  type BookingStageSnapshotSectionProps,
 } from './booking-policy-supply-sections';
 import {
   bookingCommunicationMovementHandoff,
@@ -694,6 +695,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
     chatLifecycle,
     messageCount,
   };
+  const stageSnapshotProps: BookingStageSnapshotSectionProps = {
+    stageSnapshot,
+  };
 
   return (
     <>
@@ -743,7 +747,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOpsCommandCenter {...opsCommandCenterProps} />
 
-      <BookingStageSnapshotSection stageSnapshot={stageSnapshot} />
+      <BookingStageSnapshotSection {...stageSnapshotProps} />
 
       <BookingCustomerWaitPanelSection customerWaitPanel={customerWaitPanel} />
 
