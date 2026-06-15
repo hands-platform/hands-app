@@ -178,7 +178,7 @@ export type BookingCustomerWaitPanelSectionProps = {
   customerWaitPanel: CustomerWaitPanel;
 };
 
-export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot: PolicySnapshot }) {
+export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPolicySectionProps) {
   return (
     <section className="card admin-mb-16" id="applied-operations-policy">
       <div className="ops-section-header">
@@ -219,6 +219,10 @@ export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot
     </section>
   );
 }
+
+export type BookingAppliedPolicySectionProps = {
+  policySnapshot: PolicySnapshot;
+};
 
 export function BookingAddressRadiusContractSection({
   addressRadiusContract,

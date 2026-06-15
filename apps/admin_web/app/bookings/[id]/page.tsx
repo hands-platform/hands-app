@@ -73,6 +73,7 @@ import { bookingRecordPaymentRows as buildBookingRecordPaymentRows } from './boo
 import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
+  type BookingAppliedPolicySectionProps,
   BookingCustomerWaitPanelSection,
   type BookingCustomerWaitPanelSectionProps,
   BookingDispatchCandidateDecisionMatrixSection,
@@ -702,6 +703,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const customerWaitPanelProps: BookingCustomerWaitPanelSectionProps = {
     customerWaitPanel,
   };
+  const appliedPolicyProps: BookingAppliedPolicySectionProps = {
+    policySnapshot,
+  };
 
   return (
     <>
@@ -755,7 +759,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
 
-      <BookingAppliedPolicySection policySnapshot={policySnapshot} />
+      <BookingAppliedPolicySection {...appliedPolicyProps} />
 
       <BookingAddressRadiusContractSection addressRadiusContract={addressRadiusContract} />
 
