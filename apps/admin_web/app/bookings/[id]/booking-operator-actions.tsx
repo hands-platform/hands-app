@@ -15,17 +15,29 @@ export type OperatorCommand = {
     | { type: 'task'; taskType: string; taskStatus: string; label: string };
 };
 
+export type OpsTaskActionProps = {
+  bookingId: string;
+  type: string;
+  status: string;
+  label: string;
+};
+
+export type OperatorCommandActionProps = {
+  bookingId: string;
+  command: OperatorCommand;
+};
+
+export type ActionLinkProps = {
+  href: string;
+  label: string;
+};
+
 export function OpsTaskAction({
   bookingId,
   type,
   status,
   label,
-}: {
-  bookingId: string;
-  type: string;
-  status: string;
-  label: string;
-}) {
+}: OpsTaskActionProps) {
   return (
     <form action={updateBookingOpsTask}>
       <input type="hidden" name="bookingId" value={bookingId} />
@@ -36,7 +48,7 @@ export function OpsTaskAction({
   );
 }
 
-export function OperatorCommandAction({ bookingId, command }: { bookingId: string; command: OperatorCommand }) {
+export function OperatorCommandAction({ bookingId, command }: OperatorCommandActionProps) {
   if (command.action.type === 'link') {
     return <ActionLink href={command.action.href} label={command.action.label} />;
   }
@@ -61,7 +73,7 @@ export function OperatorCommandAction({ bookingId, command }: { bookingId: strin
   );
 }
 
-export function ActionLink({ href, label }: { href: string; label: string }) {
+export function ActionLink({ href, label }: ActionLinkProps) {
   if (href.startsWith('/')) {
     return (
       <Link className="text-link" href={href}>
