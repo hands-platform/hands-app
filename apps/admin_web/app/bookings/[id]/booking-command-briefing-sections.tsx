@@ -261,7 +261,7 @@ export type BookingMatchingRuleSnapshotSectionProps = {
   matchingRuleSnapshot: MatchingRuleSnapshot;
 };
 
-export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityContractRow[] }) {
+export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthorityContractSectionProps) {
   return (
     <section className="card admin-mb-16" id="mvp-authority-contract">
       <div className="ops-section-header">
@@ -312,6 +312,10 @@ export function BookingMvpAuthorityContractSection({ rows }: { rows: AuthorityCo
     </section>
   );
 }
+
+export type BookingMvpAuthorityContractSectionProps = {
+  rows: AuthorityContractRow[];
+};
 
 export function BookingRecentOperationsTimelineSection({
   operatingTimeline,

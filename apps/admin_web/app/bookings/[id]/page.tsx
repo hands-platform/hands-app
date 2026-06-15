@@ -23,6 +23,7 @@ import {
   BookingMetricGridSection,
   type BookingMetricGridSectionProps,
   BookingMvpAuthorityContractSection,
+  type BookingMvpAuthorityContractSectionProps,
   BookingOperationsQuickRailSection,
   type BookingOperationsQuickRailSectionProps,
   BookingOperatorFirstReadSection,
@@ -734,6 +735,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const matchingRuleSnapshotProps: BookingMatchingRuleSnapshotSectionProps = {
     matchingRuleSnapshot,
   };
+  const mvpAuthorityContractProps: BookingMvpAuthorityContractSectionProps = {
+    rows: mvpAuthorityContract,
+  };
 
   return (
     <>
@@ -749,7 +753,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
 
-      <BookingMvpAuthorityContractSection rows={mvpAuthorityContract} />
+      <BookingMvpAuthorityContractSection {...mvpAuthorityContractProps} />
 
       <BookingRecentOperationsTimelineSection operatingTimeline={operatingTimeline} />
 
