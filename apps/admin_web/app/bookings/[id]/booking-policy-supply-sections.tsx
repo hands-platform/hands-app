@@ -226,9 +226,7 @@ export type BookingAppliedPolicySectionProps = {
 
 export function BookingAddressRadiusContractSection({
   addressRadiusContract,
-}: {
-  addressRadiusContract: AddressRadiusContract;
-}) {
+}: BookingAddressRadiusContractSectionProps) {
   return (
     <section className="card admin-mb-16" id="address-radius-contract">
       <div className="ops-section-header">
@@ -245,6 +243,10 @@ export function BookingAddressRadiusContractSection({
     </section>
   );
 }
+
+export type BookingAddressRadiusContractSectionProps = {
+  addressRadiusContract: AddressRadiusContract;
+};
 
 export function BookingDispatchCandidateDecisionMatrixSection({
   marketplaceSupply,
