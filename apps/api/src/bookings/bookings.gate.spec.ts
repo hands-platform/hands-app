@@ -151,6 +151,30 @@ describe('booking gate helpers', () => {
     });
   });
 
+  it('keeps missing preferred partner coordinates JSON-safe in the gate snapshot', () => {
+    expect(
+      bookingDistanceGateSnapshot({
+        matchingPolicy: policy(),
+        bookingLat: 10.7769,
+        bookingLng: 106.7009,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        customerCurrentLocation: null,
+        customerToBookingDistanceMeters: null,
+        preferredProvider: {
+          id: 'partner-without-location',
+          currentLat: undefined,
+          currentLng: 'not-a-coordinate',
+          currentLocationUpdatedAt: null,
+        },
+        preferredProviderDistanceMeters: null,
+      }).preferredProviderLocation,
+    ).toEqual({
+      lat: null,
+      lng: null,
+      updatedAt: null,
+    });
+  });
+
   it('builds booking gate rejection audit create input', () => {
     expect(
       bookingGateRejectionAuditCreateInput({

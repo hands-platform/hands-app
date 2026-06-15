@@ -124,8 +124,8 @@ export function bookingDistanceGateSnapshot(input: {
     preferredProviderId: input.preferredProvider?.id ?? null,
     preferredProviderLocation: input.preferredProvider
       ? {
-          lat: input.preferredProvider.currentLat === null ? null : Number(input.preferredProvider.currentLat),
-          lng: input.preferredProvider.currentLng === null ? null : Number(input.preferredProvider.currentLng),
+          lat: nullableCoordinate(input.preferredProvider.currentLat),
+          lng: nullableCoordinate(input.preferredProvider.currentLng),
           updatedAt: input.preferredProvider.currentLocationUpdatedAt?.toISOString() ?? null,
         }
       : null,
@@ -164,4 +164,12 @@ export function bookingGateRejectionAuditCreateInput(input: BookingGateRejection
 
 function isWorldBookingCoordinate(lat: number, lng: number) {
   return Number.isFinite(lat) && lat >= -90 && lat <= 90 && Number.isFinite(lng) && lng >= -180 && lng <= 180;
+}
+
+function nullableCoordinate(value: unknown) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
 }
