@@ -82,11 +82,12 @@ describe('setup page data', () => {
       'SMS_PROVIDER',
       'SMS_API_URL',
       'SMS_API_KEY',
+      'SMS_API_SECRET',
       'SMS_SENDER_ID',
     ]);
     expect(supabaseAuthSetup?.notes).toEqual(
       expect.arrayContaining([
-        'Before switching AUTH_BACKEND=supabase, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, and SMS_SENDER_ID into ignored env only.',
+        'For Supabase Phone Auth E2E, create the SMS/Verify credential in the chosen provider console and copy SMS_PROVIDER, SMS_API_URL, SMS_API_KEY, SMS_API_SECRET, and SMS_SENDER_ID into ignored env only.',
         'For Vonage, use the dashboard owned by administration@hands.vn and choose the endpoint/credential pair for the selected SMS or Verify product.',
       ]),
     );
@@ -107,7 +108,20 @@ describe('setup page data', () => {
     expect(fcmPlan?.status).toBeUndefined();
     expect(fcmPlan?.statusClass).toBeUndefined();
     const phonePlan = externalRegistrationPlan.find((item) => item.id === 'sms-phone-provider');
-    expect(phonePlan?.env).toEqual(['SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY', 'SMS_SENDER_ID']);
+    expect(phonePlan).toMatchObject({
+      groupId: 'supabase-auth',
+      provider: 'Supabase Phone Auth + Vonage SMS',
+    });
+    expect(phonePlan?.status).toBeUndefined();
+    expect(phonePlan?.statusClass).toBeUndefined();
+    expect(phonePlan?.env).toEqual([
+      'AUTH_BACKEND',
+      'SMS_PROVIDER',
+      'SMS_API_URL',
+      'SMS_API_KEY',
+      'SMS_API_SECRET',
+      'SMS_SENDER_ID',
+    ]);
     expect(projectControlSequence.map((item) => item.phase)).toEqual([
       'Phase A',
       'Phase B',

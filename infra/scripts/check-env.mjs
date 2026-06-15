@@ -33,6 +33,7 @@ const recommended = [
   'SMS_PROVIDER',
   'SMS_API_URL',
   'SMS_API_KEY',
+  'SMS_API_SECRET',
   'SMS_SENDER_ID',
   'MOMO_PARTNER_CODE',
   'MOMO_ACCESS_KEY',

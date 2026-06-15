@@ -29,7 +29,9 @@ const smsProviderFix =
 const smsApiUrlFix =
   'Copy the selected SMS provider API endpoint into SMS_API_URL before Supabase Phone Auth E2E. For Vonage, use the API endpoint required by the selected SMS/Verify product.';
 const smsApiKeyFix =
-  'Copy the selected SMS provider server-side secret into SMS_API_KEY before Supabase Phone Auth E2E. Keep it in ignored env files or the secret store only.';
+  'Copy the selected SMS provider API key into SMS_API_KEY before Supabase Phone Auth E2E. For Vonage this is the short API key, not the API secret.';
+const smsApiSecretFix =
+  'Copy the selected SMS provider API secret into SMS_API_SECRET before Supabase Phone Auth E2E. Keep it in ignored env files or the secret store only.';
 const smsSenderIdFix =
   'Copy the approved SMS sender ID or brand name into SMS_SENDER_ID before Supabase Phone Auth E2E. Use the sender value issued by the selected Vietnam-capable SMS provider.';
 const storageRequiredEnvKeys = [
@@ -231,13 +233,26 @@ addRecommended(
   'sms',
   'SMS_API_KEY',
   hasValue('SMS_API_KEY'),
-  'Deferred: fill the chosen SMS provider secret before real OTP launch.',
+  'Deferred: fill the chosen SMS provider API key before real OTP launch.',
 );
 addPhaseRequired(
   'sms',
   'SMS_API_KEY for Phone Auth',
   hasValue('SMS_API_KEY'),
   smsApiKeyFix,
+  ['supabase-auth', 'production'],
+);
+addRecommended(
+  'sms',
+  'SMS_API_SECRET',
+  hasSecretLikeValue('SMS_API_SECRET'),
+  'Deferred: fill the chosen SMS provider API secret before real OTP launch.',
+);
+addPhaseRequired(
+  'sms',
+  'SMS_API_SECRET for Phone Auth',
+  hasSecretLikeValue('SMS_API_SECRET'),
+  smsApiSecretFix,
   ['supabase-auth', 'production'],
 );
 addRecommended(

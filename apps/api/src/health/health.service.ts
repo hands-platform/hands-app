@@ -77,7 +77,8 @@ export class HealthService {
       this.externalGroup('Production SMS', 'sms', [
         { key: 'SMS_PROVIDER', validator: 'sms-provider' },
         { key: 'SMS_API_URL', validator: 'https-url' },
-        { key: 'SMS_API_KEY', validator: 'secret' },
+        { key: 'SMS_API_KEY' },
+        { key: 'SMS_API_SECRET', validator: 'secret' },
         { key: 'SMS_SENDER_ID' },
       ]),
       this.pushProviderExternalReadiness(),
@@ -620,7 +621,7 @@ function externalReadinessMetadata(category: string, name: string) {
   if (category === 'sms') {
     return {
       operatorAction:
-        'Register the chosen SMS service and connect it only when production phone OTP E2E begins.',
+        'Register the chosen SMS service and connect the API key, API secret, endpoint, and sender only when production phone OTP E2E begins.',
       commands: ['npm.cmd run external:check:supabase-auth'],
     };
   }

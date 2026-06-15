@@ -34,12 +34,12 @@ describe('OtpDeliveryService', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('uses the HTTP SMS adapter for configured real provider aliases', async () => {
+  it('uses the generic HTTP SMS adapter for configured custom provider aliases', async () => {
     const fetchMock = mockFetch({ ok: true });
 
     await expect(
       service({
-        SMS_PROVIDER: 'vonage',
+        SMS_PROVIDER: 'custom',
         SMS_API_URL: 'https://api.example.test/sms',
         SMS_API_KEY: 'test-sms-api-key',
         SMS_SENDER_ID: 'HANDS',
@@ -65,6 +65,62 @@ describe('OtpDeliveryService', () => {
       senderId: 'HANDS',
       to: '+84900000001',
     });
+  });
+
+  it('uses Vonage key and secret with the form-encoded SMS API contract', async () => {
+    const fetchMock = mockFetch({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(JSON.stringify({ messages: [{ status: '0' }] })),
+    });
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'vonage',
+        SMS_API_URL: 'https://rest.nexmo.com/sms/json',
+        SMS_API_KEY: '51830fa7',
+        SMS_API_SECRET: 'test-vonage-secret',
+        SMS_SENDER_ID: 'HANDS',
+      }).deliverOtp('+84900000001', '654321'),
+    ).resolves.toEqual({
+      provider: 'vonage',
+      status: 'DELIVERED',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://rest.nexmo.com/sms/json',
+      expect.objectContaining({
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        method: 'POST',
+      }),
+    );
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = new URLSearchParams(String(request.body));
+    expect(body.get('api_key')).toBe('51830fa7');
+    expect(body.get('api_secret')).toBe('test-vonage-secret');
+    expect(body.get('from')).toBe('HANDS');
+    expect(body.get('to')).toBe('+84900000001');
+    expect(body.get('text')).toBe('Your HANDS verification code is 654321. It expires in 5 minutes.');
+  });
+
+  it('fails safely when Vonage accepts the HTTP request but rejects the message', async () => {
+    mockFetch({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(JSON.stringify({ messages: [{ status: '4' }] })),
+    });
+
+    await expect(
+      service({
+        SMS_PROVIDER: 'vonage',
+        SMS_API_URL: 'https://rest.nexmo.com/sms/json',
+        SMS_API_KEY: '51830fa7',
+        SMS_API_SECRET: 'test-vonage-secret',
+        SMS_SENDER_ID: 'HANDS',
+      }).deliverOtp('+84900000001', '654321'),
+    ).rejects.toThrow('SMS service failed to send OTP');
   });
 
   it('rejects unsupported SMS provider values instead of silently using dev OTP', async () => {
