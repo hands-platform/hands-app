@@ -64,7 +64,6 @@ import {
   bookingServicePayoutRuleLabel,
   coordinateLabel,
   formatDate,
-  isTerminalPayment,
   money,
   compactActivityText,
   providerName,
@@ -75,6 +74,7 @@ import {
   bookingCashDebtNeedsSettlement,
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
+import { bookingDetailActionEvidenceGate } from './booking-detail-action-evidence-gate';
 import { bookingDetailOperatorFirstRead } from './booking-detail-operator-first-read';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
@@ -159,7 +159,6 @@ import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decisi
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
 import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
-import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
 import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
@@ -550,43 +549,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     cashFeeDebtNeedsSettlement,
     closeoutReadiness,
   });
-  const manualOutcomeEvidenceLabel = [
-    messages.length ? `${messages.length} chat message(s)` : null,
-    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : null,
-    notificationTrace.rows.length ? `${notificationTrace.rows.length} alert row(s)` : null,
-    operatorNoteLines.length ? `${operatorNoteLines.length} operator note(s)` : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
-  const actionEvidenceGate = buildBookingActionEvidenceGateFromFacts({
-    bookingStatus: booking.status,
-    paymentExists: Boolean(booking.payment?.id),
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    paymentProviderRef: booking.payment?.providerRef ?? null,
-    paymentMethod: booking.payment?.method ?? null,
-    paymentIsTerminal: isTerminalPayment(booking.payment?.status ?? 'NONE'),
-    hasChatArchive: Boolean(booking.chatRoom),
-    hasDecisionEvidence: Boolean(
-      messages.length ||
-        latestLocation ||
-        notificationTrace.rows.length ||
-        operatorNoteLines.length ||
-        booking.auditLogs?.length,
-    ),
-    manualOutcomeEvidenceLabel,
+  const actionEvidenceGate = bookingDetailActionEvidenceGate({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    operatorNoteLines,
     refundLedgerCount: refundLedgerRows.length,
     cashDebt: bookingCashDebtNeedsSettlement(booking),
-    closeoutAvailable: canCloseoutCompletedBooking(booking),
-    closeoutStatus: closeoutReadiness.status,
-    closeoutTone: closeoutReadiness.tone,
-    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
-    closeoutHelper: closeoutReadiness.helper,
-    completedCloseoutLabel: completedCloseoutLabel(booking),
-    completedCloseoutTone: completedCloseoutTone(booking),
-    expireAvailable: canExpireBooking(booking.status),
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    expiresAtLabel: formatDate(booking.expiresAt),
-    noShowAvailable: canMarkNoShow(booking.status),
+    closeoutReadiness,
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
   const marketplaceParticipants = participantCounts.marketplace;
