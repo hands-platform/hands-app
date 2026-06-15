@@ -10,9 +10,13 @@ export const FCM_SECURITY_SECRETS_COMMAND = 'npm.cmd run security:secrets';
 export const FCM_CREDENTIALS_CHECK_COMMAND = 'npm.cmd run fcm:credentials-check';
 export const FCM_DOCKER_CONTRACT_COMMAND = 'npm.cmd run docker:contract';
 export const FCM_TOKEN_SMOKE_DRY_RUN_COMMAND = 'npm.cmd run fcm:token-smoke -- --dry-run';
+export const FCM_TOKEN_RECOVERY_SMOKE_DRY_RUN_COMMAND =
+  'npm.cmd run fcm:token-recovery-smoke -- --dry-run';
 export const FCM_TOKEN_RECOVERY_SMOKE_COMMAND = 'npm.cmd run fcm:token-recovery-smoke';
 export const FCM_PUSH_SMOKE_DRY_RUN_COMMAND = 'npm.cmd run fcm:push-smoke -- --dry-run';
 export const FCM_PUSH_SMOKE_PREFLIGHT_COMMAND = 'npm.cmd run fcm:push-smoke -- --preflight';
+export const FCM_PUSH_SMOKE_PREFLIGHT_REUSE_COMMAND =
+  'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device';
 export const FCM_TOKEN_SMOKE_COMMAND = 'npm.cmd run fcm:token-smoke';
 
 export const FCM_SETUP_READINESS_COMMANDS = [
@@ -25,7 +29,9 @@ export const FCM_SETUP_READINESS_COMMANDS = [
   FCM_CREDENTIALS_CHECK_COMMAND,
   FCM_DOCKER_CONTRACT_COMMAND,
   FCM_TOKEN_SMOKE_DRY_RUN_COMMAND,
+  FCM_TOKEN_RECOVERY_SMOKE_DRY_RUN_COMMAND,
   FCM_TOKEN_RECOVERY_SMOKE_COMMAND,
   FCM_PUSH_SMOKE_DRY_RUN_COMMAND,
   FCM_PUSH_SMOKE_PREFLIGHT_COMMAND,
+  FCM_PUSH_SMOKE_PREFLIGHT_REUSE_COMMAND,
 ] as const;

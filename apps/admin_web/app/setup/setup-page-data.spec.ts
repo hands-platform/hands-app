@@ -34,10 +34,11 @@ describe('setup page data', () => {
         'Firebase Admin credentials must come from the same Firebase project as the customer and Partner google-services.json files.',
         'Run fcm:token-smoke -- --dry-run first; it lists customer/Partner actors and config without contacting the API or FCM.',
         'Run fcm:token-smoke before live push smoke; it verifies customer/Partner token registration without contacting FCM.',
+        'Run fcm:token-recovery-smoke -- --dry-run before the API/DB recovery check; it lists the synthetic recovery contract without writing records.',
         'Run fcm:token-recovery-smoke after token registration changes; it verifies disabled-token re-enable and replacement-token behavior without contacting FCM.',
         'Run fcm:push-smoke -- --dry-run for merged config/readiness only; it does not contact the API or FCM.',
-        'Run fcm:push-smoke -- --preflight to check API readiness, Firebase project alignment, notification availability, and registered device readiness without sending FCM.',
-        'After a live fcm:push-smoke, rerun fcm:push-smoke -- --preflight and confirm retryAuditPreflight.evidence is HAS_PUSH_DEVICE_LAST_SEEN_AT before relying on stale-token decisions.',
+        'Run fcm:push-smoke -- --preflight --use-registered-device to check API readiness, Firebase project alignment, notification availability, and registered device readiness without sending FCM.',
+        'After a live fcm:push-smoke, rerun fcm:push-smoke -- --preflight --use-registered-device and confirm retryAuditPreflight.evidence is HAS_PUSH_DEVICE_LAST_SEEN_AT before relying on stale-token decisions.',
         'If the latest Partner alert is blocked by notification.partner_alert_channel, FCM smoke auto-selects or suggests a standard-notification id instead of changing policy just for testing.',
         'Live push smoke needs either a real app FCM token or FCM_SMOKE_USE_REGISTERED_DEVICE=true after that same app session registers an enabled device.',
         'Use the notification board to separate credential or delivery failures, disabled tokens, stale tokens, and pending worker queue issues before retry.',
@@ -55,9 +56,11 @@ describe('setup page data', () => {
         'npm.cmd run fcm:credentials-check',
         'npm.cmd run docker:contract',
         'npm.cmd run fcm:token-smoke -- --dry-run',
+        'npm.cmd run fcm:token-recovery-smoke -- --dry-run',
         'npm.cmd run fcm:token-recovery-smoke',
         'npm.cmd run fcm:push-smoke -- --dry-run',
         'npm.cmd run fcm:push-smoke -- --preflight',
+        'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device',
         '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested standard notification id>"; npm.cmd run fcm:push-smoke -- --preflight',
         'npm.cmd run fcm:token-smoke',
         '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
@@ -120,7 +123,7 @@ describe('setup page data', () => {
     const pushSmokeCommands =
       notificationSetup?.commands.filter((command) => command.includes('fcm:push-smoke')) ?? [];
 
-    expect(pushSmokeCommands).toHaveLength(5);
+    expect(pushSmokeCommands).toHaveLength(6);
     expect(
       new Set(pushSmokeCommands.flatMap((command) => command.match(/npm\.cmd run ([\w:-]+)/)?.[1])),
     ).toEqual(new Set(['fcm:push-smoke']));
@@ -128,6 +131,7 @@ describe('setup page data', () => {
     expect(
       pushSmokeCommands.find((command) => command.includes('<preflight suggested standard notification id>')),
     ).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
+    expect(pushSmokeCommands).toContain('npm.cmd run fcm:push-smoke -- --preflight --use-registered-device');
 
     for (const command of pushSmokeCommands) {
       if (command.includes('--dry-run')) {

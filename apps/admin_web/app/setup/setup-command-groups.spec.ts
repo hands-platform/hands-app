@@ -26,7 +26,9 @@ describe('setup command groups', () => {
       'npm.cmd run notifications:push-data-contract',
       'npm.cmd run notifications:retry-audit-contract',
       'npm.cmd run fcm:push-smoke -- --preflight',
+      'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device',
       'npm.cmd run fcm:token-smoke',
+      'npm.cmd run fcm:token-recovery-smoke -- --dry-run',
       'npm.cmd run fcm:token-recovery-smoke',
       '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_NOTIFICATION_ID="<id>"; npm.cmd run fcm:push-smoke -- --preflight',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<token>"; npm.cmd run fcm:push-smoke',
@@ -66,6 +68,12 @@ describe('setup command groups', () => {
       'npm.cmd run fcm:token-smoke',
       'npm.cmd run fcm:token-recovery-smoke',
     ]);
+    expect(groups.find((group) => group.title === 'Dry-run readiness')?.commands).toContain(
+      'npm.cmd run fcm:token-recovery-smoke -- --dry-run',
+    );
+    expect(groups.find((group) => group.title === 'API preflight')?.commands).toContain(
+      'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device',
+    );
     expect(groups.find((group) => group.title === 'Dry-run readiness')?.commands).toContain(
       'npm.cmd run notifications:push-data-contract',
     );

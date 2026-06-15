@@ -66,8 +66,10 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:credentials-check',
             'npm.cmd run docker:contract',
             'npm.cmd run fcm:token-smoke -- --dry-run',
+            'npm.cmd run fcm:token-recovery-smoke -- --dry-run',
             'npm.cmd run fcm:push-smoke -- --dry-run',
             'npm.cmd run fcm:push-smoke -- --preflight',
+            'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device',
             '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested standard notification id>"; npm.cmd run fcm:push-smoke -- --preflight',
             'npm.cmd run fcm:token-smoke',
             'npm.cmd run fcm:token-recovery-smoke',
@@ -108,7 +110,9 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('pending for worker backlog');
     expect(rendered).toContain('Additional checks');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke -- --dry-run');
+    expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke -- --dry-run');
     expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight');
+    expect(rendered).toContain('npm.cmd run fcm:push-smoke -- --preflight --use-registered-device');
     expect(rendered).toContain('npm.cmd run fcm:token-smoke');
     expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(rendered).toContain('FCM_SMOKE_ROLE="CUSTOMER"');
