@@ -36,6 +36,7 @@ describe('OperationsHandoffMetricGridSection', () => {
       failedNotificationCount: 11,
       latestFcmSent: {
         helper: 'Partner +84900000002 / android / Booking Matched notifica / device push-dev',
+        href: '/notifications?review=fcm#notification-1',
         value: '13 Jun 2026, 17:09',
       },
     });
@@ -58,7 +59,7 @@ describe('OperationsHandoffMetricGridSection', () => {
         '/bookings?view=closeout',
         '/cash-settlements',
         '/notifications?review=failed',
-        '/notifications?review=fcm',
+        '/notifications?review=fcm#notification-1',
       ]),
     );
   });

@@ -106,6 +106,7 @@ describe('operations handoff page model', () => {
 
     expect(fcmSummary?.helper).toContain('Customer +84900000001 / ios');
     expect(fcmSummary?.helper).toContain('device push-dev');
+    expect(fcmSummary?.href).toBe('/notifications?review=fcm#notification-1');
     expect(fcmSummary?.value).toContain('14 Jun 2026');
     expect(decodeURIComponent(csvHref)).toContain('Customer / Partner / payment');
   });

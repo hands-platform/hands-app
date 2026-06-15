@@ -20,6 +20,7 @@ type OperationsHandoffMetricGridSectionProps = {
   readonly failedNotificationCount: number;
   readonly latestFcmSent: {
     readonly helper: string;
+    readonly href: string;
     readonly value: string;
   } | null;
 };
@@ -88,7 +89,7 @@ export function OperationsHandoffMetricGridSection({
         label="Recent FCM sent"
         value={latestFcmSent?.value ?? 'No send'}
         helper={latestFcmSent?.helper ?? 'No FCM SENT delivery recorded yet'}
-        href="/notifications?review=fcm"
+        href={latestFcmSent?.href ?? '/notifications?review=fcm'}
       />
     </section>
   );

@@ -80,6 +80,7 @@ export function buildLatestFcmSentSummary(notifications: readonly AdminNotificat
   return latestFcmSent
     ? {
         helper: formatFcmSentDeliveryDetail(latestFcmSent.notification, latestFcmSent.delivery),
+        href: `/notifications?review=fcm#${encodeURIComponent(latestFcmSent.notification.id)}`,
         value: formatDateTime(latestFcmSent.delivery.attemptedAt),
       }
     : null;
