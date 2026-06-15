@@ -134,7 +134,7 @@ export const setupOrder = [
     commands: [
       'npm.cmd run external:check:supabase-auth',
       'npm.cmd run auth:supabase-phone-smoke -- --dry-run',
-      '$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"; npm.cmd run auth:supabase-phone-smoke -- --send',
+      '$env:SUPABASE_PHONE_SMOKE_PHONE="+84900000001"; npm.cmd run auth:supabase-phone-smoke -- --send',
       '$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"; npm.cmd run auth:supabase-phone-smoke -- --verify',
       '$env:SUPABASE_JWT_SECRET="<project-jwt-secret>"; $env:API_BASE_URL="http://localhost:3000/api"; npm.cmd run auth:supabase-smoke',
     ],

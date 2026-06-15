@@ -95,7 +95,7 @@ npm.cmd run auth:supabase-smoke
 To test the real Supabase Phone Auth OTP delivery and exchange path:
 
 ```powershell
-$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"
+$env:SUPABASE_PHONE_SMOKE_PHONE="+84900000001"
 npm.cmd run auth:supabase-phone-smoke -- --send
 $env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"
 npm.cmd run auth:supabase-phone-smoke -- --verify

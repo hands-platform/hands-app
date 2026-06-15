@@ -10,6 +10,7 @@ const apiBaseUrl = normalizeApiBaseUrl(
   args['api-base-url'] ?? env.API_BASE_URL ?? 'http://localhost:3000/api',
 );
 const phone = stringValue(args.phone ?? env.SUPABASE_PHONE_SMOKE_PHONE);
+const normalizedPhone = phone ? normalizeVietnamPhone(phone) : '';
 const otp = stringValue(args.otp ?? env.SUPABASE_PHONE_SMOKE_OTP);
 const role = normalizeRole(args.role ?? env.SUPABASE_PHONE_SMOKE_ROLE ?? 'CUSTOMER');
 const shouldCreateUser = booleanValue(args['create-user'] ?? env.SUPABASE_PHONE_SMOKE_CREATE_USER, true);
@@ -31,7 +32,7 @@ if (dryRun) {
     supabase: readinessSummary(),
     apiBaseUrl,
     role,
-    phone: phone ? maskPhone(phone) : null,
+    phone: normalizedPhone ? maskPhone(normalizedPhone) : null,
     hasOtp: Boolean(otp),
     nextActions: dryRunNextActions(),
   });
@@ -40,7 +41,7 @@ if (dryRun) {
 
 requireConfig('SUPABASE_URL', supabaseUrl);
 requireConfig('SUPABASE_ANON_KEY', anonKey);
-requireConfig('SUPABASE_PHONE_SMOKE_PHONE or --phone', phone);
+requireConfig('SUPABASE_PHONE_SMOKE_PHONE or --phone', normalizedPhone);
 
 const result = {
   ok: true,
@@ -54,7 +55,7 @@ const result = {
   supabase: readinessSummary(),
   apiBaseUrl,
   role,
-  phone: maskPhone(phone),
+  phone: maskPhone(normalizedPhone),
   createUser: shouldCreateUser,
   otpSent: false,
   otpVerified: false,
@@ -64,7 +65,7 @@ const result = {
 
 if (send) {
   await postSupabaseAuth('/otp', {
-    phone,
+    phone: normalizedPhone,
     channel: 'sms',
     create_user: shouldCreateUser,
   });
@@ -77,7 +78,7 @@ if (send) {
 if (verify) {
   requireConfig('SUPABASE_PHONE_SMOKE_OTP or --otp', otp);
   const verification = await postSupabaseAuth('/verify', {
-    phone,
+    phone: normalizedPhone,
     token: otp,
     type: 'sms',
   });
@@ -146,6 +147,14 @@ function normalizeRole(value) {
   const normalized = stringValue(value).toUpperCase();
   if (normalized !== 'CUSTOMER' && normalized !== 'PROVIDER') {
     fail(`Unsupported SUPABASE_PHONE_SMOKE_ROLE=${normalized || '<empty>'}. Use CUSTOMER or PROVIDER.`);
+  }
+  return normalized;
+}
+
+function normalizeVietnamPhone(value) {
+  const normalized = stringValue(value).replace(/[\s().-]/g, '');
+  if (!/^\+84\d{8,10}$/.test(normalized)) {
+    fail('SUPABASE_PHONE_SMOKE_PHONE must use Vietnam E.164 format, for example +84900000001.');
   }
   return normalized;
 }
@@ -244,7 +253,9 @@ function dryRunNextActions() {
     actions.push('Set SUPABASE_ANON_KEY in the ignored env file.');
   }
   if (!phone) {
-    actions.push('Set SUPABASE_PHONE_SMOKE_PHONE to the phone that should receive the OTP.');
+    actions.push(
+      'Set SUPABASE_PHONE_SMOKE_PHONE to the Vietnam E.164 phone that should receive the OTP, for example +84900000001.',
+    );
   }
   actions.push('Run npm.cmd run auth:supabase-phone-smoke -- --send to send one live Supabase phone OTP.');
   actions.push(

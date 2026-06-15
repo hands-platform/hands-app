@@ -95,7 +95,7 @@ describe('setup page data', () => {
     expect(supabaseAuthSetup?.commands).toEqual(
       expect.arrayContaining([
         'npm.cmd run auth:supabase-phone-smoke -- --dry-run',
-        '$env:SUPABASE_PHONE_SMOKE_PHONE="+84<phone>"; npm.cmd run auth:supabase-phone-smoke -- --send',
+        '$env:SUPABASE_PHONE_SMOKE_PHONE="+84900000001"; npm.cmd run auth:supabase-phone-smoke -- --send',
         '$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"; npm.cmd run auth:supabase-phone-smoke -- --verify',
       ]),
     );
