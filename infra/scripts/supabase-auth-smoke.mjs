@@ -61,6 +61,22 @@ await postJson(
   401,
 );
 
+const userMetadataEscalationToken = signSupabaseToken({
+  sub: `smoke-user-metadata-escalation-${randomUUID()}`,
+  aud: jwtAudience,
+  phone: `+845${Date.now().toString().slice(-8)}`,
+  app_metadata: { role: 'CUSTOMER' },
+  user_metadata: { role: 'PROVIDER' },
+});
+await postJson(
+  '/auth/supabase/exchange',
+  {
+    supabaseAccessToken: userMetadataEscalationToken,
+    role: 'PROVIDER',
+  },
+  401,
+);
+
 const invalidAudienceToken = signSupabaseToken({
   sub: `smoke-invalid-audience-${randomUUID()}`,
   aud: 'wrong-audience',
@@ -81,6 +97,7 @@ console.log(
       providerProfileId: provider.providerProfile.id,
       directProviderRoute: true,
       roleEscalationDenied: true,
+      userMetadataRoleEscalationDenied: true,
       invalidAudienceDenied: true,
     },
     null,
