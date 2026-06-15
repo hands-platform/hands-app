@@ -100,6 +100,7 @@ import {
   bookingDetailOpsTaskCards,
 } from './booking-detail-operator-command-queue';
 import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
+import { bookingDetailMetricCards } from './booking-detail-metric-cards';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -139,11 +140,7 @@ import {
   bookingDetailProviderLocationMetricValue,
 } from './booking-provider-location-metric';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
-import {
-  bookingStatusHint,
-  latestProviderLocation,
-  latestProviderLocationFreshness,
-} from './booking-status-location';
+import { latestProviderLocation, latestProviderLocationFreshness } from './booking-status-location';
 import {
   AdminBookingDetail,
   AdminNotification,
@@ -177,8 +174,6 @@ import {
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
-import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
-import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 
 type PageProps = {
@@ -1010,37 +1005,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
           : `${paymentEvidence.paymentMethodAmountLabel}.`,
     },
   ];
-  const bookingMetricCards = [
-    { label: 'Status', value: booking.status, helper: bookingStatusHint(booking.status) },
-    { label: 'Closure', value: closureSummary.status, helper: closureSummary.detail },
-    {
-      label: 'Payment',
-      value: booking.payment?.status ?? 'NONE',
-      helper: bookingPaymentHint(booking, {
-        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-      }),
-    },
-    {
-      label: 'Partners',
-      value: `${booking.participants?.length ?? 0} participant row(s)`,
-      helper: bookingPartnerHint(booking),
-    },
-    {
-      label: 'Chat',
-      value: booking.chatRoom ? 'Ready' : 'Not ready',
-      helper: `${messages.length} message(s)`,
-    },
-    {
-      label: 'Location',
-      value: bookingDetailProviderLocationMetricValue(booking),
-      helper: bookingDetailProviderLocationMetricHelper(booking),
-    },
-    {
-      label: 'Attention checks',
-      value: attentionSummary.label,
-      helper: attentionSummary.helper,
-    },
-  ];
+  const bookingMetricCards = bookingDetailMetricCards({
+    booking,
+    closureSummary,
+    messageCount: messages.length,
+    attentionSummary,
+  });
   const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
   const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
   const bookingRecordServiceRows = buildBookingRecordServiceRows({
