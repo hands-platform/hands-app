@@ -64,6 +64,17 @@ const smokeRequiredKeys = [
   'queuedJobId',
 ];
 
+const apiRetryDecisionOrder = [
+  'latestDelivery.pushDeviceEnabled === false',
+  "latestDelivery.status === 'FAILED'",
+  'hasStalePushTokenTimestamp(latestDelivery)',
+];
+const adminRetryDecisionOrder = [
+  'latestDelivery.pushDevice?.enabled === false',
+  "latestDelivery.status === 'FAILED'",
+  'isStaleNotificationPushDeviceDelivery(latestDelivery)',
+];
+
 const result = {
   ok: true,
   apiMissingKeys: missingKeys(apiRetryAudit, apiRequiredKeys),
@@ -72,6 +83,11 @@ const result = {
   duplicateMetadataKeys: duplicates(retryAuditMetadataKeys),
   duplicateLatestDeliveryKeys: duplicates(latestDeliveryKeys),
   duplicateRetryJobKeys: duplicates(retryJobKeys),
+  apiRetryDecisionOrder: orderedMarkers(apiRetryAudit, apiRetryDecisionOrder),
+  adminRetryDecisionOrder: orderedMarkers(
+    readSource('apps/admin_web/app/notifications/notification-action-confirmation.ts'),
+    adminRetryDecisionOrder,
+  ),
 };
 
 result.ok =
@@ -80,7 +96,9 @@ result.ok =
   result.smokeMissingKeys.length === 0 &&
   result.duplicateMetadataKeys.length === 0 &&
   result.duplicateLatestDeliveryKeys.length === 0 &&
-  result.duplicateRetryJobKeys.length === 0;
+  result.duplicateRetryJobKeys.length === 0 &&
+  result.apiRetryDecisionOrder.ok &&
+  result.adminRetryDecisionOrder.ok;
 
 if (!result.ok) {
   console.error(JSON.stringify(result, null, 2));
@@ -107,4 +125,19 @@ function duplicates(values) {
     seen.add(value);
   }
   return [...repeated];
+}
+
+function orderedMarkers(source, markers) {
+  const positions = markers.map((marker) => ({
+    marker,
+    index: source.indexOf(marker),
+  }));
+  const missing = positions.filter((entry) => entry.index === -1).map((entry) => entry.marker);
+  const inOrder = positions.every((entry, index) => index === 0 || positions[index - 1].index < entry.index);
+
+  return {
+    ok: missing.length === 0 && inOrder,
+    missing,
+    positions,
+  };
 }

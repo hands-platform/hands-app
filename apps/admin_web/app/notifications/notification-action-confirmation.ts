@@ -162,18 +162,18 @@ function retryConfirmationCopy(
     };
   }
 
-  if (isStaleNotificationPushDeviceDelivery(latestDelivery)) {
-    return {
-      confirmLabel: 'Retry after token refresh',
-      description: `Notification ${id} latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying. ${evidence}${reviewGuidance}`,
-      tone: 'warning',
-    };
-  }
-
   if (latestDelivery.status === 'FAILED') {
     return {
       confirmLabel: 'Retry notification',
       description: `Retry notification ${id} after fixing the latest delivery failure. ${evidence}${reviewGuidance}`,
+      tone: 'warning',
+    };
+  }
+
+  if (isStaleNotificationPushDeviceDelivery(latestDelivery)) {
+    return {
+      confirmLabel: 'Retry after token refresh',
+      description: `Notification ${id} latest delivery used an old FCM token timestamp. Ask the user to reopen the app or run token recovery smoke before retrying. ${evidence}${reviewGuidance}`,
       tone: 'warning',
     };
   }

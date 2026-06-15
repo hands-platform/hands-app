@@ -217,6 +217,46 @@ describe('notification action confirmation', () => {
     );
   });
 
+  it('prioritizes failed delivery recovery before stale token guidance', () => {
+    const confirmation = buildNotificationActionConfirmation(
+      [
+        {
+          ...notification,
+          deliveries: [
+            {
+              ...notification.deliveries?.[0],
+              attemptedAt: '2026-06-01T00:04:00.000Z',
+              id: 'delivery-stale-failed',
+              provider: 'FCM',
+              response: { failureCode: 'messaging/mismatched-credential' },
+              status: 'FAILED',
+              pushDevice: {
+                id: 'push-device-123456',
+                platform: 'android',
+                enabled: true,
+                lastSeenAt: '2026-04-15T00:04:00.000Z',
+              },
+            },
+          ],
+        },
+      ],
+      'retry',
+      {
+        notificationId: notification.id,
+        pushDeviceId: '',
+        review: 'failed',
+      },
+    );
+
+    expect(confirmation).toMatchObject({
+      confirmLabel: 'Retry notification',
+      tone: 'warning',
+    });
+    expect(confirmation?.description).toContain('after fixing the latest delivery failure');
+    expect(confirmation?.description).toContain('failure messaging/mismatched-credential');
+    expect(confirmation?.description).toContain('30+ day token timestamp');
+  });
+
   it('makes retry copy explicit when the latest delivery already succeeded', () => {
     const confirmation = buildNotificationActionConfirmation(
       [
