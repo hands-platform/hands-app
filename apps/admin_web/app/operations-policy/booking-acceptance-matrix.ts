@@ -174,10 +174,10 @@ function buildBookingAcceptanceCards(
       status: policy.pushReady ? 'Push enabled' : 'In-app first',
       detail: policy.pushReady
         ? 'Partner booking and marketplace participation alerts are ready to route through FCM.'
-        : 'Booking notifications are recorded in-app until FCM production setup is fully ready.',
+        : 'Partner booking and marketplace alerts stay in-app until live FCM smoke, token recovery, and fallback queues are clean.',
       operatorAction: policy.pushReady
-        ? 'Monitor delivery failures and disabled devices on the Notifications board.'
-        : 'Keep this until FCM and production SMS credentials/monitoring are complete.',
+        ? 'Monitor delivery failures, disabled devices, stale tokens, and retry audit evidence on the Notifications board.'
+        : 'Keep this on in-app-first until live FCM smoke, token recovery, and notification monitoring pass; SMS stays under the deferred Phone Auth step.',
       className: policy.pushReady ? 'ops-task-done' : 'ops-task-pending',
       pillClass: policy.pushReady ? 'pill-success' : 'pill-info',
       blocking: false,

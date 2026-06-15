@@ -57,6 +57,8 @@ describe('booking acceptance matrix builder', () => {
     expect(matrix.cards).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          operatorAction:
+            'Monitor delivery failures, disabled devices, stale tokens, and retry audit evidence on the Notifications board.',
           pillClass: 'pill-success',
           status: 'Push enabled',
           title: 'Partner alert delivery',
@@ -101,9 +103,19 @@ describe('booking acceptance matrix builder', () => {
       expect.arrayContaining([
         expect.objectContaining({ status: 'Owner override', title: 'First-pick response window' }),
         expect.objectContaining({ status: 'Customer-choice conflict', title: 'Customer final selection' }),
+        expect.objectContaining({
+          detail:
+            'Partner booking and marketplace alerts stay in-app until live FCM smoke, token recovery, and fallback queues are clean.',
+          operatorAction:
+            'Keep this on in-app-first until live FCM smoke, token recovery, and notification monitoring pass; SMS stays under the deferred Phone Auth step.',
+          status: 'In-app first',
+          title: 'Partner alert delivery',
+        }),
         expect.objectContaining({ status: 'Historical setting review', title: 'Negative wallet gate' }),
       ]),
     );
+    const alertCard = matrix.cards.find((card) => card.title === 'Partner alert delivery');
+    expect(alertCard?.operatorAction).not.toContain('production SMS credentials');
   });
 });
 
