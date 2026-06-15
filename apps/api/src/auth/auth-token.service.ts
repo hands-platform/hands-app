@@ -22,10 +22,7 @@ type SupabaseJwtPayload = {
     role?: string;
     roles?: string[];
   };
-  user_metadata?: {
-    role?: string;
-    roles?: string[];
-  };
+  user_metadata?: Record<string, unknown>;
 };
 
 @Injectable()
@@ -131,8 +128,6 @@ export class AuthTokenService {
     const rawRoles = [
       payload.app_metadata?.role,
       ...(payload.app_metadata?.roles ?? []),
-      payload.user_metadata?.role,
-      ...(payload.user_metadata?.roles ?? []),
     ].filter((role): role is string => Boolean(role));
 
     const roles = rawRoles
