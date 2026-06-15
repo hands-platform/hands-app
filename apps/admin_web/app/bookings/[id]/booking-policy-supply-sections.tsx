@@ -144,9 +144,7 @@ export type BookingStageSnapshotSectionProps = {
 
 export function BookingCustomerWaitPanelSection({
   customerWaitPanel,
-}: {
-  customerWaitPanel: CustomerWaitPanel;
-}) {
+}: BookingCustomerWaitPanelSectionProps) {
   return (
     <section className="card admin-mb-16" id="audit">
       <div className="ops-section-header">
@@ -175,6 +173,10 @@ export function BookingCustomerWaitPanelSection({
     </section>
   );
 }
+
+export type BookingCustomerWaitPanelSectionProps = {
+  customerWaitPanel: CustomerWaitPanel;
+};
 
 export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot: PolicySnapshot }) {
   return (

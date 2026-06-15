@@ -74,6 +74,7 @@ import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
   BookingCustomerWaitPanelSection,
+  type BookingCustomerWaitPanelSectionProps,
   BookingDispatchCandidateDecisionMatrixSection,
   BookingMarketplaceSupplySection,
   BookingStageSnapshotSection,
@@ -698,6 +699,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const stageSnapshotProps: BookingStageSnapshotSectionProps = {
     stageSnapshot,
   };
+  const customerWaitPanelProps: BookingCustomerWaitPanelSectionProps = {
+    customerWaitPanel,
+  };
 
   return (
     <>
@@ -749,7 +753,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingStageSnapshotSection {...stageSnapshotProps} />
 
-      <BookingCustomerWaitPanelSection customerWaitPanel={customerWaitPanel} />
+      <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
 
       <BookingAppliedPolicySection policySnapshot={policySnapshot} />
 
