@@ -49,6 +49,7 @@ import {
 import {
   BookingChatLifecycleSection,
   BookingCloseoutReadinessSection,
+  type BookingCloseoutReadinessSectionProps,
   BookingCommunicationMovementHandoffSection,
   BookingHandoffChecklistSection,
   BookingMarketplaceWalletEvidenceSection,
@@ -660,6 +661,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const payoutBatchEligibilityProps: BookingPayoutBatchEligibilitySectionProps = {
     payoutBatchEligibility,
   };
+  const closeoutReadinessProps: BookingCloseoutReadinessSectionProps = {
+    bookingStatus: booking.status,
+    closeoutReadiness,
+  };
 
   return (
     <>
@@ -697,10 +702,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingOperatingLedgerSection operatingLedger={operatingLedger} />
 
-      <BookingCloseoutReadinessSection
-        bookingStatus={booking.status}
-        closeoutReadiness={closeoutReadiness}
-      />
+      <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
 
       <BookingOperatingSnapshotSection operatingSnapshot={operatingSnapshot} />
 

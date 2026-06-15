@@ -232,10 +232,7 @@ export function BookingOperatingLedgerSection({
 export function BookingCloseoutReadinessSection({
   bookingStatus,
   closeoutReadiness,
-}: {
-  bookingStatus: string;
-  closeoutReadiness: CloseoutReadiness;
-}) {
+}: BookingCloseoutReadinessSectionProps) {
   return (
     <section className="card admin-mb-16" id="booking-closeout-readiness">
       <div className="ops-section-header">
@@ -313,6 +310,11 @@ export function BookingCloseoutReadinessSection({
     </section>
   );
 }
+
+export type BookingCloseoutReadinessSectionProps = {
+  bookingStatus: string;
+  closeoutReadiness: CloseoutReadiness;
+};
 
 export function BookingOperatingSnapshotSection({
   operatingSnapshot,
