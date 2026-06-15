@@ -153,12 +153,14 @@ export const setupOrder = [
     id: 'maps',
     title: 'MapTiler and Geoapify',
     phase: 'Location E2E',
-    operatorAction: 'Use the configured low-cost map/geocoding keys and verify address search before E2E.',
+    operatorAction:
+      'Use the configured low-cost map/geocoding keys and keep the live style/geocoding check passing before E2E.',
     exitCriteria: 'Customer app can search an address, move the pin, and load nearby partners.',
     purpose: 'Required for customer address search, map pin confirmation, and nearby partner display.',
     env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
     notes: [
       'MapTiler and Geoapify keys are configured locally in ignored environment files.',
+      'external:check:maps validates the MapTiler style endpoint and a Vietnam geocoding query.',
       'Set both keys in the ignored .env file, then restart local API/Admin so /setup reads the updated process environment.',
       'Use MapTiler only for map tiles.',
       'Use Geoapify only for geocoding/search.',
@@ -267,7 +269,7 @@ export const setupOrder = [
     id: 'storage',
     title: 'File storage and CDN',
     phase: 'Media operations',
-    operatorAction: 'Use local MinIO for MVP, then configure production storage/CDN.',
+    operatorAction: 'Keep local MinIO upload/read smoke passing, then configure production storage/CDN.',
     exitCriteria: 'Private verification files and public partner media can be uploaded and served.',
     purpose: 'Required for partner verification files, public profile media, and moderation evidence.',
     env: [
@@ -281,7 +283,7 @@ export const setupOrder = [
       'S3_PUBLIC_BASE_URL',
     ],
     notes: [
-      'Local MinIO is enough for development.',
+      'Local MinIO upload/read smoke passes for private verification files and public partner media.',
       'Use private reads for verification files.',
       'For Supabase Storage, prefer S3_PRIVATE_BUCKET=hands-private and S3_PUBLIC_BUCKET=hands-public.',
       'Serve approved public partner media through a CDN base URL.',
@@ -405,7 +407,7 @@ export const externalRegistrationPlan = [
     provider: 'Supabase Storage or S3-compatible storage',
     owner: 'administration@hands.vn',
     detail:
-      'Local MinIO is enough for development. Production needs private KYC buckets and public partner media delivery.',
+      'Local MinIO upload/read smoke passes for development. Production still needs private KYC buckets and public partner media delivery.',
     env: ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET', 'S3_PUBLIC_BASE_URL'],
   },
   {
@@ -476,7 +478,7 @@ export const verifiedBaseline = [
   'Customer Flutter analyze/test pass.',
   'Partner Flutter analyze/test pass.',
   'Firebase mobile scope guard passes with FCM-only usage.',
-  'MapTiler and Geoapify checks pass.',
+  'MapTiler, Geoapify, and storage smoke checks pass.',
   'Supabase schema guard passes.',
   'Secret leak guard passes.',
 ] as const;

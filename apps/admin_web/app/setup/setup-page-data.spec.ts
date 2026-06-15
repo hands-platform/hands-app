@@ -29,6 +29,18 @@ describe('setup page data', () => {
     );
     expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('notifications'));
     expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('storage'));
+    const mapsSetup = setupOrder.find((item) => item.id === 'maps');
+    expect(mapsSetup?.notes).toEqual(
+      expect.arrayContaining([
+        'external:check:maps validates the MapTiler style endpoint and a Vietnam geocoding query.',
+      ]),
+    );
+    const storageSetup = setupOrder.find((item) => item.id === 'storage');
+    expect(storageSetup?.notes).toEqual(
+      expect.arrayContaining([
+        'Local MinIO upload/read smoke passes for private verification files and public partner media.',
+      ]),
+    );
     const notificationSetup = setupOrder.find((item) => item.id === 'notifications');
     expect(notificationSetup?.notes).toEqual(
       expect.arrayContaining([
@@ -134,6 +146,8 @@ describe('setup page data', () => {
       'SMS_SENDER_ID',
       'SUPABASE_PHONE_SMOKE_PHONE',
     ]);
+    const storagePlan = externalRegistrationPlan.find((item) => item.id === 'storage-cdn');
+    expect(storagePlan?.detail).toContain('Local MinIO upload/read smoke passes for development.');
     expect(projectControlSequence.map((item) => item.phase)).toEqual([
       'Phase A',
       'Phase B',
@@ -142,7 +156,11 @@ describe('setup page data', () => {
       'Phase E',
     ]);
     expect(verifiedBaseline).toEqual(
-      expect.arrayContaining(['API typecheck and build pass.', 'Secret leak guard passes.']),
+      expect.arrayContaining([
+        'API typecheck and build pass.',
+        'MapTiler, Geoapify, and storage smoke checks pass.',
+        'Secret leak guard passes.',
+      ]),
     );
   });
 
