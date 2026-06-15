@@ -501,10 +501,7 @@ export type BookingCommunicationMovementHandoffSectionProps = {
 export function BookingChatLifecycleSection({
   chatLifecycle,
   messageCount,
-}: {
-  chatLifecycle: ChatLifecycle;
-  messageCount: number;
-}) {
+}: BookingChatLifecycleSectionProps) {
   return (
     <section className="card admin-mb-16" id="structured-ops-status">
       <div className="ops-section-header">
@@ -542,3 +539,8 @@ export function BookingChatLifecycleSection({
     </section>
   );
 }
+
+export type BookingChatLifecycleSectionProps = {
+  chatLifecycle: ChatLifecycle;
+  messageCount: number;
+};

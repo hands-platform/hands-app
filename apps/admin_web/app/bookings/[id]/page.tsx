@@ -48,6 +48,7 @@ import {
 } from './booking-operator-sections';
 import {
   BookingChatLifecycleSection,
+  type BookingChatLifecycleSectionProps,
   BookingCloseoutReadinessSection,
   type BookingCloseoutReadinessSectionProps,
   BookingCommunicationMovementHandoffSection,
@@ -685,6 +686,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const communicationMovementHandoffProps: BookingCommunicationMovementHandoffSectionProps = {
     communicationMovementHandoff,
   };
+  const chatLifecycleProps: BookingChatLifecycleSectionProps = {
+    chatLifecycle,
+    messageCount,
+  };
 
   return (
     <>
@@ -730,7 +735,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
 
-      <BookingChatLifecycleSection chatLifecycle={chatLifecycle} messageCount={messageCount} />
+      <BookingChatLifecycleSection {...chatLifecycleProps} />
 
       <BookingOpsCommandCenter {...opsCommandCenterProps} />
 
