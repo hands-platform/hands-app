@@ -219,6 +219,13 @@ const completedBookingInclude = {
   selectedProvider: true,
 } satisfies Prisma.BookingInclude;
 
+const customerCancellableBookingInclude = {
+  preferredProvider: true,
+  participants: { include: { providerProfile: true } },
+  selectedProvider: true,
+  payment: true,
+} satisfies Prisma.BookingInclude;
+
 const providerBookingHistoryInclude = {
   services: { include: { service: true } },
   addressSnapshot: true,
@@ -258,6 +265,14 @@ const firstRevenuePayoutSetupProviderInclude = {
   taxProfile: true,
   agreements: true,
 } satisfies Prisma.ProviderProfileInclude;
+
+const marketplaceParticipantResponseInclude = {
+  providerProfile: true,
+} satisfies Prisma.BookingParticipantInclude;
+
+const bookingCustomerProfileInclude = {
+  customerProfile: true,
+} satisfies Prisma.BookingInclude;
 
 @Injectable()
 export class BookingsService {
@@ -1011,12 +1026,7 @@ export class BookingsService {
     });
     const booking = await this.prisma.booking.findFirstOrThrow({
       where: { id: bookingId, customerProfileId: customer.id },
-      include: {
-        preferredProvider: true,
-        participants: { include: { providerProfile: true } },
-        selectedProvider: true,
-        payment: true,
-      },
+      include: customerCancellableBookingInclude,
     });
 
     assertCustomerDirectCancellationAllowed(booking);
@@ -1242,7 +1252,7 @@ export class BookingsService {
     const updatedParticipant = await this.prisma.bookingParticipant.update({
       where: participantKey,
       data: { status, respondedAt: new Date() },
-      include: { providerProfile: true },
+      include: marketplaceParticipantResponseInclude,
     });
     await this.announceMarketplaceParticipantResponse({
       status,
@@ -1984,7 +1994,7 @@ export class BookingsService {
   private async getCustomerUserIdForBooking(bookingId: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { customerProfile: true },
+      include: bookingCustomerProfileInclude,
     });
     return booking.customerProfile.userId;
   }
