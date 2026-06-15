@@ -749,7 +749,8 @@ describe('notification page model', () => {
       enableDeviceHref: '/notifications?confirm=enable-device&pushDeviceId=device-disabled',
       failureCodeLabel: 'BAD_TOKEN',
       httpStatusLabel: '400',
-      recoveryHintLabel: null,
+      recoveryHintLabel:
+        'Ask the customer or Partner to reopen the app, then re-enable only after the token path is current.',
       statusClassName: 'pill pill-warn',
     });
   });
@@ -960,6 +961,8 @@ describe('notification page model', () => {
     expect(rows[0]?.deliveryRows[0]).toMatchObject({
       deviceFreshnessLabel: '30+ day token timestamp',
       deviceStateLabel: 'Device enabled',
+      recoveryHintLabel:
+        'Ask the user to reopen the app so the token refreshes, then prefer token recovery smoke before retrying.',
       status: 'SENT',
       statusClassName: 'pill pill-success',
     });

@@ -576,10 +576,20 @@ function buildNotificationDeliveryRows(
     id: delivery.id ?? `${notification.id}-${delivery.attemptedAt}`,
     platformLabel: delivery.pushDevice?.platform ?? 'device',
     provider: delivery.provider,
-    recoveryHintLabel: notificationDeliveryRecoveryHint(delivery),
+    recoveryHintLabel: deliveryRecoveryHintLabel(delivery),
     status: delivery.status,
     statusClassName: deliveryStatusClassName(delivery.status),
   }));
+}
+
+function deliveryRecoveryHintLabel(delivery: AdminNotificationDelivery) {
+  if (delivery.pushDevice?.enabled === false) {
+    return 'Ask the customer or Partner to reopen the app, then re-enable only after the token path is current.';
+  }
+  if (isStaleNotificationPushDeviceDelivery(delivery)) {
+    return 'Ask the user to reopen the app so the token refreshes, then prefer token recovery smoke before retrying.';
+  }
+  return notificationDeliveryRecoveryHint(delivery);
 }
 
 function deliveryFailureCodeLabel(delivery: AdminNotificationDelivery) {
