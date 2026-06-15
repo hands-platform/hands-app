@@ -9,7 +9,6 @@ import {
   buildBookingActivityCsvHref,
   buildBookingActivityRecords,
   buildBookingActivitySummary,
-  type BookingActivityRecord,
 } from './booking-activity-records';
 import { BookingActionStatusSections } from './booking-action-status-sections';
 import { BookingCloseoutSections } from './booking-closeout-sections';
@@ -87,6 +86,7 @@ import {
   bookingChatRepairActionState,
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-state';
+import { bookingDetailEvidencePacket } from './booking-detail-evidence-packet';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import {
   bookingDetailAttentionFlags,
@@ -156,7 +156,6 @@ import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardr
 import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
 import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
 import { bookingEvidenceBundleRows as buildBookingEvidenceBundleRowsFromFacts } from '../../../lib/booking-evidence-bundle-rows';
-import { bookingEvidencePacket as buildBookingEvidencePacket } from '../../../lib/booking-evidence-packet';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../../lib/booking-final-gate-reason';
 import {
   bookingLocationTrail,
@@ -190,9 +189,6 @@ import {
   bookingProviderLocationMetricValue,
 } from '../../../lib/booking-provider-location-copy';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
-import {
-  type BookingRefundLedgerRow,
-} from '../../../lib/booking-refund-ledger';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -582,7 +578,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
   });
-  const evidencePacket = bookingEvidencePacket({
+  const evidencePacket = bookingDetailEvidencePacket({
     booking,
     messages,
     latestLocation,
@@ -1302,62 +1298,6 @@ function bookingOperatorCommandQueue({
     canMarkNoShow: canMarkNoShow(booking.status),
     attentionFlagCount: attentionFlags.length,
     pendingTask: pendingTasks[0] ?? null,
-  });
-}
-
-function bookingEvidencePacket({
-  booking,
-  messages,
-  latestLocation,
-  notificationTrace,
-  financeTrace,
-  refundLedgerRows,
-  operatorNoteLines,
-  bookingActivityRecords,
-}: {
-  booking: AdminBookingDetail;
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot | null;
-  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
-  financeTrace: ReturnType<typeof bookingFinanceTrace>;
-  refundLedgerRows: BookingRefundLedgerRow[];
-  operatorNoteLines: string[];
-  bookingActivityRecords: BookingActivityRecord[];
-}) {
-  const trail = locationTrail(booking);
-  const paymentEvidence = bookingPaymentEvidence(booking);
-  return buildBookingEvidencePacket({
-    chatReady: bookingChatReady(booking),
-    messageCount: messages.length,
-    latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
-    locationTrailCount: trail.length,
-    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
-    latestLocationCoordinateLabel: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : null,
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    paymentMethod: booking.payment?.method ?? 'No method',
-    paymentAmountLabel: money(booking.payment?.amount, booking.payment?.currency),
-    refundRows: refundLedgerRows.map((row) => ({
-      status: row.status,
-      amountLabel: money(row.amount, row.payment?.currency ?? undefined),
-    })),
-    alertCount: notificationTrace.rows.length,
-    failedAlertCount: notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length,
-    marketplaceBatchCount: notificationTrace.backupBatches.length,
-    operatorNoteLines,
-    auditLogCount: booking.auditLogs?.length ?? 0,
-    opsTaskCount: booking.opsTasks?.length ?? 0,
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
-    addressPinLabel: booking.addressSnapshot
-      ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-      : null,
-    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    customerPriceLabel: financeTrace.customerPrice,
-    walletLedgerLabel: financeTrace.walletLedger,
-    refundEvidence: paymentEvidence.refundEvidence,
-    activityRecordCount: bookingActivityRecords.length,
-    latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
-    latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
 }
 
