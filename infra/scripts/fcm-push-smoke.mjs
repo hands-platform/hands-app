@@ -77,6 +77,11 @@ const fcmSmokePreflightBlockerCopy = {
     action: ({ alternativeNotificationPreflights }) =>
       alternativeNotificationHint(alternativeNotificationPreflights),
   },
+  AUTO_SELECTED_PAYMENT_NOTIFICATION_DEFERRED: {
+    label: 'Default FCM smoke selected a payment notification while payments are deferred',
+    action: ({ alternativeNotificationPreflights }) =>
+      deferredPaymentNotificationHint(alternativeNotificationPreflights),
+  },
 };
 
 if (!['ANY', 'SENT', 'FAILED', 'SKIPPED'].includes(expectedStatus)) {
@@ -252,6 +257,10 @@ if (partnerAlertPolicyBlocker) {
     )}`,
   );
 }
+const deferredPaymentBlocker = deferredPaymentNotificationBlocker(notificationPreflight);
+if (deferredPaymentBlocker) {
+  fail(deferredPaymentNotificationHint(alternativeNotificationPreflights));
+}
 const projectAlignmentBlocker = fcmProjectAlignmentBlocker(projectAlignment);
 if (projectAlignmentBlocker) {
   fail(
@@ -418,7 +427,8 @@ async function selectDefaultNotification({ accessToken, notifications, latestUse
 
   if (
     !requestedNotificationId &&
-    expectedProviderBlocker(partnerAlertPolicyPreflight) &&
+    (expectedProviderBlocker(partnerAlertPolicyPreflight) ||
+      deferredPaymentNotificationBlocker(notificationPreflight)) &&
     alternativeNotificationPreflights[0]?.id
   ) {
     selectedNotificationId = alternativeNotificationPreflights[0].id;
@@ -482,12 +492,19 @@ function findAlternativeNotificationPreflights(notifications, selectedNotificati
     .filter((notification) => notification.id !== selectedNotificationId)
     .filter((notification) => notificationBelongsToSmokeUser(notification))
     .filter((notification) => !partnerAlertTypes.has(notification.type))
+    .filter((notification) => !isDeferredPaymentNotification(notification))
     .map(summarizeNotification)
     .slice(0, 3);
 }
 
 function notificationBelongsToSmokeUser(notification) {
   return notification.user?.phone === phone && userHasRole(notification.user, role);
+}
+
+function isDeferredPaymentNotification(notification) {
+  return String(notification?.type ?? '')
+    .toLowerCase()
+    .startsWith('payment.');
 }
 
 async function findPartnerAlertPolicyPreflight(accessToken, notification) {
@@ -628,7 +645,8 @@ function registeredDeviceWarnings(latestDevice, latestEnabledDevice) {
   return [
     {
       code: 'NEWER_DISABLED_DEVICE',
-      label: 'The newest matching push device is disabled while preflight will reuse an older enabled device.',
+      label:
+        'The newest matching push device is disabled while preflight will reuse an older enabled device.',
       operatorAction:
         'Ask the same app session to refresh its FCM token or confirm the older enabled device before live FCM retry.',
       latestDeviceId: latestDevice.id ?? null,
@@ -689,9 +707,7 @@ async function findNotificationRetryAuditPreflight(accessToken, notificationId) 
 
   const auditLogs = await listAdminAuditLogs(accessToken);
   const matchingRetryLogs = auditLogs.filter(
-    (log) =>
-      log.action === 'notification.retry' &&
-      retryAuditNotificationId(log) === notificationId,
+    (log) => log.action === 'notification.retry' && retryAuditNotificationId(log) === notificationId,
   );
   const latestRetryAudit = summarizeRetryAuditLog(matchingRetryLogs[0]);
   const evidence = retryAuditEvidence(latestRetryAudit);
@@ -727,9 +743,7 @@ function summarizeRetryAuditLog(log) {
     notificationId: stringValue(metadata.notificationId),
     retryRisk: stringValue(metadata.retryRisk),
     retryAlreadyDelivered: booleanValue(metadata.retryAlreadyDelivered),
-    operatorAction: metadata.operatorAction
-      ? fcmSmokeDisplayText(metadata.operatorAction)
-      : null,
+    operatorAction: metadata.operatorAction ? fcmSmokeDisplayText(metadata.operatorAction) : null,
     latestDelivery: summarizeRetryAuditLatestDelivery(latestDelivery),
     retryJob: summarizeRetryAuditJob(retryJob),
   };
@@ -958,6 +972,10 @@ function preflightBlockers({
   if (partnerAlertBlocker) {
     blockers.push(partnerAlertBlocker);
   }
+  const deferredPaymentBlocker = deferredPaymentNotificationBlocker(notificationPreflight);
+  if (deferredPaymentBlocker) {
+    blockers.push(deferredPaymentBlocker);
+  }
   const projectAlignmentBlocker = fcmProjectAlignmentBlocker(projectAlignment);
   if (projectAlignmentBlocker) {
     blockers.push(projectAlignmentBlocker);
@@ -1012,6 +1030,14 @@ function expectedProviderBlocker(partnerAlertPolicyPreflight) {
   }
 
   return 'PARTNER_ALERT_POLICY_PROVIDER_MISMATCH';
+}
+
+function deferredPaymentNotificationBlocker(notification) {
+  if (requestedNotificationId || !isDeferredPaymentNotification(notification)) {
+    return null;
+  }
+
+  return 'AUTO_SELECTED_PAYMENT_NOTIFICATION_DEFERRED';
 }
 
 function preflightNextActions(
@@ -1096,6 +1122,15 @@ function alternativeNotificationHint(alternativeNotificationPreflights) {
   }
 
   return `The selected notification is a Partner alert controlled by ${partnerAlertPolicyKey}. Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest standard notification for this same role/phone, or intentionally update the policy before live FCM retry.`;
+}
+
+function deferredPaymentNotificationHint(alternativeNotificationPreflights) {
+  const [firstAlternative] = alternativeNotificationPreflights;
+  if (firstAlternative?.id) {
+    return `Set FCM_SMOKE_NOTIFICATION_ID=${firstAlternative.id} to use the latest non-payment notification for this same role/phone before live FCM retry.`;
+  }
+
+  return 'Create or select a non-payment notification with FCM_SMOKE_NOTIFICATION_ID before live FCM retry; payment notifications are deferred for this pass.';
 }
 
 function firebaseAdminCredentialAction() {
