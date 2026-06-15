@@ -95,6 +95,10 @@ import {
   bookingDetailDispatchChecklist,
 } from './booking-detail-dispatch-checks';
 import { bookingDetailOperatorActionMatrix } from './booking-detail-operator-action-matrix';
+import {
+  bookingDetailOperatorCommandQueue,
+  bookingDetailOpsTaskCards,
+} from './booking-detail-operator-command-queue';
 import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
@@ -137,17 +141,12 @@ import {
 } from './booking-status-location';
 import {
   AdminBookingDetail,
-  AdminChatMessage,
-  AdminLocationSnapshot,
   AdminNotification,
   AdminOperationalPolicySetting,
   AdminProvider,
   adminGet,
 } from '../../../lib/admin-api';
-import {
-  attentionLevel,
-  type AttentionFlag,
-} from '../../../lib/admin-attention-flags';
+import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -169,13 +168,11 @@ import {
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
 import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
-import { bookingOpsTaskCards as buildBookingOpsTaskCards } from '../../../lib/booking-ops-task-cards';
 import {
   bookingOperatorNoteLines,
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
-import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
@@ -236,7 +233,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const attentionSummary = attentionLevel(attentionFlags);
   const liveSignals = bookingLiveServiceSignals(booking);
   const dispatchSteps = bookingDetailDispatchChecklist(booking);
-  const opsTaskCards = bookingOpsTaskCards(booking);
+  const opsTaskCards = bookingDetailOpsTaskCards(booking);
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingDetailFinanceSummaryCards(financeTrace);
   const financeFlags = bookingDetailFinanceFlags(booking, financeTrace);
@@ -538,7 +535,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#booking-activity',
     },
   ];
-  const operatorCommandQueue = bookingOperatorCommandQueue({
+  const operatorCommandQueue = bookingDetailOperatorCommandQueue({
     booking,
     attentionFlags,
     messages,
@@ -1253,46 +1250,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
-}
-
-function bookingOperatorCommandQueue({
-  booking,
-  attentionFlags,
-  messages,
-  latestLocation,
-}: {
-  booking: AdminBookingDetail;
-  attentionFlags: AttentionFlag[];
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot;
-}) {
-  const finalPartner = bookingFinalPartnerSummary(booking);
-  const partnerLabel = finalPartner.selected ? finalPartner.label : 'No final Partner';
-  const pendingTasks = bookingOpsTaskCards(booking).filter((task) => task.status !== 'DONE');
-
-  return buildBookingOperatorCommandQueue({
-    bookingStatus: booking.status,
-    participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
-    partnerLabel,
-    hasFinalPartner: finalPartner.selected,
-    hasChatRoom: Boolean(booking.chatRoom),
-    messageCount: messages.length,
-    hasLatestLocation: Boolean(latestLocation),
-    latestLocationFreshness: latestProviderLocationFreshness(booking),
-    providerLocationHelper: bookingDetailProviderLocationMetricHelper(booking),
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    closeoutAvailable: canCloseoutCompletedBooking(booking),
-    canExpire: canExpireBooking(booking.status),
-    canMarkNoShow: canMarkNoShow(booking.status),
-    attentionFlagCount: attentionFlags.length,
-    pendingTask: pendingTasks[0] ?? null,
-  });
-}
-
-function bookingOpsTaskCards(booking: AdminBookingDetail) {
-  return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
 }
 
 function locationTrail(booking: AdminBookingDetail) {
