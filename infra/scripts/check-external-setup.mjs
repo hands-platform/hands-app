@@ -19,6 +19,10 @@ const checks = [];
 const mobileReleaseKeystoreEnvKeys = ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'];
 const momoEnvKeys = ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'MOMO_SECRET_KEY'];
 const vnpayEnvKeys = ['VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'];
+const momoCredentialsFix =
+  'Create or open the MoMo Merchant Portal sandbox integration, copy MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/MOMO/callback. Production callback: https://api.hands.vn/api/payments/MOMO/callback.';
+const vnpayCredentialsFix =
+  'Create or open the VNPay Merchant Portal sandbox integration, copy VNPAY_TMN_CODE and VNPAY_HASH_SECRET into the ignored env file, then register callbacks. Local callback: http://localhost:3000/api/payments/VNPAY/callback. Production callback: https://api.hands.vn/api/payments/VNPAY/callback.';
 const storageRequiredEnvKeys = [
   'STORAGE_PROVIDER',
   'S3_ENDPOINT',
@@ -225,26 +229,26 @@ addRecommended(
   'payments',
   'MoMo credentials',
   allHaveValue(momoEnvKeys),
-  'Fill MoMo merchant credentials before MoMo E2E.',
+  momoCredentialsFix,
 );
 addPhaseRequired(
   'payments',
   'MoMo credentials',
   allHaveValue(momoEnvKeys),
-  'Fill MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, and MOMO_SECRET_KEY before payment E2E.',
+  momoCredentialsFix,
   ['payments', 'production'],
 );
 addRecommended(
   'payments',
   'VNPay credentials',
   allHaveValue(vnpayEnvKeys),
-  'Fill VNPay merchant credentials before VNPay E2E.',
+  vnpayCredentialsFix,
 );
 addPhaseRequired(
   'payments',
   'VNPay credentials',
   allHaveValue(vnpayEnvKeys),
-  'Fill VNPAY_TMN_CODE and VNPAY_HASH_SECRET before VNPay E2E.',
+  vnpayCredentialsFix,
   ['payments', 'production'],
 );
 
