@@ -57,7 +57,6 @@ import {
 } from './booking-communication-movement-handoff';
 import {
   bookingAddressSnapshotLabel,
-  bookingServiceOptionLabel,
   coordinateLabel,
   formatDate,
   money,
@@ -102,6 +101,7 @@ import {
 } from './booking-detail-operator-command-queue';
 import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
+import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
 import { bookingDetailMetricCards } from './booking-detail-metric-cards';
 import { bookingDetailOperationsQuickRail } from './booking-detail-operations-quick-rail';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
@@ -215,6 +215,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const messageCount = messages.length;
   const chatReady = bookingChatReady(booking);
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
+  const toolbarProps = bookingDetailToolbarProps({ booking, finalPartnerSummary });
   const participantCounts = bookingParticipantCounts(booking);
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const latestLocation = latestProviderLocation(booking);
@@ -571,16 +572,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     <>
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
 
-      <BookingDetailToolbar
-        bookingId={booking.id}
-        chatRoomId={booking.chatRoom?.id}
-        customerProfileId={booking.customerProfile?.id}
-        finalPartnerId={finalPartnerSummary.selected ? finalPartnerSummary.id : null}
-        paymentId={booking.payment?.id}
-        refundId={booking.refunds?.[0]?.id}
-        serviceLabel={bookingServiceOptionLabel(booking)}
-        status={booking.status}
-      />
+      <BookingDetailToolbar {...toolbarProps} />
 
       <BookingOperatorFirstReadSection rows={bookingOperatorFirstRead} />
 

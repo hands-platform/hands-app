@@ -60,6 +60,17 @@ type PriorityBriefing = {
   }>;
 };
 
+export type BookingDetailToolbarProps = {
+  bookingId: string;
+  serviceLabel: string;
+  status: string;
+  customerProfileId?: string | null;
+  finalPartnerId?: string | null;
+  chatRoomId?: string | null;
+  paymentId?: string | null;
+  refundId?: string | null;
+};
+
 export function BookingCommandDecisionStripSection({
   commandDecisionStrip,
 }: {
@@ -103,16 +114,7 @@ export function BookingDetailToolbar({
   chatRoomId,
   paymentId,
   refundId,
-}: {
-  bookingId: string;
-  serviceLabel: string;
-  status: string;
-  customerProfileId?: string | null;
-  finalPartnerId?: string | null;
-  chatRoomId?: string | null;
-  paymentId?: string | null;
-  refundId?: string | null;
-}) {
+}: BookingDetailToolbarProps) {
   return (
     <section className="toolbar">
       <div>
