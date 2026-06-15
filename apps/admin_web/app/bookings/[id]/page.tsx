@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import {
   BookingActivityPanel,
   BookingFullRecordIndex,
-  type BookingRecordIndexCard,
 } from './booking-activity-panel';
 import {
   buildBookingActivityCsvHref,
@@ -91,6 +90,7 @@ import { bookingDetailFinanceSummaryCards } from './booking-detail-finance-summa
 import { bookingDetailFlowStages } from './booking-detail-flow-stages';
 import { bookingDetailLocationTrail } from './booking-detail-location-trail';
 import { bookingHandoffChecklist } from './booking-handoff-checklist';
+import { bookingDetailRecordIndexCards } from './booking-detail-record-index-cards';
 import {
   bookingDetailAttentionFlags,
   bookingDetailDispatchChecklist,
@@ -341,92 +341,23 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     notifications: rawNotifications,
   });
-  const bookingRecordIndexCards: BookingRecordIndexCard[] = [
-    {
-      href: '#customer',
-      label: 'Customer',
-      value: booking.customerProfile?.user?.phone ?? 'No phone',
-      helper: booking.customerProfile?.user?.fullName ?? 'Customer profile',
-    },
-    {
-      href: '#participants',
-      label: 'Partners',
-      value: `${participantCounts.total}`,
-      helper: `${participantCounts.marketplace} marketplace / ${participantCounts.firstPick} first-pick row(s).`,
-    },
-    {
-      href: '#chat',
-      label: 'Chat archive',
-      value: `${messages.length}`,
-      helper: booking.chatRoom ? `Room ${shortId(booking.chatRoom.id)}` : 'No chat room yet',
-    },
-    {
-      href: '#payment',
-      label: 'Payment and wallet',
-      value: paymentEvidence.paymentStatus,
-      helper: paymentEvidence.paymentAmountLabel,
-    },
-    {
-      href: '#finance',
-      label: 'Finance trace',
-      value: financeTrace.providerPayout,
-      helper: `${financeTrace.platformFee} HANDS fee`,
-    },
-    {
-      href: booking.earning?.id ? `/earnings#earning-${booking.earning.id}` : '/earnings',
-      label: 'Earnings ledger',
-      value: booking.earning?.status ?? 'No earning row yet',
-      helper: booking.earning?.id ? shortId(booking.earning.id) : 'Open finance ledger',
-    },
-    {
-      href: '/cash-settlements',
-      label: 'Cash settlement desk',
-      value: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash',
-      helper: booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt',
-    },
-    {
-      href: '/tax-policy',
-      label: 'Tax policy',
-      value: financeTrace.withholding,
-      helper: 'Versioned rules, no hardcoded rates.',
-    },
-    {
-      href: '#service-pricing-snapshot',
-      label: 'Service and pricing',
-      value: financeTrace.payoutRuleStatus,
-      helper: financeTrace.serviceOption,
-    },
-    {
-      href: '#location',
-      label: 'Location trail',
-      value: bookingDetailProviderLocationMetricValue(booking),
+  const bookingRecordIndexCards = bookingDetailRecordIndexCards({
+    booking,
+    participantCounts,
+    messageCount: messages.length,
+    paymentEvidence,
+    financeTrace,
+    providerLocationMetric: {
       helper: bookingDetailProviderLocationMetricHelper(booking),
+      value: bookingDetailProviderLocationMetricValue(booking),
     },
-    {
-      href: '#communication-movement-handoff',
-      label: 'Communication and movement',
-      value: communicationMovementHandoff.status,
-      helper: `${messages.length} message(s), ${locationTrailSnapshots.length} location row(s).`,
-    },
-    {
-      href: '#alerts',
-      label: 'Alerts',
-      value: `${notificationTrace.rows.length}`,
-      helper: `${notificationTrace.backupBatches.length} marketplace alert batch(es).`,
-    },
-    {
-      href: '#operator-notes',
-      label: 'Operator notes',
-      value: `${operatorNoteLines.length}`,
-      helper: 'Internal handling notes retained on this booking.',
-    },
-    {
-      href: '#booking-activity',
-      label: 'Activity timeline',
-      value: `${bookingActivityRecords.length}`,
-      helper: 'Date-ordered operational history.',
-    },
-  ];
+    communicationMovementStatus: communicationMovementHandoff.status,
+    locationTrailCount: locationTrailSnapshots.length,
+    notificationCount: notificationTrace.rows.length,
+    marketplaceAlertBatchCount: notificationTrace.backupBatches.length,
+    operatorNoteCount: operatorNoteLines.length,
+    activityRecordCount: bookingActivityRecords.length,
+  });
   const operatingLedger = [
     {
       area: 'Customer',
