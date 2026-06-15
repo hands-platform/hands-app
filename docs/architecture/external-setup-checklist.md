@@ -23,18 +23,18 @@ Canonical operator order:
 
 ## Current Status
 
-| Area            | Status                                  | Next action                                            |
-| --------------- | --------------------------------------- | ------------------------------------------------------ |
-| GitHub          | Connected to HANDS org repo             | Keep pushing `develop`                                 |
-| Supabase        | Staging project created and SQL applied | Phone Auth/SMS E2E deferred                            |
-| MapTiler        | Local/staging key configured            | Keep key out of Git                                    |
-| Geoapify        | Local/staging key configured            | Keep key out of Git                                    |
-| Firebase        | FCM allowed for push only               | Do not use Firebase DB/Auth/Firestore                  |
-| Push            | Server-side FCM path testable           | Confirm same-session app token delivery before rollout |
-| SMS             | Dev OTP active                          | Vonage Phone Auth/SMS E2E later                        |
-| Storage         | Local MinIO works                       | Supabase Storage S3/R2 production choice later         |
-| Android signing | Local helper ready                      | Production keystores stay in secrets folder            |
-| Payments        | Cash active, MoMo/VNPay adapters exist  | Merchant sandbox credentials last                      |
+| Area            | Status                                                                          | Next action                                                         |
+| --------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| GitHub          | Connected to HANDS org repo                                                     | Keep pushing `develop`                                              |
+| Supabase        | Staging project created, SQL applied, Phone Auth send smoke reached test device | Capture OTP and finish verify/API exchange smoke                    |
+| MapTiler        | Local/staging key configured                                                    | Keep key out of Git                                                 |
+| Geoapify        | Local/staging key configured                                                    | Keep key out of Git                                                 |
+| Firebase        | FCM allowed for push only                                                       | Do not use Firebase DB/Auth/Firestore                               |
+| Push            | Server-side FCM path live-smoked with a registered device                       | Keep broad rollout behind audit evidence and token freshness checks |
+| SMS             | Vonage credentials send OTP through current provider route                      | SMS sender-channel refinement deferred                              |
+| Storage         | Local MinIO works                                                               | Supabase Storage S3/R2 production choice later                      |
+| Android signing | Local helper ready                                                              | Production keystores stay in secrets folder                         |
+| Payments        | Cash active, MoMo/VNPay adapters exist                                          | Merchant sandbox credentials last                                   |
 
 ## Required Env Groups
 
@@ -107,7 +107,7 @@ npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<fir
 npm.cmd run fcm:credentials:install -- -SourcePath C:\Users\<you>\Downloads\<firebase-admin-key>.json -UpdateEnv
 ```
 
-`fcm:push-smoke -- --dry-run` is config-only. `fcm:push-smoke -- --preflight` contacts the API but does not call retry or FCM. Run `npm.cmd run fcm:push-smoke` without either flag only after Firebase Admin credentials and either a real app FCM token or `FCM_SMOKE_USE_REGISTERED_DEVICE=true` for an enabled device from the selected role, phone, and platform are ready.
+`fcm:push-smoke -- --dry-run` is config-only. `fcm:push-smoke -- --preflight` contacts the API but does not call retry or FCM. Run `npm.cmd run fcm:push-smoke` without either flag only after Firebase Admin credentials and either a real app FCM token or `FCM_SMOKE_USE_REGISTERED_DEVICE=true` for an enabled device from the selected role, phone, and platform are ready. The current registered-device live smoke should stay on non-payment notification candidates while payment gateway work remains last.
 Partner alert notifications are controlled by `notification.partner_alert_channel`; when the default latest notification is a Partner alert intentionally routed to `IN_APP_ONLY`, the FCM smoke auto-selects a recent standard notification for the same role/phone when one exists, otherwise preflight reports the provider mismatch and suggests a standard notification id.
 For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `docker-compose.prod.yml` mounts that host file into the API container at `FIREBASE_ADMIN_CREDENTIALS_CONTAINER_PATH` or `/run/secrets/firebase-admin.json`.
 
@@ -128,7 +128,7 @@ VNPAY_HASH_SECRET=
 - `SUPABASE_SERVICE_ROLE_KEY`, payment secrets, SMS secrets, Firebase Admin private keys, S3 secrets, and Android keystore passwords must never be committed.
 - If using `FIREBASE_SERVICE_ACCOUNT_JSON`, provide raw or base64 Firebase service account JSON with `project_id`, `client_email`, and `private_key`.
 - If using `GOOGLE_APPLICATION_CREDENTIALS` for FCM, point it to an existing valid service account JSON file available to the API process or Docker container.
-- Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
+- Keep production app login on the existing safe path until Supabase Phone Auth OTP verify plus Nest API exchange both pass.
 - Use `PUSH_PROVIDER=in_app_only` for inbox-only local work; use `PUSH_PROVIDER=fcm` only during intentional FCM push E2E or staging rollout.
 - Customers never carry negative wallet balances in MVP.
 - Partner cash-fee debt can create a negative wallet and block final acceptance, service start, and payout release until settlement.

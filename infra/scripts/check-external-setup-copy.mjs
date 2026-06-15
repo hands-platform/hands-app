@@ -94,7 +94,7 @@ function checkPaymentSetupOrder(file, source) {
     },
     {
       file: 'docs/architecture/external-account-migration.md',
-      before: '| SMS |',
+      before: /^\|\s*SMS\s*\|/m,
       after: '| Payments',
       fix: 'Keep payments after SMS/storage/push in the external account migration table.',
     },
@@ -110,7 +110,7 @@ function checkPaymentSetupOrder(file, source) {
     return;
   }
 
-  const beforeIndex = source.indexOf(check.before);
+  const beforeIndex = patternIndex(source, check.before);
   const afterIndex = source.indexOf(check.after);
   if (beforeIndex === -1 || afterIndex === -1 || afterIndex < beforeIndex) {
     violations.push({
@@ -120,4 +120,11 @@ function checkPaymentSetupOrder(file, source) {
       fix: check.fix,
     });
   }
+}
+
+function patternIndex(source, pattern) {
+  if (pattern instanceof RegExp) {
+    return source.search(pattern);
+  }
+  return source.indexOf(pattern);
 }

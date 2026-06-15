@@ -12,18 +12,18 @@ Use this file when moving external services to clean HANDS-owned accounts under 
 
 ## Current Account State
 
-| Service | Status | Next action |
-| --- | --- | --- |
-| Domain/DNS | `hands.vn` managed through PA Vietnam | Add production DNS when deployment starts |
-| Email | `administration@hands.vn` can receive mail | Use as owner/admin email |
-| GitHub | `hands-platform/hands-app` connected | Keep `develop` pushed |
-| Supabase | `hands-staging` created, SQL applied, storage buckets verified | Phone Auth/SMS E2E later |
-| MapTiler | HANDS-owned key configured locally | Add restrictions later if needed |
-| Geoapify | HANDS-owned key configured locally | Add restrictions later if needed |
-| Push | In-app mode active | FCM production E2E later |
-| Storage | Local MinIO active | Supabase Storage S3/R2 decision later |
-| SMS | Dev OTP active | Vonage Phone Auth/SMS E2E later |
-| Payments | Cash active, adapters exist | MoMo/VNPay sandbox credentials last |
+| Service    | Status                                                                                                    | Next action                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Domain/DNS | `hands.vn` managed through PA Vietnam                                                                     | Add production DNS when deployment starts                |
+| Email      | `administration@hands.vn` can receive mail                                                                | Use as owner/admin email                                 |
+| GitHub     | `hands-platform/hands-app` connected                                                                      | Keep `develop` pushed                                    |
+| Supabase   | `hands-staging` created, SQL applied, storage buckets verified, Phone Auth send smoke reached test device | Capture OTP and finish verify/API exchange smoke         |
+| MapTiler   | HANDS-owned key configured locally                                                                        | Add restrictions later if needed                         |
+| Geoapify   | HANDS-owned key configured locally                                                                        | Add restrictions later if needed                         |
+| Push       | FCM credentials installed and registered-device live smoke sent a non-payment notification                | Keep rollout gated by audit evidence and token freshness |
+| Storage    | Local MinIO active                                                                                        | Supabase Storage S3/R2 decision later                    |
+| SMS        | Vonage credentials usable for current Phone Auth OTP send path                                            | SMS sender-channel refinement deferred                   |
+| Payments   | Cash active, adapters exist                                                                               | MoMo/VNPay sandbox credentials last                      |
 
 ## Verification
 
