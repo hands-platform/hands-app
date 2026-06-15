@@ -57,6 +57,7 @@ import {
   BookingOperatingLedgerSection,
   type BookingOperatingLedgerSectionProps,
   BookingOperatingSnapshotSection,
+  type BookingOperatingSnapshotSectionProps,
   BookingOperatingTimelineSection,
 } from './booking-operating-sections';
 import {
@@ -673,6 +674,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const marketplaceWalletEvidenceProps: BookingMarketplaceWalletEvidenceSectionProps = {
     marketplaceWalletEvidence,
   };
+  const operatingSnapshotProps: BookingOperatingSnapshotSectionProps = {
+    operatingSnapshot,
+  };
 
   return (
     <>
@@ -712,7 +716,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
 
-      <BookingOperatingSnapshotSection operatingSnapshot={operatingSnapshot} />
+      <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
 
       <BookingOperatingTimelineSection operatingTimeline={operatingTimeline} />
 

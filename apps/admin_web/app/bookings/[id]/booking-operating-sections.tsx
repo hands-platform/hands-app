@@ -322,9 +322,7 @@ export type BookingCloseoutReadinessSectionProps = {
 
 export function BookingOperatingSnapshotSection({
   operatingSnapshot,
-}: {
-  operatingSnapshot: OperatingSnapshot;
-}) {
+}: BookingOperatingSnapshotSectionProps) {
   return (
     <section className="card admin-mb-16" id="operating-snapshot">
       <div className="ops-section-header">
@@ -360,6 +358,10 @@ export function BookingOperatingSnapshotSection({
     </section>
   );
 }
+
+export type BookingOperatingSnapshotSectionProps = {
+  operatingSnapshot: OperatingSnapshot;
+};
 
 export function BookingOperatingTimelineSection({
   operatingTimeline,
