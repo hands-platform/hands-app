@@ -80,8 +80,6 @@ import {
   bookingCashDebtNeedsSettlement,
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
-import { bookingOperatingActivityTimelineItems } from './booking-operating-activity-timeline-items';
-import { bookingOperatingBaseTimelineItems } from './booking-operating-base-timeline-items';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
@@ -94,10 +92,7 @@ import { bookingHandoffChecklist } from './booking-handoff-checklist';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
-import { bookingOperatingFinanceTimelineItems } from './booking-operating-finance-timeline-items';
-import {
-  createBookingOperatingTimelineCollector,
-} from './booking-operating-timeline-items';
+import { bookingOperatingTimeline } from './booking-operating-timeline';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
@@ -1450,45 +1445,6 @@ function bookingEvidencePacket({
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
-}
-
-function bookingOperatingTimeline({
-  booking,
-  addressLine,
-  addressPin,
-  latestLocation,
-  messages,
-  notifications,
-}: {
-  booking: AdminBookingDetail;
-  addressLine: string;
-  addressPin: string;
-  latestLocation?: AdminLocationSnapshot;
-  messages: AdminChatMessage[];
-  notifications: AdminNotification[];
-}) {
-  const timelineItems = createBookingOperatingTimelineCollector();
-  const addItem = timelineItems.addItem;
-
-  for (const item of bookingOperatingBaseTimelineItems({
-    booking,
-    addressLine,
-    addressPin,
-    latestLocation,
-    messages,
-  })) {
-    addItem(item);
-  }
-
-  for (const item of bookingOperatingFinanceTimelineItems(booking)) {
-    addItem(item);
-  }
-
-  for (const item of bookingOperatingActivityTimelineItems({ booking, notifications })) {
-    addItem(item);
-  }
-
-  return timelineItems.build();
 }
 
 type CommunicationMovementEvent = {
