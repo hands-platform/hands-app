@@ -347,7 +347,7 @@ export type BookingDispatchCandidateDecisionMatrixSectionProps = {
   marketplaceSupply: MarketplaceSupply;
 };
 
-export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketplaceSupply: MarketplaceSupply }) {
+export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMarketplaceSupplySectionProps) {
   return (
     <section className="card admin-mb-16" id="marketplace-supply">
       <div className="ops-section-header">
@@ -407,6 +407,10 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketp
     </section>
   );
 }
+
+export type BookingMarketplaceSupplySectionProps = {
+  marketplaceSupply: MarketplaceSupply;
+};
 
 function SummaryCardGrid({ cards }: { cards: SummaryCard[] }) {
   return (

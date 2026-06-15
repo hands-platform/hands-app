@@ -80,6 +80,7 @@ import {
   BookingDispatchCandidateDecisionMatrixSection,
   type BookingDispatchCandidateDecisionMatrixSectionProps,
   BookingMarketplaceSupplySection,
+  type BookingMarketplaceSupplySectionProps,
   BookingStageSnapshotSection,
   type BookingStageSnapshotSectionProps,
 } from './booking-policy-supply-sections';
@@ -714,6 +715,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const dispatchCandidateDecisionMatrixProps: BookingDispatchCandidateDecisionMatrixSectionProps = {
     marketplaceSupply,
   };
+  const marketplaceSupplyProps: BookingMarketplaceSupplySectionProps = {
+    marketplaceSupply,
+  };
 
   return (
     <>
@@ -773,7 +777,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
 
-      <BookingMarketplaceSupplySection marketplaceSupply={marketplaceSupply} />
+      <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
 
       <BookingAlertTraceSection {...alertTraceProps} />
 
