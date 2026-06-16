@@ -586,7 +586,7 @@ const pages = [
     path: '/refunds?range=7d',
     markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'],
   },
-  { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service follow-up'] },
+  { path: '/reviews', markers: ['Customer Reviews', 'Customer Review', 'Follow-up', 'Search Review'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
   {
     path: '/notifications?review=failed',

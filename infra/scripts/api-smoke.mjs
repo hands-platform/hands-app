@@ -2744,6 +2744,67 @@ const review = await postJson('/customer/reviews', customerAuth.accessToken, {
   rating: 5,
   comment: 'Great service.',
 });
+const duplicateReviewError = await expectRequestFailure(
+  'Duplicate completed-booking review should be blocked',
+  () =>
+    postJson('/customer/reviews', customerAuth.accessToken, {
+      bookingId: booking.id,
+      rating: 4,
+      comment: 'Second review attempt',
+    }),
+  400,
+);
+if (!duplicateReviewError.includes('Review already exists for this booking')) {
+  throw new Error(`Duplicate review guard returned an unexpected error: ${duplicateReviewError}`);
+}
+
+const publicProviderDetailAfterReview = await request(`/customer/partners/${booking.selectedProviderId}`);
+const publicReviewCountAfterCreate = Array.isArray(publicProviderDetailAfterReview?.reviews)
+  ? publicProviderDetailAfterReview.reviews.length
+  : 0;
+if (
+  !publicProviderDetailAfterReview?.reviews?.some(
+    (item) => item?.comment === 'Great service.' && item?.rating === 5,
+  ) ||
+  (publicProviderDetailAfterReview?.reviewCount ?? 0) < 1
+) {
+  throw new Error(
+    `Public provider detail did not expose the newly published review: ${JSON.stringify(
+      publicProviderDetailAfterReview,
+    )}`,
+  );
+}
+
+await patchJson(`/admin/reviews/${review.id}/moderate`, adminAuth.accessToken, {
+  status: 'HIDDEN',
+  reportReason: 'Held by admin',
+});
+const publicProviderDetailAfterHold = await request(`/customer/partners/${booking.selectedProviderId}`);
+if (
+  publicProviderDetailAfterHold?.reviews?.some((item) => item?.comment === 'Great service.') ||
+  (publicProviderDetailAfterHold?.reviewCount ?? 0) >= publicReviewCountAfterCreate
+) {
+  throw new Error(
+    `Held review still appears in public provider detail: ${JSON.stringify(publicProviderDetailAfterHold)}`,
+  );
+}
+
+await patchJson(`/admin/reviews/${review.id}/moderate`, adminAuth.accessToken, {
+  status: 'PUBLISHED',
+});
+const publicProviderDetailAfterRepublish = await request(`/customer/partners/${booking.selectedProviderId}`);
+if (
+  !publicProviderDetailAfterRepublish?.reviews?.some(
+    (item) => item?.comment === 'Great service.' && item?.rating === 5,
+  ) ||
+  (publicProviderDetailAfterRepublish?.reviewCount ?? 0) < publicReviewCountAfterCreate
+) {
+  throw new Error(
+    `Republished review did not return to public provider detail: ${JSON.stringify(
+      publicProviderDetailAfterRepublish,
+    )}`,
+  );
+}
 
 const completedCloseout = await postJson(`/admin/bookings/${booking.id}/closeout`, adminAuth.accessToken, {
   note: 'Smoke test completed booking closeout',
@@ -3414,6 +3475,11 @@ console.log({
   partnerControlReportId: partnerControlReport.id,
   partnerControlReportStatus: resolvedPartnerControlReport.status,
   partnerControlSanctionId: partnerControlSanction.id,
+  duplicateReviewGuardReady: duplicateReviewError.includes('Review already exists for this booking'),
+  publicReviewVisibilityRoundTripReady:
+    publicReviewCountAfterCreate >= 1 &&
+    (publicProviderDetailAfterHold?.reviewCount ?? 0) < publicReviewCountAfterCreate &&
+    (publicProviderDetailAfterRepublish?.reviewCount ?? 0) >= publicReviewCountAfterCreate,
   partnerControlSanctionLifted: liftedPartnerControlSanction.status === 'LIFTED',
   providerPayoutHoldBlocked: Boolean(payoutHoldSanction.id) && liftedPayoutHoldSanction.status === 'LIFTED',
   providerSupabaseRoleSyncStatus: providerSupabaseRoleSync.status,
