@@ -95,7 +95,7 @@ export default async function OperationsPolicyPage({
   const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
 
   return (
-    <>
+    <div className="operations-policy-page">
       <section className="toolbar">
         <div>
           <h1>Operations Policy</h1>
@@ -216,6 +216,6 @@ export default async function OperationsPolicyPage({
         backlog={ownerDecisionBacklog}
         pressure={ownerDecisionPressure}
       />
-    </>
+    </div>
   );
 }

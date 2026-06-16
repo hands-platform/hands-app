@@ -352,7 +352,7 @@ a {
 .admin-metric-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   margin-bottom: 20px;
 }
 
@@ -362,6 +362,12 @@ a {
   min-width: 0;
   overflow-x: auto;
   width: 100%;
+}
+
+.admin-table-scroll > .table,
+.admin-scroll-x > .table {
+  min-width: 100%;
+  width: max-content;
 }
 
 .booking-monitor .admin-table-scroll {
@@ -1160,6 +1166,39 @@ a.action-button-card:hover {
   border-radius: 0;
   box-shadow: none;
   margin-top: 0;
+  min-width: 1380px;
+}
+
+.booking-monitor .table th:nth-child(1),
+.booking-monitor .table td:nth-child(1) {
+  min-width: 190px;
+}
+
+.booking-monitor .table th:nth-child(2),
+.booking-monitor .table td:nth-child(2) {
+  min-width: 190px;
+}
+
+.booking-monitor .table th:nth-child(3),
+.booking-monitor .table td:nth-child(3) {
+  min-width: 170px;
+}
+
+.booking-monitor .table th:nth-child(4),
+.booking-monitor .table td:nth-child(4) {
+  min-width: 270px;
+}
+
+.booking-monitor .table th:nth-child(5),
+.booking-monitor .table td:nth-child(5),
+.booking-monitor .table th:nth-child(6),
+.booking-monitor .table td:nth-child(6) {
+  min-width: 160px;
+}
+
+.booking-monitor .table th:nth-child(7),
+.booking-monitor .table td:nth-child(7) {
+  min-width: 280px;
 }
 
 .ops-filter-actions {
@@ -1383,6 +1422,54 @@ a.action-button-card:hover {
   box-shadow: none;
   margin-top: 0;
   min-width: 820px;
+}
+
+.operations-policy-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.operations-policy-page > .admin-mb-16,
+.operations-policy-page > .admin-mt-16 {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.operations-policy-page > .toolbar,
+.operations-policy-page > .card,
+.operations-policy-page .grid > .card {
+  min-width: 0;
+}
+
+.operations-policy-page > .card,
+.operations-policy-page .grid > .card {
+  overflow: hidden;
+}
+
+.operations-policy-page .grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.operations-policy-page .ops-section-header > div,
+.operations-policy-page .ops-row > div {
+  min-width: 0;
+}
+
+.operations-policy-page .ops-section-header > .pill,
+.operations-policy-page .ops-section-header > .signal,
+.operations-policy-page .ops-row > .pill,
+.operations-policy-page .ops-row > .signal,
+.operations-policy-page .ops-row > .text-link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.operations-policy-page .field select,
+.operations-policy-page .field input,
+.operations-policy-page .field textarea {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .service-catalog-page {
@@ -2618,6 +2705,13 @@ textarea:focus-visible {
   font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table .pill,
+.table .signal,
+.table .status-badge {
+  white-space: nowrap;
 }
 
 .table tbody tr:hover {
@@ -2760,6 +2854,9 @@ textarea:focus-visible {
 
 .vuexy-review-card .admin-table-scroll {
   margin-top: 0;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .vuexy-review-card .table {
@@ -2769,7 +2866,7 @@ textarea:focus-visible {
   box-shadow: none;
   color: rgba(225, 222, 245, 0.9);
   margin: 0;
-  min-width: 1080px;
+  min-width: 1120px;
 }
 
 .vuexy-review-card .table th,
@@ -2802,6 +2899,28 @@ textarea:focus-visible {
 .vuexy-review-card .table td:nth-child(4) {
   min-width: 300px;
   width: 34%;
+}
+
+.vuexy-review-card .table th:nth-child(2),
+.vuexy-review-card .table td:nth-child(2),
+.vuexy-review-card .table th:nth-child(3),
+.vuexy-review-card .table td:nth-child(3) {
+  min-width: 180px;
+}
+
+.vuexy-review-card .table th:nth-child(5),
+.vuexy-review-card .table td:nth-child(5) {
+  min-width: 132px;
+}
+
+.vuexy-review-card .table th:nth-child(6),
+.vuexy-review-card .table td:nth-child(6) {
+  min-width: 150px;
+}
+
+.vuexy-review-card .table th:nth-child(7),
+.vuexy-review-card .table td:nth-child(7) {
+  min-width: 96px;
 }
 
 .vuexy-review-check-cell input {
@@ -3689,6 +3808,7 @@ textarea:focus-visible {
   box-shadow: none;
   margin-top: 0;
   min-width: 0;
+  overflow-x: auto;
   width: 100%;
 }
 
@@ -3696,7 +3816,22 @@ textarea:focus-visible {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  min-width: 860px;
+  min-width: 1120px;
+}
+
+.notification-table-shell .table th:nth-child(1),
+.notification-table-shell .table td:nth-child(1) {
+  min-width: 150px;
+}
+
+.notification-table-shell .table th:nth-child(2),
+.notification-table-shell .table td:nth-child(2) {
+  min-width: 180px;
+}
+
+.notification-table-shell .table th:nth-child(3),
+.notification-table-shell .table td:nth-child(3) {
+  min-width: 140px;
 }
 
 .notification-table-shell .table th:nth-child(4),
@@ -3712,6 +3847,11 @@ textarea:focus-visible {
 .notification-table-shell .table th:nth-child(6),
 .notification-table-shell .table td:nth-child(6) {
   min-width: 260px;
+}
+
+.notification-table-shell .table th:nth-child(7),
+.notification-table-shell .table td:nth-child(7) {
+  min-width: 130px;
 }
 
 .notification-delivery-summary {
