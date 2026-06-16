@@ -2683,12 +2683,31 @@ a.ops-task-card {
 }
 
 .setup-page .setup-backlog,
+.setup-page .stack > .card > .detail-grid,
 .setup-page .detail-grid > .card > .stack,
 .setup-page .detail-grid > .card > .timeline {
   max-height: min(620px, calc(100vh - 220px));
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-gutter: stable;
+}
+
+.setup-page .stack > .card > .detail-grid {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: 14px;
+}
+
+.setup-page .stack > .card > .detail-grid > div {
+  max-height: min(560px, calc(100vh - 260px));
+  min-width: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.setup-page .stack > .card > .detail-grid + .setup-command-block {
+  margin-top: 16px;
 }
 
 .setup-action-list,
