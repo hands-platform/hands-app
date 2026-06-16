@@ -1,18 +1,22 @@
 import Link from 'next/link';
-import { AdminTableScroll } from '../../components/admin-data-table';
-import { MetricCard } from '../../components/metric-card';
+import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { adminGet } from '../../lib/admin-api';
 import type { AdminCustomer } from '../../lib/admin-api';
-import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
+import { formatDateTime as formatDate } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { buildCustomerActiveFilters, buildCustomerFilters, customerSortLabel } from './customer-filters';
+import { CustomerFilterBoard } from './customer-filter-board';
 import {
-  buildCustomerFilterSummary,
   buildCustomerRow,
   buildCustomerSummary,
   filterCustomerRows,
   sortCustomerRows,
 } from './customer-list-model';
+import {
+  buildCustomerManagementMetrics,
+  buildCustomerManagementSpotlights,
+  buildCustomerManagementTableRows,
+} from './customer-management-view-model';
 import { CustomersTableSection } from './customers-table-section';
 
 type CustomersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -23,9 +27,16 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const allRows = customers.map(buildCustomerRow);
   const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
   const summary = buildCustomerSummary(rows);
-  const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 8);
   const activeFilters = buildCustomerActiveFilters(filters);
-  const filterSummary = buildCustomerFilterSummary(rows, allRows, summary, activeFilters.length);
+  const metrics = buildCustomerManagementMetrics(summary, allRows.length);
+  const spotlights = buildCustomerManagementSpotlights(
+    summary,
+    rows.length,
+    allRows.length,
+    activeFilters.length,
+  );
+  const tableRows = buildCustomerManagementTableRows(rows);
+  const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 6);
   const customerListCsvHref = buildCsvDataHref(
     rows.map((row) => ({
       customer_id: row.id,
@@ -114,328 +125,78 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   );
 
   return (
-    <>
-      <section className="toolbar">
-        <div>
-          <h1>Customer Management</h1>
-          <p className="muted">
-            Customer activity board for profile, booking history, completed work, chat archives, wallet view,
-            saved addresses, last app session state, and push reachability. This page records factual customer activity
-            for operator review.
-          </p>
-        </div>
-        <div className="actions">
+    <AdminPageTemplate
+      title="Customer Management"
+      description="Customer profile, booking movement, completed work, chat archive, payment footprint, saved locations, app sessions, and push reachability in one management flow."
+      metrics={metrics}
+      actions={
+        <>
           <Link className="text-link" href="/bookings">
             Open bookings
           </Link>
           <Link className="text-link" href="/payments">
             Open payments
           </Link>
-        </div>
-      </section>
+          <Link className="text-link" href="/reviews">
+            Open reviews
+          </Link>
+        </>
+      }
+    >
+      <CustomerFilterBoard
+        activeFilters={activeFilters}
+        csvHref={customerListCsvHref}
+        filteredCount={rows.length}
+        filters={filters}
+        totalCount={allRows.length}
+      />
 
       <section className="card admin-mb-16">
-        <form className="form-grid" action="/customers">
-          <label>
-            Search
-            <input name="q" defaultValue={filters.q} placeholder="Name, phone, email, customer id" />
-          </label>
-          <label>
-            Booking state
-            <select name="booking" defaultValue={filters.booking}>
-              <option value="">All</option>
-              <option value="active">Active booking</option>
-              <option value="completed">Completed work</option>
-              <option value="closed">Closed booking</option>
-              <option value="no-booking">No booking yet</option>
-            </select>
-          </label>
-          <label>
-            Booking flow
-            <select name="bookingFlow" defaultValue={filters.bookingFlow}>
-              <option value="">All</option>
-              <option value="open-matching">Open matching wait</option>
-              <option value="first-pick">First-pick pending</option>
-              <option value="customer-choice">Customer final choice</option>
-              <option value="chat-live">Chat room opened</option>
-              <option value="chat-missing">Matched but chat missing</option>
-              <option value="service-live">Service in progress</option>
-              <option value="completed-work">Completed work</option>
-              <option value="closed-record">Closed or no-show record</option>
-              <option value="address-snapshot">Address snapshot saved</option>
-            </select>
-          </label>
-          <label>
-            App and push
-            <select name="reachability" defaultValue={filters.reachability}>
-              <option value="">All</option>
-              <option value="in-app">In app now</option>
-              <option value="push-ready">Push ready</option>
-              <option value="no-push">No push device</option>
-              <option value="no-session">No app session</option>
-            </select>
-          </label>
-          <label>
-            Address
-            <select name="address" defaultValue={filters.address}>
-              <option value="">All</option>
-              <option value="saved">Saved address</option>
-              <option value="missing">No saved address</option>
-            </select>
-          </label>
-          <label>
-            Payment
-            <select name="payment" defaultValue={filters.payment}>
-              <option value="">All</option>
-              <option value="captured">Captured payment</option>
-              <option value="issue">Payment follow-up</option>
-              <option value="refund">Refund history</option>
-              <option value="no-payment">No payment record</option>
-            </select>
-          </label>
-          <label>
-            Chat archive
-            <select name="chat" defaultValue={filters.chat}>
-              <option value="">All</option>
-              <option value="has-chat">Has chat archive</option>
-              <option value="no-chat">No chat archive</option>
-            </select>
-          </label>
-          <label>
-            Admin memo
-            <select name="memo" defaultValue={filters.memo}>
-              <option value="">All</option>
-              <option value="has-memo">Has memo</option>
-              <option value="no-memo">No memo</option>
-            </select>
-          </label>
-          <label>
-            Joined from
-            <input type="date" name="joinedFrom" defaultValue={filters.joinedFrom} />
-          </label>
-          <label>
-            Joined to
-            <input type="date" name="joinedTo" defaultValue={filters.joinedTo} />
-          </label>
-          <label>
-            Recent access
-            <select name="seen" defaultValue={filters.seen}>
-              <option value="">All</option>
-              <option value="live">In app now</option>
-              <option value="7d">Seen in 7 days</option>
-              <option value="30d">Seen in 30 days</option>
-              <option value="inactive-30d">No access 30 days</option>
-              <option value="never">No app session</option>
-            </select>
-          </label>
-          <label>
-            Min bookings
-            <input name="minBookings" defaultValue={filters.minBookings ?? ''} inputMode="numeric" />
-          </label>
-          <label>
-            Min completed
-            <input name="minCompleted" defaultValue={filters.minCompleted ?? ''} inputMode="numeric" />
-          </label>
-          <label>
-            Min paid amount
-            <input name="minSpend" defaultValue={filters.minSpend ?? ''} inputMode="numeric" />
-          </label>
-          <label>
-            Sort
-            <select name="sort" defaultValue={filters.sort}>
-              <option value="last-booking">Last booking</option>
-              <option value="last-work">Last completed work</option>
-              <option value="booking-count">Booking count</option>
-              <option value="completed-count">Completed work count</option>
-              <option value="captured-spend">Captured spend</option>
-              <option value="last-seen">Last app session</option>
-              <option value="joined">First signup</option>
-              <option value="name">Name</option>
-            </select>
-          </label>
-          <div className="actions full-span">
-            <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/customers">
-              Clear filters
-            </Link>
-            <a
-              className="text-link"
-              download={`hands-customers-${filters.sort}.csv`}
-              href={customerListCsvHref}
-            >
-              Export CSV
-            </a>
-            <span className="muted">
-              Showing {rows.length} of {allRows.length} customer row(s)
-            </span>
-          </div>
-          {activeFilters.length > 0 ? (
-            <div className="participant-list full-span">
-              <span className="pill pill-info">Active filters</span>
-              {activeFilters.map((filter) => (
-                <span className="pill pill-warn" key={filter}>
-                  {filter}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="muted full-span">
-              No customer filter is active. Use filters when support needs one customer, one booking state, or
-              missing contact/location information.
-            </p>
-          )}
-        </form>
-      </section>
-
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Current filter summary</h2>
-            <p className="muted">
-              A factual snapshot of the customer rows currently loaded on this page before export or follow-up
-              work.
-            </p>
-          </div>
-          <span className="pill pill-info">{filters.sort ? customerSortLabel(filters.sort) : 'Default'}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          {filterSummary.map((item) => (
+        <AdminSectionHeader
+          title="Customer operations snapshot"
+          description="Quick read of the filtered customer directory before an operator opens the full table."
+          status={<span className="pill pill-info">{spotlights.length} signals</span>}
+        />
+        <div className="service-trace-summary admin-mt-12">
+          {spotlights.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
               <strong>{item.value}</strong>
-              <small className="muted">{item.detail}</small>
+              <small>{item.detail}</small>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="grid admin-mb-16">
-        <MetricCard label="Customers" value={summary.total.toString()} helper="Total customer profiles" />
-        <MetricCard
-          label="Joined recently"
-          value={summary.recentJoins.toString()}
-          helper="New accounts in 30 days"
-        />
-        <MetricCard
-          label="In app now"
-          value={summary.live.toString()}
-          helper="Latest session under 30 minutes"
-        />
-        <MetricCard
-          label="Active bookings"
-          value={summary.activeBookings.toString()}
-          helper="Needs live ops attention"
-        />
-        <MetricCard
-          label="Completed work"
-          value={summary.completedBookings.toString()}
-          helper="Finished service records"
-        />
-        <MetricCard
-          label="Last work"
-          value={summary.latestCompletedAt ? formatDate(summary.latestCompletedAt) : 'None'}
-          helper="Newest completed service"
-        />
-        <MetricCard
-          label="Closed bookings"
-          value={summary.cancelledBookings.toString()}
-          helper="Cancelled, expired, or refunded records"
-        />
-        <MetricCard
-          label="Saved addresses"
-          value={summary.addresses.toString()}
-          helper="Saved or selected locations"
-        />
-        <MetricCard
-          label="Captured spend"
-          value={formatMoney(summary.capturedSpend)}
-          helper="Captured customer payments"
-        />
-      </section>
-
       <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer activity board</h2>
-            <p className="muted">
-              Recent customer activity by booking, completed work, payment, chat archive, address, and
-              reachability.
-            </p>
-          </div>
-          <span className="pill pill-info">{recentActivityRows.length} recent</span>
+        <AdminSectionHeader
+          title="Recent customer movement"
+          description="Newest booking and completed-work signals so the operations desk can jump directly into the next customer record."
+          status={<span className="pill pill-info">{recentActivityRows.length} recent</span>}
+        />
+        <div className="service-trace-summary admin-mt-12">
+          {recentActivityRows.length > 0 ? (
+            recentActivityRows.map((row) => (
+              <Link href={`/customers/${row.id}`} key={row.id}>
+                <span>{row.name}</span>
+                <strong>{row.activityLabel}</strong>
+                <small>
+                  {row.lastBookingAt ? `Last booking ${formatDate(row.lastBookingAt)}` : 'No booking yet'} /{' '}
+                  {row.lastCompletedAt ? `last work ${formatDate(row.lastCompletedAt)}` : 'no completed work'}
+                </small>
+              </Link>
+            ))
+          ) : (
+            <div>
+              <span>Activity</span>
+              <strong>No customer movement yet</strong>
+              <small>Once bookings are created or completed, this rail will surface the newest customer signals.</small>
+            </div>
+          )}
         </div>
-        <div className="service-trace-summary">
-          <div>
-            <span>Last booking</span>
-            <strong>{summary.latestBookingAt ? formatDate(summary.latestBookingAt) : 'None'}</strong>
-            <small className="muted">Newest customer activity</small>
-          </div>
-          <div>
-            <span>Push reachable</span>
-            <strong>{summary.pushReachable}</strong>
-            <small className="muted">Enabled device token exists</small>
-          </div>
-          <div>
-            <span>Refund records</span>
-            <strong>{formatMoney(summary.refundAmount)}</strong>
-            <small className="muted">Refund rows in loaded history</small>
-          </div>
-          <div>
-            <span>Chat traces</span>
-            <strong>{summary.chatRooms}</strong>
-            <small className="muted">Rooms connected to bookings</small>
-          </div>
-          <div>
-            <span>No saved address</span>
-            <strong>{summary.missingAddress}</strong>
-            <small className="muted">Profile has no stored address row</small>
-          </div>
-          <div>
-            <span>Payment issues</span>
-            <strong>{summary.paymentIssues}</strong>
-            <small className="muted">Pending, failed, released, or refunded</small>
-          </div>
-        </div>
-        {recentActivityRows.length > 0 ? (
-          <AdminTableScroll>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Activity</th>
-                  <th>Last completed work</th>
-                  <th>Last booking</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentActivityRows.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <strong>{row.name}</strong>
-                      <p className="muted">{row.phone}</p>
-                    </td>
-                    <td>{row.activityLabel}</td>
-                    <td>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work yet'}</td>
-                    <td>{row.lastBookingAt ? formatDate(row.lastBookingAt) : 'No booking'}</td>
-                    <td>
-                      <Link className="text-link" href={`/customers/${row.id}`}>
-                        Open customer
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </AdminTableScroll>
-        ) : (
-          <p className="muted admin-mt-14">
-            No customer booking activity has been recorded yet.
-          </p>
-        )}
       </section>
 
-      <CustomersTableSection rows={rows} sortLabel={customerSortLabel(filters.sort)} />
-    </>
+      <CustomersTableSection rows={tableRows} sortLabel={customerSortLabel(filters.sort)} />
+    </AdminPageTemplate>
   );
 }

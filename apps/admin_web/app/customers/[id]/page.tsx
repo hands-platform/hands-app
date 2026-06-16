@@ -50,6 +50,13 @@ import {
   orderCustomerActivityRecords,
   readDetailActivityOrder,
 } from './customer-detail-filters';
+import {
+  CustomerDetailOverviewShell,
+  type CustomerDetailOverviewAction,
+  type CustomerDetailOverviewFact,
+  type CustomerDetailOverviewHighlight,
+  type CustomerDetailOverviewNavItem,
+} from './customer-detail-overview-shell';
 import type { DetailActivityOrder } from './customer-detail-filters';
 
 type PageProps = {
@@ -421,6 +428,128 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         'No selected service address loaded.',
     },
   ];
+  const overviewStatusBadges = [
+    activeBooking ? 'Active booking' : 'No live booking',
+    pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
+    latestSession
+      ? Date.now() - dateMs(latestSession.lastSeenAt) <= 30 * 60_000
+        ? 'In app now'
+        : 'Recent session saved'
+      : 'No app session',
+  ];
+  const overviewHighlights: CustomerDetailOverviewHighlight[] = [
+    {
+      label: 'Bookings',
+      value: String(bookings.length),
+      helper: `${bookingStats.active} active / ${bookingStats.completed} completed`,
+    },
+    {
+      label: 'Captured spend',
+      value: formatMoney(wallet.capturedSpend),
+      helper: `${wallet.refundCount} refund row(s) / ${formatMoney(wallet.refundAmount)} refunded`,
+    },
+    {
+      label: 'Retained chat',
+      value: `${chatMessageCount} messages`,
+      helper: `${chatRooms.length} room(s) linked to this customer`,
+    },
+    {
+      label: 'Saved locations',
+      value: `${addresses.length}`,
+      helper: addresses[0]?.value ?? 'No saved location loaded yet',
+    },
+  ];
+  const overviewFacts: CustomerDetailOverviewFact[] = [
+    {
+      label: 'Customer ID',
+      value: customer.id,
+      helper: 'Stable admin customer profile id.',
+    },
+    {
+      label: 'Phone',
+      value: customer.user?.phone ?? 'No phone',
+      helper: customer.user?.email ?? 'No email linked to this customer account.',
+    },
+    {
+      label: 'Joined',
+      value: formatDate(customer.user?.createdAt),
+      helper: customer.user?.updatedAt
+        ? `Last account update ${formatDate(customer.user.updatedAt)}`
+        : 'No account update timestamp loaded.',
+    },
+    {
+      label: 'Last session',
+      value: latestSession ? formatDate(latestSession.lastSeenAt) : 'No session',
+      helper: latestSession
+        ? `${latestSession.platform ?? 'Unknown'} / ${latestSession.appVersion ?? 'No app version'}`
+        : 'No app session or device heartbeat loaded.',
+    },
+    {
+      label: 'Frequent service',
+      value: mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking))) ?? 'Not enough history',
+      helper:
+        mostCommonLabel(bookings.map((booking) => bookingAddressEvidenceLabel(booking))) ??
+        'No repeated service area found.',
+    },
+  ];
+  const overviewActions: CustomerDetailOverviewAction[] = [
+    {
+      href: latestBooking?.id ? `/bookings/${latestBooking.id}` : '#booking-history',
+      label: latestBooking ? 'Open latest booking' : 'Open booking history',
+    },
+    {
+      href: `/payments?customer=${encodeURIComponent(customer.id)}`,
+      label: 'Open payments',
+    },
+    {
+      href: `/chat-archive?q=${encodeURIComponent(customer.id)}`,
+      label: 'Open chat archive',
+    },
+  ];
+  const overviewNavigation: CustomerDetailOverviewNavItem[] = [
+    {
+      href: '#customer-operations-digest',
+      label: 'Operations digest',
+      value: `${customerOperationsDigest.length} lanes`,
+      detail: 'Single-screen customer operating state.',
+    },
+    {
+      href: '#customer-connected-operations-records',
+      label: 'Linked records',
+      value: `${connectedCustomerRecordLinks.length} links`,
+      detail: 'Bookings, payments, chat archives, sessions, and notes.',
+    },
+    {
+      href: '#wallet',
+      label: 'Payment ledger',
+      value: formatMoney(wallet.capturedSpend),
+      detail: `${wallet.refundCount} refund row(s) tracked for this customer.`,
+    },
+    {
+      href: '#booking-history',
+      label: 'Booking history',
+      value: `${bookings.length} rows`,
+      detail: 'Active, completed, cancelled, refunded, and no-show records.',
+    },
+    {
+      href: '#customer-chat-retention-ledger',
+      label: 'Chat retention',
+      value: `${chatRooms.length} room(s)`,
+      detail: 'Customer and Partner chat evidence retained for admin review.',
+    },
+    {
+      href: '#customer-activity',
+      label: 'Activity timeline',
+      value: `${filteredCustomerActivityRecords.length} events`,
+      detail: `${dateFilters.label} / ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}.`,
+    },
+    {
+      href: '#notifications',
+      label: 'Notifications',
+      value: `${filteredNotifications.length} rows`,
+      detail: 'Recent customer push and in-app notification history.',
+    },
+  ];
 
   return (
     <>
@@ -451,6 +580,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
+      <div className="customer-detail-shell">
+        <CustomerDetailOverviewShell
+          actions={overviewActions}
+          facts={overviewFacts}
+          highlights={overviewHighlights}
+          name={customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer'}
+          navigation={overviewNavigation}
+          statusBadges={overviewStatusBadges}
+          subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
+        />
+
+        <div className="customer-detail-main">
       <section className="card admin-mb-16" id="customer-operator-first-read">
         <div className="ops-section-header">
           <div>
@@ -1754,6 +1895,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
       </section>
+        </div>
+      </div>
     </>
   );
 }

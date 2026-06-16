@@ -1,130 +1,140 @@
 import Link from 'next/link';
-
+import { ArrowUpRight, BellRing, MapPin, MessageSquareText, ReceiptText, Smartphone, Wallet } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
-import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
-import type { CustomerRow } from './customer-list-model';
+import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 type CustomersTableSectionProps = {
-  readonly rows: readonly CustomerRow[];
+  readonly rows: readonly CustomerManagementTableRow[];
   readonly sortLabel: string;
 };
 
 export function CustomersTableSection({ rows, sortLabel }: CustomersTableSectionProps) {
   return (
-    <section className="card">
-      <div className="ops-section-header">
+    <section className="vuexy-customer-table-card" aria-labelledby="customer-directory-title">
+      <div className="vuexy-customer-toolbar">
         <div>
-          <h2>All customers</h2>
-          <p className="muted">List view sorted by {sortLabel}. Open a row to see all customer details.</p>
+          <h2 id="customer-directory-title">Customer directory</h2>
+          <p>
+            Vuexy-style customer management board using live HANDS customer profile, booking, payment,
+            session, and chat facts.
+          </p>
         </div>
-        <span className="pill pill-info">{rows.length} rows</span>
+        <div className="participant-list">
+          <span className="pill pill-info">{rows.length} rows</span>
+          <span className="pill pill-neutral">Sorted by {sortLabel}</span>
+        </div>
       </div>
+
       <AdminTableScroll>
-        <table className="table">
+        <table className="table vuexy-customer-table">
           <thead>
             <tr>
               <th>Customer</th>
-              <th>Customer ID</th>
-              <th>Phone / email</th>
-              <th>Joined</th>
-              <th>Recent access</th>
-              <th>Last work</th>
-              <th>Bookings</th>
-              <th>Completed</th>
-              <th>Frequent service / area</th>
-              <th>Repeated Partner</th>
-              <th>Closed / no-show</th>
-              <th>Total paid</th>
-              <th>Device / IP</th>
+              <th>Activity</th>
+              <th>Service pattern</th>
+              <th>Reachability</th>
+              <th>Finance</th>
               <th>Ops trail</th>
-              <th>Memo</th>
-              <th>Addresses</th>
-              <th>Open</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.name}</strong>
-                  <p className="muted">First signup: {formatDate(row.joinedAt)}</p>
-                </td>
-                <td>
-                  <code>{row.id}</code>
-                </td>
-                <td>
-                  <strong>{row.phone}</strong>
-                  <p className="muted">{row.email}</p>
-                </td>
-                <td>{formatDate(row.joinedAt)}</td>
-                <td>
-                  <strong>{row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</strong>
-                  <p className="muted">{row.isLive ? 'In app now' : 'Not live'}</p>
-                </td>
-                <td>
-                  <strong>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work'}</strong>
-                  <p className="muted">{row.lastCompletedLabel}</p>
-                </td>
-                <td>
-                  <strong>{row.bookingCount}</strong>
-                  <p className="muted">
-                    {row.activeBookings} active / last {row.lastBookingAt ? formatDate(row.lastBookingAt) : 'none'}
-                  </p>
-                </td>
-                <td>
-                  <strong>{row.completedBookings}</strong>
-                  <p className="muted">{row.lastCompletedPartner}</p>
-                </td>
-                <td>
-                  <strong>{row.commonService}</strong>
-                  <p className="muted">{row.commonArea}</p>
-                </td>
-                <td>
-                  <strong>{row.commonPartner}</strong>
-                  <p className="muted">Repeated selected or preferred Partner</p>
-                </td>
-                <td>
-                  <strong>{row.cancelledBookings}</strong>
-                  <p className="muted">
-                    Customer {row.customerClosedBookings} / admin {row.adminClosedBookings} / Partner{' '}
-                    {row.partnerClosedBookings}
-                  </p>
-                  <p className="muted">{row.noShowBookings} no-show</p>
-                </td>
-                <td>
-                  <strong>{formatMoney(row.capturedSpend)}</strong>
-                  <p className="muted">{formatMoney(row.refundAmount)} refunded</p>
-                </td>
-                <td>
-                  <strong>{row.latestSessionDevice}</strong>
-                  <p className="muted">{row.latestSessionIp}</p>
-                </td>
-                <td>
-                  <strong>{row.chatRooms} chat room(s)</strong>
-                  <p className="muted">
-                    {row.paymentIssues} payment follow-up / {row.memoCount} memo(s)
-                  </p>
-                </td>
-                <td>
-                  <strong>{row.latestMemoTitle}</strong>
-                  <p className="muted">{row.latestMemoDetail}</p>
-                </td>
-                <td>{row.addressCount}</td>
-                <td>
-                  <Link className="text-link" href={`/customers/${row.id}`}>
-                    Details
-                  </Link>
-                </td>
-              </tr>
-            ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={17}>
+                <td colSpan={7}>
                   <strong>No customers found</strong>
-                  <p className="muted">Change the filters or clear search to view customer records.</p>
+                  <p className="muted">Change the filters or clear the search to view customer records.</p>
                 </td>
               </tr>
             ) : null}
+            {rows.map((row) => (
+              <tr key={row.customerIdLabel}>
+                <td>
+                  <div className="vuexy-customer-person">
+                    <span className="vuexy-customer-avatar">{row.initials}</span>
+                    <div>
+                      <strong>{row.name}</strong>
+                      <span>{row.phone}</span>
+                      <span>{row.email}</span>
+                      <small>
+                        {row.customerIdLabel} / joined {row.joinedLabel}
+                      </small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-stack">
+                    <strong>{row.activityLabel}</strong>
+                    <span>{row.activityDetail}</span>
+                    <small>{row.bookingLabel}</small>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-stack">
+                    <strong>{row.patternLabel}</strong>
+                    <span>{row.patternDetail}</span>
+                    <small>{row.closureLabel}</small>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-stack">
+                    <strong>{row.reachabilityLabel}</strong>
+                    <span>{row.reachabilityDetail}</span>
+                    <small>{row.sessionLabel}</small>
+                    <div className="vuexy-customer-inline-tags">
+                      <span className="pill pill-info">
+                        <MapPin aria-hidden="true" size={14} />
+                        {row.addressLabel}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-stack">
+                    <strong>{row.financeLabel}</strong>
+                    <span>{row.financeDetail}</span>
+                    <div className="vuexy-customer-inline-tags">
+                      <span className="pill pill-success">
+                        <Wallet aria-hidden="true" size={14} />
+                        Paid
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-stack">
+                    <strong>{row.opsLabel}</strong>
+                    <span>{row.opsDetail}</span>
+                    <div className="vuexy-customer-inline-tags">
+                      <span className="pill pill-neutral">
+                        <MessageSquareText aria-hidden="true" size={14} />
+                        {row.chatLabel}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="vuexy-customer-actions">
+                    <Link className="vuexy-customer-action-link" href={row.detailHref}>
+                      <ArrowUpRight aria-hidden="true" size={16} />
+                      Open
+                    </Link>
+                    <Link className="vuexy-customer-action-link is-muted" href={row.paymentsHref}>
+                      <ReceiptText aria-hidden="true" size={16} />
+                      Payments
+                    </Link>
+                    <Link className="vuexy-customer-action-link is-muted" href={row.chatHref}>
+                      <BellRing aria-hidden="true" size={16} />
+                      Chats
+                    </Link>
+                    <span className="vuexy-customer-action-meta">
+                      <Smartphone aria-hidden="true" size={14} />
+                      {row.sessionLabel}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </AdminTableScroll>
