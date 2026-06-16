@@ -1076,7 +1076,7 @@ a.action-button-card:hover {
 
 .booking-monitor {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 
@@ -1113,12 +1113,15 @@ a.action-button-card:hover {
 
 .booking-monitor .card .card {
   background: var(--admin-surface);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   min-width: 0;
 }
 
 .booking-monitor .ops-section-header {
   align-items: flex-start;
   border-bottom: 1px solid var(--admin-border);
+  gap: 12px;
   padding-bottom: 14px;
 }
 
@@ -1130,11 +1133,12 @@ a.action-button-card:hover {
 }
 
 .booking-monitor .ops-filter-grid {
-  background: var(--admin-action-hover);
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   margin-top: 14px;
-  padding: 14px;
+  padding: 16px;
 }
 
 .booking-monitor .admin-table-scroll .table {
@@ -1151,8 +1155,11 @@ a.action-button-card:hover {
 .booking-monitor .participant-list button {
   background: var(--admin-surface);
   border-color: var(--admin-border-strong);
+  border-radius: var(--admin-radius);
   box-shadow: none;
   color: rgb(var(--admin-main-channel) / 0.78);
+  min-height: var(--admin-control-height);
+  padding-inline: 12px;
 }
 
 .booking-monitor .participant-list button:hover {
@@ -1561,7 +1568,7 @@ a.action-button-card:hover {
   gap: 8px;
   min-height: 132px;
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-lg);
   padding: 14px;
   background: var(--admin-surface);
 }
@@ -1569,15 +1576,15 @@ a.action-button-card:hover {
 .booking-monitor .ops-signal-card,
 .booking-monitor .dispatch-step-card,
 .booking-monitor .ops-task-card {
-  background: linear-gradient(180deg, #ffffff, rgba(250, 250, 250, 0.9));
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   border-radius: var(--admin-radius-lg);
-  box-shadow: 0 1px 2px rgba(47, 43, 61, 0.04);
+  box-shadow: var(--admin-shadow-xs);
 }
 
 .ops-signal-card strong {
   overflow-wrap: anywhere;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .dispatch-checklist {
@@ -1591,11 +1598,11 @@ a.action-button-card:hover {
   align-content: space-between;
   border: 1px solid var(--admin-border);
   border-left-width: 4px;
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-lg);
   display: grid;
   gap: 12px;
   min-height: 190px;
-  padding: 14px;
+  padding: 16px;
 }
 
 .dispatch-step-card h3,
@@ -1639,11 +1646,11 @@ a.action-button-card:hover {
   align-content: space-between;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-lg);
   display: grid;
   gap: 12px;
   min-height: 220px;
-  padding: 14px;
+  padding: 16px;
 }
 
 .ops-task-card h3,
@@ -1668,6 +1675,7 @@ a.action-button-card:hover {
 
 a.ops-task-card {
   transition:
+    background-color 140ms ease,
     border-color 140ms ease,
     box-shadow 140ms ease,
     transform 140ms ease;
@@ -1675,6 +1683,7 @@ a.ops-task-card {
 
 .booking-monitor a.ops-task-card:hover {
   border-color: rgba(115, 103, 240, 0.28);
+  background: var(--admin-action-hover);
   box-shadow: var(--admin-shadow-md);
   transform: translateY(-2px);
 }
@@ -1683,8 +1692,8 @@ a.ops-task-card {
   align-self: end;
   color: var(--admin-link);
   display: inline-flex;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .ops-task-card-action:hover {
@@ -1699,7 +1708,7 @@ a.ops-task-card {
 
 .ops-task-breakdown-item {
   align-items: center;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--admin-action-hover);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   display: flex;
@@ -1993,23 +2002,25 @@ a.ops-task-card {
   position: relative;
   min-height: 180px;
   overflow: hidden;
-  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
   background:
     linear-gradient(
       140deg,
       transparent 42%,
-      rgba(148, 163, 184, 0.6) 43%,
-      rgba(148, 163, 184, 0.6) 45%,
+      rgb(var(--admin-main-channel) / 0.18) 43%,
+      rgb(var(--admin-main-channel) / 0.18) 45%,
       transparent 46%
     ),
     linear-gradient(
       35deg,
       transparent 46%,
-      rgba(148, 163, 184, 0.35) 47%,
-      rgba(148, 163, 184, 0.35) 49%,
+      rgb(var(--admin-primary-channel) / 0.16) 47%,
+      rgb(var(--admin-primary-channel) / 0.16) 49%,
       transparent 50%
     ),
-    #eef6e8;
+    var(--admin-action-hover);
+  box-shadow: inset 0 0 0 1px rgb(var(--admin-main-channel) / 0.02);
 }
 
 .route-dot {
@@ -2018,20 +2029,21 @@ a.ops-task-card {
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: white;
+  box-shadow: var(--admin-shadow-sm);
 }
 
 .route-customer {
   left: 30%;
   top: 52%;
-  background: #3f7a34;
+  background: var(--admin-accent);
 }
 
 .route-provider {
   right: 26%;
   top: 42%;
-  background: #dc2626;
+  background: var(--admin-danger);
 }
 
 .status-badge,
@@ -3543,7 +3555,8 @@ textarea:focus-visible {
 .service-trace-summary a {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   display: grid;
   gap: 6px;
   padding: 12px;
@@ -3657,9 +3670,10 @@ textarea:focus-visible {
 }
 
 .booking-command-primary {
-  background: #f8faf6;
-  border: 1px solid #d8e7ce;
-  border-radius: 12px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   margin-top: 12px;
   padding: 16px;
 }
@@ -3688,7 +3702,8 @@ textarea:focus-visible {
 .service-impact-card {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
   display: grid;
   gap: 10px;
   margin: 12px 0;
