@@ -4,7 +4,11 @@ import { buildBookingsPageModel } from './booking-page-model';
 
 type BookingsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export default async function BookingsPage({ searchParams }: { searchParams?: BookingsPageSearchParams }) {
+type BookingsPageProps = {
+  searchParams?: BookingsPageSearchParams;
+};
+
+export default async function BookingsPage({ searchParams }: BookingsPageProps) {
   const [bookings, auditLogs, policySettings] = await Promise.all([
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
