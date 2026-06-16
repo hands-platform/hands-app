@@ -107,6 +107,14 @@ type BookingMonitorListSectionProps = {
   readonly rows: readonly BookingMonitorListRow[];
 };
 
+type BookingMonitorListTableRowProps = {
+  readonly row: BookingMonitorListRow;
+};
+
+type StatusBadgeProps = {
+  readonly status: string;
+};
+
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   return (
     <section className="card admin-mt-16">
@@ -137,7 +145,7 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
   );
 }
 
-function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListRow }) {
+function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
   const { booking } = row;
 
   return (
@@ -353,6 +361,6 @@ function BookingMonitorOpsCheckCell({
   );
 }
 
-function StatusBadge({ status }: { readonly status: string }) {
+function StatusBadge({ status }: StatusBadgeProps) {
   return <span className={`status-badge status-${status.toLowerCase()}`}>{status}</span>;
 }
