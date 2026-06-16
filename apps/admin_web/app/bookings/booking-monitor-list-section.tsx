@@ -111,6 +111,11 @@ type BookingMonitorListTableRowProps = {
   readonly row: BookingMonitorListRow;
 };
 
+type BookingMonitorOpsCheckCellProps = {
+  readonly booking: AdminBooking;
+  readonly row: BookingMonitorListRow;
+};
+
 type StatusBadgeProps = {
   readonly status: string;
 };
@@ -311,10 +316,7 @@ function BookingMonitorPaymentWalletCell({
 function BookingMonitorOpsCheckCell({
   booking,
   row,
-}: {
-  readonly booking: AdminBooking;
-  readonly row: BookingMonitorListRow;
-}) {
+}: BookingMonitorOpsCheckCellProps) {
   return (
     <td>
       <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>
