@@ -752,7 +752,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   };
 
   return (
-    <>
+    <div className="booking-detail-page">
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
 
       <BookingDetailToolbar {...toolbarProps} />
@@ -828,7 +828,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingRecordDetailSections {...recordDetailSectionsProps} />
 
       <BookingActivityPanel {...activityPanelProps} />
-    </>
+    </div>
   );
 }
 

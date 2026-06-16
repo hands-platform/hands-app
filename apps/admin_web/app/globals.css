@@ -2161,6 +2161,73 @@ a.action-button-card:hover {
   gap: 16px;
 }
 
+.booking-detail-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.booking-detail-page > .toolbar,
+.booking-detail-page > .grid,
+.booking-detail-page > .detail-grid,
+.booking-detail-page > .card,
+.booking-detail-page > section.card {
+  margin-bottom: 0;
+  margin-top: 0;
+  min-width: 0;
+}
+
+.booking-detail-page > .grid {
+  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.booking-detail-page > .detail-grid,
+.booking-detail-page .grid,
+.booking-detail-page .ops-task-grid,
+.booking-detail-page .service-trace-summary {
+  align-items: start;
+}
+
+.booking-detail-page > .card,
+.booking-detail-page > section.card,
+.booking-detail-page .detail-grid > .card,
+.booking-detail-page .grid > .card,
+.booking-detail-page .ops-task-grid > .ops-task-card {
+  max-height: min(780px, calc(100vh - 140px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.booking-detail-page .admin-table-scroll {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  max-height: min(680px, calc(100vh - 220px));
+  overflow: auto;
+}
+
+.booking-detail-page .admin-table-scroll .table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+}
+
+.booking-detail-page .detail-grid .setup-stage-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.booking-detail-page .detail-grid .setup-stage-item > div {
+  min-width: 0;
+}
+
+.booking-detail-page .detail-grid .setup-stage-item > small {
+  align-self: start;
+  justify-self: flex-start;
+}
+
 .ops-command-center {
   display: flex;
   align-items: flex-start;
