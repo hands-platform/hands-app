@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download, Filter, X } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
@@ -140,11 +141,16 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
             <input type="date" name="to" defaultValue={dateFilters.to} />
           </label>
           <div className="actions full-span">
-            <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/chat-archive">
+            <button className="button button-primary" type="submit">
+              <Filter aria-hidden="true" size={16} />
+              Apply filters
+            </button>
+            <Link className="button button-secondary" href="/chat-archive">
+              <X aria-hidden="true" size={16} />
               Clear
             </Link>
-            <a className="text-link" download="hands-chat-archive.csv" href={messageCsvHref}>
+            <a className="button button-secondary" download="hands-chat-archive.csv" href={messageCsvHref}>
+              <Download aria-hidden="true" size={16} />
               Export messages CSV
             </a>
             <span className="muted">

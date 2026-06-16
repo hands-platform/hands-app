@@ -1,3 +1,4 @@
+import { Filter, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -117,8 +118,12 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               </select>
             </label>
             <div className="actions full-span">
-              <button type="submit">Apply filters</button>
-              <a className="text-link" href="/audit-log">
+              <button className="button button-primary" type="submit">
+                <Filter aria-hidden="true" size={16} />
+                Apply filters
+              </button>
+              <a className="button button-secondary" href="/audit-log">
+                <X aria-hidden="true" size={16} />
                 Clear filters
               </a>
               <span className="muted">
