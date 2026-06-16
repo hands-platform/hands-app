@@ -1371,16 +1371,19 @@ a.action-button-card:hover {
   margin-bottom: 0;
 }
 
-.partners-page > .grid {
+.partners-page > .grid,
+.partners-page > .detail-grid {
   margin-bottom: 0;
   margin-top: 0;
 }
 
-.partners-page > .grid > .card {
+.partners-page > .grid > .card,
+.partners-page > .detail-grid > .card {
   min-width: 0;
 }
 
 .partners-page .grid > .card,
+.partners-page .detail-grid > .card,
 .partners-page .ops-task-grid > .ops-task-card {
   max-height: min(780px, calc(100vh - 140px));
   overflow-x: hidden;
@@ -1399,6 +1402,12 @@ a.action-button-card:hover {
 .partners-page .grid,
 .partners-page .ops-task-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.partners-page .detail-grid,
+.partners-page .grid,
+.partners-page .ops-task-grid {
+  align-items: start;
 }
 
 .partners-page .setup-stage-item {

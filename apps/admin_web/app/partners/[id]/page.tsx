@@ -693,7 +693,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
 
   return (
-    <>
+    <div className="partners-page">
       {accountConfirmation ? (
         <ConfirmDialog
           action={partnerDetailAccountServerAction(accountConfirmation.action)}
@@ -1026,7 +1026,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           payoutBatchCount={provider.payoutBatches?.length ?? 0}
         />
       </section>
-    </>
+    </div>
   );
 }
 
