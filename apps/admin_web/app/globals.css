@@ -76,7 +76,7 @@ body {
   background: var(--admin-bg);
   color: var(--admin-text);
   line-height: 1.46667;
-  min-width: 1280px;
+  min-width: 1440px;
 }
 
 a {
@@ -97,7 +97,7 @@ a {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
-  min-width: 1280px;
+  min-width: 1440px;
 }
 
 .sidebar {
