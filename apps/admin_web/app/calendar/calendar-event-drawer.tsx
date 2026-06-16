@@ -1,6 +1,7 @@
 'use client';
 
 import type { ChangeEvent } from 'react';
+import { RotateCcw, Save, Trash2, X } from 'lucide-react';
 
 import { CALENDAR_CATEGORIES, type CalendarCategory, type CalendarEventDraft } from './calendar-model';
 
@@ -69,12 +70,17 @@ export function CalendarEventDrawer({
                 onClick={onDelete}
                 type="button"
               >
-                <i className="tabler-trash" aria-hidden="true" />
+                <Trash2 aria-hidden="true" size={16} />
                 Delete
               </button>
             ) : null}
-            <button className="calendar-icon-button" onClick={onClose} type="button">
-              <i className="tabler-x" aria-hidden="true" />
+            <button
+              aria-label="Close event drawer"
+              className="calendar-icon-button"
+              onClick={onClose}
+              type="button"
+            >
+              <X aria-hidden="true" size={16} />
             </button>
           </div>
         </div>
@@ -148,9 +154,11 @@ export function CalendarEventDrawer({
 
         <div className="calendar-drawer-footer">
           <button className="button button-primary" onClick={onSubmit} type="button">
+            <Save aria-hidden="true" size={16} />
             {mode === 'create' ? 'Add Event' : 'Update Event'}
           </button>
           <button className="button button-secondary" onClick={onReset} type="button">
+            <RotateCcw aria-hidden="true" size={16} />
             Reset
           </button>
         </div>

@@ -375,7 +375,7 @@ export function CalendarClient() {
           <div className="calendar-board-footer">
             <span className="muted">Drag, resize, or click an event to update it.</span>
             <button
-              className="text-link calendar-quick-add"
+              className="button button-secondary calendar-quick-add"
               onClick={() => openCreateDrawer(new Date())}
               type="button"
             >
