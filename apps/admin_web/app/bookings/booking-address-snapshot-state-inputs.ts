@@ -16,9 +16,13 @@ export function bookingAddressSnapshotStateInput(
 
   return {
     hasAddressSnapshot: Boolean(snapshot),
-    snapshotAddressText: snapshot?.addressText ? marketplaceDisplayText(snapshot.addressText) : null,
+    snapshotAddressText: displayAddressText(snapshot?.addressText),
     snapshotPinLabel: snapshot ? coordinatePairLabel(snapshot.latitude, snapshot.longitude) : null,
-    legacyAddressText: legacyAddress ? marketplaceDisplayText(legacyAddress) : null,
+    legacyAddressText: displayAddressText(legacyAddress),
     legacyPinLabel: coordinatePairLabel(booking.lat, booking.lng),
   };
+}
+
+function displayAddressText(value?: string | null) {
+  return value ? marketplaceDisplayText(value) : null;
 }
