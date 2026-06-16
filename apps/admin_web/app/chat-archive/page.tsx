@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, Filter, X } from 'lucide-react';
+import { Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
@@ -80,13 +80,16 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </p>
         </div>
         <div className="actions">
-          <Link className="text-link" href="/bookings?view=chat">
+          <Link className="button button-secondary" href="/bookings?view=chat">
+            <MessageSquare aria-hidden="true" size={16} />
             Booking chat handoff
           </Link>
-          <Link className="text-link" href="/customers">
+          <Link className="button button-secondary" href="/customers">
+            <User aria-hidden="true" size={16} />
             Customers
           </Link>
-          <Link className="text-link" href="/partners">
+          <Link className="button button-secondary" href="/partners">
+            <Users aria-hidden="true" size={16} />
             Partners
           </Link>
         </div>
@@ -195,7 +198,8 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               find missing rooms or rooms where no message has been stored yet.
             </p>
           </div>
-          <Link className="text-link" href="/bookings?view=chat-repair">
+          <Link className="button button-secondary" href="/bookings?view=chat-repair">
+            <Wrench aria-hidden="true" size={16} />
             Booking chat repair
           </Link>
         </div>
