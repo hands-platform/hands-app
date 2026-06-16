@@ -57,6 +57,11 @@ import {
   type CustomerDetailOverviewHighlight,
   type CustomerDetailOverviewNavItem,
 } from './customer-detail-overview-shell';
+import {
+  CustomerDetailSectionBand,
+  CustomerDetailShortcutStrip,
+  type CustomerDetailShortcut,
+} from './customer-detail-section-shell';
 import type { DetailActivityOrder } from './customer-detail-filters';
 
 type PageProps = {
@@ -550,6 +555,38 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       detail: 'Recent customer push and in-app notification history.',
     },
   ];
+  const detailShortcuts: CustomerDetailShortcut[] = [
+    {
+      href: '#customer-operations-digest',
+      label: 'Operations',
+      value: `${customerOperationsDigest.length} lanes`,
+      detail: 'Dispatch, linked records, gate attempts, journey, and command queue.',
+    },
+    {
+      href: '#customer-info',
+      label: 'Account',
+      value: customer.user?.phone ?? 'No phone',
+      detail: 'Identity, reachability, profile facts, wallet, and saved locations.',
+    },
+    {
+      href: '#customer-chat-retention-ledger',
+      label: 'Chat archive',
+      value: `${chatRooms.length} room(s)`,
+      detail: 'Retention checks, transcript access, and booking-linked room evidence.',
+    },
+    {
+      href: '#booking-history',
+      label: 'Booking records',
+      value: `${filteredBookings.length} rows`,
+      detail: 'Booking ledger, cancellation history, and booking-level operating notes.',
+    },
+    {
+      href: '#customer-activity',
+      label: 'Activity timeline',
+      value: `${filteredCustomerActivityRecords.length} events`,
+      detail: 'Cross-surface events grouped by date filter and record type.',
+    },
+  ];
 
   return (
     <>
@@ -580,6 +617,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
+      <CustomerDetailShortcutStrip items={detailShortcuts} />
+
       <div className="customer-detail-shell">
         <CustomerDetailOverviewShell
           actions={overviewActions}
@@ -592,6 +631,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
 
         <div className="customer-detail-main">
+      <CustomerDetailSectionBand
+        eyebrow="Operations"
+        title="Customer operating picture"
+        description="Above-fold decision support for the desk: what is live now, what is blocked, what evidence exists, and which linked records matter next."
+        status={<span className="pill pill-info">Operator flow</span>}
+      >
       <section className="card admin-mb-16" id="customer-operator-first-read">
         <div className="ops-section-header">
           <div>
@@ -1275,7 +1320,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <button type="submit">Save customer activity note</button>
         </form>
       </section>
+      </CustomerDetailSectionBand>
 
+      <CustomerDetailSectionBand
+        eyebrow="Account"
+        title="Customer account and balance"
+        description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
+        status={<span className="pill pill-info">Profile and wallet</span>}
+      >
       <section className="card admin-mb-16" id="customer-info">
         <div className="ops-section-header">
           <div>
@@ -1394,7 +1446,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
         </section>
       </section>
+      </CustomerDetailSectionBand>
 
+      <CustomerDetailSectionBand
+        eyebrow="Records"
+        title="Bookings, chat, and audit record"
+        description="Historical booking rows, retained chat evidence, operator note ledgers, customer activity, notifications, and audit trail in one archive block."
+        status={<span className="pill pill-info">Historical archive</span>}
+      >
       <section className="card admin-mb-16" id="booking-history">
         <div className="ops-section-header">
           <div>
@@ -1895,6 +1954,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </table>
         </AdminTableScroll>
       </section>
+      </CustomerDetailSectionBand>
         </div>
       </div>
     </>

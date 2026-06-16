@@ -2520,6 +2520,114 @@ textarea:focus-visible {
   margin-bottom: 16px;
 }
 
+.customer-detail-shortcut-strip,
+.customer-detail-section-band {
+  background: #2f3349;
+  border: 1px solid rgba(225, 222, 245, 0.12);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 18px 40px rgba(15, 20, 34, 0.24);
+  color: rgba(225, 222, 245, 0.9);
+}
+
+.customer-detail-shortcut-strip {
+  padding: 22px;
+}
+
+.customer-detail-shortcut-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.customer-detail-shortcut-link {
+  align-items: center;
+  background: rgba(225, 222, 245, 0.03);
+  border: 1px solid rgba(225, 222, 245, 0.1);
+  border-radius: 10px;
+  color: rgba(225, 222, 245, 0.92);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.customer-detail-shortcut-link:hover {
+  background: rgba(225, 222, 245, 0.05);
+}
+
+.customer-detail-shortcut-icon {
+  align-items: center;
+  background: rgba(115, 103, 240, 0.16);
+  border-radius: 999px;
+  color: #c7c2ff;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.customer-detail-shortcut-link strong,
+.customer-detail-section-band-header h2 {
+  color: rgba(225, 222, 245, 0.94);
+}
+
+.customer-detail-shortcut-link small,
+.customer-detail-section-band-header span,
+.customer-detail-section-band-header p {
+  color: rgba(225, 222, 245, 0.68);
+}
+
+.customer-detail-shortcut-link em {
+  color: rgba(225, 222, 245, 0.58);
+  font-size: 12px;
+  font-style: normal;
+  text-align: right;
+}
+
+.customer-detail-section-band {
+  padding: 22px;
+}
+
+.customer-detail-section-band-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.customer-detail-section-band-header > div > span {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.customer-detail-section-band-header h2 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.customer-detail-section-band-header p {
+  margin: 10px 0 0;
+  max-width: 760px;
+}
+
+.customer-detail-section-band-body {
+  display: grid;
+  gap: 16px;
+}
+
+.customer-detail-section-band .card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(225, 222, 245, 0.1);
+  box-shadow: none;
+}
+
 .customer-detail-sidebar {
   align-self: start;
   display: flex;
@@ -3217,6 +3325,21 @@ textarea:focus-visible {
   .vuexy-customer-advanced-grid,
   .customer-detail-highlight-grid,
   .customer-detail-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-detail-shortcut-grid,
+  .customer-detail-shortcut-link {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-detail-shortcut-link {
+    align-items: start;
+    display: grid;
+  }
+
+  .customer-detail-section-band-header {
+    display: grid;
     grid-template-columns: 1fr;
   }
 

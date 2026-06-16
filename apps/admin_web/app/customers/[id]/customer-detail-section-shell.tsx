@@ -1,0 +1,93 @@
+import type { ReactNode } from 'react';
+
+import { Grid2x2, MessageSquareText, ScrollText, UserRound, Wallet } from 'lucide-react';
+
+import { AdminSectionHeader } from '../../../components/admin-page-template';
+
+export type CustomerDetailShortcut = {
+  readonly detail: string;
+  readonly href: string;
+  readonly label: string;
+  readonly value: string;
+};
+
+type CustomerDetailShortcutStripProps = {
+  readonly items: readonly CustomerDetailShortcut[];
+};
+
+type CustomerDetailSectionBandProps = {
+  readonly children: ReactNode;
+  readonly description: ReactNode;
+  readonly eyebrow: string;
+  readonly id?: string;
+  readonly status?: ReactNode;
+  readonly title: string;
+};
+
+export function CustomerDetailShortcutStrip({ items }: CustomerDetailShortcutStripProps) {
+  return (
+    <section className="customer-detail-shortcut-strip admin-mb-16">
+      <AdminSectionHeader
+        title="Customer workspace"
+        description="Jump between the same factual areas without scrolling through the full record from the top each time."
+        status={<span className="pill pill-info">{items.length} lanes</span>}
+      />
+      <div className="customer-detail-shortcut-grid admin-mt-14">
+        {items.map((item) => (
+          <a className="customer-detail-shortcut-link" href={item.href} key={item.label}>
+            <span className="customer-detail-shortcut-icon" aria-hidden="true">
+              {shortcutIcon(item.label)}
+            </span>
+            <div>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </div>
+            <em>{item.value}</em>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function CustomerDetailSectionBand({
+  children,
+  description,
+  eyebrow,
+  id,
+  status,
+  title,
+}: CustomerDetailSectionBandProps) {
+  return (
+    <section className="customer-detail-section-band admin-mb-16" id={id}>
+      <div className="customer-detail-section-band-header">
+        <div>
+          <span>{eyebrow}</span>
+          <h2>{title}</h2>
+          <p className="muted">{description}</p>
+        </div>
+        {status ? <div className="participant-list">{status}</div> : null}
+      </div>
+      <div className="customer-detail-section-band-body">{children}</div>
+    </section>
+  );
+}
+
+function shortcutIcon(label: string) {
+  const normalized = label.toLowerCase();
+
+  if (normalized.includes('account') || normalized.includes('customer')) {
+    return <UserRound size={16} />;
+  }
+  if (normalized.includes('payment') || normalized.includes('wallet')) {
+    return <Wallet size={16} />;
+  }
+  if (normalized.includes('chat')) {
+    return <MessageSquareText size={16} />;
+  }
+  if (normalized.includes('activity') || normalized.includes('timeline')) {
+    return <ScrollText size={16} />;
+  }
+
+  return <Grid2x2 size={16} />;
+}
