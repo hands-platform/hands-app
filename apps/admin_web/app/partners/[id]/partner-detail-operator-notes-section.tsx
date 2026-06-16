@@ -1,3 +1,4 @@
+import { Save } from 'lucide-react';
 import { addProviderOpsNote } from '../actions';
 
 export type PartnerOperatorNoteRow = {
@@ -67,7 +68,10 @@ export function PartnerDetailOperatorNotesSection({
           name="note"
           placeholder="Example: Partner confirmed they will refresh location before receiving new requests."
         />
-        <button type="submit">Save partner operation note</button>
+        <button className="button button-primary" type="submit">
+          <Save aria-hidden="true" size={16} />
+          Save partner operation note
+        </button>
       </form>
     </div>
   );

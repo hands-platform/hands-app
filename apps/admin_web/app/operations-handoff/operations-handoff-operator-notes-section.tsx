@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Save, ScrollText } from 'lucide-react';
 import { formatRelativeTime } from '../../lib/admin-format';
 import { addOperationsHandoffNote } from './actions';
 import type { OperatorNoteRow } from './operations-handoff-operator-notes';
@@ -17,7 +18,8 @@ export function OperationsHandoffOperatorNotesSection({
           <h2>Latest operator notes</h2>
           <p className="muted">Shift, Customer, Partner, and booking notes written by admins.</p>
         </div>
-        <Link className="text-link" href="/audit-log">
+        <Link className="button button-secondary" href="/audit-log">
+          <ScrollText aria-hidden="true" size={16} />
           Open audit log
         </Link>
       </div>
@@ -60,7 +62,10 @@ export function OperationsHandoffOperatorNotesSection({
             placeholder="Write the factual shift handoff note for the next operator."
           />
         </label>
-        <button type="submit">Save handoff note</button>
+        <button className="button button-primary" type="submit">
+          <Save aria-hidden="true" size={16} />
+          Save handoff note
+        </button>
       </form>
       <div className="stack">
         {notes.slice(0, 8).map((note) => (

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AdminTableScroll } from '../../../components/admin-data-table';
 import { MetricCard } from '../../../components/metric-card';
@@ -1209,15 +1210,20 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <input type="date" name="to" defaultValue={dateFilters.to} />
           </label>
           <div className="actions">
-            <button type="submit">Apply filter</button>
+            <button className="button button-primary" type="submit">
+              <Filter aria-hidden="true" size={16} />
+              Apply filter
+            </button>
             <a
-              className="text-link"
+              className="button button-secondary"
               download={`hands-customer-${shortId(customer.id)}-activity.csv`}
               href={filteredActivityCsvHref}
             >
+              <Download aria-hidden="true" size={16} />
               Export activity CSV
             </a>
-            <Link className="text-link" href={`/customers/${customer.id}`}>
+            <Link className="button button-secondary" href={`/customers/${customer.id}`}>
+              <X aria-hidden="true" size={16} />
               Clear
             </Link>
           </div>
@@ -1317,7 +1323,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
             />
           </label>
-          <button type="submit">Save customer activity note</button>
+          <button className="button button-primary" type="submit">
+            <Save aria-hidden="true" size={16} />
+            Save customer activity note
+          </button>
         </form>
       </section>
       </CustomerDetailSectionBand>

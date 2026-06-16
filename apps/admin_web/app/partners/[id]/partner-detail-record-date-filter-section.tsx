@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download, Filter, X } from 'lucide-react';
 
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
@@ -93,11 +94,16 @@ export function PartnerDetailRecordDateFilterSection({
           <input type="date" name="to" defaultValue={dateFilters.to} />
         </label>
         <div className="actions">
-          <button type="submit">Apply filter</button>
-          <a className="text-link" download={activityCsvDownloadName} href={filteredActivityCsvHref}>
+          <button className="button button-primary" type="submit">
+            <Filter aria-hidden="true" size={16} />
+            Apply filter
+          </button>
+          <a className="button button-secondary" download={activityCsvDownloadName} href={filteredActivityCsvHref}>
+            <Download aria-hidden="true" size={16} />
             Export activity CSV
           </a>
-          <Link className="text-link" href={`/partners/${partnerId}`}>
+          <Link className="button button-secondary" href={`/partners/${partnerId}`}>
+            <X aria-hidden="true" size={16} />
             Clear
           </Link>
         </div>
