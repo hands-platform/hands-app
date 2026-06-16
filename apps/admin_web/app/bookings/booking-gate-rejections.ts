@@ -13,14 +13,12 @@ export function bookingGateReasonCode(log: AdminAuditLog) {
 export function bookingGateRejectionInfo(log: AdminAuditLog) {
   const metadata = readPlainRecord(log.metadata) ?? {};
   const reasonCode = bookingGateReasonCode(log);
-  const bookingAddress =
-    readPlainRecord(metadata.bookingAddress) ??
-    readPlainRecord(metadata.address) ??
-    readPlainRecord(metadata.addressSnapshot);
-  const currentLocation =
-    readPlainRecord(metadata.customerCurrentLocation) ??
-    readPlainRecord(metadata.currentLocation) ??
-    readPlainRecord(metadata.customerLocation);
+  const bookingAddress = readFirstRecord([metadata.bookingAddress, metadata.address, metadata.addressSnapshot]);
+  const currentLocation = readFirstRecord([
+    metadata.customerCurrentLocation,
+    metadata.currentLocation,
+    metadata.customerLocation,
+  ]);
   const customerProfileId =
     readOptionalString(metadata.customerProfileId) ??
     readOptionalString(metadata.customerId) ??
@@ -145,11 +143,21 @@ function formatGateDistance(label: string, distance: number | null, limit: numbe
   return `${label}: ${formatDistanceMeters(distance)} / limit ${formatDistanceMeters(limit)}`;
 }
 
-function readFirstNumber(values: unknown[]) {
+function readFirstNumber(values: readonly unknown[]) {
   for (const value of values) {
     const parsed = readOptionalNumber(value);
     if (parsed !== null) {
       return parsed;
+    }
+  }
+  return null;
+}
+
+function readFirstRecord(values: readonly unknown[]) {
+  for (const value of values) {
+    const record = readPlainRecord(value);
+    if (record) {
+      return record;
     }
   }
   return null;
