@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import { CommandCopyRow } from '../../components/command-copy-row';
 
 type SetupExternalBacklogItem = {
@@ -32,10 +33,12 @@ export function SetupExternalBacklogSection({ missingCount, backlog }: SetupExte
         {backlog.map((item) => (
           <div className="setup-backlog-item" key={`${item.groupId}-${item.name}`}>
             <span>{item.groupTitle}</span>
-            <a className="text-link" href={`#${item.groupId}`}>
-              <strong>{item.name}</strong>
-            </a>
+            <strong>{item.name}</strong>
             <p className="muted">{item.reason}</p>
+            <a className="button button-secondary setup-card-action" href={`#${item.groupId}`}>
+              <ArrowRight size={16} aria-hidden="true" />
+              Open setup group
+            </a>
             {item.commands && item.commands.length > 0 && (
               <div className="setup-command-list admin-mt-8">
                 {item.commands.slice(0, 2).map((command) => (

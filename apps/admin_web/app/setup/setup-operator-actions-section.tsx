@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react';
 import { CommandCopyRow } from '../../components/command-copy-row';
 
 type SetupOperatorAction = {
@@ -44,6 +45,10 @@ export function SetupOperatorActionsSection({
                 ))}
               </div>
             )}
+            <span className="button button-secondary setup-card-action">
+              <ArrowRight size={16} aria-hidden="true" />
+              Open setup group
+            </span>
           </a>
         ))}
         {nextActions.length === 0 && (
