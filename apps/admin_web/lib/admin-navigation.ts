@@ -54,6 +54,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Operator notes and unresolved work for the next shift.',
       },
       {
+        href: '/calendar',
+        label: 'Calendar',
+        description: 'Shared operations calendar for live planning and follow-up blocks.',
+      },
+      {
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',
@@ -123,7 +128,8 @@ export const adminNavSections: AdminNavSection[] = [
       {
         href: '/partners?review=acceptance-blocked',
         label: 'Direct Request Held',
-        description: 'Partners held from preferred direct requests by account, identity, bank, device, location, or alert gates.',
+        description:
+          'Partners held from preferred direct requests by account, identity, bank, device, location, or alert gates.',
       },
       {
         href: '/partners?review=marketplace-ready',
