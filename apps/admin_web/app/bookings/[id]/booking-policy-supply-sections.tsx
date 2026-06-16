@@ -21,6 +21,19 @@ type OpsTaskCard = {
   pillClass: string;
 };
 
+type SummaryCardGridProps = {
+  cards: SummaryCard[];
+};
+
+type PillBadgeListProps = {
+  badges: PillBadge[];
+  showDetailTitle?: boolean;
+};
+
+type OpsTaskCardGridProps = {
+  cards: OpsTaskCard[];
+};
+
 type StageSnapshot = {
   stage: string;
   pillClass: string;
@@ -412,7 +425,7 @@ export type BookingMarketplaceSupplySectionProps = {
   marketplaceSupply: MarketplaceSupply;
 };
 
-function SummaryCardGrid({ cards }: { cards: SummaryCard[] }) {
+function SummaryCardGrid({ cards }: SummaryCardGridProps) {
   return (
     <div className="service-trace-summary admin-mt-12">
       {cards.map((item) => (
@@ -429,10 +442,7 @@ function SummaryCardGrid({ cards }: { cards: SummaryCard[] }) {
 function PillBadgeList({
   badges,
   showDetailTitle = false,
-}: {
-  badges: PillBadge[];
-  showDetailTitle?: boolean;
-}) {
+}: PillBadgeListProps) {
   return (
     <div className="participant-list admin-mt-8">
       {badges.map((badge) => (
@@ -444,7 +454,7 @@ function PillBadgeList({
   );
 }
 
-function OpsTaskCardGrid({ cards }: { cards: OpsTaskCard[] }) {
+function OpsTaskCardGrid({ cards }: OpsTaskCardGridProps) {
   return (
     <div className="ops-task-grid admin-mt-14">
       {cards.map((card) => (
