@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
@@ -123,29 +124,31 @@ type StatusBadgeProps = {
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   return (
     <section className="card admin-mt-16">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Booking / stage</th>
-            <th>Address / customer</th>
-            <th>Customer choice</th>
-            <th title="Matching rule snapshot">Partner supply</th>
-            <th>Chat / location</th>
-            <th>Payment / wallet</th>
-            <th title="Primary booking command Booking gate reason Action status strip">Ops check</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <BookingMonitorListTableRow key={row.booking.id} row={row} />
-          ))}
-          {rows.length === 0 && (
+      <AdminTableScroll>
+        <table className="table">
+          <thead>
             <tr>
-              <td colSpan={7}>{emptyMessage}</td>
+              <th>Booking / stage</th>
+              <th>Address / customer</th>
+              <th>Customer choice</th>
+              <th title="Matching rule snapshot">Partner supply</th>
+              <th>Chat / location</th>
+              <th>Payment / wallet</th>
+              <th title="Primary booking command Booking gate reason Action status strip">Ops check</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <BookingMonitorListTableRow key={row.booking.id} row={row} />
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={7}>{emptyMessage}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </AdminTableScroll>
     </section>
   );
 }
