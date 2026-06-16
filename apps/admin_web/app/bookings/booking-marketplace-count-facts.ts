@@ -27,15 +27,11 @@ export function bookingMarketplaceCountFacts(booking: AdminBooking): BookingMark
 }
 
 export function bookingMarketplaceParticipantCount(booking: AdminBooking): number {
-  return (
-    booking.matchingEvidence?.marketplaceParticipantCount ??
-    bookingMarketplaceParticipants(booking).length
-  );
+  const matchingEvidenceCount = booking.matchingEvidence?.marketplaceParticipantCount;
+  return matchingEvidenceCount ?? bookingMarketplaceParticipants(booking).length;
 }
 
 export function bookingCustomerSelectableCount(booking: AdminBooking): number {
-  return (
-    booking.matchingEvidence?.selectableParticipantCount ??
-    bookingCustomerSelectableParticipants(booking).length
-  );
+  const matchingEvidenceCount = booking.matchingEvidence?.selectableParticipantCount;
+  return matchingEvidenceCount ?? bookingCustomerSelectableParticipants(booking).length;
 }
