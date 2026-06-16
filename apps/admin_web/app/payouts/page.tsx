@@ -1,19 +1,9 @@
 import Link from 'next/link';
 
-import {
-  AdminEarning,
-  AdminOperationalPolicySetting,
-  AdminPayoutBatch,
-  adminGet,
-} from '../../lib/admin-api';
+import { AdminEarning, AdminOperationalPolicySetting, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import {
-  formatDateTime,
-  formatMoney,
-  formatRelativeTime,
-  shortRecordId,
-} from '../../lib/admin-format';
+import { formatDateTime, formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -38,10 +28,7 @@ import {
   type PayoutMoneyFlowCard,
   type PayoutMoneyFlowCheck,
 } from './payout-money-flow-section';
-import {
-  PayoutInclusionAuditSection,
-  type PayoutInclusionAuditRow,
-} from './payout-inclusion-audit-section';
+import { PayoutInclusionAuditSection, type PayoutInclusionAuditRow } from './payout-inclusion-audit-section';
 import {
   PayoutReleaseBlockerQueueSection,
   type PayoutReleaseBlockerQueueItem,
@@ -50,10 +37,7 @@ import {
   PayoutServiceEvidenceSection,
   type PayoutServiceEvidenceItem,
 } from './payout-service-evidence-section';
-import {
-  PayoutStatusLanesSection,
-  type PayoutStatusLane,
-} from './payout-status-lanes-section';
+import { PayoutStatusLanesSection, type PayoutStatusLane } from './payout-status-lanes-section';
 
 type PayoutsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -102,11 +86,27 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         { label: 'Total batches', value: summary.total, helper: 'Payout batches in the selected range.' },
         { label: 'Needs review', value: summary.needsReview, helper: 'Draft or failed payout batches.' },
         { label: 'In progress', value: summary.inProgress, helper: 'Processing transfer batches.' },
-        { label: 'Payout holds', value: summary.payoutHolds, helper: 'Batches blocked by Partner account checks.' },
-        { label: 'Missing refs', value: summary.missingTransferRefs, helper: 'Transfer references required before paid.' },
+        {
+          label: 'Payout holds',
+          value: summary.payoutHolds,
+          helper: 'Batches blocked by Partner account checks.',
+        },
+        {
+          label: 'Missing refs',
+          value: summary.missingTransferRefs,
+          helper: 'Transfer references required before paid.',
+        },
         { label: 'Settled', value: summary.settled, helper: 'Paid payout batches.' },
-        { label: 'Total net', value: formatMoney(summary.totalNetAmount, summary.currency), helper: 'Partner net in visible batches.' },
-        { label: 'Withheld tax', value: formatMoney(summary.withholdingAmount, summary.currency), helper: 'Tax logs attached to payout batches.' },
+        {
+          label: 'Total net',
+          value: formatMoney(summary.totalNetAmount, summary.currency),
+          helper: 'Partner net in visible batches.',
+        },
+        {
+          label: 'Withheld tax',
+          value: formatMoney(summary.withholdingAmount, summary.currency),
+          helper: 'Tax logs attached to payout batches.',
+        },
       ]}
       title="Partner Payouts"
     >
@@ -155,7 +155,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           ))}
         </div>
       </section>
-      <section className="card admin-mb-16">
+      <section className="card admin-mb-16 payout-release-policy-card">
         <div className="ops-section-header">
           <div>
             <h2>Payout batch release policy desk</h2>
@@ -172,8 +172,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
-              Live Admin policy values used by finance before payout release, cash-fee clearance, and
-              final acceptance, service start, and payout release reopening.
+              Live Admin policy values used by finance before payout release, cash-fee clearance, and final
+              acceptance, service start, and payout release reopening.
             </p>
           </div>
           <span className="pill pill-info">Live policy default</span>
@@ -243,8 +243,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           <div>
             <h3>Marketplace and payout unblock bridge</h3>
             <p className="muted">
-              Connects Partner cash-fee debt to the gates operators care about: final acceptance, service start,
-              and payout release. Partners can see marketplace requests while the wallet is negative.
+              Connects Partner cash-fee debt to the gates operators care about: final acceptance, service
+              start, and payout release. Partners can see marketplace requests while the wallet is negative.
             </p>
           </div>
           <Link className="text-link" href="/bookings?view=marketplace">
@@ -367,15 +367,7 @@ function payoutActionMenuItems(batch: AdminPayoutBatch) {
         ]
       : []),
     ...(!isTerminalPayoutBatch(batch)
-      ? [
-          payoutActionMenuItem(
-            batch,
-            'paid',
-            'Paid',
-            'Review before marking this payout paid.',
-            'warning',
-          ),
-        ]
+      ? [payoutActionMenuItem(batch, 'paid', 'Paid', 'Review before marking this payout paid.', 'warning')]
       : []),
     ...(batch.status === 'PROCESSING'
       ? [
@@ -732,7 +724,8 @@ function buildPayoutReleasePolicyDesk(
     {
       title: 'Batch cycle policy',
       status: 'Config driven',
-      detail: 'Payout release follows weekly, monthly, or admin-selected batch timing from Operations Policy.',
+      detail:
+        'Payout release follows weekly, monthly, or admin-selected batch timing from Operations Policy.',
       action: 'Change the cycle in policy first, then run finance batches from this page.',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
@@ -740,7 +733,8 @@ function buildPayoutReleasePolicyDesk(
     {
       title: 'Release gate',
       status: `${readyBatches.length} ready / ${blockedBatches.length} blocked`,
-      detail: 'Paid status requires clean transfer reference, closed tax logs, no payout hold, and no cash-fee debt attached.',
+      detail:
+        'Paid status requires clean transfer reference, closed tax logs, no payout hold, and no cash-fee debt attached.',
       action: blockedBatches.length
         ? 'Open the release blocker queue before marking a batch paid.'
         : 'Active batches have no release blocker in the current filter.',
@@ -774,7 +768,8 @@ function buildPayoutReleasePolicyDesk(
     {
       title: 'Customer wallet isolation',
       status: 'Partner only',
-      detail: 'Cash-fee wallet debt belongs to partner settlement; customer wallet balance is not made negative.',
+      detail:
+        'Cash-fee wallet debt belongs to partner settlement; customer wallet balance is not made negative.',
       action: 'Use customer pages for booking and payment history, not partner cash-fee recovery.',
       className: 'ops-task-done',
       pillClass: 'pill-success',
@@ -797,7 +792,8 @@ function buildAppliedPayoutPolicyCards(policy: AdminLiveOperationsPolicy): Appli
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative Partner wallet blocks final acceptance, service start, and payout release until settled.',
+      helper:
+        'Negative Partner wallet blocks final acceptance, service start, and payout release until settled.',
     },
     {
       label: 'Marketplace radius',
@@ -860,7 +856,8 @@ function buildPayoutReleaseCycleBoard(
       timing: 'Before release',
       status: `${cashDebt.length} held`,
       queue: 'Partner cash-fee wallet debt from cash bookings.',
-      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before final acceptance, service start, and payout release resume.',
+      operatorCheck:
+        'Debt must be settled by deposit evidence or approved offset before final acceptance, service start, and payout release resume.',
       nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
       pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
     },
@@ -948,9 +945,7 @@ function buildPayoutMarketplaceUnblockBridge(
 
 function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayoutBatch[]) {
   const currency = earnings[0]?.currency ?? batches[0]?.currency ?? 'VND';
-  const batchedIds = new Set(
-    batches.flatMap((batch) => (batch.earnings ?? []).map((earning) => earning.id)),
-  );
+  const batchedIds = new Set(batches.flatMap((batch) => (batch.earnings ?? []).map((earning) => earning.id)));
   const unbatched = earnings.filter((earning) => !earning.payoutBatchId && !batchedIds.has(earning.id));
   const ready = unbatched.filter((earning) => isEarningBatchReady(earning));
   const cashDebt = unbatched.filter((earning) => earning.netAmount < 0);
@@ -1033,7 +1028,10 @@ function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditR
   };
 }
 
-function sumEarnings(earnings: AdminEarning[], field: 'grossAmount' | 'platformFee' | 'withholdingAmount' | 'netAmount') {
+function sumEarnings(
+  earnings: AdminEarning[],
+  field: 'grossAmount' | 'platformFee' | 'withholdingAmount' | 'netAmount',
+) {
   return earnings.reduce((sum, earning) => sum + Number(earning[field] ?? 0), 0);
 }
 
@@ -1452,7 +1450,8 @@ function buildPayoutStatusLanes(lanes: readonly PayoutLane[]): PayoutStatusLane[
       currency: batch.currency,
       earningCount: batch.earnings?.length ?? 0,
       opsHint: opsHint(batch),
-      partnerLabel: batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
+      partnerLabel:
+        batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
     })),
     pillClass: lane.pillClass,
     emptyText: lane.emptyText,

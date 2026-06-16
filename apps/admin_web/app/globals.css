@@ -1606,6 +1606,111 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.tax-policy-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.tax-policy-page > .admin-mb-16,
+.tax-policy-page > .toolbar,
+.tax-policy-page > .grid {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.tax-policy-page > .toolbar,
+.tax-policy-page > .card,
+.tax-policy-version-grid > .card {
+  min-width: 0;
+}
+
+.tax-policy-page > .card {
+  max-height: min(900px, calc(100vh - 120px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.tax-policy-version-grid {
+  grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+}
+
+.tax-policy-version-grid > .card {
+  max-height: min(900px, calc(100vh - 120px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.tax-policy-page .compact-form {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
+.tax-policy-page .setup-stage-item {
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr) auto;
+}
+
+.tax-policy-page .setup-stage-item > div,
+.tax-policy-page .ops-section-header > div,
+.tax-policy-page .toolbar > div {
+  min-width: 0;
+}
+
+.payout-release-policy-card {
+  max-height: min(900px, calc(100vh - 120px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.payout-batch-list-card .admin-table-scroll,
+.payout-service-evidence-card .admin-table-scroll,
+.refunds-table-card .admin-table-scroll,
+.coupons-table-card .admin-table-scroll {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  max-height: min(700px, calc(100vh - 220px));
+  overflow: auto;
+}
+
+.payout-batch-list-card .admin-table-scroll .table,
+.payout-service-evidence-card .admin-table-scroll .table,
+.refunds-table-card .admin-table-scroll .table,
+.coupons-table-card .admin-table-scroll .table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+}
+
+.payout-batch-list-card .admin-table-scroll .table {
+  min-width: 1840px;
+}
+
+.payout-service-evidence-card .admin-table-scroll .table {
+  min-width: 1420px;
+}
+
+.refunds-table-card .admin-table-scroll .table {
+  min-width: 1420px;
+}
+
+.coupons-table-card .admin-table-scroll .table {
+  min-width: 1120px;
+}
+
+.payout-batch-list-card .admin-table-scroll .table th,
+.payout-service-evidence-card .admin-table-scroll .table th,
+.refunds-table-card .admin-table-scroll .table th,
+.coupons-table-card .admin-table-scroll .table th {
+  box-shadow: inset 0 -1px 0 var(--admin-border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
 .service-catalog-page {
   display: grid;
   gap: 16px;

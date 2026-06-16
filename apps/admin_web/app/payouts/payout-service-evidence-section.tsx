@@ -1,4 +1,5 @@
 import { formatMoney } from '../../lib/admin-format';
+import { AdminTableScroll } from '../../components/admin-data-table';
 
 export type PayoutServiceEvidenceItem = {
   readonly batchCount: number;
@@ -20,9 +21,13 @@ type PayoutServiceEvidenceSectionProps = {
   readonly items: readonly PayoutServiceEvidenceItem[];
 };
 
-export function PayoutServiceEvidenceSection({ batchCount, currency, items }: PayoutServiceEvidenceSectionProps) {
+export function PayoutServiceEvidenceSection({
+  batchCount,
+  currency,
+  items,
+}: PayoutServiceEvidenceSectionProps) {
   return (
-    <div className="card admin-card-scroll admin-mb-16">
+    <div className="card admin-card-scroll admin-mb-16 payout-service-evidence-card">
       <div className="ops-section-header">
         <div>
           <h2>Payout service evidence</h2>
@@ -62,41 +67,43 @@ export function PayoutServiceEvidenceSection({ batchCount, currency, items }: Pa
         </div>
       </div>
       {items.length ? (
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Service option</th>
-              <th>Batches</th>
-              <th>Earnings</th>
-              <th>Gross</th>
-              <th>Partner net</th>
-              <th>Platform fee</th>
-              <th>Tax</th>
-              <th>Cash debt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.key}>
-                <td>
-                  <strong>{item.label}</strong>
-                  <p className="muted">{item.groupKey}</p>
-                </td>
-                <td>{item.batchCount}</td>
-                <td>{item.earningCount}</td>
-                <td>{formatMoney(item.grossAmount, item.currency)}</td>
-                <td>{formatMoney(item.netAmount, item.currency)}</td>
-                <td>{formatMoney(item.platformFee, item.currency)}</td>
-                <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
-                <td>
-                  <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
-                    {formatMoney(item.cashDebtAmount, item.currency)}
-                  </span>
-                </td>
+        <AdminTableScroll>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service option</th>
+                <th>Batches</th>
+                <th>Earnings</th>
+                <th>Gross</th>
+                <th>Partner net</th>
+                <th>Platform fee</th>
+                <th>Tax</th>
+                <th>Cash debt</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.key}>
+                  <td>
+                    <strong>{item.label}</strong>
+                    <p className="muted">{item.groupKey}</p>
+                  </td>
+                  <td>{item.batchCount}</td>
+                  <td>{item.earningCount}</td>
+                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
+                  <td>{formatMoney(item.netAmount, item.currency)}</td>
+                  <td>{formatMoney(item.platformFee, item.currency)}</td>
+                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+                  <td>
+                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
+                      {formatMoney(item.cashDebtAmount, item.currency)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </AdminTableScroll>
       ) : (
         <p className="muted">No payout batch has linked service evidence yet.</p>
       )}

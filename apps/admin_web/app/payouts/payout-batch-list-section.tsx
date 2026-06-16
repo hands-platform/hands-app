@@ -1,4 +1,5 @@
 import { PayoutBatchTable, type PayoutBatchTableRow } from './payout-batch-table';
+import { AdminTableScroll } from '../../components/admin-data-table';
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -9,7 +10,7 @@ type PayoutBatchListSectionProps = {
 
 export function PayoutBatchListSection({ rows, updateTransferRefAction }: PayoutBatchListSectionProps) {
   return (
-    <div className="card">
+    <div className="card payout-batch-list-card">
       <div className="toolbar">
         <div>
           <p className="muted">
@@ -26,7 +27,9 @@ export function PayoutBatchListSection({ rows, updateTransferRefAction }: Payout
         </div>
       </div>
 
-      <PayoutBatchTable rows={rows} updateTransferRefAction={updateTransferRefAction} />
+      <AdminTableScroll>
+        <PayoutBatchTable rows={rows} updateTransferRefAction={updateTransferRefAction} />
+      </AdminTableScroll>
     </div>
   );
 }

@@ -16,7 +16,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
   const preview = buildTaxPreview(policies, params);
 
   return (
-    <>
+    <div className="tax-policy-page">
       <section className="toolbar">
         <div>
           <h1>Tax policy</h1>
@@ -120,8 +120,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
             <div>
               <strong>{formatMoney(preview.withholdingAmount)} withholding</strong>
               <p className="muted">
-                Gross {formatMoney(preview.grossAmount)} / service type{' '}
-                {preview.serviceType || 'not set'}.
+                Gross {formatMoney(preview.grossAmount)} / service type {preview.serviceType || 'not set'}.
               </p>
             </div>
             <small>{formatBps(preview.rule?.rateBps ?? 0)}</small>
@@ -163,7 +162,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         </form>
       </section>
 
-      <section className="grid">
+      <section className="grid tax-policy-version-grid">
         {policies.map((policy) => (
           <article className="card" key={policy.id}>
             <div className="toolbar admin-mb-12">
@@ -324,7 +323,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           </article>
         ))}
       </section>
-    </>
+    </div>
   );
 }
 
@@ -477,8 +476,7 @@ function buildTaxPreview(
     grossAmount,
     serviceTypes: serviceType ? [serviceType] : [],
   });
-  const withholdingAmount =
-    policy && rule ? cappedBpsAmount(grossAmount, rule.rateBps, rule.fixedAmount) : 0;
+  const withholdingAmount = policy && rule ? cappedBpsAmount(grossAmount, rule.rateBps, rule.fixedAmount) : 0;
 
   return {
     serviceType,

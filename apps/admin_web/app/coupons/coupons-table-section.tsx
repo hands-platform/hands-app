@@ -1,5 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
-import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 
 export type CouponTableRow = {
   readonly actions: readonly ActionMenuItem[];
@@ -32,11 +32,13 @@ export function CouponsTableSection({
   scheduledCount,
 }: CouponsTableSectionProps) {
   return (
-    <section className="card admin-mt-20">
+    <section className="card admin-mt-20 coupons-table-card">
       <div className="ops-section-header">
         <div>
           <h2>Checkout Campaigns</h2>
-          <p className="muted">Use this board to confirm which codes are safe to expose in the customer booking flow.</p>
+          <p className="muted">
+            Use this board to confirm which codes are safe to expose in the customer booking flow.
+          </p>
         </div>
         <div className="participant-list">
           <span className="pill pill-success">{liveCount} live</span>
@@ -45,38 +47,38 @@ export function CouponsTableSection({
           <span className="pill">{pausedCount} paused</span>
         </div>
       </div>
-      <AdminDataTable
-        emptyMessage="No coupons loaded."
-        headers={['Code', 'Description', 'Discount', 'Status', 'Window', 'Ops hint', 'Action']}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <td>
-              <strong>{row.code}</strong>
-              <div className="muted">
-                Customer can enter {row.lowerCode} or {row.code}
-              </div>
-            </td>
-            <td>{row.description}</td>
-            <td>{row.discountLabel}</td>
-            <td>
-              <span className={row.statusClassName}>{row.statusLabel}</span>
-              <div className="admin-text-subtle-12">{row.windowSignal}</div>
-            </td>
-            <td>{row.windowLabel}</td>
-            <td>
-              <div>{row.opsHint}</div>
-              <div className="muted admin-mt-6">
-                {row.checkoutHint}
-              </div>
-            </td>
-            <td>
-              <ActionMenu actions={row.actions} label={`${row.code} coupon actions`} />
-            </td>
-          </tr>
-        ))}
-      </AdminDataTable>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage="No coupons loaded."
+          headers={['Code', 'Description', 'Discount', 'Status', 'Window', 'Ops hint', 'Action']}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td>
+                <strong>{row.code}</strong>
+                <div className="muted">
+                  Customer can enter {row.lowerCode} or {row.code}
+                </div>
+              </td>
+              <td>{row.description}</td>
+              <td>{row.discountLabel}</td>
+              <td>
+                <span className={row.statusClassName}>{row.statusLabel}</span>
+                <div className="admin-text-subtle-12">{row.windowSignal}</div>
+              </td>
+              <td>{row.windowLabel}</td>
+              <td>
+                <div>{row.opsHint}</div>
+                <div className="muted admin-mt-6">{row.checkoutHint}</div>
+              </td>
+              <td>
+                <ActionMenu actions={row.actions} label={`${row.code} coupon actions`} />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </section>
   );
 }
