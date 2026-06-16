@@ -100,6 +100,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
 
   return (
     <AdminPageTemplate
+      contentClassName="earnings-page"
       description="Partner earning ledger for service revenue, HANDS fee, tax withholding, cash debt, and payout batching."
       metrics={[
         {

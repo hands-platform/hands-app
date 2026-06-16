@@ -49,6 +49,7 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
 
   return (
     <AdminPageTemplate
+      contentClassName="files-page"
       description="Central review board for Partner verification files and public profile media."
       metrics={[
         { label: 'Total files', value: summary.total, helper: 'Partner file records loaded.' },
@@ -93,8 +94,8 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
           </div>
           <StatusBadge tone={rows.length ? 'info' : 'neutral'}>{rows.length} visible</StatusBadge>
         </div>
-        <div className="table-scroll">
-          <table>
+        <div className="admin-table-scroll">
+          <table className="table files-review-table">
             <thead>
               <tr>
                 <th>File</th>

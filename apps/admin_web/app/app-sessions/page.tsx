@@ -67,6 +67,7 @@ export default async function AppSessionsPage({
 
   return (
     <AdminPageTemplate
+      contentClassName="app-sessions-page"
       actions={
         <>
           <Link className="text-link" href="/">
