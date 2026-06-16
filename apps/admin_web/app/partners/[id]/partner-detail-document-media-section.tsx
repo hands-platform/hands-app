@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
@@ -56,8 +57,15 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
             ) : null}
             <p className="muted">
               {document.fileHref ? (
-                <a className="text-link" href={document.fileHref} target="_blank" rel="noreferrer">
-                  Open private file
+                <a
+                  aria-label={`Open ${document.typeLabel}`}
+                  className="files-open-action"
+                  href={document.fileHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open private file"
+                >
+                  <ExternalLink size={16} aria-hidden="true" />
                 </a>
               ) : (
                 marketplaceDisplayText(document.fileLabel)
@@ -92,8 +100,15 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
             {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
             <p className="muted">
               {file.fileHref ? (
-                <a className="text-link" href={file.fileHref} target="_blank" rel="noreferrer">
-                  {marketplaceDisplayText(file.fileLabel)}
+                <a
+                  aria-label={`Open ${marketplaceDisplayText(file.fileLabel)}`}
+                  className="files-open-action"
+                  href={file.fileHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={marketplaceDisplayText(file.fileLabel)}
+                >
+                  <ExternalLink size={16} aria-hidden="true" />
                 </a>
               ) : (
                 marketplaceDisplayText(file.fileLabel)
