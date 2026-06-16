@@ -1606,6 +1606,49 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.dashboard-page {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.dashboard-page > .admin-mt-20,
+.dashboard-page > .detail-grid,
+.dashboard-page > .grid {
+  margin-top: 0;
+}
+
+.dashboard-page > .toolbar,
+.dashboard-page > .card,
+.dashboard-page > .grid > .card,
+.dashboard-page > .detail-grid > .card {
+  min-width: 0;
+}
+
+.dashboard-card-scroll {
+  max-height: min(900px, calc(100vh - 120px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.dashboard-page .service-trace-summary {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.dashboard-page .detail-grid {
+  align-items: start;
+}
+
+.dashboard-page .ops-task-card {
+  min-width: 0;
+}
+
+.dashboard-page .ops-row > div,
+.dashboard-page .ops-section-header > div {
+  min-width: 0;
+}
+
 .tax-policy-page {
   display: grid;
   gap: 16px;

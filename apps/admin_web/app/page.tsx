@@ -654,7 +654,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   ];
 
   return (
-    <>
+    <div className="dashboard-page">
       <section className="toolbar">
         <div>
           <h1>HANDS Operations</h1>
@@ -1065,7 +1065,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
+      <section className="card admin-mt-20 dashboard-card-scroll dashboard-menu-map-card">
         <div className="ops-section-header">
           <div>
             <h2>Admin menu map</h2>
@@ -1329,7 +1329,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         ))}
       </section>
 
-      <section className="card admin-mt-20">
+      <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
         <div className="ops-section-header">
           <div>
             <h2>Matching control room</h2>
@@ -1417,7 +1417,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
+      <section className="card admin-mt-20 dashboard-card-scroll dashboard-policy-card">
         <div className="ops-section-header">
           <div>
             <h2>Operations policy snapshot</h2>
@@ -1959,7 +1959,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
+      <section className="card admin-mt-20 dashboard-card-scroll dashboard-partner-dispatch-card">
         <div className="ops-section-header">
           <div>
             <h2>Partner dispatch control</h2>
@@ -2061,7 +2061,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="card admin-mt-20">
+      <section className="card admin-mt-20 dashboard-card-scroll dashboard-command-lanes-card">
         <div className="ops-section-header">
           <div>
             <h2>Today command lanes</h2>
@@ -2133,8 +2133,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <section className="detail-grid admin-mt-20">
-        <div className="card">
+      <section className="detail-grid admin-mt-20 dashboard-queue-grid">
+        <div className="card dashboard-card-scroll dashboard-checklist-card">
           <div className="ops-section-header">
             <div>
               <h2>Operations checklist queue</h2>
@@ -2213,7 +2213,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </div>
         </div>
 
-        <div className="card">
+        <div className="card dashboard-card-scroll dashboard-setup-card">
           <div className="ops-section-header">
             <div>
               <h2>External setup readiness</h2>
@@ -2304,7 +2304,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
-    </>
+    </div>
   );
 }
 
