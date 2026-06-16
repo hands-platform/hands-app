@@ -1779,6 +1779,29 @@ a.action-button-card:hover {
   z-index: 2;
 }
 
+.files-open-action {
+  align-items: center;
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-link);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  text-decoration: none;
+  transition:
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    color var(--admin-transition);
+  width: 34px;
+}
+
+.files-open-action:hover {
+  background: var(--admin-primary-soft);
+  border-color: rgb(var(--admin-primary-channel) / 0.24);
+  color: var(--admin-accent-strong);
+}
+
 .operations-policy-page > .admin-mb-16,
 .operations-policy-page > .admin-mt-16 {
   margin-bottom: 0;

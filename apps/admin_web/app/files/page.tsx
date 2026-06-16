@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -152,8 +153,15 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
         <p className="muted">{formatBytes(row.sizeBytes)}</p>
         <p className="muted">{row.visibility}</p>
         {row.fileHref ? (
-          <a href={row.fileHref} rel="noreferrer" target="_blank">
-            Open file
+          <a
+            aria-label={`Open ${row.purposeLabel}`}
+            className="files-open-action"
+            href={row.fileHref}
+            rel="noreferrer"
+            target="_blank"
+            title="Open file"
+          >
+            <ExternalLink size={16} aria-hidden="true" />
           </a>
         ) : (
           <span className="muted">No read URL</span>
