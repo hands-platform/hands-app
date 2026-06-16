@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { adminGet } from '../../lib/admin-api';
 import type { AdminCustomer } from '../../lib/admin-api';
-import { formatDateTime as formatDate } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { buildCustomerActiveFilters, buildCustomerFilters, customerSortLabel } from './customer-filters';
 import { CustomerFilterBoard } from './customer-filter-board';
@@ -14,7 +13,6 @@ import {
 } from './customer-list-model';
 import {
   buildCustomerManagementMetrics,
-  buildCustomerManagementSpotlights,
   buildCustomerManagementTableRows,
 } from './customer-management-view-model';
 import { CustomersTableSection } from './customers-table-section';
@@ -29,14 +27,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const summary = buildCustomerSummary(rows);
   const activeFilters = buildCustomerActiveFilters(filters);
   const metrics = buildCustomerManagementMetrics(summary, allRows.length);
-  const spotlights = buildCustomerManagementSpotlights(
-    summary,
-    rows.length,
-    allRows.length,
-    activeFilters.length,
-  );
   const tableRows = buildCustomerManagementTableRows(rows);
-  const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 6);
   const customerListCsvHref = buildCsvDataHref(
     rows.map((row) => ({
       customer_id: row.id,
@@ -127,7 +118,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   return (
     <AdminPageTemplate
       title="Customer Management"
-      description="Customer profile, booking movement, completed work, chat archive, payment footprint, saved locations, app sessions, and push reachability in one management flow."
+      description="Customer list aligned to the Vuexy management table using live customer profile, reservation, session, and wallet data."
       metrics={metrics}
       actions={
         <>
@@ -150,51 +141,6 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         filters={filters}
         totalCount={allRows.length}
       />
-
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          title="Customer operations snapshot"
-          description="Quick read of the filtered customer directory before an operator opens the full table."
-          status={<span className="pill pill-info">{spotlights.length} signals</span>}
-        />
-        <div className="service-trace-summary admin-mt-12">
-          {spotlights.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          title="Recent customer movement"
-          description="Newest booking and completed-work signals so the operations desk can jump directly into the next customer record."
-          status={<span className="pill pill-info">{recentActivityRows.length} recent</span>}
-        />
-        <div className="service-trace-summary admin-mt-12">
-          {recentActivityRows.length > 0 ? (
-            recentActivityRows.map((row) => (
-              <Link href={`/customers/${row.id}`} key={row.id}>
-                <span>{row.name}</span>
-                <strong>{row.activityLabel}</strong>
-                <small>
-                  {row.lastBookingAt ? `Last booking ${formatDate(row.lastBookingAt)}` : 'No booking yet'} /{' '}
-                  {row.lastCompletedAt ? `last work ${formatDate(row.lastCompletedAt)}` : 'no completed work'}
-                </small>
-              </Link>
-            ))
-          ) : (
-            <div>
-              <span>Activity</span>
-              <strong>No customer movement yet</strong>
-              <small>Once bookings are created or completed, this rail will surface the newest customer signals.</small>
-            </div>
-          )}
-        </div>
-      </section>
 
       <CustomersTableSection rows={tableRows} sortLabel={customerSortLabel(filters.sort)} />
     </AdminPageTemplate>

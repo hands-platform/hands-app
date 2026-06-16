@@ -27,30 +27,20 @@ export type CustomerManagementSpotlight = {
 };
 
 export type CustomerManagementTableRow = {
-  readonly activityDetail: string;
-  readonly activityLabel: string;
-  readonly addressLabel: string;
-  readonly bookingLabel: string;
   readonly chatHref: string;
-  readonly chatLabel: string;
-  readonly closureLabel: string;
   readonly customerIdLabel: string;
   readonly detailHref: string;
+  readonly deviceLanguageLabel: string;
   readonly email: string;
-  readonly financeDetail: string;
-  readonly financeLabel: string;
   readonly initials: string;
+  readonly lastLoginAddressLabel: string;
+  readonly lastLoginDateLabel: string;
   readonly joinedLabel: string;
   readonly name: string;
-  readonly opsDetail: string;
-  readonly opsLabel: string;
   readonly paymentsHref: string;
-  readonly patternDetail: string;
-  readonly patternLabel: string;
   readonly phone: string;
-  readonly reachabilityDetail: string;
-  readonly reachabilityLabel: string;
-  readonly sessionLabel: string;
+  readonly totalReservationsCompletedLabel: string;
+  readonly totalWalletAmountLabel: string;
 };
 
 export function buildCustomerManagementMetrics(
@@ -61,32 +51,22 @@ export function buildCustomerManagementMetrics(
     {
       label: 'Total customers',
       value: totalCustomerCount,
-      helper: 'Loaded customer profiles in the current workspace.',
+      helper: 'Loaded customer profiles.',
     },
     {
-      label: 'In app now',
+      label: 'Active customers',
       value: summary.live,
-      helper: 'Customer sessions active in the last 30 minutes.',
+      helper: 'Recent live sessions.',
     },
     {
-      label: 'Active bookings',
-      value: summary.activeBookings,
-      helper: 'Customers who currently need live ops attention.',
-    },
-    {
-      label: 'Push ready',
-      value: summary.pushReachable,
-      helper: 'Customers with at least one enabled push device.',
-    },
-    {
-      label: 'Completed work',
+      label: 'Completed reservations',
       value: summary.completedBookings,
-      helper: 'Finished service records linked to these customers.',
+      helper: 'Finished reservations.',
     },
     {
-      label: 'Captured spend',
+      label: 'Total wallet amount',
       value: formatMoney(summary.capturedSpend),
-      helper: 'Captured customer payments in this result.',
+      helper: 'Captured customer wallet total.',
     },
   ];
 }
@@ -139,52 +119,22 @@ export function buildCustomerManagementTableRows(
 ): CustomerManagementTableRow[] {
   return rows.map((row) => {
     const customerIdLabel = compactText(row.id, 12);
-    const financeLabel = `${formatMoney(row.capturedSpend)} paid`;
-    const financeDetail = `${formatMoney(row.refundAmount)} refunded / ${row.paymentCount} payment row(s)`;
-    const activeDetail = row.lastBookingAt ? `Last booking ${formatDate(row.lastBookingAt)}` : 'No booking yet';
-    const completedDetail = row.lastCompletedAt
-      ? `Last completed ${formatDate(row.lastCompletedAt)}`
-      : 'No completed work yet';
-    const reachabilityDetail = row.pushReachable
-      ? `${row.latestSessionPlatform} / push ready`
-      : `${row.latestSessionPlatform} / no push device`;
-    const opsDetail = `${row.chatRooms} chat room(s) / ${row.memoCount} memo(s) / ${row.paymentIssues} payment follow-up`;
 
     return {
-      activityDetail: row.activeBookings > 0 ? activeDetail : completedDetail,
-      activityLabel:
-        row.activeBookings > 0
-          ? `${row.activeBookings} active booking(s)`
-          : row.completedBookings > 0
-            ? `${row.completedBookings} completed work row(s)`
-            : row.bookingCount > 0
-              ? `${row.bookingCount} booking record(s)`
-              : 'New customer profile',
-      addressLabel:
-        row.addressCount > 0
-          ? `${row.addressCount} saved location(s)`
-          : 'Needs saved location follow-up',
-      bookingLabel: `${row.bookingCount} booking(s) / ${row.firstPickBookings} first-pick / ${row.customerChoiceBookings} final choice`,
       chatHref: `/chat-archive?q=${encodeURIComponent(row.id)}`,
-      chatLabel: row.chatRooms > 0 ? `${row.chatRooms} retained room(s)` : 'No retained chat room',
-      closureLabel: `${row.cancelledBookings} closed / ${row.noShowBookings} no-show`,
       customerIdLabel,
       detailHref: `/customers/${row.id}`,
+      deviceLanguageLabel: row.deviceLanguage,
       email: row.email,
-      financeDetail,
-      financeLabel,
       initials: readInitials(row.name),
+      lastLoginAddressLabel: row.lastLoginAddress,
+      lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured',
       joinedLabel: row.joinedAt ? formatDate(row.joinedAt) : 'Join date missing',
       name: row.name,
-      opsDetail,
-      opsLabel: row.latestMemoTitle,
       paymentsHref: `/payments?customer=${encodeURIComponent(row.id)}`,
-      patternDetail: `${row.commonArea} / repeated ${row.commonPartner}`,
-      patternLabel: row.commonService,
       phone: row.phone,
-      reachabilityDetail,
-      reachabilityLabel: row.isLive ? 'In app now' : row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No app session',
-      sessionLabel: row.latestSessionDevice,
+      totalReservationsCompletedLabel: String(row.completedBookings),
+      totalWalletAmountLabel: formatMoney(row.capturedSpend),
     };
   });
 }

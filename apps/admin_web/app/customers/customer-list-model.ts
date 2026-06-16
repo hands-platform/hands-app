@@ -217,6 +217,8 @@ export function buildCustomerRow(customer: AdminCustomer) {
     latestSessionPlatform: latestSession?.platform ?? 'Unknown platform',
     latestSessionIp: latestSession?.ipAddress ?? 'No IP recorded',
     latestSessionAppVersion: latestSession?.appVersion ?? 'No app version',
+    deviceLanguage: readCustomerDeviceLanguage(customer),
+    lastLoginAddress: readCustomerLastLoginAddress(customer),
     isLive,
     pushReachable,
     paymentIssues,
@@ -343,6 +345,27 @@ function sessionDeviceLabel(session?: NonNullable<NonNullable<AdminCustomer['use
   return `${platform} / ${appVersion} / ${compactText(session.deviceId, 18)}`;
 }
 
+function readCustomerDeviceLanguage(customer: AdminCustomer) {
+  const metadataCandidates = [
+    readObjectText(customer as Record<string, unknown>, 'language'),
+    readObjectText(customer as Record<string, unknown>, 'locale'),
+    readObjectText((customer.user ?? {}) as Record<string, unknown>, 'language'),
+    readObjectText((customer.user ?? {}) as Record<string, unknown>, 'locale'),
+  ].filter(Boolean);
+
+  return metadataCandidates[0] ?? 'Not captured';
+}
+
+function readCustomerLastLoginAddress(customer: AdminCustomer) {
+  const metadataCandidates = [
+    readObjectText(customer as Record<string, unknown>, 'lastLoginAddress'),
+    readObjectText((customer.user ?? {}) as Record<string, unknown>, 'lastLoginAddress'),
+    readObjectText((customer.user?.appSessions?.[0] ?? {}) as Record<string, unknown>, 'lastLoginAddress'),
+  ].filter(Boolean);
+
+  return metadataCandidates[0] ?? 'Not captured';
+}
+
 function mostCommonLabel(values: string[]) {
   const counts = new Map<string, number>();
   for (const value of values) {
@@ -403,4 +426,9 @@ function compactJson(value: unknown) {
   } catch {
     return 'Metadata unavailable';
   }
+}
+
+function readObjectText(source: Record<string, unknown>, key: string) {
+  const value = source[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }

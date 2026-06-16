@@ -2306,7 +2306,13 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-select {
+  justify-content: space-between;
   min-width: 180px;
+}
+
+.vuexy-customer-select select {
+  appearance: none;
+  flex: 1;
 }
 
 .vuexy-customer-button,
@@ -2388,7 +2394,7 @@ textarea:focus-visible {
   border: 0;
   color: rgba(225, 222, 245, 0.9);
   margin: 0;
-  min-width: 1180px;
+  min-width: 1120px;
 }
 
 .vuexy-customer-table th,
@@ -2488,6 +2494,31 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.vuexy-customer-actions-row {
+  align-items: center;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.vuexy-customer-icon-action {
+  align-items: center;
+  background: rgba(225, 222, 245, 0.08);
+  border: 0;
+  border-radius: 6px;
+  color: rgba(225, 222, 245, 0.72);
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+  text-decoration: none;
+  width: 34px;
+}
+
+.vuexy-customer-icon-action:hover {
+  background: rgba(115, 103, 240, 0.16);
+  color: #ffffff;
 }
 
 .vuexy-customer-action-link {
