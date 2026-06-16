@@ -69,7 +69,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   );
 
   return (
-    <>
+    <div className="chat-archive-page">
       <section className="toolbar">
         <div>
           <h1>Chat Archive</h1>
@@ -373,9 +373,9 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           </div>
           <span className="pill pill-info">Admin retained</span>
         </div>
-        <div className="setup-stage-list admin-mt-16">
+        <div className="setup-stage-list admin-mt-16 chat-transcript-list">
           {rooms.slice(0, 12).map((room) => (
-            <article className="card" key={`${room.roomId}-messages`}>
+            <article className="card chat-transcript-room" key={`${room.roomId}-messages`}>
               <div className="ops-section-header">
                 <div>
                   <h3>
@@ -389,26 +389,10 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   Open booking
                 </Link>
               </div>
-              <div className="admin-grid-gap-10 admin-mt-12">
+              <div className="admin-grid-gap-10 admin-mt-12 chat-transcript-messages">
                 {room.messages.length > 0 ? (
                   room.messages.slice(-8).map((message) => (
-                    <div
-                      key={message.id}
-                      style={{
-                        justifySelf: senderRole(message) === 'CUSTOMER' ? 'start' : 'end',
-                        maxWidth: '78%',
-                        border: '1px solid #dfe7dc',
-                        borderRadius: 8,
-                        padding: 12,
-                        background: senderRole(message) === 'CUSTOMER' ? '#ffffff' : '#eef7e8',
-                      }}
-                    >
-                      <strong>{senderLabel(message)}</strong>
-                      <p style={{ margin: '6px 0', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-                        {message.body}
-                      </p>
-                      <small className="muted">{formatDate(message.createdAt)}</small>
-                    </div>
+                    <ChatTranscriptMessage key={message.id} message={message} />
                   ))
                 ) : (
                   <p className="muted">Chat room exists, but no messages have been sent yet.</p>
@@ -418,7 +402,24 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           ))}
         </div>
       </section>
-    </>
+    </div>
+  );
+}
+
+type ChatTranscriptMessageProps = {
+  readonly message: AdminChatMessage;
+};
+
+function ChatTranscriptMessage({ message }: ChatTranscriptMessageProps) {
+  const role = senderRole(message);
+  const roleClass = role === 'CUSTOMER' ? 'is-customer' : role === 'PROVIDER' ? 'is-partner' : 'is-system';
+
+  return (
+    <div className={`chat-transcript-bubble ${roleClass}`}>
+      <strong>{senderLabel(message)}</strong>
+      <p>{message.body}</p>
+      <small className="muted">{formatDate(message.createdAt)}</small>
+    </div>
   );
 }
 
