@@ -960,13 +960,19 @@ a.action-button-card:hover {
 }
 
 .inline-form {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  align-items: center;
+  min-width: 0;
 }
 
-.inline-form input {
+.inline-form > * {
+  min-width: 0;
+}
+
+.inline-form input,
+.inline-form select {
   min-width: 180px;
 }
 
@@ -1013,10 +1019,11 @@ a.action-button-card:hover {
 }
 
 .form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 12px;
   align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  min-width: 0;
 }
 
 .compact-form {
@@ -1024,27 +1031,38 @@ a.action-button-card:hover {
   margin: 12px 0;
 }
 
-.form-grid label {
+.field,
+.filter-grid label,
+.form-grid label,
+.ops-filter-grid label {
+  color: var(--admin-muted);
   display: grid;
   gap: 6px;
-  color: var(--admin-muted);
   font-size: 0.8125rem;
   font-weight: 500;
+  min-width: 0;
+}
+
+.form-grid > *,
+.ops-filter-grid > *,
+.filter-grid > * {
+  min-width: 0;
+}
+
+.filter-grid {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  min-width: 0;
 }
 
 .ops-filter-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, 1.4fr) repeat(2, minmax(180px, 0.8fr)) auto;
-  gap: 12px;
   align-items: end;
-}
-
-.ops-filter-grid label {
   display: grid;
-  gap: 6px;
-  color: var(--admin-muted);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  gap: 12px;
+  grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(180px, 0.8fr)) auto;
+  min-width: 0;
 }
 
 .full-span {
@@ -3189,13 +3207,24 @@ textarea {
   box-shadow: none;
 }
 
+input:hover:not(:disabled):not([readonly]),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled):not([readonly]) {
+  border-color: var(--admin-border-strong);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--admin-disabled);
   opacity: 1;
 }
 
+select {
+  cursor: pointer;
+}
+
 textarea {
+  line-height: 1.5;
   min-height: 96px;
   resize: vertical;
 }
@@ -3209,6 +3238,18 @@ textarea {
 .action-button-card input,
 .action-button-card select,
 .action-button-card textarea {
+  width: 100%;
+}
+
+.field input,
+.field select,
+.field textarea,
+.filter-grid input,
+.filter-grid select,
+.filter-grid textarea,
+.inline-form input,
+.inline-form select,
+.inline-form textarea {
   width: 100%;
 }
 
