@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Bell, LayoutDashboard } from 'lucide-react';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import type { AdminAppSession } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
@@ -70,10 +71,12 @@ export default async function AppSessionsPage({
       contentClassName="app-sessions-page"
       actions={
         <>
-          <Link className="text-link" href="/">
+          <Link className="button button-secondary" href="/">
+            <LayoutDashboard aria-hidden="true" size={16} />
             Dashboard
           </Link>
-          <Link className="text-link" href="/notifications">
+          <Link className="button button-secondary" href="/notifications">
+            <Bell aria-hidden="true" size={16} />
             Notifications
           </Link>
         </>

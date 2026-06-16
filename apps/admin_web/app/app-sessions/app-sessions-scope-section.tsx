@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { X } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
 
@@ -26,7 +27,8 @@ export function AppSessionsScopeSection({
     <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
-          <Link className="text-link" href="/app-sessions">
+          <Link className="button button-secondary" href="/app-sessions">
+            <X aria-hidden="true" size={16} />
             Clear filters
           </Link>
         }
