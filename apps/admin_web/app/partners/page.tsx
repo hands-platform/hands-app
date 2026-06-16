@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download, Filter, X } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -369,15 +370,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </select>
           </label>
           <div className="actions full-span">
-            <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/partners">
+            <button className="button button-primary" type="submit">
+              <Filter aria-hidden="true" size={16} />
+              Apply filters
+            </button>
+            <Link className="button button-secondary" href="/partners">
+              <X aria-hidden="true" size={16} />
               Clear filters
             </Link>
             <a
-              className="text-link"
+              className="button button-secondary"
               download={`hands-partners-${partnerExportFileSlug}.csv`}
               href={partnerListCsvHref}
             >
+              <Download aria-hidden="true" size={16} />
               Export visible CSV
             </a>
             <span className="muted">
