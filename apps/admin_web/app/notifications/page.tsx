@@ -54,7 +54,7 @@ export default async function NotificationsPage({
         />
       ) : null}
 
-      <div className="stack">
+      <div className="stack notification-monitor">
         <NotificationCommandHeaderSection />
 
         <NotificationChannelPolicySection
