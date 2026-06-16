@@ -11,7 +11,7 @@ describe('AppSessionsTableSection', () => {
 
     expect(rendered).toContain('Massage Partner');
     expect(rendered).toContain('+84900000000');
-    expect(rendered).toContain('PARTNER');
+    expect(rendered).toContain('Partner');
     expect(rendered).toContain('live');
     expect(rendered).toContain('ios');
     expect(rendered).toContain('1.0.2');

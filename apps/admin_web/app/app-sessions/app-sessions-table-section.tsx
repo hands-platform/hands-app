@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable } from '../../components/admin-data-table';
+import { RoleBadge } from '../../components/role-badge';
 
 export type AppSessionTableRow = {
   readonly appVersionLabel: string;
@@ -36,7 +37,9 @@ export function AppSessionsTableSection({ emptyMessage, rows }: AppSessionsTable
             <strong>{row.userLabel}</strong>
             <div className="muted">{row.userPhoneLabel}</div>
           </td>
-          <td>{row.roleLabel}</td>
+          <td>
+            <RoleBadge role={row.roleLabel} />
+          </td>
           <td>
             <span className={`pill ${row.statePillClassName}`}>{row.stateLabel}</span>
           </td>

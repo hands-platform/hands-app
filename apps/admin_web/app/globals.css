@@ -1,8 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap");
+
 :root {
   --admin-bg: #f8f7fa;
   --admin-bg-strong: #f3f2f5;
   --admin-surface: #ffffff;
   --admin-surface-soft: #fafafa;
+  --admin-surface-raised: rgba(255, 255, 255, 0.92);
   --admin-border: rgba(47, 43, 61, 0.12);
   --admin-border-strong: rgba(47, 43, 61, 0.22);
   --admin-text: #2f2b3d;
@@ -18,11 +21,15 @@
   --admin-info: #00bad1;
   --admin-warning: #ff9f43;
   --admin-danger: #ff4c51;
+  --admin-secondary: #808390;
   --admin-radius: 8px;
   --admin-radius-lg: 12px;
+  --admin-shadow-xs: 0 1px 2px rgba(47, 43, 61, 0.06);
   --admin-shadow-sm: 0 2px 6px rgba(47, 43, 61, 0.08);
-  --admin-shadow-md: 0 10px 20px rgba(47, 43, 61, 0.12);
-  --admin-shadow-lg: 0 14px 36px rgba(47, 43, 61, 0.16);
+  --admin-shadow-md: 0 4px 14px rgba(47, 43, 61, 0.12);
+  --admin-shadow-lg: 0 10px 30px rgba(47, 43, 61, 0.16);
+  --admin-control-height: 38px;
+  --admin-transition: 160ms ease;
 }
 
 * {
@@ -35,9 +42,10 @@ html {
 
 body {
   margin: 0;
-  font-family: Inter, "Public Sans", Arial, Helvetica, sans-serif;
+  font-family: "Public Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   background:
-    linear-gradient(180deg, rgba(115, 103, 240, 0.04), rgba(255, 255, 255, 0) 260px),
+    radial-gradient(circle at 26% 0%, rgba(115, 103, 240, 0.08), transparent 260px),
+    linear-gradient(180deg, rgba(115, 103, 240, 0.04), rgba(255, 255, 255, 0) 300px),
     var(--admin-bg);
   color: var(--admin-text);
   line-height: 1.45;
@@ -59,14 +67,16 @@ a {
 
 .shell {
   display: grid;
-  grid-template-columns: 282px minmax(0, 1fr);
+  grid-template-columns: 292px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
-  background: var(--admin-sidebar);
+  background:
+    linear-gradient(180deg, rgba(115, 103, 240, 0.04), rgba(255, 255, 255, 0) 240px),
+    var(--admin-sidebar);
   border-right: 1px solid var(--admin-border);
-  box-shadow: 6px 0 18px rgba(47, 43, 61, 0.05);
+  box-shadow: 8px 0 24px rgba(47, 43, 61, 0.06);
   color: var(--admin-text);
   height: 100vh;
   overflow: auto;
@@ -85,13 +95,11 @@ a {
 .brand-mark {
   align-items: center;
   background: linear-gradient(135deg, var(--admin-accent), #8f85f3);
-  border-radius: 10px;
+  border-radius: var(--admin-radius);
   box-shadow: 0 8px 18px rgba(115, 103, 240, 0.3);
   color: white;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 16px;
-  font-weight: 900;
   height: 34px;
   justify-content: center;
   width: 34px;
@@ -130,9 +138,9 @@ a {
   grid-template-columns: 24px 1fr;
   padding: 9px 10px;
   transition:
-    background 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease;
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    color var(--admin-transition);
 }
 
 .nav-flow-link:hover {
@@ -143,19 +151,26 @@ a {
 
 .nav-flow-link span {
   align-items: center;
-  background: var(--admin-accent);
+  background: var(--admin-accent-soft);
   border-radius: 999px;
-  color: white;
+  color: var(--admin-accent-strong);
   display: inline-flex;
-  font-size: 12px;
-  font-weight: 800;
   height: 24px;
   justify-content: center;
   width: 24px;
 }
 
 .nav-flow-link strong {
+  display: grid;
   font-size: 13px;
+  gap: 1px;
+}
+
+.nav-flow-link strong small {
+  color: var(--admin-sidebar-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .nav {
@@ -189,19 +204,34 @@ a {
 .nav a {
   border-radius: var(--admin-radius);
   color: rgba(47, 43, 61, 0.74);
-  display: block;
   font-size: 14px;
   padding: 9px 12px;
   transition:
-    background 140ms ease,
-    color 140ms ease,
-    transform 140ms ease;
+    background var(--admin-transition),
+    color var(--admin-transition),
+    transform var(--admin-transition);
+}
+
+.nav-link {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 18px minmax(0, 1fr);
+}
+
+.nav-link svg {
+  color: rgba(47, 43, 61, 0.52);
+  transition: color var(--admin-transition);
 }
 
 .nav a:hover {
   background: var(--admin-sidebar-hover);
   color: var(--admin-accent-strong);
   transform: translateX(2px);
+}
+
+.nav a:hover svg {
+  color: var(--admin-accent-strong);
 }
 
 .content {
@@ -266,6 +296,7 @@ a {
   border-radius: 999px;
   color: rgba(47, 43, 61, 0.72);
   display: inline-flex;
+  gap: 6px;
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -306,12 +337,17 @@ a {
 }
 
 .card {
-  background: var(--admin-surface);
+  background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-sm);
+  min-width: 0;
   overflow-wrap: anywhere;
   padding: 18px;
+  transition:
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition),
+    transform var(--admin-transition);
 }
 
 .admin-summary-card-value {
@@ -320,6 +356,41 @@ a {
   font-weight: 700;
   line-height: 1.2;
   margin: 0.83em 0;
+}
+
+.metric-card {
+  align-items: flex-start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
+.metric-card-icon {
+  align-items: center;
+  background: var(--admin-accent-soft);
+  border-radius: var(--admin-radius);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.metric-card-content {
+  min-width: 0;
+}
+
+.metric-card p {
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.metric-card h2 {
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 5px 0 4px;
 }
 
 .admin-card-scroll {
@@ -332,7 +403,7 @@ a {
 
 .empty-state {
   align-items: center;
-  background: rgba(47, 43, 61, 0.04);
+  background: rgba(115, 103, 240, 0.04);
   border: 1px dashed var(--admin-border-strong);
   border-radius: var(--admin-radius-lg);
   color: var(--admin-muted);
@@ -403,7 +474,7 @@ a.action-button-card:hover {
 
 .action-button-card {
   align-content: space-between;
-  background: var(--admin-surface);
+  background: linear-gradient(180deg, #ffffff, rgba(250, 250, 250, 0.78));
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   display: grid;
@@ -476,7 +547,7 @@ a.action-button-card:hover {
 }
 
 .toolbar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -1482,18 +1553,18 @@ a.ops-task-card {
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 5px 9px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.2;
   max-width: 100%;
 }
 
 .status-badge {
-  background: rgba(0, 186, 209, 0.12);
-  color: #008fa1;
+  background: rgba(115, 103, 240, 0.12);
+  color: var(--admin-accent-strong);
 }
 
 .status-open_matching {
@@ -1536,6 +1607,46 @@ a.ops-task-card {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 6px;
+}
+
+.role-badge,
+.role-customer,
+.role-partner,
+.role-admin,
+.role-system {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 5px;
+  line-height: 1.2;
+  padding: 5px 9px;
+}
+
+.role-badge {
+  background: rgba(47, 43, 61, 0.07);
+  color: rgba(47, 43, 61, 0.78);
+}
+
+.role-customer {
+  background: rgba(0, 186, 209, 0.12);
+  color: #008fa1;
+}
+
+.role-partner {
+  background: rgba(115, 103, 240, 0.12);
+  color: var(--admin-accent-strong);
+}
+
+.role-admin {
+  background: rgba(40, 199, 111, 0.14);
+  color: #1e8f50;
+}
+
+.role-system {
+  background: rgba(128, 131, 144, 0.14);
+  color: rgba(47, 43, 61, 0.74);
 }
 
 .action-menu-form {
@@ -1664,11 +1775,23 @@ select,
 textarea {
   border: 1px solid var(--admin-border-strong);
   border-radius: var(--admin-radius);
-  padding: 8px 10px;
+  min-height: var(--admin-control-height);
+  padding: 8px 11px;
   background: var(--admin-surface);
   color: var(--admin-text);
   font: inherit;
   min-width: 0;
+  transition:
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition),
+    background var(--admin-transition),
+    color var(--admin-transition);
+}
+
+input,
+select,
+textarea {
+  box-shadow: inset 0 1px 0 rgba(47, 43, 61, 0.02);
 }
 
 textarea {
@@ -1691,10 +1814,10 @@ textarea {
 button {
   background: var(--admin-accent);
   border-color: var(--admin-accent);
-  box-shadow: 0 2px 6px rgba(115, 103, 240, 0.3);
+  box-shadow: 0 2px 6px rgba(115, 103, 240, 0.28);
   color: white;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 button:hover {
@@ -1762,7 +1885,9 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(115, 103, 240, 0.22);
+  border-color: rgba(115, 103, 240, 0.7);
+  box-shadow: 0 0 0 3px rgba(115, 103, 240, 0.16);
+  outline: 0;
   outline-offset: 2px;
 }
 
@@ -1772,7 +1897,7 @@ textarea:focus-visible {
   border-radius: var(--admin-radius-lg);
   border-spacing: 0;
   box-shadow: var(--admin-shadow-sm);
-  font-size: 14px;
+  font-size: 13px;
   overflow: hidden;
   width: 100%;
   border-collapse: separate;
@@ -1788,13 +1913,13 @@ textarea:focus-visible {
 .table th,
 .table td {
   border-bottom: 1px solid var(--admin-border);
-  padding: 11px 12px;
+  padding: 12px 14px;
   text-align: left;
   vertical-align: top;
 }
 
 .table th {
-  background: var(--admin-surface-soft);
+  background: rgba(47, 43, 61, 0.025);
   color: rgba(47, 43, 61, 0.62);
   font-size: 12px;
   font-weight: 800;

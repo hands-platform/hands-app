@@ -12,7 +12,8 @@ describe('MetricCard', () => {
     expect(card.props).toMatchObject({
       className: 'card',
     });
-    const content = card.props.children.props.children;
+    expect(card.props.children.props.className).toBe('metric-card');
+    const content = card.props.children.props.children[1].props.children;
     expect(content[0].props.children).toBe('Total');
     expect(content[1].props.children).toBe(12);
   });
