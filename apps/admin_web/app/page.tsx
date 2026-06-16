@@ -1,4 +1,15 @@
 import Link from 'next/link';
+import {
+  Activity,
+  BellRing,
+  BookOpenCheck,
+  CalendarClock,
+  ClipboardCheck,
+  FileClock,
+  HeartHandshake,
+  Settings2,
+  ShieldCheck,
+} from 'lucide-react';
 import { InfoRow } from '../components/info-row';
 import {
   AdminAuditLog,
@@ -664,13 +675,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </p>
         </div>
         <div className="actions">
-          <Link className="text-link" href="/bookings">
+          <Link className="button button-secondary" href="/bookings">
+            <CalendarClock size={16} aria-hidden="true" />
             Booking monitor
           </Link>
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary" href="/operations-policy">
+            <Settings2 size={16} aria-hidden="true" />
             Operations policy
           </Link>
-          <Link className="text-link" href="/app-sessions">
+          <Link className="button button-secondary" href="/app-sessions">
+            <Activity size={16} aria-hidden="true" />
             App sessions
           </Link>
           <Link className="text-link" href="/cash-settlements">
@@ -679,19 +693,23 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <Link className="text-link" href="/payments">
             Payments
           </Link>
-          <Link className="text-link" href="/partners">
+          <Link className="button button-secondary" href="/partners">
+            <HeartHandshake size={16} aria-hidden="true" />
             Partner review
           </Link>
-          <Link className="text-link" href="/partner-controls">
+          <Link className="button button-secondary" href="/partner-controls">
+            <ShieldCheck size={16} aria-hidden="true" />
             Partner controls
           </Link>
           <Link className="text-link" href="/tax-policy">
             Tax policy
           </Link>
-          <Link className="text-link" href="/setup">
+          <Link className="button button-secondary" href="/setup">
+            <ClipboardCheck size={16} aria-hidden="true" />
             Setup
           </Link>
-          <Link className="text-link" href="/audit-log">
+          <Link className="button button-secondary" href="/audit-log">
+            <FileClock size={16} aria-hidden="true" />
             Audit log
           </Link>
         </div>
@@ -706,7 +724,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               payment holds, and cash debt in one operator scan.
             </p>
           </div>
-          <Link className="text-link" href="/bookings">
+          <Link className="button button-secondary" href="/bookings">
+            <CalendarClock size={16} aria-hidden="true" />
             Open booking monitor
           </Link>
         </div>
@@ -720,13 +739,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           ))}
         </div>
         <div className="actions admin-mt-12">
-          <Link className="text-link" href="/bookings?view=matching">
+          <Link className="button button-secondary" href="/bookings?view=matching">
+            <BellRing size={16} aria-hidden="true" />
             Matching wait
           </Link>
-          <Link className="text-link" href="/bookings?view=no-show">
+          <Link className="button button-secondary" href="/bookings?view=no-show">
+            <BookOpenCheck size={16} aria-hidden="true" />
             No-show evidence
           </Link>
-          <Link className="text-link" href="/app-sessions?role=CUSTOMER&state=live">
+          <Link className="button button-secondary" href="/app-sessions?role=CUSTOMER&state=live">
+            <Activity size={16} aria-hidden="true" />
             Live customers
           </Link>
           <Link className="text-link" href="/cash-settlements">
@@ -744,7 +766,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               choice, chat handoff, settlement gates, notifications, and setup.
             </p>
           </div>
-          <Link className="text-link" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
+          <Link className="button button-secondary" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
+            <BellRing size={16} aria-hidden="true" />
             Open first action
           </Link>
         </div>
@@ -1171,7 +1194,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               settlement blocks, and notification delivery.
             </p>
           </div>
-          <Link className="text-link" href="/bookings">
+          <Link className="button button-secondary" href="/bookings">
+            <CalendarClock size={16} aria-hidden="true" />
             Open booking board
           </Link>
         </div>
@@ -1199,7 +1223,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               cohort analysis stays in Operations Policy.
             </p>
           </div>
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary" href="/operations-policy">
+            <Settings2 size={16} aria-hidden="true" />
             Review policy cohorts
           </Link>
         </div>
@@ -1242,7 +1267,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <strong>{shiftBriefing.headline}</strong>
               <p className="muted">{shiftBriefing.detail}</p>
             </div>
-            <Link className="text-link" href={shiftBriefing.primaryAction.href}>
+            <Link className="button button-secondary" href={shiftBriefing.primaryAction.href}>
+              <BellRing size={16} aria-hidden="true" />
               {shiftBriefing.primaryAction.label}
             </Link>
           </div>
@@ -1339,10 +1365,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </p>
           </div>
           <div className="participant-list">
-            <Link className="text-link" href="/bookings?view=matching">
+            <Link className="button button-secondary" href="/bookings?view=matching">
+              <BellRing size={16} aria-hidden="true" />
               Open matching timeline
             </Link>
-            <Link className="text-link" href="/operations-policy">
+            <Link className="button button-secondary" href="/operations-policy">
+              <Settings2 size={16} aria-hidden="true" />
               Simulate policy
             </Link>
           </div>
@@ -1426,7 +1454,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               cancellation, no-show, and Partner alerts.
             </p>
           </div>
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary" href="/operations-policy">
+            <Settings2 size={16} aria-hidden="true" />
             Change policy
           </Link>
         </div>
@@ -1501,7 +1530,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                     behavior.
                   </p>
                 </div>
-                <Link className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
+                <Link className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
+                  <FileClock size={16} aria-hidden="true" />
                   Policy audit
                 </Link>
               </div>
@@ -1554,15 +1584,18 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                 become customer complaints.
               </p>
             </div>
-            <Link className="text-link" href="/bookings?view=attention">
+            <Link className="button button-secondary" href="/bookings?view=attention">
+              <BellRing size={16} aria-hidden="true" />
               Attention bookings
             </Link>
           </div>
           <div className="participant-list admin-mt-8">
-            <Link className="text-link" href="/bookings?view=matching">
+            <Link className="button button-secondary" href="/bookings?view=matching">
+              <BellRing size={16} aria-hidden="true" />
               Matching ops
             </Link>
-            <Link className="text-link" href="/bookings?view=attention">
+            <Link className="button button-secondary" href="/bookings?view=attention">
+              <BellRing size={16} aria-hidden="true" />
               Attention bookings
             </Link>
           </div>
