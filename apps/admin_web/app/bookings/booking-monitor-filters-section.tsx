@@ -113,7 +113,7 @@ export function BookingMonitorFiltersSection({
             ))}
           </select>
         </label>
-        <div className="actions" style={{ alignSelf: 'end' }}>
+        <div className="actions ops-filter-actions">
           <button type="button" onClick={onClearFilters}>
             Clear list filters
           </button>

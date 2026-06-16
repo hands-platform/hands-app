@@ -283,7 +283,7 @@ export function BookingMonitor({
   const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
 
   return (
-    <>
+    <div className="booking-monitor">
       <BookingMonitorToolbarSection
         autoRefresh={autoRefresh}
         onRefreshNow={refreshNow}
@@ -377,6 +377,6 @@ export function BookingMonitor({
       />
 
       <BookingMonitorListSection emptyMessage={emptyBookingMessage(view)} rows={bookingListRows} />
-    </>
+    </div>
   );
 }
