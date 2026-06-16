@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { Eye, MessageSquareText, MoreVertical, ReceiptText } from 'lucide-react';
+import { Eye, MessageSquareText, ReceiptText } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
+import { CustomerActionDropdown } from './customer-action-dropdown';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 type CustomersTableSectionProps = {
@@ -93,9 +94,12 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
                     >
                       <MessageSquareText aria-hidden="true" size={16} />
                     </Link>
-                    <button aria-label={`More actions for ${row.name}`} className="vuexy-customer-icon-action" type="button">
-                      <MoreVertical aria-hidden="true" size={16} />
-                    </button>
+                    <CustomerActionDropdown
+                      chatHref={row.chatHref}
+                      detailHref={row.detailHref}
+                      label={`More actions for ${row.name}`}
+                      paymentsHref={row.paymentsHref}
+                    />
                   </div>
                 </td>
               </tr>

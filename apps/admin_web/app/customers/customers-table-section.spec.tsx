@@ -18,6 +18,9 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('Not captured');
     expect(rendered).toContain('12');
     expect(rendered).toContain('1,200,000');
+    expect(rendered).toContain('View profile');
+    expect(rendered).toContain('Payment records');
+    expect(rendered).toContain('Chat archive');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/customers/customer-1', '/payments?customer=customer-1', '/chat-archive?q=customer-1']),
     );
@@ -26,6 +29,9 @@ describe('CustomersTableSection', () => {
         'vuexy-customer-table-card',
         'admin-table-scroll',
         'vuexy-customer-actions vuexy-customer-actions-row',
+        'vuexy-customer-action-dropdown',
+        'vuexy-customer-action-trigger',
+        'vuexy-customer-action-menu',
       ]),
     );
   });
