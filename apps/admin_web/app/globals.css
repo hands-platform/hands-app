@@ -1276,6 +1276,10 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
+.chat-archive-page > .grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .chat-archive-page .ops-section-header {
   border-bottom: 1px solid var(--admin-border);
   padding-bottom: 14px;
@@ -3202,9 +3206,11 @@ textarea:focus-visible {
 
 .vuexy-review-card .admin-table-scroll {
   margin-top: 0;
+  max-height: min(680px, calc(100vh - 300px));
   max-width: 100%;
   min-width: 0;
-  overflow-x: auto;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .vuexy-review-card .table {
@@ -3231,6 +3237,9 @@ textarea:focus-visible {
   font-weight: 700;
   letter-spacing: 0.015em;
   line-height: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .vuexy-review-card .table tbody tr:hover {
@@ -3386,8 +3395,13 @@ textarea:focus-visible {
 .customer-detail-overview-card {
   background: #2f3349;
   border: 1px solid rgba(225, 222, 245, 0.12);
+  border-radius: 6px;
   box-shadow: 0 18px 40px rgba(15, 20, 34, 0.24);
   color: rgba(225, 222, 245, 0.9);
+}
+
+.vuexy-customer-table-card {
+  overflow: hidden;
 }
 
 .vuexy-customer-toolbar {
@@ -3549,12 +3563,21 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.vuexy-customer-table-card .admin-table-scroll {
+  border: 1px solid rgba(225, 222, 245, 0.12);
+  border-radius: 6px;
+  margin-top: 0;
+  max-height: min(680px, calc(100vh - 260px));
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
 .vuexy-customer-table {
   background: #2f3349;
   border: 0;
   color: rgba(225, 222, 245, 0.9);
   margin: 0;
-  min-width: 1000px;
+  min-width: 1420px;
   overflow-wrap: anywhere;
   width: 100%;
 }
@@ -3574,7 +3597,10 @@ textarea:focus-visible {
   font-weight: 700;
   letter-spacing: 0.015em;
   overflow-wrap: normal;
+  position: sticky;
+  top: 0;
   word-break: normal;
+  z-index: 2;
 }
 
 .vuexy-customer-table td {
@@ -3583,7 +3609,7 @@ textarea:focus-visible {
 
 .vuexy-customer-table th:first-child,
 .vuexy-customer-table td:first-child {
-  min-width: 180px;
+  min-width: 260px;
 }
 
 .vuexy-customer-table th:last-child,
@@ -3597,7 +3623,7 @@ textarea:focus-visible {
 
 .vuexy-customer-table th:last-child {
   background: #343852;
-  z-index: 2;
+  z-index: 3;
 }
 
 .vuexy-customer-table td:last-child {
@@ -3617,6 +3643,11 @@ textarea:focus-visible {
   align-items: flex-start;
   display: flex;
   gap: 14px;
+}
+
+.vuexy-customer-person > div {
+  flex: 1 1 auto;
+  min-width: 170px;
 }
 
 .vuexy-customer-avatar,
