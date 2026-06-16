@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
@@ -18,7 +19,8 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
             enforced by live booking logic.
           </p>
         </div>
-        <a className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
+        <a className="button button-secondary" href="/audit-log?bucket=Operations%2FPolicy">
+          <ExternalLink size={16} aria-hidden="true" />
           Open policy audit
         </a>
       </div>

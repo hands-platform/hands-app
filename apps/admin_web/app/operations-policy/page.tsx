@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Settings } from 'lucide-react';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -170,7 +171,8 @@ export default async function OperationsPolicyPage({
                 Seed operational policies from the API setup before editing live matching rules. Each policy
                 update will require a Change reason so operators can audit why the value changed.
               </p>
-              <Link className="text-link" href="/setup">
+              <Link className="button button-secondary" href="/setup">
+                <Settings size={16} aria-hidden="true" />
                 Open setup checks
               </Link>
             </div>

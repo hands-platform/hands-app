@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
@@ -89,7 +90,8 @@ export function OperationsPolicyBookingCreateGateSection({
           <h3>Recent blocked create attempts</h3>
           <p className="muted">Shows factual support evidence for failed booking creation and troubleshooting.</p>
         </div>
-        <Link className="text-link" href="/bookings?view=blocked-create">
+        <Link className="button button-secondary" href="/bookings?view=blocked-create">
+          <ExternalLink size={16} aria-hidden="true" />
           Open blocked-create queue
         </Link>
       </div>
@@ -108,7 +110,8 @@ export function OperationsPolicyBookingCreateGateSection({
                 Attempt {shortDisplayId(attempt.id)} - Recorded {formatDateTime(attempt.createdAt)}
               </small>
               <div className="actions admin-mt-10">
-                <Link className="text-link" href={attempt.href}>
+                <Link className="button button-secondary" href={attempt.href}>
+                  <ExternalLink size={16} aria-hidden="true" />
                   Open evidence
                 </Link>
               </div>

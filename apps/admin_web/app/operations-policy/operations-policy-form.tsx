@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExternalLink, Save } from 'lucide-react';
 import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -72,7 +73,8 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
             <strong>{relatedBookings.title}</strong>
             <p className="muted">{relatedBookings.helper}</p>
           </div>
-          <Link className="text-link" href={relatedBookings.href}>
+          <Link className="button button-secondary" href={relatedBookings.href}>
+            <ExternalLink size={16} aria-hidden="true" />
             Open records
           </Link>
         </div>
@@ -160,7 +162,8 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
         />
       </label>
-      <button className="admin-mt-12" type="submit">
+      <button className="button button-primary admin-mt-12" type="submit">
+        <Save size={16} aria-hidden="true" />
         Save policy
       </button>
       {setting.updatedAt ? (

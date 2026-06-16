@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Users } from 'lucide-react';
 
 type FinalPartnerChoiceMatrix = {
   readonly blockingCount: number;
@@ -64,7 +65,8 @@ export function OperationsPolicyFinalPartnerChoiceSection({
             readiness follow-up.
           </p>
         </div>
-        <Link className="text-link" href="/partners">
+        <Link className="button button-secondary" href="/partners">
+          <Users size={16} aria-hidden="true" />
           Open Partner queue
         </Link>
       </div>
