@@ -1766,6 +1766,13 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
+.dashboard-page > .card {
+  max-height: min(860px, calc(100vh - 140px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 .dashboard-page .service-trace-summary {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
@@ -1776,6 +1783,13 @@ a.action-button-card:hover {
 
 .dashboard-page .ops-task-card {
   min-width: 0;
+}
+
+.dashboard-page .ops-task-note {
+  max-height: min(720px, calc(100vh - 220px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .dashboard-page .ops-row > div,
