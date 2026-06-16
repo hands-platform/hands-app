@@ -1,3 +1,4 @@
+import { FileClock } from 'lucide-react';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   humanizeAuditAction,
@@ -19,7 +20,8 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
             Use this before investigating unexpected commission or payout changes.
           </p>
         </div>
-        <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
+        <a className="button button-secondary" href="/audit-log?bucket=Service%2FPricing">
+          <FileClock aria-hidden="true" size={16} />
           Open service audit
         </a>
       </div>

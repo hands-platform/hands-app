@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CalendarClock, FileClock } from 'lucide-react';
 
 type ServiceBookingExposureGuardSectionProps = {
   readonly activeServiceCount: number;
@@ -55,10 +56,12 @@ export function ServiceBookingExposureGuardSection({
         </div>
       </div>
       <div className="actions admin-mt-12">
-        <Link className="text-link" href="/bookings?view=pricing">
+        <Link className="button button-secondary" href="/bookings?view=pricing">
+          <CalendarClock aria-hidden="true" size={16} />
           Open pricing-check bookings
         </Link>
-        <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
+        <a className="button button-secondary" href="/audit-log?bucket=Service%2FPricing">
+          <FileClock aria-hidden="true" size={16} />
           Review service pricing audit
         </a>
       </div>
