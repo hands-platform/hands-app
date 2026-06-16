@@ -200,4 +200,33 @@ void main() {
       expect(marketplaceParticipationLabel(policy), 'marketplace options open');
     });
   });
+
+  group('provider review summary', () {
+    test('prefers aggregate rating and review count from the public API', () {
+      final provider = {
+        'ratingAvg': 4.7,
+        'reviewCount': 29,
+        'reviews': [
+          {'rating': 5},
+          {'rating': 3},
+        ],
+      };
+
+      expect(providerAverageRating(provider), 4.7);
+      expect(providerReviewCount(provider), 29);
+    });
+
+    test('falls back to loaded reviews when aggregate values are missing', () {
+      final provider = {
+        'reviews': [
+          {'rating': 4},
+          {'rating': 5},
+          {'rating': 3},
+        ],
+      };
+
+      expect(providerAverageRating(provider), 4);
+      expect(providerReviewCount(provider), 3);
+    });
+  });
 }

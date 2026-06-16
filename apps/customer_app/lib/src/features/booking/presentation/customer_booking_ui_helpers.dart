@@ -314,6 +314,11 @@ Map<String, dynamic>? activeBookingProvider(Map<String, dynamic>? booking) {
 }
 
 double providerAverageRating(Map<String, dynamic> provider) {
+  final aggregateRating = asDouble(provider['ratingAvg']);
+  if (aggregateRating != null && aggregateRating > 0) {
+    return aggregateRating;
+  }
+
   final reviews = asList(provider['reviews']);
   if (reviews.isEmpty) {
     return 5;
@@ -326,6 +331,11 @@ double providerAverageRating(Map<String, dynamic> provider) {
 }
 
 int providerReviewCount(Map<String, dynamic> provider) {
+  final aggregateCount = asNum(provider['reviewCount'])?.toInt();
+  if (aggregateCount != null && aggregateCount >= 0) {
+    return aggregateCount;
+  }
+
   final reviews = provider['reviews'];
   if (reviews is List<dynamic>) {
     return reviews.length;

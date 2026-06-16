@@ -30,13 +30,20 @@ export class CustomersService {
     }
 
     const review = await this.prisma.$transaction(async (tx) => {
+      const existingReview = await tx.review.findUnique({
+        where: { bookingId: booking.id },
+      });
+      if (existingReview) {
+        throw new BadRequestException('Review already exists for this booking');
+      }
+
       const review = await tx.review.create({
         data: {
           bookingId: booking.id,
           customerProfileId: customer.id,
           providerProfileId: booking.selectedProviderId!,
           rating: input.rating,
-          comment: input.comment,
+          comment: normalizeNullableText(input.comment),
         },
       });
 
@@ -90,6 +97,11 @@ export class CustomersService {
       finalAmount,
     };
   }
+}
+
+function normalizeNullableText(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
 }
 
 function normalizePercentDiscount(discount: Prisma.JsonValue): { type: 'percent'; value: number } | null {

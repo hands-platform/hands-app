@@ -470,4 +470,72 @@ describe('AdminService query orchestration', () => {
     });
     expect(JSON.stringify(prisma.adminAuditLog.create.mock.calls)).not.toContain('raw-fcm-token');
   });
+
+  it('moderates a review, recalculates published rating, and writes an audit log', async () => {
+    const tx = {
+      review: {
+        update: jest.fn().mockResolvedValue({
+          id: 'review-1',
+          providerProfileId: 'partner-1',
+          status: 'HIDDEN',
+        }),
+        aggregate: jest.fn().mockResolvedValue({
+          _avg: { rating: 4 },
+          _count: { rating: 3 },
+        }),
+      },
+      providerProfile: {
+        update: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.moderateReview('admin-1', 'review-1', {
+        status: 'HIDDEN' as never,
+        reportReason: 'Held by admin',
+      }),
+    ).resolves.toMatchObject({
+      id: 'review-1',
+      providerProfileId: 'partner-1',
+    });
+
+    expect(tx.review.update).toHaveBeenCalledWith({
+      where: { id: 'review-1' },
+      data: {
+        status: 'HIDDEN',
+        reportReason: 'Held by admin',
+        moderatedAt: expect.any(Date),
+      },
+    });
+    expect(tx.review.aggregate).toHaveBeenCalledWith({
+      where: { providerProfileId: 'partner-1', status: 'PUBLISHED' },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+    expect(tx.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'partner-1' },
+      data: {
+        ratingAvg: 4,
+        reviewCount: 3,
+      },
+    });
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'review.moderate',
+        target: 'review:review-1',
+        metadata: {
+          status: 'HIDDEN',
+          reportReason: 'Held by admin',
+        },
+      },
+    });
+  });
 });
