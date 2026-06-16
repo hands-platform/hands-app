@@ -481,7 +481,7 @@ a {
   align-items: start;
   display: grid;
   gap: 16px;
-  grid-template-columns: 240px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .calendar-sidebar,
@@ -575,10 +575,11 @@ a {
 }
 
 .calendar-board-toolbar {
-  align-items: start;
+  align-items: center;
   display: flex;
   gap: 16px;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .calendar-board-eyebrow,
@@ -600,9 +601,10 @@ a {
 .calendar-toolbar-actions {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .calendar-segmented-control {
@@ -611,6 +613,7 @@ a {
   border-radius: 999px;
   display: inline-flex;
   padding: 4px;
+  white-space: nowrap;
 }
 
 .calendar-segmented-control button,
@@ -656,6 +659,7 @@ a {
 
 .calendar-nav-buttons {
   display: inline-flex;
+  flex: 0 0 auto;
   gap: 8px;
 }
 

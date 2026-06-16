@@ -11,7 +11,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import DatePicker from 'react-datepicker';
 import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core';
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
-import { ChevronLeft, ChevronRight, ListFilter, Plus, SquarePen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import {
@@ -44,7 +44,6 @@ export function CalendarClient() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CalendarEventDraft>(createBlankDraft(new Date()));
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -229,7 +228,7 @@ export function CalendarClient() {
       </section>
 
       <div className="calendar-shell">
-        <aside className={`calendar-sidebar card ${sidebarOpen ? 'calendar-sidebar-open' : ''}`}>
+        <aside className="calendar-sidebar card">
           <div className="calendar-sidebar-section">
             <button
               className="button button-primary calendar-add-button"
@@ -292,14 +291,6 @@ export function CalendarClient() {
               <h2>{formatMonthLabel(currentDate)}</h2>
             </div>
             <div className="calendar-toolbar-actions">
-              <button
-                className="calendar-icon-button"
-                onClick={() => setSidebarOpen((current) => !current)}
-                type="button"
-              >
-                <ListFilter aria-hidden="true" size={16} />
-                Filters
-              </button>
               <div className="calendar-segmented-control" role="tablist" aria-label="Calendar views">
                 {[
                   ['dayGridMonth', 'Month'],
