@@ -1082,7 +1082,7 @@ a.action-button-card:hover {
 
 .booking-monitor > .card {
   box-shadow: var(--admin-shadow-md);
-  max-height: min(960px, calc(100vh - 96px));
+  max-height: min(840px, calc(100vh - 160px));
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -1092,7 +1092,11 @@ a.action-button-card:hover {
   background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
+  max-height: min(760px, calc(100vh - 180px));
   min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .booking-monitor .ops-section-header {
@@ -1696,6 +1700,13 @@ a.action-button-card:hover {
 
 .operations-policy-page .grid {
   grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+}
+
+.operations-policy-page .ops-task-grid > .ops-task-card {
+  max-height: min(760px, calc(100vh - 180px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .operations-policy-page .ops-task-note .ops-row {
@@ -3966,8 +3977,7 @@ textarea:focus-visible {
   margin-bottom: 16px;
 }
 
-.customer-detail-shortcut-strip,
-.customer-detail-section-band {
+.customer-detail-shortcut-strip {
   background: #2f3349;
   border: 1px solid rgba(225, 222, 245, 0.12);
   border-radius: var(--admin-radius-lg);
@@ -4032,15 +4042,25 @@ textarea:focus-visible {
 }
 
 .customer-detail-section-band {
-  padding: 22px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--admin-text);
+  padding: 0;
 }
 
 .customer-detail-section-band-header {
   align-items: flex-start;
+  background: #2f3349;
+  border: 1px solid rgba(225, 222, 245, 0.12);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 18px 40px rgba(15, 20, 34, 0.2);
+  color: rgba(225, 222, 245, 0.9);
   display: flex;
   gap: 14px;
   justify-content: space-between;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
+  padding: 18px 22px;
 }
 
 .customer-detail-section-band-header > div > span {
@@ -4069,9 +4089,9 @@ textarea:focus-visible {
 }
 
 .customer-detail-section-band .card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(225, 222, 245, 0.1);
-  box-shadow: none;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-xs);
 }
 
 .customer-detail-sidebar {
