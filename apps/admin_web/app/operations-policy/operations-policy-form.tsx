@@ -23,9 +23,8 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
   return (
     <form
       action={updateOperationalPolicy}
-      className="card"
+      className="card admin-m-0"
       id={operationalPolicyAnchor(setting.key)}
-      style={{ margin: 0 }}
     >
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="valueType" value={valueType} />
@@ -170,9 +169,7 @@ export function OperationsPolicyForm({ setting, bookings }: OperationsPolicyForm
           {setting.updatedBy?.fullName ?? setting.updatedBy?.phone ?? 'admin'}
         </p>
       ) : (
-        <p className="muted admin-mt-10">
-          Using default until an admin override is saved.
-        </p>
+        <p className="muted admin-mt-10">Using default until an admin override is saved.</p>
       )}
     </form>
   );

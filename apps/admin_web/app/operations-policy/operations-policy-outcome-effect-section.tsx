@@ -6,15 +6,17 @@ type OperationsPolicyOutcomeEffectSectionProps = {
   readonly analysis: PolicyOutcomeEffectAnalysis;
 };
 
-export function OperationsPolicyOutcomeEffectSection({ analysis }: OperationsPolicyOutcomeEffectSectionProps) {
+export function OperationsPolicyOutcomeEffectSection({
+  analysis,
+}: OperationsPolicyOutcomeEffectSectionProps) {
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
         <div>
           <h2>Policy outcome effect</h2>
           <p className="muted">
-            Groups real bookings by the policy snapshot saved at booking open. Use this before changing the
-            10 minute response window, marketplace policy, invite cap, or marketplace opening mode.
+            Groups real bookings by the policy snapshot saved at booking open. Use this before changing the 10
+            minute response window, marketplace policy, invite cap, or marketplace opening mode.
           </p>
         </div>
         <span className={`pill ${analysis.sampleCount ? 'pill-info' : 'pill-warn'}`}>
@@ -63,7 +65,7 @@ export function OperationsPolicyOutcomeEffectSection({ analysis }: OperationsPol
                   <p className="muted admin-mt-6">{row.outcomeDetail}</p>
                 </td>
                 <td>
-                  <p style={{ margin: 0 }}>{row.operatorRead}</p>
+                  <p className="admin-m-0">{row.operatorRead}</p>
                 </td>
               </tr>
             ))}

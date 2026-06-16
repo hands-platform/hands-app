@@ -10,15 +10,10 @@ export function ServiceActionNoticeSection({ notice }: ServiceActionNoticeSectio
   }
 
   const isSuccess = notice.tone === 'success';
+  const noticeClassName = isSuccess ? 'admin-notice-success' : 'admin-notice-danger';
 
   return (
-    <section
-      className="card admin-mb-16"
-      style={{
-        borderColor: isSuccess ? '#b8ddb0' : '#f0c7c2',
-        background: isSuccess ? '#f4fbf1' : '#fff5f3',
-      }}
-    >
+    <section className={`card admin-mb-16 admin-notice-card ${noticeClassName}`}>
       <div className="ops-section-header">
         <div>
           <h2>{notice.title}</h2>

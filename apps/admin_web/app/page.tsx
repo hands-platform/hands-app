@@ -789,7 +789,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Open marketplace bookings</span>
             <strong>{marketplaceParticipantSnapshot.openMarketplaceBookings}</strong>
-            <small>Bookings still open for first-pick response, Partner participation, or customer choice.</small>
+            <small>
+              Bookings still open for first-pick response, Partner participation, or customer choice.
+            </small>
           </div>
           <div>
             <span>Participant rows</span>
@@ -829,7 +831,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Cash fee gate</span>
             <strong>{marketplaceParticipantSnapshot.cashDebtBlockedBookings}</strong>
-            <small>Bookings where unpaid HANDS fees block final acceptance, service start, and payout release.</small>
+            <small>
+              Bookings where unpaid HANDS fees block final acceptance, service start, and payout release.
+            </small>
           </div>
           <div>
             <span>Latest participant</span>
@@ -1379,9 +1383,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                       <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
                       <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
                     </div>
-                    <p className="muted admin-mt-6">
-                      Next: {row.nextAction}
-                    </p>
+                    <p className="muted admin-mt-6">Next: {row.nextAction}</p>
                   </div>
                   <span className={`pill ${row.pillClass}`}>{row.status}</span>
                 </div>
@@ -1401,7 +1403,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
               <span className={`pill ${matchingControl.healthPillClass}`}>{matchingControl.healthLabel}</span>
             </div>
-            <div className="ops-task-grid admin-mt-12" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="ops-task-grid admin-grid-single admin-mt-12">
               {matchingControl.checks.map((check) => (
                 <div className={`ops-task-card ${check.className}`} key={check.title}>
                   <span className={`pill ${check.pillClass}`}>{check.status}</span>
@@ -2646,8 +2648,10 @@ type DashboardPolicyOutcomeStats = {
 function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOperationalPolicySetting[]) {
   const measuredBookings = bookings.filter((booking) => dashboardBookingPolicySnapshot(booking));
   const stats = dashboardPolicyOutcomeStats(measuredBookings);
-  const liveWindow = dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ?? 10;
-  const liveRadius = dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10000;
+  const liveWindow =
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ?? 10;
+  const liveRadius =
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10000;
   const liveInviteCap =
     dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50;
   const liveBackupMode = normalizeAdminMarketplaceOpenMode(
@@ -3192,7 +3196,7 @@ function buildTodayCommandOrder(input: {
       title: 'Cash fee settlement gate',
       value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
       detail: input.cashSettlementSummary.providerCount
-          ? `${money(
+        ? `${money(
             input.cashSettlementSummary.totalDebtAmount,
             input.cashSettlementSummary.currency,
           )} in open cash fee debt blocks final acceptance, service start, and payout release until settled.`
@@ -3541,8 +3545,7 @@ function buildBookingEvidenceCommandQueue(input: {
     input.bookingDeepDive.manualCloseout +
     input.cashSettlementSummary.rowCount;
   const locationChecks = locationRows.length;
-  const alertChecks =
-    input.failedNotifications.length + alertRows.length;
+  const alertChecks = input.failedNotifications.length + alertRows.length;
   const closeoutChecks = closeoutRows.length;
 
   const items: BookingEvidenceCommandQueueItem[] = [
@@ -3667,7 +3670,10 @@ function buildBookingEvidenceCommandQueue(input: {
   });
 }
 
-function bookingEvidenceSample(bookings: AdminBooking[], label: string): BookingEvidenceCommandQueueItem['sample'] {
+function bookingEvidenceSample(
+  bookings: AdminBooking[],
+  label: string,
+): BookingEvidenceCommandQueueItem['sample'] {
   const booking = bookings.sort(bookingEvidencePrioritySort)[0];
   if (!booking) {
     return undefined;
@@ -3687,8 +3693,9 @@ function bookingEvidencePrioritySort(left: AdminBooking, right: AdminBooking) {
   if (leftRank !== rightRank) {
     return rightRank - leftRank;
   }
-  return dashboardDateValue(bookingLatestActivityAt(right)) -
-    dashboardDateValue(bookingLatestActivityAt(left));
+  return (
+    dashboardDateValue(bookingLatestActivityAt(right)) - dashboardDateValue(bookingLatestActivityAt(left))
+  );
 }
 
 function bookingEvidenceStatusRank(status?: string | null) {
@@ -3842,7 +3849,7 @@ function buildLiveOperationsRadar(input: {
       status: noFreshSupplyRows ? 'Supply gap' : firstPickRows + marketplaceRows ? 'Monitoring' : 'Clear',
       detail:
         firstPickRows + marketplaceRows > 0
-            ? 'Preferred Partner has the first window while 10km marketplace participants stay visible for customer choice.'
+          ? 'Preferred Partner has the first window while 10km marketplace participants stay visible for customer choice.'
           : 'No active first-pick or marketplace lane is visible in the current booking sample.',
       href: noFreshSupplyRows
         ? '/bookings?view=no-supply'

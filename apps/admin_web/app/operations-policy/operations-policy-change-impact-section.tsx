@@ -31,7 +31,7 @@ export function OperationsPolicyChangeImpactSection({
       </div>
       <div className="ops-task-grid admin-mt-14">
         {dashboard.snapshotSummary.map((item) => (
-          <div className="ops-task-card ops-task-done" key={item.label} style={{ minHeight: 0 }}>
+          <div className="ops-task-card ops-task-done admin-min-h-0" key={item.label}>
             <span className="pill pill-info">{item.scope}</span>
             <h3>{item.label}</h3>
             <p>{item.value}</p>
@@ -59,7 +59,7 @@ export function OperationsPolicyChangeImpactSection({
                 <td>{row.liveValue}</td>
                 <td>{row.savedValue}</td>
                 <td>
-                  <p style={{ margin: 0 }}>{row.operatorMeaning}</p>
+                  <p className="admin-m-0">{row.operatorMeaning}</p>
                 </td>
               </tr>
             ))}

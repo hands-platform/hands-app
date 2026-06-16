@@ -13,8 +13,8 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
         <div>
           <h2>Recent policy audit trail</h2>
           <p className="muted">
-            Shows who changed a policy, the previous value, the new value, and whether the setting is
-            already enforced by live booking logic.
+            Shows who changed a policy, the previous value, the new value, and whether the setting is already
+            enforced by live booking logic.
           </p>
         </div>
         <a className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
@@ -51,7 +51,7 @@ export function OperationsPolicyAuditTrailSection({ rows }: OperationsPolicyAudi
                 <td>{row.previousValue}</td>
                 <td>{row.value}</td>
                 <td>
-                  <p style={{ margin: 0 }}>{displayOperationalWording(row.reason)}</p>
+                  <p className="admin-m-0">{displayOperationalWording(row.reason)}</p>
                 </td>
                 <td>
                   <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>

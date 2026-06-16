@@ -57,15 +57,11 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
             <Link className="pill pill-info" href={row.relatedBoardHref}>
               {row.relatedBoardLabel}
             </Link>
-            <div className="muted admin-mt-6">
-              {row.priorityLabel}
-            </div>
+            <div className="muted admin-mt-6">{row.priorityLabel}</div>
           </td>
           <td>
             <div>{row.opsHint}</div>
-            <div className="muted admin-mt-6">
-              {row.opsDetail}
-            </div>
+            <div className="muted admin-mt-6">{row.opsDetail}</div>
           </td>
           <td>
             {row.metadataHighlights.length > 0 ? (
@@ -77,17 +73,7 @@ export function AuditLogTableSection({ emptyMessage, rows }: AuditLogTableSectio
                 ))}
               </div>
             ) : null}
-            <pre
-              style={{
-                color: '#475569',
-                fontSize: 12,
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}
-            >
-              {row.metadataPreview}
-            </pre>
+            <pre className="admin-pre-wrap">{row.metadataPreview}</pre>
           </td>
         </tr>
       ))}

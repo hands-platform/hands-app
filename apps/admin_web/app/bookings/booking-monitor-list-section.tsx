@@ -234,7 +234,7 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
         </div>
         <div className="participant-list admin-mt-8">
           {booking.preferredProvider && row.preferredProviderStateLabel && (
-            <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
+            <span className="pill pill-priority">
               First-pick: {row.preferredPartnerLabel} {row.preferredProviderStateLabel}
             </span>
           )}
@@ -316,10 +316,7 @@ function BookingMonitorPaymentWalletCell({
   );
 }
 
-function BookingMonitorOpsCheckCell({
-  booking,
-  row,
-}: BookingMonitorOpsCheckCellProps) {
+function BookingMonitorOpsCheckCell({ booking, row }: BookingMonitorOpsCheckCellProps) {
   return (
     <td>
       <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>

@@ -54,7 +54,7 @@ export function BookingMonitorBlockedCreateSection({
             ))}
           </select>
         </label>
-        <div className="actions" style={{ alignSelf: 'end' }}>
+        <div className="actions admin-align-end">
           <button type="button" onClick={() => onGateFilterChange('all')}>
             Clear create gate
           </button>
@@ -94,9 +94,7 @@ export function BookingMonitorBlockedCreateSection({
             const evidence = bookingGateRejectionInfo(log);
             return (
               <article className="ops-task-card" key={log.id}>
-                <span className={`signal ${commandToneClass(evidence.tone)}`}>
-                  {evidence.reasonLabel}
-                </span>
+                <span className={`signal ${commandToneClass(evidence.tone)}`}>{evidence.reasonLabel}</span>
                 <h3>{shortId(log.id)}</h3>
                 <p>{evidence.operatorAction}</p>
                 <div className="participant-list">

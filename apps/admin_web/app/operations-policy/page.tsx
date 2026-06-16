@@ -25,9 +25,7 @@ import { OperationsPolicyAuditTrailSection } from './operations-policy-audit-tra
 import { OperationsPolicyAuthorityBaselineSection } from './operations-policy-authority-baseline-section';
 import { OperationsPolicyBookingCreateGateSection } from './operations-policy-booking-create-gate-section';
 import { OperationsPolicyChangeImpactSection } from './operations-policy-change-impact-section';
-import {
-  OperationsPolicyDrilldownSection,
-} from './operations-policy-drilldown-section';
+import { OperationsPolicyDrilldownSection } from './operations-policy-drilldown-section';
 import { OperationsPolicyEnforcementTraceSection } from './operations-policy-enforcement-trace-section';
 import { OperationsPolicyFinalPartnerChoiceSection } from './operations-policy-final-partner-choice-section';
 import { OperationsPolicyMatchingStageImpactSection } from './operations-policy-matching-stage-impact-section';
@@ -36,9 +34,7 @@ import { OperationsPolicyMatchingPlaybookSection } from './operations-policy-mat
 import { OperationsPolicyNextChoicesSection } from './operations-policy-next-choices-section';
 import { OperationsPolicyOutcomeEffectSection } from './operations-policy-outcome-effect-section';
 import { OperationsPolicyForm } from './operations-policy-form';
-import {
-  OperationsPolicyOwnerDecisionBacklogSection,
-} from './operations-policy-owner-decision-backlog-section';
+import { OperationsPolicyOwnerDecisionBacklogSection } from './operations-policy-owner-decision-backlog-section';
 import { OperationsPolicyRecommendedValueReviewSection } from './operations-policy-recommended-value-review-section';
 import { OperationsPolicySensitivityPreviewSection } from './operations-policy-sensitivity-preview-section';
 import { buildOwnerDecisionPressure } from './owner-decision-pressure';
@@ -96,10 +92,7 @@ export default async function OperationsPolicyPage({
   );
   const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
   const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
-  const actionGatePolicyChecklist = buildActionGatePolicyChecklist(
-    settings,
-    formatSnapshotPolicyValue,
-  );
+  const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings, formatSnapshotPolicyValue);
 
   return (
     <>
@@ -120,12 +113,9 @@ export default async function OperationsPolicyPage({
 
       {notice ? (
         <section
-          className="card"
-          style={{
-            marginBottom: 16,
-            borderColor: notice.tone === 'success' ? '#b8ddb0' : '#f0c7c2',
-            background: notice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
-          }}
+          className={`card admin-notice-card ${
+            notice.tone === 'success' ? 'admin-notice-success' : 'admin-notice-danger'
+          }`}
         >
           <div className="ops-section-header">
             <div>
@@ -174,7 +164,7 @@ export default async function OperationsPolicyPage({
             <OperationsPolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
           {matchingSettings.length === 0 ? (
-            <div className="card" style={{ margin: 0 }}>
+            <div className="card admin-m-0">
               <h3>No matching policies loaded</h3>
               <p className="muted">
                 Seed operational policies from the API setup before editing live matching rules. Each policy

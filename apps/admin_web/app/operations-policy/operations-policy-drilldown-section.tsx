@@ -53,7 +53,7 @@ export function OperationsPolicyDrilldownSection({ drilldown }: OperationsPolicy
 
 function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView }) {
   return (
-    <div className={`ops-task-card ${list.className}`} style={{ minHeight: 0 }}>
+    <div className={`ops-task-card admin-min-h-0 ${list.className}`}>
       <div>
         <span className={`pill ${list.pillClass}`}>{list.rows.length} item(s)</span>
         <h3>{list.title}</h3>
@@ -66,9 +66,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
               <a className="text-link" href={row.href}>
                 {row.title}
               </a>
-              <p className="muted" style={{ margin: '6px 0' }}>
-                {row.subtitle}
-              </p>
+              <p className="muted admin-my-6">{row.subtitle}</p>
               <div className="participant-list">
                 {row.pills.map((pill) => (
                   <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
@@ -82,9 +80,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
         </div>
       ) : (
         <div className="ops-task-note">
-          <p className="muted" style={{ margin: 0 }}>
-            {list.emptyText}
-          </p>
+          <p className="muted admin-m-0">{list.emptyText}</p>
         </div>
       )}
     </div>
