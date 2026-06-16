@@ -10,8 +10,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <div className="shell">
           <aside className="sidebar">
             <div className="brand-block">
-              <strong>HANDS Admin</strong>
-              <span>Operations Command Center</span>
+              <span className="brand-mark" aria-hidden="true">
+                H
+              </span>
+              <div>
+                <strong>HANDS Admin</strong>
+                <span>Operations Command Center</span>
+              </div>
             </div>
             <section className="nav-flow" aria-label="Shift flow">
               <span className="nav-section-label">Shift Flow</span>
@@ -38,7 +43,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               ))}
             </nav>
           </aside>
-          <main className="content">{children}</main>
+          <main className="content">
+            <header className="topbar" aria-label="Admin workspace">
+              <div>
+                <span className="topbar-eyebrow">HANDS VN MVP</span>
+                <strong>Operations Command Center</strong>
+              </div>
+              <div className="topbar-actions" aria-label="Workspace status">
+                <span className="topbar-chip">Vietnam Operations</span>
+                <span className="topbar-chip topbar-chip-primary">Live Workspace</span>
+              </div>
+            </header>
+            <div className="content-inner">{children}</div>
+          </main>
         </div>
       </body>
     </html>
