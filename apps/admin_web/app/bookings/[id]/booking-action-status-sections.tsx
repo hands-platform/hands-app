@@ -68,6 +68,14 @@ export type BookingActionStatusSectionsProps = {
   opsTaskCards: OpsTaskCard[];
 };
 
+type BookingDispatchChecklistSectionProps = {
+  dispatchSteps: DispatchStep[];
+};
+
+type BookingLiveServiceBoardSectionProps = {
+  liveSignals: LiveSignal[];
+};
+
 export function BookingActionStatusSections({
   bookingId,
   chatRepair,
@@ -123,7 +131,7 @@ function BookingChatRepairSection({
   );
 }
 
-function BookingDispatchChecklistSection({ dispatchSteps }: { dispatchSteps: DispatchStep[] }) {
+function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchChecklistSectionProps) {
   const sameShiftCount = dispatchSteps.filter((step) => step.priority === 'Now').length;
 
   return (
@@ -352,7 +360,7 @@ function BookingNoShowHandlingSection({
   );
 }
 
-function BookingLiveServiceBoardSection({ liveSignals }: { liveSignals: LiveSignal[] }) {
+function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoardSectionProps) {
   return (
     <section className="card ops-command-center admin-mb-16">
       <div>
