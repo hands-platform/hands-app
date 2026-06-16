@@ -88,6 +88,38 @@ type ParticipantLedger = {
   rows: ParticipantRow[];
 };
 
+type ParticipantLedgerSectionProps = {
+  participantLedger: ParticipantLedger;
+};
+
+type ParticipantBoundaryProps = {
+  boundary: ParticipantLedger['boundary'];
+};
+
+type ParticipantSelectionTraceProps = {
+  rows: SelectionTraceRow[];
+};
+
+type ParticipantLifecycleTableProps = {
+  rows: ParticipantLifecycleRow[];
+};
+
+type ParticipantEligibilityMatrixProps = {
+  rows: ParticipantRow[];
+};
+
+type ParticipantRecordsTableProps = {
+  rows: ParticipantRow[];
+};
+
+type SummaryCardsProps = {
+  cards: SummaryCard[];
+};
+
+type InfoRowsProps = {
+  rows: InfoRowModel[];
+};
+
 type CashSettlementRow = {
   lane: string;
   scope: string;
@@ -244,7 +276,7 @@ export function BookingRecordDetailSections({
   );
 }
 
-function ParticipantLedgerSection({ participantLedger }: { participantLedger: ParticipantLedger }) {
+function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectionProps) {
   const { boundary, cards, lifecycleRows, rows, selectionTrace, status, tone } = participantLedger;
 
   return (
@@ -275,7 +307,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
   );
 }
 
-function ParticipantBoundary({ boundary }: { boundary: ParticipantLedger['boundary'] }) {
+function ParticipantBoundary({ boundary }: ParticipantBoundaryProps) {
   return (
     <>
       <div className="participant-list admin-mt-12">
@@ -302,7 +334,7 @@ function getParticipantBoundaryPillClass(index: number) {
   return 'pill';
 }
 
-function ParticipantSelectionTrace({ rows }: { rows: SelectionTraceRow[] }) {
+function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
   return (
     <div className="setup-stage-list admin-mt-14">
       {rows.map((item) => (
@@ -319,7 +351,7 @@ function ParticipantSelectionTrace({ rows }: { rows: SelectionTraceRow[] }) {
   );
 }
 
-function ParticipantLifecycleTable({ rows }: { rows: ParticipantLifecycleRow[] }) {
+function ParticipantLifecycleTable({ rows }: ParticipantLifecycleTableProps) {
   return (
     <AdminTableScroll>
       <table className="table">
@@ -350,7 +382,7 @@ function ParticipantLifecycleTable({ rows }: { rows: ParticipantLifecycleRow[] }
   );
 }
 
-function ParticipantEligibilityMatrix({ rows }: { rows: ParticipantRow[] }) {
+function ParticipantEligibilityMatrix({ rows }: ParticipantEligibilityMatrixProps) {
   return (
     <AdminTableScroll>
       <table className="table admin-mt-10">
@@ -399,7 +431,7 @@ function ParticipantEligibilityMatrix({ rows }: { rows: ParticipantRow[] }) {
   );
 }
 
-function ParticipantRecordsTable({ rows }: { rows: ParticipantRow[] }) {
+function ParticipantRecordsTable({ rows }: ParticipantRecordsTableProps) {
   return (
     <AdminTableScroll>
       <table className="table">
@@ -516,7 +548,7 @@ function CashFeeSettlementPathSection({
   );
 }
 
-function SummaryCards({ cards }: { cards: SummaryCard[] }) {
+function SummaryCards({ cards }: SummaryCardsProps) {
   return (
     <div className="service-trace-summary admin-mt-12">
       {cards.map((card) => (
@@ -530,7 +562,7 @@ function SummaryCards({ cards }: { cards: SummaryCard[] }) {
   );
 }
 
-function InfoRows({ rows }: { rows: InfoRowModel[] }) {
+function InfoRows({ rows }: InfoRowsProps) {
   return (
     <>
       {rows.map((row) => (
