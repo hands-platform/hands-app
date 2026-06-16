@@ -480,8 +480,8 @@ a {
 .calendar-shell {
   align-items: start;
   display: grid;
-  gap: 14px;
-  grid-template-columns: 224px minmax(0, 1fr);
+  gap: 16px;
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .calendar-sidebar,
@@ -491,7 +491,7 @@ a {
 
 .calendar-sidebar {
   display: grid;
-  gap: 18px;
+  gap: 0;
   padding: 0;
   position: sticky;
   top: 100px;
@@ -500,7 +500,7 @@ a {
 .calendar-sidebar-section {
   display: grid;
   gap: 14px;
-  padding: 14px;
+  padding: 18px;
 }
 
 .calendar-sidebar-section + .calendar-sidebar-section {
@@ -555,16 +555,23 @@ a {
   align-items: center;
   display: flex;
   gap: 10px;
+  line-height: 1.45;
+  min-width: 0;
 }
 
 .calendar-filter-row input {
   accent-color: var(--admin-accent);
+  flex: 0 0 auto;
+}
+
+.calendar-filter-row span {
+  min-width: 0;
 }
 
 .calendar-board {
   display: grid;
   gap: 16px;
-  padding: 14px;
+  padding: 22px;
 }
 
 .calendar-board-toolbar {
@@ -653,8 +660,10 @@ a {
 }
 
 .calendar-board-surface {
+  border-top: 1px solid var(--admin-border);
   min-width: 0;
   overflow: auto;
+  padding-top: 16px;
 }
 
 .calendar-board-surface .fc {
@@ -667,8 +676,16 @@ a {
   border-color: var(--admin-border);
 }
 
+.calendar-board-surface .fc-theme-standard .fc-scrollgrid {
+  border-inline: 0;
+}
+
 .calendar-board-surface .fc .fc-toolbar {
   display: none;
+}
+
+.calendar-board-surface .fc .fc-col-header-cell {
+  background: transparent;
 }
 
 .calendar-board-surface .fc .fc-col-header-cell-cushion,
@@ -676,40 +693,91 @@ a {
 .calendar-board-surface .fc .fc-list-day-text,
 .calendar-board-surface .fc .fc-list-day-side-text {
   color: var(--admin-text);
-  font-weight: 700;
+  text-decoration: none;
+}
+
+.calendar-board-surface .fc .fc-col-header-cell-cushion {
+  display: inline-flex;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 12px 8px;
+}
+
+.calendar-board-surface .fc .fc-daygrid-day {
+  padding: 8px;
+}
+
+.calendar-board-surface .fc .fc-daygrid-day-events {
+  margin-top: 10px;
+  min-height: 5rem;
+}
+
+.calendar-board-surface .fc .fc-daygrid-day-number {
+  color: var(--admin-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.calendar-board-surface .fc .fc-day-other .fc-daygrid-day-number {
+  color: var(--admin-disabled);
+}
+
+.calendar-board-surface .fc .fc-list {
+  border: 0;
+}
+
+.calendar-board-surface .fc .fc-list-day-cushion {
+  background: var(--admin-action-hover);
+  padding: 10px 14px;
 }
 
 .calendar-board-surface .fc .fc-day-today {
-  background: var(--admin-primary-soft);
+  background: var(--admin-action-hover);
 }
 
 .calendar-event {
   border: 0 !important;
-  border-radius: var(--admin-radius) !important;
+  border-radius: 4px !important;
   box-shadow: none !important;
-  color: #fff !important;
+  color: var(--admin-accent-strong) !important;
   font-weight: 500;
-  padding-inline: 2px;
+  margin: 0 2px 6px !important;
+  padding: 4px 8px !important;
+}
+
+.calendar-event .fc-event-main,
+.calendar-event .fc-event-title,
+.calendar-event .fc-event-time {
+  color: inherit !important;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  padding: 0;
 }
 
 .calendar-event-accent {
-  background: var(--admin-accent) !important;
+  background: var(--admin-primary-soft) !important;
+  color: var(--admin-accent-strong) !important;
 }
 
 .calendar-event-info {
-  background: var(--admin-info) !important;
+  background: var(--admin-info-soft) !important;
+  color: #008fa1 !important;
 }
 
 .calendar-event-success {
-  background: var(--admin-success) !important;
+  background: var(--admin-success-soft) !important;
+  color: #1e8f50 !important;
 }
 
 .calendar-event-warning {
-  background: var(--admin-warning) !important;
+  background: var(--admin-warning-soft) !important;
+  color: #b86000 !important;
 }
 
 .calendar-event-danger {
-  background: var(--admin-danger) !important;
+  background: var(--admin-danger-soft) !important;
+  color: #cc3035 !important;
 }
 
 .calendar-board-footer {
