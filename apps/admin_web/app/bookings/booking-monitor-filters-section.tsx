@@ -1,3 +1,5 @@
+import { X } from 'lucide-react';
+
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 export type BookingMonitorViewOption = {
@@ -114,7 +116,8 @@ export function BookingMonitorFiltersSection({
           </select>
         </label>
         <div className="actions ops-filter-actions">
-          <button type="button" onClick={onClearFilters}>
+          <button className="button button-secondary" type="button" onClick={onClearFilters}>
+            <X aria-hidden="true" size={16} />
             Clear list filters
           </button>
         </div>

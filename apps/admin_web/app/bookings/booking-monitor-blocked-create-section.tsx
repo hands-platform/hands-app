@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Filter, ScrollText, X } from 'lucide-react';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass } from './booking-command-display';
@@ -36,7 +37,8 @@ export function BookingMonitorBlockedCreateSection({
             evidence for support follow-up, not customer or Partner priority decisions.
           </p>
         </div>
-        <Link className="text-link" href="/audit-log?query=booking.create.rejected">
+        <Link className="button button-secondary" href="/audit-log?query=booking.create.rejected">
+          <ScrollText aria-hidden="true" size={16} />
           Open audit log
         </Link>
       </div>
@@ -55,7 +57,12 @@ export function BookingMonitorBlockedCreateSection({
           </select>
         </label>
         <div className="actions admin-align-end">
-          <button type="button" onClick={() => onGateFilterChange('all')}>
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={() => onGateFilterChange('all')}
+          >
+            <X aria-hidden="true" size={16} />
             Clear create gate
           </button>
         </div>
@@ -71,10 +78,16 @@ export function BookingMonitorBlockedCreateSection({
               <span className="pill">Latest {item.latestAge}</span>
             </div>
             <div className="actions admin-mt-12">
-              <button type="button" onClick={() => onGateFilterChange(item.filter)}>
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={() => onGateFilterChange(item.filter)}
+              >
+                <Filter aria-hidden="true" size={16} />
                 Show this gate
               </button>
-              <Link className="text-link" href={item.auditHref}>
+              <Link className="button button-secondary" href={item.auditHref}>
+                <ScrollText aria-hidden="true" size={16} />
                 Audit evidence
               </Link>
             </div>

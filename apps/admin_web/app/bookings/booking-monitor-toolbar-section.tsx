@@ -1,5 +1,7 @@
 'use client';
 
+import { Pause, Play, RefreshCw } from 'lucide-react';
+
 type BookingMonitorToolbarSectionProps = {
   readonly autoRefresh: boolean;
   readonly onRefreshNow: () => void;
@@ -11,6 +13,8 @@ export function BookingMonitorToolbarSection({
   onRefreshNow,
   onToggleAutoRefresh,
 }: BookingMonitorToolbarSectionProps) {
+  const AutoRefreshIcon = autoRefresh ? Pause : Play;
+
   return (
     <section className="toolbar">
       <div>
@@ -20,10 +24,12 @@ export function BookingMonitorToolbarSection({
         </p>
       </div>
       <div className="actions">
-        <button type="button" onClick={onToggleAutoRefresh}>
+        <button className="button button-secondary" type="button" onClick={onToggleAutoRefresh}>
+          <AutoRefreshIcon aria-hidden="true" size={16} />
           {autoRefresh ? 'Pause refresh' : 'Resume refresh'}
         </button>
-        <button type="button" onClick={onRefreshNow}>
+        <button className="button button-primary" type="button" onClick={onRefreshNow}>
+          <RefreshCw aria-hidden="true" size={16} />
           Refresh now
         </button>
       </div>
