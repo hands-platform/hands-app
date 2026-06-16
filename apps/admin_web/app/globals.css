@@ -76,6 +76,7 @@ body {
   background: var(--admin-bg);
   color: var(--admin-text);
   line-height: 1.46667;
+  min-width: 1280px;
 }
 
 a {
@@ -96,6 +97,7 @@ a {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
+  min-width: 1280px;
 }
 
 .sidebar {
@@ -272,7 +274,7 @@ a {
   display: grid;
   gap: 16px;
   margin: 0 auto;
-  max-width: 1440px;
+  max-width: 1680px;
   width: 100%;
 }
 
@@ -292,7 +294,7 @@ a {
   gap: 16px;
   justify-content: space-between;
   margin: 0 auto 18px;
-  max-width: 1440px;
+  max-width: 1680px;
   min-height: 64px;
   padding: 8px 16px;
   position: sticky;
@@ -638,7 +640,7 @@ a {
 
 .calendar-board-surface {
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .calendar-board-surface .fc {
@@ -811,61 +813,6 @@ a {
 
 .calendar-field-wide {
   grid-column: 1 / -1;
-}
-
-@media (max-width: 1080px) {
-  .calendar-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .calendar-sidebar {
-    display: none;
-    left: 24px;
-    max-height: calc(100vh - 48px);
-    overflow: auto;
-    position: fixed;
-    right: 24px;
-    top: 24px;
-    z-index: 24;
-  }
-
-  .calendar-sidebar-open {
-    display: grid;
-  }
-
-  .calendar-board-toolbar,
-  .calendar-toolbar-actions,
-  .calendar-board-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .calendar-nav-buttons {
-    justify-content: space-between;
-  }
-}
-
-@media (max-width: 640px) {
-  .calendar-board,
-  .calendar-sidebar {
-    padding: 14px;
-  }
-
-  .calendar-drawer {
-    width: 100%;
-  }
-
-  .calendar-drawer-header,
-  .calendar-drawer-footer,
-  .calendar-drawer-body,
-  .calendar-sidebar-section {
-    padding-inline: 16px;
-  }
-
-  .calendar-segmented-control {
-    inline-size: 100%;
-    overflow: auto;
-  }
 }
 
 .metric-card {
@@ -1345,6 +1292,8 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-md);
+  max-height: min(680px, calc(100vh - 220px));
+  overflow: auto;
 }
 
 .chat-archive-page .admin-table-scroll .table {
@@ -1352,6 +1301,135 @@ a.action-button-card:hover {
   border-radius: 0;
   box-shadow: none;
   margin-top: 0;
+  min-width: 1180px;
+}
+
+.chat-archive-page .admin-table-scroll .table th {
+  box-shadow: inset 0 -1px 0 var(--admin-border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.chat-archive-page > .card {
+  max-height: min(960px, calc(100vh - 96px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.audit-log-page,
+.partners-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.audit-log-page > .card,
+.audit-log-page > section.card,
+.partners-page > .card,
+.partners-page > section.card {
+  margin-bottom: 0;
+  margin-top: 0;
+  max-height: min(960px, calc(100vh - 96px));
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.partners-page > h1 {
+  margin-bottom: 0;
+}
+
+.partners-page > .grid {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.partners-page > .grid > .card {
+  min-width: 0;
+}
+
+.partners-page .grid > .card,
+.partners-page .ops-task-grid > .ops-task-card {
+  max-height: min(780px, calc(100vh - 140px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.partners-page .grid > .card .setup-stage-list {
+  max-height: min(520px, calc(100vh - 260px));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.operations-policy-page .service-trace-summary,
+.partners-page .service-trace-summary,
+.partners-page .grid,
+.partners-page .ops-task-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.partners-page .setup-stage-item {
+  grid-template-columns: minmax(64px, auto) minmax(0, 1fr) auto;
+}
+
+.partners-page .text-link {
+  overflow-wrap: normal;
+}
+
+.partners-page .ops-row {
+  align-items: flex-start;
+}
+
+.audit-log-page .admin-table-scroll,
+.partners-page .admin-table-scroll {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  max-height: min(680px, calc(100vh - 220px));
+  overflow: auto;
+}
+
+.audit-log-page .admin-table-scroll .table,
+.partners-page .admin-table-scroll .table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+}
+
+.audit-log-page .admin-table-scroll .table {
+  min-width: 1500px;
+}
+
+.partners-page .service-trace,
+.partners-page .partner-legacy-table {
+  min-width: 1500px;
+}
+
+.partners-page .service-trace th:nth-child(1),
+.partners-page .service-trace td:nth-child(1),
+.partners-page .partner-legacy-table th:nth-child(1),
+.partners-page .partner-legacy-table td:nth-child(1) {
+  min-width: 180px;
+}
+
+.partners-page .service-trace th,
+.partners-page .service-trace td,
+.partners-page .partner-legacy-table th,
+.partners-page .partner-legacy-table td {
+  min-width: 140px;
+}
+
+.audit-log-page .admin-table-scroll .table th,
+.partners-page .admin-table-scroll .table th {
+  box-shadow: inset 0 -1px 0 var(--admin-border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .operations-handoff-page {
@@ -1474,7 +1552,33 @@ a.action-button-card:hover {
 
 .operations-policy-page > .card,
 .operations-policy-page .grid > .card {
-  overflow: hidden;
+  max-height: min(960px, calc(100vh - 96px));
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.operations-policy-page .admin-table-scroll {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  max-height: min(680px, calc(100vh - 220px));
+  overflow: auto;
+}
+
+.operations-policy-page .admin-table-scroll .table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  min-width: 920px;
+}
+
+.operations-policy-page .admin-table-scroll .table th {
+  box-shadow: inset 0 -1px 0 var(--admin-border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .operations-policy-page .grid {
@@ -4223,225 +4327,4 @@ textarea:focus-visible {
 .service-impact-card h3,
 .service-impact-card p {
   margin: 0;
-}
-
-@media (max-width: 860px) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    border-bottom: 1px solid var(--admin-border);
-    height: auto;
-    max-height: min(420px, 62vh);
-    overflow: auto;
-    position: static;
-  }
-
-  .content {
-    padding: 18px;
-  }
-
-  .topbar {
-    align-items: flex-start;
-    display: grid;
-    gap: 10px;
-    margin-bottom: 14px;
-    min-height: 0;
-    position: static;
-  }
-
-  .topbar-actions {
-    justify-content: flex-start;
-  }
-
-  .content-inner {
-    max-width: 100%;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .toolbar,
-  .monitor-meta,
-  .ops-command-center,
-  .ops-note-panel {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .ops-command-center .actions {
-    justify-content: flex-start;
-  }
-
-  .action-button-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ops-filter-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ops-section-header,
-  .ops-check-item {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .booking-monitor {
-    gap: 14px;
-  }
-
-  .booking-monitor > .toolbar {
-    padding: 16px;
-  }
-
-  .booking-monitor .ops-section-header {
-    gap: 10px;
-  }
-
-  .booking-monitor .ops-filter-grid {
-    padding: 12px;
-  }
-
-  .chat-archive-page {
-    gap: 14px;
-  }
-
-  .chat-archive-page > .toolbar {
-    padding: 16px;
-  }
-
-  .chat-archive-page .form-grid {
-    padding: 12px;
-  }
-
-  .operations-handoff-page {
-    gap: 14px;
-  }
-
-  .operations-handoff-page > .toolbar {
-    padding: 16px;
-  }
-
-  .operations-handoff-page .card .toolbar {
-    gap: 10px;
-  }
-
-  .service-catalog-page {
-    gap: 14px;
-  }
-
-  .service-catalog-page .ops-section-header {
-    gap: 10px;
-  }
-
-  .service-catalog-page .form-grid {
-    padding: 12px;
-  }
-
-  .vuexy-review-toolbar,
-  .vuexy-review-footer {
-    align-items: stretch;
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .vuexy-review-controls {
-    justify-content: flex-start;
-  }
-
-  .vuexy-review-search {
-    width: 100%;
-  }
-
-  .vuexy-review-pagination {
-    justify-content: flex-start;
-  }
-
-  .vuexy-customer-form-primary,
-  .vuexy-customer-toolbar,
-  .customer-detail-identity {
-    align-items: stretch;
-  }
-
-  .vuexy-customer-search,
-  .vuexy-customer-select {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .vuexy-customer-advanced-grid,
-  .customer-detail-highlight-grid,
-  .customer-detail-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .customer-detail-shortcut-grid,
-  .customer-detail-shortcut-link {
-    grid-template-columns: 1fr;
-  }
-
-  .customer-detail-shortcut-link {
-    align-items: start;
-    display: grid;
-  }
-
-  .customer-detail-section-band-header {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .customer-detail-sidebar {
-    position: static;
-  }
-
-  .chat-transcript-bubble {
-    max-width: 100%;
-  }
-
-  .service-trace-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .setup-backlog {
-    grid-template-columns: 1fr;
-  }
-
-  .dispatch-checklist {
-    grid-template-columns: 1fr;
-  }
-
-  .ops-task-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .table {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .command-copy-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .command-copy-button {
-    justify-self: flex-start;
-  }
-
-  .service-matrix,
-  .service-ledger,
-  .service-trace {
-    min-width: 0;
-  }
-
-  .setup-stage-item {
-    grid-template-columns: 1fr;
-  }
 }

@@ -1,6 +1,7 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminTableScroll } from '../../components/admin-data-table';
 import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
 import {
   formatDateTime,
@@ -72,75 +73,79 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
       ]}
       title="Audit Log"
     >
-      <AuditLogCommandBoardSection items={commandBoard} />
+      <div className="audit-log-page">
+        <AuditLogCommandBoardSection items={commandBoard} />
 
-      <section className="card admin-mb-16">
-        <form className="form-grid" action="/audit-log">
-          <label>
-            Search
-            <input name="q" defaultValue={filters.q} placeholder="Action, target, actor, metadata" />
-          </label>
-          <label>
-            Date range
-            <select name="range" defaultValue={filters.range}>
-              <option value="all">All dates</option>
-              <option value="today">Today</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-            </select>
-          </label>
-          <label>
-            Bucket
-            <select name="bucket" defaultValue={filters.bucket}>
-              <option value="">All</option>
-              <option value="Dispatch">Dispatch</option>
-              <option value="Operations/Policy">Operations/Policy</option>
-              <option value="Payment">Payment</option>
-              <option value="Finance/Closeout">Finance/Closeout</option>
-              <option value="Service/Pricing">Service/Pricing</option>
-              <option value="Notification">Notification</option>
-              <option value="Partner">Partner</option>
-              <option value="Tax">Tax</option>
-              <option value="System">System</option>
-            </select>
-          </label>
-          <label>
-            Priority
-            <select name="priority" defaultValue={filters.priority}>
-              <option value="">All</option>
-              <option value="4">Review this first</option>
-              <option value="3">Check before close</option>
-              <option value="2">Trace related flow</option>
-              <option value="1">Reference event</option>
-            </select>
-          </label>
-          <div className="actions full-span">
-            <button type="submit">Apply filters</button>
-            <a className="text-link" href="/audit-log">
-              Clear filters
-            </a>
-            <span className="muted">
-              Showing {logs.length} of {dateFilteredLogs.length} events / {dateRangeLabel(filters.range)}
-            </span>
-          </div>
-        </form>
-      </section>
+        <section className="card admin-mb-16">
+          <form className="form-grid" action="/audit-log">
+            <label>
+              Search
+              <input name="q" defaultValue={filters.q} placeholder="Action, target, actor, metadata" />
+            </label>
+            <label>
+              Date range
+              <select name="range" defaultValue={filters.range}>
+                <option value="all">All dates</option>
+                <option value="today">Today</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+              </select>
+            </label>
+            <label>
+              Bucket
+              <select name="bucket" defaultValue={filters.bucket}>
+                <option value="">All</option>
+                <option value="Dispatch">Dispatch</option>
+                <option value="Operations/Policy">Operations/Policy</option>
+                <option value="Payment">Payment</option>
+                <option value="Finance/Closeout">Finance/Closeout</option>
+                <option value="Service/Pricing">Service/Pricing</option>
+                <option value="Notification">Notification</option>
+                <option value="Partner">Partner</option>
+                <option value="Tax">Tax</option>
+                <option value="System">System</option>
+              </select>
+            </label>
+            <label>
+              Priority
+              <select name="priority" defaultValue={filters.priority}>
+                <option value="">All</option>
+                <option value="4">Review this first</option>
+                <option value="3">Check before close</option>
+                <option value="2">Trace related flow</option>
+                <option value="1">Reference event</option>
+              </select>
+            </label>
+            <div className="actions full-span">
+              <button type="submit">Apply filters</button>
+              <a className="text-link" href="/audit-log">
+                Clear filters
+              </a>
+              <span className="muted">
+                Showing {logs.length} of {dateFilteredLogs.length} events / {dateRangeLabel(filters.range)}
+              </span>
+            </div>
+          </form>
+        </section>
 
-      <div className="card">
-        <div className="toolbar">
-          <div>
-            <p className="muted">
-              Recent operational trail for bookings, payments, refunds, Partner review, and alerts.
-            </p>
+        <div className="card">
+          <div className="toolbar">
+            <div>
+              <p className="muted">
+                Recent operational trail for bookings, payments, refunds, Partner review, and alerts.
+              </p>
+            </div>
+            <div className="participant-list">
+              <span className="pill pill-success">Newest first</span>
+              <span className="pill pill-info">Action grouped</span>
+              <span className="pill pill-warn">Metadata preview</span>
+            </div>
           </div>
-          <div className="participant-list">
-            <span className="pill pill-success">Newest first</span>
-            <span className="pill pill-info">Action grouped</span>
-            <span className="pill pill-warn">Metadata preview</span>
-          </div>
+
+          <AdminTableScroll>
+            <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
+          </AdminTableScroll>
         </div>
-
-        <AuditLogTableSection emptyMessage="No audit logs loaded." rows={auditLogRows} />
       </div>
     </AdminPageTemplate>
   );

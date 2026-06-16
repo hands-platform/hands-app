@@ -1,8 +1,5 @@
 import Link from 'next/link';
-import type {
-  AdminOperationalPolicySetting,
-  AdminProvider,
-} from '../../lib/admin-api';
+import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -14,9 +11,7 @@ import {
   emptyProviderMessage,
   partnerSortLabel,
 } from './partner-filters';
-import {
-  buildProviderOpsPolicy,
-} from './partner-list-ops';
+import { buildProviderOpsPolicy } from './partner-list-ops';
 import { partnerUnsettledWalletBalance as providerUnsettledWalletBalance } from './partner-activity-facts';
 import {
   filterPartners as filterProviders,
@@ -32,9 +27,7 @@ import {
   providerDispatchReady,
   providerReviewIssues,
 } from './partner-list-readiness';
-import {
-  nextPartnerListAction as nextProviderListAction,
-} from './partner-list-actions';
+import { nextPartnerListAction as nextProviderListAction } from './partner-list-actions';
 import {
   buildPartnerFilterSummary,
   buildPartnerReviewQueue as buildProviderReviewQueue,
@@ -55,10 +48,7 @@ import { buildPartnerShiftHandoff } from './partner-shift-handoff';
 import { PartnerShiftHandoffSection } from './partner-shift-handoff-section';
 import { PartnerLegacyOperationsTableSection } from './partner-legacy-operations-table-section';
 import { buildPartnerOperationRow } from './partner-operation-row';
-import {
-  buildPartnerExportRows,
-  PARTNER_EXPORT_COLUMNS,
-} from './partner-export-rows';
+import { buildPartnerExportRows, PARTNER_EXPORT_COLUMNS } from './partner-export-rows';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
 import { buildPartnerMasterRow } from './partner-master-row';
@@ -213,7 +203,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
 
   return (
-    <>
+    <div className="partners-page">
       {accountConfirmation ? (
         <ConfirmDialog
           action={partnerAccountServerAction(accountConfirmation.action)}
@@ -521,6 +511,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         renderSecurity={(provider) => <PartnerSecurityCell provider={provider} />}
         renderServices={(provider) => <PartnerServicesCell provider={provider} />}
       />
-    </>
+    </div>
   );
 }
