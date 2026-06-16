@@ -47,7 +47,7 @@ export default async function SetupPage() {
   const setupGroupDetails = buildSetupGroupDetails(readiness, setupOrder);
 
   return (
-    <>
+    <div className="setup-page">
       <SetupOverviewSection
         readinessOk={readiness.ok}
         readinessUnavailable={readinessUnavailable}
@@ -71,6 +71,6 @@ export default async function SetupPage() {
       <SetupExternalBacklogSection missingCount={summary.missing} backlog={externalBacklog} />
 
       <SetupGroupDetailSection groups={setupGroupDetails} />
-    </>
+    </div>
   );
 }

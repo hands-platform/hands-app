@@ -1978,6 +1978,83 @@ a.ops-task-card {
   margin-bottom: 6px;
 }
 
+.setup-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.setup-page > .admin-mb-16,
+.setup-page > .admin-mt-16 {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.setup-page .detail-grid {
+  align-items: start;
+}
+
+.setup-page .ops-section-header > div {
+  min-width: 0;
+}
+
+.setup-page .ops-section-header > .signal,
+.setup-page .ops-section-header > .pill,
+.setup-page .toolbar .actions > .signal,
+.setup-page .toolbar .actions > .pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.setup-page .detail-grid > .card,
+.setup-page > .card,
+.setup-page .stack > .card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.setup-page .setup-stage-list {
+  gap: 12px;
+}
+
+.setup-page .setup-stage-item {
+  border-radius: var(--admin-radius-lg);
+  gap: 8px;
+  grid-template-columns: 1fr;
+  min-width: 0;
+  padding: 14px;
+}
+
+.setup-page .setup-stage-item > span,
+.setup-page .setup-stage-item > small {
+  justify-self: flex-start;
+}
+
+.setup-page .setup-stage-item > span {
+  background: var(--admin-action-hover);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.setup-page .setup-stage-item > p,
+.setup-page .timeline-step > p,
+.setup-page .setup-backlog-item > p,
+.setup-page .ops-row p {
+  overflow-wrap: anywhere;
+}
+
+.setup-page .ops-row {
+  align-items: flex-start;
+}
+
+.setup-page .ops-row > div {
+  min-width: 0;
+}
+
+.setup-page .ops-row > .pill {
+  flex: 0 0 auto;
+}
+
 .setup-action-list,
 .setup-stage-list {
   display: grid;
