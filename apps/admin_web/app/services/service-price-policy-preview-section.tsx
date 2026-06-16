@@ -69,54 +69,58 @@ export function ServicePricePolicyPreviewSection({
         </div>
       </div>
       {rows.length ? (
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Service option</th>
-              <th>Current policy</th>
-              <th>Customer + step</th>
-              <th>Partner + step</th>
-              <th>Both + step</th>
-              <th>Check</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((row) => (
-              <tr key={row.service.id}>
-                <td>
-                  <strong>{row.service.name}</strong>
-                  <p className="muted">
-                    {row.service.durationMin} min / step {formatMoney(row.priceStep, row.currency)}
-                  </p>
-                </td>
-                <td>
-                  {row.baseRule ? (
-                    <div className="service-matrix-cell">
-                      <strong>{formatMoney(row.baseRule.customerPrice, row.currency)}</strong>
-                      <small>Partner {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
-                      <small>Commission {formatMoney(row.currentFinance.actualCompanyCommission, row.currency)}</small>
-                    </div>
-                  ) : (
-                    <span className="pill pill-danger">Missing base payout</span>
-                  )}
-                </td>
-                <td>
-                  <ScenarioPreviewCell scenario={row.customerStepScenario} />
-                </td>
-                <td>
-                  <ScenarioPreviewCell scenario={row.providerStepScenario} />
-                </td>
-                <td>
-                  <ScenarioPreviewCell scenario={row.balancedStepScenario} />
-                </td>
-                <td>
-                  <span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>
-                  <p className="muted">{row.nextAction}</p>
-                </td>
+        <div className="admin-table-scroll">
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service option</th>
+                <th>Current policy</th>
+                <th>Customer + step</th>
+                <th>Partner + step</th>
+                <th>Both + step</th>
+                <th>Check</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibleRows.map((row) => (
+                <tr key={row.service.id}>
+                  <td>
+                    <strong>{row.service.name}</strong>
+                    <p className="muted">
+                      {row.service.durationMin} min / step {formatMoney(row.priceStep, row.currency)}
+                    </p>
+                  </td>
+                  <td>
+                    {row.baseRule ? (
+                      <div className="service-matrix-cell">
+                        <strong>{formatMoney(row.baseRule.customerPrice, row.currency)}</strong>
+                        <small>Partner {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
+                        <small>
+                          Commission {formatMoney(row.currentFinance.actualCompanyCommission, row.currency)}
+                        </small>
+                      </div>
+                    ) : (
+                      <span className="pill pill-danger">Missing base payout</span>
+                    )}
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.customerStepScenario} />
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.providerStepScenario} />
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.balancedStepScenario} />
+                  </td>
+                  <td>
+                    <span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>
+                    <p className="muted">{row.nextAction}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <p className="muted">No active service option is available for price policy preview.</p>
       )}

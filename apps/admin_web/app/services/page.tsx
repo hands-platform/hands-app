@@ -45,69 +45,71 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       description="Create a service name once, then manage duration options such as 60, 90, and 120 minutes with separate minimum prices and payout policies."
       title="Service catalog"
     >
-      <ServiceCatalogSearchSection
-        activeServiceCount={model.filteredActiveServices.length}
-        groupCount={model.filteredGroupedServices.length}
-        searchQuery={model.serviceSearchQuery}
-      />
+      <div className="service-catalog-page">
+        <ServiceCatalogSearchSection
+          activeServiceCount={model.filteredActiveServices.length}
+          groupCount={model.filteredGroupedServices.length}
+          searchQuery={model.serviceSearchQuery}
+        />
 
-      <ServiceActionNoticeSection notice={model.actionNotice} />
+        <ServiceActionNoticeSection notice={model.actionNotice} />
 
-      <ServiceBookingExposureGuardSection
-        activeServiceCount={model.activeServices.length}
-        blockedCount={model.blockedReadinessItems.length}
-        payoutRuleCount={model.payoutRuleCount}
-        policyCheckCount={model.pricePolicyPreviewSummary.policyCheckCount}
-        traceGapCount={model.bookingTraceSummary.missingTraceCount}
-        warningCount={model.warningReadinessItems.length}
-      />
+        <ServiceBookingExposureGuardSection
+          activeServiceCount={model.activeServices.length}
+          blockedCount={model.blockedReadinessItems.length}
+          payoutRuleCount={model.payoutRuleCount}
+          policyCheckCount={model.pricePolicyPreviewSummary.policyCheckCount}
+          traceGapCount={model.bookingTraceSummary.missingTraceCount}
+          warningCount={model.warningReadinessItems.length}
+        />
 
-      <ServiceTypeCoverageBoardSection
-        hiddenRowCount={model.hiddenServiceTypeCoverageRowCount}
-        rows={model.serviceTypeCoverageRows}
-        summary={model.serviceTypeCoverageSummary}
-        visibleRows={model.visibleServiceTypeCoverageRows}
-      />
+        <ServiceTypeCoverageBoardSection
+          hiddenRowCount={model.hiddenServiceTypeCoverageRowCount}
+          rows={model.serviceTypeCoverageRows}
+          summary={model.serviceTypeCoverageSummary}
+          visibleRows={model.visibleServiceTypeCoverageRows}
+        />
 
-      <ServicePricingAuditTrailSection rows={model.pricingAuditRows} />
+        <ServicePricingAuditTrailSection rows={model.pricingAuditRows} />
 
-      <ServicePricingHealthSection items={model.healthItems} />
+        <ServicePricingHealthSection items={model.healthItems} />
 
-      <ServiceBookingReadinessQueueSection
-        blockedCount={model.blockedReadinessItems.length}
-        items={model.readinessItems}
-        warningCount={model.warningReadinessItems.length}
-      />
+        <ServiceBookingReadinessQueueSection
+          blockedCount={model.blockedReadinessItems.length}
+          items={model.readinessItems}
+          warningCount={model.warningReadinessItems.length}
+        />
 
-      <ServiceDurationPricingMatrixSection
-        activeTaxPolicy={model.activeTaxPolicy}
-        hiddenGroupCount={model.hiddenServiceGroupCount}
-        totalGroupCount={model.groupedServices.length}
-        visibleGroups={model.visibleGroupedServices}
-      />
+        <ServiceDurationPricingMatrixSection
+          activeTaxPolicy={model.activeTaxPolicy}
+          hiddenGroupCount={model.hiddenServiceGroupCount}
+          totalGroupCount={model.groupedServices.length}
+          visibleGroups={model.visibleGroupedServices}
+        />
 
-      <ServicePayoutLedgerSection
-        activeServiceCount={model.activeServices.length}
-        hiddenRowCount={model.hiddenPayoutLedgerRowCount}
-        rows={model.payoutLedgerRows}
-        visibleRows={model.visiblePayoutLedgerRows}
-      />
+        <ServicePayoutLedgerSection
+          activeServiceCount={model.activeServices.length}
+          hiddenRowCount={model.hiddenPayoutLedgerRowCount}
+          rows={model.payoutLedgerRows}
+          visibleRows={model.visiblePayoutLedgerRows}
+        />
 
-      <ServicePricePolicyPreviewSection
-        hiddenRowCount={model.hiddenPricePolicyPreviewRowCount}
-        rows={model.pricePolicyPreviewRows}
-        summary={model.pricePolicyPreviewSummary}
-        visibleRows={model.visiblePricePolicyPreviewRows}
-      />
+        <ServicePricePolicyPreviewSection
+          hiddenRowCount={model.hiddenPricePolicyPreviewRowCount}
+          rows={model.pricePolicyPreviewRows}
+          summary={model.pricePolicyPreviewSummary}
+          visibleRows={model.visiblePricePolicyPreviewRows}
+        />
 
-      <ServiceBookingFinanceTraceSection rows={model.bookingTraceRows} summary={model.bookingTraceSummary} />
-      <ServiceCreateFormsSection />
+        <ServiceBookingFinanceTraceSection rows={model.bookingTraceRows} summary={model.bookingTraceSummary} />
+        <ServiceCreateFormsSection />
 
-      <ServiceGroupEditGridSection
-        activeTaxPolicy={model.activeTaxPolicy}
-        hiddenGroupCount={model.hiddenServiceGroupCount}
-        visibleGroups={model.visibleGroupedServices}
-      />
+        <ServiceGroupEditGridSection
+          activeTaxPolicy={model.activeTaxPolicy}
+          hiddenGroupCount={model.hiddenServiceGroupCount}
+          visibleGroups={model.visibleGroupedServices}
+        />
+      </div>
     </AdminPageTemplate>
   );
 }

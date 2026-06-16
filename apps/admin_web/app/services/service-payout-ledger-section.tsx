@@ -28,62 +28,64 @@ export function ServicePayoutLedgerSection({
         </div>
         <span className="pill pill-info">{activeServiceCount} active option(s)</span>
       </div>
-      <table className="table service-ledger">
-        <thead>
-          <tr>
-            <th>Service option</th>
-            <th>Customer price</th>
-            <th>Partner payout</th>
-            <th>Gross fee</th>
-            <th>Tax / cost</th>
-            <th>Actual company commission</th>
-            <th>Partner visibility</th>
-            <th>Next action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {visibleRows.map((row) => (
-            <tr key={row.service.id}>
-              <td>
-                <strong>{row.service.name}</strong>
-                <p className="muted">
-                  {row.service.durationMin} min / {row.service.serviceGroupKey ?? slugify(row.service.name)}
-                </p>
-              </td>
-              <td>{formatMoney(row.service.basePrice, row.currency)}</td>
-              <td>{row.baseRule ? formatMoney(row.baseRule.providerPayoutAmount, row.currency) : '-'}</td>
-              <td>{row.baseRule ? formatMoney(row.finance.fee, row.currency) : '-'}</td>
-              <td>
-                {row.baseRule ? (
-                  <div className="service-matrix-cell">
-                    <small>VAT {formatMoney(row.finance.vatAmount, row.currency)}</small>
-                    <small>Withholding {formatMoney(row.finance.withholdingAmount, row.currency)}</small>
-                    <small>Other {formatMoney(row.baseRule.otherCostAmount, row.currency)}</small>
-                  </div>
-                ) : (
-                  '-'
-                )}
-              </td>
-              <td>
-                <span className={`pill ${row.commissionTone}`}>
-                  {row.baseRule ? formatMoney(row.finance.actualCompanyCommission, row.currency) : 'Missing rule'}
-                </span>
-              </td>
-              <td>
-                <div className="service-matrix-cell">
-                  <span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>
-                    {row.visibleProviders} visible / {row.hiddenProviders} hidden
-                  </span>
-                  <small>{row.totalProviderRows} Partner price row(s)</small>
-                </div>
-              </td>
-              <td>
-                <span className={`pill ${row.actionTone}`}>{row.action}</span>
-              </td>
+      <div className="admin-table-scroll">
+        <table className="table service-ledger">
+          <thead>
+            <tr>
+              <th>Service option</th>
+              <th>Customer price</th>
+              <th>Partner payout</th>
+              <th>Gross fee</th>
+              <th>Tax / cost</th>
+              <th>Actual company commission</th>
+              <th>Partner visibility</th>
+              <th>Next action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {visibleRows.map((row) => (
+              <tr key={row.service.id}>
+                <td>
+                  <strong>{row.service.name}</strong>
+                  <p className="muted">
+                    {row.service.durationMin} min / {row.service.serviceGroupKey ?? slugify(row.service.name)}
+                  </p>
+                </td>
+                <td>{formatMoney(row.service.basePrice, row.currency)}</td>
+                <td>{row.baseRule ? formatMoney(row.baseRule.providerPayoutAmount, row.currency) : '-'}</td>
+                <td>{row.baseRule ? formatMoney(row.finance.fee, row.currency) : '-'}</td>
+                <td>
+                  {row.baseRule ? (
+                    <div className="service-matrix-cell">
+                      <small>VAT {formatMoney(row.finance.vatAmount, row.currency)}</small>
+                      <small>Withholding {formatMoney(row.finance.withholdingAmount, row.currency)}</small>
+                      <small>Other {formatMoney(row.baseRule.otherCostAmount, row.currency)}</small>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td>
+                  <span className={`pill ${row.commissionTone}`}>
+                    {row.baseRule ? formatMoney(row.finance.actualCompanyCommission, row.currency) : 'Missing rule'}
+                  </span>
+                </td>
+                <td>
+                  <div className="service-matrix-cell">
+                    <span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>
+                      {row.visibleProviders} visible / {row.hiddenProviders} hidden
+                    </span>
+                    <small>{row.totalProviderRows} Partner price row(s)</small>
+                  </div>
+                </td>
+                <td>
+                  <span className={`pill ${row.actionTone}`}>{row.action}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {hiddenRowCount ? (
         <p className="muted">
           Showing first {visibleRows.length} of {rows.length} active option(s). Full finance totals still

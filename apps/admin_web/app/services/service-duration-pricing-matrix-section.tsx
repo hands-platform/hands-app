@@ -34,67 +34,69 @@ export function ServiceDurationPricingMatrixSection({
         </div>
         <span className="pill pill-info">{SERVICE_MATRIX_DURATIONS.join(' / ')} min</span>
       </div>
-      <table className="table service-matrix">
-        <thead>
-          <tr>
-            <th>Service</th>
-            <th>60 min</th>
-            <th>90 min</th>
-            <th>120 min</th>
-            <th>Policy state</th>
-          </tr>
-        </thead>
-        <tbody>
-          {visibleGroups.map((group) => {
-            const matrix = serviceDurationMatrix({
-              activeTaxPolicy,
-              basePayoutRule,
-              items: group.items,
-              servicePayoutFinance,
-            });
+      <div className="admin-table-scroll">
+        <table className="table service-matrix">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>60 min</th>
+              <th>90 min</th>
+              <th>120 min</th>
+              <th>Policy state</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleGroups.map((group) => {
+              const matrix = serviceDurationMatrix({
+                activeTaxPolicy,
+                basePayoutRule,
+                items: group.items,
+                servicePayoutFinance,
+              });
 
-            return (
-              <tr key={group.key}>
-                <td>
-                  <strong>{group.label}</strong>
-                  <p className="muted">{group.key}</p>
-                </td>
-                {SERVICE_MATRIX_DURATIONS.map((duration) => (
-                  <ServiceDurationCell
-                    cell={matrix.byDuration.get(duration)}
-                    key={`${group.key}-${duration}`}
-                  />
-                ))}
-                <td>
-                  <div className="service-matrix-cell">
-                    <span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>
-                      {matrix.blockedCount ? `${matrix.blockedCount} blocked` : 'Bookable'}
-                    </span>
-                    <small>{matrix.activeCount} active duration option(s)</small>
-                    <small>{matrix.payoutRuleCount} payout rule(s)</small>
-                    <small>
-                      Customer minimum total{' '}
-                      {formatMoney(matrix.totals.customerMinimum, matrix.totals.currency)}
-                    </small>
-                    <small>
-                      Partner payout total {formatMoney(matrix.totals.providerPayout, matrix.totals.currency)}
-                    </small>
-                    <small>
-                      Gross HANDS fee total {formatMoney(matrix.totals.grossFee, matrix.totals.currency)}
-                    </small>
-                    <small>
-                      Tax / cost total {formatMoney(matrix.totals.taxAndCost, matrix.totals.currency)}
-                    </small>
-                    <small>
-                      Net company fee total {formatMoney(matrix.totals.netCompanyFee, matrix.totals.currency)}
-                    </small>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              return (
+                <tr key={group.key}>
+                  <td>
+                    <strong>{group.label}</strong>
+                    <p className="muted">{group.key}</p>
+                  </td>
+                  {SERVICE_MATRIX_DURATIONS.map((duration) => (
+                    <ServiceDurationCell
+                      cell={matrix.byDuration.get(duration)}
+                      key={`${group.key}-${duration}`}
+                    />
+                  ))}
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>
+                        {matrix.blockedCount ? `${matrix.blockedCount} blocked` : 'Bookable'}
+                      </span>
+                      <small>{matrix.activeCount} active duration option(s)</small>
+                      <small>{matrix.payoutRuleCount} payout rule(s)</small>
+                      <small>
+                        Customer minimum total{' '}
+                        {formatMoney(matrix.totals.customerMinimum, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Partner payout total {formatMoney(matrix.totals.providerPayout, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Gross HANDS fee total {formatMoney(matrix.totals.grossFee, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Tax / cost total {formatMoney(matrix.totals.taxAndCost, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Net company fee total {formatMoney(matrix.totals.netCompanyFee, matrix.totals.currency)}
+                      </small>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
       {hiddenGroupCount ? (
         <p className="muted">
           Showing first {visibleGroups.length} of {totalGroupCount} service type(s) to keep the operations

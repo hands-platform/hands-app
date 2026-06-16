@@ -68,70 +68,72 @@ export function ServiceTypeCoverageBoardSection({
         </div>
       </div>
       {visibleRows.length ? (
-        <table className="table service-trace admin-mt-12">
-          <thead>
-            <tr>
-              <th>Service type</th>
-              <th>Duration coverage</th>
-              <th>Payout coverage</th>
-              <th>Partner price visibility</th>
-              <th>Finance snapshot</th>
-              <th>Next action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleRows.map((row) => (
-              <tr key={row.key}>
-                <td>
-                  <strong>{row.label}</strong>
-                  <p className="muted">{row.key}</p>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <span className={`pill ${row.missingDurations.length ? 'pill-warn' : 'pill-success'}`}>
-                      {row.activeDurationLabels || 'No active duration'}
-                    </span>
-                    <small>
-                      Missing duration options:{' '}
-                      {row.missingDurations.length
-                        ? row.missingDurations.map((duration) => `${duration} min`).join(', ')
-                        : 'none'}
-                    </small>
-                  </div>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <span className={`pill ${row.missingBasePayoutCount ? 'pill-danger' : 'pill-success'}`}>
-                      {row.missingBasePayoutCount} missing base payout
-                    </span>
-                    <small>{row.activeOptionCount} active option(s)</small>
-                    <small>{row.payoutRuleCount} payout rule(s)</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <span className={`pill ${row.hiddenPartnerPriceCount ? 'pill-warn' : 'pill-success'}`}>
-                      {row.visiblePartnerPriceCount} visible / {row.hiddenPartnerPriceCount} hidden
-                    </span>
-                    <small>{row.belowMinimumCount} below minimum</small>
-                    <small>{row.missingPayoutPriceCount} missing payout rule</small>
-                  </div>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <strong>{formatMoney(row.netCompanyFee, row.currency)}</strong>
-                    <small>Customer min {formatMoney(row.customerMinimumTotal, row.currency)}</small>
-                    <small>Partner payout {formatMoney(row.partnerPayoutTotal, row.currency)}</small>
-                  </div>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.statusLabel}</span>
-                  <p className="muted">{row.nextAction}</p>
-                </td>
+        <div className="admin-table-scroll">
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service type</th>
+                <th>Duration coverage</th>
+                <th>Payout coverage</th>
+                <th>Partner price visibility</th>
+                <th>Finance snapshot</th>
+                <th>Next action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {visibleRows.map((row) => (
+                <tr key={row.key}>
+                  <td>
+                    <strong>{row.label}</strong>
+                    <p className="muted">{row.key}</p>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${row.missingDurations.length ? 'pill-warn' : 'pill-success'}`}>
+                        {row.activeDurationLabels || 'No active duration'}
+                      </span>
+                      <small>
+                        Missing duration options:{' '}
+                        {row.missingDurations.length
+                          ? row.missingDurations.map((duration) => `${duration} min`).join(', ')
+                          : 'none'}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${row.missingBasePayoutCount ? 'pill-danger' : 'pill-success'}`}>
+                        {row.missingBasePayoutCount} missing base payout
+                      </span>
+                      <small>{row.activeOptionCount} active option(s)</small>
+                      <small>{row.payoutRuleCount} payout rule(s)</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${row.hiddenPartnerPriceCount ? 'pill-warn' : 'pill-success'}`}>
+                        {row.visiblePartnerPriceCount} visible / {row.hiddenPartnerPriceCount} hidden
+                      </span>
+                      <small>{row.belowMinimumCount} below minimum</small>
+                      <small>{row.missingPayoutPriceCount} missing payout rule</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <strong>{formatMoney(row.netCompanyFee, row.currency)}</strong>
+                      <small>Customer min {formatMoney(row.customerMinimumTotal, row.currency)}</small>
+                      <small>Partner payout {formatMoney(row.partnerPayoutTotal, row.currency)}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.tone}`}>{row.statusLabel}</span>
+                    <p className="muted">{row.nextAction}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <p className="muted">No service type matches the current catalog search.</p>
       )}

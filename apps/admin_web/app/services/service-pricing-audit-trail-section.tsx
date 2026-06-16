@@ -24,52 +24,54 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
         </a>
       </div>
       {rows.length ? (
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Action</th>
-              <th>Actor</th>
-              <th>Target</th>
-              <th>Changed fields</th>
-              <th>Pricing snapshot</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
-                  <p className="muted">{formatDateTime(row.createdAt)}</p>
-                </td>
-                <td>
-                  <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
-                </td>
-                <td>{row.actorName}</td>
-                <td>
-                  <strong>{row.targetShort}</strong>
-                  <p className="muted">{row.target}</p>
-                </td>
-                <td>
-                  <div className="participant-list">
-                    {row.changedFields.map((field) => (
-                      <span className="pill pill-info" key={`${row.id}-${field}`}>
-                        {field}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>
-                  <div className="service-matrix-cell">
-                    <small>{row.serviceLabel}</small>
-                    <small>{row.priceLabel}</small>
-                    <small>{row.payoutLabel}</small>
-                  </div>
-                </td>
+        <div className="admin-table-scroll">
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Target</th>
+                <th>Changed fields</th>
+                <th>Pricing snapshot</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
+                    <p className="muted">{formatDateTime(row.createdAt)}</p>
+                  </td>
+                  <td>
+                    <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
+                  </td>
+                  <td>{row.actorName}</td>
+                  <td>
+                    <strong>{row.targetShort}</strong>
+                    <p className="muted">{row.target}</p>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {row.changedFields.map((field) => (
+                        <span className="pill pill-info" key={`${row.id}-${field}`}>
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <small>{row.serviceLabel}</small>
+                      <small>{row.priceLabel}</small>
+                      <small>{row.payoutLabel}</small>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <p className="muted">No recent service pricing audit event has been recorded yet.</p>
       )}
