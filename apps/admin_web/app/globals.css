@@ -696,6 +696,97 @@ a.action-button-card:hover {
   margin-top: 0;
 }
 
+.operations-handoff-page {
+  display: grid;
+  gap: 16px;
+}
+
+.operations-handoff-page > .toolbar,
+.operations-handoff-page > .card,
+.operations-handoff-page > .grid,
+.operations-handoff-page > .detail-grid {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.operations-handoff-page > .toolbar {
+  background:
+    linear-gradient(135deg, rgba(115, 103, 240, 0.1), rgba(0, 186, 209, 0.08)),
+    var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  padding: 18px;
+}
+
+.operations-handoff-page > .toolbar h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+
+.operations-handoff-page > .toolbar p {
+  max-width: 780px;
+}
+
+.operations-handoff-page > .grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.operations-handoff-page > .card,
+.operations-handoff-page > .detail-grid > .card {
+  box-shadow: var(--admin-shadow-sm);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.operations-handoff-page .card .toolbar {
+  background: transparent;
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+}
+
+.operations-handoff-page .card .toolbar h2 {
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.operations-handoff-page .ops-task-card,
+.operations-handoff-page .ops-signal-card {
+  background: #ffffff;
+  border-color: var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 1px 2px rgba(47, 43, 61, 0.04);
+}
+
+.operations-handoff-page .ops-task-card {
+  min-height: 0;
+}
+
+.operations-handoff-page .ops-signal-card {
+  text-decoration: none;
+}
+
+.operations-handoff-page .admin-table-scroll {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-sm);
+  margin-top: 0;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.operations-handoff-page .admin-table-scroll .table {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  min-width: 820px;
+}
+
 .chat-transcript-list {
   gap: 14px;
 }
@@ -1993,6 +2084,18 @@ textarea:focus-visible {
 
   .chat-archive-page .form-grid {
     padding: 12px;
+  }
+
+  .operations-handoff-page {
+    gap: 14px;
+  }
+
+  .operations-handoff-page > .toolbar {
+    padding: 16px;
+  }
+
+  .operations-handoff-page .card .toolbar {
+    gap: 10px;
   }
 
   .chat-transcript-bubble {

@@ -155,12 +155,16 @@ export default async function OperationsHandoffPage({
   const checklistNeedsReview = countOpenHandoffChecklistItems(handoffChecklist);
 
   return (
-    <>
-      <h1>Operations Handoff</h1>
-      <p className="muted">
-        One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app activity. Use
-        this before changing operators so open work keeps context.
-      </p>
+    <div className="operations-handoff-page">
+      <div className="toolbar">
+        <div>
+          <h1>Operations Handoff</h1>
+          <p className="muted">
+            One shift handoff board for factual Customer, Partner, booking, chat, wallet, and app
+            activity. Use this before changing operators so open work keeps context.
+          </p>
+        </div>
+      </div>
 
       <OperationsHandoffDateRangeSection range={filters.range} />
 
@@ -203,6 +207,6 @@ export default async function OperationsHandoffPage({
       <OperationsHandoffCustomerPartnerSection customers={customerSignals} partners={partnerSignals.rows} />
 
       <OperationsHandoffFinanceCloseoutSection rows={financeRows} />
-    </>
+    </div>
   );
 }

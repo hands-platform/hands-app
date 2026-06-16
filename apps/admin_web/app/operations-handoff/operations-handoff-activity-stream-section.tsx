@@ -37,45 +37,47 @@ export function OperationsHandoffActivityStreamSection({
           </Link>
         </div>
       </div>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>When</th>
-            <th>Area</th>
-            <th>Record</th>
-            <th>Summary</th>
-            <th>Continue</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <div>{relativeTime(item.createdAt)}</div>
-                <small className="muted">{formatDateTime(item.createdAt)}</small>
-              </td>
-              <td>
-                <span className={item.className}>{item.area}</span>
-              </td>
-              <td>
-                <div>{item.record}</div>
-                <small className="muted">{item.source}</small>
-              </td>
-              <td>{item.summary}</td>
-              <td>
-                <Link className="text-link" href={item.href}>
-                  Open
-                </Link>
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
+      <div className="admin-table-scroll">
+        <table className="table">
+          <thead>
             <tr>
-              <td colSpan={5}>No recent activity stream rows.</td>
+              <th>When</th>
+              <th>Area</th>
+              <th>Record</th>
+              <th>Summary</th>
+              <th>Continue</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <div>{relativeTime(item.createdAt)}</div>
+                  <small className="muted">{formatDateTime(item.createdAt)}</small>
+                </td>
+                <td>
+                  <span className={item.className}>{item.area}</span>
+                </td>
+                <td>
+                  <div>{item.record}</div>
+                  <small className="muted">{item.source}</small>
+                </td>
+                <td>{item.summary}</td>
+                <td>
+                  <Link className="text-link" href={item.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5}>No recent activity stream rows.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

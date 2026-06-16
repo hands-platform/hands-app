@@ -27,55 +27,57 @@ export function OperationsHandoffBookingQueueSection({
           </Link>
         </div>
       </div>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Booking</th>
-            <th>Customer</th>
-            <th>Partner</th>
-            <th>Status</th>
-            <th>Payment / wallet</th>
-            <th>Chat</th>
-            <th>Next action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bookings.map((booking) => (
-            <tr key={booking.id}>
-              <td>
-                <Link className="text-link" href={`/bookings/${booking.id}`}>
-                  {shortDisplayId(booking.id)}
-                </Link>
-                <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
-              </td>
-              <td>
-                <div>{booking.customerName}</div>
-                <small className="muted">{booking.customerPhone}</small>
-              </td>
-              <td>
-                <div>{booking.partnerName}</div>
-                <small className="muted">{booking.partnerDetail}</small>
-              </td>
-              <td>
-                <span className={booking.statusClass}>{booking.status}</span>
-              </td>
-              <td>
-                <div>{booking.paymentLabel}</div>
-                <small className="muted">{booking.walletLabel}</small>
-              </td>
-              <td>
-                <span className={booking.chatClass}>{booking.chatLabel}</span>
-              </td>
-              <td>{booking.nextAction}</td>
-            </tr>
-          ))}
-          {bookings.length === 0 ? (
+      <div className="admin-table-scroll">
+        <table className="table">
+          <thead>
             <tr>
-              <td colSpan={7}>No active booking handoff rows.</td>
+              <th>Booking</th>
+              <th>Customer</th>
+              <th>Partner</th>
+              <th>Status</th>
+              <th>Payment / wallet</th>
+              <th>Chat</th>
+              <th>Next action</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {bookings.map((booking) => (
+              <tr key={booking.id}>
+                <td>
+                  <Link className="text-link" href={`/bookings/${booking.id}`}>
+                    {shortDisplayId(booking.id)}
+                  </Link>
+                  <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
+                </td>
+                <td>
+                  <div>{booking.customerName}</div>
+                  <small className="muted">{booking.customerPhone}</small>
+                </td>
+                <td>
+                  <div>{booking.partnerName}</div>
+                  <small className="muted">{booking.partnerDetail}</small>
+                </td>
+                <td>
+                  <span className={booking.statusClass}>{booking.status}</span>
+                </td>
+                <td>
+                  <div>{booking.paymentLabel}</div>
+                  <small className="muted">{booking.walletLabel}</small>
+                </td>
+                <td>
+                  <span className={booking.chatClass}>{booking.chatLabel}</span>
+                </td>
+                <td>{booking.nextAction}</td>
+              </tr>
+            ))}
+            {bookings.length === 0 ? (
+              <tr>
+                <td colSpan={7}>No active booking handoff rows.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
