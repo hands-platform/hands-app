@@ -589,7 +589,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   ];
 
   return (
-    <>
+    <div className="customer-detail-page">
       <section className="toolbar">
         <div>
           <p className="muted">
@@ -1957,7 +1957,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </CustomerDetailSectionBand>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
