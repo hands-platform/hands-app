@@ -1,9 +1,8 @@
 import type { AdminReview } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
-import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import Link from 'next/link';
-import { shortId } from '../../lib/admin-format';
+import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
 import {
@@ -11,18 +10,16 @@ import {
   readReviewModerationStatus,
 } from './review-action-confirmation';
 import {
-  buildReviewCommandBoard,
+  REVIEW_EXPORT_COLUMNS,
+  buildReviewExportRows,
   buildReviewFilters,
+  buildReviewListHref,
   buildReviewTableRows,
   buildSummary,
   emptyReviewMessage,
   filterReviews,
-  humanizeStatus,
+  paginateReviewRows,
   reviewFilterDescription,
-  reviewFilterLinks,
-  reviewProviderLabel,
-  reviewToneClass,
-  reviewToneLabel,
   sortReviews,
 } from './review-page-model';
 import { ReviewsTableSection } from './reviews-table-section';
@@ -34,10 +31,11 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
   const filters = buildReviewFilters(params);
   const allReviews = sortReviews(await adminGet<AdminReview[]>('/admin/reviews', []));
   const reviews = filterReviews(allReviews, filters);
+  const pagination = paginateReviewRows(reviews, filters);
   const summary = buildSummary(allReviews);
-  const commandBoard = buildReviewCommandBoard(allReviews);
-  const reviewRows = buildReviewTableRows(reviews);
-  const activeFilter = reviewFilterLinks().find((item) => item.review === filters.review);
+  const reviewRows = buildReviewTableRows(pagination.rows);
+  const reviewRowPagination = { ...pagination, rows: reviewRows };
+  const reviewCsvHref = buildCsvDataHref(buildReviewExportRows(reviews), [...REVIEW_EXPORT_COLUMNS]);
   const confirmation =
     readSearchParam(params.confirm) === 'moderate'
       ? buildReviewModerationConfirmation(
@@ -50,14 +48,14 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
 
   return (
     <AdminPageTemplate
-      description="Moderation board for customer comments, Partner coaching notes, and public visibility decisions."
+      description="All customer-written reviews, Partner service context, and app visibility moderation in one board."
       metrics={[
-        { label: 'Total feedback records', value: summary.total, helper: 'Feedback records loaded.' },
-        { label: 'Reported / hidden', value: summary.flagged, helper: 'Rows needing moderation context.' },
-        { label: 'Published', value: summary.published, helper: 'Visible to customers.' },
-        { label: 'Follow-up records', value: summary.followUp, helper: 'Records with report reasons.' },
+        { label: 'Total reviews', value: summary.total, helper: 'Customer review records loaded.' },
+        { label: 'Published', value: summary.published, helper: 'Visible in the app.' },
+        { label: 'Held', value: summary.held, helper: 'Not visible in the app.' },
+        { label: 'Average rating', value: summary.averageRating, helper: 'Published and held review mix.' },
       ]}
-      title="Feedback And Reports"
+      title="Customer Reviews"
     >
       {confirmation ? (
         <ConfirmDialog
@@ -72,87 +70,25 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
         />
       ) : null}
 
-      <section className="card admin-mb-16">
-        <AdminSectionHeader
-          description="Customer comments, Partner coaching notes, and public visibility decisions are handled here as factual service records."
-          status={
-            <span
-              className={`pill ${
-                commandBoard.some((item) => item.reviews.length > 0 && item.tone === 'warn')
-                  ? 'pill-warn'
-                  : 'pill-success'
-              }`}
-            >
-              {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback record(s)
-            </span>
-          }
-          title="Feedback command board"
-        />
-        <div className="ops-task-grid">
-          {commandBoard.map((item) => (
-            <Link className="ops-task-card" href={item.href} key={item.title}>
-              <span className={`signal ${reviewToneClass(item.tone)}`}>{reviewToneLabel(item.tone)}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{item.status}</span>
-                <span className="pill">{item.reviews.length} record(s)</span>
-              </div>
-              {item.reviews.length > 0 ? (
-                <div className="stack">
-                  {item.reviews.slice(0, 3).map((review) => (
-                    <span className="muted" key={`${item.title}-${review.id}`}>
-                      {shortId(review.id)} / {reviewProviderLabel(review)} / {humanizeStatus(review.status)}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <small>{item.operatorAction}</small>
-            </Link>
-          ))}
+      {filters.review || filters.q ? (
+        <div className="admin-mb-16">
+          <span className="pill pill-info">
+            Showing {reviews.length} of {allReviews.length}
+          </span>
+          {filters.review ? <span className="pill pill-warn">{reviewFilterDescription(filters.review)}</span> : null}
+          <a className="text-link" href={buildReviewListHref(filters, { q: '', review: '' })}>
+            Clear review filters
+          </a>
         </div>
-      </section>
+      ) : null}
 
-      <div className="card">
-        <div className="toolbar">
-          <div>
-            <h2>Feedback operation filters</h2>
-            <p className="muted">
-              Moderation board for guest feedback, dispute records, and service recovery records.
-            </p>
-            {activeFilter?.review ? (
-              <p className="muted">
-                Active queue: <strong>{activeFilter.label}</strong> -{' '}
-                {reviewFilterDescription(activeFilter.review)}
-              </p>
-            ) : null}
-          </div>
-          <div className="participant-list">
-            {filters.review ? (
-              <Link className="pill pill-success" href="/reviews">
-                Clear filter
-              </Link>
-            ) : null}
-            {reviewFilterLinks().map((item) => (
-              <Link
-                className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-                href={item.href}
-                key={item.label}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
-              Showing {reviews.length} of {allReviews.length}
-            </span>
-          </div>
-        </div>
-
-        <ReviewsTableSection
-          emptyMessage={emptyReviewMessage(filters.review)}
-          rows={reviewRows}
-        />
-      </div>
+      <ReviewsTableSection
+        csvHref={reviewCsvHref}
+        emptyMessage={emptyReviewMessage(filters.review)}
+        filters={filters}
+        pagination={reviewRowPagination}
+        rows={reviewRows}
+      />
     </AdminPageTemplate>
   );
 }

@@ -23,27 +23,27 @@ type ReviewModerationMetadata = {
 
 const reviewModerationMetadata: Record<ReviewModerationStatus, ReviewModerationMetadata> = {
   HIDDEN: {
-    confirmLabel: 'Hide feedback',
+    confirmLabel: 'Hold review',
     description: (review, reportReason) =>
-      `Hide feedback ${shortId(review.id)} from public visibility. Reason: ${reportReason || 'Hidden by admin'}.`,
-    title: (review) => `Hide feedback ${shortId(review.id)}?`,
-    tone: 'danger',
+      `Hold review ${shortId(review.id)} from app visibility. Reason: ${reportReason || 'Held by admin'}.`,
+    title: (review) => `Hold review ${shortId(review.id)}?`,
+    tone: 'warning',
   },
   PUBLISHED: {
-    confirmLabel: 'Publish feedback',
+    confirmLabel: 'Publish review',
     description: (review) =>
-      `Publish feedback ${shortId(review.id)} so it can be visible to customers and operational review.`,
-    title: (review) => `Publish feedback ${shortId(review.id)}?`,
-    tone: 'info',
+      `Publish review ${shortId(review.id)} so it can appear in the app and count toward Partner rating.`,
+    title: (review) => `Publish review ${shortId(review.id)}?`,
+    tone: 'success',
   },
   REPORTED: {
     confirmLabel: 'Mark for follow-up',
     description: (review, reportReason) =>
-      `Mark feedback ${shortId(review.id)} for moderation follow-up. Reason: ${
+      `Mark review ${shortId(review.id)} for moderation follow-up. Reason: ${
         reportReason || 'Marked for follow-up'
       }.`,
-    title: (review) => `Report feedback ${shortId(review.id)}?`,
-    tone: 'warning',
+    title: (review) => `Mark review ${shortId(review.id)} for follow-up?`,
+    tone: 'info',
   },
 };
 

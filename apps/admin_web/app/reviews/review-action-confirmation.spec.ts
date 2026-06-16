@@ -13,29 +13,29 @@ const review = {
 } as AdminReview;
 
 describe('review action confirmation', () => {
-  it('builds a hide confirmation with report reason evidence', () => {
-    const confirmation = buildReviewModerationConfirmation([review], review.id, 'HIDDEN', 'Hidden by admin');
+  it('builds a hold confirmation with report reason evidence', () => {
+    const confirmation = buildReviewModerationConfirmation([review], review.id, 'HIDDEN', 'Held by admin');
 
     expect(confirmation).toEqual({
       cancelHref: '/reviews',
-      confirmLabel: 'Hide feedback',
-      description: 'Hide feedback review-f from public visibility. Reason: Hidden by admin.',
+      confirmLabel: 'Hold review',
+      description: 'Hold review review-f from app visibility. Reason: Held by admin.',
       hiddenInputs: [
         { name: 'reviewId', value: review.id },
         { name: 'status', value: 'HIDDEN' },
-        { name: 'reportReason', value: 'Hidden by admin' },
+        { name: 'reportReason', value: 'Held by admin' },
       ],
       reviewId: review.id,
-      title: 'Hide feedback review-f?',
-      tone: 'danger',
+      title: 'Hold review review-f?',
+      tone: 'warning',
     });
   });
 
   it('builds a publish confirmation', () => {
     const confirmation = buildReviewModerationConfirmation([review], review.id, 'PUBLISHED', '');
 
-    expect(confirmation?.confirmLabel).toBe('Publish feedback');
-    expect(confirmation?.tone).toBe('info');
+    expect(confirmation?.confirmLabel).toBe('Publish review');
+    expect(confirmation?.tone).toBe('success');
     expect(confirmation?.hiddenInputs).toContainEqual({ name: 'status', value: 'PUBLISHED' });
   });
 

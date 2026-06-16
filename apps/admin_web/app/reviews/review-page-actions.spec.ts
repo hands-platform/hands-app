@@ -9,11 +9,11 @@ describe('review page actions', () => {
       status: 'REPORTED',
     } as AdminReview);
 
-    expect(actions.map((action) => action.label)).toEqual(['Publish', 'Hide', 'Report']);
+    expect(actions.map((action) => action.label)).toEqual(['Publish', 'Hold', 'Follow-up']);
     expect(actions.map((action) => action.disabled)).toEqual([false, false, true]);
     expect(actions.map((action) => (action.kind === 'link' ? action.href : ''))).toEqual([
       '/reviews?confirm=moderate&reviewId=review-action-123456&status=PUBLISHED',
-      '/reviews?confirm=moderate&reviewId=review-action-123456&status=HIDDEN&reportReason=Hidden+by+admin',
+      '/reviews?confirm=moderate&reviewId=review-action-123456&status=HIDDEN&reportReason=Held+by+admin',
       '/reviews?confirm=moderate&reviewId=review-action-123456&status=REPORTED&reportReason=Marked+for+follow-up',
     ]);
   });

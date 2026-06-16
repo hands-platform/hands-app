@@ -4,6 +4,23 @@ import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
 import type { ReviewTableRow } from './reviews-table-section';
 
+export const DEFAULT_REVIEW_PAGE_SIZE = 10;
+export const REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+export const REVIEW_EXPORT_COLUMNS = [
+  'Review ID',
+  'Partner',
+  'Customer',
+  'Customer Phone',
+  'Rating',
+  'Status',
+  'App Visibility',
+  'Review',
+  'Report Reason',
+  'Created At',
+  'Booking',
+  'Service',
+] as const;
+
 export type ReviewCommandTone = 'warn' | 'info' | 'ok';
 
 export type ReviewCommandItem = {
@@ -17,25 +34,44 @@ export type ReviewCommandItem = {
 };
 
 export type ReviewFilters = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly q: string;
   readonly review: string;
+};
+
+export type ReviewPagination<T> = {
+  readonly from: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly rows: readonly T[];
+  readonly to: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
 };
 
 export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTableRow[] {
   return reviews.map((review) => ({
-    actionLabel: `Feedback actions for ${shortId(review.id)}`,
+    actionLabel: `Review actions for ${shortId(review.id)}`,
     actions: reviewModerationActionMenuItems(review),
+    appVisibilityLabel: review.status === 'PUBLISHED' ? 'App visible' : 'Not visible in app',
+    bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
     commentLabel: review.comment?.trim() || 'No written review',
-    customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown',
+    createdAtLabel: formatReviewDate(review.createdAt),
+    customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
+    customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
     customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
     id: review.id,
-    opsHint: opsHint(review),
-    opsSignal: opsSignal(review),
-    providerHint: providerReviewHint(review),
-    providerLabel: review.providerProfile?.displayName ?? 'Unknown',
-    reportReasonLabel: review.reportReason?.trim() ? `Report: ${review.reportReason}` : 'No report reason',
+    partnerHint: partnerReviewHint(review),
+    partnerInitials: initials(review.providerProfile?.displayName),
+    partnerLabel: reviewProviderLabel(review),
+    rating: review.rating,
+    ratingLabel: `${review.rating}/5`,
+    reportReasonLabel: review.reportReason?.trim() ? `Reason: ${review.reportReason}` : '',
+    serviceLabel: reviewServiceLabel(review),
     shortIdLabel: shortId(review.id),
-    signalClassName: signalClass(review),
-    statusLabel: humanizeStatus(review.status),
+    statusClassName: reviewStatusClassName(review.status),
+    statusLabel: reviewStatusLabel(review.status),
     statusMeaning: statusMeaning(review.status),
   }));
 }
@@ -55,14 +91,14 @@ export function buildReviewCommandBoard(reviews: readonly AdminReview[]): Review
   const followUp = reviews.filter(
     (review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()),
   );
-  const hidden = reviews.filter((review) => review.status === 'HIDDEN');
+  const held = reviews.filter((review) => review.status === 'HIDDEN');
 
   return [
     {
-      title: 'Reported feedback',
-      detail: 'Customer or operator reports need moderation, support notes, and public visibility decision.',
+      title: 'Reported reviews',
+      detail: 'Customer or operator reports need moderation, support notes, and a visibility decision.',
       status: 'Reported',
-      operatorAction: 'Open reported rows first, then publish, hide, or keep under follow-up.',
+      operatorAction: 'Open reported rows first, then publish, hold, or keep under follow-up.',
       href: '/reviews?review=reported',
       tone: reported.length > 0 ? 'warn' : 'ok',
       reviews: reported,
@@ -77,75 +113,151 @@ export function buildReviewCommandBoard(reviews: readonly AdminReview[]): Review
       reviews: followUp,
     },
     {
-      title: 'Hidden evidence',
-      detail: 'Hidden reviews should not disappear operationally; they remain useful for disputes.',
-      status: 'Hidden',
-      operatorAction: 'Make sure hidden rows have a clear reason and audit trail.',
-      href: '/reviews?review=hidden',
-      tone: hidden.length > 0 ? 'info' : 'ok',
-      reviews: hidden,
+      title: 'Held from app',
+      detail: 'Held reviews are not shown in the app, but remain retained for support and Partner coaching.',
+      status: 'Held',
+      operatorAction: 'Make sure held rows have a clear reason and audit trail.',
+      href: '/reviews?review=held',
+      tone: held.length > 0 ? 'info' : 'ok',
+      reviews: held,
     },
   ];
 }
 
 export function buildReviewFilters(params: Record<string, string | string[] | undefined>): ReviewFilters {
   return {
+    page: normalizePage(readParam(params.page)),
+    pageSize: normalizePageSize(readParam(params.pageSize)),
+    q: readParam(params.q).trim(),
     review: normalizeReviewFilter(readParam(params.review)),
   };
 }
 
 export function filterReviews(reviews: readonly AdminReview[], filters: ReviewFilters): AdminReview[] {
-  if (!filters.review) {
-    return [...reviews];
+  const query = filters.q.toLowerCase();
+
+  return reviews.filter((review) => {
+    if (filters.review && !reviewMatchesFilter(review, filters.review)) {
+      return false;
+    }
+    if (query && !searchableReviewText(review).includes(query)) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function paginateReviewRows<T>(rows: readonly T[], filters: ReviewFilters): ReviewPagination<T> {
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+  const paginatedRows = rows.slice(start, start + filters.pageSize);
+
+  return {
+    from: totalRows === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows: paginatedRows,
+    to: Math.min(start + filters.pageSize, totalRows),
+    totalPages,
+    totalRows,
+  };
+}
+
+export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<ReviewFilters> = {}) {
+  const next: ReviewFilters = {
+    ...filters,
+    ...overrides,
+    page: overrides.page ?? 1,
+  };
+  const params = new URLSearchParams();
+
+  if (next.q) {
+    params.set('q', next.q);
   }
-  return reviews.filter((review) => reviewMatchesFilter(review, filters.review));
+  if (next.pageSize !== DEFAULT_REVIEW_PAGE_SIZE) {
+    params.set('pageSize', String(next.pageSize));
+  }
+  if (next.review) {
+    params.set('review', next.review);
+  }
+  if (next.page > 1) {
+    params.set('page', String(next.page));
+  }
+
+  return params.size ? `/reviews?${params.toString()}` : '/reviews';
 }
 
 export function reviewFilterLinks() {
   return [
-    { label: 'All feedback', href: '/reviews', review: '' },
-    { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
-    { label: 'Follow-up', href: '/reviews?review=follow-up', review: 'follow-up' },
-    { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
+    { label: 'All reviews', href: '/reviews', review: '' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
+    { label: 'Held', href: '/reviews?review=held', review: 'held' },
+    { label: 'Follow-up', href: '/reviews?review=follow-up', review: 'follow-up' },
+    { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
   ] as const;
 }
 
 export function reviewFilterDescription(review: string) {
   if (review === 'reported') {
-    return 'feedback records that need moderation follow-up.';
+    return 'reviews that need moderation follow-up.';
   }
   if (review === 'follow-up') {
-    return 'feedback records with report reasons or moderation follow-up.';
+    return 'reviews with report reasons or moderation follow-up.';
   }
-  if (review === 'hidden') {
-    return 'feedback removed from public visibility but retained for evidence.';
+  if (review === 'held') {
+    return 'reviews held from app visibility but retained for evidence.';
   }
   if (review === 'published') {
-    return 'feedback currently visible to customers.';
+    return 'reviews currently visible in the app.';
   }
-  return 'all feedback records.';
+  return 'all customer reviews.';
 }
 
 export function emptyReviewMessage(review: string) {
   if (!review) {
-    return 'No feedback records loaded.';
+    return 'No customer reviews loaded.';
   }
-  return `No feedback records currently match this queue. ${reviewFilterDescription(review)}`;
+  return `No customer reviews currently match this queue. ${reviewFilterDescription(review)}`;
 }
 
 export function buildSummary(reviews: readonly AdminReview[]) {
+  const rated = reviews.filter((review) => Number.isFinite(review.rating));
+
   return {
-    total: reviews.length,
-    flagged: reviews.filter((review) => review.status === 'REPORTED' || review.status === 'HIDDEN').length,
+    averageRating:
+      rated.length > 0
+        ? (rated.reduce((sum, review) => sum + review.rating, 0) / rated.length).toFixed(1)
+        : '0.0',
+    held: reviews.filter((review) => review.status === 'HIDDEN').length,
     published: reviews.filter((review) => review.status === 'PUBLISHED').length,
+    reported: reviews.filter((review) => review.status === 'REPORTED').length,
     followUp: reviews.filter((review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()))
       .length,
+    total: reviews.length,
   };
 }
 
+export function buildReviewExportRows(reviews: readonly AdminReview[]) {
+  return reviews.map((review) => ({
+    'Review ID': review.id,
+    Partner: reviewProviderLabel(review),
+    Customer: review.customerProfile?.user?.fullName ?? 'Unknown customer',
+    'Customer Phone': review.customerProfile?.user?.phone ?? '',
+    Rating: review.rating,
+    Status: reviewStatusLabel(review.status),
+    'App Visibility': review.status === 'PUBLISHED' ? 'Visible' : 'Not visible',
+    Review: review.comment?.trim() || '',
+    'Report Reason': review.reportReason?.trim() || '',
+    'Created At': formatReviewDate(review.createdAt),
+    Booking: review.booking?.id ?? '',
+    Service: reviewServiceLabel(review),
+  }));
+}
+
 export function reviewProviderLabel(review: AdminReview) {
-  return review.providerProfile?.displayName ?? 'Unknown partner';
+  return review.providerProfile?.displayName ?? 'Unknown Partner';
 }
 
 export function reviewToneClass(tone: ReviewCommandTone) {
@@ -166,6 +278,10 @@ export function reviewToneLabel(tone: ReviewCommandTone) {
     return 'Clear';
   }
   return 'Monitor';
+}
+
+export function humanizeStatus(status: string) {
+  return reviewStatusLabel(status);
 }
 
 function reviewPriority(review: AdminReview) {
@@ -192,7 +308,7 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'follow-up') {
     return review.status === 'REPORTED' || Boolean(review.reportReason?.trim());
   }
-  if (filter === 'hidden') {
+  if (filter === 'held') {
     return review.status === 'HIDDEN';
   }
   if (filter === 'published') {
@@ -201,62 +317,128 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   return true;
 }
 
-export function humanizeStatus(status: string) {
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+function reviewStatusLabel(status: string) {
+  switch (status) {
+    case 'PUBLISHED':
+      return 'Published';
+    case 'HIDDEN':
+      return 'Held';
+    case 'REPORTED':
+      return 'Follow-up';
+    default:
+      return status
+        .toLowerCase()
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+  }
+}
+
+function reviewStatusClassName(status: string) {
+  if (status === 'PUBLISHED') {
+    return 'review-status-chip review-status-published';
+  }
+  if (status === 'HIDDEN') {
+    return 'review-status-chip review-status-held';
+  }
+  return 'review-status-chip review-status-follow-up';
 }
 
 function statusMeaning(status: string) {
   switch (status) {
     case 'PUBLISHED':
-      return 'Visible to customers';
+      return 'Visible in app';
     case 'HIDDEN':
-      return 'Removed from public view';
+      return 'Held from app visibility';
     case 'REPORTED':
-      return 'Needs moderation follow-up';
+      return 'Moderation follow-up';
     default:
-      return 'Feedback state under moderation';
+      return 'Review state under moderation';
   }
 }
 
-function providerReviewHint(review: AdminReview) {
+function partnerReviewHint(review: AdminReview) {
   if (review.status === 'REPORTED' || review.reportReason?.trim()) {
-    return 'Feedback has a follow-up marker';
-  }
-  return 'Use this record to track service feedback and booking context';
-}
-
-function signalClass(review: AdminReview) {
-  if (review.status === 'REPORTED') {
-    return 'signal signal-warn';
-  }
-  if (review.status === 'PUBLISHED') {
-    return 'signal signal-ok';
-  }
-  return 'signal signal-info';
-}
-
-function opsSignal(review: AdminReview) {
-  if (review.status === 'REPORTED') {
-    return 'Needs moderation';
+    return 'Follow-up marker';
   }
   if (review.status === 'HIDDEN') {
-    return 'Already hidden';
+    return 'Not visible in app';
   }
-  return 'Monitor';
+  return 'Visible review';
 }
 
-function opsHint(review: AdminReview) {
-  if (review.status === 'REPORTED') {
-    return 'Review the text, confirm the report reason, and decide whether to keep it hidden.';
+function reviewServiceLabel(review: AdminReview) {
+  const services = review.booking?.services
+    ?.map((item) => item.service?.name)
+    .filter((name): name is string => Boolean(name));
+
+  return services?.length ? services.join(', ') : 'Service not attached';
+}
+
+function searchableReviewText(review: AdminReview) {
+  return [
+    review.id,
+    reviewProviderLabel(review),
+    review.customerProfile?.user?.fullName ?? '',
+    review.customerProfile?.user?.phone ?? '',
+    review.comment ?? '',
+    review.reportReason ?? '',
+    reviewStatusLabel(review.status),
+    statusMeaning(review.status),
+    reviewServiceLabel(review),
+    review.booking?.id ?? '',
+    String(review.rating),
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function formatReviewDate(value?: string | null) {
+  const timestamp = value ? new Date(value) : null;
+  if (!timestamp || Number.isNaN(timestamp.getTime())) {
+    return 'No date';
   }
-  if (review.status === 'HIDDEN') {
-    return 'Hidden feedback should still be documented for support or partner coaching.';
+
+  return [
+    `${pad(timestamp.getHours())}:${pad(timestamp.getMinutes())}`,
+    `${pad(timestamp.getDate())}/${pad(timestamp.getMonth() + 1)}/${timestamp.getFullYear()}`,
+  ].join(' ');
+}
+
+function initials(value?: string | null) {
+  const parts = value?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (parts.length === 0) {
+    return 'NA';
   }
-  return 'Routine feedback row for customer sentiment and booking context.';
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function normalizePage(value: string) {
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function normalizePageSize(value: string) {
+  const pageSize = Number(value);
+  return REVIEW_PAGE_SIZE_OPTIONS.includes(pageSize as (typeof REVIEW_PAGE_SIZE_OPTIONS)[number])
+    ? pageSize
+    : DEFAULT_REVIEW_PAGE_SIZE;
+}
+
+function normalizeReviewFilter(value: string) {
+  if (value === 'low-rating' || value === 'service-recovery') {
+    return 'follow-up';
+  }
+  if (value === 'hidden' || value === 'hold') {
+    return 'held';
+  }
+  if (value === 'published' || value === 'held' || value === 'reported' || value === 'follow-up') {
+    return value;
+  }
+  return '';
 }
 
 function dateMs(value?: string | null) {
@@ -264,9 +446,6 @@ function dateMs(value?: string | null) {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function normalizeReviewFilter(value: string) {
-  if (value === 'low-rating' || value === 'service-recovery') {
-    return 'follow-up';
-  }
-  return value;
+function pad(value: number) {
+  return String(value).padStart(2, '0');
 }

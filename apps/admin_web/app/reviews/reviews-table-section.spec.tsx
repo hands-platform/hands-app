@@ -1,74 +1,119 @@
+import {
+  DEFAULT_REVIEW_PAGE_SIZE,
+  type ReviewFilters,
+  type ReviewPagination,
+} from './review-page-model';
 import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
 
 describe('ReviewsTableSection', () => {
-  it('renders review moderation evidence and action links', () => {
+  it('renders the Vuexy customer review board with controls, rating, status, and action links', () => {
     const section = ReviewsTableSection({
-      emptyMessage: 'No feedback records loaded.',
+      csvHref: 'data:text/csv;charset=utf-8,Review',
+      emptyMessage: 'No customer reviews loaded.',
+      filters: filters(),
+      pagination: pagination([buildRow()]),
       rows: [buildRow()],
     });
 
-    const rendered = textContent(section);
+    const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Feedback record');
-    expect(rendered).toContain('review');
+    expect(rendered).toContain('Customer Review');
+    expect(rendered).toContain('Search Review');
+    expect(rendered).toContain('Export');
     expect(rendered).toContain('Massage Partner');
-    expect(rendered).toContain('Feedback has a follow-up marker');
+    expect(rendered).toContain('Visible review');
     expect(rendered).toContain('Customer One');
     expect(rendered).toContain('+84900000000');
-    expect(rendered).toContain('Reported');
-    expect(rendered).toContain('Needs moderation follow-up');
-    expect(rendered).toContain('Needs moderation');
-    expect(rendered).toContain('Report: Service arrived late');
+    expect(rendered).toContain('The service arrived late but recovered well.');
+    expect(rendered).toContain('Aromatherapy');
+    expect(rendered).toContain('Published');
+    expect(rendered).toContain('Visible in app');
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/reviews?confirm=moderate&reviewId=review-1&status=PUBLISHED',
-        '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Hidden+by+admin',
+        '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Held+by+admin',
+        'data:text/csv;charset=utf-8,Review',
       ]),
     );
   });
 
   it('renders the empty state when there are no review rows', () => {
     const section = ReviewsTableSection({
-      emptyMessage: 'No feedback records currently match this queue.',
+      csvHref: 'data:text/csv;charset=utf-8,Review',
+      emptyMessage: 'No customer reviews currently match this queue.',
+      filters: filters({ review: 'held' }),
+      pagination: pagination([]),
       rows: [],
     });
 
-    expect(textContent(section)).toContain('No feedback records currently match this queue.');
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No customer reviews currently match this queue.');
+    expect(rendered).toContain('Showing 0 to 0 of 0 entries');
   });
 });
 
 function buildRow(): ReviewTableRow {
   return {
-    actionLabel: 'Feedback actions for review',
+    actionLabel: 'Review actions for review',
     actions: [
       {
-        description: 'Review before making this feedback visible.',
+        description: 'Publish this review so it can appear in the app.',
         href: '/reviews?confirm=moderate&reviewId=review-1&status=PUBLISHED',
         kind: 'link',
         label: 'Publish',
-        tone: 'info',
+        tone: 'success',
       },
       {
-        description: 'Review before removing this feedback from public visibility.',
-        href: '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Hidden+by+admin',
+        description: 'Hold this review so it no longer appears in the app.',
+        href: '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Held+by+admin',
         kind: 'link',
-        label: 'Hide',
-        tone: 'danger',
+        label: 'Hold',
+        tone: 'warning',
       },
     ],
+    appVisibilityLabel: 'App visible',
+    bookingLabel: 'booking',
     commentLabel: 'The service arrived late but recovered well.',
+    createdAtLabel: '16:08 23/02/2026',
+    customerInitials: 'CO',
     customerLabel: 'Customer One',
     customerPhone: '+84900000000',
     id: 'review-1',
-    opsHint: 'Review the text, confirm the report reason, and decide whether to keep it hidden.',
-    opsSignal: 'Needs moderation',
-    providerHint: 'Feedback has a follow-up marker',
-    providerLabel: 'Massage Partner',
-    reportReasonLabel: 'Report: Service arrived late',
+    partnerHint: 'Visible review',
+    partnerInitials: 'MP',
+    partnerLabel: 'Massage Partner',
+    rating: 5,
+    ratingLabel: '5/5',
+    reportReasonLabel: '',
+    serviceLabel: 'Aromatherapy',
     shortIdLabel: 'review',
-    signalClassName: 'signal signal-warn',
-    statusLabel: 'Reported',
-    statusMeaning: 'Needs moderation follow-up',
+    statusClassName: 'review-status-chip review-status-published',
+    statusLabel: 'Published',
+    statusMeaning: 'Visible in app',
+  };
+}
+
+function filters(input: Partial<ReviewFilters> = {}): ReviewFilters {
+  return {
+    page: 1,
+    pageSize: DEFAULT_REVIEW_PAGE_SIZE,
+    q: '',
+    review: '',
+    ...input,
+  };
+}
+
+function pagination(rows: ReviewTableRow[]): ReviewPagination<ReviewTableRow> {
+  return {
+    from: rows.length ? 1 : 0,
+    page: 1,
+    pageSize: DEFAULT_REVIEW_PAGE_SIZE,
+    rows,
+    to: rows.length,
+    totalPages: 1,
+    totalRows: rows.length,
   };
 }
 
@@ -87,6 +132,10 @@ function textContent(value: unknown): string {
   const record = readRecord(value);
   const props = readRecord(record?.props);
   return textContent(props?.children);
+}
+
+function normalizedText(value: unknown) {
+  return textContent(value).replace(/\s+/g, ' ').trim();
 }
 
 function hrefsIn(value: unknown): string[] {

@@ -7,35 +7,35 @@ export function reviewModerationActionMenuItems(review: AdminReview): readonly A
     {
       description:
         review.status === 'PUBLISHED'
-          ? 'Feedback is already published.'
-          : 'Review before making this feedback visible.',
+          ? 'Review is already published and visible in the app.'
+          : 'Publish this review so it can appear in the app.',
       disabled: review.status === 'PUBLISHED',
       href: reviewModerationConfirmHref(review.id, 'PUBLISHED'),
       kind: 'link',
       label: 'Publish',
-      tone: 'info',
+      tone: 'success',
     },
     {
       description:
         review.status === 'HIDDEN'
-          ? 'Feedback is already hidden.'
-          : 'Review before removing this feedback from public visibility.',
+          ? 'Review is already held from app visibility.'
+          : 'Hold this review so it no longer appears in the app.',
       disabled: review.status === 'HIDDEN',
-      href: reviewModerationConfirmHref(review.id, 'HIDDEN', 'Hidden by admin'),
+      href: reviewModerationConfirmHref(review.id, 'HIDDEN', 'Held by admin'),
       kind: 'link',
-      label: 'Hide',
-      tone: 'danger',
+      label: 'Hold',
+      tone: 'warning',
     },
     {
       description:
         review.status === 'REPORTED'
-          ? 'Feedback is already marked for follow-up.'
-          : 'Review before adding moderation follow-up.',
+          ? 'Review is already marked for moderation follow-up.'
+          : 'Mark this review for moderation follow-up without publishing it immediately.',
       disabled: review.status === 'REPORTED',
       href: reviewModerationConfirmHref(review.id, 'REPORTED', 'Marked for follow-up'),
       kind: 'link',
-      label: 'Report',
-      tone: 'warning',
+      label: 'Follow-up',
+      tone: 'info',
     },
   ];
 }

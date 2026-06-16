@@ -241,8 +241,8 @@ export const adminNavSections: AdminNavSection[] = [
       },
       {
         href: '/reviews',
-        label: 'Feedback',
-        description: 'Customer feedback records for service evidence and follow-up.',
+        label: 'Customer Reviews',
+        description: 'Customer review records, app visibility, and moderation follow-up.',
       },
       {
         href: '/audit-log',

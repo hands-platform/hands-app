@@ -1941,6 +1941,377 @@ textarea:focus-visible {
   outline-offset: -2px;
 }
 
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.vuexy-review-card {
+  background: #2f3349;
+  border: 1px solid rgba(225, 222, 245, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 3px 12px rgba(19, 17, 32, 0.2);
+  color: rgba(225, 222, 245, 0.9);
+  overflow: hidden;
+}
+
+.vuexy-review-toolbar {
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(225, 222, 245, 0.12);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.vuexy-review-toolbar h2,
+.vuexy-review-toolbar p {
+  margin: 0;
+}
+
+.vuexy-review-toolbar h2 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.vuexy-review-toolbar p {
+  color: rgba(225, 222, 245, 0.7);
+  font-size: 13px;
+  line-height: 20px;
+  margin-top: 5px;
+}
+
+.vuexy-review-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-end;
+}
+
+.vuexy-review-search,
+.vuexy-review-select {
+  align-items: center;
+  border: 1px solid rgba(225, 222, 245, 0.22);
+  border-radius: 6px;
+  color: rgba(225, 222, 245, 0.5);
+  display: flex;
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.vuexy-review-search {
+  width: 280px;
+}
+
+.vuexy-review-search input,
+.vuexy-review-select select {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: rgba(225, 222, 245, 0.9);
+  font-size: 15px;
+  min-height: 0;
+  padding: 0;
+}
+
+.vuexy-review-search input {
+  flex: 1;
+  min-width: 0;
+}
+
+.vuexy-review-search input::placeholder {
+  color: rgba(225, 222, 245, 0.4);
+}
+
+.vuexy-review-select {
+  min-width: 88px;
+}
+
+.vuexy-review-select select {
+  min-width: 56px;
+}
+
+.vuexy-review-button,
+.vuexy-review-export {
+  align-items: center;
+  background: rgba(128, 131, 144, 0.16);
+  border: 0;
+  border-radius: 6px;
+  color: #808390;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 700;
+  gap: 8px;
+  justify-content: center;
+  line-height: 22px;
+  min-height: 38px;
+  padding: 8px 18px;
+  text-decoration: none;
+}
+
+.vuexy-review-button:hover,
+.vuexy-review-export:hover {
+  background: rgba(128, 131, 144, 0.24);
+  color: rgba(225, 222, 245, 0.9);
+}
+
+.vuexy-review-card .admin-table-scroll {
+  margin-top: 0;
+}
+
+.vuexy-review-card .table {
+  background: #2f3349;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: rgba(225, 222, 245, 0.9);
+  margin: 0;
+  min-width: 1080px;
+}
+
+.vuexy-review-card .table th,
+.vuexy-review-card .table td {
+  border-bottom: 1px solid rgba(225, 222, 245, 0.12);
+  padding: 16px 18px;
+  vertical-align: middle;
+}
+
+.vuexy-review-card .table th {
+  background: #2f3349;
+  color: rgba(225, 222, 245, 0.76);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 24px;
+}
+
+.vuexy-review-card .table tbody tr:hover {
+  background: rgba(225, 222, 245, 0.04);
+}
+
+.vuexy-review-card .table th:first-child,
+.vuexy-review-card .table td:first-child {
+  padding-left: 22px;
+  width: 42px;
+}
+
+.vuexy-review-card .table th:nth-child(4),
+.vuexy-review-card .table td:nth-child(4) {
+  min-width: 300px;
+  width: 34%;
+}
+
+.vuexy-review-check-cell input {
+  accent-color: #7367f0;
+  height: 18px;
+  width: 18px;
+}
+
+.vuexy-review-person {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  min-width: 0;
+}
+
+.vuexy-review-person strong,
+.vuexy-review-person span {
+  display: block;
+  min-width: 0;
+}
+
+.vuexy-review-person strong {
+  color: rgba(225, 222, 245, 0.9);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.vuexy-review-person span {
+  color: rgba(225, 222, 245, 0.7);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.vuexy-review-person .vuexy-review-customer {
+  color: #7367f0;
+}
+
+.vuexy-review-avatar {
+  align-items: center;
+  background: linear-gradient(135deg, #7367f0, #00bad1);
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.vuexy-review-avatar-square {
+  background: linear-gradient(135deg, #00bad1, #28c76f);
+  border-radius: 6px;
+  height: 38px;
+  width: 38px;
+}
+
+.vuexy-review-copy-cell {
+  color: rgba(225, 222, 245, 0.7);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.vuexy-review-copy-cell p {
+  margin: 5px 0;
+  max-width: 440px;
+}
+
+.vuexy-review-copy-cell span {
+  color: rgba(225, 222, 245, 0.5);
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.vuexy-review-stars {
+  align-items: center;
+  color: rgba(255, 159, 67, 0.32);
+  display: flex;
+  gap: 1px;
+}
+
+.vuexy-review-stars .is-filled {
+  color: #ff9f43;
+  fill: #ff9f43;
+}
+
+.vuexy-review-date-cell {
+  color: rgba(225, 222, 245, 0.7);
+  font-size: 15px;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.review-status-chip {
+  align-items: center;
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  min-width: 24px;
+  padding: 2px 10px;
+}
+
+.review-status-published {
+  background: rgba(40, 199, 111, 0.16);
+  color: #28c76f;
+}
+
+.review-status-held {
+  background: rgba(255, 159, 67, 0.16);
+  color: #ff9f43;
+}
+
+.review-status-follow-up {
+  background: rgba(0, 186, 209, 0.16);
+  color: #00bad1;
+}
+
+.vuexy-review-card td small {
+  color: rgba(225, 222, 245, 0.5);
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+  margin-top: 4px;
+}
+
+.vuexy-review-actions {
+  align-items: flex-start;
+  color: rgba(225, 222, 245, 0.7);
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.vuexy-review-actions .participant-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.vuexy-review-actions .pill {
+  justify-content: center;
+  min-width: 86px;
+}
+
+.vuexy-review-footer {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 14px 24px;
+}
+
+.vuexy-review-footer > span {
+  color: rgba(225, 222, 245, 0.4);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.vuexy-review-pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.vuexy-review-page-link {
+  align-items: center;
+  background: rgba(225, 222, 245, 0.08);
+  border-radius: 6px;
+  color: rgba(225, 222, 245, 0.9);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+  min-width: 38px;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.vuexy-review-page-link.is-active {
+  background: #7367f0;
+  box-shadow: 0 2px 6px rgba(115, 103, 240, 0.3);
+  color: #ffffff;
+}
+
+.vuexy-review-page-link.is-disabled {
+  color: rgba(225, 222, 245, 0.3);
+  cursor: not-allowed;
+}
+
+.vuexy-review-page-link:not(.is-disabled):hover {
+  background: rgba(115, 103, 240, 0.16);
+  color: #8f85f3;
+}
+
 .notification-table-shell {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
@@ -2321,6 +2692,25 @@ textarea:focus-visible {
 
   .service-catalog-page .form-grid {
     padding: 12px;
+  }
+
+  .vuexy-review-toolbar,
+  .vuexy-review-footer {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .vuexy-review-controls {
+    justify-content: flex-start;
+  }
+
+  .vuexy-review-search {
+    width: 100%;
+  }
+
+  .vuexy-review-pagination {
+    justify-content: flex-start;
   }
 
   .chat-transcript-bubble {
