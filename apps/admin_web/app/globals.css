@@ -1386,13 +1386,15 @@ a.action-button-card:hover {
 }
 
 .service-catalog-page > .card,
-.service-catalog-page > .grid {
+.service-catalog-page > .grid,
+.service-catalog-page > .service-edit-grid {
   margin-bottom: 0;
   margin-top: 0;
 }
 
 .service-catalog-page > .card,
-.service-catalog-page > .grid > .card {
+.service-catalog-page > .grid > .card,
+.service-catalog-page > .service-edit-grid > .card {
   min-width: 0;
   overflow: hidden;
 }
@@ -1446,6 +1448,96 @@ a.action-button-card:hover {
   border-radius: 0;
   box-shadow: none;
   margin-top: 0;
+}
+
+.service-edit-grid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+}
+
+.service-edit-grid > .card {
+  align-self: start;
+}
+
+.service-edit-notice-card {
+  background: var(--admin-action-hover);
+  box-shadow: var(--admin-shadow-xs);
+  grid-column: 1 / -1;
+}
+
+.service-edit-card {
+  display: grid;
+  gap: 16px;
+  max-height: min(760px, calc(100vh - 96px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.service-catalog-page > .service-edit-grid > .service-edit-card {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.service-edit-card > .toolbar {
+  align-items: flex-start;
+  background: var(--admin-surface-raised);
+  border-bottom: 1px solid var(--admin-border);
+  gap: 12px;
+  margin: -24px -24px 0;
+  padding: 24px 24px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.service-edit-card .setup-stage-list {
+  gap: 12px;
+  margin-top: 0;
+}
+
+.service-edit-card .setup-stage-item {
+  border-radius: var(--admin-radius-lg);
+  gap: 12px;
+  grid-template-columns: 1fr;
+  padding: 14px;
+}
+
+.service-edit-card .setup-stage-item > div {
+  min-width: 0;
+}
+
+.service-edit-card .setup-stage-item > span {
+  background: var(--admin-action-hover);
+  border-radius: 999px;
+  justify-self: flex-start;
+  min-width: 50px;
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.service-edit-card .setup-stage-item > small {
+  justify-self: flex-start;
+}
+
+.service-catalog-page .service-impact-card .ops-section-header {
+  grid-template-columns: 1fr;
+}
+
+.service-catalog-page .service-impact-card .ops-section-header .pill {
+  justify-self: flex-start;
+  white-space: nowrap;
+}
+
+.service-catalog-page .service-impact-card .setup-stage-item {
+  grid-template-columns: 1fr;
+}
+
+.service-catalog-page .service-impact-card .setup-stage-item > span,
+.service-catalog-page .service-impact-card .setup-stage-item > small {
+  justify-self: flex-start;
 }
 
 .chat-transcript-list {

@@ -20,7 +20,7 @@ export function ServiceGroupEditCard({ activeTaxPolicy, group }: ServiceGroupEdi
   const durationCoverage = standardDurationCoverage(group.items);
 
   return (
-    <article className="card">
+    <article className="card service-edit-card">
       <div className="toolbar admin-mb-12">
         <div>
           <h2>{group.label}</h2>

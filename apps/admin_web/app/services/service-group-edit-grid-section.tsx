@@ -14,9 +14,9 @@ export function ServiceGroupEditGridSection({
   visibleGroups,
 }: ServiceGroupEditGridSectionProps) {
   return (
-    <section className="grid">
+    <section className="service-edit-grid">
       {hiddenGroupCount ? (
-        <article className="card">
+        <article className="card service-edit-notice-card">
           <h2>Large catalog mode</h2>
           <p className="muted">
             Editing is capped to the first {visibleGroups.length} service type(s) on this page so admin
