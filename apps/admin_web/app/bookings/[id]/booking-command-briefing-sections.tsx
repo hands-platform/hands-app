@@ -17,6 +17,14 @@ type SummaryMetricRow = {
   helper: string;
 };
 
+type SummaryLinkGridProps = {
+  rows: SummaryLinkCard[];
+};
+
+type SummaryMetricGridProps = {
+  rows: SummaryMetricRow[];
+};
+
 type MetricSummaryCard = SummaryMetricRow;
 
 type MatchingRuleSnapshot = {
@@ -394,7 +402,7 @@ export type BookingPriorityBriefingSectionProps = {
   operatorPriorityBriefing: PriorityBriefing;
 };
 
-function SummaryLinkGrid({ rows }: { rows: SummaryLinkCard[] }) {
+function SummaryLinkGrid({ rows }: SummaryLinkGridProps) {
   return (
     <div className="service-trace-summary admin-mt-12">
       {rows.map((item) => (
@@ -408,7 +416,7 @@ function SummaryLinkGrid({ rows }: { rows: SummaryLinkCard[] }) {
   );
 }
 
-function SummaryMetricGrid({ rows }: { rows: SummaryMetricRow[] }) {
+function SummaryMetricGrid({ rows }: SummaryMetricGridProps) {
   return (
     <div className="service-trace-summary admin-mt-12">
       {rows.map((row) => (
