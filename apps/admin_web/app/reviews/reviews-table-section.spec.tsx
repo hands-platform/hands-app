@@ -29,13 +29,22 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Published');
     expect(rendered).toContain('Visible in app');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
-    expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining([
-        '/reviews?confirm=moderate&reviewId=review-1&status=PUBLISHED',
-        '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Held+by+admin',
-        'data:text/csv;charset=utf-8,Review',
-      ]),
-    );
+    expect(hrefsIn(section)).toContain('data:text/csv;charset=utf-8,Review');
+    expect(dropdownPropsIn(section)).toEqual([
+      expect.objectContaining({
+        actions: expect.arrayContaining([
+          expect.objectContaining({
+            href: '/reviews?confirm=moderate&reviewId=review-1&status=PUBLISHED',
+            label: 'Publish',
+          }),
+          expect.objectContaining({
+            href: '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Held+by+admin',
+            label: 'Hold',
+          }),
+        ]),
+        label: 'Review actions for review',
+      }),
+    ]);
   });
 
   it('renders the empty state when there are no review rows', () => {
@@ -60,6 +69,7 @@ function buildRow(): ReviewTableRow {
     actions: [
       {
         description: 'Publish this review so it can appear in the app.',
+        disabled: false,
         href: '/reviews?confirm=moderate&reviewId=review-1&status=PUBLISHED',
         kind: 'link',
         label: 'Publish',
@@ -67,6 +77,7 @@ function buildRow(): ReviewTableRow {
       },
       {
         description: 'Hold this review so it no longer appears in the app.',
+        disabled: false,
         href: '/reviews?confirm=moderate&reviewId=review-1&status=HIDDEN&reportReason=Held+by+admin',
         kind: 'link',
         label: 'Hold',
@@ -153,10 +164,29 @@ function hrefsIn(value: unknown): string[] {
   return [...href, ...hrefsIn(props?.children)];
 }
 
+function dropdownPropsIn(value: unknown): Record<string, unknown>[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(dropdownPropsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  if (isReviewActionDropdown(record?.type)) {
+    return props ? [props] : [];
+  }
+  return dropdownPropsIn(props?.children);
+}
+
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
   const props = readRecord(record?.props);
-  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+  return typeof record?.type === 'function' && !isReviewActionDropdown(record.type)
+    ? resolveElement(record.type(props))
+    : value;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {
@@ -164,4 +194,8 @@ function readRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
+}
+
+function isReviewActionDropdown(value: unknown) {
+  return typeof value === 'function' && value.name === 'ReviewActionDropdown';
 }

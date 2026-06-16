@@ -9,6 +9,7 @@ import {
   ProviderDocumentType,
   ProviderKycStatus,
   ProviderStatus,
+  ReviewStatus,
   VerificationStatus,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
@@ -104,7 +105,12 @@ export class ProvidersService {
             },
           },
         },
-        reviews: { select: { rating: true }, take: 20, orderBy: { createdAt: 'desc' } },
+        reviews: {
+          where: { status: ReviewStatus.PUBLISHED },
+          select: { rating: true },
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+        },
       },
       take: 100,
     });
@@ -194,7 +200,11 @@ export class ProvidersService {
             },
           },
         },
-        reviews: { take: 10, orderBy: { createdAt: 'desc' } },
+        reviews: {
+          where: { status: ReviewStatus.PUBLISHED },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
     return {
@@ -618,13 +628,15 @@ function publicProviderUser(user?: { fullName: string | null } | null) {
 }
 
 function publicProviderReviews(
-  reviews: Array<{ rating: number; comment: string | null; createdAt: Date | string }>,
+  reviews: Array<{ rating: number; comment: string | null; createdAt: Date | string; status?: ReviewStatus | string }>,
 ) {
-  return reviews.map((review) => ({
-    rating: review.rating,
-    comment: review.comment,
-    createdAt: review.createdAt instanceof Date ? review.createdAt.toISOString() : review.createdAt,
-  }));
+  return reviews
+    .filter((review) => review.status === undefined || review.status === ReviewStatus.PUBLISHED)
+    .map((review) => ({
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.createdAt instanceof Date ? review.createdAt.toISOString() : review.createdAt,
+    }));
 }
 
 function providerPublicBookableServiceSummary(

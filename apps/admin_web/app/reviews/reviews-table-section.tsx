@@ -6,18 +6,18 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
-  MoreVertical,
   Search,
   Star,
 } from 'lucide-react';
-import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { ReviewActionDropdown } from './review-action-dropdown';
+import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import { REVIEW_PAGE_SIZE_OPTIONS, buildReviewListHref } from './review-page-model';
 
 export type ReviewTableRow = {
   readonly actionLabel: string;
-  readonly actions: readonly ActionMenuItem[];
+  readonly actions: readonly ReviewActionItem[];
   readonly appVisibilityLabel: string;
   readonly bookingLabel: string;
   readonly commentLabel: string;
@@ -143,8 +143,7 @@ export function ReviewsTableSection({ csvHref, emptyMessage, filters, pagination
               </td>
               <td>
                 <div className="vuexy-review-actions">
-                  <MoreVertical aria-hidden="true" size={22} />
-                  <ActionMenu actions={row.actions} label={row.actionLabel} />
+                  <ReviewActionDropdown actions={row.actions} label={row.actionLabel} />
                 </div>
               </td>
             </tr>

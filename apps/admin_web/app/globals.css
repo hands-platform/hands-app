@@ -2240,22 +2240,105 @@ textarea:focus-visible {
 }
 
 .vuexy-review-actions {
-  align-items: flex-start;
+  align-items: center;
   color: rgba(225, 222, 245, 0.7);
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-}
-
-.vuexy-review-actions .participant-list {
-  display: grid;
-  gap: 6px;
-  margin-top: 0;
-}
-
-.vuexy-review-actions .pill {
+  display: flex;
   justify-content: center;
-  min-width: 86px;
+  position: relative;
+}
+
+.vuexy-review-action-dropdown {
+  position: relative;
+}
+
+.vuexy-review-action-trigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(225, 222, 245, 0.68);
+  cursor: pointer;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+  width: 36px;
+}
+
+.vuexy-review-action-trigger:hover,
+.vuexy-review-action-trigger[aria-expanded='true'] {
+  background: rgba(225, 222, 245, 0.08);
+  color: #ffffff;
+}
+
+.vuexy-review-action-menu {
+  background: #2f3349;
+  border: 1px solid rgba(225, 222, 245, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 17, 30, 0.34);
+  display: grid;
+  gap: 4px;
+  min-width: 158px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+}
+
+.vuexy-review-action-menu::before {
+  border-bottom: 7px solid rgba(225, 222, 245, 0.14);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: -7px;
+}
+
+.vuexy-review-action-item {
+  align-items: center;
+  border-radius: 6px;
+  color: rgba(225, 222, 245, 0.86);
+  display: flex;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 10px;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.vuexy-review-action-item:hover {
+  background: rgba(115, 103, 240, 0.16);
+  color: #ffffff;
+}
+
+.vuexy-review-action-item.is-success svg {
+  color: #28c76f;
+}
+
+.vuexy-review-action-item.is-warning svg {
+  color: #ff9f43;
+}
+
+.vuexy-review-action-item.is-info svg {
+  color: #00bad1;
+}
+
+.vuexy-review-action-item.is-disabled {
+  color: rgba(225, 222, 245, 0.34);
+  cursor: not-allowed;
+}
+
+.vuexy-review-action-item.is-disabled svg {
+  color: rgba(225, 222, 245, 0.28);
 }
 
 .vuexy-review-footer {

@@ -1,8 +1,16 @@
-import type { ActionMenuItem } from '../../components/action-menu';
 import type { AdminReview } from '../../lib/admin-api';
 import { reviewModerationConfirmHref } from './review-action-confirmation';
 
-export function reviewModerationActionMenuItems(review: AdminReview): readonly ActionMenuItem[] {
+export type ReviewActionItem = {
+  readonly description: string;
+  readonly disabled: boolean;
+  readonly href: string;
+  readonly kind: 'link';
+  readonly label: string;
+  readonly tone: 'info' | 'success' | 'warning';
+};
+
+export function reviewModerationActionMenuItems(review: AdminReview): readonly ReviewActionItem[] {
   return [
     {
       description:

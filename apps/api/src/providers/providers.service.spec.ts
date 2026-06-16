@@ -3,6 +3,7 @@ import {
   VerificationStatus,
   ProviderKycStatus,
   ProviderBankAccountStatus,
+  ReviewStatus,
 } from '@prisma/client';
 
 import { ProvidersService } from './providers.service';
@@ -33,6 +34,33 @@ describe('ProvidersService nearby discovery', () => {
     expect(Object.keys((partners[0].user ?? {}) as Record<string, unknown>)).not.toContain('phone');
   });
 
+  it('requests only published review ratings in public nearby discovery', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([nearbyProviderFixture()]),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      {} as never,
+      {
+        get: jest.fn(),
+      } as never,
+    );
+
+    await service.findNearby(10.7769, 106.7009);
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          reviews: expect.objectContaining({
+            where: { status: ReviewStatus.PUBLISHED },
+          }),
+        }),
+      }),
+    );
+  });
+
   it('skips partners with invalid saved coordinates in public nearby discovery', async () => {
     const service = createServiceWithNearbyProviders([
       nearbyProviderFixture({ id: 'partner-invalid', currentLat: 'not-a-coordinate' }),
@@ -47,43 +75,56 @@ describe('ProvidersService nearby discovery', () => {
   });
 
   it('does not expose private review or media storage fields in public partner detail', async () => {
-    const service = new ProvidersService(
-      {
-        providerProfile: {
-          findFirstOrThrow: jest.fn().mockResolvedValue({
-            id: 'partner-hcm',
-            displayName: 'Linh Wellness',
-            user: {
-              fullName: 'Linh Wellness',
-              phone: '0900000000',
-              fileAssets: [
-                {
-                  id: 'file-1',
-                  url: 'https://cdn.hands.vn/public/profile.jpg',
-                  key: 'private/storage/key/profile.jpg',
-                  purpose: 'PROFILE_IMAGE',
-                  contentType: 'image/jpeg',
-                },
-              ],
-            },
-            services: [],
-            reviews: [
+    const prisma = {
+      providerProfile: {
+        findFirstOrThrow: jest.fn().mockResolvedValue({
+          id: 'partner-hcm',
+          displayName: 'Linh Wellness',
+          user: {
+            fullName: 'Linh Wellness',
+            phone: '0900000000',
+            fileAssets: [
               {
-                id: 'review-1',
-                bookingId: 'booking-1',
-                customerProfileId: 'customer-1',
-                providerProfileId: 'partner-hcm',
-                rating: 5,
-                comment: 'Great service.',
-                status: 'PUBLISHED',
-                reportReason: 'internal moderation note',
-                moderatedAt: new Date(),
-                createdAt: new Date('2026-06-01T00:00:00.000Z'),
+                id: 'file-1',
+                url: 'https://cdn.hands.vn/public/profile.jpg',
+                key: 'private/storage/key/profile.jpg',
+                purpose: 'PROFILE_IMAGE',
+                contentType: 'image/jpeg',
               },
             ],
-          }),
-        },
-      } as never,
+          },
+          services: [],
+          reviews: [
+            {
+              id: 'review-1',
+              bookingId: 'booking-1',
+              customerProfileId: 'customer-1',
+              providerProfileId: 'partner-hcm',
+              rating: 5,
+              comment: 'Great service.',
+              status: ReviewStatus.PUBLISHED,
+              reportReason: 'internal moderation note',
+              moderatedAt: new Date(),
+              createdAt: new Date('2026-06-01T00:00:00.000Z'),
+            },
+            {
+              id: 'review-held',
+              bookingId: 'booking-2',
+              customerProfileId: 'customer-2',
+              providerProfileId: 'partner-hcm',
+              rating: 1,
+              comment: 'Held review should not appear.',
+              status: ReviewStatus.HIDDEN,
+              reportReason: 'Held by admin',
+              moderatedAt: new Date(),
+              createdAt: new Date('2026-06-02T00:00:00.000Z'),
+            },
+          ],
+        }),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
       {} as never,
       {
         get: jest.fn(),
@@ -93,16 +134,29 @@ describe('ProvidersService nearby discovery', () => {
     const detail = await service.getDetail('partner-hcm');
     const serialized = JSON.stringify(detail);
 
+    expect(prisma.providerProfile.findFirstOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          reviews: expect.objectContaining({
+            where: { status: ReviewStatus.PUBLISHED },
+          }),
+        }),
+      }),
+    );
+
     expect(serialized).not.toContain('0900000000');
     expect(serialized).not.toContain('private/storage/key');
     expect(serialized).not.toContain('booking-1');
     expect(serialized).not.toContain('customer-1');
     expect(serialized).not.toContain('internal moderation note');
-    expect(detail.reviews[0]).toEqual({
-      rating: 5,
-      comment: 'Great service.',
-      createdAt: '2026-06-01T00:00:00.000Z',
-    });
+    expect(serialized).not.toContain('Held review should not appear.');
+    expect(detail.reviews).toEqual([
+      {
+        rating: 5,
+        comment: 'Great service.',
+        createdAt: '2026-06-01T00:00:00.000Z',
+      },
+    ]);
   });
 });
 
