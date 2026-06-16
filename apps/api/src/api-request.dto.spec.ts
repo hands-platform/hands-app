@@ -78,6 +78,26 @@ describe('remaining API request DTO validation', () => {
     expect(service).toHaveProperty('name', 'Foot Massage');
     expect(service).toHaveProperty('basePrice', 450000);
     expect(service).not.toHaveProperty('private');
+
+    const session = await pipe.transform(
+      {
+        role: 'CUSTOMER',
+        deviceId: ' hands-device-1 ',
+        platform: ' android ',
+        appVersion: ' 1.0.0 ',
+        deviceLanguage: ' vi-VN ',
+        lastLoginAddress: ' 123 Nguyen Hue, District 1 ',
+        ignored: true,
+      },
+      { type: 'body', metatype: bodyMetatype(UsersController.prototype, 'recordAppSession', 2) as never, data: '' },
+    );
+
+    expect(session).toHaveProperty('deviceId', 'hands-device-1');
+    expect(session).toHaveProperty('platform', 'android');
+    expect(session).toHaveProperty('appVersion', '1.0.0');
+    expect(session).toHaveProperty('deviceLanguage', 'vi-VN');
+    expect(session).toHaveProperty('lastLoginAddress', '123 Nguyen Hue, District 1');
+    expect(session).not.toHaveProperty('ignored');
   });
 
   it('rejects invalid enums and required values before service logic runs', async () => {

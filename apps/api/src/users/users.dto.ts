@@ -30,6 +30,18 @@ export class RecordAppSessionDto {
   appVersion?: string;
 
   @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(20)
+  deviceLanguage?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(240)
+  lastLoginAddress?: string;
+
+  @IsOptional()
   @Allow()
   metadata?: Record<string, unknown>;
 }

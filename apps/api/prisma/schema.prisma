@@ -276,6 +276,8 @@ model AppSession {
   deviceId   String
   platform   String?
   appVersion String?
+  deviceLanguage String?
+  lastLoginAddress String?
   ipAddress  String?
   active     Boolean   @default(true)
   lastSeenAt DateTime  @default(now())

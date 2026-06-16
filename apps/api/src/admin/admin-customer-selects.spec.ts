@@ -12,6 +12,10 @@ describe('admin customer selects', () => {
 
   it('keeps customer detail activity lists bounded', () => {
     expect(adminCustomerDetailSelect.user.select.appSessions).toMatchObject({ take: 20 });
+    expect(adminCustomerDetailSelect.user.select.appSessions.select).toMatchObject({
+      deviceLanguage: true,
+      lastLoginAddress: true,
+    });
     expect(adminCustomerDetailSelect.user.select.notifications).toMatchObject({
       take: 50,
       select: adminCustomerNotificationSelect,

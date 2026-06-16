@@ -44,6 +44,7 @@ final authLocalDataSourceProvider = Provider<AuthLocalDataSource>((ref) {
 final appSessionReporterProvider = Provider<AppSessionReporter>((ref) {
   return AppSessionReporter(
     api: ref.read(apiClientProvider),
+    addressStorageKey: 'hands.customer.last_login_address.v1',
     storage: const FlutterSecureStorage(),
     role: 'CUSTOMER',
     storageKey: 'hands.customer.app_session_device_id.v1',

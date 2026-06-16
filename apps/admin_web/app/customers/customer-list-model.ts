@@ -346,7 +346,9 @@ function sessionDeviceLabel(session?: NonNullable<NonNullable<AdminCustomer['use
 }
 
 function readCustomerDeviceLanguage(customer: AdminCustomer) {
+  const latestSession = customer.user?.appSessions?.[0];
   const metadataCandidates = [
+    latestSession?.deviceLanguage,
     readObjectText(customer as Record<string, unknown>, 'language'),
     readObjectText(customer as Record<string, unknown>, 'locale'),
     readObjectText((customer.user ?? {}) as Record<string, unknown>, 'language'),
@@ -357,10 +359,11 @@ function readCustomerDeviceLanguage(customer: AdminCustomer) {
 }
 
 function readCustomerLastLoginAddress(customer: AdminCustomer) {
+  const latestSession = customer.user?.appSessions?.[0];
   const metadataCandidates = [
+    latestSession?.lastLoginAddress,
     readObjectText(customer as Record<string, unknown>, 'lastLoginAddress'),
     readObjectText((customer.user ?? {}) as Record<string, unknown>, 'lastLoginAddress'),
-    readObjectText((customer.user?.appSessions?.[0] ?? {}) as Record<string, unknown>, 'lastLoginAddress'),
   ].filter(Boolean);
 
   return metadataCandidates[0] ?? 'Not captured';

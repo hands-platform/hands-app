@@ -1,10 +1,12 @@
 import '../../../../core/api_client.dart';
+import '../../../../core/app_session_reporter.dart';
 import '../../domain/repositories/customer_discovery_repository.dart';
 
 class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
-  const CustomerDiscoveryRepositoryImpl(this._api);
+  const CustomerDiscoveryRepositoryImpl(this._api, this._appSessionReporter);
 
   final ApiClient _api;
+  final AppSessionReporter _appSessionReporter;
 
   @override
   Future<List<dynamic>> listServices() async {
@@ -33,6 +35,7 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
       'lng': lng,
       'addressText': addressText,
     });
+    await _appSessionReporter.saveLastKnownAddress(addressText);
     return result is Map<String, dynamic> ? result : null;
   }
 

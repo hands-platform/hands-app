@@ -9,15 +9,18 @@ import 'api_client.dart';
 class AppSessionReporter {
   const AppSessionReporter({
     required ApiClient api,
+    required String addressStorageKey,
     required FlutterSecureStorage storage,
     required String role,
     required String storageKey,
   })  : _api = api,
+        _addressStorageKey = addressStorageKey,
         _storage = storage,
         _role = role,
         _storageKey = storageKey;
 
   final ApiClient _api;
+  final String _addressStorageKey;
   final FlutterSecureStorage _storage;
   final String _role;
   final String _storageKey;
@@ -32,7 +35,17 @@ class AppSessionReporter {
         'APP_VERSION',
         defaultValue: '0.1.0+1',
       ),
+      'deviceLanguage': PlatformDispatcher.instance.locale.toLanguageTag(),
+      'lastLoginAddress': await _readLastLoginAddress(),
     });
+  }
+
+  Future<void> saveLastKnownAddress(String addressText) async {
+    final normalized = addressText.trim();
+    if (normalized.isEmpty) {
+      return;
+    }
+    await _storage.write(key: _addressStorageKey, value: normalized);
   }
 
   Future<String> _readOrCreateDeviceId() async {
@@ -47,5 +60,11 @@ class AppSessionReporter {
         'hands-customer-${base64UrlEncode(bytes).replaceAll('=', '')}';
     await _storage.write(key: _storageKey, value: generated);
     return generated;
+  }
+
+  Future<String?> _readLastLoginAddress() async {
+    final saved = await _storage.read(key: _addressStorageKey);
+    final normalized = saved?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
   }
 }

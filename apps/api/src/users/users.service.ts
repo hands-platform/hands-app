@@ -53,6 +53,8 @@ export class UsersService {
       deviceId?: string;
       platform?: string;
       appVersion?: string;
+      deviceLanguage?: string;
+      lastLoginAddress?: string;
       metadata?: Record<string, unknown>;
     },
     ipAddress?: string,
@@ -86,6 +88,8 @@ export class UsersService {
       update: {
         platform: normalizeOptionalText(input.platform),
         appVersion: normalizeOptionalText(input.appVersion),
+        deviceLanguage: normalizeOptionalText(input.deviceLanguage),
+        lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
         ipAddress: normalizeOptionalText(ipAddress),
         active: true,
         lastSeenAt: now,
@@ -98,6 +102,8 @@ export class UsersService {
         deviceId,
         platform: normalizeOptionalText(input.platform),
         appVersion: normalizeOptionalText(input.appVersion),
+        deviceLanguage: normalizeOptionalText(input.deviceLanguage),
+        lastLoginAddress: normalizeOptionalText(input.lastLoginAddress),
         ipAddress: normalizeOptionalText(ipAddress),
         active: true,
         lastSeenAt: now,

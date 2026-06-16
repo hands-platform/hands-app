@@ -83,6 +83,8 @@ export type AdminAppSession = {
   deviceId: string;
   platform?: string | null;
   appVersion?: string | null;
+  deviceLanguage?: string | null;
+  lastLoginAddress?: string | null;
   ipAddress?: string | null;
   active: boolean;
   lastSeenAt: string;
