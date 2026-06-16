@@ -12,6 +12,7 @@ export type AdminPageMetric = {
 type AdminPageTemplateProps = {
   readonly actions?: ReactNode;
   readonly children: ReactNode;
+  readonly contentClassName?: string;
   readonly description?: ReactNode;
   readonly metrics?: readonly AdminPageMetric[];
   readonly title: string;
@@ -31,6 +32,7 @@ type AdminSectionHeaderProps = {
 export function AdminPageTemplate({
   actions,
   children,
+  contentClassName,
   description,
   metrics = [],
   title,
@@ -45,7 +47,7 @@ export function AdminPageTemplate({
         {actions ? <div className="participant-list">{actions}</div> : null}
       </div>
       {metrics.length ? <AdminMetricGrid metrics={metrics} /> : null}
-      {children}
+      {contentClassName ? <div className={contentClassName}>{children}</div> : children}
     </>
   );
 }

@@ -121,6 +121,7 @@ export default async function PartnerControlsPage({
         />
       ) : null}
       <AdminPageTemplate
+        contentClassName="partner-controls-page"
         description="Track Partner reports, account controls, booking blocks, payout holds, and operations follow-up in one operator view."
         metrics={pageMetrics}
         title="Partner Controls"

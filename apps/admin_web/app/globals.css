@@ -1467,8 +1467,9 @@ a.action-button-card:hover {
   max-width: 780px;
 }
 
-.operations-handoff-page > .grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+.operations-handoff-page > .grid,
+.setup-page > .grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .operations-handoff-page > .card,
@@ -1542,6 +1543,35 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.partner-controls-page {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.partner-controls-page > .card {
+  margin-bottom: 0;
+  margin-top: 0;
+  max-height: min(960px, calc(100vh - 96px));
+  min-width: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.partner-controls-page .table {
+  min-width: 1180px;
+}
+
+.partner-controls-page .table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.partner-controls-page .form-grid {
+  min-width: min(100%, 920px);
+}
+
 .operations-policy-page > .admin-mb-16,
 .operations-policy-page > .admin-mt-16 {
   margin-bottom: 0;
@@ -1586,7 +1616,17 @@ a.action-button-card:hover {
 }
 
 .operations-policy-page .grid {
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+}
+
+.operations-policy-page .ops-task-note .ops-row {
+  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr);
+}
+
+.operations-policy-page .ops-task-note .ops-row strong {
+  text-align: left;
 }
 
 .operations-policy-page .ops-section-header > div,
