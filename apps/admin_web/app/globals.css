@@ -851,6 +851,11 @@ a {
   margin: 5px 0 4px;
 }
 
+.metric-card small {
+  display: block;
+  line-height: 1.35;
+}
+
 .admin-card-scroll {
   max-width: 100%;
   min-width: 0;
@@ -1229,10 +1234,30 @@ a.action-button-card:hover {
 }
 
 .notification-monitor .ops-task-card {
+  align-content: start;
   background: #ffffff;
   border-color: var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
+  min-height: 0;
+}
+
+.notification-monitor .ops-task-grid {
+  align-items: start;
+}
+
+.notification-monitor .ops-task-card .muted,
+.notification-monitor .ops-task-card small {
+  overflow-wrap: anywhere;
+}
+
+.notification-monitor .command-copy-row {
+  min-width: 0;
+}
+
+.notification-monitor .command-copy-row code {
+  min-width: 0;
+  white-space: pre;
 }
 
 .chat-archive-page {
