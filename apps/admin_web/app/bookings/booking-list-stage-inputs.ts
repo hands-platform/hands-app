@@ -25,14 +25,17 @@ export function bookingListStageInput(
   nowMs: number,
   facts: BookingListStageBookingFacts,
 ): BookingListStageInput {
+  const locationNeedsOps = bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs));
+  const marketplaceAlertNotifiedCount = bookingBackupAlertTraceSummary(booking).totalNotified;
+
   return {
     bookingId: booking.id,
     hasChatRoom: bookingMatchingChatReady(booking),
     isHandoffStatus: isHandoffBookingStatus(booking.status),
     isTerminalStatus: terminalBookingStatuses.has(booking.status),
-    locationNeedsOps: bookingLocationNeedsOpsFromFacts(bookingLocationNeedsOpsInput(booking, nowMs)),
+    locationNeedsOps,
     matchingEvidence: booking.matchingEvidence,
-    marketplaceAlertNotifiedCount: bookingBackupAlertTraceSummary(booking).totalNotified,
+    marketplaceAlertNotifiedCount,
     marketplaceCount: facts.marketplaceCount,
     responseWindowExpired: bookingMatchingWindowExpired(booking, nowMs),
     selectableCount: facts.selectableCount,
