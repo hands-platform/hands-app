@@ -1,3 +1,4 @@
+import { Layers3, PlusCircle } from 'lucide-react';
 import { createService, createServiceDurationSet } from './actions';
 
 export function ServiceCreateFormsSection() {
@@ -63,7 +64,10 @@ export function ServiceCreateFormsSection() {
             Description
             <input name="description" placeholder="Shown in customer and Partner apps" />
           </label>
-          <button type="submit">Create duration set</button>
+          <button className="button button-primary" type="submit">
+            <Layers3 aria-hidden="true" size={16} />
+            Create duration set
+          </button>
         </form>
       </section>
 
@@ -114,7 +118,10 @@ export function ServiceCreateFormsSection() {
             Description
             <input name="description" placeholder="Shown in customer and Partner apps" />
           </label>
-          <button type="submit">Create service</button>
+          <button className="button button-primary" type="submit">
+            <PlusCircle aria-hidden="true" size={16} />
+            Create service
+          </button>
         </form>
       </section>
     </>

@@ -1,3 +1,5 @@
+import { Search, X } from 'lucide-react';
+
 type ServiceCatalogSearchSectionProps = {
   readonly activeServiceCount: number;
   readonly groupCount: number;
@@ -18,9 +20,13 @@ export function ServiceCatalogSearchSection({
           Find service type, duration, group key, or price
           <input name="q" placeholder="foot massage, 90, 450000, deep_tissue" defaultValue={searchQuery} />
         </label>
-        <button type="submit">Search catalog</button>
+        <button className="button button-primary" type="submit">
+          <Search aria-hidden="true" size={16} />
+          Search catalog
+        </button>
         {searchQuery ? (
-          <a className="pill pill-neutral" href="/services">
+          <a className="button button-secondary" href="/services">
+            <X aria-hidden="true" size={16} />
             Clear search
           </a>
         ) : null}

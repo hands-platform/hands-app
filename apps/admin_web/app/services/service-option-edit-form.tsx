@@ -1,3 +1,4 @@
+import { Save } from 'lucide-react';
 import type { AdminServiceCatalogItem } from '../../lib/admin-api';
 import { updateService } from './actions';
 
@@ -47,7 +48,10 @@ export function ServiceOptionEditForm({ service }: ServiceOptionEditFormProps) {
         Active
         <input name="active" type="checkbox" defaultChecked={service.active} />
       </label>
-      <button type="submit">Update service</button>
+      <button className="button button-primary" type="submit">
+        <Save aria-hidden="true" size={16} />
+        Update service
+      </button>
     </form>
   );
 }
