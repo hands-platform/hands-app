@@ -6,6 +6,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { CustomerFilters } from './customer-filters';
 
 type CustomerFilterBoardProps = {
@@ -24,16 +25,29 @@ export function CustomerFilterBoard({
   totalCount,
 }: CustomerFilterBoardProps) {
   return (
-    <section className="vuexy-customer-filter-card card admin-mb-16" aria-labelledby="customer-directory-controls">
-      <div className="vuexy-customer-toolbar">
-        <div>
-          <h2 id="customer-directory-controls">Filters</h2>
+    <AdminFilterPanel
+      className="vuexy-customer-filter-card admin-mb-16"
+      id="customer-directory-controls"
+      resultLabel={`${filteredCount} of ${totalCount}`}
+      title="Filters"
+      footer={(
+        <div className="vuexy-customer-filter-footer">
+          {activeFilters.length > 0 ? (
+            <>
+              {activeFilters.map((filter) => (
+                <span className="pill pill-warn" key={filter}>
+                  {filter}
+                </span>
+              ))}
+            </>
+          ) : (
+            <Link className="vuexy-customer-button is-ghost" href="/customers">
+              Clear filters
+            </Link>
+          )}
         </div>
-        <div className="participant-list">
-          <span className="pill pill-info">{filteredCount} of {totalCount}</span>
-        </div>
-      </div>
-
+      )}
+    >
       <form action="/customers" className="vuexy-customer-form">
         <input name="sort" type="hidden" value={filters.sort} />
         <div className="vuexy-customer-form-primary">
@@ -74,23 +88,7 @@ export function CustomerFilterBoard({
           </AdminFormControlButton>
         </div>
       </form>
-
-      <div className="vuexy-customer-filter-footer">
-        {activeFilters.length > 0 ? (
-          <>
-            {activeFilters.map((filter) => (
-              <span className="pill pill-warn" key={filter}>
-                {filter}
-              </span>
-            ))}
-          </>
-        ) : (
-          <Link className="vuexy-customer-button is-ghost" href="/customers">
-            Clear filters
-          </Link>
-        )}
-      </div>
-    </section>
+    </AdminFilterPanel>
   );
 }
 
