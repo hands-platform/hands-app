@@ -65,7 +65,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
         <div className="ops-task-breakdown">
           {list.rows.map((row) => (
             <div className="ops-task-note" key={`${list.key}-${row.id}`}>
-              <a className="text-link" href={row.href}>
+              <a className="button button-secondary policy-inline-action" href={row.href}>
                 <ExternalLink aria-hidden="true" size={14} />
                 {row.title}
               </a>
