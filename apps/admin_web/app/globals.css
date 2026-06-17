@@ -1,7 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap');
 
-:root {
+:root,
+[data-theme='light'] {
   --admin-main-channel: 47 43 61;
+  --admin-surface-channel: 255 255 255;
+  --admin-shadow-channel: 47 43 61;
   --admin-primary-channel: 115 103 240;
   --admin-success-channel: 40 199 111;
   --admin-info-channel: 0 186 209;
@@ -19,6 +22,7 @@
   --admin-text: rgb(var(--admin-main-channel) / 0.9);
   --admin-muted: rgb(var(--admin-main-channel) / 0.7);
   --admin-disabled: rgb(var(--admin-main-channel) / 0.4);
+  --admin-inverse-text: #ffffff;
   --admin-action-hover: rgb(var(--admin-main-channel) / 0.06);
   --admin-action-selected: rgb(var(--admin-main-channel) / 0.08);
   --admin-sidebar: #ffffff;
@@ -29,10 +33,15 @@
   --admin-accent-strong: #675dd8;
   --admin-link: #7367f0;
   --admin-success: #28c76f;
+  --admin-success-text: #1e8f50;
   --admin-info: #00bad1;
+  --admin-info-text: #008fa1;
   --admin-warning: #ff9f43;
+  --admin-warning-text: #b86000;
   --admin-danger: #ff4c51;
+  --admin-danger-text: #cc3035;
   --admin-secondary: #808390;
+  --admin-secondary-text: #6f6b7d;
   --admin-primary-soft: rgb(var(--admin-primary-channel) / 0.16);
   --admin-success-soft: rgb(var(--admin-success-channel) / 0.16);
   --admin-info-soft: rgb(var(--admin-info-channel) / 0.16);
@@ -42,16 +51,45 @@
   --admin-radius-sm: 6px;
   --admin-radius: 6px;
   --admin-radius-lg: 8px;
-  --admin-shadow-xs: 0 1px 6px rgb(var(--admin-main-channel) / 0.1);
-  --admin-shadow-sm: 0 2px 8px rgb(var(--admin-main-channel) / 0.12);
-  --admin-shadow-md: 0 3px 12px rgb(var(--admin-main-channel) / 0.14);
-  --admin-shadow-lg: 0 4px 18px rgb(var(--admin-main-channel) / 0.16);
+  --admin-shadow-xs: 0 1px 6px rgb(var(--admin-shadow-channel) / 0.1);
+  --admin-shadow-sm: 0 2px 8px rgb(var(--admin-shadow-channel) / 0.12);
+  --admin-shadow-md: 0 3px 12px rgb(var(--admin-shadow-channel) / 0.14);
+  --admin-shadow-lg: 0 4px 18px rgb(var(--admin-shadow-channel) / 0.16);
   --admin-primary-shadow-sm: 0 2px 6px rgb(var(--admin-primary-channel) / 0.3);
   --admin-primary-shadow-md: 0 4px 16px rgb(var(--admin-primary-channel) / 0.4);
   --admin-focus-ring: 0 2px 6px rgb(var(--admin-primary-channel) / 0.3);
   --admin-table-header-bg: #ffffff;
   --admin-control-height: 38px;
   --admin-transition: 160ms ease;
+}
+
+[data-theme='dark'] {
+  --admin-main-channel: 225 222 245;
+  --admin-surface-channel: 47 51 73;
+  --admin-shadow-channel: 19 17 32;
+  --admin-bg: #25293c;
+  --admin-bg-strong: #2a2e42;
+  --admin-surface: #2f3349;
+  --admin-surface-soft: #343850;
+  --admin-surface-raised: #2f3349;
+  --admin-border: rgb(var(--admin-main-channel) / 0.12);
+  --admin-border-strong: rgb(var(--admin-main-channel) / 0.22);
+  --admin-input-border: rgb(var(--admin-main-channel) / 0.22);
+  --admin-text: rgb(var(--admin-main-channel) / 0.9);
+  --admin-muted: rgb(var(--admin-main-channel) / 0.7);
+  --admin-disabled: rgb(var(--admin-main-channel) / 0.4);
+  --admin-inverse-text: #ffffff;
+  --admin-action-hover: rgb(var(--admin-main-channel) / 0.06);
+  --admin-action-selected: rgb(var(--admin-main-channel) / 0.08);
+  --admin-sidebar: #2f3349;
+  --admin-sidebar-hover: rgb(var(--admin-primary-channel) / 0.16);
+  --admin-sidebar-muted: rgb(var(--admin-main-channel) / 0.56);
+  --admin-success-text: #28c76f;
+  --admin-info-text: #00bad1;
+  --admin-warning-text: #ffb269;
+  --admin-danger-text: #ff7074;
+  --admin-secondary-text: rgb(var(--admin-main-channel) / 0.7);
+  --admin-table-header-bg: #343850;
 }
 
 * {
@@ -112,11 +150,11 @@ a {
 .sidebar {
   background: var(--admin-sidebar);
   border-right: 1px solid var(--admin-border);
-  box-shadow: 8px 0 24px rgb(var(--admin-main-channel) / 0.06);
+  box-shadow: 8px 0 24px rgb(var(--admin-shadow-channel) / 0.06);
   color: var(--admin-text);
   height: 100vh;
   overflow: auto;
-  padding: 16px 12px;
+  padding: 20px 14px;
   position: sticky;
   top: 0;
 }
@@ -155,7 +193,7 @@ a {
 
 .nav {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   margin-top: 10px;
 }
 
@@ -186,10 +224,12 @@ a {
   color: rgb(var(--admin-main-channel) / 0.74);
   font-size: 15px;
   line-height: 22px;
+  min-height: 38px;
   padding: 8px 12px;
   transition:
     background var(--admin-transition),
     color var(--admin-transition),
+    box-shadow var(--admin-transition),
     transform var(--admin-transition);
 }
 
@@ -214,6 +254,23 @@ a {
   color: var(--admin-accent-strong);
 }
 
+.nav-link[data-active='true'],
+.nav-link[aria-current='page'] {
+  background: linear-gradient(270deg, var(--admin-accent), #8f85f3);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
+}
+
+.nav-link[data-active='true'] svg,
+.nav-link[aria-current='page'] svg {
+  color: var(--admin-inverse-text);
+}
+
+.nav-link[data-active='true']:hover,
+.nav-link[aria-current='page']:hover {
+  color: var(--admin-inverse-text);
+}
+
 .content {
   min-width: 0;
   overflow-x: clip;
@@ -224,7 +281,7 @@ a {
   display: grid;
   gap: 16px;
   margin: 0 auto;
-  max-width: 1680px;
+  max-width: 1440px;
   width: 100%;
 }
 
@@ -236,7 +293,7 @@ a {
 .topbar {
   align-items: center;
   backdrop-filter: blur(10px);
-  background: rgb(255 255 255 / 0.9);
+  background: rgb(var(--admin-surface-channel) / 0.9);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-sm);
@@ -244,7 +301,7 @@ a {
   gap: 16px;
   justify-content: space-between;
   margin: 0 auto 18px;
-  max-width: 1680px;
+  max-width: 1440px;
   min-height: 64px;
   padding: 8px 16px;
   position: sticky;
@@ -292,6 +349,43 @@ a {
 
 .topbar-chip-primary {
   background: var(--admin-accent-soft);
+  color: var(--admin-accent-strong);
+}
+
+.theme-toggle {
+  align-items: center;
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+}
+
+.theme-toggle-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--admin-radius-sm);
+  box-shadow: none;
+  color: var(--admin-muted);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0;
+  width: 30px;
+}
+
+.theme-toggle-button:hover {
+  background: var(--admin-action-hover);
+  border-color: transparent;
+  color: var(--admin-accent-strong);
+}
+
+.theme-toggle-button[aria-pressed='true'] {
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-xs);
   color: var(--admin-accent-strong);
 }
 
@@ -400,7 +494,7 @@ a {
 .button-primary {
   background: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
-  color: #fff;
+  color: var(--admin-inverse-text);
 }
 
 .button-primary:hover {
@@ -408,7 +502,7 @@ a {
 }
 
 .button-secondary {
-  background: #fff;
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   color: var(--admin-text);
 }
@@ -503,7 +597,7 @@ a {
 .calendar-mini-picker .react-datepicker__day--selected,
 .calendar-mini-picker .react-datepicker__day--keyboard-selected {
   background: var(--admin-accent);
-  color: #fff;
+  color: var(--admin-inverse-text);
 }
 
 .calendar-filter-list {
@@ -513,7 +607,7 @@ a {
 
 .calendar-filter-row {
   align-items: center;
-  background: #fff;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   cursor: pointer;
@@ -626,7 +720,7 @@ a {
 }
 
 .calendar-segmented-control button.is-active {
-  background: #fff;
+  background: var(--admin-surface);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-accent-strong);
 }
@@ -812,7 +906,7 @@ a {
 }
 
 .calendar-drawer {
-  background: #fff;
+  background: var(--admin-surface);
   border-left: 1px solid var(--admin-border);
   box-shadow: var(--admin-shadow-lg);
   display: grid;
@@ -870,7 +964,7 @@ a {
 .calendar-field input,
 .calendar-field select,
 .calendar-field textarea {
-  background: #fff;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-input-border);
   border-radius: var(--admin-radius);
   color: var(--admin-text);
@@ -924,7 +1018,7 @@ a {
 }
 
 .calendar-field-toggle input::before {
-  background: #fff;
+  background: var(--admin-inverse-text);
   border-radius: 999px;
   box-shadow: var(--admin-shadow-xs);
   content: '';
@@ -3929,7 +4023,7 @@ a.ops-task-card {
 
 .status-open_matching {
   background: var(--admin-warning-soft);
-  color: #b86000;
+  color: var(--admin-warning-text);
 }
 
 .status-matched,
@@ -3937,29 +4031,29 @@ a.ops-task-card {
 .status-arrived,
 .status-in_service {
   background: var(--admin-success-soft);
-  color: #1e8f50;
+  color: var(--admin-success-text);
 }
 
 .status-cancelled,
 .status-expired,
 .status-refunded {
   background: var(--admin-danger-soft);
-  color: #cc3035;
+  color: var(--admin-danger-text);
 }
 
 .signal-ok {
   background: var(--admin-success-soft);
-  color: #1e8f50;
+  color: var(--admin-success-text);
 }
 
 .signal-info {
   background: var(--admin-info-soft);
-  color: #008fa1;
+  color: var(--admin-info-text);
 }
 
 .signal-warn {
   background: var(--admin-warning-soft);
-  color: #b86000;
+  color: var(--admin-warning-text);
 }
 
 .participant-list {
@@ -3991,7 +4085,7 @@ a.ops-task-card {
 
 .role-customer {
   background: var(--admin-info-soft);
-  color: #008fa1;
+  color: var(--admin-info-text);
 }
 
 .role-partner {
@@ -4001,7 +4095,7 @@ a.ops-task-card {
 
 .role-admin {
   background: var(--admin-success-soft);
-  color: #1e8f50;
+  color: var(--admin-success-text);
 }
 
 .role-system {
@@ -4047,22 +4141,22 @@ a.ops-task-card {
 
 .pill-success {
   background: var(--admin-success-soft);
-  color: #1e8f50;
+  color: var(--admin-success-text);
 }
 
 .pill-info {
   background: var(--admin-info-soft);
-  color: #008fa1;
+  color: var(--admin-info-text);
 }
 
 .pill-warn {
   background: var(--admin-warning-soft);
-  color: #b86000;
+  color: var(--admin-warning-text);
 }
 
 .pill-danger {
   background: var(--admin-danger-soft);
-  color: #cc3035;
+  color: var(--admin-danger-text);
 }
 
 .pill-neutral {
@@ -4240,21 +4334,21 @@ button.status-provider_on_the_way:hover,
 button.status-arrived:hover,
 button.status-in_service:hover {
   background: var(--admin-success-soft);
-  color: #1e8f50;
+  color: var(--admin-success-text);
 }
 
 button.pill-info:hover,
 button.signal-info:hover,
 button.status-badge:hover {
   background: var(--admin-info-soft);
-  color: #008fa1;
+  color: var(--admin-info-text);
 }
 
 button.pill-warn:hover,
 button.signal-warn:hover,
 button.status-open_matching:hover {
   background: var(--admin-warning-soft);
-  color: #b86000;
+  color: var(--admin-warning-text);
 }
 
 button.pill-danger:hover,
@@ -4262,7 +4356,7 @@ button.status-cancelled:hover,
 button.status-expired:hover,
 button.status-refunded:hover {
   background: var(--admin-danger-soft);
-  color: #cc3035;
+  color: var(--admin-danger-text);
 }
 
 button.pill-neutral:hover {
@@ -4356,17 +4450,17 @@ textarea:focus-visible {
 }
 
 .vuexy-review-card {
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.12);
-  border-radius: 6px;
-  box-shadow: 0 3px 12px rgba(19, 17, 32, 0.2);
-  color: rgba(225, 222, 245, 0.9);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
   overflow: hidden;
 }
 
 .vuexy-review-toolbar {
   align-items: flex-start;
-  border-bottom: 1px solid rgba(225, 222, 245, 0.12);
+  border-bottom: 1px solid var(--admin-border);
   display: flex;
   gap: 18px;
   justify-content: space-between;
@@ -4385,7 +4479,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-toolbar p {
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
   margin-top: 5px;
@@ -4415,9 +4509,9 @@ textarea:focus-visible {
 .vuexy-review-search,
 .vuexy-review-select {
   align-items: center;
-  border: 1px solid rgba(225, 222, 245, 0.22);
-  border-radius: 6px;
-  color: rgba(225, 222, 245, 0.5);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-disabled);
   display: flex;
   gap: 10px;
   min-height: 34px;
@@ -4433,7 +4527,7 @@ textarea:focus-visible {
   background: transparent;
   border: 0;
   box-shadow: none;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   font-size: 15px;
   min-height: 0;
   padding: 0;
@@ -4445,7 +4539,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-search input::placeholder {
-  color: rgba(225, 222, 245, 0.4);
+  color: var(--admin-disabled);
 }
 
 .vuexy-review-select {
@@ -4459,10 +4553,10 @@ textarea:focus-visible {
 .vuexy-review-button,
 .vuexy-review-export {
   align-items: center;
-  background: rgba(128, 131, 144, 0.16);
+  background: var(--admin-secondary-soft);
   border: 0;
   border-radius: 6px;
-  color: #808390;
+  color: var(--admin-secondary-text);
   display: inline-flex;
   font-size: 15px;
   font-weight: 700;
@@ -4476,8 +4570,8 @@ textarea:focus-visible {
 
 .vuexy-review-button:hover,
 .vuexy-review-export:hover {
-  background: rgba(128, 131, 144, 0.24);
-  color: rgba(225, 222, 245, 0.9);
+  background: var(--admin-action-hover);
+  color: var(--admin-text);
 }
 
 .vuexy-review-card .admin-table-scroll {
@@ -4490,25 +4584,25 @@ textarea:focus-visible {
 }
 
 .vuexy-review-card .table {
-  background: #2f3349;
+  background: var(--admin-surface-raised);
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   margin: 0;
   min-width: 1120px;
 }
 
 .vuexy-review-card .table th,
 .vuexy-review-card .table td {
-  border-bottom: 1px solid rgba(225, 222, 245, 0.12);
+  border-bottom: 1px solid var(--admin-border);
   padding: 16px 18px;
   vertical-align: middle;
 }
 
 .vuexy-review-card .table th {
-  background: #2f3349;
-  color: rgba(225, 222, 245, 0.76);
+  background: var(--admin-table-header-bg);
+  color: var(--admin-muted);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.015em;
@@ -4519,7 +4613,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-card .table tbody tr:hover {
-  background: rgba(225, 222, 245, 0.04);
+  background: var(--admin-action-hover);
 }
 
 .vuexy-review-card .table th:first-child,
@@ -4557,7 +4651,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-check-cell input {
-  accent-color: #7367f0;
+  accent-color: var(--admin-accent);
   height: 18px;
   width: 18px;
 }
@@ -4576,14 +4670,14 @@ textarea:focus-visible {
 }
 
 .vuexy-review-person strong {
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   font-size: 15px;
   font-weight: 700;
   line-height: 22px;
 }
 
 .vuexy-review-person span {
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
 }
@@ -4596,7 +4690,7 @@ textarea:focus-visible {
   align-items: center;
   background: linear-gradient(135deg, #7367f0, #00bad1);
   border-radius: 999px;
-  color: #ffffff;
+  color: var(--admin-inverse-text);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 12px;
@@ -4614,7 +4708,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-copy-cell {
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
 }
@@ -4625,7 +4719,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-copy-cell span {
-  color: rgba(225, 222, 245, 0.5);
+  color: var(--admin-disabled);
   display: block;
   font-size: 12px;
   line-height: 18px;
@@ -4644,7 +4738,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-date-cell {
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   font-size: 15px;
   line-height: 22px;
   white-space: nowrap;
@@ -4663,17 +4757,17 @@ textarea:focus-visible {
 
 .review-status-published {
   background: rgba(40, 199, 111, 0.16);
-  color: #28c76f;
+  color: var(--admin-success-text);
 }
 
 .vuexy-customer-filter-card,
 .vuexy-customer-table-card,
 .customer-detail-overview-card {
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.12);
-  border-radius: 6px;
-  box-shadow: 0 18px 40px rgba(15, 20, 34, 0.24);
-  color: rgba(225, 222, 245, 0.9);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
 }
 
 .vuexy-customer-table-card {
@@ -4691,7 +4785,7 @@ textarea:focus-visible {
 
 .vuexy-customer-toolbar h2,
 .customer-detail-overview-card h2 {
-  color: rgba(225, 222, 245, 0.94);
+  color: var(--admin-text);
   font-size: 22px;
   line-height: 1.3;
   margin: 0;
@@ -4699,7 +4793,7 @@ textarea:focus-visible {
 
 .vuexy-customer-toolbar p,
 .customer-detail-overview-card p {
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   margin: 8px 0 0;
   max-width: 760px;
 }
@@ -4720,9 +4814,9 @@ textarea:focus-visible {
 .vuexy-customer-search,
 .vuexy-customer-select {
   align-items: center;
-  border: 1px solid rgba(225, 222, 245, 0.18);
-  border-radius: 6px;
-  color: rgba(225, 222, 245, 0.7);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-muted);
   display: flex;
   gap: 10px;
   min-height: 40px;
@@ -4741,7 +4835,7 @@ textarea:focus-visible {
   background: transparent;
   border: 0;
   box-shadow: none;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   min-height: 0;
   outline: none;
 }
@@ -4752,7 +4846,7 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-search input::placeholder {
-  color: rgba(225, 222, 245, 0.42);
+  color: var(--admin-disabled);
 }
 
 .vuexy-customer-select {
@@ -4770,10 +4864,10 @@ textarea:focus-visible {
 .customer-detail-action-primary,
 .customer-detail-action-link {
   align-items: center;
-  background: rgba(128, 131, 144, 0.16);
+  background: var(--admin-secondary-soft);
   border: 0;
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   display: inline-flex;
   font-size: 14px;
   font-weight: 700;
@@ -4788,19 +4882,19 @@ textarea:focus-visible {
 .vuexy-customer-export:hover,
 .customer-detail-action-primary:hover,
 .customer-detail-action-link:hover {
-  background: rgba(128, 131, 144, 0.28);
+  background: var(--admin-action-hover);
 }
 
 .vuexy-customer-button.is-ghost,
 .customer-detail-action-link {
-  background: rgba(115, 103, 240, 0.12);
-  color: #c7c2ff;
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-customer-export,
 .customer-detail-action-primary {
-  background: rgba(115, 103, 240, 0.18);
-  color: #f5f3ff;
+  background: var(--admin-accent);
+  color: var(--admin-inverse-text);
 }
 
 .vuexy-customer-advanced-grid {
@@ -4810,7 +4904,7 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-advanced-grid label {
-  color: rgba(225, 222, 245, 0.74);
+  color: var(--admin-muted);
   display: flex;
   flex-direction: column;
   font-size: 13px;
@@ -4819,15 +4913,15 @@ textarea:focus-visible {
 
 .vuexy-customer-advanced-grid input,
 .vuexy-customer-advanced-grid select {
-  border: 1px solid rgba(225, 222, 245, 0.16);
-  border-radius: 6px;
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
   min-height: 40px;
   padding: 0 12px;
 }
 
 .vuexy-customer-filter-footer {
   align-items: center;
-  border-top: 1px solid rgba(225, 222, 245, 0.1);
+  border-top: 1px solid var(--admin-border);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -4840,8 +4934,8 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table-card .admin-table-scroll {
-  border: 1px solid rgba(225, 222, 245, 0.12);
-  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
   margin-top: 0;
   max-height: min(680px, calc(100vh - 260px));
   overflow: auto;
@@ -4849,9 +4943,9 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table {
-  background: #2f3349;
+  background: var(--admin-surface-raised);
   border: 0;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   margin: 0;
   min-width: 1420px;
   overflow-wrap: anywhere;
@@ -4860,15 +4954,15 @@ textarea:focus-visible {
 
 .vuexy-customer-table th,
 .vuexy-customer-table td {
-  background: #2f3349;
-  border-bottom: 1px solid rgba(225, 222, 245, 0.12);
+  background: var(--admin-surface-raised);
+  border-bottom: 1px solid var(--admin-border);
   padding: 14px 12px;
   vertical-align: top;
 }
 
 .vuexy-customer-table th {
-  background: #343852;
-  color: rgba(225, 222, 245, 0.76);
+  background: var(--admin-table-header-bg);
+  color: var(--admin-muted);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.015em;
@@ -4890,7 +4984,7 @@ textarea:focus-visible {
 
 .vuexy-customer-table th:last-child,
 .vuexy-customer-table td:last-child {
-  box-shadow: -10px 0 18px rgba(15, 20, 34, 0.2);
+  box-shadow: -10px 0 18px rgb(var(--admin-shadow-channel) / 0.12);
   min-width: 168px;
   position: sticky;
   right: 0;
@@ -4898,21 +4992,21 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table th:last-child {
-  background: #343852;
+  background: var(--admin-table-header-bg);
   z-index: 3;
 }
 
 .vuexy-customer-table td:last-child {
-  background: #2f3349;
+  background: var(--admin-surface-raised);
   z-index: 1;
 }
 
 .vuexy-customer-table tbody tr:hover td {
-  background: rgba(225, 222, 245, 0.04);
+  background: var(--admin-action-hover);
 }
 
 .vuexy-customer-table tbody tr:hover td:last-child {
-  background: #383d57;
+  background: var(--admin-surface-soft);
 }
 
 .vuexy-customer-person {
@@ -4931,7 +5025,7 @@ textarea:focus-visible {
   align-items: center;
   background: linear-gradient(135deg, #7367f0, #00bad1);
   border-radius: 12px;
-  color: #fff;
+  color: var(--admin-inverse-text);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 14px;
@@ -4950,7 +5044,7 @@ textarea:focus-visible {
 
 .vuexy-customer-person strong,
 .vuexy-customer-stack strong {
-  color: rgba(225, 222, 245, 0.94);
+  color: var(--admin-text);
   display: block;
   font-size: 15px;
   line-height: 1.45;
@@ -4963,7 +5057,7 @@ textarea:focus-visible {
 .customer-detail-overview-card span,
 .customer-detail-overview-card small,
 .customer-detail-nav-list small {
-  color: rgba(225, 222, 245, 0.68);
+  color: var(--admin-muted);
   display: block;
   line-height: 1.5;
 }
@@ -5009,10 +5103,10 @@ textarea:focus-visible {
 
 .vuexy-customer-icon-action {
   align-items: center;
-  background: rgba(225, 222, 245, 0.08);
+  background: var(--admin-action-hover);
   border: 0;
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.72);
+  color: var(--admin-muted);
   display: inline-flex;
   height: 34px;
   justify-content: center;
@@ -5022,8 +5116,8 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-icon-action:hover {
-  background: rgba(115, 103, 240, 0.16);
-  color: #ffffff;
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-customer-action-dropdown {
@@ -5032,10 +5126,10 @@ textarea:focus-visible {
 
 .vuexy-customer-action-trigger {
   align-items: center;
-  background: rgba(225, 222, 245, 0.08);
+  background: var(--admin-action-hover);
   border: 0;
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.72);
+  color: var(--admin-muted);
   cursor: pointer;
   display: inline-flex;
   height: 34px;
@@ -5054,13 +5148,13 @@ textarea:focus-visible {
 
 .vuexy-customer-action-dropdown[open] .vuexy-customer-action-trigger,
 .vuexy-customer-action-trigger:hover {
-  background: rgba(115, 103, 240, 0.16);
-  color: #ffffff;
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-customer-action-menu {
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.14);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   box-shadow: 0 10px 28px rgba(15, 17, 30, 0.34);
   display: grid;
@@ -5074,7 +5168,7 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-action-menu::before {
-  border-bottom: 7px solid rgba(225, 222, 245, 0.14);
+  border-bottom: 7px solid var(--admin-border);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
   content: '';
@@ -5086,7 +5180,7 @@ textarea:focus-visible {
 .vuexy-customer-action-item {
   align-items: center;
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.86);
+  color: var(--admin-text);
   display: flex;
   font-size: 13px;
   font-weight: 700;
@@ -5104,13 +5198,13 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-action-item:hover {
-  background: rgba(115, 103, 240, 0.16);
-  color: #ffffff;
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-customer-action-link {
   align-items: center;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   display: inline-flex;
   font-size: 13px;
   font-weight: 700;
@@ -5119,12 +5213,12 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-action-link.is-muted {
-  color: rgba(225, 222, 245, 0.74);
+  color: var(--admin-muted);
 }
 
 .vuexy-customer-action-meta {
   align-items: center;
-  color: rgba(225, 222, 245, 0.5);
+  color: var(--admin-disabled);
   display: inline-flex;
   font-size: 12px;
   gap: 6px;
@@ -5139,11 +5233,11 @@ textarea:focus-visible {
 }
 
 .customer-detail-shortcut-strip {
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.12);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
-  box-shadow: 0 18px 40px rgba(15, 20, 34, 0.24);
-  color: rgba(225, 222, 245, 0.9);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
 }
 
 .customer-detail-shortcut-strip {
@@ -5158,10 +5252,10 @@ textarea:focus-visible {
 
 .customer-detail-shortcut-link {
   align-items: center;
-  background: rgba(225, 222, 245, 0.03);
-  border: 1px solid rgba(225, 222, 245, 0.1);
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
-  color: rgba(225, 222, 245, 0.92);
+  color: var(--admin-text);
   display: grid;
   gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -5170,14 +5264,14 @@ textarea:focus-visible {
 }
 
 .customer-detail-shortcut-link:hover {
-  background: rgba(225, 222, 245, 0.05);
+  background: var(--admin-action-selected);
 }
 
 .customer-detail-shortcut-icon {
   align-items: center;
-  background: rgba(115, 103, 240, 0.16);
+  background: var(--admin-primary-soft);
   border-radius: 999px;
-  color: #c7c2ff;
+  color: var(--admin-accent-strong);
   display: inline-flex;
   height: 30px;
   justify-content: center;
@@ -5186,17 +5280,17 @@ textarea:focus-visible {
 
 .customer-detail-shortcut-link strong,
 .customer-detail-section-band-header h2 {
-  color: rgba(225, 222, 245, 0.94);
+  color: var(--admin-text);
 }
 
 .customer-detail-shortcut-link small,
 .customer-detail-section-band-header span,
 .customer-detail-section-band-header p {
-  color: rgba(225, 222, 245, 0.68);
+  color: var(--admin-muted);
 }
 
 .customer-detail-shortcut-link em {
-  color: rgba(225, 222, 245, 0.58);
+  color: var(--admin-disabled);
   font-size: 12px;
   font-style: normal;
   text-align: right;
@@ -5212,11 +5306,11 @@ textarea:focus-visible {
 
 .customer-detail-section-band-header {
   align-items: flex-start;
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.12);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
-  box-shadow: 0 18px 40px rgba(15, 20, 34, 0.2);
-  color: rgba(225, 222, 245, 0.9);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
   display: flex;
   gap: 14px;
   justify-content: space-between;
@@ -5390,14 +5484,14 @@ textarea:focus-visible {
 .customer-detail-highlight-grid strong,
 .customer-detail-fact-list strong,
 .customer-detail-nav-list strong {
-  color: rgba(225, 222, 245, 0.94);
+  color: var(--admin-text);
   display: block;
   font-size: 15px;
   line-height: 1.45;
 }
 
 .customer-detail-fact-list {
-  border-top: 1px solid rgba(225, 222, 245, 0.1);
+  border-top: 1px solid var(--admin-border);
   margin-top: 6px;
   padding-top: 18px;
 }
@@ -5418,9 +5512,9 @@ textarea:focus-visible {
 
 .customer-detail-nav-list a {
   align-items: center;
-  border: 1px solid rgba(225, 222, 245, 0.1);
+  border: 1px solid var(--admin-border);
   border-radius: 10px;
-  color: rgba(225, 222, 245, 0.88);
+  color: var(--admin-text);
   display: grid;
   gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -5429,14 +5523,14 @@ textarea:focus-visible {
 }
 
 .customer-detail-nav-list a:hover {
-  background: rgba(225, 222, 245, 0.04);
+  background: var(--admin-action-hover);
 }
 
 .customer-detail-nav-icon {
   align-items: center;
-  background: rgba(115, 103, 240, 0.16);
+  background: var(--admin-primary-soft);
   border-radius: 999px;
-  color: #c7c2ff;
+  color: var(--admin-accent-strong);
   display: inline-flex;
   height: 28px;
   justify-content: center;
@@ -5444,7 +5538,7 @@ textarea:focus-visible {
 }
 
 .customer-detail-nav-list em {
-  color: rgba(225, 222, 245, 0.58);
+  color: var(--admin-disabled);
   font-size: 12px;
   font-style: normal;
   text-align: right;
@@ -5452,16 +5546,16 @@ textarea:focus-visible {
 
 .review-status-held {
   background: rgba(255, 159, 67, 0.16);
-  color: #ff9f43;
+  color: var(--admin-warning-text);
 }
 
 .review-status-follow-up {
   background: rgba(0, 186, 209, 0.16);
-  color: #00bad1;
+  color: var(--admin-info-text);
 }
 
 .vuexy-review-card td small {
-  color: rgba(225, 222, 245, 0.5);
+  color: var(--admin-disabled);
   display: block;
   font-size: 12px;
   line-height: 18px;
@@ -5470,7 +5564,7 @@ textarea:focus-visible {
 
 .vuexy-review-actions {
   align-items: center;
-  color: rgba(225, 222, 245, 0.7);
+  color: var(--admin-muted);
   display: flex;
   justify-content: center;
   position: relative;
@@ -5485,7 +5579,7 @@ textarea:focus-visible {
   background: transparent;
   border: 0;
   border-radius: 999px;
-  color: rgba(225, 222, 245, 0.68);
+  color: var(--admin-muted);
   cursor: pointer;
   display: inline-flex;
   height: 36px;
@@ -5499,13 +5593,13 @@ textarea:focus-visible {
 
 .vuexy-review-action-trigger:hover,
 .vuexy-review-action-trigger[aria-expanded='true'] {
-  background: rgba(225, 222, 245, 0.08);
-  color: #ffffff;
+  background: var(--admin-action-hover);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-review-action-menu {
-  background: #2f3349;
-  border: 1px solid rgba(225, 222, 245, 0.14);
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   box-shadow: 0 10px 28px rgba(15, 17, 30, 0.34);
   display: grid;
@@ -5519,7 +5613,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-action-menu::before {
-  border-bottom: 7px solid rgba(225, 222, 245, 0.14);
+  border-bottom: 7px solid var(--admin-border);
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
   content: '';
@@ -5531,7 +5625,7 @@ textarea:focus-visible {
 .vuexy-review-action-item {
   align-items: center;
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.86);
+  color: var(--admin-text);
   display: flex;
   font-size: 14px;
   font-weight: 700;
@@ -5545,8 +5639,8 @@ textarea:focus-visible {
 }
 
 .vuexy-review-action-item:hover {
-  background: rgba(115, 103, 240, 0.16);
-  color: #ffffff;
+  background: var(--admin-primary-soft);
+  color: var(--admin-accent-strong);
 }
 
 .vuexy-review-action-item.is-success svg {
@@ -5562,12 +5656,12 @@ textarea:focus-visible {
 }
 
 .vuexy-review-action-item.is-disabled {
-  color: rgba(225, 222, 245, 0.34);
+  color: var(--admin-disabled);
   cursor: not-allowed;
 }
 
 .vuexy-review-action-item.is-disabled svg {
-  color: rgba(225, 222, 245, 0.28);
+  color: var(--admin-disabled);
 }
 
 .vuexy-review-footer {
@@ -5580,7 +5674,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-footer > span {
-  color: rgba(225, 222, 245, 0.4);
+  color: var(--admin-disabled);
   font-size: 15px;
   line-height: 22px;
 }
@@ -5595,9 +5689,9 @@ textarea:focus-visible {
 
 .vuexy-review-page-link {
   align-items: center;
-  background: rgba(225, 222, 245, 0.08);
+  background: var(--admin-action-hover);
   border-radius: 6px;
-  color: rgba(225, 222, 245, 0.9);
+  color: var(--admin-text);
   display: inline-flex;
   font-size: 13px;
   font-weight: 700;
@@ -5609,18 +5703,18 @@ textarea:focus-visible {
 }
 
 .vuexy-review-page-link.is-active {
-  background: #7367f0;
-  box-shadow: 0 2px 6px rgba(115, 103, 240, 0.3);
-  color: #ffffff;
+  background: var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
 }
 
 .vuexy-review-page-link.is-disabled {
-  color: rgba(225, 222, 245, 0.3);
+  color: var(--admin-disabled);
   cursor: not-allowed;
 }
 
 .vuexy-review-page-link:not(.is-disabled):hover {
-  background: rgba(115, 103, 240, 0.16);
+  background: var(--admin-primary-soft);
   color: #8f85f3;
 }
 
