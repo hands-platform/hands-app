@@ -23,11 +23,13 @@ describe('AdminDataTable', () => {
   it('renders a full-width empty row when there is no data', () => {
     const table = AdminDataTable({
       children: null,
+      className: 'vuexy-customer-table',
       emptyMessage: 'No feedback records loaded.',
       headers: ['Feedback', 'Action', 'Status'],
       rowCount: 0,
     });
 
+    expect(table.props).toMatchObject({ className: 'table vuexy-customer-table' });
     const emptyRow = table.props.children[1].props.children[1];
     expect(emptyRow.props.children.props).toMatchObject({
       children: 'No feedback records loaded.',

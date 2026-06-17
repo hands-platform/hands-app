@@ -28,6 +28,7 @@ describe('CustomersTableSection', () => {
       expect.arrayContaining([
         'vuexy-customer-table-card',
         'admin-table-scroll',
+        'table vuexy-customer-table',
         'vuexy-customer-actions vuexy-customer-actions-row',
         'vuexy-customer-action-dropdown',
         'vuexy-customer-action-trigger',

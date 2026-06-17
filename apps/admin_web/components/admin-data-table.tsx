@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 type AdminDataTableProps = {
   readonly children: ReactNode;
+  readonly className?: string;
   readonly emptyMessage: ReactNode;
   readonly headers: readonly string[];
   readonly rowCount: number;
@@ -15,9 +16,15 @@ export function AdminTableScroll({ children }: AdminTableScrollProps) {
   return <div className="admin-table-scroll">{children}</div>;
 }
 
-export function AdminDataTable({ children, emptyMessage, headers, rowCount }: AdminDataTableProps) {
+export function AdminDataTable({
+  children,
+  className,
+  emptyMessage,
+  headers,
+  rowCount,
+}: AdminDataTableProps) {
   return (
-    <table className="table">
+    <table className={className ? `table ${className}` : 'table'}>
       <thead>
         <tr>
           {headers.map((header) => (
