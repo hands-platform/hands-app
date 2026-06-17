@@ -3608,6 +3608,19 @@ textarea:focus-visible {
   margin-top: 5px;
 }
 
+.vuexy-review-filter-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vuexy-review-clear-filter {
+  box-shadow: none;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
 .vuexy-review-controls {
   align-items: center;
   display: flex;

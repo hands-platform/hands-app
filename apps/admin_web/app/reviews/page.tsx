@@ -1,4 +1,6 @@
 import type { AdminReview } from '../../lib/admin-api';
+import Link from 'next/link';
+import { X } from 'lucide-react';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -71,14 +73,18 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
       ) : null}
 
       {filters.review || filters.q ? (
-        <div className="admin-mb-16">
+        <div className="vuexy-review-filter-summary admin-mb-16">
           <span className="pill pill-info">
             Showing {reviews.length} of {allReviews.length}
           </span>
           {filters.review ? <span className="pill pill-warn">{reviewFilterDescription(filters.review)}</span> : null}
-          <a className="text-link" href={buildReviewListHref(filters, { q: '', review: '' })}>
-            Clear review filters
-          </a>
+          <Link
+            className="button button-secondary vuexy-review-clear-filter"
+            href={buildReviewListHref(filters, { q: '', review: '' })}
+          >
+            <X aria-hidden="true" size={14} />
+            Clear filters
+          </Link>
         </div>
       ) : null}
 
