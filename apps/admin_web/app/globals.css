@@ -2153,8 +2153,27 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.operations-policy-page > .toolbar {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  padding: 24px;
+}
+
+.operations-policy-page > .toolbar h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+
+.operations-policy-page > .toolbar p {
+  max-width: 780px;
+}
+
 .operations-policy-page > .card,
 .operations-policy-page .grid > .card {
+  box-shadow: var(--admin-shadow-md);
   max-height: min(960px, calc(100vh - 96px));
   overflow-x: auto;
   overflow-y: auto;
@@ -2185,7 +2204,55 @@ a.action-button-card:hover {
 }
 
 .operations-policy-page .grid {
-  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.operations-policy-page form.card {
+  border-color: rgb(var(--admin-primary-channel) / 0.12);
+  display: grid;
+  gap: 14px;
+}
+
+.operations-policy-page form.card .service-trace-summary {
+  margin-top: 0;
+}
+
+.operations-policy-page form.card .service-trace-summary > div {
+  background: #ffffff;
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+}
+
+.operations-policy-page .booking-radar {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.operations-policy-page .insight-card {
+  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  color: inherit;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.operations-policy-page a.insight-card:hover {
+  background: var(--admin-action-hover);
+  border-color: rgb(var(--admin-primary-channel) / 0.24);
+  box-shadow: var(--admin-shadow-md);
+}
+
+.operations-policy-page .ops-task-note {
+  background: var(--admin-action-hover);
+  border-radius: var(--admin-radius-lg);
+  padding: 12px;
 }
 
 .operations-policy-page .ops-task-grid > .ops-task-card {
@@ -2240,8 +2307,22 @@ a.action-button-card:hover {
 .operations-policy-page .field select,
 .operations-policy-page .field input,
 .operations-policy-page .field textarea {
+  background: #ffffff;
+  border-color: rgb(var(--admin-primary-channel) / 0.14);
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
   max-width: 100%;
   min-width: 0;
+}
+
+.operations-policy-page .field select:focus,
+.operations-policy-page .field input:focus,
+.operations-policy-page .field textarea:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.56);
+  box-shadow:
+    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
+    var(--admin-shadow-xs);
+  outline: none;
 }
 
 .dashboard-page {
