@@ -6,10 +6,15 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
-  Search,
   Star,
 } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { ReviewActionDropdown } from './review-action-dropdown';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
@@ -56,38 +61,38 @@ export function ReviewsTableSection({ csvHref, emptyMessage, filters, pagination
           <p>Customer-written reviews are published by default. Hold a review to remove it from app visibility.</p>
         </div>
         <form action="/reviews" className="vuexy-review-controls">
-          <label className="vuexy-review-search">
-            <Search aria-hidden="true" size={18} />
-            <span className="sr-only">Search Review</span>
-            <input defaultValue={filters.q} name="q" placeholder="Search Review" type="search" />
-          </label>
-          <label className="vuexy-review-select">
-            <span className="sr-only">Rows per page</span>
-            <select defaultValue={filters.pageSize} name="pageSize">
-              {REVIEW_PAGE_SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="vuexy-review-select">
-            <span className="sr-only">Review status</span>
-            <select defaultValue={filters.review} name="review">
-              <option value="">All</option>
-              <option value="published">Published</option>
-              <option value="held">Held</option>
-              <option value="follow-up">Follow-up</option>
-              <option value="reported">Reported</option>
-            </select>
-          </label>
-          <button className="vuexy-review-button" type="submit">
+          <AdminFormSearch
+            className="vuexy-review-search"
+            defaultValue={filters.q}
+            label="Search Review"
+            name="q"
+            placeholder="Search Review"
+          />
+          <AdminFormSelect
+            className="vuexy-review-select"
+            defaultValue={String(filters.pageSize)}
+            label="Rows per page"
+            name="pageSize"
+            options={reviewPageSizeOptions}
+          />
+          <AdminFormSelect
+            className="vuexy-review-select"
+            defaultValue={filters.review}
+            label="Review status"
+            name="review"
+            options={reviewStatusOptions}
+          />
+          <AdminFormControlButton className="vuexy-review-button">
             Apply
-          </button>
-          <a className="vuexy-review-export" download="hands-customer-reviews.csv" href={csvHref}>
+          </AdminFormControlButton>
+          <AdminFormControlLink
+            className="vuexy-review-export"
+            download="hands-customer-reviews.csv"
+            href={csvHref}
+          >
             <Download aria-hidden="true" size={16} />
             Export
-          </a>
+          </AdminFormControlLink>
         </form>
       </div>
 
@@ -237,3 +242,16 @@ function visiblePageNumbers(pagination: ReviewPagination<ReviewTableRow>) {
 
   return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
 }
+
+const reviewPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({
+  label: String(option),
+  value: String(option),
+}));
+
+const reviewStatusOptions = [
+  { label: 'All', value: '' },
+  { label: 'Published', value: 'published' },
+  { label: 'Held', value: 'held' },
+  { label: 'Follow-up', value: 'follow-up' },
+  { label: 'Reported', value: 'reported' },
+] as const;

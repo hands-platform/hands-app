@@ -30,6 +30,14 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Visible in app');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
     expect(hrefsIn(section)).toContain('data:text/csv;charset=utf-8,Review');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-form-search vuexy-review-search',
+        'admin-form-select vuexy-review-select',
+        'admin-form-control-button vuexy-review-button',
+        'admin-form-control-link vuexy-review-export',
+      ]),
+    );
     expect(dropdownPropsIn(section)).toEqual([
       expect.objectContaining({
         actions: expect.arrayContaining([
@@ -162,6 +170,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function dropdownPropsIn(value: unknown): Record<string, unknown>[] {

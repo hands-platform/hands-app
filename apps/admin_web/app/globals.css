@@ -4539,11 +4539,6 @@ textarea:focus-visible {
 .vuexy-review-search,
 .vuexy-review-select {
   align-items: center;
-  border: 1px solid var(--admin-input-border);
-  border-radius: var(--admin-radius);
-  color: var(--admin-disabled);
-  display: flex;
-  gap: 10px;
   min-height: 34px;
   padding: 0 14px;
 }
@@ -4554,12 +4549,7 @@ textarea:focus-visible {
 
 .vuexy-review-search input,
 .vuexy-review-select select {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  color: var(--admin-text);
   font-size: 15px;
-  min-height: 0;
   padding: 0;
 }
 
@@ -4582,20 +4572,11 @@ textarea:focus-visible {
 
 .vuexy-review-button,
 .vuexy-review-export {
-  align-items: center;
-  background: var(--admin-secondary-soft);
-  border: 0;
-  border-radius: 6px;
   color: var(--admin-secondary-text);
-  display: inline-flex;
   font-size: 15px;
-  font-weight: 700;
-  gap: 8px;
-  justify-content: center;
   line-height: 22px;
   min-height: 38px;
   padding: 8px 18px;
-  text-decoration: none;
 }
 
 .vuexy-review-button:hover,

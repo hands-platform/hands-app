@@ -23,6 +23,8 @@ describe('ReviewActionDropdown', () => {
     expect(html).toContain('aria-haspopup="menu"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('Review actions for review');
+    expect(html).toContain('admin-action-dropdown vuexy-review-action-dropdown');
+    expect(html).toContain('admin-action-trigger vuexy-review-action-trigger');
     expect(html).not.toContain('role="menu"');
   });
 });

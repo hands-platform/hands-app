@@ -47,19 +47,19 @@ export function ReviewActionDropdown({ actions, label }: ReviewActionDropdownPro
   }, [open]);
 
   return (
-    <div className="vuexy-review-action-dropdown" ref={rootRef}>
+    <div className="admin-action-dropdown vuexy-review-action-dropdown" ref={rootRef}>
       <button
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={label}
-        className="vuexy-review-action-trigger"
+        className="admin-action-trigger vuexy-review-action-trigger"
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
         <MoreVertical aria-hidden="true" size={20} />
       </button>
       {open ? (
-        <div className="vuexy-review-action-menu" role="menu">
+        <div className="admin-action-menu vuexy-review-action-menu" role="menu">
           {actions.map((item) => (
             <ReviewActionControl item={item} key={item.label} onSelect={() => setOpen(false)} />
           ))}
@@ -77,7 +77,7 @@ function ReviewActionControl({
   readonly onSelect: () => void;
 }) {
   const Icon = actionIcons[item.label as keyof typeof actionIcons] ?? Flag;
-  const className = `vuexy-review-action-item is-${item.tone}${item.disabled ? ' is-disabled' : ''}`;
+  const className = `admin-action-item vuexy-review-action-item is-${item.tone}${item.disabled ? ' is-disabled' : ''}`;
   const content = (
     <>
       <Icon aria-hidden="true" size={16} />
