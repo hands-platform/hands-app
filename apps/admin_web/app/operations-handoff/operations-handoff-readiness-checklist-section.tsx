@@ -10,6 +10,8 @@ export function OperationsHandoffReadinessChecklistSection({
   openCount,
   rows,
 }: OperationsHandoffReadinessChecklistSectionProps) {
+  const visibleRows = rows.filter((item) => item.tone !== 'success');
+
   return (
     <section className="card admin-mb-16">
       <div className="toolbar">
@@ -25,7 +27,7 @@ export function OperationsHandoffReadinessChecklistSection({
         </span>
       </div>
       <div className="ops-task-grid">
-        {rows.map((item) => (
+        {visibleRows.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.id}>
             <span className={item.badgeClass}>{item.status}</span>
             <h3>{item.title}</h3>
@@ -37,6 +39,18 @@ export function OperationsHandoffReadinessChecklistSection({
             <small>{item.operatorAction}</small>
           </Link>
         ))}
+        {visibleRows.length === 0 ? (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Ready</span>
+            <h3>Handoff checks are ready</h3>
+            <p>No open checklist item needs review for the current range.</p>
+            <div className="participant-list">
+              <span className="pill pill-success">0 open</span>
+              <span className="pill pill-success">Ops</span>
+            </div>
+            <small>Keep the written shift note updated before closeout.</small>
+          </div>
+        ) : null}
       </div>
     </section>
   );

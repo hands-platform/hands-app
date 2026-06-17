@@ -8,6 +8,8 @@ type OperationsHandoffImmediateActionSectionProps = {
 export function OperationsHandoffImmediateActionSection({
   actions,
 }: OperationsHandoffImmediateActionSectionProps) {
+  const visibleActions = actions.filter((item) => !item.statusClass.includes('success'));
+
   return (
     <section className="card admin-mb-16">
       <div className="toolbar">
@@ -18,10 +20,10 @@ export function OperationsHandoffImmediateActionSection({
             notification delivery, and written handoff notes.
           </p>
         </div>
-        <span className="pill pill-info">{actions.length} action lane(s)</span>
+        <span className="pill pill-info">{visibleActions.length} action lane(s)</span>
       </div>
       <div className="ops-task-grid">
-        {actions.map((item) => (
+        {visibleActions.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.id}>
             <span className={item.className}>{item.owner}</span>
             <h3>{item.title}</h3>
@@ -33,6 +35,21 @@ export function OperationsHandoffImmediateActionSection({
             <small>{item.nextAction}</small>
           </Link>
         ))}
+        {visibleActions.length === 0 ? (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Clear</span>
+            <h3>No immediate action lane</h3>
+            <p>
+              Live matching, chat, cash gate, alerts, Partner follow-up, closeout, and recent notes
+              are clear.
+            </p>
+            <div className="participant-list">
+              <span className="pill pill-success">0 action</span>
+              <span className="pill pill-success">Ops</span>
+            </div>
+            <small>Continue monitoring the current range.</small>
+          </div>
+        ) : null}
       </div>
     </section>
   );

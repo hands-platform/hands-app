@@ -18,6 +18,19 @@ describe('OperationsHandoffImmediateActionSection', () => {
           statusClass: 'pill pill-warn',
           title: 'Open matching windows',
         },
+        {
+          className: 'signal signal-ok',
+          count: 0,
+          countLabel: '0 booking(s)',
+          detail: 'All closeout checks are clear.',
+          href: '/operations-handoff',
+          id: 'closeout-clear',
+          nextAction: 'No action needed.',
+          owner: 'Ops',
+          status: 'Ready',
+          statusClass: 'pill pill-success',
+          title: 'Closeout clear',
+        },
       ],
     });
 
@@ -28,13 +41,16 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(rendered).toContain('1');
     expect(rendered).toContain('action lane(s)');
     expect(rendered).toContain('Open matching windows');
+    expect(rendered).not.toContain('Closeout clear');
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
   });
 
-  it('renders an empty lane count when there are no actions', () => {
+  it('renders a clear lane card when there are no actions', () => {
     const rendered = textContent(OperationsHandoffImmediateActionSection({ actions: [] }));
 
     expect(rendered).toContain('0');
     expect(rendered).toContain('action lane(s)');
+    expect(rendered).toContain('No immediate action lane');
+    expect(rendered).toContain('Continue monitoring the current range');
   });
 });

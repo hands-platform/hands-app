@@ -19,6 +19,19 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
           title: 'Live matching reviewed',
           tone: 'warn',
         },
+        {
+          badgeClass: 'pill pill-success',
+          count: 0,
+          countLabel: '0 open',
+          detail: 'All notification retries are clear.',
+          href: '/notifications',
+          id: 'notifications-clear',
+          operatorAction: 'No action needed.',
+          owner: 'Ops',
+          status: 'Ready',
+          title: 'Notifications clear',
+          tone: 'success',
+        },
       ],
     });
 
@@ -28,6 +41,7 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     expect(rendered).toContain('Shift handoff checklist');
     expect(rendered).toContain('1 check(s) open');
     expect(rendered).toContain('Live matching reviewed');
+    expect(rendered).not.toContain('Notifications clear');
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
   });
 
@@ -37,5 +51,7 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     );
 
     expect(rendered).toContain('Ready to hand over');
+    expect(rendered).toContain('Handoff checks are ready');
+    expect(rendered).toContain('No open checklist item needs review');
   });
 });
