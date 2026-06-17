@@ -60,4 +60,47 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
     ]);
     expect(hrefsIn(section)).toContain('/bookings?view=first-pick');
   });
+
+  it('hides non-action operating queue cards behind a clear state', () => {
+    const section = BookingMonitorMarketplaceLedgerOverviewSection({
+      getCustomerLabel: () => 'Customer A',
+      marketplaceLedgerSummary: {
+        declined: 0,
+        firstPick: 0,
+        marketplace: 0,
+        selected: 0,
+        total: 0,
+        waitingChoice: 0,
+      },
+      marketplaceOperatingQueue: [
+        {
+          bookings: [],
+          detail: 'Partner pool is visible.',
+          href: '/bookings?view=marketplace',
+          operatorAction: 'No operator action.',
+          status: 'Visible',
+          step: '2. Partner participation pool',
+          title: 'Partner participation pool',
+          tone: 'info',
+          value: '0 waiting',
+        },
+        {
+          bookings: [],
+          detail: 'Wallet lane is clear.',
+          href: '/bookings?view=cash-debt',
+          operatorAction: 'No operator action.',
+          status: 'Clear',
+          step: '5. Wallet unblock lane',
+          title: 'Wallet unblock lane',
+          tone: 'ok',
+          value: '0 blocked',
+        },
+      ],
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No marketplace lane needs action');
+    expect(rendered).not.toContain('Partner participation pool');
+    expect(rendered).not.toContain('Wallet unblock lane');
+  });
 });

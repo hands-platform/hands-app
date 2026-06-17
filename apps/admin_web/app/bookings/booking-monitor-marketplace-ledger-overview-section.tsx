@@ -17,15 +17,17 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
   marketplaceLedgerSummary,
   marketplaceOperatingQueue,
 }: BookingMonitorMarketplaceLedgerOverviewSectionProps) {
+  const visibleOperatingQueue = marketplaceOperatingQueue.filter(
+    (item) => item.tone === 'danger' || item.tone === 'warn',
+  );
+
   return (
     <>
       <div className="ops-section-header">
         <div>
           <h2>Marketplace participant ledger</h2>
           <p className="muted">
-            All participant records by booking, including first-pick, marketplace participants, declined
-            responses, and the customer final choice. This is the operations record of who entered the
-            request; visibility-only marketplace exposure is intentionally not counted as participation.
+            Participant evidence for first-pick, marketplace, declined, and final-choice rows.
           </p>
         </div>
         <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
@@ -37,14 +39,13 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
           <div>
             <h3>Marketplace operating queue</h3>
             <p className="muted">
-              Practical dispatch sequence for first-pick timer control, Partner participation pool, customer
-              final selection lane, chat handoff, and wallet unblock lane.
+              Only marketplace lanes with current operator work are shown here.
             </p>
           </div>
           <span className="pill pill-info">No auto assignment</span>
         </div>
         <div className="ops-task-grid admin-mt-12">
-          {marketplaceOperatingQueue.map((item) => (
+          {visibleOperatingQueue.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.step}>
               <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
               <h3>{item.title}</h3>
@@ -66,6 +67,13 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
               )}
             </Link>
           ))}
+          {visibleOperatingQueue.length === 0 && (
+            <div className="ops-task-card">
+              <span className="signal signal-ok">Clear</span>
+              <h3>No marketplace lane needs action</h3>
+              <p>First-pick, supply, customer choice, chat handoff, and wallet unblock lanes are clear.</p>
+            </div>
+          )}
         </div>
       </section>
     </>

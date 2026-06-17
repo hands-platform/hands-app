@@ -71,8 +71,6 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     });
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Participant rows only');
-    expect(rendered).toContain('Wallet gate applies before finalization');
     expect(rendered).toContain('Marketplace participants 1');
     expect(rendered).toContain('Open marketplace');
     expect(rendered).toContain('Customer A');
@@ -93,5 +91,34 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     });
 
     expect(normalizedText(section)).toContain('No participant records match the current booking filters.');
+  });
+
+  it('hides clear operation summary cards when only non-action states remain', () => {
+    const section = BookingMonitorMarketplaceParticipantLedgerSection({
+      getCustomerLabel: () => 'Customer A',
+      marketplaceLedgerPills: [],
+      marketplaceLedgerRows: [],
+      marketplaceOperationsCards: [
+        {
+          detail: 'Selected Partners are already handled.',
+          href: '/bookings?view=marketplace',
+          title: 'Selected Partners',
+          tone: 'pill-success',
+          value: '2',
+        },
+        {
+          detail: 'No customer choice wait.',
+          href: '/bookings?view=customer-choice',
+          title: 'Customer choice',
+          tone: 'pill-neutral',
+          value: '0',
+        },
+      ],
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No marketplace participant action is needed');
+    expect(rendered).not.toContain('Selected Partners');
+    expect(rendered).not.toContain('Customer choice');
   });
 });

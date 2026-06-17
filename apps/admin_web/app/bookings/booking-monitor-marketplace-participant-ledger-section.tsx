@@ -24,27 +24,35 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
   marketplaceLedgerRows,
   marketplaceOperationsCards,
 }: BookingMonitorMarketplaceParticipantLedgerSectionProps) {
+  const visibleMarketplaceOperationsCards = marketplaceOperationsCards.filter(
+    (card) => card.tone === 'pill-info' || card.tone === 'pill-warn',
+  );
+
   return (
     <>
       <div className="participant-list admin-mt-12">
-        <span className="pill pill-info">Participant rows only</span>
-        <span className="pill pill-warn">Wallet gate applies before finalization</span>
-        <span className="pill">No automatic final assignment</span>
         {marketplaceLedgerPills.map((pill) => (
           <span className={`pill ${pill.tone}`} key={pill.label}>
             {pill.label}
           </span>
         ))}
-        <span className="pill">Participant evidence</span>
+        {marketplaceLedgerPills.length === 0 && <span className="pill">Participant evidence</span>}
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {marketplaceOperationsCards.map((card) => (
+        {visibleMarketplaceOperationsCards.map((card) => (
           <Link className="ops-task-card" href={card.href} key={card.title}>
             <span className={`signal ${card.tone}`}>{card.title}</span>
             <strong className="ops-task-card-value">{card.value}</strong>
             <p>{card.detail}</p>
           </Link>
         ))}
+        {marketplaceOperationsCards.length > 0 && visibleMarketplaceOperationsCards.length === 0 && (
+          <div className="ops-task-card">
+            <span className="signal pill-success">Clear</span>
+            <strong className="ops-task-card-value">0</strong>
+            <p>No marketplace participant action is needed for the current filters.</p>
+          </div>
+        )}
       </div>
       {marketplaceLedgerRows.length === 0 ? (
         <div className="empty-state admin-mt-14">

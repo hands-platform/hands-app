@@ -30,9 +30,7 @@ export function BookingMonitorMarketplaceCoverageSection({
         <div>
           <h3>Marketplace booking coverage board</h3>
           <p className="muted">
-            Booking-level view of first-pick timer, 10 km alert trace, participant history,
-            customer-selectable Partners, wallet gate, and final customer selection. This board shows
-            bookings with and without participants before drilling into the participant ledger.
+            Booking-level exceptions for marketplace supply, customer choice, wallet gate, and final selection.
           </p>
         </div>
         <div className="actions">
@@ -44,9 +42,6 @@ export function BookingMonitorMarketplaceCoverageSection({
         </div>
       </div>
       <div className="participant-list admin-mt-12">
-        <span className="pill">Booking rows, not visibility events</span>
-        <span className="pill">Wallet gate blocks finalization</span>
-        <span className="pill">No auto assignment</span>
         <span className="pill">Final Partner selected {marketplaceBookingCoverageSummary.selected}</span>
       </div>
       {marketplaceBookingCoverageRows.length === 0 ? (
