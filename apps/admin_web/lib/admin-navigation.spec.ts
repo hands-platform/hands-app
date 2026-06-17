@@ -34,4 +34,20 @@ describe('admin navigation', () => {
 
     expect(duplicates).toEqual([]);
   });
+
+  it('keeps customer and partner operations in one user-management category', () => {
+    const userSection = adminNavSections.find((section) => section.label === 'Users');
+
+    expect(adminNavSections.map((section) => section.label)).not.toContain('Customers');
+    expect(adminNavSections.map((section) => section.label)).not.toContain('Partners');
+    expect(userSection?.links.map((link) => link.href)).toEqual([
+      '/customers',
+      '/app-sessions?role=CUSTOMER&state=live',
+      '/partners',
+      '/partners?review=kyc',
+      '/partners?review=acceptance-blocked',
+      '/partners?review=marketplace-ready',
+      '/partner-controls',
+    ]);
+  });
 });

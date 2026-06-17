@@ -79,9 +79,19 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Partners',
-    description: 'Partner onboarding, readiness, wallet gates, and operating controls.',
+    label: 'Users',
+    description: 'Customer records, Partner onboarding, readiness, controls, and support evidence.',
     links: [
+      {
+        href: '/customers',
+        label: 'Customer List',
+        description: 'Customer account list with booking and payment facts.',
+      },
+      {
+        href: '/app-sessions?role=CUSTOMER&state=live',
+        label: 'Live Customers',
+        description: 'Customers currently active in the app.',
+      },
       {
         href: '/partners',
         label: 'Partner List',
@@ -107,22 +117,6 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/partner-controls',
         label: 'Partner Controls',
         description: 'Manual Partner state, hold, and account controls.',
-      },
-    ],
-  },
-  {
-    label: 'Customers',
-    description: 'Customer records, booking history, wallet, addresses, and support evidence.',
-    links: [
-      {
-        href: '/customers',
-        label: 'Customer List',
-        description: 'Customer account list with booking and payment facts.',
-      },
-      {
-        href: '/app-sessions?role=CUSTOMER&state=live',
-        label: 'Live Customers',
-        description: 'Customers currently active in the app.',
       },
     ],
   },
