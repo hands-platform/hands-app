@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, User } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPageTemplate } from '../../components/admin-page-template';
@@ -135,7 +135,8 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
         <p className="muted">{shortId(row.id, { length: 12, ellipsis: true })}</p>
       </td>
       <td>
-        <Link className="text-link" href={row.partnerHref}>
+        <Link className="button button-secondary admin-inline-action" href={row.partnerHref}>
+          <User aria-hidden="true" size={14} />
           {row.partnerName}
         </Link>
         <p className="muted">{shortId(row.partnerId, { length: 12, ellipsis: true })}</p>
