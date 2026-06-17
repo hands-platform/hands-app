@@ -18,6 +18,7 @@ import {
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
+import { bookingChatOpensAfterMatchOrSelectionCopy } from '../../../lib/booking-chat-copy';
 import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
 import {
   detailDateRangeOptions,
@@ -3618,7 +3619,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
         ? 'Customer and Partner apps may hide completed or closed chats, but admin keeps the archive.'
         : booking.chatRoom
           ? 'Room should remain visible until the service is completed or closed.'
-          : 'Chat opens after first-pick match or customer final selection.',
+          : bookingChatOpensAfterMatchOrSelectionCopy,
       adminRetention: booking.chatRoom
         ? 'Admin archive retained'
         : requiresRoom

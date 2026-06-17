@@ -1,3 +1,5 @@
+import { bookingChatOpensAfterMatchOrSelectionCopy } from './booking-chat-copy';
+
 type EvidenceBundleTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 
 export type BookingEvidenceBundleRowsInput = {
@@ -98,7 +100,7 @@ export function bookingEvidenceBundleRows(
           }`
         : input.chatRepairNeeded
           ? 'Matched booking should have a retained chat archive.'
-          : 'Chat opens after first-pick match or customer final selection.',
+          : bookingChatOpensAfterMatchOrSelectionCopy,
       operatorUse: 'Use the transcript for service handoff, cancellation, no-show, and refund context.',
       href: input.chatReady ? `/chat-archive?q=${encodeURIComponent(input.bookingId)}` : '#chat',
     },

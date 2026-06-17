@@ -3,6 +3,7 @@ import {
   compactBookingCheckFlags,
   type BookingCheckLevelFlag,
 } from './booking-check-level';
+import { bookingChatOpensAfterMatchOrSelectionCopy } from './booking-chat-copy';
 
 export type BookingChatRepairNeedsOpsInput = {
   status: string;
@@ -70,7 +71,7 @@ export function bookingChatRepairActionState(
       canSubmit: false,
       status: 'Not required',
       tone: 'pill-neutral',
-      helper: 'Chat opens after first-pick match or customer final selection.',
+      helper: bookingChatOpensAfterMatchOrSelectionCopy,
     };
   }
 

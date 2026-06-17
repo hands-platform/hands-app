@@ -1,4 +1,5 @@
 import { bookingRecordCreatedAt } from '../../../lib/admin-booking-time';
+import { bookingChatOpensAfterMatchOrSelectionCopy } from '../../../lib/booking-chat-copy';
 import { dateValue, formatDate, shortRecordId } from './partner-detail-format';
 import type {
   PartnerBookingArchiveBooking,
@@ -81,7 +82,7 @@ export function buildPartnerChatRetentionRows<TBooking extends PartnerBookingArc
         ? 'Customer and Partner apps may hide completed or closed chats, but admin keeps the archive.'
         : booking.chatRoom
           ? 'Room should remain visible until the service is completed or closed.'
-          : 'Chat opens after first-pick match or customer final selection.',
+          : bookingChatOpensAfterMatchOrSelectionCopy,
       adminRetention: booking.chatRoom
         ? 'Admin archive retained'
         : requiresRoom
