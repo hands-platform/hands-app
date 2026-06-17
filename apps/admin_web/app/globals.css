@@ -171,7 +171,7 @@ a {
   background: linear-gradient(135deg, var(--admin-accent), #8f85f3);
   border-radius: var(--admin-radius);
   box-shadow: var(--admin-primary-shadow-sm);
-  color: white;
+  color: var(--admin-inverse-text);
   display: inline-flex;
   flex: 0 0 auto;
   height: 34px;
@@ -450,6 +450,10 @@ a {
     transform var(--admin-transition);
 }
 
+.card:hover {
+  border-color: var(--admin-border-strong);
+}
+
 .admin-summary-card-value {
   display: block;
   font-size: 1.5em;
@@ -474,11 +478,13 @@ a {
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 500;
   gap: 8px;
   justify-content: center;
   min-height: var(--admin-control-height);
   padding: 0 14px;
+  text-transform: none;
   transition:
     background var(--admin-transition),
     border-color var(--admin-transition),
@@ -493,12 +499,14 @@ a {
 
 .button-primary {
   background: var(--admin-accent);
+  border-color: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
   color: var(--admin-inverse-text);
 }
 
 .button-primary:hover {
   background: var(--admin-accent-strong);
+  border-color: var(--admin-accent-strong);
 }
 
 .button-secondary {
@@ -1527,7 +1535,7 @@ a.action-button-card:hover {
 
 .notification-monitor .ops-task-card {
   align-content: start;
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -1625,7 +1633,7 @@ a.action-button-card:hover {
 
 .chat-archive-page .form-grid input,
 .chat-archive-page .form-grid select {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -1643,7 +1651,7 @@ a.action-button-card:hover {
 
 .chat-archive-page .form-grid .actions.full-span {
   align-items: center;
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -1672,7 +1680,7 @@ a.action-button-card:hover {
 
 .chat-archive-page .service-trace-summary > div,
 .chat-archive-page .service-trace-summary > a {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
 }
@@ -1812,7 +1820,7 @@ a.action-button-card:hover {
 
 .partners-page > .card:first-of-type .form-grid input,
 .partners-page > .card:first-of-type .form-grid select {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -1830,7 +1838,7 @@ a.action-button-card:hover {
 
 .partners-page > .card:first-of-type .form-grid .actions.full-span {
   align-items: center;
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -1857,7 +1865,7 @@ a.action-button-card:hover {
 
 .partners-page .service-trace-summary > div,
 .partners-page .service-trace-summary > a {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
 }
@@ -1895,7 +1903,7 @@ a.action-button-card:hover {
 
 .audit-log-page .form-grid input,
 .audit-log-page .form-grid select {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -1913,7 +1921,7 @@ a.action-button-card:hover {
 
 .audit-log-page .form-grid .actions.full-span {
   align-items: center;
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -1949,7 +1957,7 @@ a.action-button-card:hover {
 }
 
 .audit-log-page .ops-task-card .stack {
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   display: grid;
@@ -2101,7 +2109,7 @@ a.action-button-card:hover {
 
 .operations-handoff-page .ops-task-card,
 .operations-handoff-page .ops-signal-card {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -2151,7 +2159,7 @@ a.action-button-card:hover {
 
 .operations-handoff-page .ops-note-form select,
 .operations-handoff-page .ops-note-form textarea {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -2357,7 +2365,7 @@ a.action-button-card:hover {
 }
 
 .files-page .filter-bar .compact-form input {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -2381,7 +2389,7 @@ a.action-button-card:hover {
 
 .files-page .filter-bar-options {
   align-items: center;
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid rgb(var(--admin-primary-channel) / 0.12);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -2572,7 +2580,7 @@ a.action-button-card:hover {
 }
 
 .operations-policy-page form.card .service-trace-summary > div {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
 }
@@ -2584,7 +2592,7 @@ a.action-button-card:hover {
 }
 
 .operations-policy-page .insight-card {
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
@@ -2660,7 +2668,7 @@ a.action-button-card:hover {
 .operations-policy-page .field select,
 .operations-policy-page .field input,
 .operations-policy-page .field textarea {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -2906,7 +2914,7 @@ a.action-button-card:hover {
 .service-catalog-page .form-grid input,
 .service-catalog-page .form-grid select,
 .service-catalog-page .form-grid textarea {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-color: rgb(var(--admin-primary-channel) / 0.14);
   box-shadow: var(--admin-shadow-xs);
   color: var(--admin-text);
@@ -2951,7 +2959,7 @@ a.action-button-card:hover {
 
 .service-catalog-page .service-trace-summary > div,
 .service-catalog-page .service-trace-summary > a {
-  background: #ffffff;
+  background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
 }
@@ -3158,7 +3166,7 @@ a.action-button-card:hover {
 }
 
 .chat-transcript-bubble.is-customer {
-  background: #ffffff;
+  background: var(--admin-surface);
   justify-self: start;
 }
 
@@ -3855,7 +3863,7 @@ a.ops-task-card {
 
 .setup-card-action {
   align-items: center;
-  background: #fff;
+  background: var(--admin-surface);
   border-color: var(--admin-border);
   color: var(--admin-text);
   display: inline-flex;
@@ -3986,7 +3994,7 @@ a.ops-task-card {
   padding: 6px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: white;
+  color: var(--admin-inverse-text);
   box-shadow: var(--admin-shadow-sm);
 }
 
@@ -4247,6 +4255,7 @@ textarea {
 input,
 select,
 textarea {
+  background: var(--admin-surface);
   box-shadow: none;
 }
 
@@ -4263,7 +4272,19 @@ textarea::placeholder {
 }
 
 select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--admin-muted) 50%),
+    linear-gradient(135deg, var(--admin-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-repeat: no-repeat;
+  background-size:
+    5px 5px,
+    5px 5px;
   cursor: pointer;
+  padding-right: 34px;
 }
 
 textarea {
@@ -4300,9 +4321,10 @@ button {
   background: var(--admin-accent);
   border-color: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
-  color: white;
+  color: var(--admin-inverse-text);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
+  text-transform: none;
 }
 
 button:hover {
@@ -4369,6 +4391,14 @@ button:disabled {
   opacity: 0.45;
 }
 
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--admin-action-hover);
+  color: var(--admin-disabled);
+  cursor: not-allowed;
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -4413,7 +4443,7 @@ textarea:focus-visible {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -5829,7 +5859,7 @@ textarea:focus-visible {
 }
 
 .notification-delivery-attempt {
-  background: #ffffff;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   max-width: 380px;
