@@ -1711,6 +1711,12 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
+.audit-log-page > section.card:first-child {
+  max-height: none;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+
 .partners-page > h1 {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
