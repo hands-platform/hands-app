@@ -1463,13 +1463,6 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.notification-monitor > .card {
-  max-height: min(960px, calc(100vh - 96px));
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
-
 .notification-monitor .soft-card {
   background: var(--admin-surface);
   border-color: var(--admin-border);
@@ -1511,7 +1504,7 @@ a.action-button-card:hover {
 
 .notification-monitor .ops-task-grid {
   align-items: start;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .notification-monitor .ops-task-card:hover {
@@ -1536,6 +1529,12 @@ a.action-button-card:hover {
 }
 
 @media (min-width: 1600px) {
+  .notification-monitor .ops-task-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1900px) {
   .notification-monitor .ops-task-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
