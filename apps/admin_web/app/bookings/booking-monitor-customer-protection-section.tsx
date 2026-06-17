@@ -26,6 +26,10 @@ export function BookingMonitorCustomerProtectionSection({
   const hasOpenCloseout = lanes.some((lane) => lane.bookings.length > 0);
   const visibleLanes = lanes.filter((lane) => lane.tone !== 'ok' || lane.bookings.length > 0);
 
+  if (visibleLanes.length === 0) {
+    return null;
+  }
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
@@ -60,13 +64,6 @@ export function BookingMonitorCustomerProtectionSection({
             <small>{lane.operatorAction}</small>
           </Link>
         ))}
-        {visibleLanes.length === 0 && (
-          <div className="ops-task-card">
-            <span className="signal signal-ok">Clear</span>
-            <h3>No closeout lane needs action</h3>
-            <p>Cancelled, expired, no-show, completed, and cash-fee debt checks are clear.</p>
-          </div>
-        )}
       </div>
     </section>
   );

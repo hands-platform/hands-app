@@ -34,6 +34,8 @@ describe('BookingMonitorCustomerProtectionSection', () => {
     });
     const rendered = normalizedText(section);
 
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected customer protection section to render.');
     expect(rendered).toContain('Customer protection closeout board');
     expect(rendered).toContain('1 open closeout');
     expect(rendered).toContain('No-show payment release');
@@ -46,7 +48,7 @@ describe('BookingMonitorCustomerProtectionSection', () => {
     expect(hrefsIn(section)).not.toContain('/bookings?view=cash-debt');
   });
 
-  it('renders a clear badge when all closeout lanes are empty', () => {
+  it('returns no section when all closeout lanes are empty', () => {
     const section = BookingMonitorCustomerProtectionSection({
       getCustomerLabel: () => 'Customer A',
       lanes: [
@@ -62,10 +64,6 @@ describe('BookingMonitorCustomerProtectionSection', () => {
       ],
     });
 
-    const rendered = normalizedText(section);
-
-    expect(rendered).toContain('0 open closeout');
-    expect(rendered).toContain('No closeout lane needs action');
-    expect(rendered).not.toContain('Expired payment release');
+    expect(section).toBeNull();
   });
 });
