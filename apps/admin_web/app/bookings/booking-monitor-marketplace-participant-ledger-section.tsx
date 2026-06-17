@@ -88,8 +88,9 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                     <span className="pill">{row.roleLabel}</span>
                   </td>
                   <td>
-                    <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                    <div className="muted">{row.evidenceDetail}</div>
+                    <span className={`pill ${row.evidenceTone}`} title={row.evidenceDetail}>
+                      {row.evidenceLabel}
+                    </span>
                   </td>
                   <td>
                     <span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>
@@ -98,9 +99,10 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                   <td>
                     <strong>{row.distanceLabel}</strong>
                     <div>
-                      <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+                      <span className={`pill ${row.distancePolicyTone}`} title={row.distancePolicyHelper}>
+                        {row.distancePolicyLabel}
+                      </span>
                     </div>
-                    <div className="muted">{row.distancePolicyHelper}</div>
                   </td>
                   <td>
                     <div>{row.windowLabel}</div>
@@ -114,12 +116,14 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                     <div className="muted">{row.respondedLabel}</div>
                   </td>
                   <td>
-                    <span className={`pill ${row.choiceTone}`}>{row.choiceLabel}</span>
+                    <span className={`pill ${row.choiceTone}`} title={row.choiceReason}>
+                      {row.choiceLabel}
+                    </span>
                     <div className="participant-list admin-mt-6">
-                      <span className={`pill ${row.chatHandoffTone}`}>{row.chatHandoffLabel}</span>
+                      <span className={`pill ${row.chatHandoffTone}`} title={row.choiceNextStep}>
+                        {row.chatHandoffLabel}
+                      </span>
                     </div>
-                    <div className="muted">{row.choiceReason}</div>
-                    <small>{row.choiceNextStep}</small>
                   </td>
                 </tr>
               ))}

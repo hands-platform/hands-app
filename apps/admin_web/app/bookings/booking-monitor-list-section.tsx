@@ -231,9 +231,9 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
         </div>
         <div
           className="muted admin-mt-8"
-          title={`${row.matchingRuleSnapshot.windowLabel} | ${row.matchingRuleSnapshot.radiusLabel} | ${row.matchingRuleSnapshot.customerChoiceLabel} | ${row.matchingRuleSnapshot.operatorAction}`}
+          title={`${row.matchingRuleSnapshot.supplyLabel} | ${row.matchingRuleSnapshot.windowLabel} | ${row.matchingRuleSnapshot.radiusLabel} | ${row.matchingRuleSnapshot.customerChoiceLabel} | ${row.matchingRuleSnapshot.operatorAction}`}
         >
-          {row.matchingRuleSnapshot.supplyLabel}
+          Supply snapshot
         </div>
         <div className="participant-list admin-mt-8">
           {booking.preferredProvider && row.preferredProviderStateLabel && (

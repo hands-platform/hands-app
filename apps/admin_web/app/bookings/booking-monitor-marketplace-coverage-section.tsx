@@ -95,14 +95,17 @@ export function BookingMonitorMarketplaceCoverageSection({
                     </span>
                   </td>
                   <td>
-                    <span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>
-                    <div className="muted">{row.alertDetail}</div>
+                    <span className={`pill ${row.alertTone}`} title={row.alertDetail}>
+                      {row.alertLabel}
+                    </span>
                   </td>
                   <td>
                     <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
                   </td>
                   <td>
-                    <span className={`pill ${row.nextActionTone}`}>{row.nextAction}</span>
+                    <span className={`pill ${row.nextActionTone}`} title={row.nextAction}>
+                      {compactCoverageNextActionLabel(row.nextAction)}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -119,4 +122,18 @@ export function BookingMonitorMarketplaceCoverageSection({
       )}
     </section>
   );
+}
+
+function compactCoverageNextActionLabel(nextAction: string): string {
+  if (nextAction.startsWith('Finance /')) {
+    return 'Finance review';
+  }
+  if (nextAction.startsWith('No-show is marked')) {
+    return 'No-show review';
+  }
+  if (nextAction.length > 48) {
+    return 'Review detail';
+  }
+
+  return nextAction;
 }

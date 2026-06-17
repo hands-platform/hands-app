@@ -39,7 +39,7 @@ export function BookingMonitorNextActionsSection({
       </div>
       <div className="participant-list admin-mt-12">
         {nextActions.map((item) => (
-          <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`}>
+          <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`} title={item.detail}>
             <div className="ops-section-header">
               <div>
                 <p>
@@ -49,9 +49,10 @@ export function BookingMonitorNextActionsSection({
               </div>
               <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
             </div>
-            <p className="muted">{item.detail}</p>
-            <p>
-              <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}: {item.operatorAction}
+            <p className="muted">{compactNextActionDetail(item.detail)}</p>
+            <p title={item.operatorAction}>
+              <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}:{' '}
+              {compactOperatorAction(item.operatorAction)}
             </p>
             <p className="muted">
               {getCustomerLabel(item.booking)} / {marketplaceDisplayText(getProviderLabel(item.booking))}
@@ -81,4 +82,26 @@ export function BookingMonitorNextActionsSection({
       </div>
     </section>
   );
+}
+
+function compactNextActionDetail(detail: string): string {
+  if (detail.startsWith('No-show is marked')) {
+    return 'No-show review required.';
+  }
+  if (detail.length > 64) {
+    return 'Open booking detail for the full action context.';
+  }
+
+  return detail;
+}
+
+function compactOperatorAction(operatorAction: string): string {
+  if (operatorAction.startsWith('No-show is marked')) {
+    return 'No-show review';
+  }
+  if (operatorAction.length > 64) {
+    return 'Open detail';
+  }
+
+  return operatorAction;
 }
