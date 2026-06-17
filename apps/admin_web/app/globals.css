@@ -405,13 +405,14 @@ a {
 .admin-table-scroll {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
+  border-radius: var(--admin-radius);
   box-shadow: var(--admin-shadow-md);
   margin-top: 14px;
-  max-height: min(680px, calc(100vh - 220px));
   max-width: 100%;
   min-width: 0;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-gutter: stable;
   width: 100%;
 }
 
@@ -1470,8 +1471,8 @@ a.action-button-card:hover {
 
 .vuexy-booking-table-toolbar h2 {
   font-size: 18px;
-  font-weight: 700;
-  line-height: 1.25;
+  font-weight: 500;
+  line-height: 28px;
 }
 
 .vuexy-booking-table-toolbar p {
@@ -1507,19 +1508,21 @@ a.action-button-card:hover {
   background: var(--admin-surface-raised);
   border-bottom: 1px solid var(--admin-border);
   min-width: 0;
-  padding: 14px 12px;
+  padding: 8px 16px;
   vertical-align: top;
 }
 
 .booking-monitor .vuexy-booking-table th {
   background: var(--admin-table-header-bg);
-  color: var(--admin-muted);
+  color: var(--admin-text);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.015em;
-  line-height: 20px;
+  font-weight: 500;
+  height: 56px;
+  letter-spacing: 0.2px;
+  line-height: 24px;
   overflow-wrap: normal;
-  position: static;
+  position: relative;
+  text-transform: uppercase;
   word-break: normal;
 }
 
@@ -4645,9 +4648,9 @@ textarea:focus-visible {
 }
 
 .table {
-  background: var(--admin-surface);
+  background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
+  border-radius: var(--admin-radius);
   border-spacing: 0;
   box-shadow: var(--admin-shadow-md);
   font-size: 0.8125rem;
@@ -4666,19 +4669,54 @@ textarea:focus-visible {
 .table th,
 .table td {
   border-bottom: 1px solid var(--admin-border);
-  padding: 12px 14px;
   text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
+}
+
+.table th:not(:first-child):not(:last-child),
+.table td:not(:first-child):not(:last-child) {
+  padding: 8px 16px;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding: 8px 16px 8px 24px;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding: 8px 24px 8px 16px;
 }
 
 .table th {
   background: var(--admin-table-header-bg);
-  color: var(--admin-muted);
+  color: var(--admin-text);
   font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
+  font-weight: 500;
+  height: 56px;
+  letter-spacing: 0.2px;
+  line-height: 24px;
+  position: relative;
+  text-transform: uppercase;
   white-space: nowrap;
+}
+
+.table th:not(:last-child)::after {
+  background: var(--admin-border);
+  content: '';
+  height: 14px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+}
+
+.table td {
+  color: var(--admin-muted);
+  font-size: 0.9375rem;
+  height: 50px;
+  line-height: 1.4667;
 }
 
 .table .pill,
@@ -4687,7 +4725,12 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-.table tbody tr:hover {
+.table tbody tr {
+  background: var(--admin-surface-raised);
+}
+
+.table tbody tr:hover,
+.table tbody tr:hover td {
   background: var(--admin-action-hover);
 }
 

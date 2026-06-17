@@ -15,7 +15,7 @@ describe('AdminDataTable', () => {
     });
 
     expect(table.type).toBe('table');
-    expect(table.props).toMatchObject({ className: 'table' });
+    expect(table.props).toMatchObject({ className: 'table vuexy-data-table' });
     expect(table.props.children[0].props.children.props.children).toHaveLength(2);
     expect(table.props.children[1].props.children[1]).toBeNull();
   });
@@ -29,7 +29,7 @@ describe('AdminDataTable', () => {
       rowCount: 0,
     });
 
-    expect(table.props).toMatchObject({ className: 'table vuexy-customer-table' });
+    expect(table.props).toMatchObject({ className: 'table vuexy-data-table vuexy-customer-table' });
     const emptyRow = table.props.children[1].props.children[1];
     expect(emptyRow.props.children.props).toMatchObject({
       children: 'No feedback records loaded.',

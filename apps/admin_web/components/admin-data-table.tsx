@@ -23,8 +23,10 @@ export function AdminDataTable({
   headers,
   rowCount,
 }: AdminDataTableProps) {
+  const tableClassName = className ? `table vuexy-data-table ${className}` : 'table vuexy-data-table';
+
   return (
-    <table className={className ? `table ${className}` : 'table'}>
+    <table className={tableClassName}>
       <thead>
         <tr>
           {headers.map((header) => (

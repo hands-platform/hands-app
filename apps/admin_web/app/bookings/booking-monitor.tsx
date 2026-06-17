@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
-import { emptyBookingMessage } from './booking-empty-message';
 import {
   bookingTimestamp,
   formatBookingClockTime as formatClockTime,
@@ -189,8 +189,11 @@ export function BookingMonitor({
   );
   const visibleBookings = visibleBookingModel.visibleBookings;
   const bookingListRows = useMemo(
-    () => visibleBookings.map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
-    [currentTimeMs, nowMs, visibleBookings],
+    () =>
+      [...bookings]
+        .sort(compareBookingRequestTimeDescending)
+        .map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
+    [bookings, currentTimeMs, nowMs],
   );
   const marketplacePanel = useMemo(
     () =>
@@ -343,6 +346,8 @@ export function BookingMonitor({
         visibleBookingCount={visibleBookings.length}
       />
 
+      <BookingMonitorListSection emptyMessage="No bookings loaded." rows={bookingListRows} />
+
       {view === 'blocked-create' && (
         <BookingMonitorBlockedCreateSection
           bookingGateTriage={bookingGateTriage}
@@ -365,8 +370,19 @@ export function BookingMonitor({
         marketplaceOperatingQueue={marketplacePanel.marketplaceOperatingQueue}
         marketplaceOperationsCards={marketplacePanel.marketplaceOperationsCards}
       />
-
-      <BookingMonitorListSection emptyMessage={emptyBookingMessage(view)} rows={bookingListRows} />
     </div>
   );
+}
+
+function compareBookingRequestTimeDescending(left: AdminBooking, right: AdminBooking) {
+  return bookingRequestTimeMs(right) - bookingRequestTimeMs(left);
+}
+
+function bookingRequestTimeMs(booking: AdminBooking) {
+  const value = bookingRequestOpenedAt(booking);
+  if (!value) {
+    return 0;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }

@@ -142,7 +142,7 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
       <div className="vuexy-booking-table-toolbar">
         <div>
           <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
-          <p>Request-to-completion queue ordered by live booking operations status.</p>
+          <p>All loaded bookings from request to completion, ordered by request time.</p>
         </div>
         <span className="pill pill-info">{rows.length} booking(s)</span>
       </div>
