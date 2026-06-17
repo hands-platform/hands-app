@@ -850,9 +850,9 @@ a {
   display: grid;
   grid-template-rows: auto 1fr auto;
   inset: 0 0 0 auto;
-  max-width: 100%;
+  min-width: 400px;
   position: fixed;
-  width: 420px;
+  width: 400px;
   z-index: 31;
 }
 
@@ -863,7 +863,7 @@ a {
   display: flex;
   gap: 12px;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 20px 24px;
 }
 
 .calendar-drawer-footer {
@@ -880,12 +880,12 @@ a {
 
 .calendar-drawer-body {
   overflow: auto;
-  padding: 20px;
+  padding: 20px 24px;
 }
 
 .calendar-form-grid {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .calendar-field {
@@ -909,6 +909,18 @@ a {
   font: inherit;
   min-height: var(--admin-control-height);
   padding: 10px 12px;
+  transition:
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition),
+    background var(--admin-transition);
+}
+
+.calendar-field input:focus,
+.calendar-field select:focus,
+.calendar-field textarea:focus {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-focus-ring);
+  outline: 0;
 }
 
 .calendar-field textarea {
@@ -918,13 +930,55 @@ a {
 
 .calendar-field-toggle {
   align-items: center;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
   grid-template-columns: 1fr auto;
+  min-height: 46px;
+  padding: 10px 12px;
 }
 
 .calendar-field-toggle input {
-  min-height: 20px;
-  min-width: 20px;
+  appearance: none;
+  background: rgb(var(--admin-main-channel) / 0.18);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  height: 22px;
+  min-height: 22px;
+  min-width: 40px;
   padding: 0;
+  position: relative;
+  transition:
+    background var(--admin-transition),
+    box-shadow var(--admin-transition);
+  width: 40px;
+}
+
+.calendar-field-toggle input::before {
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: var(--admin-shadow-xs);
+  content: '';
+  height: 18px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform var(--admin-transition);
+  width: 18px;
+}
+
+.calendar-field-toggle input:checked {
+  background: var(--admin-accent);
+}
+
+.calendar-field-toggle input:checked::before {
+  transform: translateX(18px);
+}
+
+.calendar-field-toggle input:focus-visible {
+  box-shadow: var(--admin-focus-ring);
+  outline: 0;
 }
 
 .calendar-field-wide {
