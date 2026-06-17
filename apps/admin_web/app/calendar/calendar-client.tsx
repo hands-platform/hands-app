@@ -14,6 +14,7 @@ import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { MetricCard } from '../../components/metric-card';
 import {
   buildCalendarMetrics,
   CALENDAR_CATEGORIES,
@@ -205,26 +206,18 @@ export function CalendarClient() {
   return (
     <div className="calendar-page">
       <section className="admin-metric-grid">
-        <article className="card">
-          <span className="metric-label">Visible events</span>
-          <strong className="admin-summary-card-value">{metrics.total}</strong>
-          <p className="muted">Filtered across the active calendar categories.</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Today</span>
-          <strong className="admin-summary-card-value">{metrics.today}</strong>
-          <p className="muted">Events scheduled for the current day.</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Next 7 days</span>
-          <strong className="admin-summary-card-value">{metrics.upcoming}</strong>
-          <p className="muted">Upcoming working blocks and operator reminders.</p>
-        </article>
-        <article className="card">
-          <span className="metric-label">Next up</span>
-          <strong className="calendar-next-label">{metrics.nextLabel}</strong>
-          <p className="muted">The next visible event on the board.</p>
-        </article>
+        <MetricCard
+          helper="Filtered across the active calendar categories."
+          label="Visible events"
+          value={metrics.total}
+        />
+        <MetricCard helper="Events scheduled for the current day." label="Today" value={metrics.today} />
+        <MetricCard
+          helper="Upcoming working blocks and operator reminders."
+          label="Next 7 days"
+          value={metrics.upcoming}
+        />
+        <MetricCard helper="The next visible event on the board." label="Next up" value={metrics.nextLabel} />
       </section>
 
       <div className="calendar-shell">

@@ -835,14 +835,6 @@ a {
   gap: 6px;
 }
 
-.calendar-next-label {
-  display: block;
-  font-size: 1.05rem;
-  font-weight: 500;
-  line-height: 1.5;
-  margin: 18px 0 10px;
-}
-
 .calendar-drawer-backdrop {
   background: rgb(var(--admin-main-channel) / 0.36);
   border: 0;
