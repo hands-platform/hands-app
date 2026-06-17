@@ -7,8 +7,10 @@ import {
   ChevronsRight,
   Download,
   Star,
+  X,
 } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -18,7 +20,7 @@ import {
 import { ReviewActionDropdown } from './review-action-dropdown';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
-import { REVIEW_PAGE_SIZE_OPTIONS, buildReviewListHref } from './review-page-model';
+import { REVIEW_PAGE_SIZE_OPTIONS, buildReviewListHref, reviewFilterDescription } from './review-page-model';
 
 export type ReviewTableRow = {
   readonly actionLabel: string;
@@ -50,16 +52,47 @@ type ReviewsTableSectionProps = {
   readonly filters: ReviewFilters;
   readonly pagination: ReviewPagination<ReviewTableRow>;
   readonly rows: readonly ReviewTableRow[];
+  readonly totalReviewCount: number;
 };
 
-export function ReviewsTableSection({ csvHref, emptyMessage, filters, pagination, rows }: ReviewsTableSectionProps) {
+export function ReviewsTableSection({
+  csvHref,
+  emptyMessage,
+  filters,
+  pagination,
+  rows,
+  totalReviewCount,
+}: ReviewsTableSectionProps) {
+  const activeFilterLabels = reviewActiveFilterLabels(filters);
+
   return (
-    <section className="vuexy-review-card" aria-labelledby="customer-review-title">
-      <div className="vuexy-review-toolbar">
-        <div>
-          <h2 id="customer-review-title">Customer Review</h2>
-          <p>Customer-written reviews are published by default. Hold a review to remove it from app visibility.</p>
-        </div>
+    <>
+      <AdminFilterPanel
+        className="vuexy-review-filter-card admin-mb-16"
+        id="customer-review-controls"
+        resultLabel={`Showing ${pagination.totalRows} of ${totalReviewCount}`}
+        resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
+        title="Customer Review"
+        description="Customer-written reviews are published by default. Hold a review to remove it from app visibility."
+        footer={(
+          <div className="vuexy-review-filter-summary">
+            {activeFilterLabels.map((label) => (
+              <span className="pill pill-warn" key={label}>
+                {label}
+              </span>
+            ))}
+            {activeFilterLabels.length > 0 ? (
+              <Link
+                className="button button-secondary vuexy-review-clear-filter"
+                href={buildReviewListHref(filters, { q: '', review: '' })}
+              >
+                <X aria-hidden="true" size={14} />
+                Clear filters
+              </Link>
+            ) : null}
+          </div>
+        )}
+      >
         <form action="/reviews" className="vuexy-review-controls">
           <AdminFormSearch
             className="vuexy-review-search"
@@ -94,114 +127,116 @@ export function ReviewsTableSection({ csvHref, emptyMessage, filters, pagination
             Export
           </AdminFormControlLink>
         </form>
-      </div>
+      </AdminFilterPanel>
 
-      <AdminTableScroll>
-        <AdminDataTable
-          emptyMessage={emptyMessage}
-          headers={['', 'Partner', 'Customer', 'Review', 'Date', 'Status', 'Actions']}
-          rowCount={rows.length}
-        >
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td className="vuexy-review-check-cell">
-                <input aria-label={`Select review ${row.shortIdLabel}`} type="checkbox" />
-              </td>
-              <td>
-                <div className="vuexy-review-person">
-                  <span className="vuexy-review-avatar vuexy-review-avatar-square">{row.partnerInitials}</span>
-                  <div>
-                    <strong>{row.partnerLabel}</strong>
-                    <span>{row.partnerHint}</span>
+      <section className="vuexy-review-card" aria-label="Customer review table">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={emptyMessage}
+            headers={['', 'Partner', 'Customer', 'Review', 'Date', 'Status', 'Actions']}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td className="vuexy-review-check-cell">
+                  <input aria-label={`Select review ${row.shortIdLabel}`} type="checkbox" />
+                </td>
+                <td>
+                  <div className="vuexy-review-person">
+                    <span className="vuexy-review-avatar vuexy-review-avatar-square">{row.partnerInitials}</span>
+                    <div>
+                      <strong>{row.partnerLabel}</strong>
+                      <span>{row.partnerHint}</span>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td>
-                <div className="vuexy-review-person">
-                  <span className="vuexy-review-avatar">{row.customerInitials}</span>
-                  <div>
-                    <strong className="vuexy-review-customer">{row.customerLabel}</strong>
-                    <span>{row.customerPhone}</span>
+                </td>
+                <td>
+                  <div className="vuexy-review-person">
+                    <span className="vuexy-review-avatar">{row.customerInitials}</span>
+                    <div>
+                      <strong className="vuexy-review-customer">{row.customerLabel}</strong>
+                      <span>{row.customerPhone}</span>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="vuexy-review-copy-cell">
-                <div aria-label={`Rating ${row.ratingLabel}`} className="vuexy-review-stars">
-                  {Array.from({ length: 5 }, (_, index) => (
-                    <Star
-                      aria-hidden="true"
-                      className={index < row.rating ? 'is-filled' : ''}
-                      key={`${row.id}-star-${index}`}
-                      size={18}
-                    />
-                  ))}
-                </div>
-                <p>{row.commentLabel}</p>
-                <span>{row.serviceLabel}</span>
-                {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
-              </td>
-              <td className="vuexy-review-date-cell">{row.createdAtLabel}</td>
-              <td>
-                <span className={row.statusClassName}>{row.statusLabel}</span>
-                <small>{row.statusMeaning}</small>
-                <small>{row.appVisibilityLabel}</small>
-              </td>
-              <td>
-                <div className="vuexy-review-actions">
-                  <ReviewActionDropdown actions={row.actions} label={row.actionLabel} />
-                </div>
-              </td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+                </td>
+                <td className="vuexy-review-copy-cell">
+                  <div aria-label={`Rating ${row.ratingLabel}`} className="vuexy-review-stars">
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star
+                        aria-hidden="true"
+                        className={index < row.rating ? 'is-filled' : ''}
+                        key={`${row.id}-star-${index}`}
+                        size={18}
+                      />
+                    ))}
+                  </div>
+                  <p>{row.commentLabel}</p>
+                  <span>{row.serviceLabel}</span>
+                  {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
+                </td>
+                <td className="vuexy-review-date-cell">{row.createdAtLabel}</td>
+                <td>
+                  <span className={row.statusClassName}>{row.statusLabel}</span>
+                  <small>{row.statusMeaning}</small>
+                  <small>{row.appVisibilityLabel}</small>
+                </td>
+                <td>
+                  <div className="vuexy-review-actions">
+                    <ReviewActionDropdown actions={row.actions} label={row.actionLabel} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
 
-      <div className="vuexy-review-footer">
-        <span>
-          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
-        </span>
-        <nav aria-label="Customer review pages" className="vuexy-review-pagination">
-          <PaginationControl
-            disabled={pagination.page <= 1}
-            href={buildReviewListHref(filters, { page: 1 })}
-            label="First page"
-          >
-            <ChevronsLeft size={18} />
-          </PaginationControl>
-          <PaginationControl
-            disabled={pagination.page <= 1}
-            href={buildReviewListHref(filters, { page: Math.max(1, pagination.page - 1) })}
-            label="Previous page"
-          >
-            <ChevronLeft size={18} />
-          </PaginationControl>
-          {visiblePageNumbers(pagination).map((page) => (
+        <div className="vuexy-review-footer">
+          <span>
+            Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+          </span>
+          <nav aria-label="Customer review pages" className="vuexy-review-pagination">
             <PaginationControl
-              active={page === pagination.page}
-              href={buildReviewListHref(filters, { page })}
-              key={page}
-              label={`Page ${page}`}
+              disabled={pagination.page <= 1}
+              href={buildReviewListHref(filters, { page: 1 })}
+              label="First page"
             >
-              {page}
+              <ChevronsLeft size={18} />
             </PaginationControl>
-          ))}
-          <PaginationControl
-            disabled={pagination.page >= pagination.totalPages}
-            href={buildReviewListHref(filters, { page: Math.min(pagination.totalPages, pagination.page + 1) })}
-            label="Next page"
-          >
-            <ChevronRight size={18} />
-          </PaginationControl>
-          <PaginationControl
-            disabled={pagination.page >= pagination.totalPages}
-            href={buildReviewListHref(filters, { page: pagination.totalPages })}
-            label="Last page"
-          >
-            <ChevronsRight size={18} />
-          </PaginationControl>
-        </nav>
-      </div>
-    </section>
+            <PaginationControl
+              disabled={pagination.page <= 1}
+              href={buildReviewListHref(filters, { page: Math.max(1, pagination.page - 1) })}
+              label="Previous page"
+            >
+              <ChevronLeft size={18} />
+            </PaginationControl>
+            {visiblePageNumbers(pagination).map((page) => (
+              <PaginationControl
+                active={page === pagination.page}
+                href={buildReviewListHref(filters, { page })}
+                key={page}
+                label={`Page ${page}`}
+              >
+                {page}
+              </PaginationControl>
+            ))}
+            <PaginationControl
+              disabled={pagination.page >= pagination.totalPages}
+              href={buildReviewListHref(filters, { page: Math.min(pagination.totalPages, pagination.page + 1) })}
+              label="Next page"
+            >
+              <ChevronRight size={18} />
+            </PaginationControl>
+            <PaginationControl
+              disabled={pagination.page >= pagination.totalPages}
+              href={buildReviewListHref(filters, { page: pagination.totalPages })}
+              label="Last page"
+            >
+              <ChevronsRight size={18} />
+            </PaginationControl>
+          </nav>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -241,6 +276,17 @@ function visiblePageNumbers(pagination: ReviewPagination<ReviewTableRow>) {
   const adjustedStart = Math.max(1, end - 4);
 
   return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+}
+
+function reviewActiveFilterLabels(filters: ReviewFilters) {
+  const labels: string[] = [];
+  if (filters.q) {
+    labels.push(`Search: ${filters.q}`);
+  }
+  if (filters.review) {
+    labels.push(reviewFilterDescription(filters.review));
+  }
+  return labels;
 }
 
 const reviewPageSizeOptions = REVIEW_PAGE_SIZE_OPTIONS.map((option) => ({

@@ -1,6 +1,4 @@
 import type { AdminReview } from '../../lib/admin-api';
-import Link from 'next/link';
-import { X } from 'lucide-react';
 import { adminGet } from '../../lib/admin-api';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -15,13 +13,11 @@ import {
   REVIEW_EXPORT_COLUMNS,
   buildReviewExportRows,
   buildReviewFilters,
-  buildReviewListHref,
   buildReviewTableRows,
   buildSummary,
   emptyReviewMessage,
   filterReviews,
   paginateReviewRows,
-  reviewFilterDescription,
   sortReviews,
 } from './review-page-model';
 import { ReviewsTableSection } from './reviews-table-section';
@@ -72,28 +68,13 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
         />
       ) : null}
 
-      {filters.review || filters.q ? (
-        <div className="vuexy-review-filter-summary admin-mb-16">
-          <span className="pill pill-info">
-            Showing {reviews.length} of {allReviews.length}
-          </span>
-          {filters.review ? <span className="pill pill-warn">{reviewFilterDescription(filters.review)}</span> : null}
-          <Link
-            className="button button-secondary vuexy-review-clear-filter"
-            href={buildReviewListHref(filters, { q: '', review: '' })}
-          >
-            <X aria-hidden="true" size={14} />
-            Clear filters
-          </Link>
-        </div>
-      ) : null}
-
       <ReviewsTableSection
         csvHref={reviewCsvHref}
         emptyMessage={emptyReviewMessage(filters.review)}
         filters={filters}
         pagination={reviewRowPagination}
         rows={reviewRows}
+        totalReviewCount={allReviews.length}
       />
     </AdminPageTemplate>
   );

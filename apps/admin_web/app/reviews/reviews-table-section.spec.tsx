@@ -13,6 +13,7 @@ describe('ReviewsTableSection', () => {
       filters: filters(),
       pagination: pagination([buildRow()]),
       rows: [buildRow()],
+      totalReviewCount: 1,
     });
 
     const rendered = normalizedText(section);
@@ -36,6 +37,7 @@ describe('ReviewsTableSection', () => {
         'admin-form-select vuexy-review-select',
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
+        'card admin-filter-panel vuexy-review-filter-card admin-mb-16',
       ]),
     );
     expect(dropdownPropsIn(section)).toEqual([
@@ -62,11 +64,15 @@ describe('ReviewsTableSection', () => {
       filters: filters({ review: 'held' }),
       pagination: pagination([]),
       rows: [],
+      totalReviewCount: 3,
     });
 
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('No customer reviews currently match this queue.');
+    expect(rendered).toContain('Showing 0 of 3');
+    expect(rendered).toContain('reviews held from app visibility but retained for evidence.');
+    expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('Showing 0 to 0 of 0 entries');
   });
 });

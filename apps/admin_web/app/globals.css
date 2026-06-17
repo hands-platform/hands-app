@@ -4993,33 +4993,6 @@ textarea:focus-visible {
   overflow: hidden;
 }
 
-.vuexy-review-toolbar {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--admin-border);
-  display: flex;
-  gap: 18px;
-  justify-content: space-between;
-  padding: 24px;
-}
-
-.vuexy-review-toolbar h2,
-.vuexy-review-toolbar p {
-  margin: 0;
-}
-
-.vuexy-review-toolbar h2 {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.vuexy-review-toolbar p {
-  color: var(--admin-muted);
-  font-size: 13px;
-  line-height: 20px;
-  margin-top: 5px;
-}
-
 .vuexy-review-filter-summary {
   align-items: center;
   display: flex;
