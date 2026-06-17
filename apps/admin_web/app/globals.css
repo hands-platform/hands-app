@@ -1895,6 +1895,14 @@ a.action-button-card:hover {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.operations-handoff-page > .grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.operations-handoff-page > .detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .operations-handoff-page > .card,
 .operations-handoff-page > .detail-grid > .card {
   box-shadow: var(--admin-shadow-md);
@@ -1917,6 +1925,21 @@ a.action-button-card:hover {
   margin-bottom: 6px;
 }
 
+.operations-handoff-page > section.card:first-of-type .actions {
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  justify-content: flex-start;
+  padding: 12px;
+}
+
+.operations-handoff-page .actions .button {
+  box-shadow: none;
+  min-height: 36px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
 .operations-handoff-page .ops-task-card,
 .operations-handoff-page .ops-signal-card {
   background: #ffffff;
@@ -1929,8 +1952,63 @@ a.action-button-card:hover {
   min-height: 0;
 }
 
+.operations-handoff-page .ops-task-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operations-handoff-page .ops-task-card:hover,
+.operations-handoff-page .ops-signal-card:hover {
+  background: var(--admin-action-hover);
+  border-color: rgb(var(--admin-primary-channel) / 0.28);
+  box-shadow: var(--admin-shadow-md);
+  transform: translateY(-2px);
+}
+
 .operations-handoff-page .ops-signal-card {
   text-decoration: none;
+}
+
+.operations-handoff-page .ops-note-form {
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  gap: 12px;
+  padding: 14px;
+}
+
+.operations-handoff-page .ops-note-form .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.operations-handoff-page .ops-note-form label {
+  color: var(--admin-muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  line-height: 1.25;
+}
+
+.operations-handoff-page .ops-note-form select,
+.operations-handoff-page .ops-note-form textarea {
+  background: #ffffff;
+  border-color: rgb(var(--admin-primary-channel) / 0.14);
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
+}
+
+.operations-handoff-page .ops-note-form select:focus,
+.operations-handoff-page .ops-note-form textarea:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.56);
+  box-shadow:
+    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
+    var(--admin-shadow-xs);
+  outline: none;
+}
+
+.operations-handoff-page .ops-note-form .button {
+  justify-self: flex-start;
 }
 
 .operations-handoff-page .admin-table-scroll {
