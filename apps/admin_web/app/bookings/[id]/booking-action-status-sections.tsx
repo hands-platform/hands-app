@@ -191,7 +191,7 @@ function BookingStructuredOpsStatusSection({
             <div>
               <span className={`pill ${opsTaskTone(task.status)}`}>{task.status}</span>
               <h3>{task.label}</h3>
-              <p>{task.helper}</p>
+              <p title={task.helper}>{compactOpsTaskHelper(task.helper)}</p>
               <small>{task.updatedBy}</small>
               {task.note && <small className="ops-task-note">Note: {task.note}</small>}
             </div>
@@ -205,6 +205,20 @@ function BookingStructuredOpsStatusSection({
       </div>
     </section>
   );
+}
+
+function compactOpsTaskHelper(helper: string): string {
+  if (helper.startsWith('Confirm the guest has been updated')) {
+    return 'Customer update checkpoint.';
+  }
+  if (helper.startsWith('Confirm the Partner has been reached')) {
+    return 'Partner contact checkpoint.';
+  }
+  if (helper.length > 64) {
+    return 'Review handling detail.';
+  }
+
+  return helper;
 }
 
 function BookingOperatorNotesSection({

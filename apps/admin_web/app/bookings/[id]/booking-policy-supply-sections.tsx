@@ -223,12 +223,26 @@ export function BookingAppliedPolicySection({ policySnapshot }: BookingAppliedPo
             <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
             <h3>{decision.label}</h3>
             <p>{decision.value}</p>
-            <small>{decision.helper}</small>
+            <small title={decision.helper}>{compactPolicyDecisionHelper(decision.helper)}</small>
           </div>
         ))}
       </div>
     </section>
   );
+}
+
+function compactPolicyDecisionHelper(helper: string): string {
+  if (helper === 'Saved on booking open and aligned with current policy.') {
+    return 'Saved policy aligned.';
+  }
+  if (helper.startsWith('Saved on booking open. Current policy is ')) {
+    return 'Saved policy differs from live.';
+  }
+  if (helper.length > 64) {
+    return 'Review policy detail.';
+  }
+
+  return helper;
 }
 
 export type BookingAppliedPolicySectionProps = {
@@ -427,11 +441,22 @@ function SummaryCardGrid({ cards }: SummaryCardGridProps) {
         <div key={item.label}>
           <span>{item.label}</span>
           <strong>{item.value}</strong>
-          <small>{item.helper}</small>
+          <small title={item.helper}>{compactSummaryCardHelper(item.helper)}</small>
         </div>
       ))}
     </div>
   );
+}
+
+function compactSummaryCardHelper(helper: string): string {
+  if (helper === 'Saved on booking open and aligned with current policy.') {
+    return 'Saved policy aligned.';
+  }
+  if (helper.endsWith(' Saved on booking open and aligned with current policy.')) {
+    return helper.replace('Saved on booking open and aligned with current policy.', 'Saved policy aligned.');
+  }
+
+  return helper;
 }
 
 function PillBadgeList({
