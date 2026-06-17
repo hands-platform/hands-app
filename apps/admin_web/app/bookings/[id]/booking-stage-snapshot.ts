@@ -141,7 +141,7 @@ export function bookingStageSnapshot(
       {
         label: 'Status',
         value: status,
-        helper: bookingStatusHint(status),
+        helper: bookingStageStatusHelper(status),
       },
       {
         label: 'Preferred Partner',
@@ -184,4 +184,8 @@ export function bookingStageSnapshot(
       },
     ],
   };
+}
+
+function bookingStageStatusHelper(status: string) {
+  return status === 'COMPLETED' ? 'Closeout stage ready.' : bookingStatusHint(status);
 }

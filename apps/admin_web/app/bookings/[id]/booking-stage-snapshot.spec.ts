@@ -80,4 +80,27 @@ describe('booking stage snapshot', () => {
       }),
     );
   });
+
+  it('uses stage-specific status helper for completed closeout', () => {
+    const snapshot = bookingStageSnapshot(
+      booking({
+        payment: { id: 'payment-1' } as AdminBookingDetail['payment'],
+        status: 'COMPLETED',
+      }),
+      {
+        detail: 'Customer wait panel detail.',
+      },
+      {
+        eligibleCount: 0,
+      },
+    );
+
+    expect(snapshot.metrics).toContainEqual(
+      expect.objectContaining({
+        helper: 'Closeout stage ready.',
+        label: 'Status',
+        value: 'COMPLETED',
+      }),
+    );
+  });
 });
