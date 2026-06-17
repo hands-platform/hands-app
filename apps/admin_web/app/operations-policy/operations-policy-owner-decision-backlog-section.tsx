@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { OwnerDecisionBacklogItem } from './owner-decision-backlog';
 import type { OwnerDecisionPressure } from './owner-decision-pressure';
@@ -77,7 +78,8 @@ export function OperationsPolicyOwnerDecisionBacklogSection({
               <p className="muted">{item.recommendation}</p>
               <strong>Decision trigger</strong>
               <p className="muted">{item.decisionTrigger}</p>
-              <Link className="text-link" href={item.href}>
+              <Link className="button button-secondary policy-inline-action" href={item.href}>
+                <ExternalLink size={14} aria-hidden="true" />
                 Review data
               </Link>
             </div>

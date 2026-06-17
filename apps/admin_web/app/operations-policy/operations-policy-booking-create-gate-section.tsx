@@ -76,7 +76,8 @@ export function OperationsPolicyBookingCreateGateSection({
                 <td>{row.defaultValue}</td>
                 <td>{row.operatorMeaning}</td>
                 <td>
-                  <Link className="text-link" href={row.href}>
+                  <Link className="button button-secondary policy-inline-action" href={row.href}>
+                    <ExternalLink size={14} aria-hidden="true" />
                     {row.evidence}
                   </Link>
                 </td>

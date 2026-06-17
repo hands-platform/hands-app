@@ -1,3 +1,5 @@
+import { ExternalLink } from 'lucide-react';
+
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 
 type LivePolicySimulator = {
@@ -93,7 +95,11 @@ export function OperationsPolicyLiveSimulatorSection({
             {simulation.partnerRows.map((partner) => (
               <div className="ops-row" key={partner.id}>
                 <div>
-                  <a className="text-link" href={`/partners/${partner.id}`}>
+                  <a
+                    className="button button-secondary policy-inline-action"
+                    href={`/partners/${partner.id}`}
+                  >
+                    <ExternalLink size={14} aria-hidden="true" />
                     {displayOperationalWording(partner.name)}
                   </a>
                   <p className="muted">
