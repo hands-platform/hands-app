@@ -2226,15 +2226,76 @@ a.action-button-card:hover {
 }
 
 .service-catalog-page .form-grid {
+  align-items: end;
   background: var(--admin-action-hover);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
-  margin-top: 14px;
-  padding: 14px;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 16px;
+  padding: 16px;
 }
 
 .service-catalog-page > .card:first-child .form-grid {
+  grid-template-columns: minmax(0, 1fr) auto auto;
   margin-top: 0;
+}
+
+.service-catalog-page > .card:first-child .form-grid .full-span {
+  grid-column: auto;
+}
+
+.service-catalog-page .form-grid label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.service-catalog-page .form-grid input,
+.service-catalog-page .form-grid select,
+.service-catalog-page .form-grid textarea {
+  background: #ffffff;
+  border-color: rgb(var(--admin-primary-channel) / 0.14);
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
+  min-height: 40px;
+}
+
+.service-catalog-page .form-grid input:focus,
+.service-catalog-page .form-grid select:focus,
+.service-catalog-page .form-grid textarea:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.56);
+  box-shadow:
+    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
+    var(--admin-shadow-xs);
+  outline: none;
+}
+
+.service-catalog-page .form-grid input[type='checkbox'] {
+  box-shadow: none;
+  min-height: 18px;
+  width: 18px;
+}
+
+.service-catalog-page .form-grid .button {
+  align-self: end;
+  box-shadow: none;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.service-catalog-page .form-grid .button-secondary {
+  border-color: rgb(var(--admin-primary-channel) / 0.18);
+  color: var(--admin-accent);
+}
+
+.service-catalog-page .compact-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.service-catalog-page .compact-form .button {
+  justify-self: flex-start;
 }
 
 .service-catalog-page .service-trace-summary > div,
