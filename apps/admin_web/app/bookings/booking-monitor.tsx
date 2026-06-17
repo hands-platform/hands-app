@@ -22,7 +22,6 @@ import {
   bookingViewOptions,
 } from './booking-monitor-options';
 import { bookingMonitorSummaryRows } from './booking-monitor-summary';
-import { BookingMonitorCommandCenterSection } from './booking-monitor-command-center-section';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
@@ -132,10 +131,6 @@ export function BookingMonitor({
     () => buildBookingMonitorCommandCenter(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
-  const commandCenterWithGate = useMemo(
-    () => [bookingGateRejectionLane, ...commandCenter],
-    [bookingGateRejectionLane, commandCenter],
-  );
   const primaryCommandQueue = useMemo(
     () => buildBookingMonitorPrimaryCommandQueue(orderedBookings),
     [orderedBookings],
@@ -225,7 +220,6 @@ export function BookingMonitor({
         activeView,
         blockedCreateCount: orderedBookingCreateRejections.length,
         blockedCreateDetail: bookingGateRejectionLane.detail,
-        bookingViewCounts,
         commandCenter,
         topNextAction: nextActions[0],
         view,
@@ -234,7 +228,6 @@ export function BookingMonitor({
     [
       activeView,
       bookingGateRejectionLane.detail,
-      bookingViewCounts,
       commandCenter,
       nextActions,
       orderedBookingCreateRejections.length,
@@ -296,7 +289,6 @@ export function BookingMonitor({
         hasMounted={hasMounted}
         isPending={isPending}
         lastRefreshLabel={lastRefreshLabel}
-        operatorRouteCards={commandRouteModel.operatorRouteCards}
         primaryCommandQueue={primaryCommandQueue}
       />
 
@@ -306,8 +298,6 @@ export function BookingMonitor({
         lastRefreshLabel={lastRefreshLabel}
         summary={summary}
       />
-
-      <BookingMonitorCommandCenterSection lanes={commandCenterWithGate} />
 
       <BookingMonitorMatchingEscalationSection
         dispatchPartnerShortcuts={dispatchPartnerShortcuts}

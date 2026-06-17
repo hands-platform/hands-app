@@ -2,7 +2,7 @@ import { headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 
 describe('BookingMonitorCommandRouteSections', () => {
-  it('renders command summary, primary queue, and route map cards', () => {
+  it('renders command summary and primary queue cards', () => {
     const sections = BookingMonitorCommandRouteSections({
       autoRefresh: true,
       commandSummaryCards: [
@@ -18,16 +18,6 @@ describe('BookingMonitorCommandRouteSections', () => {
       hasMounted: true,
       isPending: false,
       lastRefreshLabel: '09:30',
-      operatorRouteCards: [
-        {
-          action: 'Watch the direct partner response window.',
-          detail: 'Preferred partner window is open.',
-          href: '/bookings?view=first-pick',
-          label: 'First-pick wait',
-          owner: 'Dispatch',
-          value: '1',
-        },
-      ],
       primaryCommandQueue: [
         {
           count: 2,
@@ -46,15 +36,12 @@ describe('BookingMonitorCommandRouteSections', () => {
     expect(rendered).toContain('Auto refresh on / last 09:30');
     expect(rendered).toContain('Primary command queue');
     expect(rendered).toContain('2 booking(s)');
-    expect(rendered).toContain('Booking operations route map');
-    expect(rendered).toContain('No auto assignment');
     expect(headingTextsIn(sections)).toEqual([
       'Booking operations command summary',
       'Primary command queue',
-      'Booking operations route map',
     ]);
     expect(hrefsIn(sections)).toEqual(
-      expect.arrayContaining(['/bookings?view=active', '/bookings?view=attention', '/bookings?view=first-pick']),
+      expect.arrayContaining(['/bookings?view=active', '/bookings?view=attention']),
     );
   });
 
@@ -65,7 +52,6 @@ describe('BookingMonitorCommandRouteSections', () => {
       hasMounted: false,
       isPending: true,
       lastRefreshLabel: 'pending',
-      operatorRouteCards: [],
       primaryCommandQueue: [],
     });
     const rendered = normalizedText(sections);

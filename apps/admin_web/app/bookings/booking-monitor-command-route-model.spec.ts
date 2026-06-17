@@ -21,7 +21,6 @@ describe('buildBookingMonitorCommandRouteModel', () => {
       },
       blockedCreateCount: 2,
       blockedCreateDetail: 'Two blocked create attempts.',
-      bookingViewCounts: new Map([['first-pick', 4]]),
       commandCenter: [
         lane('Payment closeout', 'Payment watch'),
         lane('Dispatch pressure', 'Dispatch watch'),
@@ -52,34 +51,5 @@ describe('buildBookingMonitorCommandRouteModel', () => {
       href: '/bookings/b1',
       owner: 'Support',
     });
-  });
-
-  it('keeps operator route card count fallbacks when no top action exists', () => {
-    const model = buildBookingMonitorCommandRouteModel({
-      activeView: {
-        label: 'All bookings',
-        operatorHint: 'Investigate all records.',
-      },
-      blockedCreateCount: 0,
-      blockedCreateDetail: 'No blocked create attempts.',
-      bookingViewCounts: new Map([
-        ['first-pick', 1],
-        ['marketplace', 2],
-        ['customer-choice', 3],
-      ]),
-      commandCenter: [],
-      view: 'all',
-      visibleBookingCount: 6,
-    });
-
-    expect(model.operatorRouteCards[0]).toMatchObject({
-      label: 'Handle first',
-      value: 'Clear',
-    });
-    expect(model.operatorRouteCards.map((card) => [card.label, card.value]).slice(1, 4)).toEqual([
-      ['First-pick wait', '1'],
-      ['Marketplace pool', '2'],
-      ['Customer choice', '3'],
-    ]);
   });
 });

@@ -1,6 +1,5 @@
 import {
   buildBookingCommandSummaryCards,
-  buildBookingOperatorRouteCards,
   type BookingCommandRouteTopAction,
 } from '../../lib/booking-command-route-cards';
 import type { BookingCommandCenterLane } from './booking-command-center-board';
@@ -19,7 +18,6 @@ type BuildBookingMonitorCommandRouteModelInput = {
   readonly activeView: Pick<BookingMonitorViewOption, 'label' | 'operatorHint'>;
   readonly blockedCreateCount: number;
   readonly blockedCreateDetail: string;
-  readonly bookingViewCounts: ReadonlyMap<string, number>;
   readonly commandCenter: readonly BookingCommandCenterLane[];
   readonly topNextAction?: BookingMonitorTopAction;
   readonly view: BookingPageView;
@@ -30,7 +28,6 @@ export function buildBookingMonitorCommandRouteModel({
   activeView,
   blockedCreateCount,
   blockedCreateDetail,
-  bookingViewCounts,
   commandCenter,
   topNextAction,
   view,
@@ -56,12 +53,6 @@ export function buildBookingMonitorCommandRouteModel({
       lanes,
       topAction,
       visibleBookingCount,
-    }),
-    operatorRouteCards: buildBookingOperatorRouteCards({
-      blockedCreateCount,
-      blockedCreateDetail,
-      bookingViewCounts,
-      topAction,
     }),
   };
 }
