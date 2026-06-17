@@ -24,6 +24,10 @@ export function BookingMonitorNextActionsSection({
   nextActions,
   nowMs,
 }: BookingMonitorNextActionsSectionProps) {
+  if (nextActions.length === 0) {
+    return null;
+  }
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
@@ -33,9 +37,7 @@ export function BookingMonitorNextActionsSection({
             Flagged bookings that need operator review now; normal active bookings stay in the table.
           </p>
         </div>
-        <span className={`pill ${nextActions.length > 0 ? 'pill-warn' : 'pill-success'}`}>
-          {nextActions.length > 0 ? `${nextActions.length} action(s)` : 'Clear'}
-        </span>
+        <span className="pill pill-warn">{nextActions.length} action(s)</span>
       </div>
       <div className="participant-list admin-mt-12">
         {nextActions.map((item) => (
@@ -70,15 +72,6 @@ export function BookingMonitorNextActionsSection({
             </div>
           </Link>
         ))}
-        {nextActions.length === 0 && (
-          <div className="card">
-            <h2>Booking operations are clear</h2>
-            <p className="muted">
-              No expired matching, unresolved payment, stale live location, missing chat, or pricing policy
-              blocker needs immediate review.
-            </p>
-          </div>
-        )}
       </div>
     </section>
   );

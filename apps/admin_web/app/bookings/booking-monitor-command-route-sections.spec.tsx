@@ -120,7 +120,7 @@ describe('BookingMonitorCommandRouteSections', () => {
     expect(rendered).not.toContain('Top operator action');
     expect(rendered).not.toContain('Dispatch pressure');
     expect(rendered).not.toContain('Blocked create attempts');
-    expect(rendered).toContain('No primary booking command needs action');
+    expect(rendered).not.toContain('No primary booking command needs action');
     expect(rendered).not.toContain('Normal in-progress bookings');
   });
 });

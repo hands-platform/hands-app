@@ -76,13 +76,6 @@ export function BookingMonitorCommandRouteSections({
             </div>
           </Link>
         ))}
-        {visiblePrimaryCommandQueue.length === 0 && (
-          <div className="ops-task-card">
-            <span className="signal signal-ok">Clear</span>
-            <strong className="ops-task-card-value">0 booking(s)</strong>
-            <p>No primary booking command needs action for the current filters.</p>
-          </div>
-        )}
       </div>
     </section>
   );

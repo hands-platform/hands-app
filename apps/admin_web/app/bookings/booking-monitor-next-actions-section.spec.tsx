@@ -57,7 +57,7 @@ describe('BookingMonitorNextActionsSection', () => {
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
   });
 
-  it('renders clear state when no action is waiting', () => {
+  it('returns no section when no action is waiting', () => {
     const section = BookingMonitorNextActionsSection({
       getCustomerLabel: () => 'Customer A',
       getProviderLabel: () => 'Partner B',
@@ -65,7 +65,6 @@ describe('BookingMonitorNextActionsSection', () => {
       nowMs: 0,
     });
 
-    expect(normalizedText(section)).toContain('Booking operations are clear');
-    expect(normalizedText(section)).toContain('Clear');
+    expect(section).toBeNull();
   });
 });
