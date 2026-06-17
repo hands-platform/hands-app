@@ -50,4 +50,23 @@ describe('admin navigation', () => {
       '/partner-controls',
     ]);
   });
+
+  it('keeps policy and retained evidence in one system category', () => {
+    const systemSection = adminNavSections.find((section) => section.label === 'System');
+
+    expect(adminNavSections.map((section) => section.label)).not.toContain('Policy');
+    expect(adminNavSections.map((section) => section.label)).not.toContain('Evidence and System');
+    expect(systemSection?.links.map((link) => link.href)).toEqual([
+      '/operations-policy',
+      '/services',
+      '/tax-policy',
+      '/coupons',
+      '/chat-archive',
+      '/notifications',
+      '/files',
+      '/reviews',
+      '/audit-log',
+      '/setup',
+    ]);
+  });
 });

@@ -157,8 +157,8 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Policy',
-    description: 'Runtime rules that operators can change without code edits.',
+    label: 'System',
+    description: 'Runtime policy, retained evidence, audit trails, setup, and production readiness.',
     links: [
       {
         href: '/operations-policy',
@@ -180,12 +180,6 @@ export const adminNavSections: AdminNavSection[] = [
         label: 'Coupons',
         description: 'Coupon codes and discount exposure.',
       },
-    ],
-  },
-  {
-    label: 'Evidence and System',
-    description: 'Audit trails, retained records, moderation, setup, and production readiness.',
-    links: [
       {
         href: '/chat-archive',
         label: 'Chat Archive',
