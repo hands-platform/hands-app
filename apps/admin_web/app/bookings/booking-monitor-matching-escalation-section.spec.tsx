@@ -75,6 +75,9 @@ describe('BookingMonitorMatchingEscalationSection', () => {
         },
       ],
     });
+
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected matching escalation section to render.');
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Matching escalation board');
@@ -94,7 +97,7 @@ describe('BookingMonitorMatchingEscalationSection', () => {
     );
   });
 
-  it('renders an empty escalation card when there are no sample rows', () => {
+  it('returns no section when no matching escalation action is waiting', () => {
     const section = BookingMonitorMatchingEscalationSection({
       dispatchPartnerShortcuts: [],
       getCustomerLabel: () => 'Customer A',
@@ -127,12 +130,7 @@ describe('BookingMonitorMatchingEscalationSection', () => {
         },
       ],
     });
-    const rendered = normalizedText(section);
 
-    expect(rendered).toContain('No matching lane needs action');
-    expect(rendered).toContain('No flow stage needs action');
-    expect(rendered).toContain('No matching escalation right now');
-    expect(rendered).not.toContain('First-pick response window waiting: 0');
-    expect(rendered).not.toContain('Direct first-pick request waiting: 0');
+    expect(section).toBeNull();
   });
 });

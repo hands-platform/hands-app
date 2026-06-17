@@ -38,6 +38,16 @@ export function BookingMonitorMatchingEscalationSection({
   const visibleEscalationLanes = matchingEscalationBoard.filter((lane) => shouldShowMatchingCard(lane));
   const visibleFlowTimeline = matchingFlowTimeline.filter((step) => shouldShowMatchingCard(step));
   const visibleDispatchPartnerShortcuts = dispatchPartnerShortcuts.filter(isActionTone);
+  const visibleMatchingEscalationRows = matchingEscalationRows.slice(0, 6);
+
+  if (
+    visibleEscalationLanes.length === 0 &&
+    visibleFlowTimeline.length === 0 &&
+    visibleDispatchPartnerShortcuts.length === 0 &&
+    visibleMatchingEscalationRows.length === 0
+  ) {
+    return null;
+  }
 
   return (
     <section className="card admin-mt-16">
@@ -96,13 +106,6 @@ export function BookingMonitorMatchingEscalationSection({
             <small>{lane.operatorAction}</small>
           </Link>
         ))}
-        {visibleEscalationLanes.length === 0 && (
-          <div className="ops-task-card">
-            <span className="signal signal-ok">Clear</span>
-            <h3>No matching lane needs action</h3>
-            <p>First-pick, marketplace, customer choice, and chat handoff are clear.</p>
-          </div>
-        )}
       </div>
       <div className="admin-mt-16">
         <h3>Matching flow timeline</h3>
@@ -134,13 +137,6 @@ export function BookingMonitorMatchingEscalationSection({
               <small>{step.operatorAction}</small>
             </Link>
           ))}
-          {visibleFlowTimeline.length === 0 && (
-            <div className="ops-task-card">
-              <span className="signal signal-ok">Clear</span>
-              <h3>No flow stage needs action</h3>
-              <p>Use the booking table for normal timeline review.</p>
-            </div>
-          )}
         </div>
       </div>
       {visibleDispatchPartnerShortcuts.length > 0 && (
@@ -163,7 +159,7 @@ export function BookingMonitorMatchingEscalationSection({
         </div>
       )}
       <div className="participant-list admin-mt-14">
-        {matchingEscalationRows.slice(0, 6).map((item) => (
+        {visibleMatchingEscalationRows.map((item) => (
           <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
             <div className="ops-section-header">
               <div>
@@ -185,14 +181,6 @@ export function BookingMonitorMatchingEscalationSection({
             </div>
           </Link>
         ))}
-        {matchingEscalationRows.length === 0 && (
-          <div className="card">
-            <h3>No matching escalation right now</h3>
-            <p className="muted">
-              Open matching, marketplace participation, customer final selection, and chat handoff are clear.
-            </p>
-          </div>
-        )}
       </div>
     </section>
   );
