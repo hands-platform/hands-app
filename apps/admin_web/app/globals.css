@@ -4929,6 +4929,28 @@ textarea:focus-visible {
   flex: 1;
 }
 
+.admin-form-textarea {
+  display: grid;
+  min-width: 240px;
+}
+
+.admin-form-textarea textarea {
+  background: transparent;
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  font: inherit;
+  min-height: 122px;
+  outline: none;
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+}
+
+.admin-form-textarea textarea::placeholder {
+  color: var(--admin-disabled);
+}
+
 .admin-form-control-button,
 .admin-form-control-link,
 .vuexy-customer-button,

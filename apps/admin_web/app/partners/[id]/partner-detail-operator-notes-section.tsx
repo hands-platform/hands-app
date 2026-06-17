@@ -1,5 +1,30 @@
 import { Save } from 'lucide-react';
+
+import {
+  AdminFormControlButton,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../../components/admin-form-controls';
 import { addProviderOpsNote } from '../actions';
+
+const PARTNER_NOTE_PRESET_OPTIONS = [
+  { label: 'Manual note only', value: '' },
+  { label: 'Partner contacted; waiting for reply.', value: 'Partner contacted; waiting for reply.' },
+  {
+    label: 'Partner app session and push reachability checked.',
+    value: 'Partner app session and push reachability checked.',
+  },
+  { label: 'Partner location refresh requested.', value: 'Partner location refresh requested.' },
+  { label: 'Partner service pricing reviewed.', value: 'Partner service pricing reviewed.' },
+  {
+    label: 'Partner cash settlement or payout context reviewed.',
+    value: 'Partner cash settlement or payout context reviewed.',
+  },
+  {
+    label: 'Partner onboarding document follow-up requested.',
+    value: 'Partner onboarding document follow-up requested.',
+  },
+];
 
 export type PartnerOperatorNoteRow = {
   readonly actorTargetLabel: string;
@@ -46,32 +71,23 @@ export function PartnerDetailOperatorNotesSection({
       </div>
       <form action={addProviderOpsNote} className="ops-note-form">
         <input type="hidden" name="providerId" value={providerId} />
-        <label>
-          Quick note preset
-          <select name="preset" defaultValue="">
-            <option value="">Manual note only</option>
-            <option value="Partner contacted; waiting for reply.">Partner contacted; waiting for reply.</option>
-            <option value="Partner app session and push reachability checked.">
-              Partner app session and push reachability checked.
-            </option>
-            <option value="Partner location refresh requested.">Partner location refresh requested.</option>
-            <option value="Partner service pricing reviewed.">Partner service pricing reviewed.</option>
-            <option value="Partner cash settlement or payout context reviewed.">
-              Partner cash settlement or payout context reviewed.
-            </option>
-            <option value="Partner onboarding document follow-up requested.">
-              Partner onboarding document follow-up requested.
-            </option>
-          </select>
-        </label>
-        <textarea
+        <AdminFormSelect
+          className="partner-note-preset"
+          defaultValue=""
+          label="Quick note preset"
+          name="preset"
+          options={PARTNER_NOTE_PRESET_OPTIONS}
+        />
+        <AdminFormTextarea
+          className="partner-note-textarea"
+          label="Partner operation note"
           name="note"
           placeholder="Example: Partner confirmed they will refresh location before receiving new requests."
         />
-        <button className="button button-primary" type="submit">
+        <AdminFormControlButton className="partner-note-submit">
           <Save aria-hidden="true" size={16} />
           Save partner operation note
-        </button>
+        </AdminFormControlButton>
       </form>
     </div>
   );

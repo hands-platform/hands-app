@@ -3,6 +3,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
 } from 'react';
 
 import { ChevronDown, Search } from 'lucide-react';
@@ -30,6 +31,12 @@ type AdminFormDateProps = {
   readonly label: string;
   readonly name: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'value'>;
+
+type AdminFormTextareaProps = {
+  readonly className?: string;
+  readonly label: string;
+  readonly name: string;
+} & Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'rows' | 'value'>;
 
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
@@ -105,6 +112,31 @@ export function AdminFormDate({
     <label className={joinClassNames('admin-form-date', className)}>
       <span className="sr-only">{label}</span>
       <input defaultValue={defaultValue} name={name} onChange={onChange} type="date" value={value} />
+    </label>
+  );
+}
+
+export function AdminFormTextarea({
+  className,
+  defaultValue,
+  label,
+  name,
+  onChange,
+  placeholder,
+  rows = 4,
+  value,
+}: AdminFormTextareaProps) {
+  return (
+    <label className={joinClassNames('admin-form-textarea', className)}>
+      <span className="sr-only">{label}</span>
+      <textarea
+        defaultValue={defaultValue}
+        name={name}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={rows}
+        value={value}
+      />
     </label>
   );
 }

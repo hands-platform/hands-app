@@ -4,6 +4,7 @@ import {
   AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
+  AdminFormTextarea,
 } from './admin-form-controls';
 
 describe('Admin form controls', () => {
@@ -43,6 +44,19 @@ describe('Admin form controls', () => {
 
     expect(date.props.className).toBe('admin-form-date partner-date-filter');
     expect(textContent(date)).toContain('From date');
+  });
+
+  it('renders textarea controls with the same field contract', () => {
+    const textarea = AdminFormTextarea({
+      className: 'partner-note',
+      label: 'Partner operation note',
+      name: 'note',
+      placeholder: 'Add factual note',
+      rows: 3,
+    });
+
+    expect(textarea.props.className).toBe('admin-form-textarea partner-note');
+    expect(textContent(textarea)).toContain('Partner operation note');
   });
 
   it('renders link and button controls without owning behavior', () => {
