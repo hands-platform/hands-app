@@ -25,8 +25,6 @@ import {
   type BookingMetricGridSectionProps,
   BookingMvpAuthorityContractSection,
   type BookingMvpAuthorityContractSectionProps,
-  BookingOperationsQuickRailSection,
-  type BookingOperationsQuickRailSectionProps,
   BookingOperatorFirstReadSection,
   type BookingOperatorFirstReadSectionProps,
   BookingPriorityBriefingSection,
@@ -142,7 +140,6 @@ import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
 import { bookingDetailMetricCards } from './booking-detail-metric-cards';
-import { bookingDetailOperationsQuickRail } from './booking-detail-operations-quick-rail';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -584,21 +581,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
     notes: booking.notes,
     opsTaskCards,
   };
-  const bookingOperationsQuickRail = bookingDetailOperationsQuickRail({
-    booking,
-    operatorPriorityStatus: operatorPriorityBriefing.status,
-    matchingRuleStatus: matchingRuleSnapshot.status,
-    evidenceLaneCount: bookingEvidenceBundleRows.length,
-    connectedRecordCount: connectedRecordLinks.length,
-    participantCounts,
-    messageCount,
-    paymentEvidence,
-    financeTrace,
-    addressLine,
-    addressPin,
-    operatorQueue: operatorCommandQueue,
-    activityRecordCount,
-  });
   const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
     booking,
     addressLine,
@@ -732,9 +714,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const metricGridProps: BookingMetricGridSectionProps = {
     metrics: bookingMetricCards,
   };
-  const operationsQuickRailProps: BookingOperationsQuickRailSectionProps = {
-    rows: bookingOperationsQuickRail,
-  };
   const matchingRuleSnapshotProps: BookingMatchingRuleSnapshotSectionProps = {
     matchingRuleSnapshot,
   };
@@ -760,8 +739,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
 
       <BookingMetricGridSection {...metricGridProps} />
-
-      <BookingOperationsQuickRailSection {...operationsQuickRailProps} />
 
       <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
 
