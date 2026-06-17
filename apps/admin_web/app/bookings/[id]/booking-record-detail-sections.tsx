@@ -239,8 +239,7 @@ export function BookingRecordDetailSections({
         <div className="card" id="chat">
           <h2>Chat transcript</h2>
           <p className="muted">
-            Admin archive for this booking. Customer and Partner apps can hide the room after completion, but
-            operations keeps the loaded transcript here.
+            Admin archive for the booking transcript.
           </p>
           <div className="stack">
             {chatMessages.map((message) => (
@@ -285,9 +284,7 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
         <div>
           <h2>Actual marketplace participant ledger</h2>
           <p className="muted">
-            Every Partner who actually participated, accepted, rejected, or became the customer-selected final
-            Partner stays here as booking evidence. Marketplace visibility is not retained as activity; wallet
-            gates stop blocked Partners before a participant row is created.
+            Booking participation evidence only; marketplace supply visibility is tracked separately.
           </p>
         </div>
         <span className={`pill ${tone}`}>{status}</span>
@@ -298,8 +295,7 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
       <ParticipantLifecycleTable rows={lifecycleRows} />
       <h3 className="admin-mt-18">Customer eligibility matrix</h3>
       <p className="muted">
-        Shows who participated, who is customer-selectable, the Customer-selectable reason, and Why not
-        selectable for evidence-only rows.
+        Customer-selectable state and reason for each participant row.
       </p>
       <ParticipantEligibilityMatrix rows={rows} />
       <ParticipantRecordsTable rows={rows} />

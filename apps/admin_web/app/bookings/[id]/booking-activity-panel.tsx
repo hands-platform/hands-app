@@ -30,8 +30,7 @@ export function BookingFullRecordIndex({
         <div>
           <h2>Booking full record index</h2>
           <p className="muted">
-            One-booking record map for operators. This is factual tracking only: customer, Partner,
-            matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
+            Jump map for the detailed booking record sections below.
           </p>
         </div>
         <div className="actions">
@@ -69,9 +68,7 @@ export function BookingActivityPanel({
         <div>
           <h2>Booking chronological activity</h2>
           <p className="muted">
-            Date-sorted factual event trail for this booking: booking status, Partner participation, chat
-            messages, payment, refund, earning, platform fee, tax, wallet, location, notification, review,
-            and operator audit records.
+            Date-sorted operational event trail for this booking.
           </p>
         </div>
         <span className="pill pill-info">{records.length} event(s)</span>
