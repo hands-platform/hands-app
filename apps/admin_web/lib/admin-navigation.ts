@@ -10,39 +10,16 @@ export type AdminNavSection = {
   links: AdminNavLink[];
 };
 
-export const adminShiftFlow: AdminNavLink[] = [
-  {
-    href: '/',
-    label: 'Start Shift',
-    description: 'Open the command dashboard and review today first.',
-  },
-  {
-    href: '/bookings?view=attention',
-    label: 'Urgent Bookings',
-    description: 'Check bookings that need operator action.',
-  },
-  {
-    href: '/bookings?view=marketplace',
-    label: 'Marketplace',
-    description: 'Watch 10km Partner participation and customer choice.',
-  },
-  {
-    href: '/cash-settlements',
-    label: 'Cash Debt',
-    description: 'Clear Partner wallet debt from cash bookings.',
-  },
-  {
-    href: '/operations-handoff',
-    label: 'Handoff',
-    description: 'Leave a factual shift note for the next operator.',
-  },
-];
-
 export const adminNavSections: AdminNavSection[] = [
   {
     label: 'Command',
     description: 'Live operating picture for the current shift.',
     links: [
+      {
+        href: '/',
+        label: 'Start Shift',
+        description: 'Open the command dashboard and review today first.',
+      },
       {
         href: '/calendar',
         label: 'Calendar',
@@ -52,6 +29,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',
+      },
+      {
+        href: '/operations-handoff',
+        label: 'Handoff',
+        description: 'Leave a factual shift note for the next operator.',
       },
     ],
   },
@@ -65,9 +47,19 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Complete booking list with filters and detail links.',
       },
       {
+        href: '/bookings?view=attention',
+        label: 'Urgent Bookings',
+        description: 'Check bookings that need operator action.',
+      },
+      {
         href: '/bookings?view=matching',
         label: 'Live Matching',
         description: 'First-pick and marketplace matching windows.',
+      },
+      {
+        href: '/bookings?view=marketplace',
+        label: 'Marketplace',
+        description: 'Watch 10km Partner participation and customer choice.',
       },
       {
         href: '/bookings?view=customer-choice',
@@ -142,6 +134,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/finance-closeout',
         label: 'Finance Closeout',
         description: 'Daily, weekly, monthly, and manual closeout view.',
+      },
+      {
+        href: '/cash-settlements',
+        label: 'Cash Debt',
+        description: 'Clear Partner wallet debt from cash bookings.',
       },
       {
         href: '/payments',

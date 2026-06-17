@@ -1,18 +1,21 @@
-import { adminNavSections, adminShiftFlow } from './admin-navigation';
+import { adminNavSections } from './admin-navigation';
 
 describe('admin navigation', () => {
-  it('keeps shift-flow shortcuts out of the main nav sections', () => {
-    const shiftFlowHrefs = new Set(adminShiftFlow.map((item) => item.href));
-    const repeatedLinks = adminNavSections.flatMap((section) =>
-      section.links
-        .filter((link) => shiftFlowHrefs.has(link.href))
-        .map((link) => `${section.label}: ${link.label} -> ${link.href}`),
+  it('keeps former shift-flow shortcuts inside the category navigation', () => {
+    const linksByHref = new Map(
+      adminNavSections.flatMap((section) =>
+        section.links.map((link) => [link.href, `${section.label}: ${link.label}`] as const),
+      ),
     );
 
-    expect(repeatedLinks).toEqual([]);
+    expect(linksByHref.get('/')).toBe('Command: Start Shift');
+    expect(linksByHref.get('/operations-handoff')).toBe('Command: Handoff');
+    expect(linksByHref.get('/bookings?view=attention')).toBe('Bookings: Urgent Bookings');
+    expect(linksByHref.get('/bookings?view=marketplace')).toBe('Bookings: Marketplace');
+    expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
   });
 
-  it('does not repeat the same route across main nav categories', () => {
+  it('does not repeat the same route across nav categories', () => {
     const seen = new Map<string, string>();
     const duplicates: string[] = [];
 

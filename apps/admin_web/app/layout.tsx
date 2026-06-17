@@ -30,7 +30,7 @@ import {
   UsersRound,
   WalletCards,
 } from 'lucide-react';
-import { adminNavSections, adminShiftFlow } from '../lib/admin-navigation';
+import { adminNavSections } from '../lib/admin-navigation';
 
 const iconByLabel = {
   'All Bookings': CalendarClock,
@@ -95,22 +95,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <span>Operations Command Center</span>
               </div>
             </div>
-            <section className="nav-flow" aria-label="Shift flow">
-              <span className="nav-section-label">Shift Flow</span>
-              <div className="nav-flow-list">
-                {adminShiftFlow.map((item, index) => (
-                  <Link className="nav-flow-link" href={item.href} key={item.href} title={item.description}>
-                    <span aria-hidden="true">
-                      <NavIcon label={item.label} size={15} />
-                    </span>
-                    <strong>
-                      <small>{String(index + 1).padStart(2, '0')}</small>
-                      {item.label}
-                    </strong>
-                  </Link>
-                ))}
-              </div>
-            </section>
             <nav className="nav">
               {adminNavSections.map((section) => (
                 <section className="nav-section" key={section.label}>

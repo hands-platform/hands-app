@@ -153,69 +153,10 @@ a {
   font-size: 12px;
 }
 
-.nav-flow {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.nav-flow-list {
-  display: grid;
-  gap: 6px;
-}
-
-.nav-flow-link {
-  align-items: center;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--admin-radius);
-  color: rgb(var(--admin-main-channel) / 0.78);
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 24px 1fr;
-  padding: 7px 12px;
-  transition:
-    background var(--admin-transition),
-    border-color var(--admin-transition),
-    color var(--admin-transition);
-}
-
-.nav-flow-link:hover {
-  background: var(--admin-sidebar-hover);
-  border-color: rgb(var(--admin-primary-channel) / 0.16);
-  color: var(--admin-accent-strong);
-}
-
-.nav-flow-link span {
-  align-items: center;
-  background: var(--admin-accent-soft);
-  border-radius: 999px;
-  color: var(--admin-accent-strong);
-  display: inline-flex;
-  height: 24px;
-  justify-content: center;
-  width: 24px;
-}
-
-.nav-flow-link strong {
-  display: grid;
-  font-size: 15px;
-  font-weight: 400;
-  gap: 1px;
-  line-height: 22px;
-}
-
-.nav-flow-link strong small {
-  color: var(--admin-sidebar-muted);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
 .nav {
   display: grid;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 10px;
 }
 
 .nav-section {
