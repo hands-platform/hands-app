@@ -115,6 +115,7 @@ import { bookingChatReady } from './booking-chat-evidence';
 import {
   bookingChatRepairActionState,
 } from './booking-chat-repair-state';
+import { bookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import { bookingDetailConnectedRecordLinks } from './booking-detail-connected-record-links';
 import { bookingDetailCloseoutChecklist } from './booking-detail-closeout-checklist';
 import { bookingDetailDecisionReadiness } from './booking-detail-decision-readiness';
@@ -580,6 +581,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
     noShow: { canSubmit: canMarkNoShow(booking.status), status: booking.status },
     notes: booking.notes,
     opsTaskCards,
+    outcomeReview: bookingOutcomeReviewPanel({
+      booking,
+      closeoutOpenItemCount: closeoutReadiness.openItems.length,
+      closureSummary,
+      messageCount,
+      operatorNoteCount,
+    }),
   };
   const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
     booking,

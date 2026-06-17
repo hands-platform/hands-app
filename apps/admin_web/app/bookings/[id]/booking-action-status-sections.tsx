@@ -1,4 +1,5 @@
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
+import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import {
   addBookingOpsNote,
   closeoutCompletedBooking,
@@ -66,6 +67,7 @@ export type BookingActionStatusSectionsProps = {
   noShow: NoShowState;
   notes?: string | null;
   opsTaskCards: OpsTaskCard[];
+  outcomeReview: BookingOutcomeReviewPanel;
 };
 
 type BookingDispatchChecklistSectionProps = {
@@ -86,18 +88,53 @@ export function BookingActionStatusSections({
   noShow,
   notes,
   opsTaskCards,
+  outcomeReview,
 }: BookingActionStatusSectionsProps) {
   return (
     <>
       <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
+      <BookingOutcomeReviewSection outcomeReview={outcomeReview} />
       <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
       <BookingCompletedCloseoutSection bookingId={bookingId} closeout={closeout} />
       <BookingMatchingExpirySection bookingId={bookingId} matchingExpiry={matchingExpiry} />
       <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />
       <BookingLiveServiceBoardSection liveSignals={liveSignals} />
     </>
+  );
+}
+
+function BookingOutcomeReviewSection({
+  outcomeReview,
+}: {
+  outcomeReview: BookingOutcomeReviewPanel;
+}) {
+  if (!outcomeReview.visible) {
+    return null;
+  }
+
+  return (
+    <section className="card admin-mb-16" id="booking-outcome-review">
+      <div className="ops-section-header">
+        <div>
+          <h2>{outcomeReview.title}</h2>
+          <p className="muted">{outcomeReview.helper}</p>
+        </div>
+        <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
+      </div>
+      <div className="ops-task-grid">
+        {outcomeReview.rows.map((row) => (
+          <a className="ops-task-card" href={row.href} key={row.label}>
+            <div>
+              <span className={`pill ${row.tone}`}>{row.label}</span>
+              <h3>{row.value}</h3>
+              <p>{row.helper}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
   );
 }
 
