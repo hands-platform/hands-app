@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
+
 export type NotificationFilterLink = {
   readonly href: string;
   readonly label: string;
@@ -36,24 +38,32 @@ export function NotificationFilterBoardSection({
   const isFiltered = Boolean(activeReview || activeBookingLabel);
 
   return (
-    <div className="card soft-card admin-mb-16">
-      <div className="toolbar">
-        <div>
-          <h3>Notification operation filters</h3>
-          <p className="muted">
-            Open each queue directly from the command dashboard without hunting through rows.
-          </p>
+    <AdminFilterPanel
+      className="notification-filter-card admin-mb-16"
+      description={(
+        <>
+          Open each queue directly from the command dashboard without hunting through rows.
           {activeFilterLabel && activeFilterDescription ? (
-            <p className="muted">
+            <>
+              <br />
               Active queue: <strong>{activeFilterLabel}</strong> - {activeFilterDescription}
-            </p>
+            </>
           ) : null}
           {activeBookingLabel ? (
-            <p className="muted">
+            <>
+              <br />
               Active booking trace: <strong>{activeBookingLabel}</strong>. Showing only notifications tied to
               this booking id.
-            </p>
+            </>
           ) : null}
+        </>
+      )}
+      id="notification-operation-filters"
+      resultLabel={`Showing ${filteredCount} of ${totalCount}`}
+      resultTone={isFiltered ? 'warning' : 'success'}
+      title="Notification operation filters"
+      footer={(
+        <>
           {activeReviewRunbook ? (
             <div className="admin-mt-10">
               <span className="pill pill-info">{activeReviewRunbook.title}</span>
@@ -63,29 +73,26 @@ export function NotificationFilterBoardSection({
               </p>
             </div>
           ) : null}
-        </div>
-        <span className={`pill ${isFiltered ? 'pill-warn' : 'pill-success'}`}>
-          Showing {filteredCount} of {totalCount}
-        </span>
-      </div>
-      <div className="participant-list">
-        {isFiltered ? (
-          <Link className="pill pill-success" href="/notifications">
-            Clear filter
-          </Link>
-        ) : null}
-        {activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}
-        {links.map((link) => (
-          <Link
-            aria-current={activeReview === link.review ? 'page' : undefined}
-            className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}
-            href={link.href}
-            key={link.href}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
-    </div>
+          <div className="participant-list">
+            {isFiltered ? (
+              <Link className="pill pill-success" href="/notifications">
+                Clear filter
+              </Link>
+            ) : null}
+            {activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}
+            {links.map((link) => (
+              <Link
+                aria-current={activeReview === link.review ? 'page' : undefined}
+                className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}
+                href={link.href}
+                key={link.href}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+    />
   );
 }

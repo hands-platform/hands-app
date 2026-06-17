@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { StatusBadge, type StatusBadgeTone } from './status-badge';
 
 type AdminFilterPanelProps = {
-  readonly children: ReactNode;
+  readonly children?: ReactNode;
   readonly className?: string;
   readonly description?: ReactNode;
   readonly footer?: ReactNode;
@@ -24,6 +24,7 @@ export function AdminFilterPanel({
   title,
 }: AdminFilterPanelProps) {
   const headingId = id ? `${id}-title` : undefined;
+  const hasBody = children !== undefined && children !== null;
 
   return (
     <section className={joinClassNames('card admin-filter-panel', className)} aria-labelledby={headingId}>
@@ -34,7 +35,7 @@ export function AdminFilterPanel({
         </div>
         {resultLabel ? <StatusBadge tone={resultTone}>{resultLabel}</StatusBadge> : null}
       </div>
-      <div className="admin-filter-panel-body">{children}</div>
+      {hasBody ? <div className="admin-filter-panel-body">{children}</div> : null}
       {footer ? <div className="admin-filter-panel-footer">{footer}</div> : null}
     </section>
   );

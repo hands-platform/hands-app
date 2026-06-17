@@ -23,4 +23,16 @@ describe('AdminFilterPanel', () => {
     expect(panel.props.children[0].props.children[1].props.tone).toBe('warning');
     expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer');
   });
+
+  it('allows link-only filter panels without a body section', () => {
+    const panel = AdminFilterPanel({
+      footer: <div>Quick filters</div>,
+      resultLabel: 'Showing 2 of 10',
+      title: 'Notification operation filters',
+    });
+
+    expect(panel.props.children).toHaveLength(3);
+    expect(panel.props.children[1]).toBeNull();
+    expect(panel.props.children[2].props.className).toBe('admin-filter-panel-footer');
+  });
 });
