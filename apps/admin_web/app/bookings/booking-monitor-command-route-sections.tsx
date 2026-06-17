@@ -26,8 +26,7 @@ export function BookingMonitorCommandRouteSections({
         <div>
           <h2>Booking operations command summary</h2>
           <p className="muted">
-            Start here before drilling into booking records: lane size, first-pick and 10km marketplace
-            pressure, customer protection, payment closeout, and handoff quality.
+            Live queue health and operator lanes before table review.
           </p>
         </div>
         <span className="pill pill-info">
@@ -51,10 +50,7 @@ export function BookingMonitorCommandRouteSections({
       <div className="ops-section-header admin-mt-16">
         <div>
           <h3>Primary command queue</h3>
-          <p className="muted">
-            Grouped by the same booking command decision used in each detail page: address, matching,
-            chat, and finance.
-          </p>
+          <p className="muted">Open the lane that needs action; detailed evidence stays in booking detail.</p>
         </div>
         <span className="pill pill-info">
           {primaryCommandQueue.reduce((total, item) => total + item.count, 0)} booking(s)

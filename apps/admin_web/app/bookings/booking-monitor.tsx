@@ -21,7 +21,7 @@ import {
   bookingEvidenceFilterOptions,
   bookingViewOptions,
 } from './booking-monitor-options';
-import { bookingMonitorSummaryRows } from './booking-monitor-summary';
+import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
@@ -120,10 +120,12 @@ export function BookingMonitor({
 
   const summary = useMemo(
     () =>
-      bookingMonitorSummaryRows({
-        blockedCreateAttemptCount: orderedBookingCreateRejections.length,
-        bookings: orderedBookings.map((booking) => buildBookingMonitorSummaryFact(booking, currentTimeMs)),
-      }),
+      compactBookingMonitorSummaryRows(
+        bookingMonitorSummaryRows({
+          blockedCreateAttemptCount: orderedBookingCreateRejections.length,
+          bookings: orderedBookings.map((booking) => buildBookingMonitorSummaryFact(booking, currentTimeMs)),
+        }),
+      ),
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
 

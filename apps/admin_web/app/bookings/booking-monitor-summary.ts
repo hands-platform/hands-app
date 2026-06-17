@@ -23,6 +23,15 @@ export type BookingMonitorSummaryFact = {
   readonly status: string;
 };
 
+const ALWAYS_VISIBLE_SUMMARY_LABELS = new Set([
+  'Active bookings',
+  'Open matching',
+  'Matched',
+  'Follow-up queue',
+  'Blocked create attempts',
+]);
+const HIDDEN_COMPACT_SUMMARY_LABELS = new Set(['Policy snapshots']);
+
 export const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
   'MATCHED',
@@ -80,6 +89,16 @@ export function bookingMonitorSummaryRows(input: {
   return rows.map(([label, value]): BookingMonitorSummaryRow => [label, value.toString()]);
 }
 
+export function compactBookingMonitorSummaryRows(
+  rows: readonly BookingMonitorSummaryRow[],
+): BookingMonitorSummaryRow[] {
+  return rows.filter(
+    ([label, value]) =>
+      !HIDDEN_COMPACT_SUMMARY_LABELS.has(label) &&
+      (ALWAYS_VISIBLE_SUMMARY_LABELS.has(label) || summaryValueNumber(value) > 0),
+  );
+}
+
 function bookingStageCounts(bookings: readonly BookingMonitorSummaryFact[]) {
   return bookings.reduce((counts, booking) => {
     counts.set(booking.stageKey, (counts.get(booking.stageKey) ?? 0) + 1);
@@ -89,4 +108,9 @@ function bookingStageCounts(bookings: readonly BookingMonitorSummaryFact[]) {
 
 function countWhere<T>(items: readonly T[], predicate: (item: T) => boolean) {
   return items.filter(predicate).length;
+}
+
+function summaryValueNumber(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

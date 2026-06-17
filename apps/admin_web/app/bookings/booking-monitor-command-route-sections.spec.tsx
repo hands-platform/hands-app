@@ -33,8 +33,10 @@ describe('BookingMonitorCommandRouteSections', () => {
     const rendered = normalizedText(sections);
 
     expect(rendered).toContain('Booking operations command summary');
+    expect(rendered).toContain('Live queue health and operator lanes before table review.');
     expect(rendered).toContain('Auto refresh on / last 09:30');
     expect(rendered).toContain('Primary command queue');
+    expect(rendered).toContain('Open the lane that needs action; detailed evidence stays in booking detail.');
     expect(rendered).toContain('2 booking(s)');
     expect(headingTextsIn(sections)).toEqual([
       'Booking operations command summary',

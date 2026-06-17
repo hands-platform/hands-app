@@ -1,5 +1,6 @@
 import {
   bookingMonitorSummaryRows,
+  compactBookingMonitorSummaryRows,
   type BookingMonitorSummaryFact,
 } from './booking-monitor-summary';
 
@@ -94,5 +95,29 @@ describe('booking monitor summary helpers', () => {
     expect(rows['Chat evidence review']).toBe('1');
     expect(rows['Evidence missing']).toBe('1');
     expect(rows['Refund review']).toBe('1');
+  });
+
+  it('keeps core summary rows and hides zero-value supplemental rows', () => {
+    const rows = compactBookingMonitorSummaryRows([
+      ['Active bookings', '0'],
+      ['Open matching', '0'],
+      ['Matched', '0'],
+      ['Follow-up queue', '0'],
+      ['Blocked create attempts', '0'],
+      ['Stage 2 marketplace', '0'],
+      ['Policy snapshots', '7'],
+      ['Payment checks', '2'],
+      ['Chat repair', '0'],
+    ]);
+    const labels = rows.map(([label]) => label);
+
+    expect(labels).toEqual([
+      'Active bookings',
+      'Open matching',
+      'Matched',
+      'Follow-up queue',
+      'Blocked create attempts',
+      'Payment checks',
+    ]);
   });
 });
