@@ -114,20 +114,124 @@ type StatusBadgeProps = {
   readonly status: string;
 };
 
+type BookingTableGroupKey =
+  | 'matching-waiting'
+  | 'matched-in-progress'
+  | 'completed'
+  | 'post-match-cancellations';
+
+type BookingTableGroupDefinition = {
+  readonly description: string;
+  readonly emptyMessage: string;
+  readonly key: BookingTableGroupKey;
+  readonly title: string;
+};
+
+type BookingTableGroup = BookingTableGroupDefinition & {
+  readonly rows: readonly BookingMonitorListRow[];
+};
+
+type BookingParticipantTableRow = {
+  readonly id: string;
+  readonly partnerHref: string | null;
+  readonly partnerLabel: string;
+  readonly status: string;
+};
+
+type BookingProviderLike = {
+  readonly displayName?: string | null;
+  readonly user?: { readonly fullName?: string | null; readonly phone?: string };
+} | null | undefined;
+
 const BOOKING_TABLE_PAGE_SIZE = 10;
+const BOOKING_TABLE_HEADERS = [
+  'Request Time',
+  'Customer',
+  'Requested Partner',
+  'Participating Partners',
+  'Device Language',
+  'Service Type',
+  'Address',
+  'Status',
+] as const;
+
+const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
+  {
+    description: 'Requests waiting for Partner participation or matching decision.',
+    emptyMessage: 'No bookings are waiting for matching.',
+    key: 'matching-waiting',
+    title: 'Matching Waiting',
+  },
+  {
+    description: 'Matched bookings currently moving through dispatch and service.',
+    emptyMessage: 'No matched bookings are in progress.',
+    key: 'matched-in-progress',
+    title: 'Matched / In Progress',
+  },
+  {
+    description: 'Completed bookings ready for normal closeout review.',
+    emptyMessage: 'No completed bookings in this result set.',
+    key: 'completed',
+    title: 'Completed',
+  },
+  {
+    description: 'Partner-side cancellations and no-show reviews after matching.',
+    emptyMessage: 'No post-match cancellations in this result set.',
+    key: 'post-match-cancellations',
+    title: 'Post-match Cancellations',
+  },
+];
 
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
+  const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
+  const visibleBookingCount = groupedRows.reduce((count, group) => count + group.rows.length, 0);
+
+  return (
+    <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
+      <div className="vuexy-booking-table-toolbar">
+        <div>
+          <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
+          <p>Grouped by operating state; pre-match cancellations are omitted from this queue.</p>
+        </div>
+        <span className="pill pill-info">
+          {visibleBookingCount} shown / {rows.length} loaded
+        </span>
+      </div>
+
+      <div className="vuexy-booking-table-groups">
+        {groupedRows.map((group) => (
+          <BookingMonitorTableGroup
+            allRowsEmpty={rows.length === 0}
+            emptyMessage={emptyMessage}
+            group={group}
+            key={group.key}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BookingMonitorTableGroup({
+  allRowsEmpty,
+  emptyMessage,
+  group,
+}: {
+  readonly allRowsEmpty: boolean;
+  readonly emptyMessage: string;
+  readonly group: BookingTableGroup;
+}) {
   const [page, setPage] = useState(1);
-  const rowKey = rows.map((row) => row.booking.id).join('|');
-  const totalPages = Math.max(1, Math.ceil(rows.length / BOOKING_TABLE_PAGE_SIZE));
+  const rowKey = group.rows.map((row) => row.booking.id).join('|');
+  const totalPages = Math.max(1, Math.ceil(group.rows.length / BOOKING_TABLE_PAGE_SIZE));
   const activePage = Math.min(page, totalPages);
   const pageStartIndex = (activePage - 1) * BOOKING_TABLE_PAGE_SIZE;
   const visibleRows = useMemo(
-    () => rows.slice(pageStartIndex, pageStartIndex + BOOKING_TABLE_PAGE_SIZE),
-    [pageStartIndex, rows],
+    () => group.rows.slice(pageStartIndex, pageStartIndex + BOOKING_TABLE_PAGE_SIZE),
+    [group.rows, pageStartIndex],
   );
-  const pageFrom = rows.length === 0 ? 0 : pageStartIndex + 1;
-  const pageTo = Math.min(rows.length, pageStartIndex + visibleRows.length);
+  const pageFrom = group.rows.length === 0 ? 0 : pageStartIndex + 1;
+  const pageTo = Math.min(group.rows.length, pageStartIndex + visibleRows.length);
 
   useEffect(() => {
     setPage(1);
@@ -138,28 +242,19 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
   }, [totalPages]);
 
   return (
-    <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
-      <div className="vuexy-booking-table-toolbar">
+    <section className="vuexy-booking-table-group" aria-labelledby={`booking-table-${group.key}`}>
+      <div className="vuexy-booking-table-group-header">
         <div>
-          <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
-          <p>All loaded bookings from request to completion, ordered by request time.</p>
+          <h3 id={`booking-table-${group.key}`}>{group.title}</h3>
+          <p>{group.description}</p>
         </div>
-        <span className="pill pill-info">{rows.length} booking(s)</span>
+        <span className="pill pill-neutral">{group.rows.length} booking(s)</span>
       </div>
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
-          emptyMessage={emptyMessage}
-          headers={[
-            'Request Time',
-            'Customer',
-            'Requested Partner',
-            'Participating Partners',
-            'Device Language',
-            'Service Type',
-            'Region',
-            'Status',
-          ]}
+          emptyMessage={allRowsEmpty ? emptyMessage : group.emptyMessage}
+          headers={BOOKING_TABLE_HEADERS}
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
@@ -170,9 +265,9 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
 
       <div className="vuexy-booking-table-footer">
         <span>
-          Showing {pageFrom} to {pageTo} of {rows.length} entries
+          Showing {pageFrom} to {pageTo} of {group.rows.length} entries
         </span>
-        <nav aria-label="Realtime booking pages" className="vuexy-booking-pagination">
+        <nav aria-label={`${group.title} pages`} className="vuexy-booking-pagination">
           <PaginationButton
             disabled={activePage <= 1}
             label="First page"
@@ -221,7 +316,11 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
   const { booking } = row;
   const statusState = bookingWorkflowStatusState(booking);
   const participantRows = bookingParticipantRows(booking);
-  const regionLabel = bookingRegionLabel(booking);
+  const addressLabel = bookingAddressLabel(booking);
+  const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
+  const requestedPartnerHref = bookingPartnerHref(
+    booking.preferredProvider?.id ?? booking.preferredProviderId ?? booking.selectedProvider?.id ?? booking.selectedProviderId,
+  );
 
   return (
     <tr id={`booking-${booking.id}`}>
@@ -236,20 +335,26 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <div className="muted">{row.recencyLabel}</div>
       </td>
       <td>
-        <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
-        <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
+        <BookingPersonCell
+          helper={booking.customerProfile?.user?.phone ?? 'No phone'}
+          href={bookingCustomerHref(booking)}
+          label={bookingCustomerLabel(booking)}
+          tone="customer"
+        />
       </td>
       <td>
-        <strong>{requestedPartnerLabel(row)}</strong>
-        <div className="muted">{requestedPartnerHint(row)}</div>
+        <BookingPersonCell
+          helper={requestedPartnerHint(row)}
+          href={requestedPartnerHref}
+          label={requestedPartnerLabel(row, requestedPartner)}
+          tone="partner"
+        />
       </td>
       <td>
         {participantRows.length > 0 ? (
           <div className="vuexy-booking-participant-list">
             {participantRows.slice(0, 3).map((participant) => (
-              <span className="pill pill-neutral" key={participant.id}>
-                {participant.label} ({participant.status})
-              </span>
+              <BookingParticipantPill key={participant.id} participant={participant} />
             ))}
             {participantRows.length > 3 && (
               <span className="pill pill-info">+{participantRows.length - 3} more</span>
@@ -264,11 +369,9 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
       </td>
       <td>
         <strong>{row.serviceOptionLabel}</strong>
-        <div className="muted">{row.servicePriceLabel}</div>
       </td>
       <td>
-        <strong>{regionLabel}</strong>
-        <div className="muted">{row.addressState.pin}</div>
+        <strong>{addressLabel}</strong>
       </td>
       <td>
         <span className={`pill ${statusState.tone}`}>{statusState.label}</span>
@@ -288,6 +391,64 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         )}
       </td>
     </tr>
+  );
+}
+
+function BookingPersonCell({
+  helper,
+  href,
+  label,
+  tone,
+}: {
+  readonly helper: string;
+  readonly href: string | null;
+  readonly label: string;
+  readonly tone: 'customer' | 'partner';
+}) {
+  const className = tone === 'partner' ? 'vuexy-booking-avatar is-partner' : 'vuexy-booking-avatar';
+
+  return (
+    <div className="vuexy-booking-person">
+      <span aria-hidden="true" className={className}>
+        {avatarInitials(label)}
+      </span>
+      <div className="vuexy-booking-person-copy">
+        {href ? (
+          <Link className="vuexy-booking-person-link" href={href}>
+            {label}
+          </Link>
+        ) : (
+          <strong>{label}</strong>
+        )}
+        <div className="muted">{helper}</div>
+      </div>
+    </div>
+  );
+}
+
+function BookingParticipantPill({
+  participant,
+}: {
+  readonly participant: BookingParticipantTableRow;
+}) {
+  const content = (
+    <>
+      <span aria-hidden="true" className="vuexy-booking-participant-avatar">
+        {avatarInitials(participant.partnerLabel)}
+      </span>
+      <span>{participant.partnerLabel}</span>
+      <span className="vuexy-booking-participant-status">{participant.status}</span>
+    </>
+  );
+
+  if (!participant.partnerHref) {
+    return <span className="vuexy-booking-participant-pill">{content}</span>;
+  }
+
+  return (
+    <Link className="vuexy-booking-participant-pill" href={participant.partnerHref}>
+      {content}
+    </Link>
   );
 }
 
@@ -332,8 +493,17 @@ function visiblePageNumbers(activePage: number, totalPages: number) {
   return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
 }
 
-function requestedPartnerLabel(row: BookingMonitorListRow) {
-  return row.preferredPartnerLabel === 'none' ? 'Not selected' : row.preferredPartnerLabel;
+function requestedPartnerLabel(
+  row: BookingMonitorListRow,
+  requestedPartner: AdminBooking['preferredProvider'] | AdminBooking['selectedProvider'] | null,
+) {
+  if (row.preferredPartnerLabel !== 'none') {
+    return row.preferredPartnerLabel;
+  }
+  if (requestedPartner) {
+    return providerTableLabel(requestedPartner);
+  }
+  return 'Open marketplace';
 }
 
 function requestedPartnerHint(row: BookingMonitorListRow) {
@@ -349,11 +519,8 @@ function requestedPartnerHint(row: BookingMonitorListRow) {
 function bookingParticipantRows(booking: AdminBooking) {
   return (booking.participants ?? []).map((participant) => ({
     id: participant.id,
-    label:
-      participant.providerProfile?.displayName ??
-      participant.providerProfile?.user?.fullName ??
-      participant.providerProfile?.user?.phone ??
-      'Partner',
+    partnerHref: bookingPartnerHref(participant.providerProfile?.id ?? participant.providerProfileId),
+    partnerLabel: providerTableLabel(participant.providerProfile),
     status: participant.status,
   }));
 }
@@ -374,19 +541,79 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
   return metadataLanguage ?? 'Unknown';
 }
 
-function bookingRegionLabel(booking: AdminBooking) {
-  const snapshotAddress = readAddressText(booking.addressSnapshot?.addressText ?? booking.addressSnapshot?.address);
+function bookingAddressLabel(booking: AdminBooking) {
+  const snapshotAddress =
+    readAddressText(booking.addressSnapshot) ??
+    readAddressText(booking.addressSnapshot?.addressText ?? booking.addressSnapshot?.address);
   const legacyAddress = readAddressText(booking.address);
-  return compactRegionLabel(snapshotAddress ?? legacyAddress ?? 'No region');
+  return compactAddressLabel(snapshotAddress ?? legacyAddress ?? 'No address');
 }
 
-function compactRegionLabel(value: string) {
+function compactAddressLabel(value: string) {
   return value.length > 54 ? `${value.slice(0, 51)}...` : value;
 }
 
 function metadataText(metadata: Record<string, unknown> | null, key: string) {
   const value = metadata?.[key];
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function buildBookingTableGroups(rows: readonly BookingMonitorListRow[]): readonly BookingTableGroup[] {
+  return BOOKING_TABLE_GROUPS.map((definition) => ({
+    ...definition,
+    rows: rows.filter((row) => bookingTableGroupKey(row.booking) === definition.key),
+  }));
+}
+
+function bookingTableGroupKey(booking: AdminBooking): BookingTableGroupKey | null {
+  switch (booking.status) {
+    case 'CREATED':
+    case 'OPEN_MATCHING':
+      return 'matching-waiting';
+    case 'MATCHED':
+    case 'PROVIDER_ON_THE_WAY':
+    case 'ARRIVED':
+    case 'IN_SERVICE':
+      return 'matched-in-progress';
+    case 'COMPLETED':
+      return 'completed';
+    case 'NO_SHOW':
+      return 'post-match-cancellations';
+    case 'CANCELLED':
+      return bookingHasPostMatchEvidence(booking) ? 'post-match-cancellations' : null;
+    default:
+      return null;
+  }
+}
+
+function bookingHasPostMatchEvidence(booking: AdminBooking) {
+  return Boolean(booking.matchedAt || booking.selectedProviderId || booking.selectedProvider);
+}
+
+function bookingCustomerHref(booking: AdminBooking) {
+  const customerId = booking.customerProfile?.id ?? booking.customerProfileId;
+  return customerId ? `/customers/${customerId}` : null;
+}
+
+function bookingCustomerLabel(booking: AdminBooking) {
+  return booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+}
+
+function bookingPartnerHref(partnerId?: string | null) {
+  return partnerId ? `/partners/${partnerId}` : null;
+}
+
+function providerTableLabel(provider: BookingProviderLike) {
+  return provider?.displayName ?? provider?.user?.fullName ?? provider?.user?.phone ?? 'Partner';
+}
+
+function avatarInitials(label: string) {
+  const parts = label
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const initials = parts.length > 1 ? `${parts[0][0] ?? ''}${parts[1][0] ?? ''}` : parts[0]?.slice(0, 2);
+  return (initials || 'NA').toUpperCase();
 }
 
 function bookingWorkflowStatusState(booking: AdminBooking): {

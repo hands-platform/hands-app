@@ -29,15 +29,33 @@ describe('BookingMonitorListSection', () => {
         method: 'CARD',
         status: 'PENDING',
       },
-      participants: [{ id: 'participant_1' }],
+      participants: [
+        {
+          id: 'participant_1',
+          providerProfile: {
+            displayName: 'Partner C',
+            id: 'partner_participant',
+            user: {
+              fullName: 'Partner C',
+              phone: '+84922222222',
+            },
+          },
+          providerProfileId: 'partner_participant',
+          status: 'ACCEPTED',
+        },
+      ],
       preferredProvider: {
+        displayName: 'Partner A',
+        id: 'partner_preferred',
         user: {
           phone: '+84911111111',
         },
       },
       selectedProvider: {
+        id: 'partner_selected',
         displayName: 'Partner B',
       },
+      customerProfileId: 'customer_123',
       addressSnapshot: {
         addressText: 'Da Nang service address',
       },
@@ -163,16 +181,25 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Participating Partners');
     expect(rendered).toContain('Device Language');
     expect(rendered).toContain('Service Type');
-    expect(rendered).toContain('Region');
+    expect(rendered).toContain('Address');
     expect(rendered).toContain('Status');
+    expect(rendered).toContain('Matching Waiting');
+    expect(rendered).toContain('Matched / In Progress');
+    expect(rendered).toContain('Post-match Cancellations');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Stage 2 marketplace');
     expect(rendered).toContain('Customer A');
+    expect(rendered).toContain('Partner A');
     expect(rendered).toContain('Partner B');
+    expect(rendered).toContain('Partner C');
     expect(rendered).toContain('vi-VN');
     expect(rendered).toContain('Da Nang service address');
     expect(rendered).toContain('Waiting for match');
+    expect(rendered).not.toContain('150,000 VND');
     expect(markup).toContain('href="/bookings/booking_123456789"');
+    expect(markup).toContain('href="/customers/customer_123"');
+    expect(markup).toContain('href="/partners/partner_preferred"');
+    expect(markup).toContain('href="/partners/partner_participant"');
   });
 
   it('renders the empty booking message', () => {
