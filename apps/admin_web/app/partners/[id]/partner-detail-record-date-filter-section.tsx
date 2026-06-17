@@ -1,6 +1,11 @@
-import Link from 'next/link';
 import { Download, Filter, X } from 'lucide-react';
 
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormDate,
+  AdminFormSelect,
+} from '../../../components/admin-form-controls';
 import type { DetailDateFilters } from '../../../lib/detail-date-filter';
 import { detailDateRangeOptions } from '../../../lib/detail-date-filter';
 import { detailActivityTypeLabel } from '../../../lib/detail-activity-filter';
@@ -55,57 +60,56 @@ export function PartnerDetailRecordDateFilterSection({
         </div>
       </div>
       <form className="form-grid admin-mt-14" action={`/partners/${partnerId}`}>
-        <label>
-          Preset
-          <select name="range" defaultValue={dateFilters.range}>
-            {detailDateRangeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Record type
-          <select name="type" defaultValue={activityType}>
-            {PARTNER_ACTIVITY_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sort order
-          <select name="order" defaultValue={activityOrder}>
-            {DETAIL_ACTIVITY_ORDER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          From
-          <input type="date" name="from" defaultValue={dateFilters.from} />
-        </label>
-        <label>
-          To
-          <input type="date" name="to" defaultValue={dateFilters.to} />
-        </label>
+        <AdminFormSelect
+          className="partner-detail-filter-select"
+          defaultValue={dateFilters.range}
+          label="Preset"
+          name="range"
+          options={detailDateRangeOptions}
+        />
+        <AdminFormSelect
+          className="partner-detail-filter-select"
+          defaultValue={activityType}
+          label="Record type"
+          name="type"
+          options={PARTNER_ACTIVITY_TYPE_OPTIONS}
+        />
+        <AdminFormSelect
+          className="partner-detail-filter-select"
+          defaultValue={activityOrder}
+          label="Sort order"
+          name="order"
+          options={DETAIL_ACTIVITY_ORDER_OPTIONS}
+        />
+        <AdminFormDate
+          className="partner-detail-filter-date"
+          defaultValue={dateFilters.from}
+          label="From"
+          name="from"
+        />
+        <AdminFormDate
+          className="partner-detail-filter-date"
+          defaultValue={dateFilters.to}
+          label="To"
+          name="to"
+        />
         <div className="actions">
-          <button className="button button-primary" type="submit">
+          <AdminFormControlButton className="partner-detail-filter-button">
             <Filter aria-hidden="true" size={16} />
             Apply filter
-          </button>
-          <a className="button button-secondary" download={activityCsvDownloadName} href={filteredActivityCsvHref}>
+          </AdminFormControlButton>
+          <AdminFormControlLink
+            className="partner-detail-filter-link"
+            download={activityCsvDownloadName}
+            href={filteredActivityCsvHref}
+          >
             <Download aria-hidden="true" size={16} />
             Export activity CSV
-          </a>
-          <Link className="button button-secondary" href={`/partners/${partnerId}`}>
+          </AdminFormControlLink>
+          <AdminFormControlLink className="partner-detail-filter-link" href={`/partners/${partnerId}`}>
             <X aria-hidden="true" size={16} />
             Clear
-          </Link>
+          </AdminFormControlLink>
         </div>
       </form>
       <div className="service-trace-summary admin-mt-12">

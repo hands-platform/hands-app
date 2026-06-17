@@ -1,6 +1,7 @@
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
 } from './admin-form-controls';
@@ -30,6 +31,18 @@ describe('Admin form controls', () => {
     expect(textContent(select)).toContain('Completed reservations');
     expect(textContent(select)).toContain('Completed work');
     expect(textContent(search)).toContain('Search customer');
+  });
+
+  it('renders date controls with the same field contract', () => {
+    const date = AdminFormDate({
+      className: 'partner-date-filter',
+      defaultValue: '2026-06-17',
+      label: 'From date',
+      name: 'from',
+    });
+
+    expect(date.props.className).toBe('admin-form-date partner-date-filter');
+    expect(textContent(date)).toContain('From date');
   });
 
   it('renders link and button controls without owning behavior', () => {

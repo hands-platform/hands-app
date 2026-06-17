@@ -25,6 +25,12 @@ type AdminFormSearchProps = {
   readonly name: string;
 } & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
 
+type AdminFormDateProps = {
+  readonly className?: string;
+  readonly label: string;
+  readonly name: string;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'value'>;
+
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
   readonly className?: string;
@@ -83,6 +89,22 @@ export function AdminFormSearch({
         type="search"
         value={value}
       />
+    </label>
+  );
+}
+
+export function AdminFormDate({
+  className,
+  defaultValue,
+  label,
+  name,
+  onChange,
+  value,
+}: AdminFormDateProps) {
+  return (
+    <label className={joinClassNames('admin-form-date', className)}>
+      <span className="sr-only">{label}</span>
+      <input defaultValue={defaultValue} name={name} onChange={onChange} type="date" value={value} />
     </label>
   );
 }

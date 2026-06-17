@@ -4865,6 +4865,7 @@ textarea:focus-visible {
 }
 
 .admin-form-search,
+.admin-form-date,
 .admin-form-select,
 .vuexy-customer-search,
 .vuexy-customer-select {
@@ -4885,6 +4886,7 @@ textarea:focus-visible {
 }
 
 .admin-form-search input,
+.admin-form-date input,
 .admin-form-select select,
 .vuexy-customer-search input,
 .vuexy-customer-select select,
@@ -4899,6 +4901,7 @@ textarea:focus-visible {
 }
 
 .admin-form-search input,
+.admin-form-date input,
 .vuexy-customer-search input {
   flex: 1;
   min-width: 0;
@@ -4910,9 +4913,14 @@ textarea:focus-visible {
 }
 
 .admin-form-select,
+.admin-form-date,
 .vuexy-customer-select {
   justify-content: space-between;
   min-width: 180px;
+}
+
+.admin-form-date {
+  min-width: 160px;
 }
 
 .admin-form-select select,
