@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download } from 'lucide-react';
 
 import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
 import { formatDate, shortId } from './booking-formatters';
@@ -34,7 +35,12 @@ export function BookingFullRecordIndex({
           </p>
         </div>
         <div className="actions">
-          <a className="text-link" download={`hands-booking-${shortId(bookingId)}-activity.csv`} href={csvHref}>
+          <a
+            className="button button-secondary admin-inline-action"
+            download={`hands-booking-${shortId(bookingId)}-activity.csv`}
+            href={csvHref}
+          >
+            <Download aria-hidden="true" size={14} />
             Export activity CSV
           </a>
           <span className="pill pill-info">{eventCount} event(s)</span>

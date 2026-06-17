@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
 import { AdminTableScroll } from '../../../components/admin-data-table';
 import { MetricCard } from '../../../components/metric-card';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
@@ -129,7 +130,8 @@ export function BookingDetailToolbar({
     <section className="toolbar">
       <div>
         <p className="muted">
-          <Link className="text-link" href="/bookings">
+          <Link className="button button-secondary admin-inline-action" href="/bookings">
+            <ArrowLeft aria-hidden="true" size={14} />
             Back to booking monitor
           </Link>
         </p>
@@ -140,27 +142,41 @@ export function BookingDetailToolbar({
       </div>
       <div className="actions">
         {customerProfileId && (
-          <Link className="text-link" href={`/customers/${customerProfileId}`}>
+          <Link className="button button-secondary admin-inline-action" href={`/customers/${customerProfileId}`}>
+            <User aria-hidden="true" size={14} />
             Open customer
           </Link>
         )}
         {customerProfileId && (
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}>
+          <Link
+            className="button button-secondary admin-inline-action"
+            href={`/chat-archive?q=${encodeURIComponent(customerProfileId)}`}
+          >
+            <MessageSquareText aria-hidden="true" size={14} />
             All customer chats
           </Link>
         )}
         {finalPartnerId && (
-          <Link className="text-link" href={`/partners/${finalPartnerId}`}>
+          <Link className="button button-secondary admin-inline-action" href={`/partners/${finalPartnerId}`}>
+            <Users aria-hidden="true" size={14} />
             Open Partner
           </Link>
         )}
         {finalPartnerId && (
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}>
+          <Link
+            className="button button-secondary admin-inline-action"
+            href={`/chat-archive?q=${encodeURIComponent(finalPartnerId)}`}
+          >
+            <MessageSquareText aria-hidden="true" size={14} />
             All Partner chats
           </Link>
         )}
         {chatRoomId && (
-          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}>
+          <Link
+            className="button button-secondary admin-inline-action"
+            href={`/chat-archive?q=${encodeURIComponent(bookingId)}`}
+          >
+            <MessageSquareText aria-hidden="true" size={14} />
             Open chat archive
           </Link>
         )}
@@ -258,7 +274,8 @@ export function BookingMatchingRuleSnapshotSection({
       <SummaryMetricGrid rows={matchingRuleSnapshot.rows} />
       <div className="actions admin-mt-12">
         {matchingRuleSnapshot.actions.map((action) => (
-          <Link className="text-link" href={action.href} key={action.label}>
+          <Link className="button button-secondary admin-inline-action" href={action.href} key={action.label}>
+            <ExternalLink aria-hidden="true" size={14} />
             {action.label}
           </Link>
         ))}
@@ -282,7 +299,8 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
             first-pick priority, 10km marketplace, customer fallback Partner choice, chat retention, and wallet gate.
           </p>
         </div>
-        <Link className="text-link" href="/operations-policy">
+        <Link className="button button-secondary admin-inline-action" href="/operations-policy">
+          <ExternalLink aria-hidden="true" size={14} />
           Open policy controls
         </Link>
       </div>
@@ -310,7 +328,8 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
                 <td>{row.evidence}</td>
                 <td>{row.operatorUse}</td>
                 <td>
-                  <Link className="text-link" href={row.href}>
+                  <Link className="button button-secondary admin-inline-action" href={row.href}>
+                    <ExternalLink aria-hidden="true" size={14} />
                     Open
                   </Link>
                 </td>
@@ -340,7 +359,8 @@ export function BookingRecentOperationsTimelineSection({
             participation, customer final choice, chat, location, payment, cash debt, and closeout.
           </p>
         </div>
-        <Link className="text-link" href="#operating-timeline">
+        <Link className="button button-secondary admin-inline-action" href="#operating-timeline">
+          <ExternalLink aria-hidden="true" size={14} />
           Open full operating timeline
         </Link>
       </div>
@@ -388,7 +408,8 @@ export function BookingPriorityBriefingSection({
               <strong>{step.title}</strong>
               <p className="muted">{step.detail}</p>
             </div>
-            <Link className="text-link" href={step.href}>
+            <Link className="button button-secondary admin-inline-action" href={step.href}>
+              <ExternalLink aria-hidden="true" size={14} />
               {step.linkLabel}
             </Link>
           </div>
