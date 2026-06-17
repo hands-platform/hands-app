@@ -2,6 +2,13 @@ import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AdminTableScroll } from '../../../components/admin-data-table';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormDate,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../../components/admin-form-controls';
 import { MetricCard } from '../../../components/metric-card';
 import {
   AdminAppSession,
@@ -1177,61 +1184,56 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </div>
         </div>
         <form className="form-grid admin-mt-14" action={`/customers/${customer.id}`}>
-          <label>
-            Preset
-            <select name="range" defaultValue={dateFilters.range}>
-              {detailDateRangeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Record type
-            <select name="type" defaultValue={activityType}>
-              {CUSTOMER_ACTIVITY_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sort order
-            <select name="order" defaultValue={activityOrder}>
-              {DETAIL_ACTIVITY_ORDER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            From
-            <input type="date" name="from" defaultValue={dateFilters.from} />
-          </label>
-          <label>
-            To
-            <input type="date" name="to" defaultValue={dateFilters.to} />
-          </label>
+          <AdminFormSelect
+            className="customer-detail-filter-select"
+            defaultValue={dateFilters.range}
+            label="Preset"
+            name="range"
+            options={detailDateRangeOptions}
+          />
+          <AdminFormSelect
+            className="customer-detail-filter-select"
+            defaultValue={activityType}
+            label="Record type"
+            name="type"
+            options={CUSTOMER_ACTIVITY_TYPE_OPTIONS}
+          />
+          <AdminFormSelect
+            className="customer-detail-filter-select"
+            defaultValue={activityOrder}
+            label="Sort order"
+            name="order"
+            options={DETAIL_ACTIVITY_ORDER_OPTIONS}
+          />
+          <AdminFormDate
+            className="customer-detail-filter-date"
+            defaultValue={dateFilters.from}
+            label="From"
+            name="from"
+          />
+          <AdminFormDate
+            className="customer-detail-filter-date"
+            defaultValue={dateFilters.to}
+            label="To"
+            name="to"
+          />
           <div className="actions">
-            <button className="button button-primary" type="submit">
+            <AdminFormControlButton className="customer-detail-filter-button">
               <Filter aria-hidden="true" size={16} />
               Apply filter
-            </button>
-            <a
-              className="button button-secondary"
+            </AdminFormControlButton>
+            <AdminFormControlLink
+              className="customer-detail-filter-link"
               download={`hands-customer-${shortId(customer.id)}-activity.csv`}
               href={filteredActivityCsvHref}
             >
               <Download aria-hidden="true" size={16} />
               Export activity CSV
-            </a>
-            <Link className="button button-secondary" href={`/customers/${customer.id}`}>
+            </AdminFormControlLink>
+            <AdminFormControlLink className="customer-detail-filter-link" href={`/customers/${customer.id}`}>
               <X aria-hidden="true" size={16} />
               Clear
-            </Link>
+            </AdminFormControlLink>
           </div>
         </form>
         <div className="service-trace-summary admin-mt-12">
@@ -1300,39 +1302,39 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
         <form action={addCustomerOpsNote} className="compact-form form-grid admin-mt-14">
           <input type="hidden" name="customerId" value={customer.id} />
-          <label>
-            Quick note preset
-            <select name="preset" defaultValue="">
-              <option value="">Manual note only</option>
-              {activityPlan.presets.map((preset) => (
-                <option value={preset} key={preset}>
-                  {preset}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Related booking
-            <select name="bookingId" defaultValue={latestBooking?.id ?? ''}>
-              <option value="">No booking link</option>
-              {bookings.slice(0, 20).map((booking) => (
-                <option value={booking.id} key={booking.id}>
-                  {shortId(booking.id)} / {booking.status} / {bookingServiceLabel(booking)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="full-span">
-            Activity note
-            <textarea
-              name="note"
-              placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
-            />
-          </label>
-          <button className="button button-primary" type="submit">
+          <AdminFormSelect
+            className="customer-note-preset"
+            defaultValue=""
+            label="Quick note preset"
+            name="preset"
+            options={[
+              { label: 'Manual note only', value: '' },
+              ...activityPlan.presets.map((preset) => ({ label: preset, value: preset })),
+            ]}
+          />
+          <AdminFormSelect
+            className="customer-note-booking"
+            defaultValue={latestBooking?.id ?? ''}
+            label="Related booking"
+            name="bookingId"
+            options={[
+              { label: 'No booking link', value: '' },
+              ...bookings.slice(0, 20).map((booking) => ({
+                label: `${shortId(booking.id)} / ${booking.status} / ${bookingServiceLabel(booking)}`,
+                value: booking.id,
+              })),
+            ]}
+          />
+          <AdminFormTextarea
+            className="customer-note-textarea full-span"
+            label="Activity note"
+            name="note"
+            placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
+          />
+          <AdminFormControlButton className="customer-note-submit">
             <Save aria-hidden="true" size={16} />
             Save customer activity note
-          </button>
+          </AdminFormControlButton>
         </form>
       </section>
       </CustomerDetailSectionBand>
