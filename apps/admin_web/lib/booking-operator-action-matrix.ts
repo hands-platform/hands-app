@@ -111,7 +111,7 @@ export function bookingOperatorActionMatrix(
       tone: input.expireAvailable ? 'pill-info' : 'pill-neutral',
       evidence: input.expireAvailable
         ? `Open matching can be expired. Timer ${input.expiresAtLabel}.`
-        : `Current status is ${input.bookingStatus}.`,
+        : `Expire unavailable for ${input.bookingStatus}.`,
       operatorRule:
         'Expire only when the customer should stop waiting and the payment hold can be released or reviewed.',
       href: '#matching-expiry',
@@ -124,7 +124,7 @@ export function bookingOperatorActionMatrix(
       tone: input.noShowAvailable ? 'pill-warn' : 'pill-neutral',
       evidence: input.noShowAvailable
         ? 'Use after communication and service movement are reviewed.'
-        : `Current status is ${input.bookingStatus}.`,
+        : `No-show unavailable for ${input.bookingStatus}.`,
       operatorRule:
         'Mark no-show only from factual chat, alert, location, and operator-note evidence. Keep the record descriptive.',
       href: '#no-show-handling',

@@ -38,7 +38,7 @@ export function bookingRefundLedgerEvidence(booking: BookingRefundLedgerInput) {
   if (!rows.length) {
     return booking.payment?.status === 'REFUNDED'
       ? 'Payment is marked refunded but no refund row is loaded.'
-      : 'No refund action has been recorded for this booking.';
+      : 'No refund action recorded.';
   }
 
   const latest = [...rows].sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))[0];

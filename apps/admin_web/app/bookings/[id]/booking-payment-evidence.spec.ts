@@ -82,7 +82,7 @@ describe('booking payment evidence', () => {
       paymentQueueValue: 'No payment',
       paymentQueueHref: '/payments',
       paymentTone: 'pill-neutral',
-      refundEvidence: 'No refund action has been recorded for this booking.',
+      refundEvidence: 'No refund action recorded.',
     });
   });
 });

@@ -69,7 +69,7 @@ describe('booking refund ledger helpers', () => {
       'Payment is marked refunded but no refund row is loaded.',
     );
     expect(bookingRefundLedgerEvidence({ payment: { status: 'AUTHORIZED' } })).toBe(
-      'No refund action has been recorded for this booking.',
+      'No refund action recorded.',
     );
   });
 });

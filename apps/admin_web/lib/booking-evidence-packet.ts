@@ -100,7 +100,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         value: `${input.refundRows.length} refund row(s)`,
         helper: input.refundRows.length
           ? input.refundRows.map((row) => `${row.status} ${row.amountLabel}`).join(', ')
-          : 'No refund row is attached to this booking.',
+          : 'No refund record in packet.',
       },
       {
         label: 'Alert evidence',
@@ -164,7 +164,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         title: 'Refund evidence',
         detail: input.refundRows.length
           ? `${input.refundRows.length} refund row(s) are attached to this booking.`
-          : 'No refund row is attached to this booking.',
+          : 'Refund record not attached.',
         evidence: input.refundEvidence,
         href: '#payment',
       },

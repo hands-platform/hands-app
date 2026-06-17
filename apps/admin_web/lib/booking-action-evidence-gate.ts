@@ -59,8 +59,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
       evidence: input.paymentProviderRef
         ? `${input.paymentStatus} / gateway ref ${input.paymentProviderRef}`
         : `Payment status is ${input.paymentStatus}; no gateway reference is linked.`,
-      operatorRule:
-        'Sync only when a gateway reference exists and the payment is not already captured, released, or refunded.',
+      operatorRule: 'Sync only when gateway reference exists and payment is still actionable.',
       href: '#booking-ops',
       className: paymentSyncAvailable ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: paymentSyncAvailable ? 'pill-success' : 'pill-neutral',
@@ -104,8 +103,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
             input.manualOutcomeEvidenceLabel || 'no retained decision evidence yet'
           }`
         : `${input.paymentStatus} payment cannot be released or refunded from this state.`,
-      operatorRule:
-        'Use cancellation, expiry, no-show, chat, alert, location, note, and refund rows before money outcome changes.',
+      operatorRule: 'Require retained decision evidence before release/refund.',
       href: '#booking-ops',
       className: paymentActionAvailable
         ? input.hasDecisionEvidence
@@ -155,7 +153,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
         ? `${input.hasAddressSnapshot ? 'Address snapshot ready' : 'Address snapshot missing'} / expires ${
             input.expiresAtLabel
           }`
-        : `Current status is ${input.bookingStatus}.`,
+        : `Expire unavailable for ${input.bookingStatus}.`,
       operatorRule:
         'Expire only when the customer should stop waiting and payment release/review path is understood.',
       href: '#matching-expiry',
@@ -175,7 +173,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
         : 'Locked',
       evidence: input.noShowAvailable
         ? input.manualOutcomeEvidenceLabel || 'No chat, alert, location, note, or audit evidence is loaded yet.'
-        : `Current status is ${input.bookingStatus}.`,
+        : `No-show unavailable for ${input.bookingStatus}.`,
       operatorRule:
         'No-show is an admin evidence decision. Record what happened with factual service context only.',
       href: '#no-show-handling',
