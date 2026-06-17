@@ -32,23 +32,19 @@ describe('NotificationChannelPolicySection', () => {
     expect(rendered).toContain('Live preflight ready');
     expect(rendered).toContain('Service Completed notifica');
     expect(rendered).toContain('FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"');
-    expect(rendered).toContain('Credential issue: check setup.');
-    expect(rendered).toContain('Disabled tokens');
-    expect(rendered).toContain('Stale tokens');
-    expect(rendered).toContain('Worker queue');
     expect(rendered).toContain(
       'After live push, rerun preflight and confirm retryAuditPreflight.evidence before broad FCM push.',
     );
     expect(rendered).toContain('Audit evidence');
-    expect(rendered).toContain('Verify disabled or reinstalled app tokens before broad FCM push.');
-    expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
+    expect(rendered).not.toContain('Credential issue: check setup.');
+    expect(rendered).not.toContain('Disabled tokens');
+    expect(rendered).not.toContain('Stale tokens');
+    expect(rendered).not.toContain('Worker queue');
+    expect(rendered).not.toContain('Verify disabled or reinstalled app tokens before broad FCM push.');
+    expect(rendered).not.toContain('npm.cmd run fcm:token-recovery-smoke');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '/operations-policy',
-        '/setup#notifications',
-        '/notifications?review=disabled-device',
-        '/notifications?review=stale-device',
-        '/notifications?review=pending',
         '/audit-log?bucket=Notification&q=notification-row-123456&range=all',
       ]),
     );
@@ -74,7 +70,22 @@ describe('NotificationChannelPolicySection', () => {
       policyLabel: 'In-app only',
     });
 
-    expect(normalizedText(section)).toContain('No FCM SENT delivery recorded yet.');
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No FCM SENT delivery recorded yet.');
+    expect(rendered).toContain('Credential issue: check setup.');
+    expect(rendered).toContain('Disabled tokens');
+    expect(rendered).toContain('Stale tokens');
+    expect(rendered).toContain('Worker queue');
+    expect(rendered).toContain('npm.cmd run fcm:token-recovery-smoke');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/setup#notifications',
+        '/notifications?review=disabled-device',
+        '/notifications?review=stale-device',
+        '/notifications?review=pending',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
   });
 
@@ -136,6 +147,8 @@ describe('NotificationChannelPolicySection', () => {
 
     expect(rendered).toContain('Device warning');
     expect(rendered).toContain('Newer Customer android device device-new is disabled');
+    expect(rendered).toContain('Credential issue: check setup.');
+    expect(rendered).toContain('Disabled tokens');
   });
 });
 

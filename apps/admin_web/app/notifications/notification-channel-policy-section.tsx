@@ -29,6 +29,10 @@ export function NotificationChannelPolicySection({
   partnerAlertSmokeFallback,
   policyLabel,
 }: NotificationChannelPolicySectionProps) {
+  const shouldShowFcmDiagnosis =
+    fcmSmokeReadiness.status !== 'ready' || Boolean(fcmSmokeReadiness.deviceWarningLabel);
+  const shouldShowAuditEvidence = Boolean(fcmSmokeReadiness.selectedNotificationId);
+
   return (
     <div className="card soft-card admin-mb-16">
       <div className="toolbar">
@@ -102,39 +106,53 @@ export function NotificationChannelPolicySection({
               push.
             </p>
           ) : null}
-          <p className="muted admin-mt-6">
-            Credential issue: check setup. Token issue: review disabled or stale device queues. Worker issue:
-            review pending sends.
-          </p>
-          <div className="participant-list admin-mt-6" aria-label="FCM diagnosis links">
-            <Link className="pill pill-info" href="/setup#notifications">
-              Credential setup
-            </Link>
-            <Link className="pill pill-warn" href="/notifications?review=disabled-device">
-              Disabled tokens
-            </Link>
-            <Link className="pill pill-warn" href="/notifications?review=stale-device">
-              Stale tokens
-            </Link>
-            <Link className="pill pill-neutral" href="/notifications?review=pending">
-              Worker queue
-            </Link>
-            {fcmSmokeReadiness.selectedNotificationId ? (
-              <Link
-                className="pill pill-info"
-                href={`/audit-log?bucket=Notification&q=${encodeURIComponent(
-                  fcmSmokeReadiness.selectedNotificationId,
-                )}&range=all`}
-              >
-                Audit evidence
-              </Link>
-            ) : null}
-          </div>
-          <p className="muted admin-mt-6">Verify disabled or reinstalled app tokens before broad FCM push.</p>
-          <CommandCopyRow
-            command={FCM_TOKEN_RECOVERY_SMOKE_COMMAND}
-            label="Copy token recovery smoke command"
-          />
+          {shouldShowFcmDiagnosis ? (
+            <p className="muted admin-mt-6">
+              Credential issue: check setup. Token issue: review disabled or stale device queues. Worker
+              issue: review pending sends.
+            </p>
+          ) : null}
+          {shouldShowFcmDiagnosis || shouldShowAuditEvidence ? (
+            <div className="participant-list admin-mt-6" aria-label="FCM diagnosis links">
+              {shouldShowFcmDiagnosis ? (
+                <>
+                  <Link className="pill pill-info" href="/setup#notifications">
+                    Credential setup
+                  </Link>
+                  <Link className="pill pill-warn" href="/notifications?review=disabled-device">
+                    Disabled tokens
+                  </Link>
+                  <Link className="pill pill-warn" href="/notifications?review=stale-device">
+                    Stale tokens
+                  </Link>
+                  <Link className="pill pill-neutral" href="/notifications?review=pending">
+                    Worker queue
+                  </Link>
+                </>
+              ) : null}
+              {fcmSmokeReadiness.selectedNotificationId ? (
+                <Link
+                  className="pill pill-info"
+                  href={`/audit-log?bucket=Notification&q=${encodeURIComponent(
+                    fcmSmokeReadiness.selectedNotificationId,
+                  )}&range=all`}
+                >
+                  Audit evidence
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+          {shouldShowFcmDiagnosis ? (
+            <>
+              <p className="muted admin-mt-6">
+                Verify disabled or reinstalled app tokens before broad FCM push.
+              </p>
+              <CommandCopyRow
+                command={FCM_TOKEN_RECOVERY_SMOKE_COMMAND}
+                label="Copy token recovery smoke command"
+              />
+            </>
+          ) : null}
         </div>
         {partnerAlertSmokeFallback ? (
           <div className="ops-task-card">
