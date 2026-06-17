@@ -100,11 +100,39 @@ describe('BookingMonitorMatchingEscalationSection', () => {
       getCustomerLabel: () => 'Customer A',
       getMatchingWindowLabel: () => 'clear',
       livePolicyCards: [],
-      matchingEscalationBoard: [],
+      matchingEscalationBoard: [
+        {
+          bookings: [],
+          detail: 'No preferred Partner is currently blocking a direct request.',
+          href: '/bookings?view=matching',
+          metrics: [{ label: 'waiting', value: '0' }],
+          operatorAction: 'Monitor queue.',
+          status: 'Clear',
+          title: 'First-pick response window',
+          tone: 'ok',
+        },
+      ],
       matchingEscalationRows: [],
-      matchingFlowTimeline: [],
+      matchingFlowTimeline: [
+        {
+          bookings: [],
+          detail: 'No direct first-pick request is currently waiting.',
+          href: '/bookings?view=matching',
+          metrics: [{ label: 'waiting', value: '0' }],
+          operatorAction: 'Monitor response window.',
+          stage: 'Stage 1',
+          status: 'Clear',
+          title: 'Direct first-pick request',
+          tone: 'ok',
+        },
+      ],
     });
+    const rendered = normalizedText(section);
 
-    expect(normalizedText(section)).toContain('No matching escalation right now');
+    expect(rendered).toContain('No matching lane needs action');
+    expect(rendered).toContain('No flow stage needs action');
+    expect(rendered).toContain('No matching escalation right now');
+    expect(rendered).not.toContain('First-pick response window waiting: 0');
+    expect(rendered).not.toContain('Direct first-pick request waiting: 0');
   });
 });

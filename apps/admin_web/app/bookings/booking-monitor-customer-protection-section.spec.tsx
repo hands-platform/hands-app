@@ -39,10 +39,11 @@ describe('BookingMonitorCustomerProtectionSection', () => {
     expect(rendered).toContain('No-show payment release');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('AUTHORIZED');
-    expect(rendered).toContain('Cash debt');
+    expect(rendered).not.toContain('Cash debt');
     expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining(['/bookings?view=no-show', '/bookings?view=cash-debt']),
+      expect.arrayContaining(['/bookings?view=no-show']),
     );
+    expect(hrefsIn(section)).not.toContain('/bookings?view=cash-debt');
   });
 
   it('renders a clear badge when all closeout lanes are empty', () => {
@@ -61,6 +62,10 @@ describe('BookingMonitorCustomerProtectionSection', () => {
       ],
     });
 
-    expect(normalizedText(section)).toContain('0 open closeout');
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('0 open closeout');
+    expect(rendered).toContain('No closeout lane needs action');
+    expect(rendered).not.toContain('Expired payment release');
   });
 });

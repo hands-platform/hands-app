@@ -24,24 +24,21 @@ export function BookingMonitorCustomerProtectionSection({
 }: BookingMonitorCustomerProtectionSectionProps) {
   const openCloseoutCount = lanes.reduce((sum, lane) => sum + lane.bookings.length, 0);
   const hasOpenCloseout = lanes.some((lane) => lane.bookings.length > 0);
+  const visibleLanes = lanes.filter((lane) => lane.tone !== 'ok' || lane.bookings.length > 0);
 
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
         <div>
           <h2>Customer protection closeout board</h2>
-          <p className="muted">
-            Focused closeout lanes for cancelled, expired, no-show, completed, and cash-fee debt bookings.
-            Use this before ending a shift so customer payment and Partner wallet outcomes are not left
-            open.
-          </p>
+          <p className="muted">Only unresolved customer money or evidence lanes are shown here.</p>
         </div>
         <span className={`pill ${hasOpenCloseout ? 'pill-warn' : 'pill-success'}`}>
           {openCloseoutCount} open closeout
         </span>
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {lanes.map((lane) => (
+        {visibleLanes.map((lane) => (
           <Link className="ops-task-card" href={lane.href} key={lane.title}>
             <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
             <h3>{lane.title}</h3>
@@ -63,6 +60,13 @@ export function BookingMonitorCustomerProtectionSection({
             <small>{lane.operatorAction}</small>
           </Link>
         ))}
+        {visibleLanes.length === 0 && (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Clear</span>
+            <h3>No closeout lane needs action</h3>
+            <p>Cancelled, expired, no-show, completed, and cash-fee debt checks are clear.</p>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -35,15 +35,16 @@ export function BookingMonitorMatchingEscalationSection({
   matchingEscalationRows,
   matchingFlowTimeline,
 }: BookingMonitorMatchingEscalationSectionProps) {
+  const visibleEscalationLanes = matchingEscalationBoard.filter((lane) => shouldShowMatchingCard(lane));
+  const visibleFlowTimeline = matchingFlowTimeline.filter((step) => shouldShowMatchingCard(step));
+  const visibleDispatchPartnerShortcuts = dispatchPartnerShortcuts.filter(isActionTone);
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
         <div>
           <h2>Matching escalation board</h2>
-          <p className="muted">
-            Direct first-pick Partner flow, 10-minute response window, marketplace Partner participation,
-            and customer final selection in one operating board.
-          </p>
+          <p className="muted">Only lanes with current dispatch work are shown here.</p>
         </div>
         <Link className="text-link" href="/operations-policy">
           Change matching rules
@@ -69,7 +70,7 @@ export function BookingMonitorMatchingEscalationSection({
         ))}
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {matchingEscalationBoard.map((lane) => (
+        {visibleEscalationLanes.map((lane) => (
           <Link className="ops-task-card" href={lane.href} key={lane.title}>
             <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
             <h3>{lane.title}</h3>
@@ -95,15 +96,19 @@ export function BookingMonitorMatchingEscalationSection({
             <small>{lane.operatorAction}</small>
           </Link>
         ))}
+        {visibleEscalationLanes.length === 0 && (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Clear</span>
+            <h3>No matching lane needs action</h3>
+            <p>First-pick, marketplace, customer choice, and chat handoff are clear.</p>
+          </div>
+        )}
       </div>
       <div className="admin-mt-16">
         <h3>Matching flow timeline</h3>
-        <p className="muted">
-          Stage view for direct Partner requests, marketplace participation, customer final choice, and
-          chat/location handoff.
-        </p>
+        <p className="muted">Active stage exceptions only; full history remains in booking detail.</p>
         <div className="ops-task-grid admin-mt-12">
-          {matchingFlowTimeline.map((step) => (
+          {visibleFlowTimeline.map((step) => (
             <Link className="ops-task-card" href={step.href} key={step.stage}>
               <span className={`signal ${commandToneClass(step.tone)}`}>{step.stage}</span>
               <h3>{step.title}</h3>
@@ -129,28 +134,34 @@ export function BookingMonitorMatchingEscalationSection({
               <small>{step.operatorAction}</small>
             </Link>
           ))}
+          {visibleFlowTimeline.length === 0 && (
+            <div className="ops-task-card">
+              <span className="signal signal-ok">Clear</span>
+              <h3>No flow stage needs action</h3>
+              <p>Use the booking table for normal timeline review.</p>
+            </div>
+          )}
         </div>
       </div>
-      <div className="admin-mt-16">
-        <h3>Dispatch Partner repair shortcuts</h3>
-        <p className="muted">
-          Use these when a matching booking needs Partner supply, Partner acceptance repair, cash-fee
-          cleanup, or policy adjustment.
-        </p>
-        <div className="service-trace-summary admin-mt-12">
-          {dispatchPartnerShortcuts.map((item) => (
-            <Link
-              className={`ops-task-breakdown-item ops-task-breakdown-${bookingDashboardTone(item.tone)}`}
-              href={item.href}
-              key={item.title}
-            >
-              <span>{item.title}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </Link>
-          ))}
+      {visibleDispatchPartnerShortcuts.length > 0 && (
+        <div className="admin-mt-16">
+          <h3>Dispatch Partner repair shortcuts</h3>
+          <p className="muted">Shortcuts appear when a Partner-side queue has work.</p>
+          <div className="service-trace-summary admin-mt-12">
+            {visibleDispatchPartnerShortcuts.map((item) => (
+              <Link
+                className={`ops-task-breakdown-item ops-task-breakdown-${bookingDashboardTone(item.tone)}`}
+                href={item.href}
+                key={item.title}
+              >
+                <span>{item.title}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className="participant-list admin-mt-14">
         {matchingEscalationRows.slice(0, 6).map((item) => (
           <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
@@ -185,4 +196,15 @@ export function BookingMonitorMatchingEscalationSection({
       </div>
     </section>
   );
+}
+
+function shouldShowMatchingCard(item: {
+  readonly bookings: readonly unknown[];
+  readonly tone: 'danger' | 'info' | 'ok' | 'warn';
+}) {
+  return isActionTone(item);
+}
+
+function isActionTone(item: { readonly tone: 'danger' | 'info' | 'ok' | 'warn' }) {
+  return item.tone === 'danger' || item.tone === 'warn';
 }
