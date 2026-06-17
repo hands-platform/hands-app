@@ -11,7 +11,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import DatePicker from 'react-datepicker';
 import type { EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core';
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction';
-import { ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, SquarePen } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import {
@@ -312,6 +312,7 @@ export function CalendarClient() {
               </div>
               <div className="calendar-nav-buttons">
                 <button
+                  aria-label="Previous calendar period"
                   className="calendar-icon-button"
                   onClick={() => navigateCalendar('prev')}
                   type="button"
@@ -323,9 +324,11 @@ export function CalendarClient() {
                   onClick={() => navigateCalendar('today')}
                   type="button"
                 >
+                  <CalendarDays aria-hidden="true" size={16} />
                   Today
                 </button>
                 <button
+                  aria-label="Next calendar period"
                   className="calendar-icon-button"
                   onClick={() => navigateCalendar('next')}
                   type="button"
