@@ -5,6 +5,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 export type BookingMonitorViewOption = {
@@ -68,18 +69,19 @@ export function BookingMonitorFiltersSection({
   );
 
   return (
-    <section className="card admin-mt-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operation filters</h2>
-          <p className="muted">
-            Active queue: <strong>{activeView.label}</strong> - {activeView.description}
-          </p>
-        </div>
-        <span className={`pill ${view === 'all' ? 'pill-success' : 'pill-warn'}`}>
-          Showing {visibleBookingCount} of {baseVisibleBookingCount}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16"
+      description={(
+        <>
+          Active queue: <strong>{activeView.label}</strong> - {activeView.description}
+        </>
+      )}
+      id="booking-operation-filters"
+      resultLabel={`Showing ${visibleBookingCount} of ${baseVisibleBookingCount}`}
+      resultTone={view === 'all' ? 'success' : 'warning'}
+      title="Booking operation filters"
+      footer={<p className="muted">{activeView.operatorHint}</p>}
+    >
       <div className="ops-filter-grid admin-mb-14">
         <AdminFormSearch
           className="booking-monitor-search"
@@ -143,7 +145,6 @@ export function BookingMonitorFiltersSection({
           </button>
         ))}
       </div>
-      <p className="muted admin-mt-8">{activeView.operatorHint}</p>
-    </section>
+    </AdminFilterPanel>
   );
 }

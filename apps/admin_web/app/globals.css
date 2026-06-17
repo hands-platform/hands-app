@@ -1284,6 +1284,25 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.admin-filter-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-filter-panel-header {
+  margin-bottom: 0;
+}
+
+.admin-filter-panel-body {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-filter-panel-footer .muted {
+  margin: 0;
+}
+
 .ops-filter-grid {
   align-items: end;
   display: grid;
