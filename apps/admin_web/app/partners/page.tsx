@@ -3,6 +3,12 @@ import { ArrowRight, Download, Filter, SlidersHorizontal, X } from 'lucide-react
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -249,151 +255,181 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <h1>Partners</h1>
       <div className="card admin-mb-16">
         <form className="form-grid" action="/partners">
-          <label>
-            Search
-            <input name="q" defaultValue={filters.q} placeholder="Name, phone, city, partner id" />
-          </label>
-          <label>
-            Verification
-            <select name="verification" defaultValue={filters.verification}>
-              <option value="">All</option>
-              <option value="APPROVED">Approved</option>
-              <option value="SUBMITTED">Submitted</option>
-              <option value="PENDING">Pending</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="BLOCKED">Blocked</option>
-            </select>
-          </label>
-          <label>
-            Partner status
-            <select name="providerStatus" defaultValue={filters.providerStatus}>
-              <option value="">All</option>
-              <option value="ONLINE_AVAILABLE">Online available</option>
-              <option value="ONLINE_BUSY">Online busy</option>
-              <option value="ONLINE_AVAILABLE_SOON">Available soon</option>
-              <option value="OFFLINE">Offline</option>
-            </select>
-          </label>
-          <label>
-            KYC
-            <select name="kyc" defaultValue={filters.kyc}>
-              <option value="">All</option>
-              <option value="APPROVED">Approved</option>
-              <option value="PENDING">Pending</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="DRAFT">Draft</option>
-              <option value="MISSING">Missing</option>
-            </select>
-          </label>
-          <label>
-            Location
-            <select name="location" defaultValue={filters.location}>
-              <option value="">All</option>
-              <option value="recent">Recent</option>
-              <option value="stale">Stale</option>
-              <option value="expired">Expired</option>
-              <option value="missing">Missing</option>
-            </select>
-          </label>
-          <label>
-            Device/session
-            <select name="security" defaultValue={filters.security}>
-              <option value="">All</option>
-              <option value="account-blocked">Account blocked</option>
-              <option value="blocked">Blocked device</option>
-              <option value="session-check">Session check</option>
-              <option value="shared">Shared device</option>
-              <option value="missing">No app device</option>
-              <option value="clear">Clear</option>
-            </select>
-          </label>
-          <label>
-            Readiness
-            <select name="readiness" defaultValue={filters.readiness}>
-              <option value="">All</option>
-              <option value="ready">Ready for dispatch</option>
-              <option value="needs-review">Needs review</option>
-              <option value="approved-offline">Approved but offline</option>
-              <option value="push-missing">Push missing</option>
-            </select>
-          </label>
-          <label>
-            Booking flow
-            <select name="bookingFlow" defaultValue={filters.bookingFlow}>
-              <option value="">All</option>
-              <option value="active-booking">Has active booking</option>
-              <option value="first-pick">First-pick booking</option>
-              <option value="marketplace-joined">Marketplace participant</option>
-              <option value="final-partner">Customer final choice</option>
-              <option value="chat-live">Chat room opened</option>
-              <option value="chat-missing">Matched but chat missing</option>
-              <option value="completed-work">Completed work</option>
-              <option value="no-work">No completed work</option>
-            </select>
-          </label>
-          <label>
-            Review queue
-            <select name="review" defaultValue={filters.review}>
-              <option value="">All</option>
-              <option value="kyc">KYC updates</option>
-              <option value="documents">Document review</option>
-              <option value="public-media">Public media review</option>
-              <option value="bank">Bank payout review</option>
-              <option value="payout-setup">First earning payout setup</option>
-              <option value="cash-debt">Cash fee debt</option>
-              <option value="tax">Tax profile review</option>
-              <option value="security">Device/session check</option>
-              <option value="reports">Reports/controls</option>
-              <option value="blocked">Account blocks</option>
-              <option value="location">Location freshness</option>
-              <option value="push">Push alert readiness</option>
-              <option value="acceptance-blocked">Direct request held</option>
-              <option value="direct-ready">Direct request ready</option>
-              <option value="marketplace-ready">Marketplace ready</option>
-              <option value="marketplace-blocked">Marketplace repair</option>
-            </select>
-          </label>
-          <label>
-            Sort
-            <select name="sort" defaultValue={filters.sort}>
-              <option value="ops-priority">Checklist order</option>
-              <option value="last-work">Last completed work</option>
-              <option value="booking-count">Booking count</option>
-              <option value="completed-count">Completed work count</option>
-              <option value="gross-revenue">Gross revenue</option>
-              <option value="pending-payout">Pending payout</option>
-              <option value="available-payout">Available payout</option>
-              <option value="last-activity">Last app activity</option>
-              <option value="location-freshness">Location freshness</option>
-              <option value="wallet-debt">Wallet debt first</option>
-              <option value="name">Name</option>
-            </select>
-          </label>
+          <AdminFormSearch
+            className="partner-filter-search"
+            defaultValue={filters.q}
+            label="Search"
+            name="q"
+            placeholder="Name, phone, city, partner id"
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.verification}
+            label="Verification"
+            name="verification"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Approved', value: 'APPROVED' },
+              { label: 'Submitted', value: 'SUBMITTED' },
+              { label: 'Pending', value: 'PENDING' },
+              { label: 'Rejected', value: 'REJECTED' },
+              { label: 'Blocked', value: 'BLOCKED' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.providerStatus}
+            label="Partner status"
+            name="providerStatus"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Online available', value: 'ONLINE_AVAILABLE' },
+              { label: 'Online busy', value: 'ONLINE_BUSY' },
+              { label: 'Available soon', value: 'ONLINE_AVAILABLE_SOON' },
+              { label: 'Offline', value: 'OFFLINE' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.kyc}
+            label="KYC"
+            name="kyc"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Approved', value: 'APPROVED' },
+              { label: 'Pending', value: 'PENDING' },
+              { label: 'Rejected', value: 'REJECTED' },
+              { label: 'Draft', value: 'DRAFT' },
+              { label: 'Missing', value: 'MISSING' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.location}
+            label="Location"
+            name="location"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Recent', value: 'recent' },
+              { label: 'Stale', value: 'stale' },
+              { label: 'Expired', value: 'expired' },
+              { label: 'Missing', value: 'missing' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.security}
+            label="Device/session"
+            name="security"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Account blocked', value: 'account-blocked' },
+              { label: 'Blocked device', value: 'blocked' },
+              { label: 'Session check', value: 'session-check' },
+              { label: 'Shared device', value: 'shared' },
+              { label: 'No app device', value: 'missing' },
+              { label: 'Clear', value: 'clear' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.readiness}
+            label="Readiness"
+            name="readiness"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Ready for dispatch', value: 'ready' },
+              { label: 'Needs review', value: 'needs-review' },
+              { label: 'Approved but offline', value: 'approved-offline' },
+              { label: 'Push missing', value: 'push-missing' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.bookingFlow}
+            label="Booking flow"
+            name="bookingFlow"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'Has active booking', value: 'active-booking' },
+              { label: 'First-pick booking', value: 'first-pick' },
+              { label: 'Marketplace participant', value: 'marketplace-joined' },
+              { label: 'Customer final choice', value: 'final-partner' },
+              { label: 'Chat room opened', value: 'chat-live' },
+              { label: 'Matched but chat missing', value: 'chat-missing' },
+              { label: 'Completed work', value: 'completed-work' },
+              { label: 'No completed work', value: 'no-work' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.review}
+            label="Review queue"
+            name="review"
+            options={[
+              { label: 'All', value: '' },
+              { label: 'KYC updates', value: 'kyc' },
+              { label: 'Document review', value: 'documents' },
+              { label: 'Public media review', value: 'public-media' },
+              { label: 'Bank payout review', value: 'bank' },
+              { label: 'First earning payout setup', value: 'payout-setup' },
+              { label: 'Cash fee debt', value: 'cash-debt' },
+              { label: 'Tax profile review', value: 'tax' },
+              { label: 'Device/session check', value: 'security' },
+              { label: 'Reports/controls', value: 'reports' },
+              { label: 'Account blocks', value: 'blocked' },
+              { label: 'Location freshness', value: 'location' },
+              { label: 'Push alert readiness', value: 'push' },
+              { label: 'Direct request held', value: 'acceptance-blocked' },
+              { label: 'Direct request ready', value: 'direct-ready' },
+              { label: 'Marketplace ready', value: 'marketplace-ready' },
+              { label: 'Marketplace repair', value: 'marketplace-blocked' },
+            ]}
+          />
+          <AdminFormSelect
+            className="partner-filter-select"
+            defaultValue={filters.sort}
+            label="Sort"
+            name="sort"
+            options={[
+              { label: 'Checklist order', value: 'ops-priority' },
+              { label: 'Last completed work', value: 'last-work' },
+              { label: 'Booking count', value: 'booking-count' },
+              { label: 'Completed work count', value: 'completed-count' },
+              { label: 'Gross revenue', value: 'gross-revenue' },
+              { label: 'Pending payout', value: 'pending-payout' },
+              { label: 'Available payout', value: 'available-payout' },
+              { label: 'Last app activity', value: 'last-activity' },
+              { label: 'Location freshness', value: 'location-freshness' },
+              { label: 'Wallet debt first', value: 'wallet-debt' },
+              { label: 'Name', value: 'name' },
+            ]}
+          />
           <div className="actions full-span">
-            <button className="button button-primary" type="submit">
+            <AdminFormControlButton className="partner-filter-button">
               <Filter aria-hidden="true" size={16} />
               Apply filters
-            </button>
-            <Link className="button button-secondary" href="/partners">
+            </AdminFormControlButton>
+            <AdminFormControlLink className="partner-filter-link" href="/partners">
               <X aria-hidden="true" size={16} />
               Clear filters
-            </Link>
-            <a
-              className="button button-secondary"
+            </AdminFormControlLink>
+            <AdminFormControlLink
+              className="partner-filter-link"
               download={`hands-partners-${partnerExportFileSlug}.csv`}
               href={partnerListCsvHref}
             >
               <Download aria-hidden="true" size={16} />
               Export visible CSV
-            </a>
+            </AdminFormControlLink>
             <span className="muted">
               Showing {visibleProviders.length} of {providers.length} matching partners
               {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
             </span>
-            <Link className="button button-secondary" href="/operations-policy">
+            <AdminFormControlLink className="partner-filter-link" href="/operations-policy">
               <SlidersHorizontal aria-hidden="true" size={16} />
               Location freshness: {opsPolicy.staleLocationMinutes}m
-            </Link>
+            </AdminFormControlLink>
           </div>
           {activeFilters.length > 0 ? (
             <div className="full-span">

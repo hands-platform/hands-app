@@ -20,7 +20,12 @@ describe('PartnerActionsCell', () => {
       expect.arrayContaining(['/partners/partner-1/confirm?kind=approve', '/partners/partner-1']),
     );
     expect(classNamesIn(cell)).toEqual(
-      expect.arrayContaining(['action-menu', 'pill pill-success', 'pill pill-neutral']),
+      expect.arrayContaining([
+        'admin-action-dropdown action-menu-dropdown',
+        'admin-action-menu action-menu-panel',
+        'admin-action-item',
+        'admin-action-item is-disabled',
+      ]),
     );
   });
 });

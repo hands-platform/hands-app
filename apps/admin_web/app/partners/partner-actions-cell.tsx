@@ -6,5 +6,11 @@ type PartnerActionsCellProps = {
 };
 
 export function PartnerActionsCell({ actions, partnerName }: PartnerActionsCellProps) {
-  return <ActionMenu actions={actions} label={`Partner account actions for ${partnerName}`} />;
+  return (
+    <ActionMenu
+      actions={actions}
+      label={`Partner account actions for ${partnerName}`}
+      variant="dropdown"
+    />
+  );
 }
