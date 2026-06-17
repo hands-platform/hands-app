@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { partnerCashDebtMarketplaceAccessCopy } from '../../lib/booking-wallet-copy';
 import { providerSecurityLabel } from './partner-filters';
 import {
   latestPartnerBookingRecord,
@@ -145,7 +146,7 @@ export function buildPartnerOperationRow(
           opsPolicy.backupRadiusMeters,
         )} when the booking address matches policy.`
       : walletBalance < 0
-        ? 'Partner may see marketplace requests, but the Partner app must block marketplace alerts and booking participation until HANDS fee settlement is posted.'
+        ? partnerCashDebtMarketplaceAccessCopy
         : marketplaceEligibility.detail,
     marketplaceAccessTone: marketplaceEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
     marketplaceCanView: marketplaceEligibility.canViewMarketplace,

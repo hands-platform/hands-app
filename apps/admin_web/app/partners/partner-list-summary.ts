@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { partnerCashDebtMarketplaceAccessCopy } from '../../lib/booking-wallet-copy';
 import {
   hasApprovedBankAccount,
   hasHealthyPush,
@@ -246,8 +247,7 @@ export function buildPartnerReviewQueue(
       label: 'Cash fee debt',
       count: cashDebtNeedsReview,
       href: '/partners?review=cash-debt',
-      detail:
-        'Partners with negative wallet balance can see marketplace requests, but cannot receive marketplace alerts or participate until HANDS fee settlement is confirmed.',
+      detail: partnerCashDebtMarketplaceAccessCopy,
     },
     {
       label: 'Tax profile review',

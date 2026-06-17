@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { cashFeeDebtBlocksMarketplaceAlertsParticipationCopy } from '../../lib/booking-wallet-copy';
 import {
   hasApprovedBankAccount,
   hasHealthyPush,
@@ -90,7 +91,7 @@ export function buildPartnerCommandCenter(
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt blocks marketplace alerts and participation until HANDS fee settlement is posted.'
+          ? cashFeeDebtBlocksMarketplaceAlertsParticipationCopy
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [

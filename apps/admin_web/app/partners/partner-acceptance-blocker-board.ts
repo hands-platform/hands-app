@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { cashFeeDebtBlocksMarketplaceAlertsParticipationCopy } from '../../lib/booking-wallet-copy';
 import { partnerUnsettledWalletBalance } from './partner-activity-facts';
 import type { PartnerCommandLane } from './partner-command-center';
 import { partnerPayoutSetupNeedsReview } from './partner-finance-readiness-facts';
@@ -62,8 +63,7 @@ export function buildPartnerAcceptanceBlockerBoard(
         title: 'Cash fee settlement',
         count: cashDebt.length,
         status: cashDebt.length ? 'Blocks marketplace' : 'Clear',
-        detail:
-          'Negative wallet from cash bookings blocks marketplace alerts and participation until HANDS fee settlement is posted.',
+        detail: cashFeeDebtBlocksMarketplaceAlertsParticipationCopy,
         operatorAction:
           'Open the cash debt queue and confirm settlement before allowing marketplace participation.',
         href: '/partners?review=cash-debt',

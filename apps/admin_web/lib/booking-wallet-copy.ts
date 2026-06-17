@@ -9,3 +9,9 @@ export const cashFeeDebtGatesMarketplaceOpsCopy =
 
 export const cashDebtFinalizationSettlementActionCopy =
   'Confirm Partner wallet debt and request company fee settlement before final acceptance, service start, or payout release resumes.';
+
+export const cashFeeDebtBlocksMarketplaceAlertsParticipationCopy =
+  'Cash fee debt blocks marketplace alerts and participation until HANDS fee settlement is posted.';
+
+export const partnerCashDebtMarketplaceAccessCopy =
+  'Partner may see marketplace requests, but marketplace alerts and booking participation are blocked until HANDS fee settlement is posted.';
