@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, type LucideIcon } from 'lucide-react';
 
 import type { StatusBadgeTone } from './status-badge';
 import { statusBadgeClassName } from './status-badge';
@@ -14,8 +14,10 @@ type ActionMenuHiddenInput = {
 };
 
 type ActionMenuBaseItem = {
+  readonly ariaLabel?: string;
   readonly description?: ReactNode;
   readonly disabled?: boolean;
+  readonly icon?: LucideIcon;
   readonly label: string;
   readonly tone?: StatusBadgeTone;
 };
@@ -35,8 +37,12 @@ export type ActionMenuItem = ActionMenuLinkItem | ActionMenuSubmitItem;
 
 type ActionMenuProps = {
   readonly actions: readonly ActionMenuItem[];
+  readonly className?: string;
+  readonly itemClassName?: string;
   readonly label: string;
+  readonly menuClassName?: string;
   readonly title?: ReactNode;
+  readonly triggerClassName?: string;
   readonly variant?: 'dropdown' | 'pill-list';
 };
 
@@ -47,17 +53,26 @@ export function actionMenuItemClassName(item: Pick<ActionMenuBaseItem, 'disabled
   return statusBadgeClassName(item.tone ?? 'info');
 }
 
-export function ActionMenu({ actions, label, title, variant = 'pill-list' }: ActionMenuProps) {
+export function ActionMenu({
+  actions,
+  className,
+  itemClassName,
+  label,
+  menuClassName,
+  title,
+  triggerClassName,
+  variant = 'pill-list',
+}: ActionMenuProps) {
   if (variant === 'dropdown') {
     return (
-      <details className="admin-action-dropdown action-menu-dropdown">
-        <summary aria-label={label} className="admin-action-trigger action-menu-trigger">
+      <details className={joinClassNames('admin-action-dropdown', className ?? 'action-menu-dropdown')}>
+        <summary aria-label={label} className={joinClassNames('admin-action-trigger', triggerClassName ?? 'action-menu-trigger')}>
           <MoreVertical aria-hidden="true" size={18} />
         </summary>
-        <div className="admin-action-menu action-menu-panel" role="menu">
+        <div className={joinClassNames('admin-action-menu', menuClassName ?? 'action-menu-panel')} role="menu">
           {title ? <strong className="action-menu-title">{title}</strong> : null}
           {actions.map((item) => (
-            <ActionMenuDropdownControl item={item} key={`${item.kind}:${item.label}`} />
+            <ActionMenuDropdownControl item={item} itemClassName={itemClassName} key={`${item.kind}:${item.label}`} />
           ))}
         </div>
       </details>
@@ -76,24 +91,44 @@ export function ActionMenu({ actions, label, title, variant = 'pill-list' }: Act
   );
 }
 
-function ActionMenuDropdownControl({ item }: { readonly item: ActionMenuItem }) {
+function ActionMenuDropdownControl({
+  item,
+  itemClassName,
+}: {
+  readonly item: ActionMenuItem;
+  readonly itemClassName?: string;
+}) {
+  const Icon = item.icon;
+  const content = (
+    <>
+      {Icon ? <Icon aria-hidden="true" size={16} /> : null}
+      <span>{item.label}</span>
+    </>
+  );
+
   if (item.kind === 'link') {
     if (item.disabled) {
       return (
         <span
           aria-disabled="true"
-          className="admin-action-item is-disabled"
+          className={joinClassNames('admin-action-item is-disabled', itemClassName)}
           role="menuitem"
           title={readActionMenuTitle(item.description)}
         >
-          {item.label}
+          {content}
         </span>
       );
     }
 
     return (
-      <Link className="admin-action-item" href={item.href} role="menuitem" title={readActionMenuTitle(item.description)}>
-        {item.label}
+      <Link
+        aria-label={item.ariaLabel}
+        className={joinClassNames('admin-action-item', itemClassName)}
+        href={item.href}
+        role="menuitem"
+        title={readActionMenuTitle(item.description)}
+      >
+        {content}
       </Link>
     );
   }
@@ -104,13 +139,14 @@ function ActionMenuDropdownControl({ item }: { readonly item: ActionMenuItem }) 
         <input key={input.name} name={input.name} type="hidden" value={String(input.value)} />
       ))}
       <button
-        className="admin-action-item admin-action-button"
+        aria-label={item.ariaLabel}
+        className={joinClassNames('admin-action-item admin-action-button', itemClassName)}
         disabled={item.disabled}
         role="menuitem"
         title={readActionMenuTitle(item.description)}
         type="submit"
       >
-        {item.label}
+        {content}
       </button>
     </form>
   );
@@ -147,4 +183,8 @@ function ActionMenuControl({ item }: { readonly item: ActionMenuItem }) {
 
 export function readActionMenuTitle(description: ReactNode) {
   return typeof description === 'string' ? description : undefined;
+}
+
+function joinClassNames(...classNames: Array<string | undefined>) {
+  return classNames.filter(Boolean).join(' ');
 }

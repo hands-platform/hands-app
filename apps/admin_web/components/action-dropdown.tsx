@@ -1,6 +1,6 @@
-import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 
-import { MoreVertical, type LucideIcon } from 'lucide-react';
+import { ActionMenu, type ActionMenuItem } from './action-menu';
 
 export type ActionDropdownItem = {
   readonly ariaLabel?: string;
@@ -26,42 +26,21 @@ export function ActionDropdown({
   menuClassName,
   triggerClassName,
 }: ActionDropdownProps) {
-  return (
-    <details className={joinClassNames('admin-action-dropdown', className)}>
-      <summary aria-label={label} className={joinClassNames('admin-action-trigger', triggerClassName)}>
-        <MoreVertical aria-hidden="true" size={18} />
-      </summary>
-      <div className={joinClassNames('admin-action-menu', menuClassName)} role="menu">
-        {actions.map((action) => (
-          <ActionDropdownLink action={action} itemClassName={itemClassName} key={action.label} />
-        ))}
-      </div>
-    </details>
-  );
-}
+  const menuActions: readonly ActionMenuItem[] = actions.map((action) => ({
+    ariaLabel: action.ariaLabel,
+    href: action.href,
+    icon: action.icon,
+    kind: 'link',
+    label: action.label,
+  }));
 
-function ActionDropdownLink({
-  action,
-  itemClassName,
-}: {
-  readonly action: ActionDropdownItem;
-  readonly itemClassName?: string;
-}) {
-  const Icon = action.icon;
-
-  return (
-    <Link
-      aria-label={action.ariaLabel}
-      className={joinClassNames('admin-action-item', itemClassName)}
-      href={action.href}
-      role="menuitem"
-    >
-      {Icon ? <Icon aria-hidden="true" size={16} /> : null}
-      <span>{action.label}</span>
-    </Link>
-  );
-}
-
-function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(' ');
+  return ActionMenu({
+    actions: menuActions,
+    className,
+    itemClassName,
+    label,
+    menuClassName,
+    triggerClassName,
+    variant: 'dropdown',
+  });
 }
