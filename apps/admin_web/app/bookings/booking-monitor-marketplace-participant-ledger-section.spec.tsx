@@ -72,6 +72,7 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Participant rows only');
+    expect(rendered).toContain('Wallet gate applies before finalization');
     expect(rendered).toContain('Marketplace participants 1');
     expect(rendered).toContain('Open marketplace');
     expect(rendered).toContain('Customer A');

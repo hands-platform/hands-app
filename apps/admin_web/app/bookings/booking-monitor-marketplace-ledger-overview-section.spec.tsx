@@ -48,16 +48,13 @@ describe('BookingMonitorMarketplaceLedgerOverviewSection', () => {
 
     expect(rendered).toContain('Marketplace participant ledger');
     expect(rendered).toContain('All participant records 5');
-    expect(rendered).toContain('Marketplace record boundary');
-    expect(rendered).toContain('Actual participation rows');
-    expect(rendered).toContain('Customer choice evidence');
+    expect(rendered).not.toContain('Marketplace record boundary');
+    expect(rendered).not.toContain('Actual participation rows');
     expect(rendered).toContain('Marketplace operating queue');
     expect(rendered).toContain('First-pick timer control');
     expect(rendered).toContain('Customer A');
     expect(headingTextsIn(section)).toEqual([
       'Marketplace participant ledger',
-      'Marketplace record boundary',
-      'Not finalization rows',
       'Marketplace operating queue',
       'First-pick timer control',
     ]);

@@ -25,53 +25,13 @@ export function BookingMonitorMarketplaceLedgerOverviewSection({
           <p className="muted">
             All participant records by booking, including first-pick, marketplace participants, declined
             responses, and the customer final choice. This is the operations record of who entered the
-            request. It shows the Customer-selectable reason and Why not selectable for evidence-only rows.
-            Marketplace visibility is not an activity record; wallet-blocked Partners are stopped before
-            participation and never create participant rows.
+            request; visibility-only marketplace exposure is intentionally not counted as participation.
           </p>
         </div>
         <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
           All participant records {marketplaceLedgerSummary.total}
         </span>
       </div>
-      <section className="card admin-mt-14">
-        <div className="ops-section-header">
-          <div>
-            <h3>Marketplace record boundary</h3>
-            <p className="muted">
-              Operator shorthand for what is retained as evidence, what is blocked before a row is created,
-              and where the customer final choice is verified.
-            </p>
-          </div>
-          <span className="pill pill-info">Booking-address marketplace radius</span>
-        </div>
-        <div className="ops-task-grid admin-mt-12">
-          <article className="ops-task-card">
-            <span className="signal signal-info">Actual participation rows</span>
-            <strong className="ops-task-card-value">{marketplaceLedgerSummary.total}</strong>
-            <p>
-              First-pick, marketplace participation, accepted, declined, and customer-selected rows stay in
-              this ledger as the operational evidence trail.
-            </p>
-          </article>
-          <article className="ops-task-card">
-            <span className="signal signal-warn">Pre-finalization wallet gate</span>
-            <h3>Not finalization rows</h3>
-            <p>
-              A negative-wallet Partner may see marketplace requests, but final acceptance, service start,
-              and payout release wait until settlement.
-            </p>
-          </article>
-          <article className="ops-task-card">
-            <span className="signal signal-ok">Customer choice evidence</span>
-            <strong className="ops-task-card-value">{marketplaceLedgerSummary.selected}</strong>
-            <p>
-              Customer fallback selection is retained when first-pick does not validly win. Operators verify
-              the selected participant row and retained chat evidence.
-            </p>
-          </article>
-        </div>
-      </section>
       <section className="card admin-mt-14">
         <div className="ops-section-header">
           <div>
