@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Eye } from 'lucide-react';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from 'lucide-react';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminBooking } from '../../lib/admin-api';
-import { shortId } from '../../lib/admin-format';
+import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
 import { stagePillClass } from './booking-command-display';
+import { readAddressText } from './booking-address-readers';
 
 type BookingMonitorPillDetail = {
   readonly detail: string;
@@ -109,258 +110,354 @@ type BookingMonitorListSectionProps = {
   readonly rows: readonly BookingMonitorListRow[];
 };
 
-type BookingMonitorListTableRowProps = {
-  readonly row: BookingMonitorListRow;
-};
-
-type BookingMonitorOpsCheckCellProps = {
-  readonly booking: AdminBooking;
-  readonly row: BookingMonitorListRow;
-};
-
 type StatusBadgeProps = {
   readonly status: string;
 };
 
+const BOOKING_TABLE_PAGE_SIZE = 10;
+
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
+  const [page, setPage] = useState(1);
+  const rowKey = rows.map((row) => row.booking.id).join('|');
+  const totalPages = Math.max(1, Math.ceil(rows.length / BOOKING_TABLE_PAGE_SIZE));
+  const activePage = Math.min(page, totalPages);
+  const pageStartIndex = (activePage - 1) * BOOKING_TABLE_PAGE_SIZE;
+  const visibleRows = useMemo(
+    () => rows.slice(pageStartIndex, pageStartIndex + BOOKING_TABLE_PAGE_SIZE),
+    [pageStartIndex, rows],
+  );
+  const pageFrom = rows.length === 0 ? 0 : pageStartIndex + 1;
+  const pageTo = Math.min(rows.length, pageStartIndex + visibleRows.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [rowKey]);
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
   return (
-    <section className="card admin-mt-16">
+    <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
+      <div className="vuexy-booking-table-toolbar">
+        <div>
+          <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
+          <p>Request-to-completion queue ordered by live booking operations status.</p>
+        </div>
+        <span className="pill pill-info">{rows.length} booking(s)</span>
+      </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking / stage</th>
-              <th>Address / customer</th>
-              <th>Customer choice</th>
-              <th title="Matching rule snapshot">Partner supply</th>
-              <th>Chat / location</th>
-              <th>Payment / wallet</th>
-              <th title="Primary booking command Booking gate reason Action status strip">Ops check</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <BookingMonitorListTableRow key={row.booking.id} row={row} />
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={7}>{emptyMessage}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage={emptyMessage}
+          headers={[
+            'Request Time',
+            'Customer',
+            'Requested Partner',
+            'Participating Partners',
+            'Device Language',
+            'Service Type',
+            'Region',
+            'Status',
+          ]}
+          rowCount={visibleRows.length}
+        >
+          {visibleRows.map((row) => (
+            <BookingMonitorListTableRow key={row.booking.id} row={row} />
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
+
+      <div className="vuexy-booking-table-footer">
+        <span>
+          Showing {pageFrom} to {pageTo} of {rows.length} entries
+        </span>
+        <nav aria-label="Realtime booking pages" className="vuexy-booking-pagination">
+          <PaginationButton
+            disabled={activePage <= 1}
+            label="First page"
+            onClick={() => setPage(1)}
+          >
+            <ChevronsLeft size={18} />
+          </PaginationButton>
+          <PaginationButton
+            disabled={activePage <= 1}
+            label="Previous page"
+            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+          >
+            <ChevronLeft size={18} />
+          </PaginationButton>
+          {visiblePageNumbers(activePage, totalPages).map((pageNumber) => (
+            <PaginationButton
+              active={pageNumber === activePage}
+              key={pageNumber}
+              label={`Page ${pageNumber}`}
+              onClick={() => setPage(pageNumber)}
+            >
+              {pageNumber}
+            </PaginationButton>
+          ))}
+          <PaginationButton
+            disabled={activePage >= totalPages}
+            label="Next page"
+            onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
+          >
+            <ChevronRight size={18} />
+          </PaginationButton>
+          <PaginationButton
+            disabled={activePage >= totalPages}
+            label="Last page"
+            onClick={() => setPage(totalPages)}
+          >
+            <ChevronsRight size={18} />
+          </PaginationButton>
+        </nav>
+      </div>
     </section>
   );
 }
 
-function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
+function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListRow }) {
   const { booking } = row;
+  const statusState = bookingWorkflowStatusState(booking);
+  const participantRows = bookingParticipantRows(booking);
+  const regionLabel = bookingRegionLabel(booking);
 
   return (
     <tr id={`booking-${booking.id}`}>
       <td>
-        <strong>
-          <Link className="text-link" href={`/bookings/${booking.id}`}>
+        <div className="vuexy-booking-id-line">
+          <Link className="text-link" href={`/bookings/${booking.id}`} title="Open booking detail">
             <Eye aria-hidden="true" size={14} />
             {shortId(booking.id)}
           </Link>
-        </strong>
-        <div className="muted">{row.serviceOptionLabel}</div>
-        <div className="muted">{row.servicePriceLabel}</div>
-        {row.servicePayoutLabel && <div className="muted">{row.servicePayoutLabel}</div>}
-        {row.pricingPolicy.status !== 'ready' && (
-          <span className={`pill ${row.pricingPolicy.tone}`}>{row.pricingPolicy.label}</span>
-        )}
-        <div className="muted">Opened {row.openedDateLabel}</div>
+        </div>
+        <strong>{row.openedDateLabel}</strong>
         <div className="muted">{row.recencyLabel}</div>
-        <div className="admin-mt-8">
-          <Link
-            className={`pill ${stagePillClass(row.stage.tone)}`}
-            href={row.stage.href}
-            title={`${row.stage.detail} ${row.stage.action}`}
-          >
-            {row.stage.label}
-          </Link>
-        </div>
-        <div className="admin-mt-8">
-          <StatusBadge status={booking.status} />
-        </div>
-        {row.closureState && (
-          <div className="participant-list admin-mt-8">
-            <span className={`pill ${row.closureState.tone}`}>{row.closureState.label}</span>
-            <span className="muted">{row.closureState.detail}</span>
-          </div>
-        )}
-        <div className="muted">{row.expiresAtLabel ? `Expires ${row.expiresAtLabel}` : 'No expiry set'}</div>
       </td>
       <td>
-        <span className={`pill ${row.addressState.tone}`}>{row.addressState.label}</span>
-        <div className="muted admin-mt-8">{row.addressState.detail}</div>
-        <div className="muted">{row.addressState.pin}</div>
-        <div className="admin-mt-10">
-          <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
-        </div>
+        <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
         <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
       </td>
       <td>
-        <span
-          className={`pill ${row.selection.toneClass}`}
-          title={`${row.customerVisibleStateLabel}. ${row.selection.pathLabel}`}
-        >
-          {row.selection.label}
-        </span>
-        {row.finalPartnerLabel ? (
-          <div className="muted admin-mt-8">Final Partner: {row.finalPartnerLabel}</div>
-        ) : (
-          <div className="muted admin-mt-8">Final Partner: waiting for customer choice</div>
-        )}
+        <strong>{requestedPartnerLabel(row)}</strong>
+        <div className="muted">{requestedPartnerHint(row)}</div>
       </td>
       <td>
-        <strong>{booking.participants?.length ?? 0} participant row(s)</strong>
-        <div className="muted">First-pick {row.preferredPartnerLabel}</div>
-        <div className="muted">{row.firstPickPhoneLabel}</div>
-        <div className="participant-list admin-mt-8">
-          <span
-            className={`pill ${row.hasMatchingPolicySnapshot ? 'pill-info' : 'pill-warn'}`}
-            title={row.matchingPolicySummaryLabel}
-          >
-            {row.hasMatchingPolicySnapshot ? 'Saved policy' : 'Live policy default'}
-          </span>
-          <span className={`pill ${row.backupAlert.tone}`}>{row.backupAlert.pill}</span>
-        </div>
-        <div
-          className="muted admin-mt-8"
-          title={`${row.matchingRuleSnapshot.supplyLabel} | ${row.matchingRuleSnapshot.windowLabel} | ${row.matchingRuleSnapshot.radiusLabel} | ${row.matchingRuleSnapshot.customerChoiceLabel} | ${row.matchingRuleSnapshot.operatorAction}`}
-        >
-          Supply snapshot
-        </div>
-        <div className="participant-list admin-mt-8">
-          {booking.preferredProvider && row.preferredProviderStateLabel && (
-            <span className="pill pill-priority">
-              First-pick: {row.preferredPartnerLabel} {row.preferredProviderStateLabel}
-            </span>
-          )}
-          {row.selectedFinalPartnerPillLabel && (
-            <span className="pill pill-success">Final: {row.selectedFinalPartnerPillLabel}</span>
-          )}
-          {row.marketplaceParticipants.map((participant) => (
-            <span className="pill" key={participant.id}>
-              Marketplace: {participant.partnerLabel} ({participant.status})
-            </span>
-          ))}
-        </div>
-        {row.marketplaceParticipantOverflowCount > 0 && (
-          <div className="muted admin-mt-6">
-            +{row.marketplaceParticipantOverflowCount} more marketplace Partner(s)
+        {participantRows.length > 0 ? (
+          <div className="vuexy-booking-participant-list">
+            {participantRows.slice(0, 3).map((participant) => (
+              <span className="pill pill-neutral" key={participant.id}>
+                {participant.label} ({participant.status})
+              </span>
+            ))}
+            {participantRows.length > 3 && (
+              <span className="pill pill-info">+{participantRows.length - 3} more</span>
+            )}
           </div>
+        ) : (
+          <span className="muted">Waiting for Partner participation</span>
         )}
       </td>
       <td>
-        <span className={`pill ${row.chatState.tone}`} title={row.chatState.detail}>
-          {row.chatState.label}
-        </span>
-        <div className="muted admin-mt-8">{row.location.signalLabel}</div>
-        <div className="participant-list admin-mt-8">
-          <span className={`pill ${row.location.toneClass}`}>{row.location.pillLabel}</span>
-        </div>
+        <span className="pill pill-neutral">{bookingDeviceLanguageLabel(booking)}</span>
       </td>
-      <BookingMonitorPaymentWalletCell booking={booking} row={row} />
-      <BookingMonitorOpsCheckCell booking={booking} row={row} />
-    </tr>
-  );
-}
-
-function BookingMonitorPaymentWalletCell({
-  booking,
-  row,
-}: {
-  readonly booking: AdminBooking;
-  readonly row: BookingMonitorListRow;
-}) {
-  return (
-    <td>
-      {booking.payment?.status ?? 'NONE'}
-      <div className="muted">
-        {booking.payment
-          ? `${booking.payment.amount} ${booking.payment.currency ?? 'VND'} - ${booking.payment.method}`
-          : 'No payment'}
-      </div>
-      {booking.payment?.id && (
-        <div className="actions admin-mt-8">
-          <Link className="text-link" href={`/bookings/${booking.id}`}>
-            Detail
-          </Link>
-          <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
-            Open payment
-          </Link>
-          {(booking.status === 'REFUNDED' || booking.payment.status === 'REFUNDED') && (
-            <Link className="text-link" href="/refunds">
-              Refund board
-            </Link>
-          )}
-        </div>
-      )}
-      {row.cashDebtNeedsOps && (
+      <td>
+        <strong>{row.serviceOptionLabel}</strong>
+        <div className="muted">{row.servicePriceLabel}</div>
+      </td>
+      <td>
+        <strong>{regionLabel}</strong>
+        <div className="muted">{row.addressState.pin}</div>
+      </td>
+      <td>
+        <span className={`pill ${statusState.tone}`}>{statusState.label}</span>
         <div className="admin-mt-8">
-          <span className="pill pill-warn">Partner wallet debt</span>
+          <StatusBadge status={booking.status} />
         </div>
-      )}
-      {row.cashDebtAmountLabel && (
-        <div className="muted admin-mt-6">Cash fee debt {row.cashDebtAmountLabel}</div>
-      )}
-      {booking.earning?.id && (
-        <div className="actions admin-mt-8">
-          <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
-            Open earning
-          </Link>
-        </div>
-      )}
-    </td>
-  );
-}
-
-function BookingMonitorOpsCheckCell({ booking, row }: BookingMonitorOpsCheckCellProps) {
-  return (
-    <td>
-      <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>
-      <div className="muted admin-mt-8">{row.checkSignal.helper}</div>
-      {row.firstCheckTitle && <div className="muted">{row.firstCheckTitle}</div>}
-      <div className="participant-list admin-mt-10">
-        <span className="muted">Primary booking command</span>
         <Link
-          className={`pill ${row.commandDecisionStrip.tone}`}
-          href={`/bookings/${booking.id}#booking-command-decision-strip`}
-          title={row.commandDecisionStrip.primaryDetail}
+          className={`pill ${stagePillClass(row.stage.tone)} admin-mt-8`}
+          href={row.stage.href}
+          title={`${row.stage.detail} ${row.stage.action}`}
         >
-          {row.commandDecisionStrip.status}
+          {row.stage.label}
         </Link>
-      </div>
-      <div className="participant-list admin-mt-10">
-        <span className="muted">Booking gate reason</span>
-        <Link
-          className={`pill ${row.finalGateReason.tone}`}
-          href={row.finalGateReason.href}
-          title={row.finalGateReason.detail}
-        >
-          {row.finalGateReason.label}
-        </Link>
-      </div>
-      <div className="participant-list admin-mt-10">
-        <span className="muted">Action status strip</span>
-        {row.actionChips.map((chip) => (
-          <Link className={`pill ${chip.tone}`} href={chip.href} key={chip.label} title={chip.detail}>
-            {chip.label}
-          </Link>
-        ))}
-      </div>
-      {row.closureState && (
-        <div className="muted admin-mt-8">Closure evidence: {row.closureState.detail}</div>
-      )}
-    </td>
+        <div className="muted admin-mt-8">{statusState.detail}</div>
+        {row.closureState && (
+          <div className="muted admin-mt-6">Closure: {row.closureState.detail}</div>
+        )}
+      </td>
+    </tr>
   );
 }
 
 function StatusBadge({ status }: StatusBadgeProps) {
   return <span className={`status-badge status-${status.toLowerCase()}`}>{status}</span>;
+}
+
+function PaginationButton({
+  active = false,
+  children,
+  disabled = false,
+  label,
+  onClick,
+}: {
+  readonly active?: boolean;
+  readonly children: ReactNode;
+  readonly disabled?: boolean;
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  const className = active ? 'vuexy-booking-page-link is-active' : 'vuexy-booking-page-link';
+
+  return (
+    <button
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      className={className}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function visiblePageNumbers(activePage: number, totalPages: number) {
+  const start = Math.max(1, activePage - 2);
+  const end = Math.min(totalPages, start + 4);
+  const adjustedStart = Math.max(1, end - 4);
+
+  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+}
+
+function requestedPartnerLabel(row: BookingMonitorListRow) {
+  return row.preferredPartnerLabel === 'none' ? 'Not selected' : row.preferredPartnerLabel;
+}
+
+function requestedPartnerHint(row: BookingMonitorListRow) {
+  if (row.finalPartnerLabel) {
+    return `Final Partner: ${row.finalPartnerLabel}`;
+  }
+  if (row.preferredPartnerLabel !== 'none') {
+    return row.firstPickPhoneLabel;
+  }
+  return 'Open marketplace request';
+}
+
+function bookingParticipantRows(booking: AdminBooking) {
+  return (booking.participants ?? []).map((participant) => ({
+    id: participant.id,
+    label:
+      participant.providerProfile?.displayName ??
+      participant.providerProfile?.user?.fullName ??
+      participant.providerProfile?.user?.phone ??
+      'Partner',
+    status: participant.status,
+  }));
+}
+
+function bookingDeviceLanguageLabel(booking: AdminBooking) {
+  const sessionLanguage = booking.customerProfile?.user?.appSessions?.[0]?.deviceLanguage;
+  if (sessionLanguage) {
+    return sessionLanguage;
+  }
+
+  const metadata = readPlainRecord(booking.metadata);
+  const metadataLanguage =
+    metadataText(metadata, 'deviceLanguage') ??
+    metadataText(metadata, 'customerDeviceLanguage') ??
+    metadataText(metadata, 'language') ??
+    metadataText(metadata, 'locale');
+
+  return metadataLanguage ?? 'Unknown';
+}
+
+function bookingRegionLabel(booking: AdminBooking) {
+  const snapshotAddress = readAddressText(booking.addressSnapshot?.addressText ?? booking.addressSnapshot?.address);
+  const legacyAddress = readAddressText(booking.address);
+  return compactRegionLabel(snapshotAddress ?? legacyAddress ?? 'No region');
+}
+
+function compactRegionLabel(value: string) {
+  return value.length > 54 ? `${value.slice(0, 51)}...` : value;
+}
+
+function metadataText(metadata: Record<string, unknown> | null, key: string) {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function bookingWorkflowStatusState(booking: AdminBooking): {
+  readonly detail: string;
+  readonly label: string;
+  readonly tone: string;
+} {
+  switch (booking.status) {
+    case 'CREATED':
+      return {
+        detail: 'Request received; waiting for matching readiness.',
+        label: 'Booking requested',
+        tone: 'pill-info',
+      };
+    case 'OPEN_MATCHING':
+      return {
+        detail: 'Partner matching is open and waiting for participation or response.',
+        label: 'Waiting for match',
+        tone: 'pill-warn',
+      };
+    case 'MATCHED':
+    case 'PROVIDER_ON_THE_WAY':
+    case 'ARRIVED':
+    case 'IN_SERVICE':
+      return {
+        detail: 'Matched booking is active; monitor Partner progress and chat.',
+        label: 'Matched / in progress',
+        tone: 'pill-success',
+      };
+    case 'COMPLETED':
+      return {
+        detail: 'Service completed; closeout evidence can be reviewed in detail.',
+        label: 'Work completed',
+        tone: 'pill-success',
+      };
+    case 'CANCELLED':
+      if (booking.matchedAt || booking.selectedProviderId) {
+        return {
+          detail: 'Partner-side cancellation needs admin confirmation from chat and cancel note evidence.',
+          label: 'Partner cancel review',
+          tone: 'pill-danger',
+        };
+      }
+      return {
+        detail: 'Cancelled before matching; confirm no Partner-side service obligation exists.',
+        label: 'Cancelled before match',
+        tone: 'pill-neutral',
+      };
+    case 'NO_SHOW':
+      return {
+        detail: 'Review chat history and Partner no-show note before final admin confirmation.',
+        label: 'No-show review',
+        tone: 'pill-danger',
+      };
+    case 'EXPIRED':
+      return {
+        detail: 'Matching expired; review payment release and customer follow-up if needed.',
+        label: 'Expired',
+        tone: 'pill-warn',
+      };
+    case 'REFUNDED':
+      return {
+        detail: 'Refund state is recorded; confirm booking closeout evidence in detail.',
+        label: 'Refunded',
+        tone: 'pill-info',
+      };
+    default:
+      return {
+        detail: 'Open the booking detail for the full operating record.',
+        label: booking.status,
+        tone: 'pill-neutral',
+      };
+  }
 }

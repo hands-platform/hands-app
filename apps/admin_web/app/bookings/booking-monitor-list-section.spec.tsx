@@ -7,11 +7,12 @@ import {
 } from './booking-monitor-list-section';
 
 describe('BookingMonitorListSection', () => {
-  it('renders booking rows with stage, partner, payment, and ops links', () => {
+  it('renders realtime booking rows with the compact operations columns', () => {
     const booking = {
       id: 'booking_123456789',
       customerProfile: {
         user: {
+          appSessions: [{ deviceLanguage: 'vi-VN' }],
           fullName: 'Customer A',
           phone: '+84900000000',
         },
@@ -36,6 +37,9 @@ describe('BookingMonitorListSection', () => {
       },
       selectedProvider: {
         displayName: 'Partner B',
+      },
+      addressSnapshot: {
+        addressText: 'Da Nang service address',
       },
       status: 'OPEN_MATCHING',
     } as unknown as AdminBooking;
@@ -144,31 +148,35 @@ describe('BookingMonitorListSection', () => {
       },
     };
 
-    const section = BookingMonitorListSection({
-      emptyMessage: 'No bookings match filters.',
-      rows: [row],
-    });
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[row]}
+      />
+    );
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
-    expect(rendered).toContain('Booking / stage');
+    expect(rendered).toContain('Request Time');
+    expect(rendered).toContain('Customer');
+    expect(rendered).toContain('Requested Partner');
+    expect(rendered).toContain('Participating Partners');
+    expect(rendered).toContain('Device Language');
+    expect(rendered).toContain('Service Type');
+    expect(rendered).toContain('Region');
+    expect(rendered).toContain('Status');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Stage 2 marketplace');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('Partner B');
-    expect(rendered).toContain('Payment gate');
-    expect(rendered).toContain('Cash fee debt 20,000 VND');
+    expect(rendered).toContain('vi-VN');
+    expect(rendered).toContain('Da Nang service address');
+    expect(rendered).toContain('Waiting for match');
     expect(markup).toContain('href="/bookings/booking_123456789"');
-    expect(markup).toContain('href="/payments#payment-payment_123"');
-    expect(markup).toContain('href="/earnings#earning-earning_123"');
-    expect(markup).toContain('href="/bookings?view=payment"');
   });
 
   it('renders the empty booking message', () => {
-    const section = BookingMonitorListSection({
-      emptyMessage: 'No bookings match filters.',
-      rows: [],
-    });
+    const section = <BookingMonitorListSection emptyMessage="No bookings match filters." rows={[]} />;
 
     expect(normalizedText(renderToStaticMarkup(section))).toContain('No bookings match filters.');
   });

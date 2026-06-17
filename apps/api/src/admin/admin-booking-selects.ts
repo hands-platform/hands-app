@@ -82,7 +82,16 @@ export const adminBookingListSelect = {
   customerProfile: {
     select: {
       id: true,
-      user: { select: adminUserSummarySelect },
+      user: {
+        select: {
+          ...adminUserSummarySelect,
+          appSessions: {
+            orderBy: { lastSeenAt: 'desc' },
+            take: 1,
+            select: { deviceLanguage: true },
+          },
+        },
+      },
     },
   },
   preferredProvider: { select: adminProviderSummarySelect },

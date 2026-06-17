@@ -1445,6 +1445,198 @@ a.action-button-card:hover {
   z-index: 2;
 }
 
+.vuexy-booking-table-card {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
+  overflow: hidden;
+}
+
+.vuexy-booking-table-toolbar {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 22px 24px;
+}
+
+.vuexy-booking-table-toolbar h2,
+.vuexy-booking-table-toolbar p {
+  margin: 0;
+}
+
+.vuexy-booking-table-toolbar h2 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.vuexy-booking-table-toolbar p {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin-top: 5px;
+}
+
+.booking-monitor .vuexy-booking-table-card .admin-table-scroll {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.booking-monitor .vuexy-booking-table {
+  background: var(--admin-surface-raised);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--admin-text);
+  margin: 0;
+  min-width: 1320px;
+  width: 100%;
+}
+
+.booking-monitor .vuexy-booking-table th,
+.booking-monitor .vuexy-booking-table td {
+  background: var(--admin-surface-raised);
+  border-bottom: 1px solid var(--admin-border);
+  min-width: 0;
+  padding: 14px 12px;
+  vertical-align: top;
+}
+
+.booking-monitor .vuexy-booking-table th {
+  background: var(--admin-table-header-bg);
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  line-height: 20px;
+  overflow-wrap: normal;
+  position: static;
+  word-break: normal;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(1),
+.booking-monitor .vuexy-booking-table td:nth-child(1) {
+  min-width: 160px;
+  width: 13%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(2),
+.booking-monitor .vuexy-booking-table td:nth-child(2) {
+  min-width: 160px;
+  width: 13%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(3),
+.booking-monitor .vuexy-booking-table td:nth-child(3),
+.booking-monitor .vuexy-booking-table th:nth-child(4),
+.booking-monitor .vuexy-booking-table td:nth-child(4) {
+  min-width: 170px;
+  width: 14%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(5),
+.booking-monitor .vuexy-booking-table td:nth-child(5) {
+  min-width: 130px;
+  width: 10%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(6),
+.booking-monitor .vuexy-booking-table td:nth-child(6),
+.booking-monitor .vuexy-booking-table th:nth-child(7),
+.booking-monitor .vuexy-booking-table td:nth-child(7) {
+  min-width: 150px;
+  width: 12%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(8),
+.booking-monitor .vuexy-booking-table td:nth-child(8) {
+  min-width: 210px;
+  width: 18%;
+}
+
+.booking-monitor .vuexy-booking-table tbody tr:hover td {
+  background: var(--admin-action-hover);
+}
+
+.vuexy-booking-id-line {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vuexy-booking-participant-list {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vuexy-booking-table-footer {
+  align-items: center;
+  border-top: 1px solid var(--admin-border);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 14px 24px;
+}
+
+.vuexy-booking-table-footer > span {
+  color: var(--admin-disabled);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.vuexy-booking-pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.vuexy-booking-page-link {
+  align-items: center;
+  background: var(--admin-action-hover);
+  border: 0;
+  border-radius: 6px;
+  color: var(--admin-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+  min-width: 38px;
+  padding: 8px;
+}
+
+.vuexy-booking-page-link.is-active {
+  background: var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
+}
+
+.vuexy-booking-page-link:disabled {
+  color: var(--admin-disabled);
+  cursor: not-allowed;
+}
+
+.vuexy-booking-page-link:not(:disabled):hover {
+  background: var(--admin-primary-soft);
+  color: #8f85f3;
+}
+
 .ops-filter-actions {
   align-self: end;
 }

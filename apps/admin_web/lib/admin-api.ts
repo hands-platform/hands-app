@@ -448,6 +448,7 @@ export type AdminBooking = {
   preferredProviderId?: string | null;
   selectedProviderId?: string | null;
   status: string;
+  openedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
   scheduledStartAt?: string;
@@ -526,7 +527,14 @@ export type AdminBooking = {
   } | null;
   refunds?: AdminRefund[];
   earning?: AdminEarning | null;
-  customerProfile?: { id?: string; user?: { fullName?: string | null; phone?: string } };
+  customerProfile?: {
+    id?: string;
+    user?: {
+      fullName?: string | null;
+      phone?: string;
+      appSessions?: Array<{ deviceLanguage?: string | null }>;
+    };
+  };
   selectedProvider?: {
     id?: string;
     displayName?: string | null;
