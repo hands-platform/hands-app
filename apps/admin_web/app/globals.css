@@ -1667,13 +1667,24 @@ a.action-button-card:hover {
 }
 
 .partners-page > h1 {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  font-size: 26px;
+  line-height: 1.18;
   margin-bottom: 0;
+  padding: 24px;
 }
 
 .partners-page > .grid,
 .partners-page > .detail-grid {
   margin-bottom: 0;
   margin-top: 0;
+}
+
+.partners-page > .grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .partners-page > .grid > .card,
@@ -1696,11 +1707,73 @@ a.action-button-card:hover {
   padding-right: 4px;
 }
 
+.partners-page > .card:first-of-type .form-grid {
+  align-items: end;
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  gap: 14px;
+  grid-template-columns: minmax(240px, 1.4fr) repeat(4, minmax(0, 1fr));
+  padding: 16px;
+}
+
+.partners-page > .card:first-of-type .form-grid label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.partners-page > .card:first-of-type .form-grid input,
+.partners-page > .card:first-of-type .form-grid select {
+  background: #ffffff;
+  border-color: rgb(var(--admin-primary-channel) / 0.14);
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
+  min-height: 40px;
+}
+
+.partners-page > .card:first-of-type .form-grid input:focus,
+.partners-page > .card:first-of-type .form-grid select:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.56);
+  box-shadow:
+    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
+    var(--admin-shadow-xs);
+  outline: none;
+}
+
+.partners-page > .card:first-of-type .form-grid .actions.full-span {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  gap: 10px;
+  padding: 12px;
+}
+
+.partners-page > .card:first-of-type .form-grid .actions.full-span .button {
+  box-shadow: none;
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.partners-page > .card:first-of-type .form-grid .actions.full-span .muted {
+  margin-left: auto;
+}
+
 .operations-policy-page .service-trace-summary,
 .partners-page .service-trace-summary,
 .partners-page .grid,
 .partners-page .ops-task-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+
+.partners-page .service-trace-summary > div,
+.partners-page .service-trace-summary > a {
+  background: #ffffff;
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
 }
 
 .partners-page .detail-grid,
