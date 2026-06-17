@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, FileClock, MessageSquare } from 'lucide-react';
+import { Download, ExternalLink, FileClock, MessageSquare } from 'lucide-react';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
 
@@ -68,7 +68,8 @@ export function OperationsHandoffActivityStreamSection({
                 </td>
                 <td>{item.summary}</td>
                 <td>
-                  <Link className="text-link" href={item.href}>
+                  <Link className="button button-secondary admin-inline-action" href={item.href}>
+                    <ExternalLink aria-hidden="true" size={14} />
                     Open
                   </Link>
                 </td>

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ClipboardList, MessageSquare } from 'lucide-react';
+import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -47,7 +47,8 @@ export function OperationsHandoffBookingQueueSection({
             {bookings.map((booking) => (
               <tr key={booking.id}>
                 <td>
-                  <Link className="text-link" href={`/bookings/${booking.id}`}>
+                  <Link className="button button-secondary admin-inline-action" href={`/bookings/${booking.id}`}>
+                    <ExternalLink aria-hidden="true" size={14} />
                     {shortDisplayId(booking.id)}
                   </Link>
                   <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
