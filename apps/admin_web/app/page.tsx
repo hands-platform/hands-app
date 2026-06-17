@@ -174,32 +174,7 @@ type OperatorStartChecklistItem = {
   pillClass: string;
 };
 
-type DailyOperationsSnapshotItem = {
-  label: string;
-  value: string;
-  helper: string;
-  href: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-};
-
-type TodayCommandOrderItem = {
-  step: string;
-  title: string;
-  value: string;
-  detail: string;
-  href: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-};
-
-type ShiftOperatingRouteItem = {
-  lane: string;
-  title: string;
-  value: string;
-  checkpoint: string;
-  href: string;
-  owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-};
+type DashboardTone = 'ok' | 'info' | 'warn' | 'danger';
 
 type LiveOperationsRadarItem = {
   lane: string;
@@ -209,7 +184,7 @@ type LiveOperationsRadarItem = {
   detail: string;
   href: string;
   owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
-  tone: 'ok' | 'info' | 'warn' | 'danger';
+  tone: DashboardTone;
   checks: string[];
 };
 
@@ -220,7 +195,7 @@ type OperationsCommandBoardItem = {
   value: string;
   detail: string;
   href: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
+  tone: DashboardTone;
   checks: string[];
 };
 
@@ -231,7 +206,7 @@ type BookingEvidenceCommandQueueItem = {
   detail: string;
   href: string;
   owner: 'Dispatch' | 'Finance' | 'Support';
-  tone: 'ok' | 'info' | 'warn' | 'danger';
+  tone: DashboardTone;
   checks: string[];
   operatorAction: string;
   sample?: {
@@ -407,35 +382,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     activePayoutBatches,
     externalReadiness,
   });
-  const dailySnapshot = buildDailyOperationsSnapshot({
-    bookings,
-    providers,
-    appPresence,
-    bookingOps: liveBookingOps,
-    failedNotifications,
-    cashSettlementSummary,
-    activePayoutBatches,
-  });
-  const todayCommandOrder = buildTodayCommandOrder({
-    queue,
-    bookingOps: liveBookingOps,
-    matchingControl,
-    appPresence,
-    cashSettlementSummary,
-    failedNotifications,
-    activePayoutBatches,
-  });
-  const shiftOperatingRoute = buildShiftOperatingRoute({
-    queue,
-    bookingOps: liveBookingOps,
-    matchingControl,
-    appPresence,
-    partnerSupply,
-    cashSettlementSummary,
-    failedNotifications,
-    activePayoutBatches,
-    externalReadiness,
-  });
   const liveOperationsRadar = buildLiveOperationsRadar({
     bookingOps: liveBookingOps,
     bookingDeepDive: liveBookingDeepDive,
@@ -592,78 +538,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       };
     })
     .filter((counter): counter is { label: string; value: string; helper: string } => Boolean(counter));
-  const adminMenuMap = [
-    {
-      label: 'Customer Management',
-      href: '/customers',
-      primary: 'Customer list and customer detail',
-      helper:
-        'Profiles, booking history, chat archive, wallet-style payment view, saved addresses, and CS notes.',
-      links: [
-        ['Customers', '/customers'],
-        ['Customer Reviews', '/reviews'],
-        ['Coupons', '/coupons'],
-        ['Notifications', '/notifications'],
-      ],
-    },
-    {
-      label: 'Partner Management',
-      href: '/partners',
-      primary: 'Partner list and Partner detail',
-      helper:
-        'KYC, service setup, marketplace access, app activity, location freshness, tax, payout, and account controls.',
-      links: [
-        ['Partners', '/partners'],
-        ['Partner controls', '/partner-controls'],
-        ['Partner checks', '/partner-controls'],
-        ['App sessions', '/app-sessions'],
-      ],
-    },
-    {
-      label: 'Booking Operations',
-      href: '/bookings',
-      primary: 'Live booking monitor',
-      helper:
-        'Matching wait, first-pick response, marketplace participation, customer choice, chat, and closeout flow.',
-      links: [
-        ['All bookings', '/bookings'],
-        ['Matching', '/bookings?view=matching'],
-        ['Marketplace shortlist', '/bookings?view=marketplace'],
-        ['Blocked create', '/bookings?view=blocked-create'],
-        ['Chat handoff', '/bookings?view=chat'],
-      ],
-    },
-    {
-      label: 'Finance Operations',
-      href: '/earnings',
-      primary: 'Payments, wallet, tax, payout',
-      helper:
-        'Cash fee debt, platform fees, withholding, refunds, payout batches, and Partner settlement readiness.',
-      links: [
-        ['Closeout', '/finance-closeout'],
-        ['Payments', '/payments'],
-        ['Earnings', '/earnings'],
-        ['Cash settlements', '/cash-settlements'],
-        ['Payouts', '/payouts'],
-      ],
-    },
-    {
-      label: 'Policy and Catalog',
-      href: '/operations-policy',
-      primary: 'Rules operators can change',
-      helper:
-        'Matching windows, marketplace radius, booking gates, service options, price policy, tax policy, and setup checks.',
-      links: [
-        ['Operations policy', '/operations-policy'],
-        ['First-pick window', operationalPolicyHref(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes)],
-        ['Wallet gate', operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)],
-        ['Services', '/services'],
-        ['Tax policy', '/tax-policy'],
-        ['Setup', '/setup'],
-      ],
-    },
-  ];
-
   return (
     <div className="dashboard-page">
       <section className="toolbar">
@@ -774,12 +648,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div className="ops-task-grid admin-mt-14">
           {operationsCommandBoard.map((item) => (
             <Link
-              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
               href={item.href}
               key={item.lane}
             >
               <small>{item.owner}</small>
-              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
@@ -979,12 +853,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div className="ops-task-grid admin-mt-14">
           {bookingEvidenceCommandQueue.map((item) => (
             <Link
-              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
               href={item.href}
               key={item.lane}
             >
               <small>{item.owner}</small>
-              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
@@ -1065,14 +939,14 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         <div className="ops-task-grid admin-mt-14">
           {liveOperationsRadar.map((item) => (
             <Link
-              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              className={`ops-task-card ${dashboardToneCardClass(item.tone)}`}
               href={item.href}
               key={item.lane}
             >
               <small>
                 {item.owner} / {item.lane}
               </small>
-              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <span className={`pill ${dashboardTonePillClass(item.tone)}`}>{item.status}</span>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
               <div className="participant-list admin-mt-10">
@@ -1083,132 +957,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
                   </span>
                 ))}
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20 dashboard-card-scroll dashboard-menu-map-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Admin menu map</h2>
-            <p className="muted">
-              Recommended operating structure for staff: start with the dashboard, then open the specific
-              customer, Partner, booking, finance, or policy workspace.
-            </p>
-          </div>
-          <Link className="text-link" href="/audit-log">
-            Audit trail
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {adminMenuMap.map((group) => (
-            <div key={group.label}>
-              <span>{group.label}</span>
-              <strong>
-                <Link className="text-link" href={group.href}>
-                  {group.primary}
-                </Link>
-              </strong>
-              <small>{group.helper}</small>
-              <div className="actions admin-mt-10">
-                {group.links.map(([label, href]) => (
-                  <Link className="text-link" href={href} key={`${group.label}-${label}-${href}`}>
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Today operator order</h2>
-            <p className="muted">
-              Suggested admin sequence for the current shift. It keeps the team focused on live customers,
-              matching, chat handoff, cash settlement, payout, and alert delivery using factual activity only.
-            </p>
-          </div>
-          <Link className="text-link" href={todayCommandOrder[0]?.href ?? '/bookings'}>
-            Start first item
-          </Link>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {todayCommandOrder.map((item) => (
-            <Link
-              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
-              href={item.href}
-              key={item.step}
-            >
-              <small>{item.step}</small>
-              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.value}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-              <span className="ops-task-card-action">Open</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Shift operating route</h2>
-            <p className="muted">
-              Click-through route for the control room. It keeps live booking work, customer final choice,
-              Partner supply, chat archive, marketplace gates, and payout release in the same operating order.
-            </p>
-          </div>
-          <Link className="text-link" href={shiftOperatingRoute[0]?.href ?? '/bookings'}>
-            Open route start
-          </Link>
-        </div>
-        <div className="ops-task-grid admin-mt-14">
-          {shiftOperatingRoute.map((item, index) => (
-            <Link
-              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
-              href={item.href}
-              key={item.lane}
-            >
-              <small>
-                Route {index + 1} / {item.owner}
-              </small>
-              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.value}</span>
-              <h3>{item.title}</h3>
-              <p>{item.checkpoint}</p>
-              <span className="ops-task-card-action">{item.lane}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mt-20">
-        <div className="ops-section-header">
-          <div>
-            <h2>Daily operations snapshot</h2>
-            <p className="muted">
-              One-screen view of today&apos;s bookings, matching wait, app presence, Partner supply, cash
-              settlement blocks, and notification delivery.
-            </p>
-          </div>
-          <Link className="button button-secondary" href="/bookings">
-            <CalendarClock size={16} aria-hidden="true" />
-            Open booking board
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {dailySnapshot.map((item) => (
-            <Link
-              className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
-              href={item.href}
-              key={item.label}
-            >
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
             </Link>
           ))}
         </div>
@@ -1343,16 +1091,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </Link>
           ))}
         </div>
-      </section>
-
-      <section className="grid">
-        {metrics.map(([label, value, helper]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{value}</h2>
-            <p className="muted">{helper}</p>
-          </div>
-        ))}
       </section>
 
       <section className="card admin-mt-20 dashboard-card-scroll dashboard-matching-card">
@@ -3065,328 +2803,6 @@ function locationAgeMinutes(value?: string | null) {
     return null;
   }
   return Math.max(0, Math.round((Date.now() - timestamp) / 60000));
-}
-
-function buildDailyOperationsSnapshot(input: {
-  bookings: AdminBooking[];
-  providers: AdminProvider[];
-  appPresence: ReturnType<typeof buildAppPresence>;
-  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
-  failedNotifications: AdminNotification[];
-  cashSettlementSummary: AdminCashSettlementSummary;
-  activePayoutBatches: AdminPayoutBatch[];
-}): DailyOperationsSnapshotItem[] {
-  const todayBookings = input.bookings.filter((booking) =>
-    isInDateRange(bookingRecordCreatedAt(booking), 'today'),
-  );
-  const completedToday = input.bookings.filter(
-    (booking) =>
-      booking.status === 'COMPLETED' &&
-      isInDateRange(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt, 'today'),
-  );
-  const closedToday = input.bookings.filter(
-    (booking) =>
-      ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(booking.status) &&
-      isInDateRange(booking.updatedAt ?? booking.createdAt, 'today'),
-  );
-  const onlinePartners = input.providers.filter((provider) => provider.status.startsWith('ONLINE'));
-  const freshPartnerPins = onlinePartners.filter((provider) => {
-    const age = locationAgeMinutes(provider.currentLocationUpdatedAt);
-    return age !== null && age <= 30;
-  });
-
-  return [
-    {
-      label: 'Today bookings',
-      value: todayBookings.length.toString(),
-      helper: 'Requested or created today in Vietnam time',
-      href: '/bookings?date=today',
-      tone: todayBookings.length ? 'info' : 'ok',
-    },
-    {
-      label: 'Matching wait now',
-      value: input.bookingOps.openMatching.toString(),
-      helper: 'Customers waiting for Partner response',
-      href: '/bookings?view=matching',
-      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
-    },
-    {
-      label: 'Completed today',
-      value: completedToday.length.toString(),
-      helper: 'Finished work to close out',
-      href: '/bookings?status=COMPLETED',
-      tone: completedToday.length ? 'info' : 'ok',
-    },
-    {
-      label: 'Closed today',
-      value: closedToday.length.toString(),
-      helper: 'Cancelled, expired, no-show, or refunded records',
-      href: '/bookings?view=closeout',
-      tone: closedToday.length ? 'warn' : 'ok',
-    },
-    {
-      label: 'Active app customers',
-      value: input.appPresence.liveAppCustomers.toString(),
-      helper: `${input.appPresence.liveActiveBookingCustomers}/${input.appPresence.activeBookingCustomers} active-booking customer(s) live`,
-      href: '/app-sessions?role=CUSTOMER',
-      tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
-    },
-    {
-      label: 'Online Partners',
-      value: onlinePartners.length.toString(),
-      helper: `${freshPartnerPins.length} with fresh location pins`,
-      href: '/partners?review=direct-ready',
-      tone: onlinePartners.length ? 'ok' : 'warn',
-    },
-    {
-      label: 'Cash fee block',
-      value: input.cashSettlementSummary.providerCount.toString(),
-      helper: money(input.cashSettlementSummary.totalDebtAmount, input.cashSettlementSummary.currency),
-      href: '/cash-settlements',
-      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
-    },
-    {
-      label: 'Failed alerts',
-      value: input.failedNotifications.length.toString(),
-      helper: 'Notification rows needing retry or device check',
-      href: '/notifications?review=failed',
-      tone: input.failedNotifications.length ? 'warn' : 'ok',
-    },
-    {
-      label: 'Open payouts',
-      value: input.activePayoutBatches.length.toString(),
-      helper: 'Draft, processing, failed, or held payout batches',
-      href: '/payouts',
-      tone: input.activePayoutBatches.length ? 'info' : 'ok',
-    },
-    {
-      label: 'Closeout checks',
-      value: input.bookingOps.completedCloseoutChecks.toString(),
-      helper: 'Completed work missing finance records',
-      href: '/bookings?view=closeout',
-      tone: input.bookingOps.completedCloseoutChecks ? 'danger' : 'ok',
-    },
-  ];
-}
-
-function buildTodayCommandOrder(input: {
-  queue: OpsQueueItem[];
-  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
-  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  cashSettlementSummary: AdminCashSettlementSummary;
-  failedNotifications: AdminNotification[];
-  activePayoutBatches: AdminPayoutBatch[];
-}): TodayCommandOrderItem[] {
-  const liveMatchingCustomers = input.appPresence.liveOpenMatchingCustomers;
-  const matchingFollowUps = input.matchingControl.openRows.filter(
-    (row) => row.expired || row.freshEligibleCount === 0,
-  ).length;
-  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
-    row.customerState.toLowerCase().includes('choose'),
-  ).length;
-  const highQueueCount = input.queue.filter((item) => item.severity === 'high').length;
-  const financeQueueCount = input.queue.filter((item) =>
-    ['Finance', 'Payment', 'Payout'].includes(item.area),
-  ).length;
-
-  return [
-    {
-      step: 'Step 1',
-      title: 'Live customer wait',
-      value: `${input.bookingOps.openMatching} open`,
-      detail:
-        liveMatchingCustomers > 0
-          ? `${liveMatchingCustomers} customer(s) are in app while matching is open. Watch the booking board first.`
-          : 'No live customer is currently visible in open matching, but keep the booking board first in the shift.',
-      href: '/bookings?view=matching',
-      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
-    },
-    {
-      step: 'Step 2',
-      title: 'Partner response and marketplace',
-      value: `${matchingFollowUps} follow-up`,
-      detail:
-        matchingFollowUps > 0
-          ? 'Some open matching rows need Partner supply, location refresh, or timer review.'
-          : 'First-pick response window and marketplace participant supply look normal in the current snapshot.',
-      href: matchingFollowUps ? '/bookings?view=marketplace' : '/operations-policy',
-      tone: matchingFollowUps ? 'danger' : 'ok',
-    },
-    {
-      step: 'Step 3',
-      title: 'Customer choice and chat handoff',
-      value: `${customerChoiceRows} ready`,
-      detail:
-        customerChoiceRows > 0
-          ? 'At least one customer can select from the shortlist. After match, confirm chat handoff stays archived.'
-          : 'No customer choice list is currently ready. Keep chat creation checks visible for matched bookings.',
-      href: customerChoiceRows ? '/bookings?view=matching' : '/bookings?view=chat',
-      tone: customerChoiceRows ? 'info' : 'ok',
-    },
-    {
-      step: 'Step 4',
-      title: 'Cash fee settlement gate',
-      value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
-      detail: input.cashSettlementSummary.providerCount
-        ? `${money(
-            input.cashSettlementSummary.totalDebtAmount,
-            input.cashSettlementSummary.currency,
-          )} in open cash fee debt blocks final acceptance, service start, and payout release until settled.`
-        : 'No negative wallet cash fee block is loaded in the current snapshot.',
-      href: '/cash-settlements',
-      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
-    },
-    {
-      step: 'Step 5',
-      title: 'Finance closeout and payouts',
-      value: `${financeQueueCount} item(s)`,
-      detail:
-        financeQueueCount > 0
-          ? `${input.activePayoutBatches.length} payout batch(es), closeout checks, or payment/refund records need review.`
-          : 'Payment closeout, refund, and payout queues have no urgent item in the current snapshot.',
-      href: financeQueueCount ? '/payments' : '/payouts',
-      tone: financeQueueCount ? 'warn' : 'ok',
-    },
-    {
-      step: 'Step 6',
-      title: 'Notification delivery',
-      value: `${input.failedNotifications.length} failed`,
-      detail:
-        input.failedNotifications.length > 0
-          ? 'Retry failed delivery rows or disable stale devices so staff do not assume alerts arrived.'
-          : 'No failed notification rows are loaded right now.',
-      href: '/notifications?review=failed',
-      tone: input.failedNotifications.length ? 'warn' : 'ok',
-    },
-    {
-      step: 'Step 7',
-      title: 'Operator queue sweep',
-      value: `${highQueueCount} high`,
-      detail:
-        highQueueCount > 0
-          ? 'Open the first high-priority checklist item after the live customer and finance gates.'
-          : 'No high-priority checklist item remains after the main operating lanes.',
-      href: input.queue[0]?.href ?? '/',
-      tone: highQueueCount ? 'danger' : 'ok',
-    },
-  ];
-}
-
-function buildShiftOperatingRoute(input: {
-  queue: OpsQueueItem[];
-  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
-  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
-  appPresence: ReturnType<typeof buildAppPresence>;
-  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
-  cashSettlementSummary: AdminCashSettlementSummary;
-  failedNotifications: AdminNotification[];
-  activePayoutBatches: AdminPayoutBatch[];
-  externalReadiness: AdminExternalReadiness;
-}): ShiftOperatingRouteItem[] {
-  const firstPickRows = input.matchingControl.openRows.filter((row) =>
-    row.backupState.toLowerCase().includes('first-pick'),
-  ).length;
-  const marketplaceRows = input.matchingControl.openRows.filter((row) =>
-    row.backupState.toLowerCase().includes('marketplace'),
-  ).length;
-  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
-    row.customerState.toLowerCase().includes('choose'),
-  ).length;
-  const chatHandoffRows = input.queue.filter((item) => item.href.includes('view=chat')).length;
-  const currentStageSetupBlocked =
-    input.externalReadiness.currentStageOk === false &&
-    (input.externalReadiness.blockingCategories ?? []).length > 0;
-
-  return [
-    {
-      lane: 'Live booking route',
-      owner: 'Dispatch',
-      title: 'Start with active customer wait',
-      value: `${input.bookingOps.openMatching} open`,
-      checkpoint:
-        input.bookingOps.openMatching > 0
-          ? 'Open Matching rows should be checked before finance or setup work.'
-          : 'No open matching wait is visible; keep the booking board as the first operating screen.',
-      href: '/bookings?view=matching',
-      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
-    },
-    {
-      lane: 'Matching policy route',
-      owner: 'Dispatch',
-      title: 'Check first-pick and marketplace supply',
-      value: `${firstPickRows + marketplaceRows} row(s)`,
-      checkpoint:
-        firstPickRows + marketplaceRows > 0
-          ? 'Confirm preferred Partner response, 10km marketplace supply, and customer choice list readiness.'
-          : 'No first-pick or marketplace row needs active intervention in this snapshot.',
-      href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
-      tone: firstPickRows + marketplaceRows ? 'info' : 'ok',
-    },
-    {
-      lane: 'Customer support route',
-      owner: 'Support',
-      title: 'Confirm customer final choice and chat archive',
-      value: `${customerChoiceRows} choice`,
-      checkpoint:
-        customerChoiceRows > 0
-          ? 'Customer fallback choice is ready when first-pick does not validly win; after match, chat must exist and stay archived for admin.'
-          : 'No customer choice handoff is waiting. Review quiet or missing chat rows next.',
-      href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings?view=chat',
-      tone: customerChoiceRows || chatHandoffRows ? 'info' : 'ok',
-    },
-    {
-      lane: 'Finance settlement route',
-      owner: 'Finance',
-      title: 'Clear cash fee debt before finalization',
-      value: `${input.cashSettlementSummary.providerCount} Partner(s)`,
-      checkpoint:
-        input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout release wait for settlement.'
-          : 'No cash fee debt is blocking final acceptance, service start, or payout release.',
-      href: '/cash-settlements',
-      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
-    },
-    {
-      lane: 'Partner supply route',
-      owner: 'Partner Ops',
-      title: 'Refresh Partner readiness and last location',
-      value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online}`,
-      checkpoint:
-        input.partnerSupply.onlineAvailable > 0
-          ? `${input.partnerSupply.staleLocation} stale location pin(s); use Partner list for factual status checks.`
-          : 'No online available Partner is visible; check app sessions, location freshness, and onboarding readiness.',
-      href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
-      tone: input.partnerSupply.onlineAvailable
-        ? input.partnerSupply.staleLocation
-          ? 'warn'
-          : 'ok'
-        : 'warn',
-    },
-    {
-      lane: 'Alert and payout route',
-      owner: input.failedNotifications.length ? 'Support' : 'Finance',
-      title: 'Finish notifications and payout batches',
-      value: `${input.failedNotifications.length} alert / ${input.activePayoutBatches.length} payout`,
-      checkpoint:
-        input.failedNotifications.length > 0
-          ? 'Retry failed deliveries or mark stale devices so staff do not assume push reached the customer or Partner.'
-          : 'Notification delivery is clear; review payout batches by weekly, monthly, or admin-selected cycle.',
-      href: input.failedNotifications.length ? '/notifications?review=failed' : '/payouts',
-      tone: input.failedNotifications.length ? 'warn' : input.activePayoutBatches.length ? 'info' : 'ok',
-    },
-    {
-      lane: 'Setup route',
-      owner: 'Setup',
-      title: 'Track deferred external integrations',
-      value: currentStageSetupBlocked ? 'blocked' : 'ready',
-      checkpoint: currentStageSetupBlocked
-        ? 'Current-stage setup has blocking categories. Deferred SMS, FCM push, and payment services stay visible in Setup.'
-        : 'Current-stage setup is usable; deferred production services remain tracked for launch preparation.',
-      href: '/setup',
-      tone: currentStageSetupBlocked ? 'danger' : 'ok',
-    },
-  ];
 }
 
 function buildOperationsCommandBoard(input: {
@@ -5774,14 +5190,14 @@ function opsQueueCardClass(severity: OpsQueueItem['severity']) {
   return 'ops-task-done';
 }
 
-function todayCommandOrderCardClass(tone: TodayCommandOrderItem['tone']) {
+function dashboardToneCardClass(tone: DashboardTone) {
   if (tone === 'danger') return 'ops-task-blocked';
   if (tone === 'warn') return 'ops-task-pending';
   if (tone === 'info') return 'ops-task-active';
   return 'ops-task-done';
 }
 
-function todayCommandOrderPillClass(tone: TodayCommandOrderItem['tone']) {
+function dashboardTonePillClass(tone: DashboardTone) {
   if (tone === 'danger') return 'pill-danger';
   if (tone === 'warn') return 'pill-warn';
   if (tone === 'info') return 'pill-info';
