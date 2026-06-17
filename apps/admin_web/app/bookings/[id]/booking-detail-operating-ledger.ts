@@ -57,6 +57,11 @@ export function bookingDetailOperatingLedger({
   operatorNoteLines,
   closureSummary,
 }: BookingDetailOperatingLedgerInput): OperatingLedgerRow[] {
+  const refundLedgerEvidence =
+    paymentEvidence.refundRecordStatus === 'No refund record'
+      ? 'No refund ledger row.'
+      : paymentEvidence.refundEvidence;
+
   return [
     {
       area: 'Customer',
@@ -97,7 +102,7 @@ export function bookingDetailOperatingLedger({
     {
       area: 'Refund',
       status: paymentEvidence.refundRecordStatus,
-      evidence: paymentEvidence.refundEvidence,
+      evidence: refundLedgerEvidence,
       href: '#payment',
     },
     {

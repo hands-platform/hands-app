@@ -33,6 +33,8 @@ export function bookingDetailConnectedRecordLinks({
   financeTrace,
 }: BookingDetailConnectedRecordLinksInput): ConnectedRecordLink[] {
   const cashDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
+  const refundQueueDetail =
+    paymentEvidence.refundCountLabel === '0 refund row(s)' ? 'Queue empty.' : paymentEvidence.refundEvidence;
 
   return [
     {
@@ -80,7 +82,7 @@ export function bookingDetailConnectedRecordLinks({
     {
       label: 'Refund queue',
       value: paymentEvidence.refundCountLabel,
-      detail: paymentEvidence.refundEvidence,
+      detail: refundQueueDetail,
       href: paymentEvidence.refundHref,
       tone: paymentEvidence.refundTone,
     },

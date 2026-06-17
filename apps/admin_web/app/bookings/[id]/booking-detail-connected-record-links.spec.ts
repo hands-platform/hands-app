@@ -80,6 +80,10 @@ describe('bookingDetailConnectedRecordLinks', () => {
       href: '/chat-archive?q=booking-detail-connected-record-links',
       value: '4 message(s)',
     });
+    expect(links.find((link) => link.label === 'Refund queue')).toMatchObject({
+      detail: 'Queue empty.',
+      value: '0 refund row(s)',
+    });
   });
 
   it('keeps missing links and cash settlement path visible', () => {

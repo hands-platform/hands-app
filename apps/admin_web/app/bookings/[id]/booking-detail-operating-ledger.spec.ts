@@ -35,7 +35,7 @@ function baseInput(input: AdminBookingDetail) {
     paymentEvidence: {
       paymentStatus: 'AUTHORIZED',
       readablePaymentMethodAmountLabel: 'CARD / 500.000 VND',
-      refundRecordStatus: 'No refund',
+      refundRecordStatus: 'No refund record',
       refundEvidence: 'No refund record',
     },
     financeTrace: {
@@ -111,6 +111,10 @@ describe('bookingDetailOperatingLedger', () => {
     });
     expect(rows.find((row) => row.area === 'Tax')).toMatchObject({
       status: 'Logged',
+    });
+    expect(rows.find((row) => row.area === 'Refund')).toMatchObject({
+      evidence: 'No refund ledger row.',
+      status: 'No refund record',
     });
   });
 
