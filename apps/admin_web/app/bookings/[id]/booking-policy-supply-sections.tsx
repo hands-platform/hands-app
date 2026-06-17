@@ -128,8 +128,7 @@ export function BookingStageSnapshotSection({ stageSnapshot }: BookingStageSnaps
         <div>
           <h2>Booking stage snapshot</h2>
           <p className="muted">
-            Single operating readout for the first-pick timer, marketplace participation, customer choice, chat
-            handoff, and closeout.
+            Current stage, blocking signal, and next operator action for this booking.
           </p>
         </div>
         <span className={`pill ${stageSnapshot.pillClass}`}>{stageSnapshot.stage}</span>
@@ -164,8 +163,7 @@ export function BookingCustomerWaitPanelSection({
         <div>
           <h2>Customer wait and matching decision</h2>
           <p className="muted">
-            First-pick timer, marketplace Partner participation, customer final choice, and chat handoff in one
-            operating view.
+            Customer waiting signal, matching evidence, and the next action while assignment is unresolved.
           </p>
         </div>
         <span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>
@@ -270,9 +268,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
         <div>
           <h2>Booking-address supply check</h2>
           <p className="muted">
-            Booking-specific readout for usable marketplace supply and operational blockers. Actual
-            participation evidence stays in the participant ledger; wallet-debt Partners are repaired from
-            Partner and Finance lanes instead of being listed as booking candidates.
+            Usable Partner supply and operational blockers for this booking pin.
           </p>
         </div>
         <span className={`pill ${marketplaceSupply.candidateCommand.tone}`}>
@@ -367,8 +363,7 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
         <div>
           <h2>Marketplace Partner supply for this booking</h2>
           <p className="muted">
-            Booking-pin view of currently usable marketplace supply. This is not an activity log; participant
-            history and customer choice evidence are retained in the participant ledger.
+            Full Partner supply rows for the booking pin, with eligibility and exclusion evidence.
           </p>
         </div>
         <span className={`pill ${marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
