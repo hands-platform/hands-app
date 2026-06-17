@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CalendarClock, Star } from 'lucide-react';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { adminGet } from '../../lib/admin-api';
 import type { AdminCustomer } from '../../lib/admin-api';
@@ -122,13 +123,15 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       metrics={metrics}
       actions={
         <>
-          <Link className="text-link" href="/bookings">
+          <Link className="button button-secondary" href="/bookings">
+            <CalendarClock aria-hidden="true" size={16} />
             Open bookings
           </Link>
           <Link className="text-link" href="/payments">
             Open payments
           </Link>
-          <Link className="text-link" href="/reviews">
+          <Link className="button button-secondary" href="/reviews">
+            <Star aria-hidden="true" size={16} />
             Open reviews
           </Link>
         </>

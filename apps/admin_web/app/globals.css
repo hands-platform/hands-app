@@ -60,6 +60,7 @@
 
 html {
   background: var(--admin-bg);
+  overflow-x: hidden;
 }
 
 body {
@@ -76,7 +77,9 @@ body {
   background: var(--admin-bg);
   color: var(--admin-text);
   line-height: 1.46667;
-  min-width: 1440px;
+  min-width: 1024px;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 a {
@@ -102,7 +105,8 @@ a {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
-  min-width: 1440px;
+  min-width: 1024px;
+  width: 100%;
 }
 
 .sidebar {
