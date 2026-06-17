@@ -93,7 +93,7 @@ export function BookingOperatorQueueSections({
           <div>
             <h2>Operator command queue</h2>
             <p className="muted">
-              Practical same-shift actions for this booking. These are factual handling steps for operators.
+              Same-shift actions queued for operator handling.
             </p>
           </div>
           <span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>
@@ -127,8 +127,7 @@ export function BookingOperatorQueueSections({
           <div>
             <h2>Operator action availability</h2>
             <p className="muted">
-              Action map for this booking: what can be handled now, what is locked by status, and where the
-              operator should open the actual form.
+              Manual action availability and the linked destination for each action.
             </p>
           </div>
           <span className="pill pill-info">
@@ -206,8 +205,7 @@ export function BookingOpsCommandCenter({
           <div>
             <strong>Action evidence gate</strong>
             <p className="muted">
-              Pre-flight evidence check for the actions below. Operators can see why an action is available,
-              blocked, or needs more retained evidence before proceeding.
+              Evidence status for the manual action buttons below.
             </p>
           </div>
           <span className={`pill ${actionEvidenceGate.tone}`}>{actionEvidenceGate.status}</span>
@@ -223,47 +221,6 @@ export function BookingOpsCommandCenter({
               <small>{row.operatorRule}</small>
             </a>
           ))}
-        </div>
-        <div className="ops-task-note admin-mt-12" id="action-button-execution-map">
-          <strong>Action button execution map</strong>
-          <p className="muted">
-            Button-by-button operating readout. Use this before pressing payment, settlement, expiry,
-            no-show, or completed closeout actions.
-          </p>
-          <table className="table admin-mt-12">
-            <thead>
-              <tr>
-                <th>Action button</th>
-                <th>Current state</th>
-                <th>Why</th>
-                <th>Operator rule</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <strong>Booking gate reason</strong>
-                </td>
-                <td>
-                  <span className={`pill ${finalGateReason.pillClass}`}>{finalGateReason.title}</span>
-                </td>
-                <td>{finalGateReason.detail}</td>
-                <td>{finalGateReason.operatorRule}</td>
-              </tr>
-              {actionEvidenceGate.rows.map((row) => (
-                <tr key={`button-map-${row.action}`}>
-                  <td>
-                    <strong>{row.action}</strong>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.pillClass}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.operatorRule}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
       <div className="action-button-grid">
