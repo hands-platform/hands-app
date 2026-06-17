@@ -17,6 +17,7 @@ export function BookingPaymentAction({
   label,
   disabled,
   readout,
+  evidenceHint,
   ruleHint,
 }: {
   action: (...args: [FormData]) => Promise<void>;
@@ -25,6 +26,7 @@ export function BookingPaymentAction({
   label: string;
   disabled?: boolean;
   readout?: BookingPaymentActionReadout;
+  evidenceHint?: string;
   ruleHint?: string;
 }) {
   return (
@@ -36,7 +38,9 @@ export function BookingPaymentAction({
           {readout?.status ?? (disabled ? 'Locked' : 'Available')}
         </span>
         <strong>{label}</strong>
-        <p className="muted">{readout?.evidence ?? 'Payment action state is derived from the booking.'}</p>
+        <p className="muted">
+          {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}
+        </p>
       </div>
       <button type="submit" disabled={disabled}>
         {label}

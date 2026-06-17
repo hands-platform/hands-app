@@ -257,6 +257,7 @@ export function BookingOpsCommandCenter({
                 booking.payment.status === 'RELEASED'
               }
               readout={actionGateByAction.get('Release or refund')}
+              evidenceHint={`Release action state: ${booking.payment.status}.`}
               ruleHint="Release follows the action evidence gate above."
             />
             <BookingPaymentAction
@@ -266,6 +267,7 @@ export function BookingOpsCommandCenter({
               label="Refund"
               disabled={booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
               readout={actionGateByAction.get('Release or refund')}
+              evidenceHint={`Refund action state: ${booking.payment.status}.`}
               ruleHint="Refund follows the action evidence gate above."
             />
             {cashDebtNeedsSettlement && booking.earning?.id && (
