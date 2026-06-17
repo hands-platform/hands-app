@@ -2154,6 +2154,155 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.app-sessions-page > .admin-mb-16,
+.app-sessions-page > .admin-mt-16,
+.files-page > .admin-mb-16,
+.files-page > .admin-mt-16 {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.app-sessions-page > .card,
+.app-sessions-page > .detail-grid > .card,
+.files-page > .card {
+  margin-bottom: 0;
+  margin-top: 0;
+  max-height: min(960px, calc(100vh - 96px));
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.app-sessions-page .ops-section-header,
+.files-page .ops-section-header {
+  border-bottom: 1px solid var(--admin-border);
+  padding-bottom: 14px;
+}
+
+.app-sessions-page .ops-section-header > div,
+.files-page .ops-section-header > div {
+  min-width: 0;
+}
+
+.app-sessions-page .ops-section-header > .participant-list,
+.files-page .ops-section-header > .participant-list {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.app-sessions-page > .card:first-child > .actions {
+  align-items: center;
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  gap: 8px;
+  padding: 12px;
+}
+
+.app-sessions-page > .card:first-child > .actions .pill {
+  box-shadow: var(--admin-shadow-xs);
+  white-space: nowrap;
+}
+
+.app-sessions-page .ops-task-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.app-sessions-page .ops-task-card {
+  border-color: rgb(var(--admin-primary-channel) / 0.12);
+  box-shadow: var(--admin-shadow-xs);
+  min-height: 210px;
+}
+
+.app-sessions-page .ops-task-card:hover {
+  background: var(--admin-action-hover);
+  border-color: rgb(var(--admin-primary-channel) / 0.28);
+  box-shadow: var(--admin-shadow-md);
+  transform: translateY(-2px);
+}
+
+.app-sessions-page .detail-grid {
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-sessions-page .detail-grid .table {
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-xs);
+  margin-top: 14px;
+}
+
+.app-sessions-page .table code {
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 4px 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.files-page .filter-bar {
+  box-shadow: var(--admin-shadow-md);
+}
+
+.files-page .filter-bar .compact-form {
+  align-items: end;
+  background: var(--admin-action-hover);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  gap: 14px;
+  grid-template-columns: minmax(360px, 1fr) auto auto;
+  margin: 0;
+  padding: 16px;
+}
+
+.files-page .filter-bar .compact-form label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  line-height: 1.25;
+}
+
+.files-page .filter-bar .compact-form input {
+  background: #ffffff;
+  border-color: rgb(var(--admin-primary-channel) / 0.14);
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
+  min-height: 40px;
+}
+
+.files-page .filter-bar .compact-form input:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.56);
+  box-shadow:
+    0 0 0 3px rgb(var(--admin-primary-channel) / 0.12),
+    var(--admin-shadow-xs);
+  outline: none;
+}
+
+.files-page .filter-bar .compact-form button,
+.files-page .filter-bar .compact-form .pill {
+  box-shadow: none;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.files-page .filter-bar-options {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.12);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  gap: 8px;
+  padding: 12px;
+}
+
 .earnings-page .admin-table-scroll,
 .app-sessions-page .admin-table-scroll,
 .files-page .admin-table-scroll {
@@ -2179,7 +2328,52 @@ a.action-button-card:hover {
 
 .app-sessions-page .admin-table-scroll .table,
 .files-page .admin-table-scroll .table {
-  min-width: 1040px;
+  min-width: 1260px;
+  width: 100%;
+}
+
+.files-page .files-review-table th:nth-child(1),
+.files-page .files-review-table td:nth-child(1) {
+  min-width: 210px;
+}
+
+.files-page .files-review-table th:nth-child(2),
+.files-page .files-review-table td:nth-child(2) {
+  min-width: 230px;
+}
+
+.files-page .files-review-table th:nth-child(5),
+.files-page .files-review-table td:nth-child(5) {
+  min-width: 180px;
+}
+
+.files-page .files-review-table th:nth-child(6),
+.files-page .files-review-table td:nth-child(6) {
+  min-width: 210px;
+}
+
+.files-page .files-review-table td p,
+.app-sessions-page .table td .muted {
+  margin-bottom: 0;
+  margin-top: 4px;
+}
+
+.files-page .action-menu .participant-list {
+  align-items: center;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.files-page .action-menu .pill {
+  box-shadow: none;
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+@media (min-width: 1600px) {
+  .app-sessions-page .ops-task-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .earnings-page .admin-table-scroll .table th,
