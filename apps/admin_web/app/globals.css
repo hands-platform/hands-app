@@ -4841,6 +4841,8 @@ textarea:focus-visible {
   gap: 12px;
 }
 
+.admin-form-search,
+.admin-form-select,
 .vuexy-customer-search,
 .vuexy-customer-select {
   align-items: center;
@@ -4853,11 +4855,14 @@ textarea:focus-visible {
   padding: 0 14px;
 }
 
+.admin-form-search,
 .vuexy-customer-search {
   flex: 1 1 260px;
   min-width: 240px;
 }
 
+.admin-form-search input,
+.admin-form-select select,
 .vuexy-customer-search input,
 .vuexy-customer-select select,
 .vuexy-customer-advanced-grid input,
@@ -4870,25 +4875,31 @@ textarea:focus-visible {
   outline: none;
 }
 
+.admin-form-search input,
 .vuexy-customer-search input {
   flex: 1;
   min-width: 0;
 }
 
+.admin-form-search input::placeholder,
 .vuexy-customer-search input::placeholder {
   color: var(--admin-disabled);
 }
 
+.admin-form-select,
 .vuexy-customer-select {
   justify-content: space-between;
   min-width: 180px;
 }
 
+.admin-form-select select,
 .vuexy-customer-select select {
   appearance: none;
   flex: 1;
 }
 
+.admin-form-control-button,
+.admin-form-control-link,
 .vuexy-customer-button,
 .vuexy-customer-export,
 .customer-detail-action-primary,
@@ -4908,6 +4919,8 @@ textarea:focus-visible {
   text-decoration: none;
 }
 
+.admin-form-control-button:hover,
+.admin-form-control-link:hover,
 .vuexy-customer-button:hover,
 .vuexy-customer-export:hover,
 .customer-detail-action-primary:hover,
@@ -5150,10 +5163,12 @@ textarea:focus-visible {
   color: var(--admin-accent-strong);
 }
 
+.admin-action-dropdown,
 .vuexy-customer-action-dropdown {
   position: relative;
 }
 
+.admin-action-trigger,
 .vuexy-customer-action-trigger {
   align-items: center;
   background: var(--admin-action-hover);
@@ -5172,16 +5187,20 @@ textarea:focus-visible {
   width: 34px;
 }
 
+.admin-action-trigger::-webkit-details-marker,
 .vuexy-customer-action-trigger::-webkit-details-marker {
   display: none;
 }
 
+.admin-action-dropdown[open] .admin-action-trigger,
+.admin-action-trigger:hover,
 .vuexy-customer-action-dropdown[open] .vuexy-customer-action-trigger,
 .vuexy-customer-action-trigger:hover {
   background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);
 }
 
+.admin-action-menu,
 .vuexy-customer-action-menu {
   background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
@@ -5197,6 +5216,7 @@ textarea:focus-visible {
   z-index: 10;
 }
 
+.admin-action-menu::before,
 .vuexy-customer-action-menu::before {
   border-bottom: 7px solid var(--admin-border);
   border-left: 7px solid transparent;
@@ -5207,6 +5227,7 @@ textarea:focus-visible {
   top: -7px;
 }
 
+.admin-action-item,
 .vuexy-customer-action-item {
   align-items: center;
   border-radius: 6px;
@@ -5223,10 +5244,12 @@ textarea:focus-visible {
     color 0.18s ease;
 }
 
+.admin-action-item svg,
 .vuexy-customer-action-item svg {
   color: #8f85f3;
 }
 
+.admin-action-item:hover,
 .vuexy-customer-action-item:hover {
   background: var(--admin-primary-soft);
   color: var(--admin-accent-strong);

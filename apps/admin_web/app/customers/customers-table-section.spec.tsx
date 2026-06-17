@@ -30,9 +30,9 @@ describe('CustomersTableSection', () => {
         'admin-table-scroll',
         'table vuexy-customer-table',
         'vuexy-customer-actions vuexy-customer-actions-row',
-        'vuexy-customer-action-dropdown',
-        'vuexy-customer-action-trigger',
-        'vuexy-customer-action-menu',
+        'admin-action-dropdown vuexy-customer-action-dropdown',
+        'admin-action-trigger vuexy-customer-action-trigger',
+        'admin-action-menu vuexy-customer-action-menu',
       ]),
     );
   });

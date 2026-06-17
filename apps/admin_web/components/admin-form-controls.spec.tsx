@@ -1,0 +1,87 @@
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from './admin-form-controls';
+
+describe('Admin form controls', () => {
+  it('renders Vuexy-style select and search controls with stable labels', () => {
+    const select = AdminFormSelect({
+      className: 'customer-select',
+      defaultValue: 'completed',
+      label: 'Completed reservations',
+      name: 'booking',
+      options: [
+        { label: 'All bookings', value: '' },
+        { label: 'Completed work', value: 'completed' },
+      ],
+    });
+    const search = AdminFormSearch({
+      className: 'customer-search',
+      defaultValue: 'Linh',
+      label: 'Search customer',
+      name: 'q',
+      placeholder: 'Search Customer',
+    });
+
+    expect(select.props.className).toBe('admin-form-select customer-select');
+    expect(search.props.className).toBe('admin-form-search customer-search');
+    expect(textContent(select)).toContain('Completed reservations');
+    expect(textContent(select)).toContain('Completed work');
+    expect(textContent(search)).toContain('Search customer');
+  });
+
+  it('renders link and button controls without owning behavior', () => {
+    const link = AdminFormControlLink({
+      children: 'Export',
+      className: 'customer-export',
+      download: 'hands-customers.csv',
+      href: 'data:text/csv,name',
+    });
+    const button = AdminFormControlButton({
+      children: 'Apply',
+      className: 'customer-apply',
+    });
+
+    expect(link.props).toMatchObject({
+      className: 'admin-form-control-link customer-export',
+      download: 'hands-customers.csv',
+      href: 'data:text/csv,name',
+    });
+    expect(button.props).toMatchObject({
+      className: 'admin-form-control-button customer-apply',
+      type: 'submit',
+    });
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

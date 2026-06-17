@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { ChevronDown, Download, Search } from 'lucide-react';
+import { Download } from 'lucide-react';
+import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import type { CustomerFilters } from './customer-filters';
 
 type CustomerFilterBoardProps = {
@@ -31,52 +37,41 @@ export function CustomerFilterBoard({
       <form action="/customers" className="vuexy-customer-form">
         <input name="sort" type="hidden" value={filters.sort} />
         <div className="vuexy-customer-form-primary">
-          <label className="vuexy-customer-select">
-            <span className="sr-only">Completed reservations</span>
-            <select defaultValue={filters.booking} name="booking">
-              <option value="">All bookings</option>
-              <option value="completed">Completed work</option>
-              <option value="active">Active booking</option>
-              <option value="closed">Closed booking</option>
-              <option value="no-booking">No booking yet</option>
-            </select>
-            <ChevronDown aria-hidden="true" size={16} />
-          </label>
-          <label className="vuexy-customer-select">
-            <span className="sr-only">Wallet state</span>
-            <select defaultValue={filters.payment} name="payment">
-              <option value="">All wallet</option>
-              <option value="captured">Captured payment</option>
-              <option value="refund">Refund history</option>
-              <option value="issue">Payment follow-up</option>
-              <option value="no-payment">No payment record</option>
-            </select>
-            <ChevronDown aria-hidden="true" size={16} />
-          </label>
-          <label className="vuexy-customer-select">
-            <span className="sr-only">Last login state</span>
-            <select defaultValue={filters.seen} name="seen">
-              <option value="">All logins</option>
-              <option value="live">In app now</option>
-              <option value="7d">Seen in 7 days</option>
-              <option value="30d">Seen in 30 days</option>
-              <option value="no-session">No app session</option>
-              <option value="inactive-30d">No access 30 days</option>
-            </select>
-            <ChevronDown aria-hidden="true" size={16} />
-          </label>
-          <label className="vuexy-customer-search">
-            <Search aria-hidden="true" size={18} />
-            <span className="sr-only">Search customer</span>
-            <input defaultValue={filters.q} name="q" placeholder="Search Customer" type="search" />
-          </label>
-          <a className="vuexy-customer-export" download="hands-customers.csv" href={csvHref}>
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.booking}
+            label="Completed reservations"
+            name="booking"
+            options={bookingFilterOptions}
+          />
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.payment}
+            label="Wallet state"
+            name="payment"
+            options={paymentFilterOptions}
+          />
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.seen}
+            label="Last login state"
+            name="seen"
+            options={seenFilterOptions}
+          />
+          <AdminFormSearch
+            className="vuexy-customer-search"
+            defaultValue={filters.q}
+            label="Search customer"
+            name="q"
+            placeholder="Search Customer"
+          />
+          <AdminFormControlLink className="vuexy-customer-export" download="hands-customers.csv" href={csvHref}>
             <Download aria-hidden="true" size={16} />
             Export
-          </a>
-          <button className="vuexy-customer-button" type="submit">
+          </AdminFormControlLink>
+          <AdminFormControlButton className="vuexy-customer-button">
             Apply
-          </button>
+          </AdminFormControlButton>
         </div>
       </form>
 
@@ -98,3 +93,28 @@ export function CustomerFilterBoard({
     </section>
   );
 }
+
+const bookingFilterOptions = [
+  { label: 'All bookings', value: '' },
+  { label: 'Completed work', value: 'completed' },
+  { label: 'Active booking', value: 'active' },
+  { label: 'Closed booking', value: 'closed' },
+  { label: 'No booking yet', value: 'no-booking' },
+] as const;
+
+const paymentFilterOptions = [
+  { label: 'All wallet', value: '' },
+  { label: 'Captured payment', value: 'captured' },
+  { label: 'Refund history', value: 'refund' },
+  { label: 'Payment follow-up', value: 'issue' },
+  { label: 'No payment record', value: 'no-payment' },
+] as const;
+
+const seenFilterOptions = [
+  { label: 'All logins', value: '' },
+  { label: 'In app now', value: 'live' },
+  { label: 'Seen in 7 days', value: '7d' },
+  { label: 'Seen in 30 days', value: '30d' },
+  { label: 'No app session', value: 'no-session' },
+  { label: 'No access 30 days', value: 'inactive-30d' },
+] as const;
