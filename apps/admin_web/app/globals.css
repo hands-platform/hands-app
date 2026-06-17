@@ -476,6 +476,19 @@ a {
   background: var(--admin-action-hover);
 }
 
+.admin-inline-action {
+  box-shadow: none;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.admin-inline-action.admin-mt-8 {
+  margin-top: 8px;
+}
+
 .calendar-page {
   display: grid;
   gap: 20px;

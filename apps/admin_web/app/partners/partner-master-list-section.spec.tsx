@@ -23,7 +23,7 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Open');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'text-link']),
+      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'button button-secondary admin-inline-action']),
     );
   });
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { User } from 'lucide-react';
 
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
@@ -118,7 +119,8 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
                   <p className="muted">{row.accountNote}</p>
                 </td>
                 <td>
-                  <Link className="text-link" href={`/partners/${row.provider.id}`}>
+                  <Link className="button button-secondary admin-inline-action" href={`/partners/${row.provider.id}`}>
+                    <User aria-hidden="true" size={14} />
                     Detail
                   </Link>
                 </td>

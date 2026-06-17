@@ -44,7 +44,9 @@ describe('PartnerSecurityCell', () => {
     expect(rendered).toContain('1 shared device id(s)');
     expect(rendered).toContain('Review device/session');
     expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partners/partner-security']));
-    expect(classNamesIn(cell)).toEqual(expect.arrayContaining(['pill pill-danger', 'text-link']));
+    expect(classNamesIn(cell)).toEqual(
+      expect.arrayContaining(['pill pill-danger', 'button button-secondary admin-inline-action admin-mt-8']),
+    );
   });
 
   it('renders a missing-device fallback for partners without app devices', () => {

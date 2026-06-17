@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ShieldCheck } from 'lucide-react';
 
 import type { AdminProvider } from '../../lib/admin-api';
 import { formatDate } from './partner-list-ops';
@@ -49,7 +50,8 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
         <p className="muted">{sessionCheckSessions.length} session check(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
-      <Link className="text-link" href={`/partners/${provider.id}`}>
+      <Link className="button button-secondary admin-inline-action admin-mt-8" href={`/partners/${provider.id}`}>
+        <ShieldCheck aria-hidden="true" size={14} />
         Review device/session
       </Link>
     </div>

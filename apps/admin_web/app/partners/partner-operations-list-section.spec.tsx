@@ -30,7 +30,7 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'text-link']),
+      expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'button button-secondary admin-inline-action']),
     );
   });
 
