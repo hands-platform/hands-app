@@ -44,16 +44,6 @@ export const adminNavSections: AdminNavSection[] = [
     description: 'Live operating picture for the current shift.',
     links: [
       {
-        href: '/',
-        label: 'Command Dashboard',
-        description: 'Top-level booking, finance, Partner, customer, and setup signals.',
-      },
-      {
-        href: '/operations-handoff',
-        label: 'Shift Handoff',
-        description: 'Operator notes and unresolved work for the next shift.',
-      },
-      {
         href: '/calendar',
         label: 'Calendar',
         description: 'Shared operations calendar for live planning and follow-up blocks.',
@@ -62,11 +52,6 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',
-      },
-      {
-        href: '/notifications?review=failed',
-        label: 'Failed Alerts',
-        description: 'Notifications that failed and may need retry or follow-up.',
       },
     ],
   },
@@ -80,11 +65,6 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Complete booking list with filters and detail links.',
       },
       {
-        href: '/bookings?view=attention',
-        label: 'Attention Queue',
-        description: 'Bookings that need immediate operator review.',
-      },
-      {
         href: '/bookings?view=matching',
         label: 'Live Matching',
         description: 'First-pick and marketplace matching windows.',
@@ -93,11 +73,6 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/bookings?view=customer-choice',
         label: 'Customer Choice',
         description: 'Bookings waiting for the customer to select the final Partner.',
-      },
-      {
-        href: '/bookings?view=marketplace',
-        label: '10km Marketplace',
-        description: 'Eligible Partner participation around the booking address.',
       },
       {
         href: '/bookings?view=chat-repair',
@@ -157,11 +132,6 @@ export const adminNavSections: AdminNavSection[] = [
         label: 'Live Customers',
         description: 'Customers currently active in the app.',
       },
-      {
-        href: '/chat-archive',
-        label: 'Customer Chat Evidence',
-        description: 'Admin-retained chat history for matched bookings.',
-      },
     ],
   },
   {
@@ -182,11 +152,6 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/earnings',
         label: 'Earnings',
         description: 'Partner earning rows, fee/tax logs, and settlement impact.',
-      },
-      {
-        href: '/cash-settlements',
-        label: 'Cash Settlements',
-        description: 'Partner company receivables from cash bookings.',
       },
       {
         href: '/payouts',

@@ -13,7 +13,6 @@ import {
   ClipboardCheck,
   FileClock,
   FileText,
-  HandCoins,
   HeartHandshake,
   LifeBuoy,
   ListChecks,
@@ -34,26 +33,20 @@ import {
 import { adminNavSections, adminShiftFlow } from '../lib/admin-navigation';
 
 const iconByLabel = {
-  '10km Marketplace': MapPinned,
   'All Bookings': CalendarClock,
   Calendar: CalendarDays,
   'App Presence': Activity,
-  'Attention Queue': BellRing,
   'Audit Log': FileClock,
   'Cash Debt': WalletCards,
-  'Cash Settlements': HandCoins,
   'Chat Archive': MessageSquareText,
   'Chat Repair': MessageSquareText,
-  'Command Dashboard': Sparkles,
   Coupons: ReceiptText,
-  'Customer Chat Evidence': MessageSquareText,
   'Customer Choice': UserRoundCheck,
   'Customer List': UsersRound,
   'Direct Request Held': ShieldCheck,
   Earnings: CircleDollarSign,
   Feedback: LifeBuoy,
   'Customer Reviews': Star,
-  'Failed Alerts': BellRing,
   Files: FileText,
   'Finance Closeout': ClipboardCheck,
   Handoff: FileClock,
@@ -72,7 +65,6 @@ const iconByLabel = {
   Refunds: RefreshCw,
   'Service Catalog': PackageCheck,
   Setup: ListChecks,
-  'Shift Handoff': FileClock,
   'Start Shift': Sparkles,
   'Tax Policy': FileText,
   'Urgent Bookings': BellRing,
@@ -123,7 +115,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               {adminNavSections.map((section) => (
                 <section className="nav-section" key={section.label}>
                   <span className="nav-section-label">{section.label}</span>
-                  <p className="nav-section-description">{section.description}</p>
                   {section.links.map((link) => (
                     <Link className="nav-link" key={link.href} href={link.href} title={link.description}>
                       <NavIcon label={link.label} />
