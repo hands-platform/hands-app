@@ -37,6 +37,8 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
 
     const rendered = textContent(section);
 
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected readiness checklist section to render.');
     expect(section.type).toBe('section');
     expect(rendered).toContain('Shift handoff checklist');
     expect(rendered).toContain('1 check(s) open');
@@ -45,13 +47,9 @@ describe('OperationsHandoffReadinessChecklistSection', () => {
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
   });
 
-  it('renders ready state when nothing is open', () => {
-    const rendered = textContent(
-      OperationsHandoffReadinessChecklistSection({ openCount: 0, rows: [] }),
-    );
+  it('returns no section when nothing is open', () => {
+    const section = OperationsHandoffReadinessChecklistSection({ openCount: 0, rows: [] });
 
-    expect(rendered).toContain('Ready to hand over');
-    expect(rendered).toContain('Handoff checks are ready');
-    expect(rendered).toContain('No open checklist item needs review');
+    expect(section).toBeNull();
   });
 });

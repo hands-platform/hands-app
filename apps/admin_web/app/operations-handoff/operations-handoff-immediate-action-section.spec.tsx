@@ -36,6 +36,8 @@ describe('OperationsHandoffImmediateActionSection', () => {
 
     const rendered = textContent(section);
 
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected immediate action section to render.');
     expect(section.type).toBe('section');
     expect(rendered).toContain('Immediate action queue');
     expect(rendered).toContain('1');
@@ -45,12 +47,9 @@ describe('OperationsHandoffImmediateActionSection', () => {
     expect(hrefsIn(section)).toContain('/bookings?view=matching');
   });
 
-  it('renders a clear lane card when there are no actions', () => {
-    const rendered = textContent(OperationsHandoffImmediateActionSection({ actions: [] }));
+  it('returns no section when there are no actions', () => {
+    const section = OperationsHandoffImmediateActionSection({ actions: [] });
 
-    expect(rendered).toContain('0');
-    expect(rendered).toContain('action lane(s)');
-    expect(rendered).toContain('No immediate action lane');
-    expect(rendered).toContain('Continue monitoring the current range');
+    expect(section).toBeNull();
   });
 });

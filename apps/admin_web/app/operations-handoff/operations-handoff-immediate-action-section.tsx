@@ -10,6 +10,10 @@ export function OperationsHandoffImmediateActionSection({
 }: OperationsHandoffImmediateActionSectionProps) {
   const visibleActions = actions.filter((item) => !item.statusClass.includes('success'));
 
+  if (visibleActions.length === 0) {
+    return null;
+  }
+
   return (
     <section className="card admin-mb-16">
       <div className="toolbar">
@@ -35,21 +39,6 @@ export function OperationsHandoffImmediateActionSection({
             <small>{item.nextAction}</small>
           </Link>
         ))}
-        {visibleActions.length === 0 ? (
-          <div className="ops-task-card">
-            <span className="signal signal-ok">Clear</span>
-            <h3>No immediate action lane</h3>
-            <p>
-              Live matching, chat, cash gate, alerts, Partner follow-up, closeout, and recent notes
-              are clear.
-            </p>
-            <div className="participant-list">
-              <span className="pill pill-success">0 action</span>
-              <span className="pill pill-success">Ops</span>
-            </div>
-            <small>Continue monitoring the current range.</small>
-          </div>
-        ) : null}
       </div>
     </section>
   );
