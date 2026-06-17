@@ -262,8 +262,7 @@ export function BookingMatchingRuleSnapshotSection({
         <div>
           <h2>Matching rule snapshot</h2>
           <p className="muted">
-            Detail-level rule readout for first-pick wait, booking-address marketplace radius, customer final
-            choice, chat handoff, and wallet gate.
+            Current matching rule state and the linked policy actions for this booking.
           </p>
         </div>
         <span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>
@@ -295,8 +294,7 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
         <div>
           <h2>MVP authority contract</h2>
           <p className="muted">
-            One-screen check against the HANDS MVP policy: NestJS business authority, address snapshot,
-            first-pick priority, 10km marketplace, customer fallback Partner choice, chat retention, and wallet gate.
+            Authority source check for the booking decisions shown on this page.
           </p>
         </div>
         <Link className="button button-secondary admin-inline-action" href="/operations-policy">
@@ -355,8 +353,7 @@ export function BookingRecentOperationsTimelineSection({
         <div>
           <h2>Booking recent operations timeline</h2>
           <p className="muted">
-            Latest factual booking steps before an operator decides: address, first-pick wait, 10km Partner
-            participation, customer final choice, chat, location, payment, cash debt, and closeout.
+            Latest factual booking steps before an operator decides the next action.
           </p>
         </div>
         <Link className="button button-secondary admin-inline-action" href="#operating-timeline">
