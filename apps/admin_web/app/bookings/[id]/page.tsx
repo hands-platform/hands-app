@@ -15,6 +15,7 @@ import {
   type BookingActionStatusSectionsProps,
 } from './booking-action-status-sections';
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
+import { BookingDetailDisclosureGroup } from './booking-detail-disclosure-group';
 import {
   BookingCommandDecisionStripSection,
   type BookingCommandDecisionStripSectionProps,
@@ -758,61 +759,49 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingPriorityBriefingSection {...priorityBriefingProps} />
 
-      <BookingEvidenceSections {...evidenceSectionsProps} />
-
-      <BookingCloseoutSections {...closeoutSectionsProps} />
-
-      <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
-
-      <BookingHandoffChecklistSection {...handoffChecklistProps} />
-
-      <BookingFullRecordIndex {...fullRecordIndexProps} />
-
-      <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-
-      <BookingOperatingLedgerSection {...operatingLedgerProps} />
+      <BookingActionStatusSections {...actionStatusSectionsProps} />
 
       <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
 
-      <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+      <BookingDetailDisclosureGroup
+        helper="Chat, closeout, operator queue, handoff, and connected records are kept here for decision evidence."
+        label="Evidence"
+        title="Evidence and closeout records"
+      >
+        <BookingEvidenceSections {...evidenceSectionsProps} />
+        <BookingCloseoutSections {...closeoutSectionsProps} />
+        <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
+        <BookingHandoffChecklistSection {...handoffChecklistProps} />
+        <BookingFullRecordIndex {...fullRecordIndexProps} />
+      </BookingDetailDisclosureGroup>
 
-      <BookingOperatingTimelineSection {...operatingTimelineProps} />
-
-      <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-
-      <BookingChatLifecycleSection {...chatLifecycleProps} />
-
-      <BookingOpsCommandCenter {...opsCommandCenterProps} />
-
-      <BookingStageSnapshotSection {...stageSnapshotProps} />
-
-      <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
-
-      <BookingAppliedPolicySection {...appliedPolicyProps} />
-
-      <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
-
-      <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
-
-      <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
-
-      <BookingAlertTraceSection {...alertTraceProps} />
-
-      <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
-
-      <BookingAttentionChecksSection {...attentionChecksProps} />
-
-      <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
-
-      <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
-
-      <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
-
-      <BookingActionStatusSections {...actionStatusSectionsProps} />
-
-      <BookingRecordDetailSections {...recordDetailSectionsProps} />
-
-      <BookingActivityPanel {...activityPanelProps} />
+      <BookingDetailDisclosureGroup
+        helper="Operational timelines, policy signals, supply checks, finance trace, and full record detail stay available below the summary."
+        label="Operations"
+        title="Detailed operating signals"
+      >
+        <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
+        <BookingOperatingLedgerSection {...operatingLedgerProps} />
+        <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+        <BookingOperatingTimelineSection {...operatingTimelineProps} />
+        <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+        <BookingChatLifecycleSection {...chatLifecycleProps} />
+        <BookingOpsCommandCenter {...opsCommandCenterProps} />
+        <BookingStageSnapshotSection {...stageSnapshotProps} />
+        <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
+        <BookingAppliedPolicySection {...appliedPolicyProps} />
+        <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
+        <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
+        <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
+        <BookingAlertTraceSection {...alertTraceProps} />
+        <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
+        <BookingAttentionChecksSection {...attentionChecksProps} />
+        <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
+        <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
+        <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
+        <BookingRecordDetailSections {...recordDetailSectionsProps} />
+        <BookingActivityPanel {...activityPanelProps} />
+      </BookingDetailDisclosureGroup>
     </div>
   );
 }

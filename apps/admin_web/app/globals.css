@@ -3577,6 +3577,80 @@ a.action-button-card:hover {
   scrollbar-gutter: stable;
 }
 
+.booking-detail-section-disclosure {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: var(--admin-shadow-sm);
+  min-width: 0;
+}
+
+.booking-detail-section-summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  list-style: none;
+  min-height: 64px;
+  padding: 16px 18px;
+}
+
+.booking-detail-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.booking-detail-section-summary > span:last-child {
+  display: grid;
+  gap: 4px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.booking-detail-section-summary strong {
+  color: var(--admin-text);
+  font-size: 0.98rem;
+}
+
+.booking-detail-section-summary small {
+  color: var(--admin-muted);
+  line-height: 1.45;
+}
+
+.booking-detail-section-summary::after {
+  align-items: center;
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  color: var(--admin-muted);
+  content: "+";
+  display: inline-flex;
+  font-weight: 700;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.booking-detail-section-disclosure[open] > .booking-detail-section-summary::after {
+  content: "-";
+}
+
+.booking-detail-section-disclosure-body {
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.booking-detail-section-disclosure-body > .card,
+.booking-detail-section-disclosure-body > section.card {
+  margin: 0;
+  max-height: min(780px, calc(100vh - 180px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 .booking-detail-page .admin-table-scroll {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
