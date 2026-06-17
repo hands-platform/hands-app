@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Settings2 } from 'lucide-react';
 
 import { CommandCopyRow } from '../../components/command-copy-row';
 import type {
@@ -38,7 +39,8 @@ export function NotificationChannelPolicySection({
             requests are intentionally in-app only or routed to FCM push.
           </p>
         </div>
-        <Link className="text-link" href="/operations-policy">
+        <Link className="button button-secondary" href="/operations-policy">
+          <Settings2 aria-hidden="true" size={16} />
           Change alert policy
         </Link>
       </div>
