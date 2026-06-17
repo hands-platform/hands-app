@@ -6,7 +6,6 @@ import {
   Activity,
   BadgeCheck,
   BellRing,
-  BookOpenCheck,
   BriefcaseBusiness,
   CalendarClock,
   CalendarDays,
@@ -27,7 +26,6 @@ import {
   Sparkles,
   Star,
   Store,
-  UserRoundCheck,
   UsersRound,
   WalletCards,
 } from 'lucide-react';
@@ -42,9 +40,7 @@ const iconByLabel = {
   'Audit Log': FileClock,
   'Cash Debt': WalletCards,
   'Chat Archive': MessageSquareText,
-  'Chat Repair': MessageSquareText,
   Coupons: ReceiptText,
-  'Customer Choice': UserRoundCheck,
   'Customer List': UsersRound,
   'Direct Request Held': ShieldCheck,
   Earnings: CircleDollarSign,
@@ -55,11 +51,8 @@ const iconByLabel = {
   Handoff: FileClock,
   'KYC Review': BadgeCheck,
   'Live Customers': Activity,
-  'Live Matching': RefreshCw,
-  Marketplace: Store,
   'Marketplace Ready': Store,
   Notifications: BellRing,
-  'No-show Evidence': BookOpenCheck,
   'Operations Policy': Settings2,
   'Partner Controls': BriefcaseBusiness,
   'Partner List': HeartHandshake,
@@ -70,7 +63,6 @@ const iconByLabel = {
   Setup: ListChecks,
   'Start Shift': Sparkles,
   'Tax Policy': FileText,
-  'Urgent Bookings': BellRing,
 } as const;
 
 type AdminShellNavProps = {

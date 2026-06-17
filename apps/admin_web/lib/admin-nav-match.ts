@@ -10,6 +10,10 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
   }
 
   if (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) {
+    if (hrefPath === '/bookings') {
+      return true;
+    }
+
     return !search || pathname !== hrefPath;
   }
 

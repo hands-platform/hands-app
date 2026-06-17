@@ -10,9 +10,17 @@ describe('admin navigation', () => {
 
     expect(linksByHref.get('/')).toBe('Command: Start Shift');
     expect(linksByHref.get('/operations-handoff')).toBe('Command: Handoff');
-    expect(linksByHref.get('/bookings?view=attention')).toBe('Bookings: Urgent Bookings');
-    expect(linksByHref.get('/bookings?view=marketplace')).toBe('Bookings: Marketplace');
+    expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
+  });
+
+  it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
+    const bookingSection = adminNavSections.find((section) => section.label === 'Bookings');
+
+    expect(bookingSection?.links.map((link) => link.href)).toEqual(['/bookings']);
+    expect(bookingSection?.links[0]?.description).toContain('urgent work');
+    expect(bookingSection?.links[0]?.description).toContain('marketplace');
+    expect(bookingSection?.links[0]?.description).toContain('no-show evidence');
   });
 
   it('does not repeat the same route across nav categories', () => {

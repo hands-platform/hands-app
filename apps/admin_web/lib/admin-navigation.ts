@@ -39,42 +39,13 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     label: 'Bookings',
-    description: 'Demand, marketplace participation, customer choice, and closeout evidence.',
+    description: 'One booking workspace for demand, matching, marketplace, chat, and closeout evidence.',
     links: [
       {
         href: '/bookings',
         label: 'All Bookings',
-        description: 'Complete booking list with filters and detail links.',
-      },
-      {
-        href: '/bookings?view=attention',
-        label: 'Urgent Bookings',
-        description: 'Check bookings that need operator action.',
-      },
-      {
-        href: '/bookings?view=matching',
-        label: 'Live Matching',
-        description: 'First-pick and marketplace matching windows.',
-      },
-      {
-        href: '/bookings?view=marketplace',
-        label: 'Marketplace',
-        description: 'Watch 10km Partner participation and customer choice.',
-      },
-      {
-        href: '/bookings?view=customer-choice',
-        label: 'Customer Choice',
-        description: 'Bookings waiting for the customer to select the final Partner.',
-      },
-      {
-        href: '/bookings?view=chat-repair',
-        label: 'Chat Repair',
-        description: 'Matched bookings that need chat-room repair.',
-      },
-      {
-        href: '/bookings?view=no-show',
-        label: 'No-show Evidence',
-        description: 'Evidence queue for admin-reviewed cancellation and no-show decisions.',
+        description:
+          'Complete booking workspace with internal filters for urgent work, matching, marketplace, customer choice, chat repair, and no-show evidence.',
       },
     ],
   },
