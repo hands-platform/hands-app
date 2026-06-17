@@ -1912,6 +1912,15 @@ a.action-button-card:hover {
   width: fit-content;
 }
 
+.partner-controls-page .partner-control-inline-action {
+  box-shadow: none;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
 .operations-policy-page .ops-section-header > div,
 .operations-policy-page .ops-row > div {
   min-width: 0;

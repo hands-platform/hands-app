@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ExternalLink, Filter, User, X } from 'lucide-react';
 import {
   AdminOperationalPolicySetting,
   AdminProvider,
@@ -138,7 +139,8 @@ export default async function PartnerControlsPage({
           <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
           </span>
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary partner-control-inline-action" href="/operations-policy">
+            <ExternalLink aria-hidden="true" size={14} />
             {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
             marketplace radius / {controlPolicy.invitationLimit} invite cap / location{' '}
             {controlPolicy.locationFreshnessMinutes}m
@@ -473,8 +475,12 @@ export default async function PartnerControlsPage({
             </select>
           </label>
           <div className="actions full-span">
-            <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/partner-controls">
+            <button className="button button-primary" type="submit">
+              <Filter aria-hidden="true" size={16} />
+              Apply filters
+            </button>
+            <Link className="button button-secondary" href="/partner-controls">
+              <X aria-hidden="true" size={16} />
               Clear filters
             </Link>
           </div>
@@ -510,7 +516,11 @@ export default async function PartnerControlsPage({
             {providerWatchlist.map((item) => (
               <tr key={item.provider.id}>
                 <td>
-                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
+                  <Link
+                    className="button button-secondary partner-control-inline-action"
+                    href={`/partners/${item.provider.id}`}
+                  >
+                    <User aria-hidden="true" size={14} />
                     {adminProviderName(item.provider)}
                   </Link>
                   <p className="muted">{item.provider.user?.phone ?? 'No phone'}</p>
@@ -538,7 +548,11 @@ export default async function PartnerControlsPage({
                 </td>
                 <td>
                   <div className="actions">
-                    <Link className="text-link" href={`/partners/${item.provider.id}`}>
+                    <Link
+                      className="button button-secondary partner-control-inline-action"
+                      href={`/partners/${item.provider.id}`}
+                    >
+                      <User aria-hidden="true" size={14} />
                       Partner detail
                     </Link>
                     {item.walletBalance < 0 ? (
@@ -650,14 +664,22 @@ export default async function PartnerControlsPage({
                   </p>
                   {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
                   {report.bookingId ? (
-                    <Link className="text-link" href={`/bookings/${report.bookingId}`}>
+                    <Link
+                      className="button button-secondary partner-control-inline-action"
+                      href={`/bookings/${report.bookingId}`}
+                    >
+                      <ExternalLink aria-hidden="true" size={14} />
                       Booking {shortDisplayId(report.bookingId)}
                     </Link>
                   ) : null}
                 </td>
                 <td>
                   {report.providerProfile ? (
-                    <Link className="text-link" href={`/partners/${report.providerProfile.id}`}>
+                    <Link
+                      className="button button-secondary partner-control-inline-action"
+                      href={`/partners/${report.providerProfile.id}`}
+                    >
+                      <User aria-hidden="true" size={14} />
                       {providerName(report.providerProfile)}
                     </Link>
                   ) : (
@@ -750,7 +772,11 @@ export default async function PartnerControlsPage({
                 </td>
                 <td>
                   {sanction.providerProfile ? (
-                    <Link className="text-link" href={`/partners/${sanction.providerProfile.id}`}>
+                    <Link
+                      className="button button-secondary partner-control-inline-action"
+                      href={`/partners/${sanction.providerProfile.id}`}
+                    >
+                      <User aria-hidden="true" size={14} />
                       {providerName(sanction.providerProfile)}
                     </Link>
                   ) : (
