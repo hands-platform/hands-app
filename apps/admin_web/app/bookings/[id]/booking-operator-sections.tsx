@@ -257,6 +257,7 @@ export function BookingOpsCommandCenter({
                 booking.payment.status === 'RELEASED'
               }
               readout={actionGateByAction.get('Release or refund')}
+              ruleHint="Release follows the action evidence gate above."
             />
             <BookingPaymentAction
               action={refundBookingPayment}
@@ -265,6 +266,7 @@ export function BookingOpsCommandCenter({
               label="Refund"
               disabled={booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
               readout={actionGateByAction.get('Release or refund')}
+              ruleHint="Refund follows the action evidence gate above."
             />
             {cashDebtNeedsSettlement && booking.earning?.id && (
               <BookingCashDebtSettlementForm booking={booking} />

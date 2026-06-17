@@ -17,6 +17,7 @@ export function BookingPaymentAction({
   label,
   disabled,
   readout,
+  ruleHint,
 }: {
   action: (...args: [FormData]) => Promise<void>;
   bookingId: string;
@@ -24,6 +25,7 @@ export function BookingPaymentAction({
   label: string;
   disabled?: boolean;
   readout?: BookingPaymentActionReadout;
+  ruleHint?: string;
 }) {
   return (
     <form action={action} className={`action-button-card ${readout?.className ?? ''}`}>
@@ -39,7 +41,7 @@ export function BookingPaymentAction({
       <button type="submit" disabled={disabled}>
         {label}
       </button>
-      <small>{readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
+      <small>{ruleHint ?? readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
     </form>
   );
 }
