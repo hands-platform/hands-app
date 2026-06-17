@@ -254,7 +254,11 @@ export default async function PartnerControlsPage({
                   </div>
                 </div>
                 <div className="actions">
-                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
+                  <Link
+                    className="button button-secondary partner-control-inline-action"
+                    href={`/partners/${item.provider.id}`}
+                  >
+                    <User aria-hidden="true" size={14} />
                     Profile
                   </Link>
                   <Link className="text-link" href={item.actionHref}>
@@ -406,7 +410,11 @@ export default async function PartnerControlsPage({
                   <Link className="text-link" href={block.href}>
                     Open
                   </Link>
-                  <Link className="text-link" href={`/partners/${block.providerId}`}>
+                  <Link
+                    className="button button-secondary partner-control-inline-action"
+                    href={`/partners/${block.providerId}`}
+                  >
+                    <User aria-hidden="true" size={14} />
                     Profile
                   </Link>
                 </div>
@@ -562,9 +570,10 @@ export default async function PartnerControlsPage({
                     ) : null}
                     {item.openReportCount > 0 ? (
                       <Link
-                        className="text-link"
+                        className="button button-secondary partner-control-inline-action"
                         href={`/partner-controls?q=${encodeURIComponent(item.provider.id)}`}
                       >
+                        <ExternalLink aria-hidden="true" size={14} />
                         Report lane
                       </Link>
                     ) : null}
