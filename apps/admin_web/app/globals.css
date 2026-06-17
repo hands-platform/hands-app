@@ -1497,6 +1497,14 @@ a.action-button-card:hover {
   z-index: 2;
 }
 
+.chat-archive-page .chat-inline-action {
+  box-shadow: none;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
 .chat-archive-page > .card {
   max-height: min(960px, calc(100vh - 96px));
   overflow-x: hidden;

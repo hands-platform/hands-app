@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
+import { Briefcase, CalendarCheck, Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
@@ -262,19 +262,28 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     <td>{row.operatorAction}</td>
                     <td>
                       <div className="actions">
-                        <Link className="text-link" href={`/bookings/${row.booking.id}#chat`}>
+                        <Link
+                          className="button button-secondary chat-inline-action"
+                          href={`/bookings/${row.booking.id}#chat`}
+                        >
+                          <CalendarCheck aria-hidden="true" size={14} />
                           Booking
                         </Link>
                         {row.customerId ? (
-                          <Link className="text-link" href={`/customers/${row.customerId}#chat-history`}>
+                          <Link
+                            className="button button-secondary chat-inline-action"
+                            href={`/customers/${row.customerId}#chat-history`}
+                          >
+                            <User aria-hidden="true" size={14} />
                             Customer
                           </Link>
                         ) : null}
                         {row.partnerId ? (
                           <Link
-                            className="text-link"
+                            className="button button-secondary chat-inline-action"
                             href={`/partners/${row.partnerId}#booking-chat-records`}
                           >
+                            <Briefcase aria-hidden="true" size={14} />
                             Partner
                           </Link>
                         ) : null}
@@ -342,16 +351,28 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
                   <td>
                     <div className="actions">
-                      <Link className="text-link" href={`/bookings/${room.booking.id}#chat`}>
+                      <Link
+                        className="button button-secondary chat-inline-action"
+                        href={`/bookings/${room.booking.id}#chat`}
+                      >
+                        <CalendarCheck aria-hidden="true" size={14} />
                         Booking
                       </Link>
                       {room.customerId ? (
-                        <Link className="text-link" href={`/customers/${room.customerId}#chat-history`}>
+                        <Link
+                          className="button button-secondary chat-inline-action"
+                          href={`/customers/${room.customerId}#chat-history`}
+                        >
+                          <User aria-hidden="true" size={14} />
                           Customer
                         </Link>
                       ) : null}
                       {room.partnerId ? (
-                        <Link className="text-link" href={`/partners/${room.partnerId}#booking-chat-records`}>
+                        <Link
+                          className="button button-secondary chat-inline-action"
+                          href={`/partners/${room.partnerId}#booking-chat-records`}
+                        >
+                          <Briefcase aria-hidden="true" size={14} />
                           Partner
                         </Link>
                       ) : null}
@@ -395,7 +416,11 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     Booking {shortId(room.booking.id)} / {room.booking.status} / {room.serviceLabel}
                   </p>
                 </div>
-                <Link className="text-link" href={`/bookings/${room.booking.id}#chat`}>
+                <Link
+                  className="button button-secondary chat-inline-action"
+                  href={`/bookings/${room.booking.id}#chat`}
+                >
+                  <CalendarCheck aria-hidden="true" size={14} />
                   Open booking
                 </Link>
               </div>
