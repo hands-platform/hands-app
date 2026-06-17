@@ -25,18 +25,51 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
           sortPriority: 5,
           status: 'Cash settlement',
         },
+        {
+          action: 'Continue normal operational watch.',
+          attention: false,
+          className: 'pill pill-success',
+          detail: '3 completed booking(s), ACTIVE, location 3m ago.',
+          id: 'partner-2',
+          name: 'Partner An',
+          sortPriority: 0,
+          status: 'Location fresh',
+        },
       ],
     });
 
     const rendered = textContent(section);
 
+    expect(section).not.toBeNull();
+    if (section === null) throw new Error('Expected customer partner handoff section to render.');
     expect(section.type).toBe('section');
     expect(rendered).toContain('Customer handoff');
     expect(rendered).toContain('Customer Mai');
     expect(rendered).toContain('Partner handoff');
     expect(rendered).toContain('Partner Linh');
+    expect(rendered).not.toContain('Partner An');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/customers', '/customers/customer-1', '/partners', '/partners/partner-1']),
     );
+  });
+
+  it('returns no section when there are no Customer rows or Partner attention rows', () => {
+    const section = OperationsHandoffCustomerPartnerSection({
+      customers: [],
+      partners: [
+        {
+          action: 'Continue normal operational watch.',
+          attention: false,
+          className: 'pill pill-success',
+          detail: '3 completed booking(s), ACTIVE, location 3m ago.',
+          id: 'partner-2',
+          name: 'Partner An',
+          sortPriority: 0,
+          status: 'Location fresh',
+        },
+      ],
+    });
+
+    expect(section).toBeNull();
   });
 });
