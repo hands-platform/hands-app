@@ -1,13 +1,12 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
+import {
+  type BookingCreateGateFilter,
+  bookingCreateGateAuditQuery,
+  bookingCreateGateReasonFilter,
+} from '../../lib/booking-create-gate-reasons';
 import { bookingGateReasonCode } from './booking-gate-rejections';
 
-export type BookingGateFilter =
-  | 'all'
-  | 'service-area'
-  | 'customer-gps'
-  | 'customer-distance'
-  | 'first-pick-distance'
-  | 'unknown';
+export type BookingGateFilter = BookingCreateGateFilter;
 
 export type BookingGateFilterOption = {
   value: BookingGateFilter;
@@ -96,41 +95,9 @@ export function bookingGateMatchesFilter(log: AdminAuditLog, filter: BookingGate
   }
 
   const reasonCode = bookingGateReasonCode(log);
-  if (filter === 'service-area') {
-    return reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA';
-  }
-  if (filter === 'customer-distance') {
-    return reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR';
-  }
-  if (filter === 'first-pick-distance') {
-    return reasonCode === 'PREFERRED_PARTNER_TOO_FAR';
-  }
-  if (filter === 'customer-gps') {
-    return (
-      reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
-      reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
-      reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID' ||
-      reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE'
-    );
-  }
-  return reasonCode === 'UNKNOWN';
+  return bookingCreateGateReasonFilter(reasonCode) === filter;
 }
 
 export function bookingGateAuditQuery(filter: BookingGateFilter) {
-  if (filter === 'service-area') {
-    return 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA';
-  }
-  if (filter === 'customer-distance') {
-    return 'CUSTOMER_CURRENT_LOCATION_TOO_FAR';
-  }
-  if (filter === 'first-pick-distance') {
-    return 'PREFERRED_PARTNER_TOO_FAR';
-  }
-  if (filter === 'customer-gps') {
-    return 'CUSTOMER_CURRENT_LOCATION';
-  }
-  if (filter === 'unknown') {
-    return 'booking.create.rejected UNKNOWN';
-  }
-  return 'booking.create.rejected';
+  return bookingCreateGateAuditQuery(filter);
 }

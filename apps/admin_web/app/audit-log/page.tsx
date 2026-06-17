@@ -10,6 +10,7 @@ import {
   formatMoney as money,
   formatRelativeTime,
 } from '../../lib/admin-format';
+import { bookingCreateGateReasonLabel } from '../../lib/booking-create-gate-reasons';
 import { bookingMatchAuditHighlights } from '../../lib/booking-match-audit';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
@@ -822,7 +823,7 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
   const preferredLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
 
   if (reasonCode) {
-    highlights.push({ label: bookingGateReasonLabel(reasonCode), className: 'pill pill-info' });
+    highlights.push({ label: bookingCreateGateReasonLabel(reasonCode, 'audit'), className: 'pill pill-info' });
   }
   if (customerDistance !== null) {
     highlights.push({
@@ -838,31 +839,6 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
   }
 
   return highlights.slice(0, 6);
-}
-
-function bookingGateReasonLabel(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'optional customer GPS distance evidence';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'first-pick Partner too far';
-  }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
-    return 'address outside service area';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'optional customer GPS stale';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'optional customer GPS missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'optional GPS timestamp missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'optional GPS timestamp invalid';
-  }
-  return reasonCode.replace(/_/g, ' ').toLowerCase();
 }
 
 function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {

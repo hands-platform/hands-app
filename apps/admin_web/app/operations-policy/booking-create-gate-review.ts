@@ -2,6 +2,12 @@ import type { AdminAuditLog, AdminOperationalPolicySetting } from '../../lib/adm
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { readPlainRecord } from '../../lib/admin-format';
 import {
+  BOOKING_CREATE_GATE_REASONS,
+  bookingCreateGateCustomerGpsRejectCount,
+  bookingCreateGateReasonLabel,
+  bookingCreateGateReasonPill,
+} from '../../lib/booking-create-gate-reasons';
+import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   OPERATIONAL_POLICY_KEYS,
   adminOperationalPolicySettingByKey,
@@ -152,8 +158,8 @@ function buildBookingCreateGateRows(
       operatorMeaning: policy.serviceAreaRequired
         ? 'Booking address must be inside an enabled Vietnam service area.'
         : 'Booking can be created outside configured service areas. Use only before a city launch test.',
-      evidence: `${reasonCounts.get('BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') ?? 0} reject(s)`,
-      href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea) ?? 0} reject(s)`,
+      href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea}`,
       pillClass: policy.serviceAreaRequired ? 'pill-success' : 'pill-warn',
     },
     {
@@ -163,8 +169,8 @@ function buildBookingCreateGateRows(
       defaultValue: '20 km',
       operatorMeaning:
         'A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence.',
-      evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} historical row(s)`,
-      href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar) ?? 0} historical row(s)`,
+      href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar}`,
       pillClass: policy.customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
     },
     {
@@ -174,8 +180,8 @@ function buildBookingCreateGateRows(
       defaultValue: '50 km',
       operatorMeaning:
         'The selected first-pick Partner must be close enough to the booking address before payment authorization.',
-      evidence: `${reasonCounts.get('PREFERRED_PARTNER_TOO_FAR') ?? 0} reject(s)`,
-      href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
+      evidence: `${reasonCounts.get(BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar) ?? 0} reject(s)`,
+      href: `/audit-log?query=${BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar}`,
       pillClass: policy.preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
     },
     {
@@ -185,7 +191,7 @@ function buildBookingCreateGateRows(
       defaultValue: '10 min',
       operatorMeaning:
         'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
-      evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} historical row(s)`,
+      evidence: `${bookingCreateGateCustomerGpsRejectCount(reasonCounts)} historical row(s)`,
       href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
       pillClass: policy.freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
     },
@@ -200,11 +206,13 @@ function buildBookingGateRecentAttempts(
     const reasonCode = readOptionalString(metadata?.reasonCode) ?? 'UNKNOWN';
     return {
       id: log.id,
-      reason: bookingGateReasonLabel(reasonCode),
+      reason: bookingCreateGateReasonLabel(reasonCode, 'operations', (reason) =>
+        displayOperationalWording(reason.replace(/_/g, ' ').toLowerCase()),
+      ),
       detail: bookingGateAttemptDetail(metadata),
       createdAt: log.createdAt,
       href: `/audit-log?query=${encodeURIComponent(reasonCode)}`,
-      pillClass: bookingGateReasonPill(reasonCode),
+      pillClass: bookingCreateGateReasonPill(reasonCode),
     };
   });
 }
@@ -234,50 +242,6 @@ function bookingGateReasonCounts(logs: readonly AdminAuditLog[]) {
     counts.set(reasonCode, (counts.get(reasonCode) ?? 0) + 1);
   });
   return counts;
-}
-
-function bookingGateReasonLabel(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Optional customer GPS distance evidence';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick partner too far';
-  }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
-    return 'Outside service area';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Optional stale customer GPS';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Optional missing customer GPS';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Optional missing GPS timestamp';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Optional invalid GPS timestamp';
-  }
-  return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
-}
-
-function bookingGateReasonPill(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'pill-warn';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'pill-danger';
-  }
-  return 'pill-info';
-}
-
-function bookingGateCurrentLocationRejectCount(counts: ReadonlyMap<string, number>) {
-  return [
-    'CUSTOMER_CURRENT_LOCATION_MISSING',
-    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
-    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
-    'CUSTOMER_CURRENT_LOCATION_STALE',
-  ].reduce((total, key) => total + (counts.get(key) ?? 0), 0);
 }
 
 function bookingGateAttemptDetail(metadata: Record<string, unknown> | null) {

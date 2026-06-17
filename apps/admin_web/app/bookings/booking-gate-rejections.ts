@@ -1,5 +1,6 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { formatDistanceMeters, readPlainRecord } from '../../lib/admin-format';
+import { BOOKING_CREATE_GATE_REASONS, bookingCreateGateReasonLabel } from '../../lib/booking-create-gate-reasons';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
 
@@ -61,7 +62,7 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
     readOptionalString(currentLocation?.recordedAt);
 
   return {
-    reasonLabel: bookingGateReasonLabel(reasonCode),
+    reasonLabel: bookingCreateGateReasonLabel(reasonCode),
     tone: reasonCode === 'UNKNOWN' ? ('info' as const) : ('warn' as const),
     operatorAction: bookingGateOperatorAction(reasonCode),
     addressText:
@@ -83,51 +84,26 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
   };
 }
 
-function bookingGateReasonLabel(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Optional customer GPS distance evidence';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick Partner too far';
-  }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
-    return 'Address outside service area';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Optional customer GPS stale';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Optional customer GPS missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Optional customer GPS timestamp missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Optional customer GPS timestamp invalid';
-  }
-  return reasonCode.replaceAll('_', ' ').toLowerCase();
-}
-
 function bookingGateOperatorAction(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar) {
     return 'Treat this as historical support evidence. Current booking creation should rely on the confirmed service address snapshot, not customer GPS distance.';
   }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar) {
     return 'Ask the customer to choose a closer first-pick Partner or correct the service address. Payment and matching did not start.';
   }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea) {
     return 'Confirm the requested address is inside an enabled Vietnam service area before booking can start.';
   }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale) {
     return 'Treat this as historical optional GPS evidence. Current booking creation should continue from a confirmed Vietnam service address.';
   }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing) {
     return 'Treat this as historical optional GPS evidence. Current booking creation should not require customer GPS when the service address is confirmed.';
   }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing) {
     return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
   }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+  if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid) {
     return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
   }
   return 'Review the audit metadata and customer address before support follow-up.';
