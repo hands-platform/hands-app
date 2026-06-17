@@ -25,6 +25,16 @@ describe('OperationsPolicyActionGateChecklistSection', () => {
             status: 'Owner override',
             title: 'Payout batch cycle',
           },
+          {
+            className: 'ops-task-done',
+            current: 'Admin evidence review',
+            detail: 'Booking decisions keep evidence visible.',
+            href: '/operations-policy#policy-decision-action-evidence-gate-mode',
+            operatorAction: 'No change needed.',
+            pillClass: 'pill-success',
+            status: 'Recommended',
+            title: 'Booking action evidence',
+          },
         ],
       },
     });
@@ -36,6 +46,35 @@ describe('OperationsPolicyActionGateChecklistSection', () => {
     expect(rendered).toContain('1 / 2 recommended');
     expect(rendered).toContain('Payout batch cycle');
     expect(rendered).toContain('Current: Owner selected batch');
+    expect(rendered).not.toContain('Booking action evidence');
     expect(hrefsIn(section)).toContain('/operations-policy#policy-payout-batch-cycle-policy');
+  });
+
+  it('renders one clear card when every policy is recommended', () => {
+    const rendered = normalizedTextContent(
+      OperationsPolicyActionGateChecklistSection({
+        checklist: {
+          alignedCount: 1,
+          totalCount: 1,
+          summary: [],
+          cards: [
+            {
+              className: 'ops-task-done',
+              current: 'Admin evidence review',
+              detail: 'Booking decisions keep evidence visible.',
+              href: '/operations-policy#policy-decision-action-evidence-gate-mode',
+              operatorAction: 'No change needed.',
+              pillClass: 'pill-success',
+              status: 'Recommended',
+              title: 'Booking action evidence',
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(rendered).toContain('1 / 1 recommended');
+    expect(rendered).toContain('Action gate policies are aligned');
+    expect(rendered).not.toContain('Booking action evidence');
   });
 });

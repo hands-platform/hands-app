@@ -9,6 +9,7 @@ export function OperationsPolicyActionGateChecklistSection({
   checklist,
 }: OperationsPolicyActionGateChecklistSectionProps) {
   const allRecommended = checklist.alignedCount === checklist.totalCount;
+  const visibleCards = checklist.cards.filter((item) => item.status !== 'Recommended');
 
   return (
     <section className="card admin-mb-16" id="action-gate-policy-checklist">
@@ -35,7 +36,7 @@ export function OperationsPolicyActionGateChecklistSection({
         ))}
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {checklist.cards.map((item) => (
+        {visibleCards.map((item) => (
           <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
             <span className={`pill ${item.pillClass}`}>{item.status}</span>
             <h3>{item.title}</h3>
@@ -44,6 +45,17 @@ export function OperationsPolicyActionGateChecklistSection({
             <small>{item.operatorAction}</small>
           </Link>
         ))}
+        {visibleCards.length === 0 ? (
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-success">Clear</span>
+            <h3>Action gate policies are aligned</h3>
+            <p>
+              Booking, cash, payout, first-pick, and no-show evidence gates follow the recommended
+              baseline.
+            </p>
+            <small>Keep using booking detail evidence before irreversible operator decisions.</small>
+          </div>
+        ) : null}
       </div>
     </section>
   );

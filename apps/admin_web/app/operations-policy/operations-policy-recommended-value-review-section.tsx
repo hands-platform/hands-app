@@ -7,6 +7,8 @@ type OperationsPolicyRecommendedValueReviewSectionProps = {
 export function OperationsPolicyRecommendedValueReviewSection({
   review,
 }: OperationsPolicyRecommendedValueReviewSectionProps) {
+  const visibleCards = review.cards.filter((card) => card.status !== 'Recommended');
+
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -31,7 +33,7 @@ export function OperationsPolicyRecommendedValueReviewSection({
         ))}
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {review.cards.map((card) => (
+        {visibleCards.map((card) => (
           <div className={`ops-task-card ${card.className}`} key={card.key}>
             <span className={`pill ${card.pillClass}`}>{card.status}</span>
             <h3>{card.label}</h3>
@@ -39,6 +41,14 @@ export function OperationsPolicyRecommendedValueReviewSection({
             <small>{card.operatorAction}</small>
           </div>
         ))}
+        {visibleCards.length === 0 ? (
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-success">Aligned</span>
+            <h3>Recommended values are aligned</h3>
+            <p>Current policy values match the recommended baseline for the loaded review set.</p>
+            <small>Review this again before changing live matching or booking gates.</small>
+          </div>
+        ) : null}
       </div>
     </section>
   );

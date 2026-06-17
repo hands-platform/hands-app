@@ -15,6 +15,15 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
             pillClass: 'pill-warn',
             status: 'Owner choice',
           },
+          {
+            className: 'ops-task-done',
+            detail: 'Current value matches the recommended baseline.',
+            key: 'matching.marketplace_radius_meters',
+            label: 'Marketplace radius',
+            operatorAction: 'Keep monitoring city density.',
+            pillClass: 'pill-success',
+            status: 'Recommended',
+          },
         ],
         summary: [
           {
@@ -34,6 +43,7 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
     expect(rendered).toContain('1 owner choice(s)');
     expect(rendered).toContain('Compared policies');
     expect(rendered).toContain('Provider response window');
+    expect(rendered).not.toContain('Marketplace radius');
   });
 
   it('renders aligned state when there are no warnings', () => {
@@ -48,5 +58,6 @@ describe('OperationsPolicyRecommendedValueReviewSection', () => {
     );
 
     expect(rendered).toContain('Aligned');
+    expect(rendered).toContain('Recommended values are aligned');
   });
 });
