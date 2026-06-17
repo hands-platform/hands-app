@@ -1328,11 +1328,8 @@ a.action-button-card:hover {
   background: var(--admin-surface);
   border-radius: var(--admin-radius-lg);
   box-shadow: var(--admin-shadow-xs);
-  max-height: min(760px, calc(100vh - 180px));
   min-width: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow: visible;
 }
 
 .booking-monitor .ops-section-header {
