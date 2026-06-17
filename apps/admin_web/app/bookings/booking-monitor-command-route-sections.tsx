@@ -20,6 +20,10 @@ export function BookingMonitorCommandRouteSections({
   lastRefreshLabel,
   primaryCommandQueue,
 }: BookingMonitorCommandRouteSectionsProps) {
+  const visibleCommandSummaryCards = commandSummaryCards.filter(isVisibleCommandSummaryCard);
+  const visiblePrimaryCommandQueue = primaryCommandQueue.filter(isVisiblePrimaryCommandQueueItem);
+  const visiblePrimaryCommandCount = visiblePrimaryCommandQueue.reduce((total, item) => total + item.count, 0);
+
   return (
     <section className="card admin-mb-16">
       <div className="ops-section-header">
@@ -35,7 +39,7 @@ export function BookingMonitorCommandRouteSections({
         </span>
       </div>
       <div className="ops-task-grid admin-mt-14">
-        {commandSummaryCards.map((item) => (
+        {visibleCommandSummaryCards.map((item) => (
           <Link className="ops-task-card" href={item.href} key={item.label}>
             <span className="signal signal-info">{item.label}</span>
             <strong className="ops-task-card-value">{item.value}</strong>
@@ -53,11 +57,11 @@ export function BookingMonitorCommandRouteSections({
           <p className="muted">Open the lane that needs action; detailed evidence stays in booking detail.</p>
         </div>
         <span className="pill pill-info">
-          {primaryCommandQueue.reduce((total, item) => total + item.count, 0)} booking(s)
+          {visiblePrimaryCommandCount} booking(s)
         </span>
       </div>
       <div className="ops-task-grid admin-mt-12">
-        {primaryCommandQueue.map((item) => (
+        {visiblePrimaryCommandQueue.map((item) => (
           <Link className="ops-task-card" href={item.href} key={`${item.status}-${item.primaryAction}`}>
             <span className={`pill ${item.tone}`}>{item.status}</span>
             <strong className="ops-task-card-value">{item.count} booking(s)</strong>
@@ -72,7 +76,26 @@ export function BookingMonitorCommandRouteSections({
             </div>
           </Link>
         ))}
+        {visiblePrimaryCommandQueue.length === 0 && (
+          <div className="ops-task-card">
+            <span className="signal signal-ok">Clear</span>
+            <strong className="ops-task-card-value">0 booking(s)</strong>
+            <p>No primary booking command needs action for the current filters.</p>
+          </div>
+        )}
       </div>
     </section>
   );
+}
+
+function isVisibleCommandSummaryCard(item: BookingCommandRouteCard): boolean {
+  if (item.label === 'Current lane') {
+    return true;
+  }
+
+  return !['0', 'Clear', 'Ready', 'Stable'].includes(item.value);
+}
+
+function isVisiblePrimaryCommandQueueItem(item: BookingPrimaryCommandSummaryItem): boolean {
+  return item.tone === 'pill-danger' || item.tone === 'pill-info' || item.tone === 'pill-warn';
 }
