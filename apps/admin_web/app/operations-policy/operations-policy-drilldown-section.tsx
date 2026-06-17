@@ -1,3 +1,5 @@
+import { ExternalLink } from 'lucide-react';
+
 export type PolicyDrilldownPill = {
   readonly label: string;
   readonly className: string;
@@ -64,6 +66,7 @@ function PolicyDrilldownList({ list }: { readonly list: PolicyDrilldownListView 
           {list.rows.map((row) => (
             <div className="ops-task-note" key={`${list.key}-${row.id}`}>
               <a className="text-link" href={row.href}>
+                <ExternalLink aria-hidden="true" size={14} />
                 {row.title}
               </a>
               <p className="muted admin-my-6">{row.subtitle}</p>
