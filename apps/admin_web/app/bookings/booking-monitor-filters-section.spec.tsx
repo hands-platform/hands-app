@@ -1,4 +1,6 @@
-import { buttonsIn, normalizedText } from './booking-section-test-utils';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+import { normalizedText } from './booking-section-test-utils';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 
 describe('BookingMonitorFiltersSection', () => {
@@ -45,17 +47,26 @@ describe('BookingMonitorFiltersSection', () => {
       viewOptions,
       visibleBookingCount: 3,
     });
-    const rendered = normalizedText(section);
+    const rendered = normalizedText(renderToStaticMarkup(section));
 
     expect(rendered).toContain('Booking operation filters');
-    expect(rendered).toContain('Active queue: Active bookings - Current active bookings.');
+    expect(rendered).toContain('Active queue:');
+    expect(rendered).toContain('Active bookings');
+    expect(rendered).toContain('Current active bookings.');
     expect(rendered).toContain('Showing 3 of 7');
     expect(rendered).toContain('All statuses');
     expect(rendered).toContain('CASH');
     expect(rendered).toContain('Payment / wallet check');
-    expect(rendered).toContain('Active bookings ( 3 )');
-    expect(rendered).toContain('All bookings ( 7 )');
+    expect(rendered).toContain('Active bookings (3)');
+    expect(rendered).toContain('All bookings (7)');
     expect(rendered).toContain('Start with active bookings.');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-form-search booking-monitor-search',
+        'admin-form-select booking-monitor-select',
+        'admin-form-control-button booking-monitor-clear',
+      ]),
+    );
   });
 
   it('wires the clear filters action', () => {
@@ -87,6 +98,56 @@ describe('BookingMonitorFiltersSection', () => {
 
     clearButton?.props?.onClick?.();
     expect(onClearFilters).toHaveBeenCalledTimes(1);
-    expect(normalizedText(section)).toContain('Showing 7 of 7');
+    expect(normalizedText(renderToStaticMarkup(section))).toContain('Showing 7 of 7');
   });
 });
+
+type TestButton = {
+  readonly props?: {
+    readonly children?: unknown;
+    readonly onClick?: () => void;
+  };
+};
+
+function buttonsIn(value: unknown): TestButton[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(buttonsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const current = record?.type === 'button' ? [value as TestButton] : [];
+  return [...current, ...buttonsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

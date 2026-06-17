@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+} from 'react';
 
 import { ChevronDown, Search } from 'lucide-react';
 
@@ -12,13 +17,13 @@ type AdminFormSelectProps = {
   readonly label: string;
   readonly name: string;
   readonly options: readonly AdminFormSelectOption[];
-} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue'>;
+} & Pick<SelectHTMLAttributes<HTMLSelectElement>, 'defaultValue' | 'onChange' | 'value'>;
 
 type AdminFormSearchProps = {
   readonly className?: string;
   readonly label: string;
   readonly name: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'placeholder'>;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'value'>;
 
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
@@ -31,19 +36,21 @@ type AdminFormControlButtonProps = {
   readonly children: ReactNode;
   readonly className?: string;
   readonly type?: 'button' | 'submit';
-};
+} & Pick<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled' | 'onClick'>;
 
 export function AdminFormSelect({
   className,
   defaultValue,
   label,
   name,
+  onChange,
   options,
+  value,
 }: AdminFormSelectProps) {
   return (
     <label className={joinClassNames('admin-form-select', className)}>
       <span className="sr-only">{label}</span>
-      <select defaultValue={defaultValue} name={name}>
+      <select defaultValue={defaultValue} name={name} onChange={onChange} value={value}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -60,13 +67,22 @@ export function AdminFormSearch({
   defaultValue,
   label,
   name,
+  onChange,
   placeholder = 'Search',
+  value,
 }: AdminFormSearchProps) {
   return (
     <label className={joinClassNames('admin-form-search', className)}>
       <Search aria-hidden="true" size={18} />
       <span className="sr-only">{label}</span>
-      <input defaultValue={defaultValue} name={name} placeholder={placeholder} type="search" />
+      <input
+        defaultValue={defaultValue}
+        name={name}
+        onChange={onChange}
+        placeholder={placeholder}
+        type="search"
+        value={value}
+      />
     </label>
   );
 }
@@ -87,10 +103,17 @@ export function AdminFormControlLink({
 export function AdminFormControlButton({
   children,
   className,
+  disabled,
+  onClick,
   type = 'submit',
 }: AdminFormControlButtonProps) {
   return (
-    <button className={joinClassNames('admin-form-control-button', className)} type={type}>
+    <button
+      className={joinClassNames('admin-form-control-button', className)}
+      disabled={disabled}
+      onClick={onClick}
+      type={type}
+    >
       {children}
     </button>
   );

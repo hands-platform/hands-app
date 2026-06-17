@@ -1,5 +1,10 @@
 import { X } from 'lucide-react';
 
+import {
+  AdminFormControlButton,
+  AdminFormSearch,
+  AdminFormSelect,
+} from '../../components/admin-form-controls';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 export type BookingMonitorViewOption = {
@@ -71,55 +76,53 @@ export function BookingMonitorFiltersSection({
         </span>
       </div>
       <div className="ops-filter-grid admin-mb-14">
-        <label>
-          Search booking/customer/Partner
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="Booking ID, phone, Partner, customer, service"
-          />
-        </label>
-        <label>
-          Booking status
-          <select value={statusFilter} onChange={(event) => onStatusFilterChange(event.target.value)}>
-            <option value="all">All statuses</option>
-            {statusFilterOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Payment method
-          <select value={paymentFilter} onChange={(event) => onPaymentFilterChange(event.target.value)}>
-            <option value="all">All methods</option>
-            {paymentFilterOptions.map((method) => (
-              <option key={method} value={method}>
-                {method}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Evidence filter
-          <select
-            value={evidenceFilter}
-            onChange={(event) => onEvidenceFilterChange(event.target.value as BookingEvidenceFilter)}
-          >
-            {evidenceFilterOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <AdminFormSearch
+          className="booking-monitor-search"
+          label="Search booking/customer/Partner"
+          name="bookingSearch"
+          onChange={(event) => onSearchQueryChange(event.target.value)}
+          placeholder="Booking ID, phone, Partner, customer, service"
+          value={searchQuery}
+        />
+        <AdminFormSelect
+          className="booking-monitor-select"
+          label="Booking status"
+          name="bookingStatus"
+          onChange={(event) => onStatusFilterChange(event.target.value)}
+          options={[
+            { label: 'All statuses', value: 'all' },
+            ...statusFilterOptions.map((status) => ({ label: status, value: status })),
+          ]}
+          value={statusFilter}
+        />
+        <AdminFormSelect
+          className="booking-monitor-select"
+          label="Payment method"
+          name="paymentMethod"
+          onChange={(event) => onPaymentFilterChange(event.target.value)}
+          options={[
+            { label: 'All methods', value: 'all' },
+            ...paymentFilterOptions.map((method) => ({ label: method, value: method })),
+          ]}
+          value={paymentFilter}
+        />
+        <AdminFormSelect
+          className="booking-monitor-select"
+          label="Evidence filter"
+          name="evidenceFilter"
+          onChange={(event) => onEvidenceFilterChange(event.target.value as BookingEvidenceFilter)}
+          options={evidenceFilterOptions}
+          value={evidenceFilter}
+        />
         <div className="actions ops-filter-actions">
-          <button className="button button-secondary" type="button" onClick={onClearFilters}>
+          <AdminFormControlButton
+            className="booking-monitor-clear"
+            type="button"
+            onClick={onClearFilters}
+          >
             <X aria-hidden="true" size={16} />
             Clear list filters
-          </button>
+          </AdminFormControlButton>
         </div>
       </div>
       <div className="participant-list">
