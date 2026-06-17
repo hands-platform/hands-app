@@ -1,5 +1,10 @@
 import { classNamesIn, textContent } from './setup-section-test-utils';
 import { SetupGroupDetailSection } from './setup-group-detail-section';
+import {
+  FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
+  FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
+  FCM_PROVIDER_SUGGESTED_NOTIFICATION_PREFLIGHT_COMMAND,
+} from '../notifications/fcm-smoke-commands';
 
 describe('SetupGroupDetailSection', () => {
   it('renders setup group details with environment pills and commands', () => {
@@ -70,11 +75,11 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:push-smoke -- --dry-run',
             'npm.cmd run fcm:push-smoke -- --preflight',
             'npm.cmd run fcm:push-smoke -- --preflight --use-registered-device',
-            '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="<preflight suggested standard notification id>"; npm.cmd run fcm:push-smoke -- --preflight',
+            FCM_PROVIDER_SUGGESTED_NOTIFICATION_PREFLIGHT_COMMAND,
             'npm.cmd run fcm:token-smoke',
             'npm.cmd run fcm:token-recovery-smoke',
-            '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_DEVICE_TOKEN="<real app FCM token>"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
-            '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; npm.cmd run fcm:push-smoke',
+            FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
+            FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
             'Open http://localhost:3101/notifications?review=fcm',
             'Open http://localhost:3101/notifications?review=disabled-device',
             'Open http://localhost:3101/operations-handoff',

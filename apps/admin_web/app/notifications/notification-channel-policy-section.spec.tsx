@@ -1,5 +1,6 @@
 import { NotificationChannelPolicySection } from './notification-channel-policy-section';
 import { classNamesIn, hrefsIn, normalizedText } from './notification-section-test-utils';
+import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 
 describe('NotificationChannelPolicySection', () => {
   it('renders partner alert routing policy and channel counts', () => {
@@ -91,8 +92,14 @@ describe('NotificationChannelPolicySection', () => {
         partnerAlertNotificationId: 'notification-payout',
         partnerAlertType: 'provider.payout_batch.updated',
         partnerAlertTypeLabel: 'Partner Payout Batch Updated',
-        preflightCommand:
-          '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-earning"; npm.cmd run fcm:push-smoke -- --preflight',
+        preflightCommand: buildFcmPushSmokeCommand({
+          notificationId: 'notification-earning',
+          phone: '+84900000002',
+          platform: 'android',
+          preflight: true,
+          role: 'PROVIDER',
+          useRegisteredDevice: true,
+        }),
         suggestedNotificationId: 'notification-earning',
         suggestedType: 'earning.created',
       },
@@ -139,8 +146,14 @@ function fcmSmokeReadiness(
     detail: 'Customer +84900000001 can reuse the enabled android device for preflight without sending FCM.',
     deviceWarningLabel: null,
     latestAttemptLabel: '13 Jun 2026, 17:09',
-    preflightCommand:
-      '$env:FCM_SMOKE_ROLE="CUSTOMER"; $env:FCM_SMOKE_PHONE="+84900000001"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-row-123456"; npm.cmd run fcm:push-smoke -- --preflight',
+    preflightCommand: buildFcmPushSmokeCommand({
+      notificationId: 'notification-row-123456',
+      phone: '+84900000001',
+      platform: 'android',
+      preflight: true,
+      role: 'CUSTOMER',
+      useRegisteredDevice: true,
+    }),
     pushDeviceLabel: 'android push-dev',
     selectedNotificationId: 'notification-row-123456',
     selectedNotificationLabel: 'Service Completed notifica',

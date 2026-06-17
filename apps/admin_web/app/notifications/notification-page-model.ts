@@ -32,6 +32,7 @@ import {
   readNotificationConfirmationAction,
   retryNotificationConfirmHref,
 } from './notification-action-confirmation';
+import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 import { notificationReviewRunbook } from './notification-review-runbook';
 import {
   notificationDeliveryFailureCode,
@@ -476,16 +477,14 @@ export function buildNotificationFcmSmokeReadiness(
     const role = notificationSmokeRole(notification, delivery);
     const phone = notification.user?.phone ?? '';
     const platform = delivery.pushDevice?.platform ?? 'android';
-    const command = [
-      `$env:FCM_SMOKE_ROLE="${role}"`,
-      `$env:FCM_SMOKE_PHONE="${phone}"`,
-      `$env:FCM_SMOKE_PLATFORM="${platform}"`,
-      '$env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"',
-      '$env:FCM_SMOKE_EXPECT_PROVIDER="FCM"',
-      '$env:FCM_SMOKE_EXPECT_STATUS="SENT"',
-      `$env:FCM_SMOKE_NOTIFICATION_ID="${notification.id}"`,
-      'npm.cmd run fcm:push-smoke -- --preflight',
-    ].join('; ');
+    const command = buildFcmPushSmokeCommand({
+      notificationId: notification.id,
+      phone,
+      platform,
+      preflight: true,
+      role,
+      useRegisteredDevice: true,
+    });
 
     return {
       detail: `${role === 'PROVIDER' ? 'Partner' : 'Customer'} ${phone} can reuse the enabled ${platform} device for preflight without sending FCM.`,
@@ -960,16 +959,14 @@ function smokeFallbackPreflightCommand(
 ) {
   const phone = suggestedNotification.user?.phone ?? partnerAlert.user?.phone ?? '<provider phone>';
   const platform = latestDeliveryPlatform(suggestedNotification) ?? 'android';
-  return [
-    '$env:FCM_SMOKE_ROLE="PROVIDER"',
-    `$env:FCM_SMOKE_PHONE="${phone}"`,
-    `$env:FCM_SMOKE_PLATFORM="${platform}"`,
-    '$env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"',
-    '$env:FCM_SMOKE_EXPECT_PROVIDER="FCM"',
-    '$env:FCM_SMOKE_EXPECT_STATUS="SENT"',
-    `$env:FCM_SMOKE_NOTIFICATION_ID="${suggestedNotification.id}"`,
-    'npm.cmd run fcm:push-smoke -- --preflight',
-  ].join('; ');
+  return buildFcmPushSmokeCommand({
+    notificationId: suggestedNotification.id,
+    phone,
+    platform,
+    preflight: true,
+    role: 'PROVIDER',
+    useRegisteredDevice: true,
+  });
 }
 
 function newestFcmSmokeCandidates(notifications: readonly AdminNotification[]) {

@@ -18,6 +18,7 @@ import {
   notificationReviewRunbook,
   sortNotifications,
 } from './notification-page-model';
+import { buildFcmPushSmokeCommand } from './fcm-smoke-commands';
 
 describe('notification page model', () => {
   it('builds notification summary counts from delivery and alert records', () => {
@@ -197,8 +198,14 @@ describe('notification page model', () => {
       partnerAlertNotificationId: 'notification-partner-alert',
       partnerAlertType: 'provider.payout_batch.updated',
       partnerAlertTypeLabel: 'Partner Payout Batch Updated',
-      preflightCommand:
-        '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_PHONE="+84900000002"; $env:FCM_SMOKE_PLATFORM="android"; $env:FCM_SMOKE_USE_REGISTERED_DEVICE="true"; $env:FCM_SMOKE_EXPECT_PROVIDER="FCM"; $env:FCM_SMOKE_EXPECT_STATUS="SENT"; $env:FCM_SMOKE_NOTIFICATION_ID="notification-earning"; npm.cmd run fcm:push-smoke -- --preflight',
+      preflightCommand: buildFcmPushSmokeCommand({
+        notificationId: 'notification-earning',
+        phone: '+84900000002',
+        platform: 'android',
+        preflight: true,
+        role: 'PROVIDER',
+        useRegisteredDevice: true,
+      }),
       suggestedNotificationId: 'notification-earning',
       suggestedType: 'earning.created',
     });
