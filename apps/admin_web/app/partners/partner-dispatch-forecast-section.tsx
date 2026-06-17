@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
 
@@ -48,7 +49,8 @@ export function PartnerDispatchForecastSection({
     <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary" href="/operations-policy">
+            <SlidersHorizontal aria-hidden="true" size={16} />
             Policy: fresh location {'<='} {staleLocationMinutes}m
           </Link>
         }
@@ -80,7 +82,8 @@ export function PartnerDispatchForecastSection({
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
                 </div>
-                <Link className="text-link" href={item.href}>
+                <Link className="button button-secondary partner-summary-action" href={item.href}>
+                  <ArrowRight aria-hidden="true" size={14} />
                   {item.count}
                 </Link>
               </div>
@@ -104,7 +107,11 @@ export function PartnerDispatchForecastSection({
                     location refresh, {lane.blocked} blocked.
                   </p>
                 </div>
-                <Link className="text-link" href={`/partners?q=${encodeURIComponent(lane.city)}`}>
+                <Link
+                  className="button button-secondary partner-summary-action"
+                  href={`/partners?q=${encodeURIComponent(lane.city)}`}
+                >
+                  <ArrowRight aria-hidden="true" size={14} />
                   Open
                 </Link>
               </div>

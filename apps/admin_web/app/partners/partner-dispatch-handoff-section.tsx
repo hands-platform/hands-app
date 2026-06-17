@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SlidersHorizontal } from 'lucide-react';
 
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import type { PartnerCommandLane } from './partner-command-center';
@@ -15,7 +16,8 @@ export function PartnerDispatchHandoffSection({ handoff }: PartnerDispatchHandof
     <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
-          <Link className="text-link" href="/operations-policy">
+          <Link className="button button-secondary" href="/operations-policy">
+            <SlidersHorizontal aria-hidden="true" size={16} />
             {handoff.policyLabel}
           </Link>
         }

@@ -4911,8 +4911,8 @@ textarea:focus-visible {
   margin-top: 14px;
 }
 
-.service-trace-summary div,
-.service-trace-summary a {
+.service-trace-summary > div,
+.service-trace-summary > a {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
@@ -4933,6 +4933,16 @@ textarea:focus-visible {
   color: var(--admin-text);
   font-size: 16px;
   overflow-wrap: anywhere;
+}
+
+.partners-page .partner-summary-action {
+  align-self: start;
+  box-shadow: none;
+  font-size: 13px;
+  margin-top: 2px;
+  min-height: 34px;
+  padding: 0 10px;
+  width: fit-content;
 }
 
 .admin-m-0 {

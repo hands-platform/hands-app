@@ -22,7 +22,7 @@ describe('PartnerDispatchHandoffSection', () => {
       expect.arrayContaining(['/operations-policy', '/partners?review=marketplace-ready']),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['text-link', 'ops-task-breakdown-item ops-task-breakdown-ok']),
+      expect.arrayContaining(['button button-secondary', 'ops-task-breakdown-item ops-task-breakdown-ok']),
     );
   });
 });

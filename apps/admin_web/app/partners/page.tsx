@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, Filter, X } from 'lucide-react';
+import { ArrowRight, Download, Filter, SlidersHorizontal, X } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -390,7 +390,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               Showing {visibleProviders.length} of {providers.length} matching partners
               {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
             </span>
-            <Link className="text-link" href="/operations-policy">
+            <Link className="button button-secondary" href="/operations-policy">
+              <SlidersHorizontal aria-hidden="true" size={16} />
               Location freshness: {opsPolicy.staleLocationMinutes}m
             </Link>
           </div>
@@ -434,7 +435,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <strong>{item.value}</strong>
               <small className="muted">{item.detail}</small>
               {item.href ? (
-                <Link className="text-link" href={item.href}>
+                <Link className="button button-secondary partner-summary-action" href={item.href}>
+                  <ArrowRight aria-hidden="true" size={14} />
                   Open subset
                 </Link>
               ) : null}
