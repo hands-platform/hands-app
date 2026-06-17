@@ -17,6 +17,12 @@ describe('BookingMonitorFiltersSection', () => {
       operatorHint: 'Use this for audit review.',
       view: 'all' as const,
     },
+    {
+      description: 'Bookings closed as no-show.',
+      label: 'No-show',
+      operatorHint: 'Use this for no-show evidence review.',
+      view: 'no-show' as const,
+    },
   ];
 
   it('renders filters, counts, and active queue copy', () => {
@@ -43,6 +49,7 @@ describe('BookingMonitorFiltersSection', () => {
       viewCounts: new Map([
         ['active', 3],
         ['all', 7],
+        ['no-show', 0],
       ]),
       viewOptions,
       visibleBookingCount: 3,
@@ -59,6 +66,7 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Payment / wallet check');
     expect(rendered).toContain('Active bookings (3)');
     expect(rendered).toContain('All bookings (7)');
+    expect(rendered).not.toContain('No-show (0)');
     expect(rendered).toContain('Start with active bookings.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
@@ -67,6 +75,41 @@ describe('BookingMonitorFiltersSection', () => {
         'admin-form-control-button booking-monitor-clear',
       ]),
     );
+  });
+
+  it('keeps the active view visible even when its count is zero', () => {
+    const rendered = normalizedText(
+      renderToStaticMarkup(
+        BookingMonitorFiltersSection({
+          activeView: viewOptions[2],
+          baseVisibleBookingCount: 0,
+          evidenceFilter: 'all',
+          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
+          onClearFilters: jest.fn(),
+          onEvidenceFilterChange: jest.fn(),
+          onPaymentFilterChange: jest.fn(),
+          onSearchQueryChange: jest.fn(),
+          onStatusFilterChange: jest.fn(),
+          onViewChange: jest.fn(),
+          paymentFilter: 'all',
+          paymentFilterOptions: [],
+          searchQuery: '',
+          statusFilter: 'all',
+          statusFilterOptions: [],
+          view: 'no-show',
+          viewCounts: new Map([
+            ['active', 3],
+            ['all', 7],
+            ['no-show', 0],
+          ]),
+          viewOptions,
+          visibleBookingCount: 0,
+        }),
+      ),
+    );
+
+    expect(rendered).toContain('No-show (0)');
+    expect(rendered).toContain('All bookings (7)');
   });
 
   it('wires the clear filters action', () => {

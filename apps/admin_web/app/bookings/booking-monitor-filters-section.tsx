@@ -62,6 +62,11 @@ export function BookingMonitorFiltersSection({
   viewOptions,
   visibleBookingCount,
 }: BookingMonitorFiltersSectionProps) {
+  const visibleViewOptions = viewOptions.filter(
+    (option) =>
+      option.view === view || option.view === 'all' || (viewCounts.get(option.view) ?? 0) > 0,
+  );
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
@@ -126,7 +131,7 @@ export function BookingMonitorFiltersSection({
         </div>
       </div>
       <div className="participant-list">
-        {viewOptions.map((option) => (
+        {visibleViewOptions.map((option) => (
           <button
             key={option.view}
             type="button"

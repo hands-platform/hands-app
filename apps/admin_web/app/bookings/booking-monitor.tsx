@@ -192,10 +192,10 @@ export function BookingMonitor({
   const visibleBookings = visibleBookingModel.visibleBookings;
   const bookingListRows = useMemo(
     () =>
-      [...bookings]
+      [...visibleBookings]
         .sort(compareBookingRequestTimeDescending)
         .map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
-    [bookings, currentTimeMs, nowMs],
+    [currentTimeMs, nowMs, visibleBookings],
   );
   const marketplacePanel = useMemo(
     () =>
@@ -348,7 +348,10 @@ export function BookingMonitor({
         visibleBookingCount={visibleBookings.length}
       />
 
-      <BookingMonitorListSection emptyMessage="No bookings loaded." rows={bookingListRows} />
+      <BookingMonitorListSection
+        emptyMessage="No bookings match the current filters."
+        rows={bookingListRows}
+      />
 
       {view === 'blocked-create' && (
         <BookingMonitorBlockedCreateSection
