@@ -1321,10 +1321,7 @@ a.action-button-card:hover {
 
 .booking-monitor > .card {
   box-shadow: var(--admin-shadow-md);
-  max-height: min(840px, calc(100vh - 160px));
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow: visible;
 }
 
 .booking-monitor .card .card {
