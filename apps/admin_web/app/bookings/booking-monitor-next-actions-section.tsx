@@ -30,7 +30,7 @@ export function BookingMonitorNextActionsSection({
         <div>
           <h2>Next operator actions</h2>
           <p className="muted">
-            Booking checklist ordered by customer wait, finance follow-up, and operational aging.
+            Flagged bookings that need operator review now; normal active bookings stay in the table.
           </p>
         </div>
         <span className={`pill ${nextActions.length > 0 ? 'pill-warn' : 'pill-success'}`}>

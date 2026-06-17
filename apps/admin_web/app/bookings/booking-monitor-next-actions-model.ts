@@ -21,12 +21,10 @@ import {
 import { orderedBookingNextActions } from './booking-next-action-order';
 import { bookingNextOperatorActionFromFacts } from './booking-next-operator-action';
 import { bookingTimestamp } from './booking-list-time';
-import { activeBookingStatuses as activeStatuses } from './booking-monitor-summary';
 import { bookingMonitorCheckFlags } from './booking-monitor-check-flags-model';
 import { bookingMonitorNextActionLabel } from './booking-monitor-next-action-label';
 import { bookingMonitorSelectionLabelForBooking } from './booking-monitor-selection-model';
 import { bookingMatchingChatReady } from './booking-chat-handoff-state';
-import { bookingLocationPillLabel } from './booking-location-display';
 import { bookingLocationNeedsOpsInput } from './booking-location-ops-inputs';
 import {
   bookingCashDebtNeedsOps,
@@ -69,9 +67,7 @@ function bookingNextActionCandidate(
   if (highestFlag) {
     return bookingFlagNextAction(booking, nowMs, highestFlag);
   }
-  if (activeStatuses.has(booking.status)) {
-    return bookingActiveNextAction(booking, nowMs);
-  }
+
   return null;
 }
 
@@ -101,35 +97,11 @@ function bookingFlagNextAction(
   };
 }
 
-function bookingActiveNextAction(
-  booking: AdminBooking,
-  nowMs: number,
-): BookingMonitorNextActionItem {
-  return {
-    booking,
-    title: 'Monitor active booking',
-    detail: bookingMonitorNextActionLabel(booking),
-    operatorAction: bookingOperatorAction(booking, nowMs),
-    owner: bookingActionOwner(booking, nowMs),
-    priority: bookingActionPriority(booking, nowMs),
-    tone: 'info',
-    href: `/bookings/${booking.id}`,
-    tags: bookingActiveNextActionTags(booking, nowMs),
-  };
-}
-
 function bookingFlagNextActionTags(booking: AdminBooking) {
   return [
     booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
     booking.chatRoom ? 'chat ready' : 'chat pending',
     bookingMonitorSelectionLabelForBooking(booking),
-  ];
-}
-
-function bookingActiveNextActionTags(booking: AdminBooking, nowMs: number) {
-  return [
-    booking.payment?.status ? `payment ${booking.payment.status}` : 'payment pending',
-    bookingLocationPillLabel(booking, nowMs),
   ];
 }
 

@@ -19,7 +19,7 @@ const readyService = {
 };
 
 describe('buildBookingMonitorNextActions', () => {
-  it('promotes high severity check flags before normal active monitoring', () => {
+  it('returns flagged booking actions without duplicating normal active monitoring', () => {
     const actions = buildBookingMonitorNextActions(
       [
         {
@@ -50,11 +50,7 @@ describe('buildBookingMonitorNextActions', () => {
       title: 'Matched without chat',
       tone: 'danger',
     });
-    expect(actions[1]).toMatchObject({
-      booking: { id: 'arrived-clean' },
-      title: 'Monitor active booking',
-      tone: 'info',
-    });
+    expect(actions).toHaveLength(1);
   });
 
   it('returns no action for inactive calm bookings', () => {

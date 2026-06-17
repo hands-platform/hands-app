@@ -48,6 +48,7 @@ describe('BookingMonitorNextActionsSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Next operator actions');
+    expect(rendered).toContain('Flagged bookings that need operator review now');
     expect(rendered).toContain('1 action(s)');
     expect(rendered).toContain('Supply check');
     expect(rendered).toContain('Dispatch / Active watch');
