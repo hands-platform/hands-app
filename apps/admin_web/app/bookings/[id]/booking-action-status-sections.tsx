@@ -113,8 +113,7 @@ function BookingChatRepairSection({
       <div>
         <h2>Chat room repair</h2>
         <p className="muted">
-          Create a retained customer-Partner chat room only after a final Partner exists. This is an
-          operator command, not automatic assignment.
+          Create the retained booking chat room after a final Partner exists.
         </p>
       </div>
       {chatRepair.canSubmit ? (
@@ -140,7 +139,7 @@ function BookingDispatchChecklistSection({ dispatchSteps }: BookingDispatchCheck
         <div>
           <h2>Dispatch checklist</h2>
           <p className="muted">
-            Operator-facing next steps for this booking. These are guidance cards, not hidden automation.
+            Next handling steps for this booking.
           </p>
         </div>
         <span className={`pill ${sameShiftCount > 0 ? 'pill-warn' : 'pill-success'}`}>
@@ -179,7 +178,7 @@ function BookingStructuredOpsStatusSection({
         <div>
           <h2>Structured ops status</h2>
           <p className="muted">
-            Track concrete handling steps separately from free-text notes. These statuses are saved per booking.
+            Saved handling statuses for this booking.
           </p>
         </div>
         <span className={`pill ${doneCount === opsTaskCards.length ? 'pill-success' : 'pill-info'}`}>
@@ -222,8 +221,7 @@ function BookingOperatorNotesSection({
       <div>
         <h2>Operator notes</h2>
         <p className="muted">
-          Add internal handling notes for support handoff. Notes are appended to the booking and mirrored to the
-          audit log.
+          Internal handling notes retained with the booking audit trail.
         </p>
         <div className="ops-note-history">
           {recentNotes.length > 0 ? (
@@ -269,8 +267,7 @@ function BookingCompletedCloseoutSection({
       <div>
         <h2>Completed closeout</h2>
         <p className="muted">
-          Reconcile a completed service after operational edits or a partial failure. This confirms payment
-          capture, Partner earning, tax log, platform fee log, and wallet ledger are present.
+          Reconcile a completed service after operational edits or partial failure.
         </p>
       </div>
       {closeout.canSubmit ? (
@@ -302,8 +299,7 @@ function BookingMatchingExpirySection({
       <div>
         <h2>Matching expiry handling</h2>
         <p className="muted">
-          Close an open matching request when the customer should stop waiting. This releases any active payment
-          hold and leaves a customer-contact task for follow-up.
+          Close an open matching request when the customer should stop waiting.
         </p>
       </div>
       {matchingExpiry.canSubmit ? (
@@ -337,8 +333,7 @@ function BookingNoShowHandlingSection({
       <div>
         <h2>No-show handling</h2>
         <p className="muted">
-          Use only when the customer or Partner did not proceed and operations must close the live booking path.
-          Payment, refund, and customer communication still need review after marking no-show.
+          Mark no-show when operations must close a live booking path.
         </p>
       </div>
       {noShow.canSubmit ? (
@@ -366,8 +361,7 @@ function BookingLiveServiceBoardSection({ liveSignals }: BookingLiveServiceBoard
       <div>
         <h2>Live service board</h2>
         <p className="muted">
-          Last-known location monitoring only. HANDS does not use routing, directions, or continuous GPS streaming
-          in the MVP.
+          Last-known location monitoring for the live service.
         </p>
       </div>
       <div className="grid admin-mt-12">
