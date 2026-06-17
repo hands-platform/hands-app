@@ -4923,6 +4923,15 @@ textarea:focus-visible {
   z-index: 2;
 }
 
+.notification-table-shell .notification-partner-link {
+  box-shadow: none;
+  font-size: 13px;
+  min-height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
 .notification-delivery-summary {
   align-items: center;
   background: rgba(47, 43, 61, 0.03);

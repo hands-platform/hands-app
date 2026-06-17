@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { User } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { NotificationDeliveryCell, type NotificationDeliveryRow } from './notification-delivery-cell';
@@ -41,7 +42,8 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
         <div className="muted">{row.userPhone}</div>
         {row.partnerHref && row.partnerLabel ? (
           <div className="muted">
-            <Link className="text-link" href={row.partnerHref}>
+            <Link className="button button-secondary notification-partner-link" href={row.partnerHref}>
+              <User aria-hidden="true" size={14} />
               {row.partnerLabel}
             </Link>{' '}
             / {row.partnerStatus ?? 'status unknown'}
