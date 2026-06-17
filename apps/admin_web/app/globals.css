@@ -497,8 +497,8 @@ a {
 .calendar-shell {
   align-items: start;
   display: grid;
-  gap: 16px;
-  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 18px;
+  grid-template-columns: 240px minmax(0, 1fr);
 }
 
 .calendar-sidebar,
@@ -509,6 +509,8 @@ a {
 .calendar-sidebar {
   display: grid;
   gap: 0;
+  max-height: calc(100vh - 124px);
+  overflow: auto;
   padding: 0;
   position: sticky;
   top: 100px;
@@ -516,8 +518,8 @@ a {
 
 .calendar-sidebar-section {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 12px;
+  padding: 16px;
 }
 
 .calendar-sidebar-section + .calendar-sidebar-section {
@@ -578,9 +580,9 @@ a {
   gap: 10px;
   justify-content: space-between;
   line-height: 1.45;
-  min-height: 40px;
+  min-height: 38px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 7px 10px;
   transition:
     background var(--admin-transition),
     border-color var(--admin-transition),
@@ -599,7 +601,13 @@ a {
 
 .calendar-filter-row input {
   accent-color: var(--admin-accent);
+  border-radius: 4px;
   flex: 0 0 auto;
+  height: 18px;
+  min-height: 18px;
+  min-width: 18px;
+  padding: 0;
+  width: 18px;
 }
 
 .calendar-filter-row span {
@@ -609,7 +617,7 @@ a {
 .calendar-board {
   display: grid;
   gap: 16px;
-  padding: 22px;
+  padding: 20px;
 }
 
 .calendar-board-toolbar {
@@ -639,6 +647,7 @@ a {
 .calendar-toolbar-actions {
   align-items: center;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: nowrap;
   gap: 10px;
   justify-content: flex-end;
@@ -703,6 +712,7 @@ a {
 
 .calendar-board-surface {
   border-top: 1px solid var(--admin-border);
+  max-width: 100%;
   min-width: 0;
   overflow: auto;
   padding-top: 16px;
@@ -710,6 +720,7 @@ a {
 
 .calendar-board-surface .fc {
   font-family: inherit;
+  min-width: 1040px;
 }
 
 .calendar-board-surface .fc-theme-standard td,
