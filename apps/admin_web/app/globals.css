@@ -3550,14 +3550,45 @@ a.ops-task-card {
   min-width: 0;
 }
 
+.setup-page > .toolbar {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  margin-bottom: 0;
+  padding: 24px;
+}
+
+.setup-page > .toolbar h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+
+.setup-page > .toolbar p {
+  max-width: 780px;
+}
+
+.setup-page > .toolbar .actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .setup-page > .admin-mb-16,
 .setup-page > .admin-mt-16 {
   margin-bottom: 0;
   margin-top: 0;
 }
 
+.setup-page > .grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
 .setup-page .detail-grid {
   align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .setup-page .ops-section-header > div {
@@ -3575,11 +3606,17 @@ a.ops-task-card {
 .setup-page .detail-grid > .card,
 .setup-page > .card,
 .setup-page .stack > .card {
+  box-shadow: var(--admin-shadow-md);
   max-height: min(960px, calc(100vh - 96px));
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+.setup-page .ops-section-header {
+  border-bottom: 1px solid var(--admin-border);
+  padding-bottom: 14px;
 }
 
 .setup-page .setup-stage-list {
@@ -3603,6 +3640,28 @@ a.ops-task-card {
   background: var(--admin-action-hover);
   border-radius: 999px;
   padding: 6px 10px;
+}
+
+.setup-page .setup-action-item,
+.setup-page .setup-backlog-item,
+.setup-page .timeline-step,
+.setup-page .setup-stage-item {
+  box-shadow: var(--admin-shadow-xs);
+  transition:
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition),
+    transform var(--admin-transition);
+}
+
+.setup-page a.setup-action-item:hover,
+.setup-page a.setup-backlog-item:hover,
+.setup-page a.timeline-step:hover,
+.setup-page a.setup-stage-item:hover {
+  background: var(--admin-action-hover);
+  border-color: rgb(var(--admin-primary-channel) / 0.28);
+  box-shadow: var(--admin-shadow-md);
+  transform: translateY(-2px);
 }
 
 .setup-page .setup-stage-item > p,
@@ -3650,6 +3709,12 @@ a.ops-task-card {
 
 .setup-page .stack > .card > .detail-grid + .setup-command-block {
   margin-top: 16px;
+}
+
+@media (min-width: 1600px) {
+  .setup-page > .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .setup-action-list,
