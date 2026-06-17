@@ -24,10 +24,8 @@ import {
   paymentActionConfirmHref,
   readPaymentConfirmationAction,
 } from '../payment-action-confirmation';
-import {
-  PaymentDetailActionMapSection,
-  type PaymentDetailActionMapRow,
-} from './payment-detail-action-map-section';
+import { paymentActionExecutionMap as buildPaymentActionExecutionMap } from '../payment-action-execution-map';
+import { PaymentDetailActionMapSection } from './payment-detail-action-map-section';
 import {
   PaymentDetailCallbackTimelineSection,
   type PaymentDetailCallbackTimelineRow,
@@ -53,7 +51,13 @@ export default async function PaymentDetailPage({ params, searchParams }: PagePr
   const messages = [...(booking?.chatRoom?.messages ?? [])].sort(
     (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
   );
-  const actionMap = paymentActionExecutionMap(payment);
+  const actionMap = buildPaymentActionExecutionMap(payment, {
+    cashDebtActionLabel: 'Settle cash fee debt',
+    cashDebtOperatorRule:
+      'Settle with deposit reference or approved admin offset before final acceptance, service start, or payout release.',
+    completedCaptureReason: 'Service is completed and authorization hold is active.',
+    syncActionLabel: 'Sync gateway',
+  });
   const callbackTimelineRows = buildPaymentDetailCallbackTimelineRows(callbacks, payment.currency);
   const callbackReviewCount = callbacks.filter(paymentCallbackAttemptNeedsReview).length;
   const acceptedCallbackCount = callbacks.filter(paymentCallbackAttemptVerified).length;
@@ -397,101 +401,6 @@ function cashDebtHint(payment: AdminPaymentDetail) {
   }
   const amount = Math.abs(payment.booking?.earning?.netAmount ?? 0);
   return `Partner owes ${money(amount, payment.currency)} before final acceptance, service start, or payout release.`;
-}
-
-function paymentActionExecutionMap(payment: AdminPaymentDetail): PaymentDetailActionMapRow[] {
-  const bookingStatus = payment.booking?.status ?? 'UNKNOWN';
-  const hasGatewayReference = Boolean(payment.providerRef);
-  const terminalPayment = ['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status);
-  const completedService = bookingStatus === 'COMPLETED';
-  const closedWithoutCapture = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(bookingStatus);
-  const cashDebt = paymentCashDebtNeedsSettlement(payment);
-
-  return [
-    {
-      action: 'Sync gateway',
-      status: hasGatewayReference ? 'Available' : 'No gateway ref',
-      reason: hasGatewayReference
-        ? `Gateway reference ${payment.providerRef} is saved on this payment.`
-        : 'No gateway reference is saved yet.',
-      operatorRule: 'Use sync before manual money actions when a gateway reference exists.',
-      pillClass: hasGatewayReference ? 'pill-success' : 'pill-neutral',
-    },
-    {
-      action: 'Capture',
-      status:
-        payment.status === 'AUTHORIZED' && completedService
-          ? 'Review capture'
-          : terminalPayment
-            ? 'Locked'
-            : payment.status === 'AUTHORIZED'
-              ? 'Wait for completion'
-              : 'Not authorized',
-      reason:
-        payment.status === 'AUTHORIZED' && completedService
-          ? 'Service is completed and authorization hold is active.'
-          : terminalPayment
-            ? `Payment is already ${payment.status}.`
-            : payment.status === 'AUTHORIZED'
-              ? `Booking is ${bookingStatus}; service completion evidence is not final yet.`
-              : `Payment status is ${payment.status}.`,
-      operatorRule: 'Capture only after completed service evidence and payment ledger review.',
-      pillClass: payment.status === 'AUTHORIZED' && completedService ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      action: 'Release',
-      status:
-        payment.status === 'AUTHORIZED' && closedWithoutCapture
-          ? 'Review release'
-          : terminalPayment
-            ? 'Locked'
-            : payment.status === 'AUTHORIZED'
-              ? 'Hold active'
-              : 'Not authorized',
-      reason:
-        payment.status === 'AUTHORIZED' && closedWithoutCapture
-          ? `Booking is ${bookingStatus}; release can close the authorization without capture.`
-          : terminalPayment
-            ? `Payment is already ${payment.status}.`
-            : payment.status === 'AUTHORIZED'
-              ? 'The hold is still active; check booking evidence before release.'
-              : `Payment status is ${payment.status}.`,
-      operatorRule: 'Release only when the booking outcome should not capture customer funds.',
-      pillClass: payment.status === 'AUTHORIZED' && closedWithoutCapture ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      action: 'Refund',
-      status:
-        payment.status === 'CAPTURED'
-          ? 'Evidence required'
-          : payment.status === 'REFUNDED'
-            ? 'Already refunded'
-            : payment.status === 'RELEASED'
-              ? 'Released'
-              : 'Not captured',
-      reason:
-        payment.status === 'CAPTURED'
-          ? 'Captured money can be refunded only after admin decision evidence is recorded.'
-          : payment.status === 'REFUNDED'
-            ? 'Refund path has already started.'
-            : payment.status === 'RELEASED'
-              ? 'The authorization was released, so no captured money remains here.'
-              : 'There is no captured payment to refund from this row.',
-      operatorRule: 'Refunds must preserve customer, partner, booking, payment, and chat evidence.',
-      pillClass: payment.status === 'CAPTURED' ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      action: 'Settle cash fee debt',
-      status: cashDebt ? 'Evidence required' : payment.method === 'CASH' ? 'Clear' : 'Not cash',
-      reason: cashDebt
-        ? 'Cash was collected by the partner and the HANDS fee/tax debt is still open.'
-        : payment.method === 'CASH'
-          ? 'This cash payment has no open partner wallet debt on the linked earning.'
-          : 'This payment is not a cash collection case.',
-      operatorRule: 'Settle with deposit reference or approved admin offset before final acceptance, service start, or payout release.',
-      pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
-    },
-  ];
 }
 
 function buildPaymentDetailCallbackTimelineRows(

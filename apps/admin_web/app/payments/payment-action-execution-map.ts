@@ -1,21 +1,42 @@
-import type { AdminPayment } from '../../lib/admin-api';
 import type { PaymentActionExecutionRow } from './payment-operations-table-section';
-import { paymentCashDebtNeedsSettlement } from './payment-page-rules';
+import { paymentCashDebtNeedsSettlement, paymentStatusIsTerminal } from './payment-page-rules';
 
-const TERMINAL_PAYMENT_STATUSES = ['CAPTURED', 'REFUNDED', 'RELEASED'];
 const CLOSED_WITHOUT_CAPTURE_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'];
 
-export function paymentActionExecutionMap(payment: AdminPayment): PaymentActionExecutionRow[] {
+type PaymentActionExecutionPayment = {
+  readonly method: string;
+  readonly providerRef?: string | null;
+  readonly status: string;
+  readonly booking?: {
+    readonly status?: string;
+    readonly earning?: {
+      readonly netAmount?: number;
+      readonly status?: string;
+    } | null;
+  } | null;
+};
+
+type PaymentActionExecutionMapOptions = {
+  readonly cashDebtActionLabel?: string;
+  readonly cashDebtOperatorRule?: string;
+  readonly completedCaptureReason?: string;
+  readonly syncActionLabel?: string;
+};
+
+export function paymentActionExecutionMap(
+  payment: PaymentActionExecutionPayment,
+  options: PaymentActionExecutionMapOptions = {},
+): PaymentActionExecutionRow[] {
   const bookingStatus = payment.booking?.status ?? 'UNKNOWN';
   const hasGatewayReference = Boolean(payment.providerRef);
-  const terminalPayment = TERMINAL_PAYMENT_STATUSES.includes(payment.status);
+  const terminalPayment = paymentStatusIsTerminal(payment.status);
   const completedService = bookingStatus === 'COMPLETED';
   const closedWithoutCapture = CLOSED_WITHOUT_CAPTURE_BOOKING_STATUSES.includes(bookingStatus);
   const cashDebt = paymentCashDebtNeedsSettlement(payment);
 
   return [
     {
-      action: 'Sync',
+      action: options.syncActionLabel ?? 'Sync',
       operatorRule:
         'Use sync before manual money actions when a gateway reference exists. Sync should not decide service outcome.',
       pillClass: hasGatewayReference ? 'pill-success' : 'pill-neutral',
@@ -30,7 +51,8 @@ export function paymentActionExecutionMap(payment: AdminPayment): PaymentActionE
       pillClass: payment.status === 'AUTHORIZED' && completedService ? 'pill-warn' : 'pill-neutral',
       reason:
         payment.status === 'AUTHORIZED' && completedService
-          ? 'The service is completed and the authorization hold is still active.'
+          ? (options.completedCaptureReason ??
+            'The service is completed and the authorization hold is still active.')
           : terminalPayment
             ? `Payment is already ${payment.status}.`
             : payment.status === 'AUTHORIZED'
@@ -88,8 +110,9 @@ export function paymentActionExecutionMap(payment: AdminPayment): PaymentActionE
               : 'Not captured',
     },
     {
-      action: 'Settle cash debt',
+      action: options.cashDebtActionLabel ?? 'Settle cash debt',
       operatorRule:
+        options.cashDebtOperatorRule ??
         'Settle with a deposit reference or approved admin offset before final acceptance, service start, or payout release.',
       pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
       reason: cashDebt

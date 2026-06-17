@@ -1,6 +1,16 @@
 import type { AdminPayment, AdminPaymentCallbackAttempt } from '../../lib/admin-api';
 import { formatDateTime, formatMoney as money } from '../../lib/admin-format';
 
+type PaymentCashDebtCandidate = {
+  readonly method: string;
+  readonly booking?: {
+    readonly earning?: {
+      readonly netAmount?: number;
+      readonly status?: string;
+    } | null;
+  } | null;
+};
+
 export type PaymentCallbackMeta = {
   readonly callbackAmount: number | null;
   readonly gatewayTransactionId: string | null;
@@ -116,7 +126,7 @@ export function paymentOpsHint(payment: AdminPayment): string {
   return 'No urgent action required.';
 }
 
-export function paymentCashDebtNeedsSettlement(payment: AdminPayment): boolean {
+export function paymentCashDebtNeedsSettlement(payment: PaymentCashDebtCandidate): boolean {
   const earning = payment.booking?.earning;
   return (
     payment.method === 'CASH' &&
