@@ -1,5 +1,24 @@
 import type { ActionMenuItem } from '../../components/action-menu';
 import type { AdminProvider } from '../../lib/admin-api';
+import {
+  approveIdentityDocumentDescription,
+  approvePartnerForOperationsDescription,
+  approvePartnerKycDescription,
+  approvePayoutBankDescription,
+  approvePublicMediaDescription,
+  approveTaxProfileDescription,
+  blockPartnerAccountDescription,
+  kycRequiresApprovedDocumentsDescription,
+  rejectIdentityDocumentDescription,
+  rejectPartnerForOperationsDescription,
+  rejectPartnerKycDescription,
+  rejectPayoutBankDescription,
+  rejectPublicMediaDescription,
+  rejectTaxProfileDescription,
+  syncInfrastructureRoleDescription,
+  syncRoleRequiresApprovedVerificationDescription,
+  unblockPartnerAccountDescription,
+} from './partner-action-copy';
 import { partnerAccountActionConfirmHref } from './partner-account-action-confirmation';
 import {
   partnerReviewActionConfirmHref,
@@ -14,23 +33,21 @@ export function partnerAccountActionMenuItems(provider: AdminProvider): readonly
   const syncDisabled = provider.verification?.status !== 'APPROVED';
   const actions: ActionMenuItem[] = [
     {
-      description: 'Review before approving this Partner for operations.',
+      description: approvePartnerForOperationsDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'approve'),
       kind: 'link',
       label: 'Approve',
       tone: 'success',
     },
     {
-      description: 'Review and enter a rejection reason before sending this Partner back.',
+      description: rejectPartnerForOperationsDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'reject'),
       kind: 'link',
       label: 'Reject',
       tone: 'danger',
     },
     {
-      description: syncDisabled
-        ? 'Partner verification must be approved before syncing Supabase role.'
-        : 'Review before syncing the infrastructure role.',
+      description: syncDisabled ? syncRoleRequiresApprovedVerificationDescription : syncInfrastructureRoleDescription,
       disabled: syncDisabled,
       href: partnerAccountActionConfirmHref(provider.id, 'sync-role'),
       kind: 'link',
@@ -56,12 +73,12 @@ export function partnerDocumentReviewActionMenuItems(
 ): readonly ActionMenuItem[] {
   return partnerReviewTargetMenuItems({
     approveAction: 'approve-document',
-    approveDescription: 'Review before approving this identity document.',
+    approveDescription: approveIdentityDocumentDescription,
     approveDisabled: document.status === 'APPROVED',
     approveLabel: 'Approve doc',
     providerId,
     rejectAction: 'reject-document',
-    rejectDescription: 'Review and enter a document rejection reason.',
+    rejectDescription: rejectIdentityDocumentDescription,
     rejectDisabled: document.status === 'REJECTED',
     rejectLabel: 'Reject doc',
     target: { documentId: document.id },
@@ -74,9 +91,7 @@ export function partnerKycReviewActionMenuItems(
 ): readonly ActionMenuItem[] {
   return [
     {
-      description: canApproveKyc
-        ? 'Review before approving Partner KYC.'
-        : 'Required identity documents must be approved before KYC approval.',
+      description: canApproveKyc ? approvePartnerKycDescription : kycRequiresApprovedDocumentsDescription,
       disabled: provider.kyc?.status === 'APPROVED' || !canApproveKyc,
       href: partnerReviewActionConfirmHref(provider.id, 'approve-kyc'),
       kind: 'link',
@@ -84,7 +99,7 @@ export function partnerKycReviewActionMenuItems(
       tone: 'success',
     },
     {
-      description: 'Review and enter a KYC rejection reason.',
+      description: rejectPartnerKycDescription,
       disabled: !provider.kyc || provider.kyc.status === 'REJECTED',
       href: partnerReviewActionConfirmHref(provider.id, 'reject-kyc'),
       kind: 'link',
@@ -100,12 +115,12 @@ export function partnerBankReviewActionMenuItems(
 ): readonly ActionMenuItem[] {
   return partnerReviewTargetMenuItems({
     approveAction: 'approve-bank',
-    approveDescription: 'Review before approving this payout bank account.',
+    approveDescription: approvePayoutBankDescription,
     approveDisabled: bankAccount.status === 'APPROVED',
     approveLabel: 'Approve bank',
     providerId,
     rejectAction: 'reject-bank',
-    rejectDescription: 'Review and enter a bank rejection reason.',
+    rejectDescription: rejectPayoutBankDescription,
     rejectDisabled: bankAccount.status === 'REJECTED',
     rejectLabel: 'Reject bank',
     target: { bankAccountId: bankAccount.id },
@@ -115,7 +130,7 @@ export function partnerBankReviewActionMenuItems(
 export function partnerTaxReviewActionMenuItems(provider: AdminProvider): readonly ActionMenuItem[] {
   return [
     {
-      description: 'Review before approving this tax profile.',
+      description: approveTaxProfileDescription,
       disabled: provider.taxProfile?.status === 'APPROVED',
       href: partnerReviewActionConfirmHref(provider.id, 'approve-tax'),
       kind: 'link',
@@ -123,7 +138,7 @@ export function partnerTaxReviewActionMenuItems(provider: AdminProvider): readon
       tone: 'success',
     },
     {
-      description: 'Review and enter a tax rejection reason.',
+      description: rejectTaxProfileDescription,
       disabled: provider.taxProfile?.status === 'REJECTED',
       href: partnerReviewActionConfirmHref(provider.id, 'reject-tax'),
       kind: 'link',
@@ -139,12 +154,12 @@ export function partnerPublicMediaReviewActionMenuItems(
 ): readonly ActionMenuItem[] {
   return partnerReviewTargetMenuItems({
     approveAction: 'approve-media',
-    approveDescription: 'Review before approving this public profile media.',
+    approveDescription: approvePublicMediaDescription,
     approveDisabled: file.reviewStatus === 'APPROVED',
     approveLabel: 'Approve media',
     providerId,
     rejectAction: 'reject-media',
-    rejectDescription: 'Review and enter a media rejection reason.',
+    rejectDescription: rejectPublicMediaDescription,
     rejectDisabled: file.reviewStatus === 'REJECTED',
     rejectLabel: 'Reject media',
     target: { fileId: file.id },
@@ -154,7 +169,7 @@ export function partnerPublicMediaReviewActionMenuItems(
 function accountBlockMenuItem(provider: AdminProvider): ActionMenuItem {
   if (provider.blockedAt) {
     return {
-      description: 'Review the recorded issue before unblocking this account.',
+      description: unblockPartnerAccountDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'unblock'),
       kind: 'link',
       label: 'Unblock',
@@ -163,7 +178,7 @@ function accountBlockMenuItem(provider: AdminProvider): ActionMenuItem {
   }
 
   return {
-    description: 'Review and enter an account block reason before blocking this Partner.',
+    description: blockPartnerAccountDescription,
     href: partnerAccountActionConfirmHref(provider.id, 'block'),
     kind: 'link',
     label: 'Block',

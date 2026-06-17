@@ -86,6 +86,25 @@ import {
   type PartnerReviewConfirmationAction,
 } from '../partner-review-action-confirmation';
 import {
+  approveIdentityDocumentDescription,
+  approvePartnerForOperationsDescription,
+  approvePartnerKycDescription,
+  approvePayoutBankDescription,
+  approvePublicMediaDescription,
+  approveTaxProfileDescription,
+  blockPartnerAccountDescription,
+  kycRequiresApprovedDocumentsDescription,
+  rejectIdentityDocumentDescription,
+  rejectPartnerForOperationsDescription,
+  rejectPartnerKycDescription,
+  rejectPayoutBankDescription,
+  rejectPublicMediaDescription,
+  rejectTaxProfileDescription,
+  syncInfrastructureRoleDescription,
+  syncRoleRequiresApprovedVerificationDescription,
+  unblockPartnerAccountDescription,
+} from '../partner-action-copy';
+import {
   buildPartnerDeviceActionConfirmation,
   partnerDeviceActionConfirmHref,
   readPartnerDeviceConfirmationAction,
@@ -1101,23 +1120,21 @@ function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly
   const syncDisabled = provider.verification?.status !== 'APPROVED';
   const actions: ActionMenuItem[] = [
     {
-      description: 'Review before approving this Partner for operations.',
+      description: approvePartnerForOperationsDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'approve', { baseHref: detailBaseHref }),
       kind: 'link',
       label: 'Approve partner',
       tone: 'success',
     },
     {
-      description: 'Review and enter a rejection reason before sending this Partner back.',
+      description: rejectPartnerForOperationsDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'reject', { baseHref: detailBaseHref }),
       kind: 'link',
       label: 'Reject partner',
       tone: 'danger',
     },
     {
-      description: syncDisabled
-        ? 'Partner verification must be approved before syncing Supabase role.'
-        : 'Review before syncing the infrastructure role.',
+      description: syncDisabled ? syncRoleRequiresApprovedVerificationDescription : syncInfrastructureRoleDescription,
       disabled: syncDisabled,
       href: partnerAccountActionConfirmHref(provider.id, 'sync-role', { baseHref: detailBaseHref }),
       kind: 'link',
@@ -1128,7 +1145,7 @@ function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly
 
   if (provider.blockedAt) {
     actions.push({
-      description: 'Review the recorded issue before unblocking this account.',
+      description: unblockPartnerAccountDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'unblock', { baseHref: detailBaseHref }),
       kind: 'link',
       label: 'Unblock account',
@@ -1136,7 +1153,7 @@ function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly
     });
   } else {
     actions.push({
-      description: 'Review and enter an account block reason before blocking this Partner.',
+      description: blockPartnerAccountDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'block', { baseHref: detailBaseHref }),
       kind: 'link',
       label: 'Block account',
@@ -4329,9 +4346,7 @@ function buildPartnerKycReviewActions(
 ): ActionMenuItem[] {
   return [
     {
-      description: canApproveKyc
-        ? 'Review before approving Partner KYC.'
-        : 'Required identity documents must be approved before KYC approval.',
+      description: canApproveKyc ? approvePartnerKycDescription : kycRequiresApprovedDocumentsDescription,
       disabled: provider.kyc?.status === 'APPROVED' || !canApproveKyc,
       href: partnerDetailReviewActionConfirmHref(provider.id, 'approve-kyc'),
       kind: 'link',
@@ -4339,7 +4354,7 @@ function buildPartnerKycReviewActions(
       tone: 'success',
     },
     {
-      description: 'Review and enter a KYC rejection reason.',
+      description: rejectPartnerKycDescription,
       disabled: !provider.kyc || provider.kyc.status === 'REJECTED',
       href: partnerDetailReviewActionConfirmHref(provider.id, 'reject-kyc'),
       kind: 'link',
@@ -4373,7 +4388,7 @@ function buildPartnerDocumentReviewActions(
 ): ActionMenuItem[] {
   return [
     {
-      description: 'Review before approving this identity document.',
+      description: approveIdentityDocumentDescription,
       disabled: document.status === 'APPROVED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'approve-document', {
         documentId: document.id,
@@ -4383,7 +4398,7 @@ function buildPartnerDocumentReviewActions(
       tone: 'success',
     },
     {
-      description: 'Review and enter a document rejection reason.',
+      description: rejectIdentityDocumentDescription,
       disabled: document.status === 'REJECTED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'reject-document', {
         documentId: document.id,
@@ -4420,7 +4435,7 @@ function buildPartnerPublicMediaReviewActions(
 ): ActionMenuItem[] {
   return [
     {
-      description: 'Review before approving this public profile media.',
+      description: approvePublicMediaDescription,
       disabled: file.reviewStatus === 'APPROVED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'approve-media', {
         fileId: file.id,
@@ -4430,7 +4445,7 @@ function buildPartnerPublicMediaReviewActions(
       tone: 'success',
     },
     {
-      description: 'Review and enter a media rejection reason.',
+      description: rejectPublicMediaDescription,
       disabled: file.reviewStatus === 'REJECTED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'reject-media', {
         fileId: file.id,
@@ -4476,7 +4491,7 @@ function buildPartnerBankReviewActions(
 ): ActionMenuItem[] {
   return [
     {
-      description: 'Review before approving this payout bank account.',
+      description: approvePayoutBankDescription,
       disabled: bank.status === 'APPROVED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'approve-bank', {
         bankAccountId: bank.id,
@@ -4486,7 +4501,7 @@ function buildPartnerBankReviewActions(
       tone: 'success',
     },
     {
-      description: 'Review and enter a bank rejection reason.',
+      description: rejectPayoutBankDescription,
       disabled: bank.status === 'REJECTED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'reject-bank', {
         bankAccountId: bank.id,
@@ -4519,7 +4534,7 @@ function buildPartnerTaxReviewActions(
 ): ActionMenuItem[] {
   return [
     {
-      description: 'Review before approving this tax profile.',
+      description: approveTaxProfileDescription,
       disabled: taxProfile.status === 'APPROVED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'approve-tax'),
       kind: 'link',
@@ -4527,7 +4542,7 @@ function buildPartnerTaxReviewActions(
       tone: 'success',
     },
     {
-      description: 'Review and enter a tax rejection reason.',
+      description: rejectTaxProfileDescription,
       disabled: taxProfile.status === 'REJECTED',
       href: partnerDetailReviewActionConfirmHref(providerId, 'reject-tax'),
       kind: 'link',

@@ -19,6 +19,7 @@ import {
   partnerReviewActionConfirmHref,
   readPartnerReviewConfirmationAction,
 } from '../partners/partner-review-action-confirmation';
+import { approvePublicMediaDescription, rejectPublicMediaDescription } from '../partners/partner-action-copy';
 import {
   buildFileReviewRows,
   buildFileReviewSummary,
@@ -183,7 +184,7 @@ function fileReviewActions(row: FileReviewRow): readonly ActionMenuItem[] {
   if (row.kind === 'public-media') {
     actions.push(
       {
-        description: 'Review before approving this public profile media.',
+        description: approvePublicMediaDescription,
         disabled: row.reviewStatus === 'APPROVED',
         href: partnerReviewActionConfirmHref(row.partnerId, 'approve-media', { fileId: row.id }, { baseHref: '/files' }),
         kind: 'link',
@@ -191,7 +192,7 @@ function fileReviewActions(row: FileReviewRow): readonly ActionMenuItem[] {
         tone: 'success',
       },
       {
-        description: 'Review and enter a media rejection reason.',
+        description: rejectPublicMediaDescription,
         disabled: row.reviewStatus === 'REJECTED',
         href: partnerReviewActionConfirmHref(row.partnerId, 'reject-media', { fileId: row.id }, { baseHref: '/files' }),
         kind: 'link',
