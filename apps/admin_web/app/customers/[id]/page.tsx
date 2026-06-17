@@ -18,6 +18,11 @@ import {
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
+import {
+  bookingCreateGateFilterLabel,
+  bookingCreateGateReasonFilter,
+  bookingCreateGateReasonLabel,
+} from '../../../lib/booking-create-gate-reasons';
 import { bookingChatOpensAfterMatchOrSelectionCopy } from '../../../lib/booking-chat-copy';
 import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
 import {
@@ -3277,7 +3282,7 @@ function buildCustomerBookingGateAttemptRows(
     .map((log) => {
       const metadata = readMetadataObject(log.metadata);
       const reasonCode = readString(metadata.reasonCode) ?? 'UNKNOWN';
-      const gate = customerBookingGateFilter(reasonCode);
+      const gate = bookingCreateGateReasonFilter(reasonCode);
       const bookingAddress = readMetadataObject(metadata.bookingAddress);
       const addressText = readString(bookingAddress.addressText);
       const customerDistance = readNumber(metadata.customerDistanceMeters);
@@ -3308,8 +3313,8 @@ function buildCustomerBookingGateAttemptRows(
         id: log.id,
         at: log.createdAt,
         gate,
-        gateLabel: customerBookingGateLabel(gate),
-        reasonLabel: customerBookingGateReasonLabel(reasonCode),
+        gateLabel: bookingCreateGateFilterLabel(gate),
+        reasonLabel: bookingCreateGateReasonLabel(reasonCode, 'customerDetail'),
         detail: detailParts.join(' / '),
         addressLabel: addressText ? compactText(addressText, 72) : 'No address metadata',
         distanceLabel: distanceParts.length ? distanceParts.join(' / ') : 'No distance value',
@@ -3321,54 +3326,6 @@ function buildCustomerBookingGateAttemptRows(
       };
     })
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
-}
-
-function customerBookingGateFilter(reasonCode: string) {
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') return 'service-area';
-  if (
-    reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
-    reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE' ||
-    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
-    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID'
-  ) {
-    return 'customer-gps';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') return 'customer-distance';
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') return 'first-pick-distance';
-  return 'unknown';
-}
-
-function customerBookingGateLabel(gate: string) {
-  if (gate === 'service-area') return 'Service area';
-  if (gate === 'customer-gps') return 'Optional GPS evidence';
-  if (gate === 'customer-distance') return 'Optional GPS distance';
-  if (gate === 'first-pick-distance') return 'First-pick distance';
-  return 'Unknown gate';
-}
-
-function customerBookingGateReasonLabel(reasonCode: string) {
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Optional customer GPS distance evidence';
-  }
-  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
-    return 'First-pick Partner is outside the service address radius';
-  }
-  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
-    return 'Selected service address is outside enabled service area';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Optional customer GPS evidence is stale';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Optional customer GPS evidence is missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Optional customer GPS timestamp is missing';
-  }
-  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Optional customer GPS timestamp is invalid';
-  }
-  return reasonCode.replace(/_/g, ' ').toLowerCase();
 }
 
 function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): CustomerBookingEvidenceRow[] {

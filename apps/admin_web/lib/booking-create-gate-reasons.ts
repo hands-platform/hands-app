@@ -16,7 +16,7 @@ export type BookingCreateGateFilter =
   | 'first-pick-distance'
   | 'unknown';
 
-type BookingCreateGateReasonLabelVariant = 'monitor' | 'operations' | 'audit';
+type BookingCreateGateReasonLabelVariant = 'monitor' | 'operations' | 'audit' | 'customerDetail' | 'partnerDetail';
 
 const customerGpsReasonCodes = new Set<string>([
   BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing,
@@ -54,6 +54,31 @@ const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, s
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing]: 'optional customer GPS missing',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing]: 'optional GPS timestamp missing',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]: 'optional GPS timestamp invalid',
+  },
+  customerDetail: {
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]:
+      'First-pick Partner is outside the service address radius',
+    [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]:
+      'Selected service address is outside enabled service area',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'Optional customer GPS evidence is stale',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing]: 'Optional customer GPS evidence is missing',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing]:
+      'Optional customer GPS timestamp is missing',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]:
+      'Optional customer GPS timestamp is invalid',
+  },
+  partnerDetail: {
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]: 'Partner was outside the first-pick distance gate',
+    [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]:
+      'Selected service address was outside enabled service area',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'Optional customer GPS evidence was stale',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing]: 'Optional customer GPS evidence was missing',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing]:
+      'Optional customer GPS timestamp was missing',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]:
+      'Optional customer GPS timestamp was invalid',
   },
 };
 
@@ -100,6 +125,22 @@ export function bookingCreateGateAuditQuery(filter: BookingCreateGateFilter) {
     return 'booking.create.rejected UNKNOWN';
   }
   return 'booking.create.rejected';
+}
+
+export function bookingCreateGateFilterLabel(filter: BookingCreateGateFilter) {
+  if (filter === 'service-area') {
+    return 'Service area';
+  }
+  if (filter === 'customer-gps') {
+    return 'Optional GPS evidence';
+  }
+  if (filter === 'customer-distance') {
+    return 'Optional GPS distance';
+  }
+  if (filter === 'first-pick-distance') {
+    return 'First-pick distance';
+  }
+  return 'Unknown gate';
 }
 
 export function bookingCreateGateReasonPill(reasonCode: string) {
