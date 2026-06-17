@@ -506,8 +506,7 @@ function CashFeeSettlementPathSection({
         <div>
           <h2>Cash fee settlement path</h2>
           <p className="muted">
-            Operational view for cash bookings: customer cash collection, HANDS fee debt, tax/fee logs,
-            Partner wallet impact, and the exact unblock path for marketplace participation and payout.
+            Cash settlement and wallet unblock evidence for this booking.
           </p>
         </div>
         <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>

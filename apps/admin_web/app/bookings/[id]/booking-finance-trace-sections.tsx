@@ -279,7 +279,7 @@ export function BookingFinanceCommandCenterSection({
         <div>
           <h2>Finance command center</h2>
           <p className="muted">
-            One-booking money flow from customer price to Partner payout, HANDS fee, tax, and wallet impact.
+            Booking finance summary and required checks.
           </p>
         </div>
         <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
@@ -299,7 +299,7 @@ export function BookingFinanceCommandCenterSection({
         </div>
       ) : (
         <p className="muted admin-mt-12">
-          Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
+          Finance checks are aligned for this booking.
         </p>
       )}
     </section>
@@ -320,7 +320,7 @@ export function BookingPayoutBatchEligibilitySection({
         <div>
           <h2>Payout batch eligibility</h2>
           <p className="muted">
-            Booking-level release check before weekly, monthly, or admin-selected Partner settlement batches.
+            Booking readiness for Partner settlement batches.
           </p>
         </div>
         <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
@@ -359,8 +359,7 @@ export function BookingServicePricingSnapshotSection({
         <div>
           <h2>Service pricing snapshot</h2>
           <p className="muted">
-            Booking-level price evidence for the selected service duration, Partner payout, platform fee, tax,
-            and wallet impact.
+            Booking price, payout, fee, and tax evidence.
           </p>
         </div>
         <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>

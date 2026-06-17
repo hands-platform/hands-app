@@ -34,8 +34,7 @@ export function BookingCloseoutSections({
           <div>
             <h2>Booking closeout checklist</h2>
             <p className="muted">
-              Final operator checklist before payment capture, refund/release, cash fee settlement, no-show,
-              cancellation, or completed-work closeout. It uses factual records only.
+              Final factual checklist before closeout or finance action.
             </p>
           </div>
           <div className="actions">
@@ -66,8 +65,7 @@ export function BookingCloseoutSections({
           <div>
             <h2>Connected operations records</h2>
             <p className="muted">
-              Jump from this booking to the linked customer, Partner, chat archive, notification trace,
-              payment, refund, and settlement records.
+              Jump links to records connected to this booking.
             </p>
           </div>
           <span className="pill pill-info">{connectedRecordLinks.length} links</span>

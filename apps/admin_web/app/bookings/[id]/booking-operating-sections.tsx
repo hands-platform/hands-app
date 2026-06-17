@@ -116,10 +116,7 @@ export function BookingMarketplaceWalletEvidenceSection({
         <div>
           <h2>Marketplace participation and wallet evidence</h2>
           <p className="muted">
-            One booking view for actual participant records, customer final choice, marketplace alert batches,
-            and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
-            Partner app message when wallet debt blocks final acceptance and service start: Unpaid HANDS fees
-            must be settled before final acceptance or service start.
+            Participant, customer choice, alert, and wallet evidence for this booking.
           </p>
         </div>
         <span className={`pill ${marketplaceWalletEvidence.tone}`}>
@@ -243,8 +240,7 @@ export function BookingCloseoutReadinessSection({
         <div>
           <h2>Closeout readiness</h2>
           <p className="muted">
-            End-to-end readiness check for support, dispatch, finance, tax, wallet, location, and admin
-            evidence. This shows factual completeness only.
+            Factual completeness check for booking closeout.
           </p>
         </div>
         <span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>
@@ -272,8 +268,7 @@ export function BookingCloseoutReadinessSection({
           <div>
             <strong>Closeout exception register</strong>
             <p className="muted">
-              Only unresolved factual items appear here, so the operator can clear the booking without hunting
-              through every section.
+              Unresolved closeout items only.
             </p>
           </div>
           <span className={`pill ${closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}`}>
@@ -306,8 +301,7 @@ export function BookingCloseoutReadinessSection({
           </div>
         ) : (
           <p className="muted admin-mt-10">
-            Customer, Partner, chat, payment, finance, cash, location, and audit records are aligned for the
-            current booking stage.
+            No closeout exceptions for the current booking stage.
           </p>
         )}
       </div>
