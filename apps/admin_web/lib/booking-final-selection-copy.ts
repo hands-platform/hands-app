@@ -1,4 +1,5 @@
 import type { AdminBookingMatchingEvidence } from './admin-api';
+import { customerSelectedFinalPartnerPathCopy } from './booking-selection-copy';
 
 type AdminBookingFinalSelection = AdminBookingMatchingEvidence['finalSelection'];
 
@@ -25,7 +26,7 @@ export function bookingFinalSelectionCopy(
     case 'CUSTOMER_SELECTED_PARTNER':
       return {
         label: 'Customer selected final Partner',
-        pathLabel: 'Customer reviewed participants and selected the final Partner',
+        pathLabel: customerSelectedFinalPartnerPathCopy,
         toneClass: 'pill-success',
       };
     case 'CUSTOMER_SELECTION_AVAILABLE':

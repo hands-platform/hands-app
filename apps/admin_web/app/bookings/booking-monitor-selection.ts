@@ -1,4 +1,5 @@
 import type { BookingFinalSelectionCopy } from '../../lib/booking-final-selection-copy';
+import { firstPickWithMarketplaceWaitingPathCopy } from '../../lib/booking-selection-copy';
 
 export type BookingMonitorSelectionFacts = {
   readonly finalSelectionCopy: BookingFinalSelectionCopy | null;
@@ -70,7 +71,7 @@ export function bookingMonitorSelectionPathLabel(facts: BookingMonitorSelectionF
 
   if (facts.firstPickPending) {
     return facts.marketplaceCount > 0
-      ? 'Direct request first, with marketplace Partners already waiting'
+      ? firstPickWithMarketplaceWaitingPathCopy
       : 'Direct request first, waiting on the first-pick Partner';
   }
 
