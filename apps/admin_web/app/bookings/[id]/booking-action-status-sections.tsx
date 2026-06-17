@@ -96,13 +96,21 @@ export function BookingActionStatusSections({
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
       <BookingOutcomeReviewSection outcomeReview={outcomeReview} />
-      <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
-      <BookingCompletedCloseoutSection bookingId={bookingId} closeout={closeout} />
-      <BookingMatchingExpirySection bookingId={bookingId} matchingExpiry={matchingExpiry} />
-      <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />
+      {shouldShowChatRepairSection(chatRepair) && (
+        <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
+      )}
+      {closeout.canSubmit && <BookingCompletedCloseoutSection bookingId={bookingId} closeout={closeout} />}
+      {matchingExpiry.canSubmit && (
+        <BookingMatchingExpirySection bookingId={bookingId} matchingExpiry={matchingExpiry} />
+      )}
+      {noShow.canSubmit && <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />}
       <BookingLiveServiceBoardSection liveSignals={liveSignals} />
     </>
   );
+}
+
+function shouldShowChatRepairSection(chatRepair: ChatRepairState) {
+  return chatRepair.canSubmit || chatRepair.tone === 'pill-danger' || chatRepair.tone === 'pill-warn';
 }
 
 function BookingOutcomeReviewSection({
