@@ -216,8 +216,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('State Changed');
     expect(rendered).not.toContain('Status');
     expect(rendered).toContain('Pre-match');
-    expect(rendered).toContain('Post-match / In Progress');
-    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).not.toContain('Post-match / In Progress');
+    expect(rendered).not.toContain('Post-match Cancellations');
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('Partner A');
@@ -239,7 +239,12 @@ describe('BookingMonitorListSection', () => {
 
   it('renders the empty booking message', () => {
     const section = <BookingMonitorListSection emptyMessage="No bookings match filters." rows={[]} />;
+    const rendered = normalizedText(renderToStaticMarkup(section));
 
-    expect(normalizedText(renderToStaticMarkup(section))).toContain('No bookings match filters.');
+    expect(rendered).toContain('No realtime bookings');
+    expect(rendered).toContain('No bookings match filters.');
+    expect(rendered).not.toContain('Pre-match');
+    expect(rendered).not.toContain('Post-match / In Progress');
+    expect(rendered).not.toContain('Post-match Cancellations');
   });
 });

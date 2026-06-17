@@ -179,6 +179,7 @@ const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
 
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
+  const visibleGroups = groupedRows.filter((group) => group.rows.length > 0);
   const visibleBookingCount = groupedRows.reduce((count, group) => count + group.rows.length, 0);
 
   return (
@@ -194,28 +195,41 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
       </div>
 
       <div className="vuexy-booking-table-groups">
-        {groupedRows.map((group) => (
-          <BookingMonitorTableGroup
-            allRowsEmpty={rows.length === 0}
-            emptyMessage={emptyMessage}
-            group={group}
-            key={group.key}
-          />
-        ))}
+        {rows.length === 0 ? (
+          <BookingMonitorEmptyTableState emptyMessage={emptyMessage} />
+        ) : (
+          visibleGroups.map((group) => <BookingMonitorTableGroup group={group} key={group.key} />)
+        )}
       </div>
     </section>
   );
 }
 
-function BookingMonitorTableGroup({
-  allRowsEmpty,
-  emptyMessage,
-  group,
-}: {
-  readonly allRowsEmpty: boolean;
-  readonly emptyMessage: string;
-  readonly group: BookingTableGroup;
-}) {
+function BookingMonitorEmptyTableState({ emptyMessage }: { readonly emptyMessage: string }) {
+  return (
+    <section className="vuexy-booking-table-group" aria-labelledby="booking-table-empty">
+      <div className="vuexy-booking-table-group-header">
+        <div>
+          <h3 id="booking-table-empty">No realtime bookings</h3>
+          <p>Change filters or wait for new booking requests.</p>
+        </div>
+        <span className="pill pill-neutral">0 booking(s)</span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table"
+          emptyMessage={emptyMessage}
+          headers={BOOKING_TABLE_HEADERS}
+          rowCount={0}
+        >
+          {null}
+        </AdminDataTable>
+      </AdminTableScroll>
+    </section>
+  );
+}
+
+function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup }) {
   const [page, setPage] = useState(1);
   const rowKey = group.rows.map((row) => row.booking.id).join('|');
   const totalPages = Math.max(1, Math.ceil(group.rows.length / BOOKING_TABLE_PAGE_SIZE));
@@ -248,7 +262,7 @@ function BookingMonitorTableGroup({
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
-          emptyMessage={allRowsEmpty ? emptyMessage : group.emptyMessage}
+          emptyMessage={group.emptyMessage}
           headers={BOOKING_TABLE_HEADERS}
           rowCount={visibleRows.length}
         >
