@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CalendarDays } from 'lucide-react';
 
 import type { AdminDateRange } from '../../lib/date-range';
 import { dateRangeLabel } from '../../lib/date-range';
@@ -29,7 +30,8 @@ export function OperationsHandoffDateRangeSection({ range }: OperationsHandoffDa
       </div>
       <div className="actions">
         {handoffRangeLinks.map(([label, href]) => (
-          <Link className="text-link" href={href} key={href}>
+          <Link className="button button-secondary" href={href} key={href}>
+            <CalendarDays aria-hidden="true" size={16} />
             {label}
           </Link>
         ))}

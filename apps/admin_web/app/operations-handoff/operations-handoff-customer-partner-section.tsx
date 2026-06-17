@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Briefcase, Users } from 'lucide-react';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
@@ -18,7 +19,8 @@ export function OperationsHandoffCustomerPartnerSection({
             <h2>Customer handoff</h2>
             <p className="muted">Recent customers with booking, payment, address, and chat evidence.</p>
           </div>
-          <Link className="text-link" href="/customers">
+          <Link className="button button-secondary" href="/customers">
+            <Users aria-hidden="true" size={16} />
             Customer list
           </Link>
         </div>
@@ -40,7 +42,8 @@ export function OperationsHandoffCustomerPartnerSection({
             <h2>Partner handoff</h2>
             <p className="muted">Partner state from app, wallet, identity, location, and work facts.</p>
           </div>
-          <Link className="text-link" href="/partners">
+          <Link className="button button-secondary" href="/partners">
+            <Briefcase aria-hidden="true" size={16} />
             Partner list
           </Link>
         </div>

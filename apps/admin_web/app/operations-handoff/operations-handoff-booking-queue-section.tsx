@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ClipboardList, MessageSquare } from 'lucide-react';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -19,10 +20,12 @@ export function OperationsHandoffBookingQueueSection({
           </p>
         </div>
         <div className="actions">
-          <Link className="text-link" href="/bookings?view=attention">
+          <Link className="button button-secondary" href="/bookings?view=attention">
+            <ClipboardList aria-hidden="true" size={16} />
             Booking monitor
           </Link>
-          <Link className="text-link" href="/chat-archive">
+          <Link className="button button-secondary" href="/chat-archive">
+            <MessageSquare aria-hidden="true" size={16} />
             Chat archive
           </Link>
         </div>

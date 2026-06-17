@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Download, FileClock, MessageSquare } from 'lucide-react';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
 
@@ -23,16 +24,19 @@ export function OperationsHandoffActivityStreamSection({
         </div>
         <div className="actions">
           <a
-            className="text-link"
+            className="button button-secondary"
             download="hands-operations-handoff-activity.csv"
             href={csvHref}
           >
+            <Download aria-hidden="true" size={16} />
             Export activity CSV
           </a>
-          <Link className="text-link" href="/audit-log">
+          <Link className="button button-secondary" href="/audit-log">
+            <FileClock aria-hidden="true" size={16} />
             Audit trail
           </Link>
-          <Link className="text-link" href="/chat-archive">
+          <Link className="button button-secondary" href="/chat-archive">
+            <MessageSquare aria-hidden="true" size={16} />
             Chat archive
           </Link>
         </div>
