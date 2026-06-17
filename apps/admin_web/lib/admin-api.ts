@@ -457,6 +457,9 @@ export type AdminBooking = {
   matchedAt?: string | null;
   matchSource?: AdminBookingMatchSource | null;
   matchingEvidence?: AdminBookingMatchingEvidence;
+  serviceAddressText?: string | null;
+  statusChangedAt?: string | null;
+  statusChangedLabel?: string | null;
   closedAt?: string | null;
   closedByRole?: string | null;
   closedReason?: string | null;

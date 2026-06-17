@@ -1,4 +1,14 @@
-const ADDRESS_TEXT_FIELDS = ['addressText', 'fullAddress', 'formattedAddress', 'line1', 'street'] as const;
+const ADDRESS_TEXT_FIELDS = [
+  'addressText',
+  'address_text',
+  'fullAddress',
+  'formattedAddress',
+  'label',
+  'name',
+  'line1',
+  'street',
+] as const;
+const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
 
 export function coordinatePairLabel(lat: unknown, lng: unknown) {
   const parsedLat = coordinatePart(lat);
@@ -9,7 +19,7 @@ export function coordinatePairLabel(lat: unknown, lng: unknown) {
   return `${parsedLat}, ${parsedLng}`;
 }
 
-export function readAddressText(value: unknown) {
+export function readAddressText(value: unknown): string | null {
   if (typeof value === 'string') {
     return trimmedString(value);
   }
@@ -26,7 +36,14 @@ export function readAddressText(value: unknown) {
     }
   }
 
-  return null;
+  const nestedAddress: string | null = record.address === value ? null : readAddressText(record.address);
+  if (nestedAddress) {
+    return nestedAddress;
+  }
+
+  const parts = ADDRESS_PART_FIELDS.map((field) => trimmedString(record[field])).filter(Boolean);
+  const uniqueParts = Array.from(new Set(parts));
+  return uniqueParts.length > 0 ? uniqueParts.join(', ') : null;
 }
 
 function coordinatePart(value: unknown) {

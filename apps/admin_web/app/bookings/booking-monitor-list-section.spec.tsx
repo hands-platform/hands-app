@@ -1,10 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBooking } from '../../lib/admin-api';
 import { normalizedText } from './booking-section-test-utils';
-import {
-  BookingMonitorListSection,
-  type BookingMonitorListRow,
-} from './booking-monitor-list-section';
+import { BookingMonitorListSection, type BookingMonitorListRow } from './booking-monitor-list-section';
 
 describe('BookingMonitorListSection', () => {
   it('renders realtime booking rows with the compact operations columns', () => {
@@ -43,6 +40,42 @@ describe('BookingMonitorListSection', () => {
           providerProfileId: 'partner_participant',
           status: 'ACCEPTED',
         },
+        {
+          id: 'participant_2',
+          providerProfile: {
+            displayName: 'Partner D',
+            id: 'partner_d',
+          },
+          providerProfileId: 'partner_d',
+          status: 'JOINED',
+        },
+        {
+          id: 'participant_3',
+          providerProfile: {
+            displayName: 'Partner E',
+            id: 'partner_e',
+          },
+          providerProfileId: 'partner_e',
+          status: 'JOINED',
+        },
+        {
+          id: 'participant_4',
+          providerProfile: {
+            displayName: 'Partner F',
+            id: 'partner_f',
+          },
+          providerProfileId: 'partner_f',
+          status: 'JOINED',
+        },
+        {
+          id: 'participant_5',
+          providerProfile: {
+            displayName: 'Partner G',
+            id: 'partner_g',
+          },
+          providerProfileId: 'partner_g',
+          status: 'JOINED',
+        },
       ],
       preferredProvider: {
         displayName: 'Partner A',
@@ -59,7 +92,10 @@ describe('BookingMonitorListSection', () => {
       addressSnapshot: {
         addressText: 'Da Nang service address',
       },
+      serviceAddressText: '12 Nguyen Hue, Da Nang',
       status: 'OPEN_MATCHING',
+      statusChangedAt: '2026-06-12T03:15:00.000Z',
+      statusChangedLabel: 'Matching opened at',
     } as unknown as AdminBooking;
     const row: BookingMonitorListRow = {
       actionChips: [
@@ -166,12 +202,7 @@ describe('BookingMonitorListSection', () => {
       },
     };
 
-    const section = (
-      <BookingMonitorListSection
-        emptyMessage="No bookings match filters."
-        rows={[row]}
-      />
-    );
+    const section = <BookingMonitorListSection emptyMessage="No bookings match filters." rows={[row]} />;
     const markup = renderToStaticMarkup(section);
     const rendered = normalizedText(markup);
 
@@ -182,24 +213,28 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Device Language');
     expect(rendered).toContain('Service Type');
     expect(rendered).toContain('Address');
-    expect(rendered).toContain('Status');
-    expect(rendered).toContain('Matching Waiting');
-    expect(rendered).toContain('Matched / In Progress');
+    expect(rendered).toContain('State Changed');
+    expect(rendered).not.toContain('Status');
+    expect(rendered).toContain('Pre-match');
+    expect(rendered).toContain('Post-match / In Progress');
     expect(rendered).toContain('Post-match Cancellations');
     expect(rendered).toContain('Foot Massage');
-    expect(rendered).toContain('Stage 2 marketplace');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('Partner A');
     expect(rendered).toContain('Partner B');
-    expect(rendered).toContain('Partner C');
     expect(rendered).toContain('vi-VN');
-    expect(rendered).toContain('Da Nang service address');
-    expect(rendered).toContain('Waiting for match');
+    expect(rendered).toContain('12 Nguyen Hue, Da Nang');
+    expect(rendered).toContain('Matching opened at');
+    expect(rendered).toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');
     expect(markup).toContain('href="/bookings/booking_123456789"');
     expect(markup).toContain('href="/customers/customer_123"');
     expect(markup).toContain('href="/partners/partner_preferred"');
     expect(markup).toContain('href="/partners/partner_participant"');
+    expect(markup).toContain('vuexy-booking-avatar-group');
+    expect(markup).toContain('aria-label="Partner C (ACCEPTED)"');
+    expect(markup).toContain('>+1</span>');
+    expect(markup).not.toContain('status-badge');
   });
 
   it('renders the empty booking message', () => {

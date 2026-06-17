@@ -37,6 +37,10 @@ import {
   withAdminBookingMatchingEvidence,
   withAdminBookingMatchingEvidenceList,
 } from './admin-booking-matching-evidence';
+import {
+  withAdminBookingListMetadata,
+  withAdminBookingListMetadataList,
+} from './admin-booking-list-metadata';
 import { appendDatedAdminNote } from './admin-booking-ops-helpers';
 import {
   normalizeProviderAccountBlockReason,
@@ -906,7 +910,7 @@ export class AdminService {
       take: ADMIN_BOOKING_LIST_LIMIT,
       select: adminBookingListSelect,
     });
-    return withAdminBookingMatchingEvidenceList(bookings);
+    return withAdminBookingListMetadataList(withAdminBookingMatchingEvidenceList(bookings));
   }
 
   listChatArchive() {
@@ -978,7 +982,7 @@ export class AdminService {
       select: adminAuditLogSelect,
     });
 
-    return withAdminBookingMatchingEvidence({ ...booking, auditLogs });
+    return withAdminBookingListMetadata(withAdminBookingMatchingEvidence({ ...booking, auditLogs }));
   }
 
   async addBookingOpsNote(actorId: string, bookingId: string, input: { note?: string; preset?: string }) {

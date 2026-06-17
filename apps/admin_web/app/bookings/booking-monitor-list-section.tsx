@@ -6,8 +6,8 @@ import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
-import { stagePillClass } from './booking-command-display';
 import { readAddressText } from './booking-address-readers';
+import { formatBookingDate } from './booking-list-time';
 
 type BookingMonitorPillDetail = {
   readonly detail: string;
@@ -110,15 +110,7 @@ type BookingMonitorListSectionProps = {
   readonly rows: readonly BookingMonitorListRow[];
 };
 
-type StatusBadgeProps = {
-  readonly status: string;
-};
-
-type BookingTableGroupKey =
-  | 'matching-waiting'
-  | 'matched-in-progress'
-  | 'completed'
-  | 'post-match-cancellations';
+type BookingTableGroupKey = 'pre-match' | 'post-match-in-progress' | 'completed' | 'post-match-cancellations';
 
 type BookingTableGroupDefinition = {
   readonly description: string;
@@ -138,10 +130,13 @@ type BookingParticipantTableRow = {
   readonly status: string;
 };
 
-type BookingProviderLike = {
-  readonly displayName?: string | null;
-  readonly user?: { readonly fullName?: string | null; readonly phone?: string };
-} | null | undefined;
+type BookingProviderLike =
+  | {
+      readonly displayName?: string | null;
+      readonly user?: { readonly fullName?: string | null; readonly phone?: string };
+    }
+  | null
+  | undefined;
 
 const BOOKING_TABLE_PAGE_SIZE = 10;
 const BOOKING_TABLE_HEADERS = [
@@ -152,21 +147,21 @@ const BOOKING_TABLE_HEADERS = [
   'Device Language',
   'Service Type',
   'Address',
-  'Status',
+  'State Changed',
 ] as const;
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
-    description: 'Requests waiting for Partner participation or matching decision.',
-    emptyMessage: 'No bookings are waiting for matching.',
-    key: 'matching-waiting',
-    title: 'Matching Waiting',
+    description: 'Requests before final Partner matching.',
+    emptyMessage: 'No pre-match bookings are waiting.',
+    key: 'pre-match',
+    title: 'Pre-match',
   },
   {
     description: 'Matched bookings currently moving through dispatch and service.',
-    emptyMessage: 'No matched bookings are in progress.',
-    key: 'matched-in-progress',
-    title: 'Matched / In Progress',
+    emptyMessage: 'No post-match bookings are in progress.',
+    key: 'post-match-in-progress',
+    title: 'Post-match / In Progress',
   },
   {
     description: 'Completed bookings ready for normal closeout review.',
@@ -268,11 +263,7 @@ function BookingMonitorTableGroup({
           Showing {pageFrom} to {pageTo} of {group.rows.length} entries
         </span>
         <nav aria-label={`${group.title} pages`} className="vuexy-booking-pagination">
-          <PaginationButton
-            disabled={activePage <= 1}
-            label="First page"
-            onClick={() => setPage(1)}
-          >
+          <PaginationButton disabled={activePage <= 1} label="First page" onClick={() => setPage(1)}>
             <ChevronsLeft size={18} />
           </PaginationButton>
           <PaginationButton
@@ -314,12 +305,15 @@ function BookingMonitorTableGroup({
 
 function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListRow }) {
   const { booking } = row;
-  const statusState = bookingWorkflowStatusState(booking);
   const participantRows = bookingParticipantRows(booking);
   const addressLabel = bookingAddressLabel(booking);
+  const stateChange = bookingStatusChangeState(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
   const requestedPartnerHref = bookingPartnerHref(
-    booking.preferredProvider?.id ?? booking.preferredProviderId ?? booking.selectedProvider?.id ?? booking.selectedProviderId,
+    booking.preferredProvider?.id ??
+      booking.preferredProviderId ??
+      booking.selectedProvider?.id ??
+      booking.selectedProviderId,
   );
 
   return (
@@ -352,16 +346,9 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
       </td>
       <td>
         {participantRows.length > 0 ? (
-          <div className="vuexy-booking-participant-list">
-            {participantRows.slice(0, 3).map((participant) => (
-              <BookingParticipantPill key={participant.id} participant={participant} />
-            ))}
-            {participantRows.length > 3 && (
-              <span className="pill pill-info">+{participantRows.length - 3} more</span>
-            )}
-          </div>
+          <BookingParticipantAvatarGroup participants={participantRows} />
         ) : (
-          <span className="muted">Waiting for Partner participation</span>
+          <span className="muted">No Partner joined yet</span>
         )}
       </td>
       <td>
@@ -374,21 +361,9 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <strong>{addressLabel}</strong>
       </td>
       <td>
-        <span className={`pill ${statusState.tone}`}>{statusState.label}</span>
-        <div className="admin-mt-8">
-          <StatusBadge status={booking.status} />
-        </div>
-        <Link
-          className={`pill ${stagePillClass(row.stage.tone)} admin-mt-8`}
-          href={row.stage.href}
-          title={`${row.stage.detail} ${row.stage.action}`}
-        >
-          {row.stage.label}
-        </Link>
-        <div className="muted admin-mt-8">{statusState.detail}</div>
-        {row.closureState && (
-          <div className="muted admin-mt-6">Closure: {row.closureState.detail}</div>
-        )}
+        <strong>{stateChange.label}</strong>
+        <div className="muted admin-mt-6">{stateChange.dateLabel}</div>
+        {row.closureState && <div className="muted admin-mt-6">{row.closureState.detail}</div>}
       </td>
     </tr>
   );
@@ -426,34 +401,43 @@ function BookingPersonCell({
   );
 }
 
-function BookingParticipantPill({
-  participant,
+function BookingParticipantAvatarGroup({
+  participants,
 }: {
-  readonly participant: BookingParticipantTableRow;
+  readonly participants: readonly BookingParticipantTableRow[];
 }) {
-  const content = (
-    <>
-      <span aria-hidden="true" className="vuexy-booking-participant-avatar">
-        {avatarInitials(participant.partnerLabel)}
-      </span>
-      <span>{participant.partnerLabel}</span>
-      <span className="vuexy-booking-participant-status">{participant.status}</span>
-    </>
-  );
-
-  if (!participant.partnerHref) {
-    return <span className="vuexy-booking-participant-pill">{content}</span>;
-  }
-
   return (
-    <Link className="vuexy-booking-participant-pill" href={participant.partnerHref}>
-      {content}
-    </Link>
+    <div className="vuexy-booking-participants" aria-label={`${participants.length} participating Partners`}>
+      <div className="vuexy-booking-avatar-group">
+        {participants.slice(0, 4).map((participant) => (
+          <BookingParticipantAvatar key={participant.id} participant={participant} />
+        ))}
+        {participants.length > 4 && (
+          <span className="vuexy-booking-avatar-group-item is-overflow">+{participants.length - 4}</span>
+        )}
+      </div>
+      <span className="vuexy-booking-participant-count">{participants.length} participating</span>
+    </div>
   );
 }
 
-function StatusBadge({ status }: StatusBadgeProps) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{status}</span>;
+function BookingParticipantAvatar({ participant }: { readonly participant: BookingParticipantTableRow }) {
+  const className = 'vuexy-booking-avatar-group-item';
+  const label = `${participant.partnerLabel} (${participant.status})`;
+
+  if (!participant.partnerHref) {
+    return (
+      <span aria-label={label} className={className} title={label}>
+        {avatarInitials(participant.partnerLabel)}
+      </span>
+    );
+  }
+
+  return (
+    <Link aria-label={label} className={className} href={participant.partnerHref} title={label}>
+      {avatarInitials(participant.partnerLabel)}
+    </Link>
+  );
 }
 
 function PaginationButton({
@@ -542,15 +526,79 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
 }
 
 function bookingAddressLabel(booking: AdminBooking) {
+  const apiAddress = metadataText({ serviceAddressText: booking.serviceAddressText }, 'serviceAddressText');
   const snapshotAddress =
-    readAddressText(booking.addressSnapshot) ??
-    readAddressText(booking.addressSnapshot?.addressText ?? booking.addressSnapshot?.address);
+    readAddressText(booking.addressSnapshot?.addressText) ??
+    readAddressText(booking.addressSnapshot?.address) ??
+    readAddressText(booking.addressSnapshot);
   const legacyAddress = readAddressText(booking.address);
-  return compactAddressLabel(snapshotAddress ?? legacyAddress ?? 'No address');
+  return compactAddressLabel(apiAddress ?? snapshotAddress ?? legacyAddress ?? 'No address');
 }
 
 function compactAddressLabel(value: string) {
-  return value.length > 54 ? `${value.slice(0, 51)}...` : value;
+  return value.length > 72 ? `${value.slice(0, 69)}...` : value;
+}
+
+function bookingStatusChangeState(booking: AdminBooking) {
+  const timestamp = booking.statusChangedAt ?? bookingStatusChangedTimestamp(booking);
+
+  return {
+    dateLabel: formatBookingDate(timestamp),
+    label: booking.statusChangedLabel?.trim() || bookingStatusChangedLabel(booking),
+  };
+}
+
+function bookingStatusChangedTimestamp(booking: AdminBooking) {
+  switch (booking.status) {
+    case 'CREATED':
+    case 'OPEN_MATCHING':
+      return booking.openedAt ?? booking.createdAt ?? booking.updatedAt ?? null;
+    case 'MATCHED':
+      return booking.matchedAt ?? booking.updatedAt ?? null;
+    case 'PROVIDER_ON_THE_WAY':
+    case 'ARRIVED':
+    case 'IN_SERVICE':
+      return booking.updatedAt ?? booking.matchedAt ?? null;
+    case 'COMPLETED':
+    case 'CANCELLED':
+    case 'NO_SHOW':
+      return booking.closedAt ?? booking.updatedAt ?? null;
+    case 'EXPIRED':
+      return booking.closedAt ?? booking.expiresAt ?? booking.updatedAt ?? null;
+    case 'REFUNDED':
+      return booking.updatedAt ?? booking.closedAt ?? null;
+    default:
+      return booking.updatedAt ?? booking.createdAt ?? null;
+  }
+}
+
+function bookingStatusChangedLabel(booking: AdminBooking) {
+  switch (booking.status) {
+    case 'CREATED':
+      return 'Requested at';
+    case 'OPEN_MATCHING':
+      return 'Matching opened at';
+    case 'MATCHED':
+      return 'Matched at';
+    case 'PROVIDER_ON_THE_WAY':
+      return 'Partner on the way at';
+    case 'ARRIVED':
+      return 'Arrived at';
+    case 'IN_SERVICE':
+      return 'Service started at';
+    case 'COMPLETED':
+      return 'Completed at';
+    case 'CANCELLED':
+      return bookingHasPostMatchEvidence(booking) ? 'Partner cancelled at' : 'Cancelled at';
+    case 'NO_SHOW':
+      return 'No-show marked at';
+    case 'EXPIRED':
+      return 'Expired at';
+    case 'REFUNDED':
+      return 'Refunded at';
+    default:
+      return 'Updated at';
+  }
 }
 
 function metadataText(metadata: Record<string, unknown> | null, key: string) {
@@ -569,12 +617,12 @@ function bookingTableGroupKey(booking: AdminBooking): BookingTableGroupKey | nul
   switch (booking.status) {
     case 'CREATED':
     case 'OPEN_MATCHING':
-      return 'matching-waiting';
+      return 'pre-match';
     case 'MATCHED':
     case 'PROVIDER_ON_THE_WAY':
     case 'ARRIVED':
     case 'IN_SERVICE':
-      return 'matched-in-progress';
+      return 'post-match-in-progress';
     case 'COMPLETED':
       return 'completed';
     case 'NO_SHOW':
@@ -608,83 +656,7 @@ function providerTableLabel(provider: BookingProviderLike) {
 }
 
 function avatarInitials(label: string) {
-  const parts = label
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = label.trim().split(/\s+/).filter(Boolean);
   const initials = parts.length > 1 ? `${parts[0][0] ?? ''}${parts[1][0] ?? ''}` : parts[0]?.slice(0, 2);
   return (initials || 'NA').toUpperCase();
-}
-
-function bookingWorkflowStatusState(booking: AdminBooking): {
-  readonly detail: string;
-  readonly label: string;
-  readonly tone: string;
-} {
-  switch (booking.status) {
-    case 'CREATED':
-      return {
-        detail: 'Request received; waiting for matching readiness.',
-        label: 'Booking requested',
-        tone: 'pill-info',
-      };
-    case 'OPEN_MATCHING':
-      return {
-        detail: 'Partner matching is open and waiting for participation or response.',
-        label: 'Waiting for match',
-        tone: 'pill-warn',
-      };
-    case 'MATCHED':
-    case 'PROVIDER_ON_THE_WAY':
-    case 'ARRIVED':
-    case 'IN_SERVICE':
-      return {
-        detail: 'Matched booking is active; monitor Partner progress and chat.',
-        label: 'Matched / in progress',
-        tone: 'pill-success',
-      };
-    case 'COMPLETED':
-      return {
-        detail: 'Service completed; closeout evidence can be reviewed in detail.',
-        label: 'Work completed',
-        tone: 'pill-success',
-      };
-    case 'CANCELLED':
-      if (booking.matchedAt || booking.selectedProviderId) {
-        return {
-          detail: 'Partner-side cancellation needs admin confirmation from chat and cancel note evidence.',
-          label: 'Partner cancel review',
-          tone: 'pill-danger',
-        };
-      }
-      return {
-        detail: 'Cancelled before matching; confirm no Partner-side service obligation exists.',
-        label: 'Cancelled before match',
-        tone: 'pill-neutral',
-      };
-    case 'NO_SHOW':
-      return {
-        detail: 'Review chat history and Partner no-show note before final admin confirmation.',
-        label: 'No-show review',
-        tone: 'pill-danger',
-      };
-    case 'EXPIRED':
-      return {
-        detail: 'Matching expired; review payment release and customer follow-up if needed.',
-        label: 'Expired',
-        tone: 'pill-warn',
-      };
-    case 'REFUNDED':
-      return {
-        detail: 'Refund state is recorded; confirm booking closeout evidence in detail.',
-        label: 'Refunded',
-        tone: 'pill-info',
-      };
-    default:
-      return {
-        detail: 'Open the booking detail for the full operating record.',
-        label: booking.status,
-        tone: 'pill-neutral',
-      };
-  }
 }

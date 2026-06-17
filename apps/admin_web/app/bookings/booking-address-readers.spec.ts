@@ -11,7 +11,25 @@ describe('booking address readers', () => {
     expect(readAddressText('  12 Nguyen Hue  ')).toBe('12 Nguyen Hue');
     expect(readAddressText({ formattedAddress: 'District 1' })).toBe('District 1');
     expect(readAddressText({ addressText: '  Da Nang  ', street: 'fallback' })).toBe('Da Nang');
+    expect(readAddressText({ address_text: 'Da Nang nested legacy key' })).toBe('Da Nang nested legacy key');
     expect(readAddressText({ street: 'Hoi An' })).toBe('Hoi An');
     expect(readAddressText({ addressText: '   ' })).toBeNull();
+  });
+
+  it('reads nested address objects and composed address parts', () => {
+    expect(readAddressText({ address: { formattedAddress: 'Nested service address' } })).toBe(
+      'Nested service address',
+    );
+    expect(
+      readAddressText({
+        address: { line1: 'Ignored because parts live outside' },
+        ward: 'Ward 1',
+        district: 'District 3',
+        city: 'Ho Chi Minh City',
+      }),
+    ).toBe('Ignored because parts live outside');
+    expect(readAddressText({ ward: 'Ward 2', district: 'District 7', city: 'Ho Chi Minh City' })).toBe(
+      'Ward 2, District 7, Ho Chi Minh City',
+    );
   });
 });

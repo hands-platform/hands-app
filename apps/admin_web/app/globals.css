@@ -1665,48 +1665,58 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
-.vuexy-booking-participant-list {
-  align-items: flex-start;
+.vuexy-booking-participants {
+  align-items: center;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 12px;
+  min-height: 34px;
 }
 
-.vuexy-booking-participant-pill {
+.vuexy-booking-avatar-group {
   align-items: center;
-  background: var(--admin-action-hover);
-  border-radius: 999px;
-  color: var(--admin-text);
-  display: inline-flex;
-  gap: 7px;
-  min-height: 30px;
-  padding: 4px 10px 4px 5px;
-  text-decoration: none;
+  display: flex;
+  flex: 0 0 auto;
+  padding-left: 0;
 }
 
-.vuexy-booking-participant-pill:hover {
+.vuexy-booking-avatar-group-item {
+  align-items: center;
   background: var(--admin-primary-soft);
-  color: var(--admin-accent-strong);
-}
-
-.vuexy-booking-participant-avatar {
-  align-items: center;
+  border: 2px solid var(--admin-surface-raised);
   border-radius: 999px;
+  color: var(--admin-accent-strong);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 10px;
-  font-weight: 700;
-  height: 22px;
+  font-size: 11px;
+  font-weight: 800;
+  height: 28px;
   justify-content: center;
+  letter-spacing: 0;
   line-height: 1;
-  width: 22px;
+  margin-left: -10px;
+  text-decoration: none;
+  width: 28px;
 }
 
-.vuexy-booking-participant-status {
+.vuexy-booking-avatar-group-item:first-child {
+  margin-left: 0;
+}
+
+.vuexy-booking-avatar-group-item:hover {
+  box-shadow: 0 0 0 3px rgb(var(--admin-primary-channel) / 0.14);
+  transform: translateY(-1px);
+}
+
+.vuexy-booking-avatar-group-item.is-overflow {
+  background: rgb(var(--admin-secondary-channel) / 0.14);
+  color: var(--admin-secondary-text);
+}
+
+.vuexy-booking-participant-count {
   color: var(--admin-muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: nowrap;
 }
 
 .vuexy-booking-table-footer {

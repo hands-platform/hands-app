@@ -22,17 +22,25 @@ function createAdminService(prisma: unknown, deps: { notifications?: unknown } =
 
 describe('AdminService query orchestration', () => {
   it('adds server-computed matching evidence to booking list rows', async () => {
+    const openedAt = new Date('2026-06-10T09:30:00.000Z');
     const prisma = {
       booking: {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'booking-1',
             status: BookingStatus.OPEN_MATCHING,
+            openedAt,
+            createdAt: new Date('2026-06-10T09:00:00.000Z'),
+            updatedAt: new Date('2026-06-10T09:45:00.000Z'),
             preferredProviderId: 'first-pick-partner',
             selectedProviderId: null,
             matchedAt: null,
             matchSource: null,
             chatRoom: null,
+            addressSnapshot: {
+              address: { formattedAddress: '12 Nguyen Hue, Da Nang' },
+              addressText: null,
+            },
             participants: [
               {
                 providerProfileId: 'first-pick-partner',
@@ -65,11 +73,15 @@ describe('AdminService query orchestration', () => {
           selectableParticipantCount: 1,
           stage: 'OPEN_MARKETPLACE_ACTIVE',
         },
+        serviceAddressText: '12 Nguyen Hue, Da Nang',
+        statusChangedAt: openedAt,
+        statusChangedLabel: 'Matching opened at',
       }),
     ]);
   });
 
   it('adds server-computed matching evidence to booking detail rows', async () => {
+    const matchedAt = new Date('2026-06-10T10:00:00.000Z');
     const prisma = {
       booking: {
         findUnique: jest.fn().mockResolvedValue({
@@ -77,8 +89,9 @@ describe('AdminService query orchestration', () => {
           status: BookingStatus.MATCHED,
           preferredProviderId: 'first-pick-partner',
           selectedProviderId: 'first-pick-partner',
-          matchedAt: new Date('2026-06-10T10:00:00.000Z'),
+          matchedAt,
           matchSource: BookingMatchSource.FIRST_PICK_ACCEPTED_FIRST,
+          address: { address_text: '99 Tran Phu, Da Nang' },
           chatRoom: { id: 'chat-1' },
           participants: [
             {
@@ -108,6 +121,9 @@ describe('AdminService query orchestration', () => {
           selectableParticipantCount: 0,
           stage: 'MATCHED',
         }),
+        serviceAddressText: '99 Tran Phu, Da Nang',
+        statusChangedAt: matchedAt,
+        statusChangedLabel: 'Matched at',
       }),
     );
   });
