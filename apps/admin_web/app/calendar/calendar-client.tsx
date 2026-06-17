@@ -249,7 +249,11 @@ export function CalendarClient() {
 
           <div className="calendar-sidebar-section">
             <AdminSectionHeader title="Event Filters" />
-            <label className="calendar-filter-row">
+            <label
+              className={`calendar-filter-row calendar-filter-row-all ${
+                selectedCategories.length === CALENDAR_CATEGORIES.length ? 'is-active' : ''
+              }`}
+            >
               <input
                 checked={selectedCategories.length === CALENDAR_CATEGORIES.length}
                 onChange={(event) =>
@@ -264,7 +268,7 @@ export function CalendarClient() {
                 const active = selectedCategories.includes(category);
 
                 return (
-                  <label className="calendar-filter-row" key={category}>
+                  <label className={active ? 'calendar-filter-row is-active' : 'calendar-filter-row'} key={category}>
                     <input
                       checked={active}
                       onChange={() =>

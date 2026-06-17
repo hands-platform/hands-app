@@ -557,10 +557,31 @@ a {
 
 .calendar-filter-row {
   align-items: center;
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  cursor: pointer;
   display: flex;
   gap: 10px;
+  justify-content: space-between;
   line-height: 1.45;
+  min-height: 40px;
   min-width: 0;
+  padding: 8px 10px;
+  transition:
+    background var(--admin-transition),
+    border-color var(--admin-transition),
+    box-shadow var(--admin-transition);
+}
+
+.calendar-filter-row:hover {
+  background: var(--admin-action-hover);
+}
+
+.calendar-filter-row.is-active {
+  background: var(--admin-primary-soft);
+  border-color: rgb(var(--admin-primary-channel) / 0.24);
+  box-shadow: var(--admin-shadow-xs);
 }
 
 .calendar-filter-row input {
