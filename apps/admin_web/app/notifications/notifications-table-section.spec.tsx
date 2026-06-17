@@ -44,6 +44,9 @@ describe('NotificationsTableSection', () => {
       expect.arrayContaining([
         'notification-table-shell',
         'admin-table-scroll',
+        'admin-action-dropdown action-menu-dropdown',
+        'admin-action-menu action-menu-panel',
+        'admin-action-item',
         'notification-delivery-attempt admin-mb-10',
         'pill pill-warn',
       ]),

@@ -4115,6 +4115,48 @@ a.ops-task-card {
   display: inline;
 }
 
+.action-menu-dropdown {
+  display: inline-flex;
+  justify-content: flex-end;
+}
+
+.action-menu-panel {
+  text-align: left;
+}
+
+.action-menu-title {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px 2px;
+}
+
+.admin-action-form {
+  display: contents;
+}
+
+.admin-action-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+}
+
+.admin-action-button:disabled,
+.admin-action-item.is-disabled {
+  color: var(--admin-disabled);
+  cursor: not-allowed;
+}
+
+.admin-action-button:disabled:hover,
+.admin-action-item.is-disabled:hover {
+  background: transparent;
+  color: var(--admin-disabled);
+}
+
 .filter-bar-options {
   margin-top: 12px;
 }

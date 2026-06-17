@@ -67,7 +67,7 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
         <NotificationDeliveryCell deliveryRows={row.deliveryRows} />
       </td>
       <td>
-        <ActionMenu actions={row.actions} label={row.actionLabel} />
+        <ActionMenu actions={row.actions} label={row.actionLabel} variant="dropdown" />
       </td>
     </tr>
   );
