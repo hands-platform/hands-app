@@ -175,12 +175,14 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
         <div className="muted">Opened {row.openedDateLabel}</div>
         <div className="muted">{row.recencyLabel}</div>
         <div className="admin-mt-8">
-          <Link className={`pill ${stagePillClass(row.stage.tone)}`} href={row.stage.href}>
+          <Link
+            className={`pill ${stagePillClass(row.stage.tone)}`}
+            href={row.stage.href}
+            title={`${row.stage.detail} ${row.stage.action}`}
+          >
             {row.stage.label}
           </Link>
         </div>
-        <div className="muted admin-mt-8">{row.stage.detail}</div>
-        <div className="muted">{row.stage.action}</div>
         <div className="admin-mt-8">
           <StatusBadge status={booking.status} />
         </div>
@@ -191,7 +193,6 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
           </div>
         )}
         <div className="muted">{row.expiresAtLabel ? `Expires ${row.expiresAtLabel}` : 'No expiry set'}</div>
-        <div className="muted">{row.matchingPolicySummaryLabel}</div>
       </td>
       <td>
         <span className={`pill ${row.addressState.tone}`}>{row.addressState.label}</span>
@@ -203,36 +204,36 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
         <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
       </td>
       <td>
-        <span className={`pill ${row.selection.toneClass}`}>{row.selection.label}</span>
-        <div className="muted admin-mt-8">{row.customerVisibleStateLabel}</div>
-        <div className="muted">{row.selection.pathLabel}</div>
+        <span
+          className={`pill ${row.selection.toneClass}`}
+          title={`${row.customerVisibleStateLabel}. ${row.selection.pathLabel}`}
+        >
+          {row.selection.label}
+        </span>
         {row.finalPartnerLabel ? (
-          <div className="muted">Final Partner: {row.finalPartnerLabel}</div>
+          <div className="muted admin-mt-8">Final Partner: {row.finalPartnerLabel}</div>
         ) : (
-          <div className="muted">Final Partner: waiting for customer choice</div>
+          <div className="muted admin-mt-8">Final Partner: waiting for customer choice</div>
         )}
-        <div className="muted">{row.backupAlert.label}</div>
       </td>
       <td>
         <strong>{booking.participants?.length ?? 0} participant row(s)</strong>
         <div className="muted">First-pick {row.preferredPartnerLabel}</div>
         <div className="muted">{row.firstPickPhoneLabel}</div>
         <div className="participant-list admin-mt-8">
-          <span className={`pill ${row.hasMatchingPolicySnapshot ? 'pill-info' : 'pill-warn'}`}>
+          <span
+            className={`pill ${row.hasMatchingPolicySnapshot ? 'pill-info' : 'pill-warn'}`}
+            title={row.matchingPolicySummaryLabel}
+          >
             {row.hasMatchingPolicySnapshot ? 'Saved policy' : 'Live policy default'}
           </span>
           <span className={`pill ${row.backupAlert.tone}`}>{row.backupAlert.pill}</span>
         </div>
-        <div className="stack admin-mt-10">
-          <span className="muted">Matching rule snapshot</span>
-          <span className={`pill ${row.matchingRuleSnapshot.sourceTone}`}>
-            {row.matchingRuleSnapshot.sourceLabel}
-          </span>
-          <span className="muted">{row.matchingRuleSnapshot.windowLabel}</span>
-          <span className="muted">{row.matchingRuleSnapshot.radiusLabel}</span>
-          <span className="muted">{row.matchingRuleSnapshot.supplyLabel}</span>
-          <span className="muted">{row.matchingRuleSnapshot.customerChoiceLabel}</span>
-          <small>{row.matchingRuleSnapshot.operatorAction}</small>
+        <div
+          className="muted admin-mt-8"
+          title={`${row.matchingRuleSnapshot.windowLabel} | ${row.matchingRuleSnapshot.radiusLabel} | ${row.matchingRuleSnapshot.customerChoiceLabel} | ${row.matchingRuleSnapshot.operatorAction}`}
+        >
+          {row.matchingRuleSnapshot.supplyLabel}
         </div>
         <div className="participant-list admin-mt-8">
           {booking.preferredProvider && row.preferredProviderStateLabel && (
@@ -256,9 +257,10 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
         )}
       </td>
       <td>
-        <span className={`pill ${row.chatState.tone}`}>{row.chatState.label}</span>
-        <div className="muted admin-mt-8">{row.chatState.detail}</div>
-        <div className="muted">{row.location.signalLabel}</div>
+        <span className={`pill ${row.chatState.tone}`} title={row.chatState.detail}>
+          {row.chatState.label}
+        </span>
+        <div className="muted admin-mt-8">{row.location.signalLabel}</div>
         <div className="participant-list admin-mt-8">
           <span className={`pill ${row.location.toneClass}`}>{row.location.pillLabel}</span>
         </div>
@@ -324,8 +326,6 @@ function BookingMonitorOpsCheckCell({ booking, row }: BookingMonitorOpsCheckCell
       <span className={`signal ${row.checkSignal.tone}`}>{row.checkSignal.label}</span>
       <div className="muted admin-mt-8">{row.checkSignal.helper}</div>
       {row.firstCheckTitle && <div className="muted">{row.firstCheckTitle}</div>}
-      <div className="admin-mt-8">{row.opsSignal}</div>
-      <div className="muted admin-mt-8">{row.nextActionLabel}</div>
       <div className="participant-list admin-mt-10">
         <span className="muted">Primary booking command</span>
         <Link
@@ -333,11 +333,8 @@ function BookingMonitorOpsCheckCell({ booking, row }: BookingMonitorOpsCheckCell
           href={`/bookings/${booking.id}#booking-command-decision-strip`}
           title={row.commandDecisionStrip.primaryDetail}
         >
-          {row.commandDecisionStrip.primaryAction}
+          {row.commandDecisionStrip.status}
         </Link>
-      </div>
-      <div className="muted admin-mt-6">
-        {row.commandDecisionStrip.status}: {row.commandDecisionStrip.primaryDetail}
       </div>
       <div className="participant-list admin-mt-10">
         <span className="muted">Booking gate reason</span>
@@ -349,7 +346,6 @@ function BookingMonitorOpsCheckCell({ booking, row }: BookingMonitorOpsCheckCell
           {row.finalGateReason.label}
         </Link>
       </div>
-      <div className="muted admin-mt-6">{row.finalGateReason.detail}</div>
       <div className="participant-list admin-mt-10">
         <span className="muted">Action status strip</span>
         {row.actionChips.map((chip) => (
