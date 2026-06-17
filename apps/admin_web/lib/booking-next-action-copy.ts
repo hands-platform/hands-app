@@ -1,3 +1,5 @@
+import { partnerCashCollectionSettlementCopy } from './booking-wallet-copy';
+
 export type BookingNextActionCopyInput = {
   readonly backupSelected: boolean;
   readonly cashDebtNeedsOps: boolean;
@@ -30,7 +32,7 @@ export function bookingNextActionCopy(input: BookingNextActionCopyInput) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (input.cashDebtNeedsOps) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.';
+    return partnerCashCollectionSettlementCopy;
   }
   if (
     input.status === 'OPEN_MATCHING' &&

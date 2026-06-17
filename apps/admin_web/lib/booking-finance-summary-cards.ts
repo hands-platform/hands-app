@@ -1,3 +1,5 @@
+import { cashFeeDebtGatesMarketplaceOpsCopy } from './booking-wallet-copy';
+
 export type BookingFinanceSummaryTrace = {
   currency: string;
   paymentMethod: string;
@@ -68,6 +70,6 @@ function walletImpactHelper(financeTrace: BookingFinanceSummaryTrace) {
     return 'Non-cash booking should create payout credit after completion.';
   }
   return financeTrace.walletTotalAmount < 0
-    ? 'Cash fee debt gates marketplace alerts, participation, and payout release.'
+    ? cashFeeDebtGatesMarketplaceOpsCopy
     : 'Cash settlement ledger is not negative.';
 }

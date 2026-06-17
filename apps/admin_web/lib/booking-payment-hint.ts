@@ -1,3 +1,5 @@
+import { cashFeeDebtBlocksMarketplaceOpsCopy } from './booking-wallet-copy';
+
 export type BookingPaymentHintInput = {
   status?: string | null;
   payment?: {
@@ -24,7 +26,7 @@ export function bookingPaymentHint(
     return 'No-show requires payment decision before closing.';
   }
   if (options.cashDebtNeedsSettlement) {
-    return 'Cash fee debt is still unsettled; marketplace alerts, participation, and payout release are blocked.';
+    return cashFeeDebtBlocksMarketplaceOpsCopy;
   }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';

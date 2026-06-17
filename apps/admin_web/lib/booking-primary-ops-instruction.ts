@@ -1,3 +1,5 @@
+import { partnerCashCollectionSettlementCopy } from './booking-wallet-copy';
+
 export type PrimaryBookingOpsInstructionInput = {
   status?: string | null;
   payment?: { status?: string | null } | null;
@@ -29,7 +31,7 @@ export function primaryBookingOpsInstruction(
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (options.cashDebtNeedsSettlement) {
-    return 'Cash was collected by the Partner. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.';
+    return partnerCashCollectionSettlementCopy;
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';

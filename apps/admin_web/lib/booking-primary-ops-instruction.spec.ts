@@ -44,7 +44,7 @@ describe('primary booking ops instruction', () => {
     };
 
     expect(primaryBookingOpsInstruction(booking, { cashDebtNeedsSettlement: true })).toBe(
-      'Cash was collected by the Partner. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
+      'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
     );
   });
 

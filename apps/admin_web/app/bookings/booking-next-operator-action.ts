@@ -1,3 +1,5 @@
+import { cashDebtFinalizationSettlementActionCopy } from '../../lib/booking-wallet-copy';
+
 export type BookingNextOperatorActionInput = {
   readonly cashDebtNeedsOps: () => boolean;
   readonly completedCloseoutNeedsOps: () => boolean;
@@ -9,8 +11,6 @@ export type BookingNextOperatorActionInput = {
   readonly status?: string | null;
 };
 
-const cashDebtAction =
-  'Confirm Partner wallet debt and request company fee settlement before final acceptance, service start, or payout release resumes.';
 const closeoutAction =
   'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
 const paymentAction =
@@ -54,7 +54,7 @@ export function bookingNextOperatorActionFromFacts(input: BookingNextOperatorAct
 
 function bookingPaymentOperatorAction(input: BookingNextOperatorActionInput) {
   if (input.cashDebtNeedsOps()) {
-    return cashDebtAction;
+    return cashDebtFinalizationSettlementActionCopy;
   }
   if (input.completedCloseoutNeedsOps()) {
     return closeoutAction;
