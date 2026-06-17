@@ -776,31 +776,45 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </BookingDetailDisclosureGroup>
 
       <BookingDetailDisclosureGroup
-        helper="Operational timelines, policy signals, supply checks, finance trace, and full record detail stay available below the summary."
-        label="Operations"
-        title="Detailed operating signals"
+        helper="Policy, address radius, customer wait, and marketplace supply checks for Partner matching."
+        label="Dispatch"
+        title="Dispatch and supply checks"
       >
-        <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-        <BookingOperatingLedgerSection {...operatingLedgerProps} />
-        <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
-        <BookingOperatingTimelineSection {...operatingTimelineProps} />
-        <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-        <BookingChatLifecycleSection {...chatLifecycleProps} />
-        <BookingOpsCommandCenter {...opsCommandCenterProps} />
         <BookingStageSnapshotSection {...stageSnapshotProps} />
         <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
         <BookingAppliedPolicySection {...appliedPolicyProps} />
         <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
         <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
         <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
+      </BookingDetailDisclosureGroup>
+
+      <BookingDetailDisclosureGroup
+        helper="Live service movement, communication, alerts, audit, and activity timeline."
+        label="History"
+        title="Operating history"
+      >
+        <BookingOperatingLedgerSection {...operatingLedgerProps} />
+        <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+        <BookingOperatingTimelineSection {...operatingTimelineProps} />
+        <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+        <BookingChatLifecycleSection {...chatLifecycleProps} />
+        <BookingOpsCommandCenter {...opsCommandCenterProps} />
         <BookingAlertTraceSection {...alertTraceProps} />
         <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
         <BookingAttentionChecksSection {...attentionChecksProps} />
+        <BookingActivityPanel {...activityPanelProps} />
+      </BookingDetailDisclosureGroup>
+
+      <BookingDetailDisclosureGroup
+        helper="Wallet evidence, finance checks, payout eligibility, service pricing, and complete booking records."
+        label="Records"
+        title="Settlement and record detail"
+      >
+        <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
         <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
         <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
         <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
         <BookingRecordDetailSections {...recordDetailSectionsProps} />
-        <BookingActivityPanel {...activityPanelProps} />
       </BookingDetailDisclosureGroup>
     </div>
   );
