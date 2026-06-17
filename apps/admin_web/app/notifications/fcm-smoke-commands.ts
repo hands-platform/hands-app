@@ -83,6 +83,28 @@ export const FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND = buildFcmPushSmo
   useRegisteredDevice: true,
 });
 
+export const FCM_NOTIFICATION_REVIEW_COMMANDS = [
+  'Open http://localhost:3101/notifications?review=fcm',
+  'Open http://localhost:3101/notifications?review=failed',
+  'Open http://localhost:3101/notifications?review=disabled-device',
+  'Open http://localhost:3101/notifications?review=stale-device',
+  'Open http://localhost:3101/notifications?review=pending',
+] as const;
+
+export const FCM_OPERATIONS_HANDOFF_COMMAND = 'Open http://localhost:3101/operations-handoff';
+export const FCM_NOTIFICATION_AUDIT_COMMAND =
+  'Open http://localhost:3101/audit-log?bucket=Notification';
+
+export const FCM_SETUP_REVIEW_COMMANDS = [
+  ...FCM_NOTIFICATION_REVIEW_COMMANDS,
+  FCM_OPERATIONS_HANDOFF_COMMAND,
+  FCM_NOTIFICATION_AUDIT_COMMAND,
+] as const;
+
+export function isFcmSetupReviewCommand(command: string) {
+  return (FCM_SETUP_REVIEW_COMMANDS as readonly string[]).includes(command);
+}
+
 export const FCM_SETUP_READINESS_COMMANDS = [
   FCM_EXTERNAL_CHECK_COMMAND,
   FCM_ENV_CONTRACT_COMMAND,

@@ -3,6 +3,9 @@ import { SetupGroupDetailSection } from './setup-group-detail-section';
 import {
   FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
   FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
+  FCM_NOTIFICATION_AUDIT_COMMAND,
+  FCM_NOTIFICATION_REVIEW_COMMANDS,
+  FCM_OPERATIONS_HANDOFF_COMMAND,
   FCM_PROVIDER_SUGGESTED_NOTIFICATION_PREFLIGHT_COMMAND,
 } from '../notifications/fcm-smoke-commands';
 
@@ -80,10 +83,10 @@ describe('SetupGroupDetailSection', () => {
             'npm.cmd run fcm:token-recovery-smoke',
             FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
             FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
-            'Open http://localhost:3101/notifications?review=fcm',
-            'Open http://localhost:3101/notifications?review=disabled-device',
-            'Open http://localhost:3101/operations-handoff',
-            'Open http://localhost:3101/audit-log?bucket=Notification',
+            FCM_NOTIFICATION_REVIEW_COMMANDS[0],
+            FCM_NOTIFICATION_REVIEW_COMMANDS[2],
+            FCM_OPERATIONS_HANDOFF_COMMAND,
+            FCM_NOTIFICATION_AUDIT_COMMAND,
             'npm.cmd run notifications:future-check',
           ],
         },
@@ -124,9 +127,9 @@ describe('SetupGroupDetailSection', () => {
     expect(rendered).toContain('FCM_SMOKE_PHONE="+84900000001"');
     expect(rendered).toContain('FCM_SMOKE_USE_REGISTERED_DEVICE="true"');
     expect(rendered).toContain('FCM_SMOKE_EXPECT_STATUS="SENT"');
-    expect(rendered).toContain('Open http://localhost:3101/notifications?review=disabled-device');
-    expect(rendered).toContain('Open http://localhost:3101/operations-handoff');
-    expect(rendered).toContain('Open http://localhost:3101/audit-log?bucket=Notification');
+    expect(rendered).toContain(FCM_NOTIFICATION_REVIEW_COMMANDS[2]);
+    expect(rendered).toContain(FCM_OPERATIONS_HANDOFF_COMMAND);
+    expect(rendered).toContain(FCM_NOTIFICATION_AUDIT_COMMAND);
     expect(rendered).toContain('npm.cmd run notifications:future-check');
   });
 

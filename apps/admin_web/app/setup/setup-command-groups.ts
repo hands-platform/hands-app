@@ -1,6 +1,7 @@
 import {
   FCM_TOKEN_RECOVERY_SMOKE_COMMAND,
   FCM_TOKEN_SMOKE_COMMAND,
+  isFcmSetupReviewCommand,
 } from '../notifications/fcm-smoke-commands';
 
 export type SetupCommandGroup = {
@@ -103,9 +104,5 @@ export function setupCommandGroups(groupId: string, commands: readonly string[])
 }
 
 function isFcmReviewCommand(command: string) {
-  return (
-    command.startsWith('Open http://localhost:3101/notifications') ||
-    command === 'Open http://localhost:3101/operations-handoff' ||
-    command === 'Open http://localhost:3101/audit-log?bucket=Notification'
-  );
+  return isFcmSetupReviewCommand(command);
 }

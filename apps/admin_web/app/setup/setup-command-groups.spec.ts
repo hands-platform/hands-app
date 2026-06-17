@@ -1,4 +1,9 @@
 import { nextSetupCommand, setupCommandGroups } from './setup-command-groups';
+import {
+  FCM_NOTIFICATION_AUDIT_COMMAND,
+  FCM_NOTIFICATION_REVIEW_COMMANDS,
+  FCM_OPERATIONS_HANDOFF_COMMAND,
+} from '../notifications/fcm-smoke-commands';
 
 describe('setup command groups', () => {
   it('keeps non-notification commands in one sequence', () => {
@@ -32,9 +37,9 @@ describe('setup command groups', () => {
       'npm.cmd run fcm:token-recovery-smoke',
       '$env:FCM_SMOKE_ROLE="PROVIDER"; $env:FCM_SMOKE_NOTIFICATION_ID="<id>"; npm.cmd run fcm:push-smoke -- --preflight',
       '$env:FCM_SMOKE_DEVICE_TOKEN="<token>"; npm.cmd run fcm:push-smoke',
-      'Open http://localhost:3101/notifications?review=fcm',
-      'Open http://localhost:3101/operations-handoff',
-      'Open http://localhost:3101/audit-log?bucket=Notification',
+      FCM_NOTIFICATION_REVIEW_COMMANDS[0],
+      FCM_OPERATIONS_HANDOFF_COMMAND,
+      FCM_NOTIFICATION_AUDIT_COMMAND,
       'npm.cmd run custom:check',
     ]);
 
@@ -57,9 +62,9 @@ describe('setup command groups', () => {
       'post-send retry audit freshness',
     );
     expect(groups.find((group) => group.title === 'Review queues and evidence')?.commands).toEqual([
-      'Open http://localhost:3101/notifications?review=fcm',
-      'Open http://localhost:3101/operations-handoff',
-      'Open http://localhost:3101/audit-log?bucket=Notification',
+      FCM_NOTIFICATION_REVIEW_COMMANDS[0],
+      FCM_OPERATIONS_HANDOFF_COMMAND,
+      FCM_NOTIFICATION_AUDIT_COMMAND,
     ]);
     expect(groups.find((group) => group.title === 'Token registration')?.detail).toContain(
       'without sending FCM push',

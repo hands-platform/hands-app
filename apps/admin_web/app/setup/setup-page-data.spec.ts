@@ -12,6 +12,7 @@ import {
   FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
   FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
   FCM_PROVIDER_SUGGESTED_NOTIFICATION_PREFLIGHT_COMMAND,
+  FCM_SETUP_REVIEW_COMMANDS,
 } from '../notifications/fcm-smoke-commands';
 
 describe('setup page data', () => {
@@ -84,13 +85,7 @@ describe('setup page data', () => {
         'npm.cmd run fcm:token-smoke',
         FCM_CUSTOMER_LIVE_TOKEN_SMOKE_COMMAND,
         FCM_CUSTOMER_LIVE_REGISTERED_DEVICE_SMOKE_COMMAND,
-        'Open http://localhost:3101/notifications?review=fcm',
-        'Open http://localhost:3101/notifications?review=failed',
-        'Open http://localhost:3101/notifications?review=disabled-device',
-        'Open http://localhost:3101/notifications?review=stale-device',
-        'Open http://localhost:3101/notifications?review=pending',
-        'Open http://localhost:3101/operations-handoff',
-        'Open http://localhost:3101/audit-log?bucket=Notification',
+        ...FCM_SETUP_REVIEW_COMMANDS,
       ]),
     );
     const supabaseAuthSetup = setupOrder.find((item) => item.id === 'supabase-auth');
