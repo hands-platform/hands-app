@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { Eye } from 'lucide-react';
 import { AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
@@ -161,6 +162,7 @@ function BookingMonitorListTableRow({ row }: BookingMonitorListTableRowProps) {
       <td>
         <strong>
           <Link className="text-link" href={`/bookings/${booking.id}`}>
+            <Eye aria-hidden="true" size={14} />
             {shortId(booking.id)}
           </Link>
         </strong>
