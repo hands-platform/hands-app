@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Eye, MessageSquareText, ReceiptText } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { customerActionLinks, type CustomerActionLink } from './customer-action-links';
 import { CustomerActionDropdown } from './customer-action-dropdown';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
@@ -29,65 +29,50 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
           headers={customerTableHeaders}
           rowCount={rows.length}
         >
-          {rows.map((row) => (
-            <tr key={row.customerIdLabel}>
-              <td>
-                <div className="vuexy-customer-person">
-                  <span className="vuexy-customer-avatar">{row.initials}</span>
-                  <div>
-                    <strong>{row.name}</strong>
-                    <span>{row.phone}</span>
-                    <small>{row.customerIdLabel}</small>
+          {rows.map((row) => {
+            const actions = customerActionLinks(row);
+
+            return (
+              <tr key={row.customerIdLabel}>
+                <td>
+                  <div className="vuexy-customer-person">
+                    <span className="vuexy-customer-avatar">{row.initials}</span>
+                    <div>
+                      <strong>{row.name}</strong>
+                      <span>{row.phone}</span>
+                      <small>{row.customerIdLabel}</small>
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td>
-                <strong>{row.deviceLanguageLabel}</strong>
-              </td>
-              <td>
-                <strong>{row.joinedLabel}</strong>
-              </td>
-              <td>
-                <strong>{row.lastLoginDateLabel}</strong>
-              </td>
-              <td>
-                <strong>{row.lastLoginAddressLabel}</strong>
-              </td>
-              <td>
-                <strong>{row.totalReservationsCompletedLabel}</strong>
-              </td>
-              <td>
-                <strong>{row.totalWalletAmountLabel}</strong>
-              </td>
-              <td>
-                <div className="vuexy-customer-actions vuexy-customer-actions-row">
-                  <Link aria-label={`Open ${row.name}`} className="vuexy-customer-icon-action" href={row.detailHref}>
-                    <Eye aria-hidden="true" size={16} />
-                  </Link>
-                  <Link
-                    aria-label={`Open ${row.name} payments`}
-                    className="vuexy-customer-icon-action"
-                    href={row.paymentsHref}
-                  >
-                    <ReceiptText aria-hidden="true" size={16} />
-                  </Link>
-                  <Link
-                    aria-label={`Open ${row.name} chats`}
-                    className="vuexy-customer-icon-action"
-                    href={row.chatHref}
-                  >
-                    <MessageSquareText aria-hidden="true" size={16} />
-                  </Link>
-                  <CustomerActionDropdown
-                    chatHref={row.chatHref}
-                    detailHref={row.detailHref}
-                    label={`More actions for ${row.name}`}
-                    paymentsHref={row.paymentsHref}
-                  />
-                </div>
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td>
+                  <strong>{row.deviceLanguageLabel}</strong>
+                </td>
+                <td>
+                  <strong>{row.joinedLabel}</strong>
+                </td>
+                <td>
+                  <strong>{row.lastLoginDateLabel}</strong>
+                </td>
+                <td>
+                  <strong>{row.lastLoginAddressLabel}</strong>
+                </td>
+                <td>
+                  <strong>{row.totalReservationsCompletedLabel}</strong>
+                </td>
+                <td>
+                  <strong>{row.totalWalletAmountLabel}</strong>
+                </td>
+                <td>
+                  <div className="vuexy-customer-actions vuexy-customer-actions-row">
+                    {actions.map((action) => (
+                      <CustomerIconAction action={action} key={action.label} />
+                    ))}
+                    <CustomerActionDropdown actions={actions} label={`More actions for ${row.name}`} />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </AdminDataTable>
       </AdminTableScroll>
     </section>
@@ -111,5 +96,15 @@ function CustomerTableEmptyState() {
       <strong>No customers found</strong>
       <p className="muted">Change the filters or clear the search to view customer records.</p>
     </>
+  );
+}
+
+function CustomerIconAction({ action }: { readonly action: CustomerActionLink }) {
+  const Icon = action.icon;
+
+  return (
+    <Link aria-label={action.ariaLabel} className="vuexy-customer-icon-action" href={action.href}>
+      <Icon aria-hidden="true" size={16} />
+    </Link>
   );
 }
