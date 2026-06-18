@@ -328,23 +328,52 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <BookingAddressCell address={addressDisplay} />
       </td>
       <td>
-        <strong>{stateChange.label}</strong>
-        <div className="muted admin-mt-6">{stateChange.dateLabel}</div>
-        {row.closureState && (
-          <div className="vuexy-booking-closure-evidence">
-            <div className="vuexy-booking-closure-pills">
-              <span className={`pill ${row.closureState.tone}`}>{row.closureState.label}</span>
-              {cancellationReviewSignal && (
-                <span className={`pill ${cancellationReviewSignal.tone}`}>
-                  {cancellationReviewSignal.label}
-                </span>
-              )}
-            </div>
-            <div className="muted">{row.closureState.detail}</div>
-          </div>
-        )}
+        <BookingStateChangedCell
+          cancellationReviewSignal={cancellationReviewSignal}
+          closureState={row.closureState}
+          stateChange={stateChange}
+        />
       </td>
     </tr>
+  );
+}
+
+function BookingStateChangedCell({
+  cancellationReviewSignal,
+  closureState,
+  stateChange,
+}: {
+  readonly cancellationReviewSignal: { readonly label: string; readonly tone: string } | null;
+  readonly closureState: BookingMonitorPillDetail | null;
+  readonly stateChange: { readonly dateLabel: string; readonly label: string };
+}) {
+  return (
+    <div className="vuexy-booking-state-cell">
+      <span className="pill pill-neutral">State changed</span>
+      <strong aria-label={`State changed: ${stateChange.label}`} title={stateChange.label}>
+        {stateChange.label}
+      </strong>
+      <div
+        aria-label={`State changed at: ${stateChange.dateLabel}`}
+        className="muted"
+        title={stateChange.dateLabel}
+      >
+        {stateChange.dateLabel}
+      </div>
+      {closureState && (
+        <div className="vuexy-booking-closure-evidence">
+          <div className="vuexy-booking-closure-pills">
+            <span className={`pill ${closureState.tone}`}>{closureState.label}</span>
+            {cancellationReviewSignal && (
+              <span className={`pill ${cancellationReviewSignal.tone}`}>
+                {cancellationReviewSignal.label}
+              </span>
+            )}
+          </div>
+          <div className="muted">{closureState.detail}</div>
+        </div>
+      )}
+    </div>
   );
 }
 

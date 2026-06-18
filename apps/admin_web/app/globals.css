@@ -1749,7 +1749,8 @@ a.action-button-card:hover {
 
 .vuexy-booking-address-cell,
 .vuexy-booking-language-cell,
-.vuexy-booking-service-cell {
+.vuexy-booking-service-cell,
+.vuexy-booking-state-cell {
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -1757,7 +1758,8 @@ a.action-button-card:hover {
 
 .vuexy-booking-address-cell > strong,
 .vuexy-booking-language-cell > strong,
-.vuexy-booking-service-cell > strong {
+.vuexy-booking-service-cell > strong,
+.vuexy-booking-state-cell > strong {
   color: var(--admin-text);
   display: block;
   line-height: 20px;
@@ -1769,8 +1771,13 @@ a.action-button-card:hover {
 
 .vuexy-booking-address-cell > .pill,
 .vuexy-booking-language-cell > .pill,
-.vuexy-booking-service-cell > .pill {
+.vuexy-booking-service-cell > .pill,
+.vuexy-booking-state-cell > .pill {
   justify-self: flex-start;
+}
+
+.vuexy-booking-state-cell > .muted {
+  line-height: 20px;
 }
 
 .vuexy-booking-closure-evidence {

@@ -239,6 +239,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Service address');
     expect(rendered).not.toContain('Booking pin');
     expect(rendered).toContain('Matching opened at');
+    expect(rendered).toContain('State changed');
     expect(rendered).toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');
     expect(markup).toContain('href="/bookings/booking_123456789"');
@@ -252,6 +253,8 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('vuexy-booking-address-cell');
     expect(markup).toContain('title="12 Nguyen Hue, Da Nang"');
     expect(markup).toContain('aria-label="Service address: 12 Nguyen Hue, Da Nang"');
+    expect(markup).toContain('vuexy-booking-state-cell');
+    expect(markup).toContain('aria-label="State changed: Matching opened at"');
     expect(markup).toContain('vuexy-booking-avatar-group');
     expect(markup).toContain('aria-label="Partner C (ACCEPTED)"');
     expect(markup).toContain('>+1</span>');
@@ -330,6 +333,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
     expect(markup).toContain('vuexy-booking-closure-evidence');
     expect(markup).toContain('vuexy-booking-closure-pills');
+    expect(markup).toContain('vuexy-booking-state-cell');
+    expect(markup).toContain('aria-label="State changed: Partner cancelled at"');
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
   });
