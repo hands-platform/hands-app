@@ -12,6 +12,7 @@ describe('booking address readers', () => {
     expect(readAddressText({ formattedAddress: 'District 1' })).toBe('District 1');
     expect(readAddressText({ addressText: '  Da Nang  ', street: 'fallback' })).toBe('Da Nang');
     expect(readAddressText({ address_text: 'Da Nang nested legacy key' })).toBe('Da Nang nested legacy key');
+    expect(readAddressText({ formatted_address: 'Da Nang snake case' })).toBe('Da Nang snake case');
     expect(readAddressText({ street: 'Hoi An' })).toBe('Hoi An');
     expect(readAddressText({ addressText: '   ' })).toBeNull();
   });
@@ -27,9 +28,21 @@ describe('booking address readers', () => {
         district: 'District 3',
         city: 'Ho Chi Minh City',
       }),
-    ).toBe('Ignored because parts live outside');
+    ).toBe('Ward 1, District 3, Ho Chi Minh City');
     expect(readAddressText({ ward: 'Ward 2', district: 'District 7', city: 'Ho Chi Minh City' })).toBe(
       'Ward 2, District 7, Ho Chi Minh City',
     );
+  });
+
+  it('does not treat pin or coordinate labels as real addresses', () => {
+    expect(readAddressText('10.7769, 106.7009')).toBeNull();
+    expect(readAddressText({ label: 'Booking pin 10.7769, 106.7009' })).toBeNull();
+    expect(
+      readAddressText({
+        address: { label: 'Selected pin 10.7769, 106.7009' },
+        line1: '12 Nguyen Hue',
+        city: 'Da Nang',
+      }),
+    ).toBe('12 Nguyen Hue, Da Nang');
   });
 });

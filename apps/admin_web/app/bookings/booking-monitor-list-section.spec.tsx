@@ -89,10 +89,16 @@ describe('BookingMonitorListSection', () => {
         displayName: 'Partner B',
       },
       customerProfileId: 'customer_123',
-      addressSnapshot: {
-        addressText: 'Da Nang service address',
+      address: {
+        formattedAddress: '12 Nguyen Hue, Da Nang',
       },
-      serviceAddressText: '12 Nguyen Hue, Da Nang',
+      addressSnapshot: {
+        address: {
+          label: 'Booking pin 16.0471, 108.2062',
+        },
+        addressText: null,
+      },
+      serviceAddressText: null,
       status: 'OPEN_MATCHING',
       statusChangedAt: '2026-06-12T03:15:00.000Z',
       statusChangedLabel: 'Matching opened at',
@@ -224,6 +230,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Partner B');
     expect(rendered).toContain('vi-VN');
     expect(rendered).toContain('12 Nguyen Hue, Da Nang');
+    expect(rendered).not.toContain('Booking pin');
     expect(rendered).toContain('Matching opened at');
     expect(rendered).toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');

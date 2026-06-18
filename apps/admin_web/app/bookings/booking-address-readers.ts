@@ -2,13 +2,17 @@ const ADDRESS_TEXT_FIELDS = [
   'addressText',
   'address_text',
   'fullAddress',
+  'full_address',
   'formattedAddress',
-  'label',
-  'name',
-  'line1',
-  'street',
+  'formatted_address',
+  'displayAddress',
+  'display_address',
+  'addressLine',
+  'address_line',
 ] as const;
 const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
+const ADDRESS_LABEL_FIELDS = ['label', 'name'] as const;
+const COORDINATE_PAIR_TEXT_RE = /^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/;
 
 export function coordinatePairLabel(lat: unknown, lng: unknown) {
   const parsedLat = coordinatePart(lat);
@@ -21,7 +25,7 @@ export function coordinatePairLabel(lat: unknown, lng: unknown) {
 
 export function readAddressText(value: unknown): string | null {
   if (typeof value === 'string') {
-    return trimmedString(value);
+    return trimmedAddressText(value);
   }
 
   const record = readRecord(value);
@@ -30,10 +34,16 @@ export function readAddressText(value: unknown): string | null {
   }
 
   for (const field of ADDRESS_TEXT_FIELDS) {
-    const candidate = trimmedString(record[field]);
+    const candidate = trimmedAddressText(record[field]);
     if (candidate) {
       return candidate;
     }
+  }
+
+  const parts = ADDRESS_PART_FIELDS.map((field) => trimmedAddressText(record[field])).filter(Boolean);
+  const uniqueParts = Array.from(new Set(parts));
+  if (uniqueParts.length > 0) {
+    return uniqueParts.join(', ');
   }
 
   const nestedAddress: string | null = record.address === value ? null : readAddressText(record.address);
@@ -41,9 +51,14 @@ export function readAddressText(value: unknown): string | null {
     return nestedAddress;
   }
 
-  const parts = ADDRESS_PART_FIELDS.map((field) => trimmedString(record[field])).filter(Boolean);
-  const uniqueParts = Array.from(new Set(parts));
-  return uniqueParts.length > 0 ? uniqueParts.join(', ') : null;
+  for (const field of ADDRESS_LABEL_FIELDS) {
+    const candidate = trimmedAddressText(record[field]);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 function coordinatePart(value: unknown) {
@@ -55,6 +70,14 @@ function readRecord(value: unknown) {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
 }
 
-function trimmedString(value: unknown) {
-  return typeof value === 'string' ? value.trim() || null : null;
+function trimmedAddressText(value: unknown) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text || isPinLikeAddressText(text)) {
+    return null;
+  }
+  return text;
+}
+
+function isPinLikeAddressText(value: string) {
+  return COORDINATE_PAIR_TEXT_RE.test(value) || /\bpin\b/i.test(value);
 }

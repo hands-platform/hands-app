@@ -6,6 +6,7 @@ import {
   formatMoney,
   shortId as formatShortId,
 } from '../../../lib/admin-format';
+import { readAddressText } from '../booking-address-readers';
 
 export function readAmount(value: unknown) {
   return readNullableAmount(value) ?? 0;
@@ -59,32 +60,18 @@ export function bookingServicePayoutRuleLabel(booking: AdminBookingDetail) {
 }
 
 export function addressLabel(address: unknown) {
-  if (typeof address === 'string') {
-    return address;
-  }
-  if (address && typeof address === 'object') {
-    const record = address as Record<string, unknown>;
-    const knownText =
-      record.addressText ?? record.address_text ?? record.address ?? record.label ?? record.name;
-    if (typeof knownText === 'string' && knownText.trim()) {
-      return knownText.trim();
-    }
-  }
-  if (address && typeof address === 'object' && 'line1' in address) {
-    return String((address as { line1?: unknown }).line1 ?? 'Address pending');
-  }
-  return 'Address pending';
+  return readAddressText(address) ?? 'Address pending';
 }
 
 export function bookingAddressSnapshotLabel(booking: AdminBookingDetail) {
-  const snapshotText = booking.addressSnapshot?.addressText?.trim();
-  if (snapshotText) {
-    return snapshotText;
-  }
-  if (booking.addressSnapshot?.address) {
-    return addressLabel(booking.addressSnapshot.address);
-  }
-  return addressLabel(booking.address);
+  return (
+    readAddressText(booking.serviceAddressText) ??
+    readAddressText(booking.addressSnapshot?.addressText) ??
+    readAddressText(booking.address) ??
+    readAddressText(booking.addressSnapshot?.address) ??
+    readAddressText(booking.addressSnapshot) ??
+    'Address pending'
+  );
 }
 
 export function coordinateLabel(lat?: string | number | null, lng?: string | number | null) {

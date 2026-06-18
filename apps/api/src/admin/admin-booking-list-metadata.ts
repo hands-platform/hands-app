@@ -29,14 +29,18 @@ const ADDRESS_TEXT_FIELDS = [
   'addressText',
   'address_text',
   'fullAddress',
+  'full_address',
   'formattedAddress',
-  'label',
-  'name',
-  'line1',
-  'street',
+  'formatted_address',
+  'displayAddress',
+  'display_address',
+  'addressLine',
+  'address_line',
 ] as const;
 
 const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
+const ADDRESS_LABEL_FIELDS = ['label', 'name'] as const;
+const COORDINATE_PAIR_TEXT_RE = /^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/;
 
 export function withAdminBookingListMetadataList<T extends AdminBookingListMetadataInput>(
   bookings: readonly T[],
@@ -58,9 +62,9 @@ export function withAdminBookingListMetadata<T extends AdminBookingListMetadataI
 export function bookingServiceAddressText(booking: AdminBookingListMetadataInput): string | null {
   return (
     readBookingAddressText(booking.addressSnapshot?.addressText) ??
+    readBookingAddressText(booking.address) ??
     readBookingAddressText(booking.addressSnapshot?.address) ??
-    readBookingAddressText(booking.addressSnapshot) ??
-    readBookingAddressText(booking.address)
+    readBookingAddressText(booking.addressSnapshot)
   );
 }
 
@@ -123,7 +127,7 @@ function bookingHasPostMatchEvidence(booking: AdminBookingListMetadataInput) {
 
 function readBookingAddressText(value: unknown): string | null {
   if (typeof value === 'string') {
-    return trimmedString(value);
+    return trimmedAddressText(value);
   }
 
   const record = readRecord(value);
@@ -132,10 +136,16 @@ function readBookingAddressText(value: unknown): string | null {
   }
 
   for (const field of ADDRESS_TEXT_FIELDS) {
-    const candidate = trimmedString(record[field]);
+    const candidate = trimmedAddressText(record[field]);
     if (candidate) {
       return candidate;
     }
+  }
+
+  const addressParts = ADDRESS_PART_FIELDS.map((field) => trimmedAddressText(record[field])).filter(Boolean);
+  const uniqueParts = Array.from(new Set(addressParts));
+  if (uniqueParts.length > 0) {
+    return uniqueParts.join(', ');
   }
 
   const nestedAddress: string | null =
@@ -144,17 +154,30 @@ function readBookingAddressText(value: unknown): string | null {
     return nestedAddress;
   }
 
-  const addressParts = ADDRESS_PART_FIELDS.map((field) => trimmedString(record[field])).filter(Boolean);
-  const uniqueParts = Array.from(new Set(addressParts));
-  return uniqueParts.length > 0 ? uniqueParts.join(', ') : null;
+  for (const field of ADDRESS_LABEL_FIELDS) {
+    const candidate = trimmedAddressText(record[field]);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 function readRecord(value: unknown): AddressRecord | null {
   return value && typeof value === 'object' ? (value as AddressRecord) : null;
 }
 
-function trimmedString(value: unknown) {
-  return typeof value === 'string' ? value.trim() || null : null;
+function trimmedAddressText(value: unknown) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text || isPinLikeAddressText(text)) {
+    return null;
+  }
+  return text;
+}
+
+function isPinLikeAddressText(value: string) {
+  return COORDINATE_PAIR_TEXT_RE.test(value) || /\bpin\b/i.test(value);
 }
 
 function assertUnhandledAdminBookingStatus(status: never): never {

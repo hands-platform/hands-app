@@ -477,12 +477,12 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
 
 function bookingAddressLabel(booking: AdminBooking) {
   const apiAddress = metadataText({ serviceAddressText: booking.serviceAddressText }, 'serviceAddressText');
+  const legacyAddress = readAddressText(booking.address);
   const snapshotAddress =
     readAddressText(booking.addressSnapshot?.addressText) ??
     readAddressText(booking.addressSnapshot?.address) ??
     readAddressText(booking.addressSnapshot);
-  const legacyAddress = readAddressText(booking.address);
-  return compactAddressLabel(apiAddress ?? snapshotAddress ?? legacyAddress ?? 'No address');
+  return compactAddressLabel(apiAddress ?? legacyAddress ?? snapshotAddress ?? 'No address');
 }
 
 function compactAddressLabel(value: string) {
