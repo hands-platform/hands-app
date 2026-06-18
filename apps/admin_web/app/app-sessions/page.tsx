@@ -3,6 +3,7 @@ import { Bell, LayoutDashboard } from 'lucide-react';
 import { AdminPageTemplate, AdminSectionHeader } from '../../components/admin-page-template';
 import type { AdminAppSession } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   AppSessionsBreakdownSection,
@@ -120,9 +121,15 @@ function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSess
   return sessions.slice(0, 80).map((session) => {
     const state = sessionState(session);
     const partnerId = session.user?.providerProfile?.id;
+    const customerId = session.user?.customerProfile?.id;
+    const userHref = partnerId ? `/partners/${partnerId}` : customerId ? `/customers/${customerId}` : null;
 
     return {
       appVersionLabel: session.appVersion ?? 'unknown',
+      avatarStatus: adminAvatarStatusFromSignals({
+        devices: session.user?.pushDevices,
+        sessions: [session],
+      }),
       deviceIdLabel: shortDeviceId(session.deviceId),
       id: session.id,
       ipAddressLabel: session.ipAddress ?? 'no ip',
@@ -133,6 +140,7 @@ function buildAppSessionTableRows(sessions: readonly AdminAppSession[]): AppSess
       roleLabel: session.role === 'PROVIDER' ? 'PARTNER' : session.role,
       stateLabel: state,
       statePillClassName: sessionStatePill(state),
+      userHref,
       userLabel: sessionUserLabel(session),
       userPhoneLabel: session.user?.phone ?? session.userId,
     };

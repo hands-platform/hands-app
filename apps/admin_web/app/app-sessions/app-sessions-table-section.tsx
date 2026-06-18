@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { User } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { RoleBadge } from '../../components/role-badge';
+import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 
 export type AppSessionTableRow = {
   readonly appVersionLabel: string;
+  readonly avatarStatus: AdminAvatarStatus;
   readonly deviceIdLabel: string;
   readonly id: string;
   readonly ipAddressLabel: string;
@@ -16,6 +19,7 @@ export type AppSessionTableRow = {
   readonly roleLabel: string;
   readonly stateLabel: string;
   readonly statePillClassName: string;
+  readonly userHref: string | null;
   readonly userLabel: string;
   readonly userPhoneLabel: string;
 };
@@ -36,8 +40,15 @@ export function AppSessionsTableSection({ emptyMessage, rows }: AppSessionsTable
         {rows.map((row) => (
           <tr key={row.id}>
             <td>
-              <strong>{row.userLabel}</strong>
-              <div className="muted">{row.userPhoneLabel}</div>
+              <AdminPersonCell
+                avatarClassName={`vuexy-booking-avatar${row.roleLabel === 'PARTNER' ? ' is-partner' : ''}`}
+                avatarStatus={row.avatarStatus}
+                className="vuexy-booking-person"
+                helper={row.userPhoneLabel}
+                href={row.userHref}
+                label={row.userLabel}
+                linkClassName="table-link"
+              />
             </td>
             <td>
               <RoleBadge role={row.roleLabel} />

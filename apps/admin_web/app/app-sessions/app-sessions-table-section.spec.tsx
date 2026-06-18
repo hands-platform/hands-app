@@ -21,6 +21,7 @@ describe('AppSessionsTableSection', () => {
     expect(rendered).toContain('127.0.0.1');
     expect(rendered).toContain('Open Partner');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-avatar-status-dot is-online']));
   });
 
   it('renders the empty state when there are no session rows', () => {
@@ -36,6 +37,7 @@ describe('AppSessionsTableSection', () => {
 function buildRow(): AppSessionTableRow {
   return {
     appVersionLabel: '1.0.2',
+    avatarStatus: 'online',
     deviceIdLabel: 'device-123',
     id: 'session-1',
     ipAddressLabel: '127.0.0.1',
@@ -46,6 +48,7 @@ function buildRow(): AppSessionTableRow {
     roleLabel: 'PARTNER',
     stateLabel: 'live',
     statePillClassName: 'pill-success',
+    userHref: '/partners/partner-1',
     userLabel: 'Massage Partner',
     userPhoneLabel: '+84900000000',
   };
@@ -81,6 +84,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
