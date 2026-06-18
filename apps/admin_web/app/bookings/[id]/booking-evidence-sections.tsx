@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
@@ -80,6 +80,38 @@ type EvidenceBundleRow = {
   href: string;
 };
 
+const DECISION_EVIDENCE_GUARDRAIL_HEADERS = [
+  'Guardrail',
+  'Status',
+  'Loaded record',
+  'Next operator step',
+  'Open',
+] as const;
+
+const CHAT_EVIDENCE_DECISION_HEADERS = [
+  'Evidence lane',
+  'State',
+  'Factual record',
+  'Operator use',
+  'Open',
+] as const;
+
+const MANUAL_DECISION_READINESS_HEADERS = [
+  'Decision lane',
+  'Status',
+  'Evidence loaded',
+  'Operator use',
+  'Open',
+] as const;
+
+const BOOKING_EVIDENCE_BUNDLE_HEADERS = [
+  'Lane',
+  'Current state',
+  'Evidence',
+  'Operator use',
+  'Open',
+] as const;
+
 export type BookingEvidenceSectionsProps = {
   bookingId: string;
   decisionEvidenceGuardrails: DecisionGuardrailRow[];
@@ -113,37 +145,30 @@ export function BookingEvidenceSections({
           <span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Guardrail</th>
-                <th>Status</th>
-                <th>Loaded record</th>
-                <th>Next operator step</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={DECISION_EVIDENCE_GUARDRAIL_HEADERS}
+            rowCount={decisionEvidenceGuardrails.length}
+          >
+            {decisionEvidenceGuardrails.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.title}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.nextStep}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {decisionEvidenceGuardrails.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.title}</strong>
-                    <p className="muted">{row.scope}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.nextStep}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
 
@@ -213,37 +238,30 @@ export function BookingEvidenceSections({
           ))}
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Evidence lane</th>
-                <th>State</th>
-                <th>Factual record</th>
-                <th>Operator use</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CHAT_EVIDENCE_DECISION_HEADERS}
+            rowCount={chatEvidenceDecisionBoard.rows.length}
+          >
+            {chatEvidenceDecisionBoard.rows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.state}</span>
+                </td>
+                <td>{row.record}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {chatEvidenceDecisionBoard.rows.map((row) => (
-                <tr key={row.lane}>
-                  <td>
-                    <strong>{row.lane}</strong>
-                    <p className="muted">{row.scope}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.state}</span>
-                  </td>
-                  <td>{row.record}</td>
-                  <td>{row.operatorUse}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
 
@@ -264,37 +282,30 @@ export function BookingEvidenceSections({
           </div>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Decision lane</th>
-                <th>Status</th>
-                <th>Evidence loaded</th>
-                <th>Operator use</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={MANUAL_DECISION_READINESS_HEADERS}
+            rowCount={manualDecisionReadiness.length}
+          >
+            {manualDecisionReadiness.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {manualDecisionReadiness.map((row) => (
-                <tr key={row.lane}>
-                  <td>
-                    <strong>{row.lane}</strong>
-                    <p className="muted">{row.scope}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.operatorUse}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
         <div className="ops-task-note admin-mt-14">
           <div className="ops-section-header">
@@ -338,37 +349,30 @@ export function BookingEvidenceSections({
           <span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Lane</th>
-                <th>Current state</th>
-                <th>Evidence</th>
-                <th>Operator use</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={BOOKING_EVIDENCE_BUNDLE_HEADERS}
+            rowCount={bookingEvidenceBundleRows.length}
+          >
+            {bookingEvidenceBundleRows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.recordLabel}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {bookingEvidenceBundleRows.map((row) => (
-                <tr key={row.lane}>
-                  <td>
-                    <strong>{row.lane}</strong>
-                    <p className="muted">{row.recordLabel}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.operatorUse}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
     </>

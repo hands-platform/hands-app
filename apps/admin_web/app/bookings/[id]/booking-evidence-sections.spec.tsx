@@ -1,0 +1,123 @@
+import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
+import { BookingEvidenceSections } from './booking-evidence-sections';
+
+describe('Booking evidence sections', () => {
+  it('renders evidence decision tables with shared table styling and links', () => {
+    const section = BookingEvidenceSections({
+      bookingId: 'booking-1',
+      bookingEvidenceBundleRows: [
+        {
+          evidence: 'Address, payment, wallet, chat, and notes are retained.',
+          href: '#bundle',
+          lane: 'Full bundle',
+          operatorUse: 'Use before final decision.',
+          recordLabel: 'All evidence',
+          status: 'Ready',
+          tone: 'pill-success',
+        },
+      ],
+      chatEvidenceDecisionBoard: {
+        metrics: [
+          {
+            helper: 'Partner cancellation message exists.',
+            label: 'Chat',
+            value: 'Retained',
+          },
+        ],
+        rows: [
+          {
+            href: '#chat',
+            lane: 'Cancellation chat',
+            operatorUse: 'Confirm Partner reason before settlement.',
+            record: 'Partner left a cancellation reason.',
+            scope: 'Partner chat',
+            state: 'Loaded',
+            tone: 'pill-success',
+          },
+        ],
+        status: 'Loaded',
+        summary: 'Chat records are available for review.',
+        tone: 'pill-info',
+      },
+      decisionEvidenceGuardrails: [
+        {
+          evidence: 'Payment capture and wallet state are visible.',
+          href: '#guardrail',
+          id: 'payment',
+          nextStep: 'Check settlement before closeout.',
+          scope: 'Finance',
+          status: 'Ready',
+          title: 'Finance guardrail',
+          tone: 'pill-success',
+        },
+      ],
+      decisionNotePresets: [
+        {
+          detail: 'Ask for missing payment evidence before changing status.',
+          id: 'missing-payment',
+          label: 'Payment',
+          preset: 'missing_payment',
+          title: 'Request payment evidence',
+        },
+      ],
+      evidencePacket: {
+        metrics: [
+          {
+            helper: 'All required records were retained.',
+            label: 'Packet',
+            value: 'Complete',
+          },
+        ],
+        records: [
+          {
+            detail: 'Booking address snapshot is loaded.',
+            evidence: 'Address retained at booking time.',
+            href: '#packet',
+            id: 'packet-address',
+            label: 'Address',
+            title: 'Service address',
+          },
+        ],
+        status: 'Complete',
+        summary: 'Evidence packet is ready for admin decision.',
+        tone: 'pill-success',
+      },
+      manualDecisionReadiness: [
+        {
+          evidence: 'No-show evidence and chat context are loaded.',
+          href: '#manual',
+          lane: 'No-show decision',
+          operatorUse: 'Use before confirming the final no-show outcome.',
+          scope: 'Manual review',
+          status: 'Ready',
+          tone: 'pill-success',
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Decision evidence guardrails');
+    expect(rendered).toContain('Evidence packet for admin decision');
+    expect(rendered).toContain('Chat evidence decision board');
+    expect(rendered).toContain('Manual outcome decision readiness');
+    expect(rendered).toContain('Booking full evidence bundle');
+    expect(rendered).toContain('Finance guardrail');
+    expect(rendered).toContain('Partner left a cancellation reason.');
+    expect(rendered).toContain('No-show evidence and chat context are loaded.');
+    expect(rendered).toContain('Address, payment, wallet, chat, and notes are retained.');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '#bundle',
+        '#chat',
+        '#guardrail',
+        '#manual',
+        '#packet',
+        '/bookings?view=manual-decision',
+      ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link', 'pill pill-success']),
+    );
+  });
+});
