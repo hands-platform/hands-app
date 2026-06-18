@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ExternalLink, Filter, User, X } from 'lucide-react';
+import { ExternalLink, Filter, X } from 'lucide-react';
 import {
   AdminOperationalPolicySetting,
   AdminProvider,
@@ -24,7 +24,9 @@ import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/ope
 import { ActionMenu } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   buildPartnerControlDeskActionConfirmation,
   partnerControlDeskActionConfirmHref,
@@ -237,10 +239,10 @@ export default async function PartnerControlsPage({
               <div className="setup-stage-item" key={item.provider.id}>
                 <span>{item.status}</span>
                 <div>
-                  <strong>{item.partner}</strong>
-                  <p className="muted">
-                    Wallet {formatMoney(item.walletBalance)} / {item.reasons.join(', ')}
-                  </p>
+                  <PartnerControlProviderCell
+                    helper={`Wallet ${formatMoney(item.walletBalance)} / ${item.reasons.join(', ')}`}
+                    provider={item.provider}
+                  />
                   <p className="muted">{item.operatorAction}</p>
                   <div className="participant-list">
                     {item.controls.map((control) => (
@@ -254,13 +256,6 @@ export default async function PartnerControlsPage({
                   </div>
                 </div>
                 <div className="actions">
-                  <Link
-                    className="button button-secondary partner-control-inline-action"
-                    href={`/partners/${item.provider.id}`}
-                  >
-                    <User aria-hidden="true" size={14} />
-                    Profile
-                  </Link>
                   <Link className="text-link" href={item.actionHref}>
                     {item.actionLabel}
                   </Link>
@@ -414,7 +409,6 @@ export default async function PartnerControlsPage({
                     className="button button-secondary partner-control-inline-action"
                     href={`/partners/${block.providerId}`}
                   >
-                    <User aria-hidden="true" size={14} />
                     Profile
                   </Link>
                 </div>
@@ -524,14 +518,7 @@ export default async function PartnerControlsPage({
             {providerWatchlist.map((item) => (
               <tr key={item.provider.id}>
                 <td>
-                  <Link
-                    className="button button-secondary partner-control-inline-action"
-                    href={`/partners/${item.provider.id}`}
-                  >
-                    <User aria-hidden="true" size={14} />
-                    {adminProviderName(item.provider)}
-                  </Link>
-                  <p className="muted">{item.provider.user?.phone ?? 'No phone'}</p>
+                  <PartnerControlProviderCell provider={item.provider} />
                   <span className={`pill ${watchSeverityPill(item.severity)}`}>{item.severity}</span>
                 </td>
                 <td>
@@ -556,13 +543,6 @@ export default async function PartnerControlsPage({
                 </td>
                 <td>
                   <div className="actions">
-                    <Link
-                      className="button button-secondary partner-control-inline-action"
-                      href={`/partners/${item.provider.id}`}
-                    >
-                      <User aria-hidden="true" size={14} />
-                      Partner detail
-                    </Link>
                     {item.walletBalance < 0 ? (
                       <Link className="text-link" href="/cash-settlements">
                         Cash debt queue
@@ -683,18 +663,10 @@ export default async function PartnerControlsPage({
                   ) : null}
                 </td>
                 <td>
-                  {report.providerProfile ? (
-                    <Link
-                      className="button button-secondary partner-control-inline-action"
-                      href={`/partners/${report.providerProfile.id}`}
-                    >
-                      <User aria-hidden="true" size={14} />
-                      {providerName(report.providerProfile)}
-                    </Link>
-                  ) : (
-                    report.providerProfileId
-                  )}
-                  <p className="muted">{report.providerProfile?.user?.phone ?? 'No phone'}</p>
+                  <PartnerControlLinkedProviderCell
+                    fallbackId={report.providerProfileId}
+                    provider={report.providerProfile}
+                  />
                 </td>
                 <td>
                   <span className={`pill ${severityPill(report.severity)}`}>{report.severity}</span>
@@ -780,18 +752,10 @@ export default async function PartnerControlsPage({
                   <p className="muted">{partnerDisplayText(sanction.reason)}</p>
                 </td>
                 <td>
-                  {sanction.providerProfile ? (
-                    <Link
-                      className="button button-secondary partner-control-inline-action"
-                      href={`/partners/${sanction.providerProfile.id}`}
-                    >
-                      <User aria-hidden="true" size={14} />
-                      {providerName(sanction.providerProfile)}
-                    </Link>
-                  ) : (
-                    sanction.providerProfileId
-                  )}
-                  <p className="muted">{sanction.providerProfile?.user?.phone ?? 'No phone'}</p>
+                  <PartnerControlLinkedProviderCell
+                    fallbackId={sanction.providerProfileId}
+                    provider={sanction.providerProfile}
+                  />
                 </td>
                 <td>
                   {sanction.report ? (
@@ -849,6 +813,66 @@ function partnerControlDeskServerAction(action: PartnerControlDeskConfirmationAc
     case 'lift-control':
       return liftProviderSanction;
   }
+}
+
+type PartnerControlLinkedProvider =
+  | NonNullable<AdminProviderReport['providerProfile']>
+  | NonNullable<AdminProviderSanction['providerProfile']>;
+
+function PartnerControlProviderCell({
+  helper,
+  provider,
+}: {
+  readonly helper?: string;
+  readonly provider: AdminProvider;
+}) {
+  return (
+    <AdminPersonCell
+      avatarClassName="vuexy-booking-avatar is-partner"
+      avatarStatus={partnerControlProviderAvatarStatus(provider)}
+      className="vuexy-booking-person"
+      helper={helper ?? provider.user?.phone ?? 'No phone'}
+      href={`/partners/${provider.id}`}
+      label={adminProviderName(provider)}
+      linkClassName="table-link"
+    />
+  );
+}
+
+function PartnerControlLinkedProviderCell({
+  fallbackId,
+  provider,
+}: {
+  readonly fallbackId: string;
+  readonly provider?: PartnerControlLinkedProvider | null;
+}) {
+  if (!provider) {
+    return <span>{fallbackId}</span>;
+  }
+
+  return (
+    <AdminPersonCell
+      avatarClassName="vuexy-booking-avatar is-partner"
+      avatarStatus="offline"
+      className="vuexy-booking-person"
+      helper={provider.user?.phone ?? 'No phone'}
+      href={`/partners/${provider.id}`}
+      label={providerNameOrId(provider, fallbackId)}
+      linkClassName="table-link"
+    />
+  );
+}
+
+function partnerControlProviderAvatarStatus(provider: AdminProvider): AdminAvatarStatus {
+  return adminAvatarStatusFromSignals({
+    devices: provider.devices,
+    fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
+    matching: (provider.participants ?? []).some((participant) =>
+      ['INVITED', 'PENDING', 'REQUESTED'].includes(participant.status),
+    ),
+    sessions: provider.sessions,
+    working: provider.status === 'ONLINE_BUSY',
+  });
 }
 
 type PartnerControlCommandCenterInput = {
@@ -2044,10 +2068,6 @@ function sanctionSearchText(sanction: AdminProviderSanction) {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
-}
-
-function providerName(provider: NonNullable<AdminProviderReport['providerProfile']>) {
-  return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
 }
 
 function providerNameOrId(
