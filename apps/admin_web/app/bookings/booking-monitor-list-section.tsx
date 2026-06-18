@@ -157,6 +157,13 @@ type BookingTableGroup = BookingTableGroupDefinition & {
   readonly rows: readonly BookingMonitorListRow[];
 };
 
+type BookingNeedsReviewMetric = {
+  readonly helper: string;
+  readonly label: string;
+  readonly tone: string;
+  readonly value: string;
+};
+
 type BookingParticipantTableRow = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly id: string;
@@ -304,6 +311,13 @@ function BookingMonitorTableGroup({
     () => group.rows.slice(pageStartIndex, pageStartIndex + BOOKING_TABLE_PAGE_SIZE),
     [group.rows, pageStartIndex],
   );
+  const needsReviewMetrics = useMemo(
+    () =>
+      group.key === 'post-match-cancellations-pending' && group.rows.length > 0
+        ? bookingPostMatchNeedsReviewMetrics(group.rows)
+        : [],
+    [group.key, group.rows],
+  );
   const pageFrom = group.rows.length === 0 ? 0 : pageStartIndex + 1;
   const pageTo = Math.min(group.rows.length, pageStartIndex + visibleRows.length);
 
@@ -324,6 +338,7 @@ function BookingMonitorTableGroup({
         </div>
         <span className={`pill ${group.countTone}`}>{group.rows.length} booking(s)</span>
       </div>
+      {needsReviewMetrics.length > 0 && <BookingNeedsReviewSummary metrics={needsReviewMetrics} />}
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
@@ -351,6 +366,24 @@ function BookingMonitorTableGroup({
         />
       </div>
     </section>
+  );
+}
+
+function BookingNeedsReviewSummary({
+  metrics,
+}: {
+  readonly metrics: readonly BookingNeedsReviewMetric[];
+}) {
+  return (
+    <div className="vuexy-booking-review-summary" aria-label="Post-match cancellation review priorities">
+      {metrics.map((metric) => (
+        <div className={`vuexy-booking-review-metric ${metric.tone}`} key={metric.label}>
+          <span>{metric.label}</span>
+          <strong>{metric.value}</strong>
+          <p>{metric.helper}</p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -1132,6 +1165,44 @@ function buildBookingTableGroups(rows: readonly BookingMonitorListRow[]): readon
       .filter((row) => bookingTableGroupKey(row.booking) === definition.key)
       .sort(compareBookingTableRows),
   }));
+}
+
+function bookingPostMatchNeedsReviewMetrics(
+  rows: readonly BookingMonitorListRow[],
+): readonly BookingNeedsReviewMetric[] {
+  const manualReviewCount = rows.filter((row) =>
+    isPostMatchCancellationManualReviewRequired(row.booking),
+  ).length;
+  const noShowCount = rows.filter((row) => row.booking.status === 'NO_SHOW').length;
+  const missingChatCount = rows.filter((row) => (row.booking.chatRoom?.messages?.length ?? 0) === 0).length;
+  const feeHeldCount = rows.filter((row) => postMatchCancellationFeeState(row.booking) === 'held').length;
+
+  return [
+    {
+      helper: 'Partner cancellation after 15m; confirm chat before closing.',
+      label: 'Manual review',
+      tone: manualReviewCount > 0 ? 'is-warn' : 'is-neutral',
+      value: String(manualReviewCount),
+    },
+    {
+      helper: 'Check Partner message and retained evidence.',
+      label: 'No-show',
+      tone: noShowCount > 0 ? 'is-danger' : 'is-neutral',
+      value: String(noShowCount),
+    },
+    {
+      helper: 'Open detail if no retained chat is attached.',
+      label: 'Missing chat',
+      tone: missingChatCount > 0 ? 'is-warn' : 'is-neutral',
+      value: String(missingChatCount),
+    },
+    {
+      helper: 'Fee deduction remains until approval.',
+      label: 'Fee held',
+      tone: feeHeldCount > 0 ? 'is-danger' : 'is-neutral',
+      value: String(feeHeldCount),
+    },
+  ];
 }
 
 function compareBookingTableRows(left: BookingMonitorListRow, right: BookingMonitorListRow) {

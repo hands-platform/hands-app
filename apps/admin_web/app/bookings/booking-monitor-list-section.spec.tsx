@@ -413,6 +413,10 @@ describe('BookingMonitorListSection', () => {
 
     expect(rendered).toContain('Manual Review Customer');
     expect(rendered).toContain('Post-match Cancellations / Needs Review');
+    expect(rendered).toContain('Manual review');
+    expect(rendered).toContain('Partner cancellation after 15m; confirm chat before closing.');
+    expect(rendered).toContain('Missing chat');
+    expect(rendered).toContain('Fee deduction remains until approval.');
     expect(rendered).toContain('Chat (1)');
     expect(rendered).toContain('Fee held');
     expect(rendered).toContain('30m after match');
@@ -423,6 +427,10 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('admin-action-dropdown booking-post-match-action-dropdown');
     expect(markup).toContain('admin-action-menu booking-post-match-action-menu');
     expect(markup).toContain('admin-action-form');
+    expect(markup).toContain('aria-label="Post-match cancellation review priorities"');
+    expect(markup).toContain('vuexy-booking-review-summary');
+    expect(markup).toContain('vuexy-booking-review-metric is-warn');
+    expect(markup).toContain('vuexy-booking-review-metric is-danger');
     expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
     expect(markup).toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
@@ -553,6 +561,10 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Post-match Cancellations / Needs Review');
     expect(rendered).toContain('No Show Customer');
     expect(rendered).toContain('No-show marked at');
+    expect(rendered).toContain('No-show');
+    expect(rendered).toContain('Check Partner message and retained evidence.');
+    expect(rendered).toContain('Missing chat');
+    expect(rendered).toContain('Open detail if no retained chat is attached.');
     expect(rendered).toContain('Chat (0)');
     expect(rendered).toContain('No-show review');
     expect(rendered).toContain('Detail');
