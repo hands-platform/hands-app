@@ -12,8 +12,8 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
         <div>
           <h2>Post-match Cancellations</h2>
           <p>
-            Partner-side cancellations after matching. Admin approves fee restoration or keeps the Partner fee
-            hold based on chat evidence.
+            Partner-side cancellations and no-show reviews after matching. Admin checks chat evidence,
+            restores eligible cancellation fee impact, or keeps the Partner fee deduction.
           </p>
         </div>
         <div className="booking-post-match-header-actions">
@@ -29,19 +29,19 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
 
       <div className="booking-post-match-grid">
         <CancellationMetric
-          helper="After 15 minutes from match, admin must review chat and confirm the outcome."
+          helper="Cancellations after 15 minutes and no-show reviews need chat evidence before closeout."
           label="Needs admin review"
           tone="warn"
           value={board.pendingManualReviewCount}
         />
         <CancellationMetric
-          helper="Partner cancelled within 15 minutes and the API resolved the fee outcome automatically."
+          helper="Partner cancelled within 15 minutes and the API resolved the cancellation fee outcome automatically."
           label="Auto-approved"
           tone="info"
           value={board.autoApprovedCount}
         />
         <CancellationMetric
-          helper="Cancellations inside the 15-minute Partner window."
+          helper="Cancellation rows inside the 15-minute Partner window."
           label="Within 15m window"
           tone="info"
           value={board.autoApprovalWindowCount}
@@ -63,8 +63,8 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
       <div className="booking-post-match-operator-note">
         <strong>Admin handling rule</strong>
         <span>
-          Open chat, check the Partner cancellation note, then choose approve to restore the fee impact or
-          hold to keep the existing Partner fee deduction.
+          Open chat, check the Partner cancellation or no-show evidence, then approve eligible cancellation
+          fee restoration or hold the existing Partner fee deduction.
         </span>
       </div>
     </section>

@@ -468,6 +468,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Post-match Cancellations');
     expect(rendered).toContain('No Show Customer');
     expect(rendered).toContain('No-show marked at');
+    expect(rendered).toContain('Chat (0)');
+    expect(rendered).toContain('No-show review');
     expect(rendered).toContain('Detail');
     expect(rendered).not.toContain('Resolve cancellation');
     expect(rendered).not.toContain('Approve');

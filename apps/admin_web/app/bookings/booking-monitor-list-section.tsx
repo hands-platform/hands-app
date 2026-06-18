@@ -27,6 +27,7 @@ import {
   isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
   isPostMatchCancellationManualReviewRequired,
+  isPostMatchCancellationReviewBooking,
   postMatchCancellationFeeState,
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
@@ -423,14 +424,35 @@ function BookingPostMatchCancellationActionsCell({
 }) {
   const { booking } = row;
   const isCancellation = isPostMatchCancellationBooking(booking);
+  const isReview = isPostMatchCancellationReviewBooking(booking);
   const chatCount = booking.chatRoom?.messages?.length ?? 0;
 
-  if (!isCancellation) {
+  if (!isReview) {
     return (
       <Link className="booking-action-button is-secondary" href={`/bookings/${booking.id}`}>
         <Eye aria-hidden="true" size={14} />
         Detail
       </Link>
+    );
+  }
+
+  if (!isCancellation) {
+    return (
+      <div className="vuexy-booking-actions-cell">
+        <button
+          className="booking-action-button is-secondary"
+          onClick={() => onOpenChat(booking.id)}
+          type="button"
+        >
+          <MessageSquare aria-hidden="true" size={14} />
+          Chat ({chatCount})
+        </button>
+        <span className="pill pill-warn">No-show review</span>
+        <Link className="booking-action-button is-secondary" href={`/bookings/${booking.id}`}>
+          <Eye aria-hidden="true" size={14} />
+          Detail
+        </Link>
+      </div>
     );
   }
 
@@ -532,6 +554,8 @@ function BookingPostMatchCancellationChatLayer({
   const feeState = postMatchCancellationFeeState(booking);
   const resolution = postMatchCancellationResolution(booking);
   const autoApproved = isPostMatchCancellationAutoApproved(booking);
+  const evidenceLabel =
+    booking.status === 'NO_SHOW' ? 'No-show evidence' : 'Post-match cancellation evidence';
 
   return (
     <div className="booking-chat-layer" role="presentation">
@@ -543,7 +567,7 @@ function BookingPostMatchCancellationChatLayer({
       >
         <div className="booking-chat-dialog-header">
           <div>
-            <span className="pill pill-info">Post-match cancellation evidence</span>
+            <span className="pill pill-info">{evidenceLabel}</span>
             <h3 id={`booking-chat-layer-title-${booking.id}`}>
               {bookingCustomerLabel(booking)} / {providerTableLabel(booking.selectedProvider)}
             </h3>
