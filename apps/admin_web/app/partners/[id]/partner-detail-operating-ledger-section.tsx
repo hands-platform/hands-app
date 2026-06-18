@@ -1,11 +1,13 @@
 import Link from 'next/link';
 
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import type { PartnerOperatingLedgerRow } from './partner-detail-operating-ledger-model';
 
 type PartnerDetailOperatingLedgerSectionProps = {
   readonly rows: readonly PartnerOperatingLedgerRow[];
 };
+
+const PARTNER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
 
 export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOperatingLedgerSectionProps) {
   return (
@@ -21,30 +23,20 @@ export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOpera
         <span className="pill pill-info">{rows.length} record areas</span>
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Evidence</th>
-              <th>Open</th>
+        <AdminDataTable emptyMessage={null} headers={PARTNER_OPERATING_LEDGER_HEADERS} rowCount={rows.length}>
+          {rows.map((row) => (
+            <tr key={row.area}>
+              <td>{row.area}</td>
+              <td>{row.status}</td>
+              <td>{row.evidence}</td>
+              <td>
+                <Link className="text-link" href={row.href}>
+                  Open
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.area}>
-                <td>{row.area}</td>
-                <td>{row.status}</td>
-                <td>{row.evidence}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </div>
   );
