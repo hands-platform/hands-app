@@ -292,9 +292,9 @@ function buildAuditCommandLogPreviews(logs: readonly AdminAuditLog[]): AuditComm
   }));
 }
 
-function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
+export function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
   return {
-    q: readParam(params.q),
+    q: readParam(params.q) || readParam(params.query),
     bucket: readParam(params.bucket),
     priority: readParam(params.priority),
     range: normalizeDateRange(readSearchParam(params.range)),

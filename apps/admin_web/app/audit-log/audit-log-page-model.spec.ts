@@ -1,6 +1,16 @@
-import { buildAuditCommandBoard, buildAuditLogTableRows } from './page';
+import { buildAuditCommandBoard, buildAuditFilters, buildAuditLogTableRows } from './page';
 
 describe('audit log page model', () => {
+  it('accepts legacy query links as audit search input', () => {
+    expect(buildAuditFilters({ query: 'booking.create.rejected' })).toMatchObject({
+      q: 'booking.create.rejected',
+      range: 'all',
+    });
+    expect(buildAuditFilters({ q: 'notification.retry', query: 'booking.create.rejected' })).toMatchObject({
+      q: 'notification.retry',
+    });
+  });
+
   it('links notification retry audit rows to the notification board anchor', () => {
     const rows = buildAuditLogTableRows([
       {
