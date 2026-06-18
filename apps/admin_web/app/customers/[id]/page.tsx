@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -95,6 +95,43 @@ const ACTIVE_STATUSES = [
 const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
+const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
+  'Booking',
+  'Customer location',
+  'Partner flow',
+  'Chat archive',
+  'Money records',
+  'Ops evidence',
+  'Open',
+] as const;
+const CUSTOMER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
+const CUSTOMER_BOOKING_HISTORY_HEADERS = [
+  'Booking',
+  'Service',
+  'Status',
+  'Partner',
+  'Payment',
+  'Chat',
+  'Open',
+] as const;
+const CUSTOMER_CHAT_RETENTION_HEADERS = [
+  'Booking',
+  'Room state',
+  'Latest message',
+  'Mobile visibility',
+  'Admin archive',
+  'Open',
+] as const;
+const CUSTOMER_BOOKING_OPS_LEDGER_HEADERS = [
+  'Booking',
+  'Partner',
+  'Manual notes',
+  'Staff tasks',
+  'Closeout context',
+  'Open',
+] as const;
+const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
+const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
 
 export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -934,60 +971,51 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{customerBookingEvidenceRows.length} booking bundle(s)</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Customer location</th>
-                <th>Partner flow</th>
-                <th>Chat archive</th>
-                <th>Money records</th>
-                <th>Ops evidence</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customerBookingEvidenceRows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.bookingLabel}</strong>
-                    <p className="muted">{row.serviceLabel}</p>
-                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                  </td>
-                  <td>
-                    <strong>{row.addressStatus}</strong>
-                    <p className="muted">{row.addressDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.partnerStatus}</strong>
-                    <p className="muted">{row.partnerDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.chatStatus}</strong>
-                    <p className="muted">{row.chatDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.moneyStatus}</strong>
-                    <p className="muted">{row.moneyDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.opsStatus}</strong>
-                    <p className="muted">{row.opsDetail}</p>
-                  </td>
-                  <td>
-                    <Link className="text-link" href={`/bookings/${row.id}`}>
-                      Booking
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_BOOKING_EVIDENCE_HEADERS}
+            rowCount={customerBookingEvidenceRows.length}
+          >
+            {customerBookingEvidenceRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>
+                  <strong>{row.addressStatus}</strong>
+                  <p className="muted">{row.addressDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.partnerStatus}</strong>
+                  <p className="muted">{row.partnerDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.chatStatus}</strong>
+                  <p className="muted">{row.chatDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.moneyStatus}</strong>
+                  <p className="muted">{row.moneyDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.opsStatus}</strong>
+                  <p className="muted">{row.opsDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link admin-ml-10" href={row.chatHref}>
+                      Chat
                     </Link>
-                    {row.chatHref ? (
-                      <Link className="text-link admin-ml-10" href={row.chatHref}>
-                        Chat
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
         {customerBookingEvidenceRows.length === 0 ? (
           <p className="muted admin-mt-12">
@@ -1149,30 +1177,24 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Area</th>
-                <th>Status</th>
-                <th>Evidence</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_OPERATING_LEDGER_HEADERS}
+            rowCount={customerOperatingLedger.length}
+          >
+            {customerOperatingLedger.map((row) => (
+              <tr key={row.area}>
+                <td>{row.area}</td>
+                <td>{row.status}</td>
+                <td>{row.evidence}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {customerOperatingLedger.map((row) => (
-                <tr key={row.area}>
-                  <td>{row.area}</td>
-                  <td>{row.status}</td>
-                  <td>{row.evidence}</td>
-                  <td>
-                    <Link className="text-link" href={row.href}>
-                      Open
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
 
@@ -1492,68 +1514,59 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{filteredBookings.length} bookings</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Service</th>
-                <th>Status</th>
-                <th>Partner</th>
-                <th>Payment</th>
-                <th>Chat</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>
-                    <strong>{shortId(booking.id)}</strong>
-                    <p className="muted">{formatDate(bookingRecordCreatedAt(booking))}</p>
-                  </td>
-                  <td>
-                    <strong>{bookingServiceLabel(booking)}</strong>
-                    <p className="muted">{formatMoney(bookingTotal(booking))}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
-                    <p className="muted">{bookingStatusOperatorHint(booking)}</p>
-                    {isClosedCustomerBooking(booking) ? (
-                      <p className="muted">
-                        {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
-                      </p>
-                    ) : null}
-                  </td>
-                  <td>{bookingPartnerDisplayName(booking)}</td>
-                  <td>
-                    <strong>{booking.payment?.status ?? 'No payment'}</strong>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_BOOKING_HISTORY_HEADERS}
+            rowCount={filteredBookings.length}
+          >
+            {filteredBookings.map((booking) => (
+              <tr key={booking.id}>
+                <td>
+                  <strong>{shortId(booking.id)}</strong>
+                  <p className="muted">{formatDate(bookingRecordCreatedAt(booking))}</p>
+                </td>
+                <td>
+                  <strong>{bookingServiceLabel(booking)}</strong>
+                  <p className="muted">{formatMoney(bookingTotal(booking))}</p>
+                </td>
+                <td>
+                  <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
+                  <p className="muted">{bookingStatusOperatorHint(booking)}</p>
+                  {isClosedCustomerBooking(booking) ? (
                     <p className="muted">
-                      {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
+                      {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
                     </p>
-                  </td>
-                  <td>
-                    <strong>
-                      {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
-                    </strong>
-                    <p className="muted">{bookingChatArchiveLabel(booking)}</p>
-                  </td>
-                  <td>
-                    <Link className="text-link" href={`/bookings/${booking.id}`}>
-                      Booking
+                  ) : null}
+                </td>
+                <td>{bookingPartnerDisplayName(booking)}</td>
+                <td>
+                  <strong>{booking.payment?.status ?? 'No payment'}</strong>
+                  <p className="muted">
+                    {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
+                  </p>
+                </td>
+                <td>
+                  <strong>
+                    {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
+                  </strong>
+                  <p className="muted">{bookingChatArchiveLabel(booking)}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${booking.id}`}>
+                    Booking
+                  </Link>
+                  {booking.chatRoom ? (
+                    <Link
+                      className="text-link admin-ml-10"
+                      href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+                    >
+                      Chat archive
                     </Link>
-                    {booking.chatRoom ? (
-                      <Link
-                        className="text-link admin-ml-10"
-                        href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-                      >
-                        Chat archive
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
         {filteredBookings.length === 0 ? (
           <p className="muted admin-mt-12">
@@ -1583,56 +1596,48 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           ))}
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Room state</th>
-                <th>Latest message</th>
-                <th>Mobile visibility</th>
-                <th>Admin archive</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customerChatRetentionRows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.bookingLabel}</strong>
-                    <p className="muted">{row.serviceLabel}</p>
-                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                  </td>
-                  <td>
-                    <strong>{row.roomStatus}</strong>
-                    <p className="muted">{row.roomDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.latestSender}</strong>
-                    <p className="muted">{row.latestMessage}</p>
-                    <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
-                  </td>
-                  <td>
-                    <strong>{row.mobileVisibility}</strong>
-                    <p className="muted">{row.mobileVisibilityDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.adminRetention}</strong>
-                    <p className="muted">{row.adminRetentionDetail}</p>
-                  </td>
-                  <td>
-                    <Link className="text-link" href={row.bookingHref}>
-                      Booking
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_CHAT_RETENTION_HEADERS}
+            rowCount={customerChatRetentionRows.length}
+          >
+            {customerChatRetentionRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>
+                  <strong>{row.roomStatus}</strong>
+                  <p className="muted">{row.roomDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.latestSender}</strong>
+                  <p className="muted">{row.latestMessage}</p>
+                  <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
+                </td>
+                <td>
+                  <strong>{row.mobileVisibility}</strong>
+                  <p className="muted">{row.mobileVisibilityDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.adminRetention}</strong>
+                  <p className="muted">{row.adminRetentionDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={row.bookingHref}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link admin-ml-10" href={row.chatHref}>
+                      Archive
                     </Link>
-                    {row.chatHref ? (
-                      <Link className="text-link admin-ml-10" href={row.chatHref}>
-                        Archive
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
         {customerChatRetentionRows.length === 0 ? (
           <p className="muted admin-mt-12">
@@ -1653,52 +1658,44 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{customerBookingOpsLedgerRows.length} booking note row(s)</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Partner</th>
-                <th>Manual notes</th>
-                <th>Staff tasks</th>
-                <th>Closeout context</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customerBookingOpsLedgerRows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.bookingLabel}</strong>
-                    <p className="muted">{row.serviceLabel}</p>
-                    <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                  </td>
-                  <td>{row.partnerLabel}</td>
-                  <td>
-                    <strong>{row.noteStatus}</strong>
-                    <p className="muted">{row.noteDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.taskStatus}</strong>
-                    <p className="muted">{row.taskDetail}</p>
-                  </td>
-                  <td>
-                    <strong>{row.closeoutStatus}</strong>
-                    <p className="muted">{row.closeoutDetail}</p>
-                  </td>
-                  <td>
-                    <Link className="text-link" href={row.bookingHref}>
-                      Booking
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_BOOKING_OPS_LEDGER_HEADERS}
+            rowCount={customerBookingOpsLedgerRows.length}
+          >
+            {customerBookingOpsLedgerRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>{row.partnerLabel}</td>
+                <td>
+                  <strong>{row.noteStatus}</strong>
+                  <p className="muted">{row.noteDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.taskStatus}</strong>
+                  <p className="muted">{row.taskDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.closeoutStatus}</strong>
+                  <p className="muted">{row.closeoutDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={row.bookingHref}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link admin-ml-10" href={row.chatHref}>
+                      Chat
                     </Link>
-                    {row.chatHref ? (
-                      <Link className="text-link admin-ml-10" href={row.chatHref}>
-                        Chat
-                      </Link>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
         {customerBookingOpsLedgerRows.length === 0 ? (
           <p className="muted admin-mt-12">
@@ -1922,29 +1919,23 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{filteredNotifications.length} rows</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Notification</th>
-                <th>Type</th>
-                <th>Created</th>
-                <th>Delivery</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_NOTIFICATION_HEADERS}
+            rowCount={filteredNotifications.slice(0, 20).length}
+          >
+            {filteredNotifications.slice(0, 20).map((notification) => (
+              <tr key={notification.id}>
+                <td>
+                  <strong>{displayMarketplaceText(notification.title)}</strong>
+                  <p className="muted">{displayMarketplaceText(notification.body)}</p>
+                </td>
+                <td>{displayMarketplaceText(notification.type)}</td>
+                <td>{formatDate(notification.createdAt)}</td>
+                <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredNotifications.slice(0, 20).map((notification) => (
-                <tr key={notification.id}>
-                  <td>
-                    <strong>{displayMarketplaceText(notification.title)}</strong>
-                    <p className="muted">{displayMarketplaceText(notification.body)}</p>
-                  </td>
-                  <td>{displayMarketplaceText(notification.type)}</td>
-                  <td>{formatDate(notification.createdAt)}</td>
-                  <td>{notification.deliveries?.[0]?.status ?? 'No delivery'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
 
@@ -1957,28 +1948,22 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className="pill pill-info">{filteredAuditLogs.length} logs</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Actor</th>
-                <th>Created</th>
-                <th>Metadata</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={CUSTOMER_AUDIT_TRAIL_HEADERS}
+            rowCount={filteredAuditLogs.slice(0, 20).length}
+          >
+            {filteredAuditLogs.slice(0, 20).map((log) => (
+              <tr key={log.id}>
+                <td>{log.action}</td>
+                <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
+                <td>{formatDate(log.createdAt)}</td>
+                <td>
+                  <code>{compactJson(log.metadata)}</code>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredAuditLogs.slice(0, 20).map((log) => (
-                <tr key={log.id}>
-                  <td>{log.action}</td>
-                  <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
-                  <td>{formatDate(log.createdAt)}</td>
-                  <td>
-                    <code>{compactJson(log.metadata)}</code>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
       </CustomerDetailSectionBand>
