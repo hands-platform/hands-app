@@ -130,6 +130,7 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Partner One');
     expect(markup).toContain('Wallet: Clear');
     expect(markup).toContain('Cash fee settlement path');
+    expect(markup).toContain('table vuexy-data-table');
     expect(markup).toContain('href="/customers/customer_1"');
     expect(markup).toContain('href="/partners/partner_1"');
   });

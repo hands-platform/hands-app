@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import { BookingChatBubble } from './booking-chat-bubble';
 
@@ -141,6 +141,35 @@ type LocationTrailRow = {
   coordinate: string;
   recordedAt: string;
 };
+
+const PARTICIPANT_LIFECYCLE_HEADERS = [
+  'Lifecycle stage',
+  'Current evidence',
+  'Operator check',
+] as const;
+
+const PARTICIPANT_ELIGIBILITY_HEADERS = [
+  'Partner',
+  'Source',
+  'Participation',
+  'Customer eligibility',
+  'Reason and next step',
+] as const;
+
+const PARTICIPANT_RECORD_HEADERS = [
+  'Partner',
+  'Participation evidence',
+  'Role and status',
+  'Timing and distance',
+  'Operations record',
+] as const;
+
+const CASH_FEE_SETTLEMENT_HEADERS = [
+  'Settlement lane',
+  'Status',
+  'Evidence',
+  'Operator next step',
+] as const;
 
 export type BookingRecordDetailSectionsProps = {
   cashFeeSettlementPath: CashSettlementPath;
@@ -350,30 +379,21 @@ function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
 function ParticipantLifecycleTable({ rows }: ParticipantLifecycleTableProps) {
   return (
     <AdminTableScroll>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Lifecycle stage</th>
-            <th>Current evidence</th>
-            <th>Operator check</th>
+      <AdminDataTable emptyMessage={null} headers={PARTICIPANT_LIFECYCLE_HEADERS} rowCount={rows.length}>
+        {rows.map((row) => (
+          <tr key={row.stage}>
+            <td>
+              <strong>{row.stage}</strong>
+              <p className="muted">{row.scope}</p>
+            </td>
+            <td>
+              <span className={`pill ${row.tone}`}>{row.status}</span>
+              <p className="muted">{row.evidence}</p>
+            </td>
+            <td>{row.operatorUse}</td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.stage}>
-              <td>
-                <strong>{row.stage}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-                <p className="muted">{row.evidence}</p>
-              </td>
-              <td>{row.operatorUse}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        ))}
+      </AdminDataTable>
     </AdminTableScroll>
   );
 }
@@ -381,48 +401,37 @@ function ParticipantLifecycleTable({ rows }: ParticipantLifecycleTableProps) {
 function ParticipantEligibilityMatrix({ rows }: ParticipantEligibilityMatrixProps) {
   return (
     <AdminTableScroll>
-      <table className="table admin-mt-10">
-        <thead>
-          <tr>
-            <th>Partner</th>
-            <th>Source</th>
-            <th>Participation</th>
-            <th>Customer eligibility</th>
-            <th>Reason and next step</th>
+      <AdminDataTable
+        className="admin-mt-10"
+        emptyMessage="No participant eligibility rows are available yet."
+        headers={PARTICIPANT_ELIGIBILITY_HEADERS}
+        rowCount={rows.length}
+      >
+        {rows.map((row) => (
+          <tr key={`eligibility-${row.id}`}>
+            <td>
+              <strong>{row.partner}</strong>
+              <p className="muted">{row.identity}</p>
+            </td>
+            <td>
+              <span className={`pill ${row.roleTone}`}>{row.role}</span>
+            </td>
+            <td>
+              <span className={`pill ${row.statusTone}`}>{row.status}</span>
+              <p className="muted">{row.timing}</p>
+            </td>
+            <td>
+              <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
+              <p className="muted">{row.choiceState}</p>
+            </td>
+            <td>
+              <strong>{row.eligibilityReason}</strong>
+              <p className="muted">{row.operatorStatus}</p>
+              <p className="muted">{row.eligibilityNextStep}</p>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={`eligibility-${row.id}`}>
-              <td>
-                <strong>{row.partner}</strong>
-                <p className="muted">{row.identity}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.roleTone}`}>{row.role}</span>
-              </td>
-              <td>
-                <span className={`pill ${row.statusTone}`}>{row.status}</span>
-                <p className="muted">{row.timing}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
-                <p className="muted">{row.choiceState}</p>
-              </td>
-              <td>
-                <strong>{row.eligibilityReason}</strong>
-                <p className="muted">{row.operatorStatus}</p>
-                <p className="muted">{row.eligibilityNextStep}</p>
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={5}>No participant eligibility rows are available yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        ))}
+      </AdminDataTable>
     </AdminTableScroll>
   );
 }
@@ -430,67 +439,55 @@ function ParticipantEligibilityMatrix({ rows }: ParticipantEligibilityMatrixProp
 function ParticipantRecordsTable({ rows }: ParticipantRecordsTableProps) {
   return (
     <AdminTableScroll>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Partner</th>
-            <th>Participation evidence</th>
-            <th>Role and status</th>
-            <th>Timing and distance</th>
-            <th>Operations record</th>
+      <AdminDataTable
+        emptyMessage="No Partner participation has been recorded for this booking yet."
+        headers={PARTICIPANT_RECORD_HEADERS}
+        rowCount={rows.length}
+      >
+        {rows.map((row) => (
+          <tr key={row.id}>
+            <td>
+              <strong>{row.partner}</strong>
+              <p className="muted">{row.identity}</p>
+              {row.href && (
+                <Link className="text-link" href={row.href}>
+                  Open Partner record
+                </Link>
+              )}
+            </td>
+            <td>
+              <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+              <p className="muted">{row.evidenceDetail}</p>
+            </td>
+            <td>
+              <div className="filter-row">
+                <span className={`pill ${row.roleTone}`}>{row.role}</span>
+                <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
+              </div>
+              <p className="muted">{row.decision}</p>
+            </td>
+            <td>
+              <strong>{row.distance}</strong>
+              <div className="filter-row admin-mt-6">
+                <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+              </div>
+              <p className="muted">{row.distancePolicyHelper}</p>
+              <p className="muted">{row.timing}</p>
+            </td>
+            <td>
+              <div className="filter-row">
+                {row.facts.map((fact) => (
+                  <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                    {fact.label}: {fact.value}
+                  </span>
+                ))}
+              </div>
+              <p className="muted admin-mt-8">{row.operatorUse}</p>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <strong>{row.partner}</strong>
-                <p className="muted">{row.identity}</p>
-                {row.href && (
-                  <Link className="text-link" href={row.href}>
-                    Open Partner record
-                  </Link>
-                )}
-              </td>
-              <td>
-                <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                <p className="muted">{row.evidenceDetail}</p>
-              </td>
-              <td>
-                <div className="filter-row">
-                  <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                  <span className={`pill ${row.statusTone}`}>{row.status}</span>
-                  <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
-                </div>
-                <p className="muted">{row.decision}</p>
-              </td>
-              <td>
-                <strong>{row.distance}</strong>
-                <div className="filter-row admin-mt-6">
-                  <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
-                </div>
-                <p className="muted">{row.distancePolicyHelper}</p>
-                <p className="muted">{row.timing}</p>
-              </td>
-              <td>
-                <div className="filter-row">
-                  {row.facts.map((fact) => (
-                    <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
-                      {fact.label}: {fact.value}
-                    </span>
-                  ))}
-                </div>
-                <p className="muted admin-mt-8">{row.operatorUse}</p>
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={5}>No Partner participation has been recorded for this booking yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        ))}
+      </AdminDataTable>
     </AdminTableScroll>
   );
 }
@@ -513,31 +510,25 @@ function CashFeeSettlementPathSection({
       </div>
       <SummaryCards cards={cashFeeSettlementPath.cards} />
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Settlement lane</th>
-              <th>Status</th>
-              <th>Evidence</th>
-              <th>Operator next step</th>
+        <AdminDataTable
+          emptyMessage={null}
+          headers={CASH_FEE_SETTLEMENT_HEADERS}
+          rowCount={cashFeeSettlementPath.rows.length}
+        >
+          {cashFeeSettlementPath.rows.map((row) => (
+            <tr key={row.lane}>
+              <td>
+                <strong>{row.lane}</strong>
+                <p className="muted">{row.scope}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.tone}`}>{row.status}</span>
+              </td>
+              <td>{row.evidence}</td>
+              <td>{row.nextStep}</td>
             </tr>
-          </thead>
-          <tbody>
-            {cashFeeSettlementPath.rows.map((row) => (
-              <tr key={row.lane}>
-                <td>
-                  <strong>{row.lane}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.nextStep}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </div>
   );
