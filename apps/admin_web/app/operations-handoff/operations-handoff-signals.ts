@@ -21,6 +21,7 @@ type PartnerSignalFacts = {
 };
 
 const PENDING_REVIEW_STATUSES = new Set(['pending', 'PENDING', 'SUBMITTED']);
+const MATCHING_PARTICIPANT_STATUSES = new Set(['INVITED', 'PENDING', 'REQUESTED']);
 
 export function buildChatSignals(
   bookings: readonly AdminBooking[],
@@ -110,11 +111,7 @@ export function buildPartnerSignals(
         name: operatorDisplayText(
           partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner',
         ),
-        avatarStatus: adminAvatarStatusFromSignals({
-          devices: partner.user?.pushDevices,
-          fallbackOnline: partner.status === 'ONLINE_AVAILABLE' || partner.status === 'ONLINE_AVAILABLE_SOON',
-          working: partner.status === 'ONLINE_BUSY',
-        }),
+        avatarStatus: partnerHandoffAvatarStatus(partner),
         status: posture.status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: posture.action,
@@ -128,6 +125,18 @@ export function buildPartnerSignals(
 }
 
 export type PartnerSignalRow = ReturnType<typeof buildPartnerSignals>['rows'][number];
+
+function partnerHandoffAvatarStatus(partner: AdminProvider) {
+  return adminAvatarStatusFromSignals({
+    devices: [...(partner.user?.pushDevices ?? []), ...(partner.devices ?? [])],
+    fallbackOnline: partner.status === 'ONLINE_AVAILABLE' || partner.status === 'ONLINE_AVAILABLE_SOON',
+    matching: (partner.participants ?? []).some((participant) =>
+      MATCHING_PARTICIPANT_STATUSES.has(participant.status),
+    ),
+    sessions: partner.sessions,
+    working: partner.status === 'ONLINE_BUSY',
+  });
+}
 
 function partnerSignalFacts(
   partner: AdminProvider,

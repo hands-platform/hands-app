@@ -159,6 +159,31 @@ describe('operations handoff signal models', () => {
       ['partner-fresh', 'Location fresh', 'pill pill-success', false],
     ]);
   });
+
+  it('marks Partner handoff avatar as matching from pending participant signals', () => {
+    const nowMs = Date.parse('2026-06-14T10:00:00.000Z');
+    const signals = buildPartnerSignals(
+      [
+        partner({
+          currentLocationUpdatedAt: '2026-06-14T09:55:00.000Z',
+          id: 'partner-matching',
+          participants: [
+            {
+              id: 'participant-1',
+              status: 'PENDING',
+            } as NonNullable<AdminProvider['participants']>[number],
+          ],
+        }),
+      ],
+      cashSummary({}),
+      { nowMs },
+    );
+
+    expect(signals.rows[0]).toMatchObject({
+      avatarStatus: 'matching',
+      id: 'partner-matching',
+    });
+  });
 });
 
 function booking(input: Partial<AdminBooking>): AdminBooking {
