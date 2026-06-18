@@ -19,7 +19,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Supabase is infrastructure. NestJS owns business rules, authorization, booking state, matching, payments, settlement, and audit decisions.
 - Mobile and Admin must not bypass NestJS for critical business writes.
 - Customer discovery is address-based, not transient GPS-based.
-- Customers may browse partners from any country; booking creation depends on a confirmed service address in the active HANDS service area.
+- Customers may browse partners from any country; booking creation depends on a confirmed service address in the active HANDS service area and fresh current GPS must be within 50km of that selected service address when the app can provide it.
 - Every booking must preserve an immutable `BookingAddressSnapshot`.
 - Discovery can show partners beyond the Open Matching radius, but Open Matching participation is gated by booking address distance.
 - Preferred partner gets first-pick priority, currently within the 10 minute response window.
@@ -39,7 +39,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 1. Customer selects or confirms a service address.
 2. Customer browses partners sorted by address distance and availability.
 3. Customer selects a preferred partner profile and service option.
-4. API creates a booking with `BookingAddressSnapshot`.
+4. API creates a booking with `BookingAddressSnapshot` only if the selected service address passes the service-area gate and fresh current GPS is not 50km or more away.
 5. Preferred partner is notified as the first-pick Partner.
 6. Eligible partners within the configured Open Matching radius can see/join in parallel.
 7. If the first-pick Partner validly accepts first under API rules, that Partner becomes matched.

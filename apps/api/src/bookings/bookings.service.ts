@@ -46,6 +46,7 @@ import {
   bookingDistanceGateSnapshot,
   bookingGateRejectionAuditCreateInput,
   type BookingGateRejectionAuditInput,
+  customerCurrentLocationBookingDistanceGateError,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
@@ -55,10 +56,7 @@ import {
   partnerBookingResponses,
   partnerOpenBookingResponses,
 } from './bookings.response';
-import {
-  bookingCreateMetadata,
-  restoreBookingMatchingPolicy,
-} from './bookings.matching-policy';
+import { bookingCreateMetadata, restoreBookingMatchingPolicy } from './bookings.matching-policy';
 import { bookingMatchedAuditCreateInput } from './bookings.match-audit';
 import {
   bookingCompletedUpdateData,
@@ -107,10 +105,7 @@ import {
   assertProviderCanReceiveBooking,
   assertProviderOffersRequestedService,
 } from './bookings.provider-readiness';
-import {
-  openBookingWhereForProvider,
-  providerBookingHistoryWhere,
-} from './bookings.provider-query';
+import { openBookingWhereForProvider, providerBookingHistoryWhere } from './bookings.provider-query';
 import {
   bookingAddressSnapshotCreate,
   bookingCancellationResultWithReleasedPayment,
@@ -364,6 +359,27 @@ export class BookingsService {
       addressText,
       preferredProvider,
     });
+    const customerDistanceGateError = customerCurrentLocationBookingDistanceGateError(
+      distanceGate.customerToBookingDistanceMeters,
+      matchingPolicy,
+    );
+    if (customerDistanceGateError) {
+      await this.rejectCustomerCurrentLocationTooFar({
+        actorId: customerUserId,
+        customerProfileId: customer.id,
+        serviceId: service.id,
+        preferredProviderId: preferredProvider?.id,
+        bookingLat,
+        bookingLng,
+        addressText,
+        customerDistanceMeters: distanceGate.customerToBookingDistanceMeters,
+        preferredProviderDistanceMeters: distanceGate.preferredProviderDistanceMeters,
+        currentLocationRecordedAt: distanceGate.customerCurrentLocation?.recordedAt,
+        distanceGateLimits,
+        message: customerDistanceGateError.message,
+        customerDistanceLimitMeters: customerDistanceGateError.limitMeters,
+      });
+    }
     const preferredProviderDistanceGateError = preferredProviderBookingDistanceGateError(
       preferredProvider,
       distanceGate.preferredProviderDistanceMeters,
@@ -446,10 +462,7 @@ export class BookingsService {
     return { customer, customerUserId: userId };
   }
 
-  private async resolvePreferredProviderForBooking(input: {
-    providerId?: string;
-    serviceId: string;
-  }) {
+  private async resolvePreferredProviderForBooking(input: { providerId?: string; serviceId: string }) {
     const preferredProvider = input.providerId
       ? await this.prisma.providerProfile.findUniqueOrThrow({
           where: { id: input.providerId },
@@ -575,6 +588,40 @@ export class BookingsService {
       preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
       customerDistanceLimitMeters: input.distanceGateLimits.customerDistanceLimitMeters,
       preferredProviderDistanceLimitMeters: input.preferredProviderDistanceLimitMeters,
+      currentLocationRecordedAt: input.currentLocationRecordedAt,
+    });
+    throw new BadRequestException(input.message);
+  }
+
+  private async rejectCustomerCurrentLocationTooFar(input: {
+    actorId: string;
+    customerProfileId: string;
+    serviceId: string;
+    preferredProviderId?: string | null;
+    bookingLat: number;
+    bookingLng: number;
+    addressText: string;
+    customerDistanceMeters: number | null;
+    preferredProviderDistanceMeters: number | null;
+    currentLocationRecordedAt?: Date | null;
+    distanceGateLimits: ReturnType<typeof bookingDistanceGateLimits>;
+    message: string;
+    customerDistanceLimitMeters: number;
+  }): Promise<never> {
+    await this.recordBookingGateRejection({
+      actorId: input.actorId,
+      customerProfileId: input.customerProfileId,
+      serviceId: input.serviceId,
+      preferredProviderId: input.preferredProviderId,
+      reasonCode: 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+      reason: input.message,
+      bookingLat: input.bookingLat,
+      bookingLng: input.bookingLng,
+      addressText: input.addressText,
+      customerDistanceMeters: input.customerDistanceMeters,
+      preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
+      customerDistanceLimitMeters: input.customerDistanceLimitMeters,
+      preferredProviderDistanceLimitMeters: input.distanceGateLimits.preferredProviderDistanceLimitMeters,
       currentLocationRecordedAt: input.currentLocationRecordedAt,
     });
     throw new BadRequestException(input.message);
@@ -1033,9 +1080,9 @@ export class BookingsService {
     return booking;
   }
 
-  private async bookingCancellationResultWithPaymentRelease<TBooking extends { payment?: { id: string } | null }>(
-    booking: TBooking,
-  ) {
+  private async bookingCancellationResultWithPaymentRelease<
+    TBooking extends { payment?: { id: string } | null },
+  >(booking: TBooking) {
     const releasedPayment = booking.payment ? await this.payments.release(booking.payment.id) : null;
     return {
       result: bookingCancellationResultWithReleasedPayment(booking, releasedPayment),

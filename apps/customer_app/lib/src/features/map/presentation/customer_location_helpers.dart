@@ -42,12 +42,16 @@ class CustomerLocationSnapshot {
     required this.longitude,
     this.addressText,
     this.isDemoLocation = false,
+    this.currentLatitude,
+    this.currentLongitude,
   });
 
   final double latitude;
   final double longitude;
   final String? addressText;
   final bool isDemoLocation;
+  final double? currentLatitude;
+  final double? currentLongitude;
 }
 
 CustomerLocationSnapshot defaultVietnamDiscoveryLocation() {

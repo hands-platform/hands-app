@@ -39,7 +39,7 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   marketplaceRadiusMeters: 10_000,
   marketplaceLocationFreshnessMinutes: 30,
   marketplaceInvitationLimit: 50,
-  bookingMaxCustomerCurrentToAddressKm: 20,
+  bookingMaxCustomerCurrentToAddressKm: 50,
   bookingMaxPreferredPartnerDistanceKm: 50,
   bookingCurrentLocationFreshnessMinutes: 10,
   marketplaceOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
@@ -113,8 +113,7 @@ export function buildAdminLiveOperationsPolicy(
     readPolicyStringFromKeys(settings, [
       OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
       LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
-    ]) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
 
   return {
     travelBufferMinutes:
@@ -127,20 +126,17 @@ export function buildAdminLiveOperationsPolicy(
       readPolicyNumberFromKeys(settings, [
         OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
         LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
-      ]) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters,
+      ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters,
     marketplaceLocationFreshnessMinutes:
       readPolicyNumberFromKeys(settings, [
         OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
         LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
-      ]) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes,
+      ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes,
     marketplaceInvitationLimit:
       readPolicyNumberFromKeys(settings, [
         OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
         LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
-      ]) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
+      ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
     marketplaceOpenMode: normalizeAdminMarketplaceOpenMode(marketplaceOpenMode),
     backupOpenMode: normalizeAdminMarketplaceOpenMode(marketplaceOpenMode),
     preferredAcceptMode:
@@ -364,10 +360,7 @@ export function formatPolicyDistance(meters: number) {
   return `${new Intl.NumberFormat('en-US').format(meters)}m`;
 }
 
-export function adminOperationalPolicySettingByKey(
-  settings: AdminOperationalPolicySetting[],
-  key: string,
-) {
+export function adminOperationalPolicySettingByKey(settings: AdminOperationalPolicySetting[], key: string) {
   return adminOperationalPolicyEquivalentKeys(key)
     .map((candidateKey) => settings.find((setting) => setting.key === candidateKey))
     .find((setting) => setting !== undefined);

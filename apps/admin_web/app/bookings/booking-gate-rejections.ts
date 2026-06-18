@@ -1,6 +1,9 @@
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { formatDistanceMeters, readPlainRecord } from '../../lib/admin-format';
-import { BOOKING_CREATE_GATE_REASONS, bookingCreateGateReasonLabel } from '../../lib/booking-create-gate-reasons';
+import {
+  BOOKING_CREATE_GATE_REASONS,
+  bookingCreateGateReasonLabel,
+} from '../../lib/booking-create-gate-reasons';
 import { coordinatePairLabel, readAddressText } from './booking-address-readers';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
 
@@ -14,7 +17,11 @@ export function bookingGateReasonCode(log: AdminAuditLog) {
 export function bookingGateRejectionInfo(log: AdminAuditLog) {
   const metadata = readPlainRecord(log.metadata) ?? {};
   const reasonCode = bookingGateReasonCode(log);
-  const bookingAddress = readFirstRecord([metadata.bookingAddress, metadata.address, metadata.addressSnapshot]);
+  const bookingAddress = readFirstRecord([
+    metadata.bookingAddress,
+    metadata.address,
+    metadata.addressSnapshot,
+  ]);
   const currentLocation = readFirstRecord([
     metadata.customerCurrentLocation,
     metadata.currentLocation,
@@ -70,7 +77,11 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
       readOptionalString(metadata.addressText) ??
       readOptionalString(metadata.bookingAddressText) ??
       'Address not recorded',
-    customerDistanceLabel: formatGateDistance('Optional customer GPS', customerDistance, customerDistanceLimit),
+    customerDistanceLabel: formatGateDistance(
+      'Customer current location',
+      customerDistance,
+      customerDistanceLimit,
+    ),
     preferredPartnerDistanceLabel: formatGateDistance(
       'First-pick Partner',
       preferredPartnerDistance,
@@ -86,7 +97,7 @@ export function bookingGateRejectionInfo(log: AdminAuditLog) {
 
 function bookingGateOperatorAction(reasonCode: string) {
   if (reasonCode === BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar) {
-    return 'Treat this as historical support evidence. Current booking creation should rely on the confirmed service address snapshot, not customer GPS distance.';
+    return 'Ask the customer to book from a current location within the configured service-address distance gate. Payment and matching did not start.';
   }
   if (reasonCode === BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar) {
     return 'Ask the customer to choose a closer first-pick Partner or correct the service address. Payment and matching did not start.';

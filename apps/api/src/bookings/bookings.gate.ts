@@ -77,6 +77,23 @@ export function preferredProviderBookingDistanceGateError(
   return null;
 }
 
+export function customerCurrentLocationBookingDistanceGateError(
+  distanceMeters: number | null,
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled || distanceMeters === null) {
+    return null;
+  }
+  const { customerDistanceLimitMeters: limitMeters } = bookingDistanceGateLimits(policy);
+  if (distanceMeters >= limitMeters) {
+    return {
+      limitMeters,
+      message: `Booking address must be within ${policy.bookingMaxCustomerCurrentToAddressKm}km of the customer's current location`,
+    };
+  }
+  return null;
+}
+
 export function bookingDistanceGateLimits(policy: MatchingPolicy) {
   return {
     customerDistanceLimitMeters: policy.bookingMaxCustomerCurrentToAddressKm * 1000,

@@ -8,7 +8,7 @@ describe('booking create gate reasons', () => {
   it.each([
     ['BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA', 'service-area', 'Service area'],
     ['CUSTOMER_CURRENT_LOCATION_STALE', 'customer-gps', 'Optional GPS evidence'],
-    ['CUSTOMER_CURRENT_LOCATION_TOO_FAR', 'customer-distance', 'Optional GPS distance'],
+    ['CUSTOMER_CURRENT_LOCATION_TOO_FAR', 'customer-distance', 'Customer distance gate'],
     ['PREFERRED_PARTNER_TOO_FAR', 'first-pick-distance', 'First-pick distance'],
     ['UNKNOWN_REASON', 'unknown', 'Unknown gate'],
   ])('maps %s to a gate filter and label', (reasonCode, filter, label) => {

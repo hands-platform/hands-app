@@ -98,18 +98,14 @@ export function buildPolicyRecommendationReview(
   };
 }
 
-function buildPolicyRecommendationContext(
-  bookings: readonly AdminBooking[],
-): PolicyRecommendationContext {
+function buildPolicyRecommendationContext(bookings: readonly AdminBooking[]): PolicyRecommendationContext {
   return {
     activeBookingCount: bookings.filter((booking) => ACTIVE_BOOKING_STATUSES.has(booking.status)).length,
     openMatchingCount: bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length,
   };
 }
 
-function policyRecommendationReviewableSettings(
-  settings: readonly AdminOperationalPolicySetting[],
-) {
+function policyRecommendationReviewableSettings(settings: readonly AdminOperationalPolicySetting[]) {
   return settings.filter(
     (setting) => setting.recommendedValue !== null && setting.recommendedValue !== undefined,
   );
@@ -307,10 +303,7 @@ function marketplaceLocationFreshnessPosture(
   };
 }
 
-function preferredAcceptModePosture(
-  value: string,
-  recommended: string,
-): PolicyRecommendationPosture {
+function preferredAcceptModePosture(value: string, recommended: string): PolicyRecommendationPosture {
   return {
     status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'First-pick priority',
     detail:
@@ -359,10 +352,7 @@ function walletNegativeGatePosture(value: string): PolicyRecommendationPosture {
   };
 }
 
-function bookingDistanceGatePosture(
-  value: string,
-  recommended: string,
-): PolicyRecommendationPosture {
+function bookingDistanceGatePosture(value: string, recommended: string): PolicyRecommendationPosture {
   return {
     status: value === 'true' ? 'Distance protected' : 'Distance disabled',
     detail:
@@ -377,10 +367,7 @@ function bookingDistanceGatePosture(
   };
 }
 
-function bookingServiceAreaPosture(
-  value: string,
-  recommended: string,
-): PolicyRecommendationPosture {
+function bookingServiceAreaPosture(value: string, recommended: string): PolicyRecommendationPosture {
   return {
     status: value === 'true' ? 'Service area required' : 'Service area bypass',
     detail:
@@ -398,13 +385,13 @@ function bookingOptionalGpsDistancePosture(
 ): PolicyRecommendationPosture {
   const looser = finiteGreaterThan(input);
   return {
-    status: looser ? 'Wide optional GPS evidence range' : 'Baseline optional GPS evidence range',
+    status: looser ? 'Wide customer distance gate' : 'Baseline customer distance gate',
     detail:
-      'This records the optional customer GPS evidence threshold. Booking creation authority is the confirmed service address snapshot.',
+      'This controls how far fresh customer current location can be from the selected service address before booking creation stops.',
     operatorAction:
-      'Review optional customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
+      'Review rejected booking attempts where customer current location was too far from the selected service address before changing this.',
     alignedAction:
-      'Customer GPS evidence is optional while global browsing and address-based booking stay open.',
+      'Global browsing stays open, but booking requires current location to stay near the selected service address.',
     className: looser ? 'ops-task-pending' : 'ops-task-done',
     pillClass: looser ? 'pill-warn' : 'pill-success',
   };

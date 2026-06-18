@@ -17,8 +17,10 @@ String customerBookingErrorMessage(Object exception) {
   if (normalized.contains('current location must be refreshed within')) {
     return 'The optional GPS evidence is old. You can still book from a confirmed Vietnam service address.';
   }
-  if (normalized.contains('customer current location must be within')) {
-    return 'The service address and optional GPS evidence do not match. Confirm the service pin before booking.';
+  if (normalized.contains('customer current location must be within') ||
+      (normalized.contains('booking address must be within') &&
+          normalized.contains('current location'))) {
+    return 'You can browse partners from anywhere, but booking requires your current location to be within 50km of the selected service address.';
   }
   if (normalized.contains('preferred partner must be within')) {
     return 'This partner is too far from the service address for first-pick booking. Choose a closer partner or adjust the service address.';

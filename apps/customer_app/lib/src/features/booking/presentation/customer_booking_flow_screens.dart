@@ -100,7 +100,12 @@ class _BookingConfirmationPageState
         customerLng = location.longitude;
         addressController.text = location.addressText ?? addressController.text;
         locationConfirmed = !location.isDemoLocation;
-        if (location.isDemoLocation) {
+        if (location.currentLatitude != null &&
+            location.currentLongitude != null) {
+          currentGpsLat = location.currentLatitude;
+          currentGpsLng = location.currentLongitude;
+          currentGpsUpdatedAt = DateTime.now();
+        } else if (location.isDemoLocation) {
           currentGpsLat = null;
           currentGpsLng = null;
           currentGpsUpdatedAt = null;
@@ -110,7 +115,7 @@ class _BookingConfirmationPageState
           currentGpsUpdatedAt = DateTime.now();
         }
         locationMessage = location.isDemoLocation
-            ? 'GPS is unavailable or outside Vietnam. Choose the service pin on the map before booking.'
+            ? 'You can browse partners from anywhere. Choose a Vietnam service pin before booking; current GPS must be near that service address.'
             : 'GPS loaded. You can still adjust the service pin on the map.';
       });
     } catch (_) {

@@ -46,6 +46,7 @@ describe('matching policy', () => {
     expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
     expect(policy.bookingDistanceGateEnabled).toBe(true);
     expect(policy.bookingServiceAreaRequired).toBe(true);
+    expect(policy.bookingMaxCustomerCurrentToAddressKm).toBe(50);
   });
 
   it('freezes booking match source contract values for API and Admin audit consumers', () => {

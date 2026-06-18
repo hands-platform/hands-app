@@ -445,7 +445,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Blocked create attempts',
       rangeBookingCreateRejections.length.toString(),
-      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} optional GPS evidence, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
+      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerDistanceGate} customer distance, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
     ],
     [
       'Online Partners',
@@ -775,6 +775,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <small>
               <Link className="text-link" href="/bookings?view=blocked-create">
                 {bookingCreateGateSummary.customerGpsGate} optional GPS evidence,{' '}
+                {bookingCreateGateSummary.customerDistanceGate} customer distance,{' '}
                 {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
               </Link>
             </small>
@@ -2709,10 +2710,15 @@ function readOptionalString(value: unknown) {
 }
 
 function buildBookingCreateGateSummary(logs: AdminAuditLog[]) {
+  const customerDistanceGate = logs.filter(
+    (log) => bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+  ).length;
   const customerGpsGate = logs.filter(
     (log) =>
-      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR' ||
-      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_STALE',
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_STALE' ||
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
   ).length;
   const firstPickDistanceGate = logs.filter(
     (log) => bookingCreateGateReason(log) === 'PREFERRED_PARTNER_TOO_FAR',
@@ -2723,10 +2729,14 @@ function buildBookingCreateGateSummary(logs: AdminAuditLog[]) {
 
   return {
     total: logs.length,
+    customerDistanceGate,
     customerGpsGate,
     firstPickDistanceGate,
     serviceAreaGate,
-    otherGate: Math.max(0, logs.length - customerGpsGate - firstPickDistanceGate - serviceAreaGate),
+    otherGate: Math.max(
+      0,
+      logs.length - customerDistanceGate - customerGpsGate - firstPickDistanceGate - serviceAreaGate,
+    ),
   };
 }
 
@@ -4773,13 +4783,13 @@ function buildOpsQueue(input: {
       area: 'Booking',
       href: '/bookings?view=blocked-create',
       label: 'Booking create attempts blocked',
-      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} optional GPS evidence row(s), ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
+      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerDistanceGate} customer distance gate, ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
       severity:
-        createGateSummary.customerGpsGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
+        createGateSummary.customerDistanceGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
       owner: 'Support',
       priority: 64,
       recommendedAction:
-        'Open blocked create attempts and guide customers to confirm the service address snapshot or choose a closer first-pick Partner.',
+        'Open blocked create attempts and guide customers to book from a current location near the service address or choose a closer first-pick Partner.',
     });
   }
 

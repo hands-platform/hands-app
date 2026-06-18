@@ -34,7 +34,8 @@ export const bookingGateFilterOptions: BookingGateFilterOption[] = [
   {
     value: 'service-area',
     label: 'Service area',
-    operatorHint: 'Address is outside the enabled Vietnam service area. Confirm the pin before support follow-up.',
+    operatorHint:
+      'Address is outside the enabled Vietnam service area. Confirm the pin before support follow-up.',
   },
   {
     value: 'customer-gps',
@@ -44,8 +45,9 @@ export const bookingGateFilterOptions: BookingGateFilterOption[] = [
   },
   {
     value: 'customer-distance',
-    label: 'Optional GPS distance',
-    operatorHint: 'Optional customer GPS distance rows are retained only as support evidence, not booking authority.',
+    label: 'Customer distance gate',
+    operatorHint:
+      'Fresh customer current location was 50km or more from the selected service address, so booking creation stopped before payment and matching.',
   },
   {
     value: 'first-pick-distance',

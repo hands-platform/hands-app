@@ -58,7 +58,7 @@ Additional targeted checks also passed: `npm.cmd audit --audit-level=moderate`, 
 
 This pass rechecked the active booking/matching/wallet boundaries against the final authority:
 
-- `POST /customer/bookings` allows optional current GPS only as evidence and does not require customer GPS for booking creation.
+- `POST /customer/bookings` keeps app browsing global, but booking creation rejects fresh customer current GPS that is 50km or more from the confirmed Vietnam service address.
 - Booking creation rejects non-Vietnam dispatch coordinates when service-area policy is enabled.
 - Preferred partner distance is checked against the booking address, not the customer's transient current GPS.
 - Marketplace visibility and participation use booking-address distance plus the saved booking policy snapshot.

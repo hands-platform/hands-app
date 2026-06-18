@@ -22,11 +22,11 @@ export function buildBookingGateRejectionLane(
     tone: facts.totalCount > 0 ? 'warn' : 'ok',
     detail:
       facts.totalCount > 0
-        ? `${facts.customerTooFarCount} optional GPS distance, ${facts.partnerTooFarCount} first-pick distance, ${facts.serviceAreaCount} service-area, and ${facts.locationEvidenceCount} optional GPS evidence attempt(s). Latest ${facts.latestAge}.`
+        ? `${facts.customerTooFarCount} customer distance, ${facts.partnerTooFarCount} first-pick distance, ${facts.serviceAreaCount} service-area, and ${facts.locationEvidenceCount} optional GPS evidence attempt(s). Latest ${facts.latestAge}.`
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [
-      { label: 'Optional GPS evidence', value: facts.customerTooFarCount.toString() },
+      { label: 'Customer distance gate', value: facts.customerTooFarCount.toString() },
       { label: 'First-pick distance', value: facts.partnerTooFarCount.toString() },
       { label: 'Service area', value: facts.serviceAreaCount.toString() },
       { label: 'Optional GPS evidence attempts', value: facts.locationEvidenceCount.toString() },

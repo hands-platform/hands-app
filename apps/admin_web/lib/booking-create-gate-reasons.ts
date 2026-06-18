@@ -16,7 +16,12 @@ export type BookingCreateGateFilter =
   | 'first-pick-distance'
   | 'unknown';
 
-type BookingCreateGateReasonLabelVariant = 'monitor' | 'operations' | 'audit' | 'customerDetail' | 'partnerDetail';
+type BookingCreateGateReasonLabelVariant =
+  | 'monitor'
+  | 'operations'
+  | 'audit'
+  | 'customerDetail'
+  | 'partnerDetail';
 
 const customerGpsReasonCodes = new Set<string>([
   BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing,
@@ -27,7 +32,7 @@ const customerGpsReasonCodes = new Set<string>([
 
 const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, string>> = {
   monitor: {
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Customer current location too far',
     [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]: 'First-pick Partner too far',
     [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]: 'Address outside service area',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'Optional customer GPS stale',
@@ -38,7 +43,7 @@ const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, s
       'Optional customer GPS timestamp invalid',
   },
   operations: {
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Customer current location too far',
     [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]: 'First-pick partner too far',
     [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]: 'Outside service area',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'Optional stale customer GPS',
@@ -47,7 +52,7 @@ const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, s
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]: 'Optional invalid GPS timestamp',
   },
   audit: {
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'customer current location too far',
     [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]: 'first-pick Partner too far',
     [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]: 'address outside service area',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'optional customer GPS stale',
@@ -56,7 +61,8 @@ const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, s
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]: 'optional GPS timestamp invalid',
   },
   customerDetail: {
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]:
+      'Customer current location is outside the service address gate',
     [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]:
       'First-pick Partner is outside the service address radius',
     [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]:
@@ -69,12 +75,14 @@ const reasonLabels: Record<BookingCreateGateReasonLabelVariant, Record<string, s
       'Optional customer GPS timestamp is invalid',
   },
   partnerDetail: {
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]: 'Optional customer GPS distance evidence',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTooFar]:
+      'Customer current location was outside the service address gate',
     [BOOKING_CREATE_GATE_REASONS.preferredPartnerTooFar]: 'Partner was outside the first-pick distance gate',
     [BOOKING_CREATE_GATE_REASONS.addressOutsideServiceArea]:
       'Selected service address was outside enabled service area',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationStale]: 'Optional customer GPS evidence was stale',
-    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing]: 'Optional customer GPS evidence was missing',
+    [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationMissing]:
+      'Optional customer GPS evidence was missing',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampMissing]:
       'Optional customer GPS timestamp was missing',
     [BOOKING_CREATE_GATE_REASONS.customerCurrentLocationTimestampInvalid]:
@@ -88,7 +96,11 @@ export function bookingCreateGateReasonLabel(
   fallbackLabel?: (normalizedReason: string) => string,
 ) {
   const normalizedReason = normalizeBookingCreateGateReason(reasonCode);
-  return reasonLabels[variant][normalizedReason] ?? (fallbackLabel?.(normalizedReason) ?? fallbackReasonLabel(normalizedReason));
+  return (
+    reasonLabels[variant][normalizedReason] ??
+    fallbackLabel?.(normalizedReason) ??
+    fallbackReasonLabel(normalizedReason)
+  );
 }
 
 export function bookingCreateGateReasonFilter(reasonCode: string): BookingCreateGateFilter {
@@ -135,7 +147,7 @@ export function bookingCreateGateFilterLabel(filter: BookingCreateGateFilter) {
     return 'Optional GPS evidence';
   }
   if (filter === 'customer-distance') {
-    return 'Optional GPS distance';
+    return 'Customer distance gate';
   }
   if (filter === 'first-pick-distance') {
     return 'First-pick distance';

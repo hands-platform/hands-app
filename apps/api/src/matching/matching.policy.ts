@@ -7,7 +7,7 @@ export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;
 export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;
 export const DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES = 30;
 export const DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT = 50;
-export const DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM = 20;
+export const DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM = 50;
 export const DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM = 50;
 export const DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES = 10;
 
@@ -182,9 +182,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY,
     category: 'Booking',
-    label: 'Customer current-to-service address evidence',
+    label: 'Customer current-to-service address gate',
     description:
-      'Optional operations evidence comparing the customer current GPS with the confirmed service address. It does not block address-based booking creation.',
+      'When fresh customer GPS is available, booking creation is blocked if the selected service address is this far or farther from the customer current location.',
     value: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
     recommendedValue: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
     unit: 'km',

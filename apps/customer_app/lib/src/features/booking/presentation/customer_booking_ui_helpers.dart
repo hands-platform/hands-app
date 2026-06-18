@@ -347,11 +347,23 @@ Future<CustomerLocationSnapshot> resolveCustomerLocation(WidgetRef ref) async {
   final position = await ref.read(customerLocationProvider).currentPosition();
   final lat = position?.latitude;
   final lng = position?.longitude;
-  if (lat != null && lng != null && isVietnamCoordinate(lat, lng)) {
+  if (lat != null && lng != null) {
+    if (!isVietnamCoordinate(lat, lng)) {
+      return CustomerLocationSnapshot(
+        latitude: demoCustomerLat,
+        longitude: demoCustomerLng,
+        addressText: demoCustomerAddress,
+        isDemoLocation: true,
+        currentLatitude: lat,
+        currentLongitude: lng,
+      );
+    }
     return CustomerLocationSnapshot(
       latitude: lat,
       longitude: lng,
       addressText: 'Current GPS location',
+      currentLatitude: lat,
+      currentLongitude: lng,
     );
   }
   return const CustomerLocationSnapshot(

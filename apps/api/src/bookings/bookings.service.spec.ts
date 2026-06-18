@@ -157,7 +157,7 @@ describe('BookingsService booking creation', () => {
     );
   });
 
-  it('allows overseas app access while requiring a Vietnam service address snapshot', async () => {
+  it('rejects booking creation when fresh customer GPS is 50km or more from the service address', async () => {
     const addressSnapshot = {
       id: 'snapshot-1',
       bookingId: 'booking-1',
@@ -269,28 +269,33 @@ describe('BookingsService booking creation', () => {
         currentLocationUpdatedAt: new Date().toISOString(),
         paymentMethod: PaymentMethod.CASH,
       }),
-    ).resolves.toEqual(expect.objectContaining({ bookingId: 'booking-1', event: 'booking.opened' }));
+    ).rejects.toThrow("Booking address must be within 50km of the customer's current location");
 
-    const createArgs = prisma.booking.create.mock.calls[0][0];
-    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
-    expect(createArgs.data.addressSnapshot.create).toEqual(
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+    expect(matching.openBooking).not.toHaveBeenCalled();
+    expect(payments.buildAuthorization).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        addressText: 'District 1, Ho Chi Minh City, Vietnam',
-        latitude: 10.7769,
-        longitude: 106.7009,
-      }),
-    );
-    expect(createArgs.data.metadata.bookingGate).toEqual(
-      expect.objectContaining({
-        serviceArea: 'VIETNAM',
-        serviceAreaValid: true,
-        customerCurrentLocation: expect.objectContaining({
-          lat: 37.5665,
-          lng: 126.978,
+        data: expect.objectContaining({
+          action: 'booking.create.rejected',
+          target: 'customer:customer-1',
+          metadata: expect.objectContaining({
+            reasonCode: 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+            reason: "Booking address must be within 50km of the customer's current location",
+            serviceId: 'service-1',
+            customerProfileId: 'customer-1',
+            bookingAddress: expect.objectContaining({
+              lat: 10.7769,
+              lng: 106.7009,
+              addressText: 'District 1, Ho Chi Minh City, Vietnam',
+            }),
+            customerDistanceLimitMeters: 50000,
+            currentLocationRecordedAt: expect.any(String),
+          }),
         }),
       }),
     );
-    expect(createArgs.data.metadata.bookingGate.customerToBookingAddressDistanceMeters).toBeGreaterThan(
+    expect(prisma.adminAuditLog.create.mock.calls[0][0].data.metadata.customerDistanceMeters).toBeGreaterThan(
       1_000_000,
     );
   });
@@ -584,7 +589,9 @@ describe('BookingsService final partner selection', () => {
       {} as never,
     );
 
-    await expect(service.selectProvider('booking-1', 'customer-user-1', 'marketplace-partner')).resolves.toEqual(
+    await expect(
+      service.selectProvider('booking-1', 'customer-user-1', 'marketplace-partner'),
+    ).resolves.toEqual(
       expect.objectContaining({
         bookingId: 'booking-1',
         event: 'booking.matched',
@@ -1363,7 +1370,9 @@ describe('BookingsService partner response wallet gates', () => {
           chatRoom: { upsert: { create: {}, update: {} } },
           participants: {
             update: {
-              where: { bookingId_providerProfileId: { bookingId: 'booking-1', providerProfileId: 'partner-1' } },
+              where: {
+                bookingId_providerProfileId: { bookingId: 'booking-1', providerProfileId: 'partner-1' },
+              },
               data: { status: ParticipantStatus.SELECTED, respondedAt: expect.any(Date) },
             },
           },

@@ -28,9 +28,9 @@ describe('buildBookingGateRejectionLane', () => {
       title: 'Blocked booking attempts',
       tone: 'warn',
     });
-    expect(lane.detail).toContain('1 optional GPS distance');
+    expect(lane.detail).toContain('1 customer distance');
     expect(lane.metrics.map((metric) => [metric.label, metric.value])).toEqual([
-      ['Optional GPS evidence', '1'],
+      ['Customer distance gate', '1'],
       ['First-pick distance', '1'],
       ['Service area', '1'],
       ['Optional GPS evidence attempts', '1'],

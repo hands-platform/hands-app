@@ -45,19 +45,21 @@ void main() {
     expect(message, contains('confirmed Vietnam service address'));
   });
 
-  test('maps legacy customer distance errors as service pin guidance', () {
+  test('maps customer distance booking gate errors as service address guidance',
+      () {
     final message = customerBookingErrorMessage(
       ApiException(
         400,
         {
           'message':
-              'Customer current location must be within 10km of the booking address',
+              "Booking address must be within 50km of the customer's current location",
         },
       ),
     );
 
-    expect(message, contains('optional GPS evidence do not match'));
-    expect(message, contains('service pin'));
+    expect(message, contains('browse partners from anywhere'));
+    expect(message, contains('within 50km'));
+    expect(message, contains('selected service address'));
   });
 
   test('maps preferred partner distance booking gate errors', () {

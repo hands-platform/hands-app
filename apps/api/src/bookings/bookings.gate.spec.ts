@@ -9,6 +9,7 @@ import {
   bookingDistanceGateLimits,
   bookingDistanceGateSnapshot,
   bookingGateRejectionAuditCreateInput,
+  customerCurrentLocationBookingDistanceGateError,
   normalizeBookingAttemptCurrentLocation,
   preferredProviderBookingDistanceGateError,
 } from './bookings.gate';
@@ -92,9 +93,21 @@ describe('booking gate helpers', () => {
     ).toBeNull();
   });
 
+  it('flags fresh customer current locations too far from the booking address', () => {
+    expect(customerCurrentLocationBookingDistanceGateError(null, policy())).toBeNull();
+    expect(customerCurrentLocationBookingDistanceGateError(49_900, policy())).toBeNull();
+    expect(customerCurrentLocationBookingDistanceGateError(50_000, policy())).toEqual({
+      limitMeters: 50000,
+      message: "Booking address must be within 50km of the customer's current location",
+    });
+    expect(
+      customerCurrentLocationBookingDistanceGateError(50_000, policy({ bookingDistanceGateEnabled: false })),
+    ).toBeNull();
+  });
+
   it('converts booking gate policy distances to meters', () => {
     expect(bookingDistanceGateLimits(policy())).toEqual({
-      customerDistanceLimitMeters: 20000,
+      customerDistanceLimitMeters: 50000,
       preferredProviderDistanceLimitMeters: 50000,
     });
   });
@@ -138,7 +151,7 @@ describe('booking gate helpers', () => {
         ageMinutes: 5.12,
       },
       customerToBookingAddressDistanceMeters: 420,
-      customerDistanceLimitMeters: 20000,
+      customerDistanceLimitMeters: 50000,
       preferredProviderId: 'partner-1',
       preferredProviderLocation: {
         lat: 10.77,
@@ -189,7 +202,7 @@ describe('booking gate helpers', () => {
         addressText: 'District 1, Ho Chi Minh City, Vietnam',
         customerDistanceMeters: null,
         preferredProviderDistanceMeters: 60000,
-        customerDistanceLimitMeters: 20000,
+        customerDistanceLimitMeters: 50000,
         preferredProviderDistanceLimitMeters: 50000,
         currentLocationRecordedAt: new Date('2026-06-11T00:00:00.000Z'),
       }),
@@ -211,7 +224,7 @@ describe('booking gate helpers', () => {
           },
           customerDistanceMeters: null,
           preferredProviderDistanceMeters: 60000,
-          customerDistanceLimitMeters: 20000,
+          customerDistanceLimitMeters: 50000,
           preferredProviderDistanceLimitMeters: 50000,
           currentLocationRecordedAt: '2026-06-11T00:00:00.000Z',
         },
@@ -228,7 +241,7 @@ function policy(overrides: Partial<MatchingPolicy> = {}): MatchingPolicy {
     backupProviderRadiusMeters: 12000,
     bookingCurrentLocationFreshnessMinutes: 10,
     bookingDistanceGateEnabled: true,
-    bookingMaxCustomerCurrentToAddressKm: 20,
+    bookingMaxCustomerCurrentToAddressKm: 50,
     bookingMaxPreferredProviderDistanceKm: 50,
     bookingServiceAreaRequired: true,
     preferredAcceptMode: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,

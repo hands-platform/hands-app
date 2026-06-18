@@ -58,14 +58,14 @@ const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDeta
   },
   [OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm]: {
     area: 'Booking create gate',
-    title: 'Records optional customer GPS-to-service-address evidence',
+    title: 'Blocks distant customer GPS-to-service-address attempts',
     detail:
-      'Optional customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
+      'When fresh customer GPS is available, booking creation is blocked if the selected service address is this far or farther from the customer current location.',
     saveChecks: [
       {
-        label: 'Optional GPS rows',
+        label: 'Distance reject rows',
         detail:
-          'Review historical rejected booking attempts where optional customer GPS evidence looked far from the booking address.',
+          'Review rejected booking attempts where the customer current GPS was too far from the selected service address.',
         href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
       },
       {
@@ -97,13 +97,13 @@ const BOOKING_CREATE_GATE_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDeta
   },
   [OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes]: {
     area: 'Booking create gate',
-    title: 'Records optional current customer GPS freshness',
+    title: 'Controls current customer GPS freshness for the distance gate',
     detail:
-      'The app may attach recent customer GPS evidence when available. Booking must not require current GPS; the confirmed Vietnam service address remains the authority.',
+      'The app may attach recent customer GPS evidence when available. Fresh GPS can block distant selected service addresses; stale or missing GPS does not replace the confirmed service address.',
     saveChecks: [
       {
-        label: 'Optional GPS evidence rows',
-        detail: 'Review historical GPS-related rows as support evidence, not as a current booking blocker.',
+        label: 'GPS distance gate rows',
+        detail: 'Review GPS-related blocked booking attempts before changing the freshness window.',
         href: '/bookings?view=blocked-create',
       },
       {
@@ -404,7 +404,8 @@ const NOTIFICATION_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = 
       },
       {
         label: 'Setup checklist',
-        detail: 'Verify FCM project IDs, server credentials, and mobile config files are ready before enabling external push.',
+        detail:
+          'Verify FCM project IDs, server credentials, and mobile config files are ready before enabling external push.',
         href: '/setup',
       },
     ],
@@ -438,17 +439,14 @@ const FALLBACK_POLICY_IMPACT_DETAILS: PolicyImpactDetails = {
 };
 
 const POLICY_IMPACT_DETAIL_ALIASES: Record<string, string> = {
-  [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]:
-    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+  [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]: LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
   [OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]:
     LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
   [OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]:
     LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
-  [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]:
-    LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+  [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]: LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
 };
 
 function policyImpactDetailsKey(key: string) {
   return POLICY_IMPACT_DETAIL_ALIASES[key] ?? key;
 }
-
