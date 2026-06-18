@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ClipboardList, ExternalLink, MessageSquare } from 'lucide-react';
 import { AdminDataTable } from '../../components/admin-data-table';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 import type { BookingHandoffQueueRow } from './operations-handoff-booking-queue';
 
@@ -57,12 +58,26 @@ export function OperationsHandoffBookingQueueSection({
                 <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
               </td>
               <td>
-                <div>{booking.customerName}</div>
-                <small className="muted">{booking.customerPhone}</small>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-customer"
+                  avatarStatus={booking.customerAvatarStatus}
+                  className="vuexy-booking-person"
+                  helper={booking.customerPhone}
+                  href={booking.customerHref}
+                  label={booking.customerName}
+                  linkClassName="table-link"
+                />
               </td>
               <td>
-                <div>{booking.partnerName}</div>
-                <small className="muted">{booking.partnerDetail}</small>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={booking.partnerAvatarStatus}
+                  className="vuexy-booking-person"
+                  helper={booking.partnerDetail}
+                  href={booking.partnerHref}
+                  label={booking.partnerName}
+                  linkClassName="table-link"
+                />
               </td>
               <td>
                 <span className={booking.statusClass}>{booking.status}</span>

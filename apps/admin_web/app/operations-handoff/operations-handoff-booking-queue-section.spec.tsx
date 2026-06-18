@@ -9,11 +9,15 @@ describe('OperationsHandoffBookingQueueSection', () => {
           chatClass: 'pill pill-success',
           chatLabel: 'Chat archived',
           createdAt: '2026-06-14T00:00:00.000Z',
+          customerAvatarStatus: 'working',
+          customerHref: '/customers/customer-mai',
           customerName: 'Customer Mai',
           customerPhone: '+84900000001',
           id: 'booking-1234567890',
           nextAction: 'Open booking detail for the latest factual state.',
+          partnerAvatarStatus: 'working',
           partnerDetail: 'Selected Partner',
+          partnerHref: '/partners/partner-linh',
           partnerName: 'Partner Linh',
           paymentLabel: 'MOMO / CAPTURED / 150.000 VND',
           status: 'MATCHED',
@@ -36,10 +40,18 @@ describe('OperationsHandoffBookingQueueSection', () => {
         '/bookings?view=attention',
         '/chat-archive',
         '/bookings/booking-1234567890',
+        '/customers/customer-mai',
+        '/partners/partner-linh',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'admin-avatar-status-dot is-working',
+        'admin-table-scroll',
+        'table-link',
+        'table vuexy-data-table',
+        'vuexy-booking-person',
+      ]),
     );
   });
 

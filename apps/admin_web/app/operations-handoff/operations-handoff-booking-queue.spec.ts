@@ -13,7 +13,7 @@ describe('operations handoff booking queue model', () => {
           id: 'active-open',
           status: 'OPEN_MATCHING',
           updatedAt: '2026-06-14T10:00:00.000Z',
-          preferredProvider: { displayName: 'Provider Linh' },
+          preferredProvider: { displayName: 'Provider Linh', id: 'partner-linh' },
           participants: [
             {
               id: 'participant-backup',
@@ -32,7 +32,7 @@ describe('operations handoff booking queue model', () => {
           id: 'recent-completed',
           status: 'COMPLETED',
           updatedAt: '2026-06-14T09:30:00.000Z',
-          selectedProvider: { displayName: 'Partner Mai' },
+          selectedProvider: { displayName: 'Partner Mai', id: 'partner-mai', status: 'ONLINE_AVAILABLE' },
           chatRoom: { id: 'chat-1' },
           earning: {
             bookingId: 'recent-completed',
@@ -58,14 +58,21 @@ describe('operations handoff booking queue model', () => {
     expect(rows.map((row) => row.id)).toEqual(['active-open', 'recent-completed']);
     expect(rows[0]).toMatchObject({
       chatLabel: 'Chat not created',
+      customerAvatarStatus: 'matching',
+      customerHref: '/customers/customer-a',
+      partnerAvatarStatus: 'matching',
       partnerDetail: 'Preferred Partner / 1 participant(s)',
+      partnerHref: '/partners/partner-linh',
       partnerName: 'Partner Linh',
       paymentLabel: 'CASH / AUTHORIZED / 150.000 VND',
       statusClass: 'pill pill-warn',
     });
     expect(rows[1]).toMatchObject({
       chatLabel: 'Chat archived',
+      customerAvatarStatus: 'offline',
       partnerDetail: 'Selected Partner',
+      partnerAvatarStatus: 'online',
+      partnerHref: '/partners/partner-mai',
       walletLabel: 'Wallet effect -50.000 VND',
     });
   });
@@ -91,6 +98,7 @@ function booking(input: Partial<AdminBooking>): AdminBooking {
   return {
     createdAt: '2026-06-14T08:00:00.000Z',
     customerProfile: {
+      id: 'customer-a',
       user: {
         fullName: 'Customer A',
         phone: '+84900000001',

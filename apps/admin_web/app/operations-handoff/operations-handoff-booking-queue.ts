@@ -1,4 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
+import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { formatMoney } from '../../lib/admin-format';
 
@@ -36,8 +37,12 @@ export function buildBookingHandoffQueue(
         id: booking.id,
         createdAt: booking.createdAt,
         updatedAt: booking.updatedAt,
+        customerAvatarStatus: bookingCustomerHandoffAvatarStatus(booking),
+        customerHref: booking.customerProfile?.id ? `/customers/${booking.customerProfile.id}` : null,
         customerName: booking.customerProfile?.user?.fullName ?? 'Customer',
         customerPhone: booking.customerProfile?.user?.phone ?? '-',
+        partnerAvatarStatus: bookingPartnerHandoffAvatarStatus(booking),
+        partnerHref: bookingPartnerHref(booking),
         partnerName: operatorDisplayText(bookingPartnerName(booking)),
         partnerDetail: selectedPartner
           ? 'Selected Partner'
@@ -98,6 +103,40 @@ function bookingNextAction(booking: AdminBooking) {
   if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED')
     return 'Check payment release, refund, and customer notice.';
   return 'Open booking detail for the latest factual state.';
+}
+
+function bookingCustomerHandoffAvatarStatus(booking: AdminBooking): AdminAvatarStatus {
+  return bookingActiveAvatarStatus(booking);
+}
+
+function bookingPartnerHandoffAvatarStatus(booking: AdminBooking): AdminAvatarStatus {
+  const activeStatus = bookingActiveAvatarStatus(booking);
+  if (activeStatus !== 'offline') {
+    return activeStatus;
+  }
+  const partnerStatus = booking.selectedProvider?.status ?? booking.preferredProvider?.status;
+  if (partnerStatus === 'ONLINE_BUSY') {
+    return 'working';
+  }
+  if (partnerStatus === 'ONLINE_AVAILABLE' || partnerStatus === 'ONLINE_AVAILABLE_SOON') {
+    return 'online';
+  }
+  return 'offline';
+}
+
+function bookingActiveAvatarStatus(booking: AdminBooking): AdminAvatarStatus {
+  if (booking.status === 'OPEN_MATCHING') {
+    return 'matching';
+  }
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    return 'working';
+  }
+  return 'offline';
+}
+
+function bookingPartnerHref(booking: AdminBooking) {
+  const partnerId = booking.selectedProvider?.id ?? booking.preferredProvider?.id;
+  return partnerId ? `/partners/${partnerId}` : null;
 }
 
 function recentlyChangedWithin(value: string | null | undefined, nowMs: number, minutes = 120) {
