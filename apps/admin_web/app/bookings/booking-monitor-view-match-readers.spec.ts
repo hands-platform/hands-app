@@ -73,4 +73,26 @@ describe('bookingMonitorViewMatchReadersFromBooking', () => {
     expect(readers.closeoutNeedsOps()).toBe(true);
     expect(readers.status()).toBe('EXPIRED');
   });
+
+  it('includes no-show bookings with match evidence in the post-match cancellation review reader', () => {
+    const readers = bookingMonitorViewMatchReadersFromBooking(
+      booking({
+        matchedAt: '2026-06-19T09:00:00.000Z',
+        selectedProviderId: 'partner-1',
+        status: 'NO_SHOW',
+      }),
+      opsReaders(),
+    );
+    const preMatchNoShowReaders = bookingMonitorViewMatchReadersFromBooking(
+      booking({
+        matchedAt: null,
+        selectedProviderId: null,
+        status: 'NO_SHOW',
+      }),
+      opsReaders(),
+    );
+
+    expect(readers.postMatchCancellation()).toBe(true);
+    expect(preMatchNoShowReaders.postMatchCancellation()).toBe(false);
+  });
 });

@@ -31,7 +31,7 @@ export function bookingMonitorViewMatchReadersFromBooking(
     chatRepairNeedsOps: () => bookingChatRepairNeedsOps(booking),
     noSupply: () => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
     postMatchCancellation: () =>
-      booking.status === 'CANCELLED' &&
+      (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') &&
       Boolean(booking.matchedAt || booking.selectedProviderId || booking.selectedProvider),
     status: () => booking.status,
   };
