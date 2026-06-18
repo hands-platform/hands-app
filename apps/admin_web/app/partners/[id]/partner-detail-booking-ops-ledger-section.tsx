@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 
 export type PartnerBookingOpsLedgerRow = {
   id: string;
@@ -22,6 +22,15 @@ type PartnerDetailBookingOpsLedgerSectionProps = {
   statusPillClass: (status?: string) => string;
 };
 
+const PARTNER_BOOKING_OPS_LEDGER_HEADERS = [
+  'Booking',
+  'Relation',
+  'Manual notes',
+  'Staff tasks',
+  'Closeout context',
+  'Open',
+] as const;
+
 export function PartnerDetailBookingOpsLedgerSection({
   rows,
   statusPillClass,
@@ -39,52 +48,40 @@ export function PartnerDetailBookingOpsLedgerSection({
         <span className="pill pill-info">{rows.length} booking note row(s)</span>
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Relation</th>
-              <th>Manual notes</th>
-              <th>Staff tasks</th>
-              <th>Closeout context</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.id}-${row.relation}`}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>{row.relation}</td>
-                <td>
-                  <strong>{row.noteStatus}</strong>
-                  <p className="muted">{row.noteDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.taskStatus}</strong>
-                  <p className="muted">{row.taskDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.closeoutStatus}</strong>
-                  <p className="muted">{row.closeoutDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
+        <AdminDataTable emptyMessage={null} headers={PARTNER_BOOKING_OPS_LEDGER_HEADERS} rowCount={rows.length}>
+          {rows.map((row) => (
+            <tr key={`${row.id}-${row.relation}`}>
+              <td>
+                <strong>{row.bookingLabel}</strong>
+                <p className="muted">{row.serviceLabel}</p>
+                <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
+              </td>
+              <td>{row.relation}</td>
+              <td>
+                <strong>{row.noteStatus}</strong>
+                <p className="muted">{row.noteDetail}</p>
+              </td>
+              <td>
+                <strong>{row.taskStatus}</strong>
+                <p className="muted">{row.taskDetail}</p>
+              </td>
+              <td>
+                <strong>{row.closeoutStatus}</strong>
+                <p className="muted">{row.closeoutDetail}</p>
+              </td>
+              <td>
+                <Link className="text-link" href={`/bookings/${row.id}`}>
+                  Booking
+                </Link>
+                {row.chatHref ? (
+                  <Link className="text-link admin-ml-10" href={row.chatHref}>
+                    Chat
                   </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link admin-ml-10" href={row.chatHref}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
       {rows.length === 0 ? (
         <p className="muted admin-mt-12">

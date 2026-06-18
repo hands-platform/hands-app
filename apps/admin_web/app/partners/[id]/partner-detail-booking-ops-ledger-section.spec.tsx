@@ -1,0 +1,121 @@
+import { PartnerDetailBookingOpsLedgerSection } from './partner-detail-booking-ops-ledger-section';
+
+describe('PartnerDetailBookingOpsLedgerSection', () => {
+  it('renders booking operation notes with shared table styling and links', () => {
+    const section = PartnerDetailBookingOpsLedgerSection({
+      rows: [
+        {
+          bookingLabel: 'BK-1001 / 9 Jun 2026',
+          chatHref: '/chat-archive?q=BK-1001',
+          closeoutDetail: 'Admin confirmed no-show evidence.',
+          closeoutStatus: 'Closeout reviewed',
+          id: 'BK-1001',
+          noteDetail: 'Partner reported customer unavailable.',
+          noteStatus: 'Manual note saved',
+          relation: 'Selected',
+          serviceLabel: 'Deep tissue',
+          status: 'COMPLETED',
+          taskDetail: 'Review retained chat transcript.',
+          taskStatus: 'Evidence task',
+        },
+      ],
+      statusPillClass: (status) => (status === 'COMPLETED' ? 'pill-success' : 'pill-neutral'),
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Booking operations note ledger');
+    expect(rendered).toContain('1 booking note row(s)');
+    expect(rendered).toContain('BK-1001 / 9 Jun 2026');
+    expect(rendered).toContain('Manual note saved');
+    expect(rendered).toContain('Evidence task');
+    expect(rendered).toContain('Closeout reviewed');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'text-link admin-ml-10',
+        'pill pill-success',
+      ]),
+    );
+  });
+
+  it('renders the existing empty message outside the table', () => {
+    const section = PartnerDetailBookingOpsLedgerSection({
+      rows: [],
+      statusPillClass: () => 'pill-neutral',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('0 booking note row(s)');
+    expect(rendered).toContain(
+      'No booking-level operation notes or staff tasks matched this partner date filter.',
+    );
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
