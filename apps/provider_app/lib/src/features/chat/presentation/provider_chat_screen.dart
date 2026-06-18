@@ -39,7 +39,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   double? lastSharedLat;
   double? lastSharedLng;
   DateTime? lastSharedAt;
+  Map<String, dynamic>? currentBooking;
   bool loading = false;
+  bool cancellationSubmitting = false;
 
   @override
   void initState() {
@@ -197,6 +199,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() {
       chatRoomId = roomId;
       this.bookingId = bookingId ?? bookingContext?['id']?.toString();
+      currentBooking = bookingContext;
       customerLat = providerChatCustomerLatitude(bookingContext);
       customerLng = providerChatCustomerLongitude(bookingContext);
       messages = loadedMessages;
@@ -230,6 +233,69 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     messageController.clear();
     ref.read(providerRepositoryProvider).sendChatMessage(roomId, text);
+  }
+
+  Future<void> requestPostMatchCancellation() async {
+    final activeBookingId = bookingId;
+    if (activeBookingId == null || !isPostMatchCancellationAvailable) {
+      return;
+    }
+
+    final note = await _showCancellationReasonDialog();
+    if (note == null || note.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      cancellationSubmitting = true;
+      error = null;
+      statusMessage = null;
+    });
+    try {
+      final result = await ref
+          .read(providerRepositoryProvider)
+          .cancelBooking(activeBookingId, note: note);
+      final cancellation = asMap(result['postMatchCancellation']);
+      final autoApproved = cancellation?['autoApproved'] == true;
+      final adminReviewRequired =
+          cancellation?['adminReviewRequired'] == true || !autoApproved;
+      setState(() {
+        currentBooking = {
+          ...?currentBooking,
+          'id': activeBookingId,
+          'status': 'CANCELLED',
+        };
+        statusMessage = autoApproved
+            ? 'Cancellation approved automatically. This booking is now closed.'
+            : adminReviewRequired
+                ? 'Cancellation sent to HANDS operations for review. The chat and your note will stay available for admin review.'
+                : 'Cancellation request sent.';
+      });
+    } catch (exception) {
+      setState(() => error = providerAppErrorMessage(exception));
+    } finally {
+      if (mounted) {
+        setState(() => cancellationSubmitting = false);
+      }
+    }
+  }
+
+  bool get isPostMatchCancellationAvailable {
+    final status = currentBooking?['status']?.toString();
+    return bookingId != null &&
+        {
+          'MATCHED',
+          'PROVIDER_ON_THE_WAY',
+          'ARRIVED',
+          'IN_SERVICE',
+        }.contains(status);
+  }
+
+  Future<String?> _showCancellationReasonDialog() async {
+    return showDialog<String>(
+      context: context,
+      builder: (_) => const _CancellationReasonDialog(),
+    );
   }
 
   Future<void> shareLocation() async {
@@ -317,6 +383,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               icon: const Icon(Icons.my_location_outlined),
               label: const Text('Share current location'),
             ),
+            if (isPostMatchCancellationAvailable) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: cancellationSubmitting || loading
+                    ? null
+                    : requestPostMatchCancellation,
+                icon: cancellationSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cancel_schedule_send_outlined),
+                label: const Text('Cancel this booking'),
+              ),
+            ],
             const SizedBox(height: 8),
             if (messages.isEmpty)
               const InfoCard(
@@ -363,6 +445,72 @@ class MessageTile extends StatelessWidget {
         title: Text(message['body']?.toString() ?? ''),
         subtitle: Text(sender?['fullName']?.toString() ?? 'Sender'),
       ),
+    );
+  }
+}
+
+class _CancellationReasonDialog extends StatefulWidget {
+  const _CancellationReasonDialog();
+
+  @override
+  State<_CancellationReasonDialog> createState() =>
+      _CancellationReasonDialogState();
+}
+
+class _CancellationReasonDialogState extends State<_CancellationReasonDialog> {
+  final controller = TextEditingController();
+  String? validationMessage;
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Cancel this booking?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Add a clear reason. HANDS operations may review this chat before restoring any affected commission.',
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: 'Cancellation reason',
+              errorText: validationMessage,
+            ),
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 1000,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Keep booking'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final note = controller.text.trim();
+            if (note.isEmpty) {
+              setState(() {
+                validationMessage = 'Write the reason before cancelling.';
+              });
+              return;
+            }
+            Navigator.of(context).pop(note);
+          },
+          child: const Text('Send cancellation'),
+        ),
+      ],
     );
   }
 }

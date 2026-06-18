@@ -88,6 +88,66 @@ void main() {
     expect(find.text('KYC approval required'), findsOneWidget);
     expect(find.textContaining('ApiException'), findsNothing);
   });
+
+  testWidgets('sends post-match cancellation from the chat screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bookingRepository = _CancellableBookingRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              _FakeProviderProfileRepository(),
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChatScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Open latest chat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancel this booking'), findsOneWidget);
+    await tester.tap(find.text('Cancel this booking'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Cancellation reason'),
+      'Customer asked to change the appointment after matching.',
+    );
+    await tester.tap(find.text('Send cancellation'));
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.cancelledBookingId, 'booking-chat-ready');
+    expect(
+      bookingRepository.cancellationNote,
+      'Customer asked to change the appointment after matching.',
+    );
+    expect(find.textContaining('HANDS operations for review'), findsOneWidget);
+  });
 }
 
 class _FakeAuthRepository implements AuthRepository {
@@ -178,6 +238,13 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
 
   @override
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
+
+  @override
+  Future<Map<String, dynamic>> cancelBooking(
+    String bookingId, {
+    required String note,
+  }) async =>
+      {};
 }
 
 class _FakeProviderProfileRepository implements ProviderProfileRepository {
@@ -257,6 +324,48 @@ class _ChatReadyBookingRepository implements ProviderBookingRepository {
 
   @override
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
+
+  @override
+  Future<Map<String, dynamic>> cancelBooking(
+    String bookingId, {
+    required String note,
+  }) async =>
+      {};
+}
+
+class _CancellableBookingRepository extends _ChatReadyBookingRepository {
+  String? cancelledBookingId;
+  String? cancellationNote;
+
+  @override
+  Future<List<dynamic>> listBookings() async => [
+        {
+          'id': 'booking-chat-ready',
+          'status': 'MATCHED',
+          'chatRoom': {'id': 'chat-room-1'},
+          'addressSnapshot': {
+            'latitude': 10.7769,
+            'longitude': 106.7009,
+          },
+        },
+      ];
+
+  @override
+  Future<Map<String, dynamic>> cancelBooking(
+    String bookingId, {
+    required String note,
+  }) async {
+    cancelledBookingId = bookingId;
+    cancellationNote = note;
+    return {
+      'id': bookingId,
+      'status': 'CANCELLED',
+      'postMatchCancellation': {
+        'autoApproved': false,
+        'adminReviewRequired': true,
+      },
+    };
+  }
 }
 
 class _FakeChatRepository implements ChatRepository {

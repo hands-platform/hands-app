@@ -141,6 +141,13 @@ class ProviderRepository {
     return _bookingRepository.startBooking(bookingId);
   }
 
+  Future<Map<String, dynamic>> cancelBooking(
+    String bookingId, {
+    required String note,
+  }) async {
+    return _bookingRepository.cancelBooking(bookingId, note: note);
+  }
+
   Future<List<dynamic>> listChatMessages(String chatRoomId) async {
     return _chatRepository.listChatMessages(chatRoomId);
   }
