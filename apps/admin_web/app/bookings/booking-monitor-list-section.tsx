@@ -327,7 +327,12 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
       <td>
         <strong>{stateChange.label}</strong>
         <div className="muted admin-mt-6">{stateChange.dateLabel}</div>
-        {row.closureState && <div className="muted admin-mt-6">{row.closureState.detail}</div>}
+        {row.closureState && (
+          <div className="vuexy-booking-closure-evidence">
+            <span className={`pill ${row.closureState.tone}`}>{row.closureState.label}</span>
+            <div className="muted">{row.closureState.detail}</div>
+          </div>
+        )}
       </td>
     </tr>
   );

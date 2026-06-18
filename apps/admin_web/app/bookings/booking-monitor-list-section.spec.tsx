@@ -286,9 +286,41 @@ describe('BookingMonitorListSection', () => {
 
     expect(markup.indexOf('Newer Customer')).toBeLessThan(markup.indexOf('Older Customer'));
   });
+
+  it('renders closure evidence for post-match cancellation rows', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[
+          bookingRowFixture({
+            closureState: {
+              detail: 'admin closure / Provider Cancelled / Partner cancelled from chat.',
+              label: 'Closed 13 Jun 2026, 03:20',
+              tone: 'pill-info',
+            },
+            customerName: 'Cancel Customer',
+            id: 'booking_cancelled_after_match',
+            openedDateLabel: '13 Jun 2026, 03:00',
+            status: 'CANCELLED',
+            statusChangedAt: '2026-06-13T03:20:00.000Z',
+          }),
+        ]}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).toContain('Closed 13 Jun 2026, 03:20');
+    expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
+    expect(markup).toContain('vuexy-booking-closure-evidence');
+    expect(markup).toContain('pill-info');
+  });
 });
 
 function bookingRowFixture(input: {
+  readonly closureState?: BookingMonitorListRow['closureState'];
   readonly customerName: string;
   readonly id: string;
   readonly openedDateLabel: string;
@@ -308,9 +340,10 @@ function bookingRowFixture(input: {
       },
     },
     id: input.id,
+    selectedProviderId: input.status === 'CANCELLED' ? `${input.id}_partner` : null,
     status: input.status,
     statusChangedAt: input.statusChangedAt,
-    statusChangedLabel: 'Completed at',
+    statusChangedLabel: input.status === 'CANCELLED' ? 'Partner cancelled at' : 'Completed at',
   } as unknown as AdminBooking;
 
   return {
@@ -339,7 +372,7 @@ function bookingRowFixture(input: {
       label: 'Clear',
       tone: 'signal-success',
     },
-    closureState: null,
+    closureState: input.closureState ?? null,
     commandDecisionStrip: {
       primaryAction: 'Review closeout',
       primaryDetail: 'Check retained booking evidence.',

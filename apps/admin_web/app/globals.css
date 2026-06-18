@@ -1747,6 +1747,12 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
+.vuexy-booking-closure-evidence {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
 .vuexy-booking-table-footer {
   align-items: center;
   border-top: 1px solid var(--admin-border);
