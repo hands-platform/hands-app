@@ -32,6 +32,9 @@ type NotificationTableRowItemProps = {
 };
 
 export function NotificationTableRowItem({ row }: NotificationTableRowItemProps) {
+  const personLabel = row.partnerLabel ?? row.userLabel;
+  const personHelper = notificationPersonHelper(row);
+
   return (
     <tr id={row.id}>
       <td>
@@ -43,24 +46,11 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
           avatarClassName={`vuexy-booking-avatar${row.partnerHref ? ' is-partner' : ''}`}
           avatarStatus={row.userAvatarStatus}
           className="vuexy-booking-person"
-          helper={row.userPhone}
+          helper={personHelper}
           href={row.userHref}
-          label={row.userLabel}
+          label={personLabel}
           linkClassName="table-link"
         />
-        {row.partnerHref && row.partnerLabel ? (
-          <div className="admin-mt-8">
-            <AdminPersonCell
-              avatarClassName="vuexy-booking-avatar is-partner"
-              avatarStatus={row.userAvatarStatus}
-              className="vuexy-booking-person notification-partner-context"
-              helper={row.partnerStatus ?? 'status unknown'}
-              href={row.partnerHref}
-              label={row.partnerLabel}
-              linkClassName="table-link"
-            />
-          </div>
-        ) : null}
       </td>
       <td>
         <div>{row.typeLabel}</div>
@@ -83,4 +73,11 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
       </td>
     </tr>
   );
+}
+
+function notificationPersonHelper(row: NotificationTableRow) {
+  if (!row.partnerLabel) {
+    return row.userPhone;
+  }
+  return [row.userLabel, row.userPhone, row.partnerStatus].filter(Boolean).join(' / ');
 }

@@ -47,7 +47,7 @@ describe('NotificationsTableSection', () => {
         'admin-action-dropdown action-menu-dropdown',
         'admin-action-menu action-menu-panel',
         'admin-action-item',
-        'vuexy-booking-person notification-partner-context',
+        'vuexy-booking-person',
         'notification-delivery-attempt admin-mb-10',
         'admin-avatar-status-dot is-app-deleted',
         'pill pill-warn',
