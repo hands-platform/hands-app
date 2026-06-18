@@ -48,6 +48,7 @@ describe('NotificationsTableSection', () => {
         'admin-action-menu action-menu-panel',
         'admin-action-item',
         'notification-delivery-attempt admin-mb-10',
+        'admin-avatar-status-dot is-app-deleted',
         'pill pill-warn',
       ]),
     );
@@ -211,6 +212,8 @@ function buildRow(): NotificationTableRow {
     title: 'Booking Created',
     typeLabel: 'Booking Created',
     typeMeaning: 'Booking lifecycle alert',
+    userAvatarStatus: 'app-deleted',
+    userHref: '/partners/partner-1',
     userLabel: 'Linh Partner',
     userPhone: '+84900000000',
   };

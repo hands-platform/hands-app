@@ -2,6 +2,11 @@ import type { AdminNotification, AdminOperationalPolicySetting } from '../../lib
 import type { AdminPageMetric } from '../../components/admin-page-template';
 import type { ActionMenuItem } from '../../components/action-menu';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
+import {
+  adminAvatarStatusFromSignals,
+  type AdminAvatarPushDeviceSignal,
+  type AdminAvatarStatus,
+} from '../../lib/admin-avatar-status';
 import { formatDateTime, formatRelativeTime, shortId } from '../../lib/admin-format';
 import {
   isStaleNotificationPushDeviceDelivery,
@@ -299,10 +304,40 @@ export function buildNotificationTableRows(
       title: marketplaceDisplayText(notification.title),
       typeLabel: marketplaceDisplayText(humanizeType(notification.type)),
       typeMeaning: typeMeaning(notification.type),
+      userAvatarStatus: notificationUserAvatarStatus(notification),
+      userHref: notificationUserHref(notification),
       userLabel: notificationUserLabel(notification),
       userPhone: notification.user?.phone ?? 'No phone on file',
     };
   });
+}
+
+function notificationUserHref(notification: AdminNotification) {
+  const providerId = notification.user?.providerProfile?.id;
+  if (providerId) {
+    return `/partners/${providerId}`;
+  }
+  const customerId = notification.user?.customerProfile?.id;
+  return customerId ? `/customers/${customerId}` : null;
+}
+
+function notificationUserAvatarStatus(notification: AdminNotification): AdminAvatarStatus {
+  return adminAvatarStatusFromSignals({
+    devices: notificationAvatarDevices(notification),
+  });
+}
+
+function notificationAvatarDevices(notification: AdminNotification): AdminAvatarPushDeviceSignal[] {
+  const devices: AdminAvatarPushDeviceSignal[] = [...(notification.user?.pushDevices ?? [])];
+  for (const delivery of notification.deliveries ?? []) {
+    if (delivery.pushDevice) {
+      devices.push({
+        ...delivery.pushDevice,
+        deliveries: [{ response: delivery.response, status: delivery.status }],
+      });
+    }
+  }
+  return devices;
 }
 
 function notificationPartnerLabel(
