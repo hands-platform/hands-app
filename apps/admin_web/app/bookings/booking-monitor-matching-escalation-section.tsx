@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-matching-policy-cards';
@@ -25,6 +26,14 @@ type BookingMonitorMatchingEscalationSectionProps = {
   readonly matchingEscalationRows: readonly BookingMatchingEscalationRow<AdminBooking>[];
   readonly matchingFlowTimeline: readonly BookingMatchingFlowStep<AdminBooking>[];
 };
+
+const MATCHING_EXCEPTION_TABLE_HEADERS = [
+  'Booking',
+  'Exception',
+  'Signal',
+  'Operator Action',
+  'Evidence Tags',
+] as const;
 
 export function BookingMonitorMatchingEscalationSection({
   dispatchPartnerShortcuts,
@@ -64,8 +73,8 @@ export function BookingMonitorMatchingEscalationSection({
         <div>
           <h3>Applied operations policy</h3>
           <p className="muted">
-            Live Admin policy values used as the default when a booking does not carry its own saved
-            matching snapshot.
+            Live Admin policy values used as the default when a booking does not carry its own saved matching
+            snapshot.
           </p>
         </div>
         <span className="pill pill-info">Live policy default</span>
@@ -158,30 +167,51 @@ export function BookingMonitorMatchingEscalationSection({
           </div>
         </div>
       )}
-      <div className="participant-list admin-mt-14">
-        {visibleMatchingEscalationRows.map((item) => (
-          <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
-            <div className="ops-section-header">
-              <div>
-                <p>
-                  {shortId(item.booking.id)} / {getCustomerLabel(item.booking)}
-                </p>
-                <h3>{item.title}</h3>
-              </div>
-              <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
-            </div>
-            <p className="muted">{item.detail}</p>
-            <p>{item.operatorAction}</p>
-            <div className="participant-list">
-              {item.tags.map((tag) => (
-                <span className="pill" key={`${item.booking.id}-${tag}`}>
-                  {tag}
-                </span>
+      {visibleMatchingEscalationRows.length > 0 && (
+        <div className="admin-mt-16">
+          <h3>Matching exception queue</h3>
+          <p className="muted">Actionable booking rows only; full evidence remains in booking detail.</p>
+          <AdminTableScroll>
+            <AdminDataTable
+              className="vuexy-booking-table admin-mt-12"
+              emptyMessage="No matching exceptions need row-level review."
+              headers={MATCHING_EXCEPTION_TABLE_HEADERS}
+              rowCount={visibleMatchingEscalationRows.length}
+            >
+              {visibleMatchingEscalationRows.map((item) => (
+                <tr key={`matching-${item.booking.id}`}>
+                  <td>
+                    <Link className="text-link" href={`/bookings/${item.booking.id}`}>
+                      {shortId(item.booking.id)}
+                    </Link>
+                    <div className="muted">{getCustomerLabel(item.booking)}</div>
+                    <div className="muted">{bookingServiceOptionLabel(item.booking)}</div>
+                  </td>
+                  <td>
+                    <strong>{item.title}</strong>
+                    <div className="muted">{item.detail}</div>
+                  </td>
+                  <td>
+                    <span className={`signal ${commandToneClass(item.tone)}`}>
+                      {commandToneLabel(item.tone)}
+                    </span>
+                  </td>
+                  <td>{item.operatorAction}</td>
+                  <td>
+                    <div className="participant-list">
+                      {item.tags.map((tag) => (
+                        <span className="pill" key={`${item.booking.id}-${tag}`}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </Link>
-        ))}
-      </div>
+            </AdminDataTable>
+          </AdminTableScroll>
+        </div>
+      )}
     </section>
   );
 }
