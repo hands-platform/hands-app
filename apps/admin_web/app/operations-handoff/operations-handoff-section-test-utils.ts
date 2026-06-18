@@ -60,7 +60,9 @@ function renderKnownComponent(record: Record<string, unknown> | null) {
   const component = record?.type;
   if (
     typeof component === 'function' &&
-    ['AdminDataTable', 'MetricCard'].includes(component.name)
+    ['AdminAvatar', 'AdminAvatarStatusDot', 'AdminDataTable', 'AdminPersonCell', 'MetricCard'].includes(
+      component.name,
+    )
   ) {
     return (component as RenderableComponent)(readRecord(record?.props) ?? {});
   }

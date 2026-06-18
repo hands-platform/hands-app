@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Briefcase, Users } from 'lucide-react';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { CustomerSignalRow, PartnerSignalRow } from './operations-handoff-signals';
 
 type OperationsHandoffCustomerPartnerSectionProps = {
@@ -36,8 +37,13 @@ export function OperationsHandoffCustomerPartnerSection({
             {visibleCustomers.map((customer) => (
               <Link className="ops-signal-card" href={`/customers/${customer.id}`} key={customer.id}>
                 <span className="pill pill-success">{customer.completedCount} completed</span>
-                <strong>{customer.name}</strong>
-                <p>{customer.detail}</p>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar"
+                  avatarStatus={customer.avatarStatus}
+                  className="vuexy-booking-person"
+                  helper={customer.detail}
+                  label={customer.name}
+                />
                 <small>{customer.lastWorkLabel}</small>
               </Link>
             ))}
@@ -61,8 +67,13 @@ export function OperationsHandoffCustomerPartnerSection({
             {visiblePartners.map((partner) => (
               <Link className="ops-signal-card" href={`/partners/${partner.id}`} key={partner.id}>
                 <span className={partner.className}>{partner.status}</span>
-                <strong>{partner.name}</strong>
-                <p>{partner.detail}</p>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={partner.avatarStatus}
+                  className="vuexy-booking-person"
+                  helper={partner.detail}
+                  label={partner.name}
+                />
                 <small>{partner.action}</small>
               </Link>
             ))}

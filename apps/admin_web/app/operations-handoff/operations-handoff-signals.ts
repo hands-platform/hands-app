@@ -5,6 +5,7 @@ import type {
   AdminCustomer,
   AdminProvider,
 } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { formatMoney, formatRelativeTime, shortDisplayId } from '../../lib/admin-format';
 
@@ -69,6 +70,10 @@ export function buildCustomerSignals(customers: readonly AdminCustomer[]) {
       return {
         id: customer.id,
         name: customer.user?.fullName ?? customer.user?.phone ?? 'Customer',
+        avatarStatus: adminAvatarStatusFromSignals({
+          devices: customer.user?.pushDevices,
+          sessions: customer.user?.appSessions,
+        }),
         completedCount: completed.length,
         detail: `${bookings.length} booking(s), ${formatMoney(paidAmount, 'VND')} payment total, ${
           customer.selectedLocations?.length ?? 0
@@ -105,6 +110,11 @@ export function buildPartnerSignals(
         name: operatorDisplayText(
           partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner',
         ),
+        avatarStatus: adminAvatarStatusFromSignals({
+          devices: partner.user?.pushDevices,
+          fallbackOnline: partner.status === 'ONLINE_AVAILABLE' || partner.status === 'ONLINE_AVAILABLE_SOON',
+          working: partner.status === 'ONLINE_BUSY',
+        }),
         status: posture.status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: posture.action,
