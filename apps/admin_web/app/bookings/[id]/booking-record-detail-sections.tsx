@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { type AdminChatMessage } from '../../../lib/admin-api';
@@ -212,11 +210,7 @@ export function BookingRecordDetailSections({
         <div className="card" id="customer">
           <div className="ops-section-header">
             <h2>Customer</h2>
-            {customerProfileId && (
-              <Link className="text-link" href={`/customers/${customerProfileId}`}>
-                Open customer record
-              </Link>
-            )}
+            {customerProfileId && <span className="pill pill-neutral">Linked in toolbar</span>}
           </div>
           <InfoRows rows={customerRows} />
         </div>
@@ -230,9 +224,7 @@ export function BookingRecordDetailSections({
           <div className="ops-section-header">
             <h2>Partner handoff</h2>
             {finalPartnerId ? (
-              <Link className="text-link" href={`/partners/${finalPartnerId}`}>
-                Open Partner record
-              </Link>
+              <span className="pill pill-neutral">Linked in toolbar</span>
             ) : (
               <span className="pill pill-neutral">Partner record link pending</span>
             )}

@@ -123,7 +123,7 @@ function renderSections(overrides: Partial<SectionsProps> = {}) {
 }
 
 describe('BookingRecordDetailSections', () => {
-  it('renders participant ledger details and connected record links', () => {
+  it('renders participant ledger details and toolbar-linked record state', () => {
     const markup = renderSections();
 
     expect(markup).toContain('Actual marketplace participant ledger');
@@ -135,7 +135,7 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('admin-avatar-status-dot is-working');
     expect(markup).toContain('vuexy-booking-person');
     expect(markup.match(/vuexy-booking-person/g)).toHaveLength(1);
-    expect(markup).toContain('href="/customers/customer_1"');
+    expect(markup.match(/Linked in toolbar/g)).toHaveLength(2);
     expect(markup).toContain('href="/partners/partner_1"');
   });
 
