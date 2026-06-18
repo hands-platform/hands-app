@@ -10,6 +10,7 @@ import {
   Settings2,
   ShieldCheck,
 } from 'lucide-react';
+import { AdminDataTable } from '../components/admin-data-table';
 import { InfoRow } from '../components/info-row';
 import {
   AdminAuditLog,
@@ -68,6 +69,8 @@ import {
   bookingPartnerChoiceEvidenceNeedsOpsFromFacts,
 } from '../lib/booking-evidence-ops';
 import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-location-helpers';
+
+const DASHBOARD_INFO_HEADERS = ['Metric', 'Value'] as const;
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -1514,60 +1517,58 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
             <span className="pill pill-info">Presence proxy</span>
           </div>
-          <table className="table">
-            <tbody>
-              <InfoRow
-                label="Live app customers"
-                value={appPresence.liveAppCustomers.toString()}
-                detail="Customer app sessions with an unexpired heartbeat."
-              />
-              <InfoRow
-                label="Live matching customers"
-                value={appPresence.liveOpenMatchingCustomers.toString()}
-                detail="Live customers attached to open matching bookings."
-              />
-              <InfoRow
-                label="Live active-booking customers"
-                value={appPresence.liveActiveBookingCustomers.toString()}
-                detail="Live customers attached to active bookings."
-              />
-              <InfoRow
-                label="Live app Partners"
-                value={appPresence.liveAppPartners.toString()}
-                detail="Partner app sessions with an unexpired heartbeat."
-              />
-              <InfoRow
-                label="Recent customer sessions"
-                value={appPresence.recentCustomerSessions.toString()}
-                detail="Customer sessions seen in the last 30 minutes but not live now."
-              />
-              <InfoRow
-                label="Stale customer sessions"
-                value={appPresence.staleCustomerSessions.toString()}
-                detail="Customer sessions seen within 24 hours but outside the recent window."
-              />
-              <InfoRow
-                label="Active booking customers"
-                value={appPresence.activeBookingCustomers.toString()}
-                detail="Unique customers attached to open or in-service bookings."
-              />
-              <InfoRow
-                label="Reachable customers"
-                value={appPresence.reachableCustomers.toString()}
-                detail="Alternative signal from enabled push devices when session heartbeats are missing."
-              />
-              <InfoRow
-                label="Push-disabled customers"
-                value={appPresence.disabledPushCustomers.toString()}
-                detail="Customers who may not receive booking or chat updates."
-              />
-              <InfoRow
-                label="Customer records"
-                value={appPresence.totalCustomers.toString()}
-                detail="Total users with a customer profile in the latest admin snapshot."
-              />
-            </tbody>
-          </table>
+          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={10}>
+            <InfoRow
+              label="Live app customers"
+              value={appPresence.liveAppCustomers.toString()}
+              detail="Customer app sessions with an unexpired heartbeat."
+            />
+            <InfoRow
+              label="Live matching customers"
+              value={appPresence.liveOpenMatchingCustomers.toString()}
+              detail="Live customers attached to open matching bookings."
+            />
+            <InfoRow
+              label="Live active-booking customers"
+              value={appPresence.liveActiveBookingCustomers.toString()}
+              detail="Live customers attached to active bookings."
+            />
+            <InfoRow
+              label="Live app Partners"
+              value={appPresence.liveAppPartners.toString()}
+              detail="Partner app sessions with an unexpired heartbeat."
+            />
+            <InfoRow
+              label="Recent customer sessions"
+              value={appPresence.recentCustomerSessions.toString()}
+              detail="Customer sessions seen in the last 30 minutes but not live now."
+            />
+            <InfoRow
+              label="Stale customer sessions"
+              value={appPresence.staleCustomerSessions.toString()}
+              detail="Customer sessions seen within 24 hours but outside the recent window."
+            />
+            <InfoRow
+              label="Active booking customers"
+              value={appPresence.activeBookingCustomers.toString()}
+              detail="Unique customers attached to open or in-service bookings."
+            />
+            <InfoRow
+              label="Reachable customers"
+              value={appPresence.reachableCustomers.toString()}
+              detail="Alternative signal from enabled push devices when session heartbeats are missing."
+            />
+            <InfoRow
+              label="Push-disabled customers"
+              value={appPresence.disabledPushCustomers.toString()}
+              detail="Customers who may not receive booking or chat updates."
+            />
+            <InfoRow
+              label="Customer records"
+              value={appPresence.totalCustomers.toString()}
+              detail="Total users with a customer profile in the latest admin snapshot."
+            />
+          </AdminDataTable>
         </div>
       </section>
 
@@ -1694,40 +1695,38 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               Review queue
             </Link>
           </div>
-          <table className="table">
-            <tbody>
-              <InfoRow
-                label="Approved verification"
-                value={partnerSupply.approvedVerification.toString()}
-                detail="Partners whose admin verification can support work activation."
-              />
-              <InfoRow
-                label="KYC approved"
-                value={partnerSupply.kycApproved.toString()}
-                detail="Identity review approved for Level 2 activity."
-              />
-              <InfoRow
-                label="Bank approved"
-                value={partnerSupply.bankApproved.toString()}
-                detail="Primary bank account ready for payout routing."
-              />
-              <InfoRow
-                label="First revenue Partners"
-                value={partnerSupply.firstRevenue.toString()}
-                detail="Partners who should now complete tax/address/agreement requirements."
-              />
-              <InfoRow
-                label="Tax ready after revenue"
-                value={partnerSupply.taxReadyAfterRevenue.toString()}
-                detail="First-revenue Partners with approved tax profile."
-              />
-              <InfoRow
-                label="Profile review"
-                value={partnerSupply.trusted.toString()}
-                detail="Partners with optional profile review recorded."
-              />
-            </tbody>
-          </table>
+          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={6}>
+            <InfoRow
+              label="Approved verification"
+              value={partnerSupply.approvedVerification.toString()}
+              detail="Partners whose admin verification can support work activation."
+            />
+            <InfoRow
+              label="KYC approved"
+              value={partnerSupply.kycApproved.toString()}
+              detail="Identity review approved for Level 2 activity."
+            />
+            <InfoRow
+              label="Bank approved"
+              value={partnerSupply.bankApproved.toString()}
+              detail="Primary bank account ready for payout routing."
+            />
+            <InfoRow
+              label="First revenue Partners"
+              value={partnerSupply.firstRevenue.toString()}
+              detail="Partners who should now complete tax/address/agreement requirements."
+            />
+            <InfoRow
+              label="Tax ready after revenue"
+              value={partnerSupply.taxReadyAfterRevenue.toString()}
+              detail="First-revenue Partners with approved tax profile."
+            />
+            <InfoRow
+              label="Profile review"
+              value={partnerSupply.trusted.toString()}
+              detail="Partners with optional profile review recorded."
+            />
+          </AdminDataTable>
         </div>
       </section>
 
@@ -2020,58 +2019,54 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <section className="detail-grid admin-mt-20">
         <div className="card">
           <h2>Realtime flow health</h2>
-          <table className="table">
-            <tbody>
-              <InfoRow
-                label="Matching"
-                value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
-                detail="Direct request first, nearby marketplace Partners can participate when needed."
-              />
-              <InfoRow
-                label="Chat"
-                value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
-                detail="Chat is expected after Partner selection/service start."
-              />
-              <InfoRow
-                label="Partner locations"
-                value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
-                detail="MVP uses last-known location, not routing or live streaming."
-              />
-              <InfoRow
-                label="Payment ops"
-                value={`${payments.filter((payment) => payment.status === 'AUTHORIZED').length} holds`}
-                detail="Capture after service completion, release/refund on cancellation."
-              />
-            </tbody>
-          </table>
+          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
+            <InfoRow
+              label="Matching"
+              value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
+              detail="Direct request first, nearby marketplace Partners can participate when needed."
+            />
+            <InfoRow
+              label="Chat"
+              value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
+              detail="Chat is expected after Partner selection/service start."
+            />
+            <InfoRow
+              label="Partner locations"
+              value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
+              detail="MVP uses last-known location, not routing or live streaming."
+            />
+            <InfoRow
+              label="Payment ops"
+              value={`${payments.filter((payment) => payment.status === 'AUTHORIZED').length} holds`}
+              detail="Capture after service completion, release/refund on cancellation."
+            />
+          </AdminDataTable>
         </div>
 
         <div className="card">
           <h2>Finance snapshot</h2>
-          <table className="table">
-            <tbody>
-              <InfoRow
-                label="Gross"
-                value={money(earnings.grossAmount, earnings.currency)}
-                detail={`${earnings.count} earning record(s)`}
-              />
-              <InfoRow
-                label="Platform fee"
-                value={money(earnings.platformFee, earnings.currency)}
-                detail="Admin revenue before Partner payout."
-              />
-              <InfoRow
-                label="Pending net"
-                value={money(earnings.pendingNetAmount, earnings.currency)}
-                detail="Not ready for payout yet."
-              />
-              <InfoRow
-                label="Paid net"
-                value={money(earnings.paidNetAmount, earnings.currency)}
-                detail="Already marked paid."
-              />
-            </tbody>
-          </table>
+          <AdminDataTable emptyMessage={null} headers={DASHBOARD_INFO_HEADERS} rowCount={4}>
+            <InfoRow
+              label="Gross"
+              value={money(earnings.grossAmount, earnings.currency)}
+              detail={`${earnings.count} earning record(s)`}
+            />
+            <InfoRow
+              label="Platform fee"
+              value={money(earnings.platformFee, earnings.currency)}
+              detail="Admin revenue before Partner payout."
+            />
+            <InfoRow
+              label="Pending net"
+              value={money(earnings.pendingNetAmount, earnings.currency)}
+              detail="Not ready for payout yet."
+            />
+            <InfoRow
+              label="Paid net"
+              value={money(earnings.paidNetAmount, earnings.currency)}
+              detail="Already marked paid."
+            />
+          </AdminDataTable>
         </div>
       </section>
 
