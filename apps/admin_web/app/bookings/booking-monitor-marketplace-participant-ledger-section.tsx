@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminBooking } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { shortId } from '../../lib/admin-format';
 import type { MarketplaceOperationsCard } from '../../lib/marketplace-operations-cards';
 import type {
@@ -30,6 +32,14 @@ const MARKETPLACE_PARTICIPANT_LEDGER_HEADERS = [
   'Participation / response',
   'Customer choice',
 ] as const;
+
+const MARKETPLACE_PARTICIPANT_MATCHING_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
+const MARKETPLACE_PARTICIPANT_WORKING_STATUSES = new Set([
+  'MATCHED',
+  'PROVIDER_ON_THE_WAY',
+  'ARRIVED',
+  'IN_SERVICE',
+]);
 
 export function BookingMonitorMarketplaceParticipantLedgerSection({
   getCustomerLabel,
@@ -93,8 +103,16 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
                   <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
                 </td>
                 <td>
-                  <strong>{row.partnerLabel}</strong>
-                  <div className="muted">{row.participant.providerProfile?.user?.phone ?? 'No phone'}</div>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar is-partner"
+                    avatarStatus={marketplaceParticipantAvatarStatus(row)}
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={row.participant.providerProfile?.user?.phone ?? 'No phone'}
+                    href={marketplaceParticipantPartnerHref(row.participant)}
+                    label={row.partnerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
                   <span className="pill">{row.roleLabel}</span>
                 </td>
                 <td>
@@ -149,4 +167,31 @@ export function BookingMonitorMarketplaceParticipantLedgerSection({
       )}
     </>
   );
+}
+
+function marketplaceParticipantAvatarStatus(
+  row: MarketplaceParticipantLedgerRow<AdminBooking, BookingParticipant>,
+): AdminAvatarStatus {
+  const provider = row.participant.providerProfile;
+  const participantPartnerId = provider?.id ?? row.participant.providerProfileId ?? null;
+  const selectedPartnerId = row.booking.selectedProvider?.id ?? row.booking.selectedProviderId ?? null;
+  const providerStatus = row.participant.providerStatusAtJoin ?? provider?.status;
+
+  return adminAvatarStatusFromSignals({
+    fallbackOnline: Boolean(providerStatus?.startsWith('ONLINE')),
+    matching:
+      MARKETPLACE_PARTICIPANT_MATCHING_STATUSES.has(row.booking.status) &&
+      ['JOINED', 'ACCEPTED'].includes(row.participant.status),
+    working:
+      row.participant.status === 'SELECTED' ||
+      (MARKETPLACE_PARTICIPANT_WORKING_STATUSES.has(row.booking.status) &&
+        Boolean(participantPartnerId) &&
+        participantPartnerId === selectedPartnerId),
+  });
+}
+
+function marketplaceParticipantPartnerHref(participant: BookingParticipant) {
+  const partnerId = participant.providerProfile?.id ?? participant.providerProfileId;
+
+  return partnerId ? `/partners/${partnerId}` : null;
 }

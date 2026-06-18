@@ -10,6 +10,10 @@ export function textContent(value: unknown): string {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return textContent(expanded);
+  }
   const props = readRecord(record?.props);
   return textContent(props?.children);
 }
@@ -27,6 +31,10 @@ export function hrefsIn(value: unknown): string[] {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return hrefsIn(expanded);
+  }
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
@@ -41,6 +49,10 @@ export function headingTextsIn(value: unknown): string[] {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return headingTextsIn(expanded);
+  }
   const props = readRecord(record?.props);
   const type = typeof record?.type === 'string' ? record.type : '';
   const ownHeading =
@@ -64,6 +76,10 @@ export function buttonsIn(value: unknown): TestButton[] {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return buttonsIn(expanded);
+  }
   const props = readRecord(record?.props);
   const current = record?.type === 'button' ? [value as TestButton] : [];
   return [...current, ...buttonsIn(props?.children)];
@@ -86,8 +102,27 @@ export function classNamesIn(value: unknown): string[] {
 
 function resolveElement(value: unknown): unknown {
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return resolveElement(expanded);
+  }
   const props = readRecord(record?.props);
   return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+type RenderableComponent = (props: Record<string, unknown>) => unknown;
+
+function renderKnownComponent(record: Record<string, unknown> | null) {
+  const component = record?.type;
+  if (
+    typeof component === 'function' &&
+    ['AdminAvatar', 'AdminAvatarStatusDot', 'AdminDataTable', 'AdminPersonCell', 'MetricCard'].includes(
+      component.name,
+    )
+  ) {
+    return (component as RenderableComponent)(readRecord(record?.props) ?? {});
+  }
+  return null;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

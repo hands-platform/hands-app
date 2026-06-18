@@ -22,8 +22,9 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     } as unknown as AdminBooking;
     const participant = {
       id: 'participant_123',
-      providerProfile: { user: { phone: '+84900000000' } },
+      providerProfile: { id: 'partner_123', user: { phone: '+84900000000' } },
       providerStatusAtJoin: 'ONLINE',
+      status: 'JOINED',
     } as NonNullable<AdminBooking['participants']>[number];
 
     const section = BookingMonitorMarketplaceParticipantLedgerSection({
@@ -78,10 +79,20 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     expect(rendered).toContain('Wallet clear');
     expect(headingTextsIn(section)).toEqual([]);
     expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining(['/bookings?view=marketplace', '/bookings/booking_123456789']),
+      expect.arrayContaining([
+        '/bookings?view=marketplace',
+        '/bookings/booking_123456789',
+        '/partners/partner_123',
+      ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+      expect.arrayContaining([
+        'admin-avatar-status-dot is-matching',
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'text-link',
+        'vuexy-booking-person',
+      ]),
     );
   });
 
