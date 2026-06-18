@@ -5,6 +5,7 @@ import { adminPost } from '../../../lib/admin-api';
 import {
   BOOKING_CLOSEOUT_IMPACT_PATHS,
   BOOKING_PAYMENT_IMPACT_PATHS,
+  BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS,
   BOOKING_SETTLEMENT_IMPACT_PATHS,
   BOOKING_STATUS_FAILURE_IMPACT_PATHS,
   bookingActionRevalidatePaths,
@@ -145,7 +146,7 @@ async function runPostMatchCancellationDecision(formData: FormData, action: 'app
     { note: note || undefined },
     null,
   );
-  revalidateBookingAction(bookingId, ['/earnings', '/cash-settlements', '/operations-handoff']);
+  revalidateBookingAction(bookingId, BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS);
 }
 
 function revalidateBookingAction(bookingId: string, extraPaths: readonly string[] = []) {

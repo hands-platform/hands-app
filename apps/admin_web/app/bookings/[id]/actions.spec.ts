@@ -40,6 +40,8 @@ describe('booking detail server actions', () => {
       '/bookings',
       '/earnings',
       '/cash-settlements',
+      '/partner-controls',
+      '/partners',
       '/operations-handoff',
       '/audit-log',
     ]);

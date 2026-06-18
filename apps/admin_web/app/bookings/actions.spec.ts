@@ -31,11 +31,14 @@ describe('booking server actions', () => {
       null,
     );
     expect(mockedRevalidatePath.mock.calls.map(([path]) => path)).toEqual([
-      '/bookings',
       '/bookings/booking-1',
+      '/bookings',
       '/earnings',
       '/cash-settlements',
+      '/partner-controls',
+      '/partners',
       '/operations-handoff',
+      '/audit-log',
     ]);
   });
 

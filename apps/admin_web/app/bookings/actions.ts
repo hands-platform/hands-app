@@ -2,6 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { adminPost } from '../../lib/admin-api';
+import {
+  BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS,
+  bookingActionRevalidatePaths,
+} from './booking-action-paths';
 
 export async function approvePostMatchCancellation(formData: FormData) {
   await runPostMatchCancellationAction(formData, 'approve');
@@ -25,13 +29,7 @@ async function runPostMatchCancellationAction(formData: FormData, action: 'appro
     null,
   );
 
-  for (const path of [
-    '/bookings',
-    `/bookings/${bookingId}`,
-    '/earnings',
-    '/cash-settlements',
-    '/operations-handoff',
-  ]) {
+  for (const path of bookingActionRevalidatePaths(bookingId, BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS)) {
     revalidatePath(path);
   }
 }

@@ -1,6 +1,7 @@
 import {
   BOOKING_CLOSEOUT_IMPACT_PATHS,
   BOOKING_PAYMENT_IMPACT_PATHS,
+  BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS,
   BOOKING_SETTLEMENT_IMPACT_PATHS,
   BOOKING_STATUS_FAILURE_IMPACT_PATHS,
   bookingActionRevalidatePaths,
@@ -43,6 +44,13 @@ describe('booking action revalidation paths', () => {
       '/refunds',
       '/partner-controls',
       '/partners',
+    ]);
+    expect(BOOKING_POST_MATCH_CANCELLATION_IMPACT_PATHS).toEqual([
+      '/earnings',
+      '/cash-settlements',
+      '/partner-controls',
+      '/partners',
+      '/operations-handoff',
     ]);
   });
 });
