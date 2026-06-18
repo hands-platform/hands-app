@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Briefcase, CalendarCheck, Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
@@ -20,6 +20,26 @@ type ChatArchiveFilters = {
   sender: string;
 };
 
+const CHAT_REPAIR_HEADERS = [
+  'Booking',
+  'Issue',
+  'Customer',
+  'Partner',
+  'Service',
+  'Operator action',
+  'Open',
+] as const;
+const CHAT_ARCHIVE_INDEX_HEADERS = [
+  'Booking',
+  'Status',
+  'Customer',
+  'Partner',
+  'Service',
+  'Messages',
+  'Latest message',
+  'Open',
+] as const;
+
 export default async function ChatArchivePage({ searchParams }: { searchParams?: ChatArchiveSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const dateFilters = readDetailDateFilters(params);
@@ -36,6 +56,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   );
   const summary = buildChatArchiveSummary(rooms);
   const repairSummary = buildChatRepairSummary(repairRows);
+  const visibleRepairRows = repairRows.slice(0, 30);
   const messageCsvHref = buildCsvDataHref(
     rooms.flatMap((room) =>
       room.messages.map((message) => ({
@@ -227,72 +248,59 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         </div>
         {repairRows.length ? (
           <AdminTableScroll>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Booking</th>
-                  <th>Issue</th>
-                  <th>Customer</th>
-                  <th>Partner</th>
-                  <th>Service</th>
-                  <th>Operator action</th>
-                  <th>Open</th>
-                </tr>
-              </thead>
-              <tbody>
-                {repairRows.slice(0, 30).map((row) => (
-                  <tr key={`${row.booking.id}-${row.issue}`}>
-                    <td>
-                      <strong>{shortId(row.booking.id)}</strong>
-                      <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
-                    </td>
-                    <td>
-                      <span className={`pill ${row.pillClass}`}>{row.issue}</span>
-                      <p className="muted">{row.detail}</p>
-                    </td>
-                    <td>
-                      <strong>{row.customerName}</strong>
-                      <p className="muted">{row.customerPhone}</p>
-                    </td>
-                    <td>
-                      <strong>{row.partnerName}</strong>
-                      <p className="muted">{row.partnerPhone}</p>
-                    </td>
-                    <td>{row.serviceLabel}</td>
-                    <td>{row.operatorAction}</td>
-                    <td>
-                      <div className="actions">
+            <AdminDataTable emptyMessage={null} headers={CHAT_REPAIR_HEADERS} rowCount={visibleRepairRows.length}>
+              {visibleRepairRows.map((row) => (
+                <tr key={`${row.booking.id}-${row.issue}`}>
+                  <td>
+                    <strong>{shortId(row.booking.id)}</strong>
+                    <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.pillClass}`}>{row.issue}</span>
+                    <p className="muted">{row.detail}</p>
+                  </td>
+                  <td>
+                    <strong>{row.customerName}</strong>
+                    <p className="muted">{row.customerPhone}</p>
+                  </td>
+                  <td>
+                    <strong>{row.partnerName}</strong>
+                    <p className="muted">{row.partnerPhone}</p>
+                  </td>
+                  <td>{row.serviceLabel}</td>
+                  <td>{row.operatorAction}</td>
+                  <td>
+                    <div className="actions">
+                      <Link
+                        className="button button-secondary chat-inline-action"
+                        href={`/bookings/${row.booking.id}#chat`}
+                      >
+                        <CalendarCheck aria-hidden="true" size={14} />
+                        Booking
+                      </Link>
+                      {row.customerId ? (
                         <Link
                           className="button button-secondary chat-inline-action"
-                          href={`/bookings/${row.booking.id}#chat`}
+                          href={`/customers/${row.customerId}#chat-history`}
                         >
-                          <CalendarCheck aria-hidden="true" size={14} />
-                          Booking
+                          <User aria-hidden="true" size={14} />
+                          Customer
                         </Link>
-                        {row.customerId ? (
-                          <Link
-                            className="button button-secondary chat-inline-action"
-                            href={`/customers/${row.customerId}#chat-history`}
-                          >
-                            <User aria-hidden="true" size={14} />
-                            Customer
-                          </Link>
-                        ) : null}
-                        {row.partnerId ? (
-                          <Link
-                            className="button button-secondary chat-inline-action"
-                            href={`/partners/${row.partnerId}#booking-chat-records`}
-                          >
-                            <Briefcase aria-hidden="true" size={14} />
-                            Partner
-                          </Link>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      ) : null}
+                      {row.partnerId ? (
+                        <Link
+                          className="button button-secondary chat-inline-action"
+                          href={`/partners/${row.partnerId}#booking-chat-records`}
+                        >
+                          <Briefcase aria-hidden="true" size={14} />
+                          Partner
+                        </Link>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </AdminDataTable>
           </AdminTableScroll>
         ) : (
           <p className="muted admin-mt-12">
@@ -313,83 +321,70 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           <span className="pill pill-info">{rooms.length} row(s)</span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>Status</th>
-                <th>Customer</th>
-                <th>Partner</th>
-                <th>Service</th>
-                <th>Messages</th>
-                <th>Latest message</th>
-                <th>Open</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rooms.map((room) => (
-                <tr key={room.roomId}>
-                  <td>
-                    <strong>{shortId(room.booking.id)}</strong>
-                    <p className="muted">Room {shortId(room.roomId)}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${statusPillClass(room.booking.status)}`}>
-                      {room.booking.status}
-                    </span>
-                  </td>
-                  <td>
-                    <strong>{room.customerName}</strong>
-                    <p className="muted">{room.customerPhone}</p>
-                  </td>
-                  <td>
-                    <strong>{room.partnerName}</strong>
-                    <p className="muted">{room.partnerPhone}</p>
-                  </td>
-                  <td>{room.serviceLabel}</td>
-                  <td>{room.messages.length}</td>
-                  <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
-                  <td>
-                    <div className="actions">
+          <AdminDataTable
+            emptyMessage={
+              <>
+                <strong>No chat rooms found</strong>
+                <p className="muted">Clear filters or wait until matched bookings create chat rooms.</p>
+              </>
+            }
+            headers={CHAT_ARCHIVE_INDEX_HEADERS}
+            rowCount={rooms.length}
+          >
+            {rooms.map((room) => (
+              <tr key={room.roomId}>
+                <td>
+                  <strong>{shortId(room.booking.id)}</strong>
+                  <p className="muted">Room {shortId(room.roomId)}</p>
+                </td>
+                <td>
+                  <span className={`pill ${statusPillClass(room.booking.status)}`}>
+                    {room.booking.status}
+                  </span>
+                </td>
+                <td>
+                  <strong>{room.customerName}</strong>
+                  <p className="muted">{room.customerPhone}</p>
+                </td>
+                <td>
+                  <strong>{room.partnerName}</strong>
+                  <p className="muted">{room.partnerPhone}</p>
+                </td>
+                <td>{room.serviceLabel}</td>
+                <td>{room.messages.length}</td>
+                <td>{room.latestMessageAt ? formatDate(room.latestMessageAt) : 'No message'}</td>
+                <td>
+                  <div className="actions">
+                    <Link
+                      className="button button-secondary chat-inline-action"
+                      href={`/bookings/${room.booking.id}#chat`}
+                    >
+                      <CalendarCheck aria-hidden="true" size={14} />
+                      Booking
+                    </Link>
+                    {room.customerId ? (
                       <Link
                         className="button button-secondary chat-inline-action"
-                        href={`/bookings/${room.booking.id}#chat`}
+                        href={`/customers/${room.customerId}#chat-history`}
                       >
-                        <CalendarCheck aria-hidden="true" size={14} />
-                        Booking
+                        <User aria-hidden="true" size={14} />
+                        Customer
                       </Link>
-                      {room.customerId ? (
-                        <Link
-                          className="button button-secondary chat-inline-action"
-                          href={`/customers/${room.customerId}#chat-history`}
-                        >
-                          <User aria-hidden="true" size={14} />
-                          Customer
-                        </Link>
-                      ) : null}
-                      {room.partnerId ? (
-                        <Link
-                          className="button button-secondary chat-inline-action"
-                          href={`/partners/${room.partnerId}#booking-chat-records`}
-                        >
-                          <Briefcase aria-hidden="true" size={14} />
-                          Partner
-                        </Link>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {rooms.length === 0 ? (
-                <tr>
-                  <td colSpan={8}>
-                    <strong>No chat rooms found</strong>
-                    <p className="muted">Clear filters or wait until matched bookings create chat rooms.</p>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+                    ) : null}
+                    {room.partnerId ? (
+                      <Link
+                        className="button button-secondary chat-inline-action"
+                        href={`/partners/${room.partnerId}#booking-chat-records`}
+                      >
+                        <Briefcase aria-hidden="true" size={14} />
+                        Partner
+                      </Link>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
 
