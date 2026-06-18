@@ -1,0 +1,113 @@
+import { AdminRoundedPagination, adminRoundedPaginationPages } from './admin-rounded-pagination';
+
+describe('AdminRoundedPagination', () => {
+  it('builds a stable rounded five-page window', () => {
+    expect(adminRoundedPaginationPages(1, 10)).toEqual([1, 2, 3, 4, 5]);
+    expect(adminRoundedPaginationPages(5, 10)).toEqual([3, 4, 5, 6, 7]);
+    expect(adminRoundedPaginationPages(10, 10)).toEqual([6, 7, 8, 9, 10]);
+    expect(adminRoundedPaginationPages(8, 3)).toEqual([1, 2, 3]);
+  });
+
+  it('renders link pagination for server-routed tables', () => {
+    const pagination = AdminRoundedPagination({
+      activePage: 2,
+      ariaLabel: 'Customer review pages',
+      className: 'vuexy-review-pagination',
+      hrefForPage: (page) => `/reviews?page=${page}`,
+      pageLinkClassName: 'vuexy-review-page-link',
+      totalPages: 4,
+    });
+
+    expect(pagination.type).toBe('nav');
+    expect(pagination.props).toMatchObject({
+      'aria-label': 'Customer review pages',
+      className: 'vuexy-review-pagination',
+    });
+    expect(classNamesIn(pagination)).toEqual(
+      expect.arrayContaining([
+        'vuexy-review-page-link',
+        'vuexy-review-page-link is-active',
+      ]),
+    );
+    expect(hrefsIn(pagination)).toEqual(
+      expect.arrayContaining(['/reviews?page=1', '/reviews?page=2', '/reviews?page=3', '/reviews?page=4']),
+    );
+  });
+
+  it('renders button pagination for client-owned table state', () => {
+    const pagination = AdminRoundedPagination({
+      activePage: 1,
+      ariaLabel: 'Pre-match pages',
+      className: 'vuexy-booking-pagination',
+      onPageChange: jest.fn(),
+      pageLinkClassName: 'vuexy-booking-page-link',
+      totalPages: 2,
+    });
+
+    expect(elementTypesIn(pagination)).toContain('button');
+    expect(classNamesIn(pagination)).toEqual(
+      expect.arrayContaining([
+        'vuexy-booking-page-link is-active',
+        'vuexy-booking-page-link',
+      ]),
+    );
+  });
+});
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function elementTypesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(elementTypesIn);
+  }
+
+  const record = readRecord(value);
+  const type = typeof record?.type === 'string' ? [record.type] : [];
+  const props = readRecord(record?.props);
+  return [...type, ...elementTypesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
@@ -276,42 +277,14 @@ function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup
         <span>
           Showing {pageFrom} to {pageTo} of {group.rows.length} entries
         </span>
-        <nav aria-label={`${group.title} pages`} className="vuexy-booking-pagination">
-          <PaginationButton disabled={activePage <= 1} label="First page" onClick={() => setPage(1)}>
-            <ChevronsLeft size={18} />
-          </PaginationButton>
-          <PaginationButton
-            disabled={activePage <= 1}
-            label="Previous page"
-            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-          >
-            <ChevronLeft size={18} />
-          </PaginationButton>
-          {visiblePageNumbers(activePage, totalPages).map((pageNumber) => (
-            <PaginationButton
-              active={pageNumber === activePage}
-              key={pageNumber}
-              label={`Page ${pageNumber}`}
-              onClick={() => setPage(pageNumber)}
-            >
-              {pageNumber}
-            </PaginationButton>
-          ))}
-          <PaginationButton
-            disabled={activePage >= totalPages}
-            label="Next page"
-            onClick={() => setPage((currentPage) => Math.min(totalPages, currentPage + 1))}
-          >
-            <ChevronRight size={18} />
-          </PaginationButton>
-          <PaginationButton
-            disabled={activePage >= totalPages}
-            label="Last page"
-            onClick={() => setPage(totalPages)}
-          >
-            <ChevronsRight size={18} />
-          </PaginationButton>
-        </nav>
+        <AdminRoundedPagination
+          activePage={activePage}
+          ariaLabel={`${group.title} pages`}
+          className="vuexy-booking-pagination"
+          onPageChange={setPage}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={totalPages}
+        />
       </div>
     </section>
   );
@@ -452,43 +425,6 @@ function BookingParticipantAvatar({ participant }: { readonly participant: Booki
       {avatarInitials(participant.partnerLabel)}
     </Link>
   );
-}
-
-function PaginationButton({
-  active = false,
-  children,
-  disabled = false,
-  label,
-  onClick,
-}: {
-  readonly active?: boolean;
-  readonly children: ReactNode;
-  readonly disabled?: boolean;
-  readonly label: string;
-  readonly onClick: () => void;
-}) {
-  const className = active ? 'vuexy-booking-page-link is-active' : 'vuexy-booking-page-link';
-
-  return (
-    <button
-      aria-current={active ? 'page' : undefined}
-      aria-label={label}
-      className={className}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
-
-function visiblePageNumbers(activePage: number, totalPages: number) {
-  const start = Math.max(1, activePage - 2);
-  const end = Math.min(totalPages, start + 4);
-  const adjustedStart = Math.max(1, end - 4);
-
-  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
 }
 
 function requestedPartnerLabel(

@@ -1,14 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Download,
-  Star,
-  X,
-} from 'lucide-react';
+import { Download, Star, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -17,6 +8,7 @@ import {
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { ReviewActionDropdown } from './review-action-dropdown';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
@@ -194,88 +186,18 @@ export function ReviewsTableSection({
           <span>
             Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
           </span>
-          <nav aria-label="Customer review pages" className="vuexy-review-pagination">
-            <PaginationControl
-              disabled={pagination.page <= 1}
-              href={buildReviewListHref(filters, { page: 1 })}
-              label="First page"
-            >
-              <ChevronsLeft size={18} />
-            </PaginationControl>
-            <PaginationControl
-              disabled={pagination.page <= 1}
-              href={buildReviewListHref(filters, { page: Math.max(1, pagination.page - 1) })}
-              label="Previous page"
-            >
-              <ChevronLeft size={18} />
-            </PaginationControl>
-            {visiblePageNumbers(pagination).map((page) => (
-              <PaginationControl
-                active={page === pagination.page}
-                href={buildReviewListHref(filters, { page })}
-                key={page}
-                label={`Page ${page}`}
-              >
-                {page}
-              </PaginationControl>
-            ))}
-            <PaginationControl
-              disabled={pagination.page >= pagination.totalPages}
-              href={buildReviewListHref(filters, { page: Math.min(pagination.totalPages, pagination.page + 1) })}
-              label="Next page"
-            >
-              <ChevronRight size={18} />
-            </PaginationControl>
-            <PaginationControl
-              disabled={pagination.page >= pagination.totalPages}
-              href={buildReviewListHref(filters, { page: pagination.totalPages })}
-              label="Last page"
-            >
-              <ChevronsRight size={18} />
-            </PaginationControl>
-          </nav>
+          <AdminRoundedPagination
+            activePage={pagination.page}
+            ariaLabel="Customer review pages"
+            className="vuexy-review-pagination"
+            hrefForPage={(page) => buildReviewListHref(filters, { page })}
+            pageLinkClassName="vuexy-review-page-link"
+            totalPages={pagination.totalPages}
+          />
         </div>
       </section>
     </>
   );
-}
-
-function PaginationControl({
-  active = false,
-  children,
-  disabled = false,
-  href,
-  label,
-}: {
-  readonly active?: boolean;
-  readonly children: ReactNode;
-  readonly disabled?: boolean;
-  readonly href: string;
-  readonly label: string;
-}) {
-  const className = active ? 'vuexy-review-page-link is-active' : 'vuexy-review-page-link';
-
-  if (disabled) {
-    return (
-      <span aria-disabled="true" aria-label={label} className="vuexy-review-page-link is-disabled">
-        {children}
-      </span>
-    );
-  }
-
-  return (
-    <Link aria-current={active ? 'page' : undefined} aria-label={label} className={className} href={href}>
-      {children}
-    </Link>
-  );
-}
-
-function visiblePageNumbers(pagination: ReviewPagination<ReviewTableRow>) {
-  const start = Math.max(1, pagination.page - 2);
-  const end = Math.min(pagination.totalPages, start + 4);
-  const adjustedStart = Math.max(1, end - 4);
-
-  return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
 }
 
 function reviewActiveFilterLabels(filters: ReviewFilters) {
