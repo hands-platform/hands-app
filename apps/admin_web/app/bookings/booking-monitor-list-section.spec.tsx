@@ -293,6 +293,9 @@ describe('BookingMonitorListSection', () => {
         emptyMessage="No bookings match filters."
         rows={[
           bookingRowFixture({
+            closedAt: '2026-06-13T03:20:00.000Z',
+            closedByRole: 'ADMIN',
+            closedReason: 'provider_cancelled',
             closureState: {
               detail: 'admin closure / Provider Cancelled / Partner cancelled from chat.',
               label: 'Closed 13 Jun 2026, 03:20',
@@ -313,13 +316,19 @@ describe('BookingMonitorListSection', () => {
 
     expect(rendered).toContain('Post-match Cancellations');
     expect(rendered).toContain('Closed 13 Jun 2026, 03:20');
+    expect(rendered).toContain('Admin confirmed');
     expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
     expect(markup).toContain('vuexy-booking-closure-evidence');
+    expect(markup).toContain('vuexy-booking-closure-pills');
+    expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
   });
 });
 
 function bookingRowFixture(input: {
+  readonly closedAt?: string;
+  readonly closedByRole?: string;
+  readonly closedReason?: string;
   readonly closureState?: BookingMonitorListRow['closureState'];
   readonly customerName: string;
   readonly id: string;
@@ -339,6 +348,9 @@ function bookingRowFixture(input: {
         phone: '+84900000000',
       },
     },
+    closedAt: input.closedAt ?? null,
+    closedByRole: input.closedByRole ?? null,
+    closedReason: input.closedReason ?? null,
     id: input.id,
     selectedProviderId: input.status === 'CANCELLED' ? `${input.id}_partner` : null,
     status: input.status,

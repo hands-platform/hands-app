@@ -272,6 +272,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
   const participantRows = bookingParticipantRows(booking);
   const addressLabel = bookingAddressLabel(booking);
   const stateChange = bookingStatusChangeState(booking);
+  const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
   const requestedPartnerHref = bookingPartnerHref(
     booking.preferredProvider?.id ??
@@ -329,7 +330,14 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <div className="muted admin-mt-6">{stateChange.dateLabel}</div>
         {row.closureState && (
           <div className="vuexy-booking-closure-evidence">
-            <span className={`pill ${row.closureState.tone}`}>{row.closureState.label}</span>
+            <div className="vuexy-booking-closure-pills">
+              <span className={`pill ${row.closureState.tone}`}>{row.closureState.label}</span>
+              {cancellationReviewSignal && (
+                <span className={`pill ${cancellationReviewSignal.tone}`}>
+                  {cancellationReviewSignal.label}
+                </span>
+              )}
+            </div>
             <div className="muted">{row.closureState.detail}</div>
           </div>
         )}
@@ -531,6 +539,35 @@ function bookingStatusChangedLabel(booking: AdminBooking) {
     default:
       return 'Updated at';
   }
+}
+
+function bookingCancellationReviewSignal(booking: AdminBooking) {
+  if (booking.status !== 'CANCELLED' && booking.status !== 'NO_SHOW') {
+    return null;
+  }
+
+  const hasClosureTime = Boolean(booking.closedAt);
+  const hasClosureActor = Boolean(booking.closedByRole?.trim());
+  const hasClosureReason = Boolean(booking.closedReason?.trim());
+
+  if (hasClosureTime && hasClosureActor && hasClosureReason) {
+    return {
+      label: booking.closedByRole?.toUpperCase() === 'ADMIN' ? 'Admin confirmed' : 'Closure confirmed',
+      tone: 'pill-success',
+    };
+  }
+
+  if (hasClosureTime) {
+    return {
+      label: 'Needs closure detail',
+      tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-warn',
+    };
+  }
+
+  return {
+    label: 'Evidence missing',
+    tone: 'pill-danger',
+  };
 }
 
 function metadataText(metadata: Record<string, unknown> | null, key: string) {

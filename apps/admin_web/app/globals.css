@@ -1753,6 +1753,13 @@ a.action-button-card:hover {
   margin-top: 10px;
 }
 
+.vuexy-booking-closure-pills {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .vuexy-booking-table-footer {
   align-items: center;
   border-top: 1px solid var(--admin-border);
