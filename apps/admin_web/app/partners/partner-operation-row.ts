@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { partnerCashDebtMarketplaceAccessCopy } from '../../lib/booking-wallet-copy';
 import { providerSecurityLabel } from './partner-filters';
 import {
@@ -35,6 +36,7 @@ export type PartnerOperationRow = {
   provider: AdminProvider;
   name: string;
   phone: string;
+  avatarStatus: AdminAvatarStatus;
   checklist: PartnerOperationChecklistItem[];
   matchingFlow: PartnerOperationChecklistItem[];
   matchingFlowDetail: string;
@@ -82,6 +84,12 @@ export function buildPartnerOperationRow(
     provider,
     name: deps.displayName(provider),
     phone: provider.user?.phone ?? provider.id,
+    avatarStatus: adminAvatarStatusFromSignals({
+      devices: [...(provider.user?.pushDevices ?? []), ...(provider.devices ?? [])],
+      fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
+      sessions: provider.sessions,
+      working: provider.status === 'ONLINE_BUSY',
+    }),
     checklist: [
       {
         label: 'KYC',

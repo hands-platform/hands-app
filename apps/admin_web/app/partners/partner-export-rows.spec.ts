@@ -175,6 +175,7 @@ function operationRow(input: Partial<PartnerOperationRow> = {}): PartnerOperatio
     acceptanceDetail: 'Ready for direct requests',
     acceptanceLabel: 'Ready',
     acceptanceTone: 'ok',
+    avatarStatus: 'online',
     checklist: [],
     completedWorkCount: 4,
     lastActivityAt: '2026-06-09T09:00:00.000Z',

@@ -3,6 +3,7 @@ import { User } from 'lucide-react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -64,8 +65,15 @@ export function PartnerOperationsListSection({
           {rows.map((row) => (
             <tr key={row.provider.id}>
               <td>
-                <strong>{row.name}</strong>
-                <p className="muted">{row.phone}</p>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={row.avatarStatus}
+                  className="vuexy-booking-person"
+                  helper={row.phone}
+                  href={`/partners/${row.provider.id}`}
+                  label={row.name}
+                  linkClassName="table-link"
+                />
                 <div className="participant-list admin-mt-6">
                   <span className="pill pill-info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</span>
                   <span className={`pill ${row.provider.blockedAt ? 'pill-danger' : 'pill-success'}`}>

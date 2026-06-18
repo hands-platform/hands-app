@@ -33,6 +33,7 @@ describe('PartnerOperationsListSection', () => {
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table service-trace',
+        'admin-avatar-status-dot is-online',
         'pill pill-success',
         'button button-secondary admin-inline-action',
       ]),
@@ -62,6 +63,7 @@ function buildRows(): PartnerOperationsListSectionRow[] {
       acceptanceDetail: 'Ready to receive preferred direct booking requests.',
       acceptanceLabel: 'Direct request clear',
       acceptanceTone: 'ok',
+      avatarStatus: 'online',
       checklist: [
         {
           label: 'KYC',

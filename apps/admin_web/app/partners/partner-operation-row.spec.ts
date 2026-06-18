@@ -86,6 +86,7 @@ describe('partner operation row', () => {
     });
 
     expect(row.name).toBe('Linh Wellness');
+    expect(row.avatarStatus).toBe('online');
     expect(row.acceptanceLabel).toBe('Direct request clear');
     expect(row.marketplaceAccessLabel).toBe('Fee settlement required');
     expect(row.marketplaceCanView).toBe(true);
