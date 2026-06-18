@@ -1,6 +1,3 @@
-import Link from 'next/link';
-import { User } from 'lucide-react';
-
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
@@ -52,12 +49,16 @@ export function NotificationTableRowItem({ row }: NotificationTableRowItemProps)
           linkClassName="table-link"
         />
         {row.partnerHref && row.partnerLabel ? (
-          <div className="muted">
-            <Link className="button button-secondary notification-partner-link" href={row.partnerHref}>
-              <User aria-hidden="true" size={14} />
-              {row.partnerLabel}
-            </Link>{' '}
-            / {row.partnerStatus ?? 'status unknown'}
+          <div className="admin-mt-8">
+            <AdminPersonCell
+              avatarClassName="vuexy-booking-avatar is-partner"
+              avatarStatus={row.userAvatarStatus}
+              className="vuexy-booking-person notification-partner-context"
+              helper={row.partnerStatus ?? 'status unknown'}
+              href={row.partnerHref}
+              label={row.partnerLabel}
+              linkClassName="table-link"
+            />
           </div>
         ) : null}
       </td>
