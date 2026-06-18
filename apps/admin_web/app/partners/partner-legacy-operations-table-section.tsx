@@ -1,8 +1,9 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 
 type PartnerCellRenderer = (provider: AdminProvider) => ReactNode;
 
@@ -60,10 +61,15 @@ export function PartnerLegacyOperationsTableSection({
           {providers.map((provider) => (
             <tr id={`provider-${provider.id}`} key={provider.id}>
               <td>
-                <Link className="text-link" href={`/partners/${provider.id}`}>
-                  {partnerName(provider)}
-                </Link>
-                <p className="muted">{provider.user?.phone ?? provider.id}</p>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={partnerLegacyAvatarStatus(provider)}
+                  className="vuexy-booking-person"
+                  helper={provider.user?.phone ?? provider.id}
+                  href={`/partners/${provider.id}`}
+                  label={partnerName(provider)}
+                  linkClassName="table-link"
+                />
               </td>
               <td>
                 {provider.verification?.status ?? 'DRAFT'}
@@ -101,4 +107,13 @@ export function PartnerLegacyOperationsTableSection({
       </AdminTableScroll>
     </div>
   );
+}
+
+function partnerLegacyAvatarStatus(provider: AdminProvider) {
+  return adminAvatarStatusFromSignals({
+    devices: [...(provider.user?.pushDevices ?? []), ...(provider.devices ?? [])],
+    fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
+    sessions: provider.sessions,
+    working: provider.status === 'ONLINE_BUSY',
+  });
 }

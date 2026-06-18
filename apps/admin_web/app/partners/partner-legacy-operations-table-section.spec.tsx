@@ -32,7 +32,13 @@ describe('PartnerLegacyOperationsTableSection', () => {
     expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table partner-legacy-table']),
+      expect.arrayContaining([
+        'admin-avatar-status-dot is-online',
+        'admin-table-scroll',
+        'table-link',
+        'table vuexy-data-table partner-legacy-table',
+        'vuexy-booking-person',
+      ]),
     );
   });
 
