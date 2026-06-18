@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, MessageSquareText, User, Users } from 'lucide-react';
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { MetricCard } from '../../../components/metric-card';
 import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
@@ -68,6 +68,14 @@ type PriorityBriefing = {
     linkLabel: string;
   }>;
 };
+
+const MVP_AUTHORITY_CONTRACT_HEADERS = [
+  'Contract',
+  'Current state',
+  'Evidence',
+  'Operator use',
+  'Open',
+] as const;
 
 export type BookingDetailToolbarProps = {
   bookingId: string;
@@ -303,38 +311,27 @@ export function BookingMvpAuthorityContractSection({ rows }: BookingMvpAuthority
         </Link>
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Contract</th>
-              <th>Current state</th>
-              <th>Evidence</th>
-              <th>Operator use</th>
-              <th>Open</th>
+        <AdminDataTable emptyMessage={null} headers={MVP_AUTHORITY_CONTRACT_HEADERS} rowCount={rows.length}>
+          {rows.map((row) => (
+            <tr key={row.contract}>
+              <td>
+                <strong>{row.contract}</strong>
+                <p className="muted">{row.scope}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.tone}`}>{row.status}</span>
+              </td>
+              <td>{row.evidence}</td>
+              <td>{row.operatorUse}</td>
+              <td>
+                <Link className="button button-secondary admin-inline-action" href={row.href}>
+                  <ExternalLink aria-hidden="true" size={14} />
+                  Open
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.contract}>
-                <td>
-                  <strong>{row.contract}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.operatorUse}</td>
-                <td>
-                  <Link className="button button-secondary admin-inline-action" href={row.href}>
-                    <ExternalLink aria-hidden="true" size={14} />
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </section>
   );
