@@ -1747,6 +1747,26 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
+.vuexy-booking-address-cell {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vuexy-booking-address-cell > strong {
+  color: var(--admin-text);
+  display: block;
+  line-height: 20px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vuexy-booking-address-cell > .pill {
+  justify-self: flex-start;
+}
+
 .vuexy-booking-closure-evidence {
   display: grid;
   gap: 6px;

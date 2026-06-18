@@ -234,6 +234,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Partner B');
     expect(rendered).toContain('vi-VN');
     expect(rendered).toContain('12 Nguyen Hue, Da Nang');
+    expect(rendered).toContain('Service address');
     expect(rendered).not.toContain('Booking pin');
     expect(rendered).toContain('Matching opened at');
     expect(rendered).toContain('5 participating');
@@ -242,6 +243,9 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('href="/customers/customer_123"');
     expect(markup).toContain('href="/partners/partner_preferred"');
     expect(markup).toContain('href="/partners/partner_participant"');
+    expect(markup).toContain('vuexy-booking-address-cell');
+    expect(markup).toContain('title="12 Nguyen Hue, Da Nang"');
+    expect(markup).toContain('aria-label="Service address: 12 Nguyen Hue, Da Nang"');
     expect(markup).toContain('vuexy-booking-avatar-group');
     expect(markup).toContain('aria-label="Partner C (ACCEPTED)"');
     expect(markup).toContain('>+1</span>');

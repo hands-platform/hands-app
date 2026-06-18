@@ -270,7 +270,7 @@ function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup
 function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListRow }) {
   const { booking } = row;
   const participantRows = bookingParticipantRows(booking);
-  const addressLabel = bookingAddressLabel(booking);
+  const addressDisplay = bookingAddressDisplay(booking);
   const stateChange = bookingStatusChangeState(booking);
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
@@ -323,7 +323,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <strong>{row.serviceOptionLabel}</strong>
       </td>
       <td>
-        <strong>{addressLabel}</strong>
+        <BookingAddressCell address={addressDisplay} />
       </td>
       <td>
         <strong>{stateChange.label}</strong>
@@ -343,6 +343,26 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         )}
       </td>
     </tr>
+  );
+}
+
+function BookingAddressCell({
+  address,
+}: {
+  readonly address: {
+    readonly fullLabel: string;
+    readonly shortLabel: string;
+    readonly tone: 'pill-neutral' | 'pill-warn';
+  };
+}) {
+  return (
+    <div className="vuexy-booking-address-cell">
+      <span className="pill pill-neutral">Service address</span>
+      <strong aria-label={`Service address: ${address.fullLabel}`} title={address.fullLabel}>
+        {address.shortLabel}
+      </strong>
+      {address.tone === 'pill-warn' && <span className="pill pill-warn">Address missing</span>}
+    </div>
   );
 }
 
@@ -465,18 +485,24 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
   return metadataLanguage ?? 'Unknown';
 }
 
-function bookingAddressLabel(booking: AdminBooking) {
+function bookingAddressDisplay(booking: AdminBooking) {
   const apiAddress = metadataText({ serviceAddressText: booking.serviceAddressText }, 'serviceAddressText');
   const legacyAddress = readAddressText(booking.address);
   const snapshotAddress =
     readAddressText(booking.addressSnapshot?.addressText) ??
     readAddressText(booking.addressSnapshot?.address) ??
     readAddressText(booking.addressSnapshot);
-  return compactAddressLabel(apiAddress ?? legacyAddress ?? snapshotAddress ?? 'No address');
+  const fullLabel = apiAddress ?? legacyAddress ?? snapshotAddress ?? 'No address';
+
+  return {
+    fullLabel,
+    shortLabel: compactAddressLabel(fullLabel),
+    tone: fullLabel === 'No address' ? 'pill-warn' : 'pill-neutral',
+  } as const;
 }
 
 function compactAddressLabel(value: string) {
-  return value.length > 72 ? `${value.slice(0, 69)}...` : value;
+  return value.length > 58 ? `${value.slice(0, 55)}...` : value;
 }
 
 function bookingStatusChangeState(booking: AdminBooking) {
