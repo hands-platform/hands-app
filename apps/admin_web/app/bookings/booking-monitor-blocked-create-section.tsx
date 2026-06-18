@@ -31,6 +31,15 @@ const BLOCKED_CREATE_TABLE_HEADERS = [
   'Actions',
 ] as const;
 
+const BOOKING_GATE_TRIAGE_TABLE_HEADERS = [
+  'Create Gate',
+  'Status',
+  'Attempts',
+  'Latest',
+  'Operator Hint',
+  'Actions',
+] as const;
+
 export function BookingMonitorBlockedCreateSection({
   bookingGateTriage,
   gateFilter,
@@ -76,33 +85,50 @@ export function BookingMonitorBlockedCreateSection({
           </button>
         </div>
       </div>
-      <div className="ops-task-grid admin-mt-14">
-        {bookingGateTriage.map((item) => (
-          <article className="ops-task-card" key={item.filter}>
-            <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
-            <h3>{item.label}</h3>
-            <p>{item.operatorHint}</p>
-            <div className="participant-list">
-              <span className="pill">{item.count} attempt(s)</span>
-              <span className="pill">Latest {item.latestAge}</span>
-            </div>
-            <div className="actions admin-mt-12">
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={() => onGateFilterChange(item.filter)}
-              >
-                <Filter aria-hidden="true" size={16} />
-                Show this gate
-              </button>
-              <Link className="button button-secondary" href={item.auditHref}>
-                <ScrollText aria-hidden="true" size={16} />
-                Audit evidence
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table admin-mt-14"
+          emptyMessage="No booking create gates are configured for this view."
+          headers={BOOKING_GATE_TRIAGE_TABLE_HEADERS}
+          rowCount={bookingGateTriage.length}
+        >
+          {bookingGateTriage.map((item) => (
+            <tr key={item.filter}>
+              <td>
+                <strong>{item.label}</strong>
+              </td>
+              <td>
+                <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
+              </td>
+              <td>
+                <span className="pill">{item.count} attempt(s)</span>
+              </td>
+              <td>
+                <span className="muted">{item.latestAge}</span>
+              </td>
+              <td>
+                <span className="muted">{item.operatorHint}</span>
+              </td>
+              <td>
+                <div className="actions">
+                  <button
+                    className="button button-primary"
+                    type="button"
+                    onClick={() => onGateFilterChange(item.filter)}
+                  >
+                    <Filter aria-hidden="true" size={16} />
+                    Show this gate
+                  </button>
+                  <Link className="button button-secondary" href={item.auditHref}>
+                    <ScrollText aria-hidden="true" size={16} />
+                    Audit evidence
+                  </Link>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
       <p className="muted admin-mt-12">
         {bookingGateFilterOptions.find((option) => option.value === gateFilter)?.operatorHint}
       </p>
