@@ -45,6 +45,12 @@ describe('buildBookingPostMatchCancellationBoard', () => {
           matchedAt: null,
           selectedProviderId: null,
         }),
+        bookingFixture({
+          closedAt: '2026-06-19T11:45:00.000Z',
+          id: 'no-show-after-match',
+          matchedAt: '2026-06-19T11:30:00.000Z',
+          status: 'NO_SHOW',
+        }),
       ],
       nowMs,
     );
@@ -54,9 +60,9 @@ describe('buildBookingPostMatchCancellationBoard', () => {
       autoApprovalWindowCount: 1,
       feeHeldCount: 2,
       feeRestoredCount: 2,
-      monthCount: 3,
-      pendingManualReviewCount: 1,
-      totalCount: 4,
+      monthCount: 4,
+      pendingManualReviewCount: 2,
+      totalCount: 5,
     });
   });
 
@@ -92,6 +98,7 @@ function bookingFixture(input: {
   readonly id: string;
   readonly matchedAt: string | null;
   readonly selectedProviderId?: string | null;
+  readonly status?: string;
 }): AdminBooking {
   return {
     closedAt: input.closedAt,
@@ -100,7 +107,7 @@ function bookingFixture(input: {
     id: input.id,
     matchedAt: input.matchedAt,
     selectedProviderId: input.selectedProviderId === undefined ? `${input.id}-partner` : input.selectedProviderId,
-    status: 'CANCELLED',
+    status: input.status ?? 'CANCELLED',
     statusChangedAt: input.closedAt,
   } as unknown as AdminBooking;
 }

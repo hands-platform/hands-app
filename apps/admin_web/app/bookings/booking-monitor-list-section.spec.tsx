@@ -441,6 +441,39 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Fee restored');
     expect(rendered).not.toContain('Admin review required');
   });
+
+  it('keeps no-show review rows in the post-match cancellations group without fee decision actions', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[
+          bookingRowFixture({
+            closedAt: '2026-06-13T03:30:00.000Z',
+            closedByRole: 'ADMIN',
+            closedReason: 'no_show_confirmed',
+            customerName: 'No Show Customer',
+            id: 'booking_no_show_after_match',
+            matchedAt: '2026-06-13T03:00:00.000Z',
+            openedDateLabel: '13 Jun 2026, 03:00',
+            status: 'NO_SHOW',
+            statusChangedAt: '2026-06-13T03:30:00.000Z',
+          }),
+        ]}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).toContain('No Show Customer');
+    expect(rendered).toContain('No-show marked at');
+    expect(rendered).toContain('Detail');
+    expect(rendered).not.toContain('Resolve cancellation');
+    expect(rendered).not.toContain('Approve');
+    expect(rendered).not.toContain('Hold');
+    expect(markup).toContain('href="/bookings/booking_no_show_after_match"');
+  });
 });
 
 function bookingRowFixture(input: {
@@ -476,10 +509,16 @@ function bookingRowFixture(input: {
         : null,
     id: input.id,
     matchedAt: input.matchedAt ?? null,
-    selectedProviderId: input.status === 'CANCELLED' ? `${input.id}_partner` : null,
+    selectedProviderId:
+      input.status === 'CANCELLED' || input.status === 'NO_SHOW' ? `${input.id}_partner` : null,
     status: input.status,
     statusChangedAt: input.statusChangedAt,
-    statusChangedLabel: input.status === 'CANCELLED' ? 'Partner cancelled at' : 'Completed at',
+    statusChangedLabel:
+      input.status === 'CANCELLED'
+        ? 'Partner cancelled at'
+        : input.status === 'NO_SHOW'
+          ? 'No-show marked at'
+          : 'Completed at',
   } as unknown as AdminBooking;
 
   return {

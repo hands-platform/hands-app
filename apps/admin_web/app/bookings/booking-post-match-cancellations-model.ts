@@ -18,7 +18,7 @@ export function buildBookingPostMatchCancellationBoard(
   bookings: readonly AdminBooking[],
   nowMs: number,
 ): BookingPostMatchCancellationBoard {
-  const cancellations = bookings.filter(isPostMatchCancellationBooking);
+  const cancellations = bookings.filter(isPostMatchCancellationReviewBooking);
 
   return {
     autoApprovedCount: cancellations.filter(isPostMatchCancellationAutoApproved).length,
@@ -39,11 +39,22 @@ export function isPostMatchCancellationBooking(booking: AdminBooking) {
   return booking.status === 'CANCELLED' && bookingHasPostMatchEvidence(booking);
 }
 
+export function isPostMatchCancellationReviewBooking(booking: AdminBooking) {
+  return (
+    (booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') &&
+    bookingHasPostMatchEvidence(booking)
+  );
+}
+
 export function bookingHasPostMatchEvidence(booking: AdminBooking) {
   return Boolean(booking.matchedAt || booking.selectedProviderId || booking.selectedProvider);
 }
 
 export function isPostMatchCancellationAutoApprovalEligible(booking: AdminBooking) {
+  if (booking.status !== 'CANCELLED') {
+    return false;
+  }
+
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
   return minutesAfterMatch !== null && minutesAfterMatch <= POST_MATCH_CANCELLATION_REVIEW_MINUTES;
 }
