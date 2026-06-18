@@ -23,6 +23,10 @@ import { approvePostMatchCancellation, holdPostMatchCancellation } from './actio
 import { readAddressText } from './booking-address-readers';
 import { formatBookingDate } from './booking-list-time';
 import {
+  bookingPostMatchChatEvidenceRows,
+  bookingPostMatchEvidenceLabel,
+} from './booking-post-match-chat-evidence';
+import {
   isPostMatchCancellationAutoApproved,
   isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
@@ -554,15 +558,10 @@ export function BookingPostMatchCancellationChatLayer({
   const feeState = postMatchCancellationFeeState(booking);
   const resolution = postMatchCancellationResolution(booking);
   const autoApproved = isPostMatchCancellationAutoApproved(booking);
-  const evidenceLabel =
-    booking.status === 'NO_SHOW' ? 'No-show evidence' : 'Post-match cancellation evidence';
-  const evidenceRows = postMatchChatEvidenceRows({
-    autoApproved,
+  const evidenceLabel = bookingPostMatchEvidenceLabel(booking);
+  const evidenceRows = bookingPostMatchChatEvidenceRows({
     booking,
-    feeState,
-    messages,
-    minutesAfterMatch,
-    resolution,
+    messageCount: messages.length,
   });
 
   return (
@@ -612,48 +611,6 @@ export function BookingPostMatchCancellationChatLayer({
       </div>
     </div>
   );
-}
-
-function postMatchChatEvidenceRows({
-  autoApproved,
-  booking,
-  feeState,
-  messages,
-  minutesAfterMatch,
-  resolution,
-}: {
-  readonly autoApproved: boolean;
-  readonly booking: AdminBooking;
-  readonly feeState: ReturnType<typeof postMatchCancellationFeeState>;
-  readonly messages: readonly BookingChatMessage[];
-  readonly minutesAfterMatch: number | null;
-  readonly resolution: ReturnType<typeof postMatchCancellationResolution>;
-}) {
-  return [
-    {
-      label: 'Review state',
-      value: cancellationResolutionLabel(resolution, autoApproved),
-      helper: `${cancellationMinutesLabel(minutesAfterMatch)} / ${cancellationFeeStateLabel(feeState)}`,
-    },
-    {
-      label: 'Closure source',
-      value: booking.closedByRole ? humanizeBookingToken(booking.closedByRole) : 'Not recorded',
-      helper: booking.closedReason ? humanizeBookingToken(booking.closedReason) : 'No closure reason stored.',
-    },
-    {
-      label: 'Retained chat',
-      value: countLabel(messages.length, 'message'),
-      helper:
-        messages.length > 0
-          ? 'Use this transcript before approving or holding the fee decision.'
-          : 'No retained chat messages are attached to this booking.',
-    },
-    {
-      label: 'Closure note',
-      value: booking.closedNote?.trim() ? booking.closedNote.trim() : 'No note',
-      helper: booking.status === 'NO_SHOW' ? 'No-show context for admin review.' : 'Partner cancellation context.',
-    },
-  ];
 }
 
 function BookingChatMessageRow({ message }: { readonly message: BookingChatMessage }) {
@@ -1101,19 +1058,6 @@ function bookingChatSenderRole(roles?: readonly string[]) {
     return 'Admin';
   }
   return 'User';
-}
-
-function countLabel(count: number, singular: string) {
-  return `${count} ${singular}${count === 1 ? '' : 's'}`;
-}
-
-function humanizeBookingToken(value: string) {
-  const label = value
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
-  return label === 'Provider' ? 'Partner' : label;
 }
 
 function cancellationFeeStateTone(feeState: ReturnType<typeof postMatchCancellationFeeState>) {

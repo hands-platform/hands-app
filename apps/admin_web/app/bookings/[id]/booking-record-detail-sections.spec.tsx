@@ -95,6 +95,7 @@ function buildProps(overrides: Partial<SectionsProps> = {}): SectionsProps {
         },
       ],
     },
+    chatEvidenceRows: [],
     chatMessages: [],
     customerProfileId: 'customer_1',
     customerRows: [{ label: 'Customer phone', value: '+84911111111' }],
@@ -150,5 +151,42 @@ describe('BookingRecordDetailSections', () => {
 
     expect(markup).toContain('Partner record link pending');
     expect(markup).toContain('No Partner participation has been recorded for this booking yet.');
+  });
+
+  it('renders post-match cancellation chat evidence inside the booking transcript', () => {
+    const markup = renderSections({
+      chatEvidenceRows: [
+        {
+          label: 'Review state',
+          value: 'Pending admin decision',
+          helper: '30m after match / Fee held',
+        },
+        {
+          label: 'Retained chat',
+          value: '1 message',
+          helper: 'Use this transcript before approving or holding the fee decision.',
+        },
+      ],
+      chatMessages: [
+        {
+          id: 'message_1',
+          body: 'I need to cancel after matching.',
+          createdAt: '2026-06-13T03:29:00.000Z',
+          sender: {
+            id: 'partner_user_1',
+            fullName: 'Partner One',
+            roles: ['PROVIDER'],
+          },
+        },
+      ],
+    });
+
+    expect(markup).toContain('Booking chat evidence snapshot');
+    expect(markup).toContain('Review state');
+    expect(markup).toContain('Pending admin decision');
+    expect(markup).toContain('30m after match / Fee held');
+    expect(markup).toContain('Retained chat');
+    expect(markup).toContain('1 message');
+    expect(markup).toContain('booking-chat-evidence-grid is-detail');
   });
 });

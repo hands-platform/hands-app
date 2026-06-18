@@ -2,6 +2,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
+import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat-evidence';
 import { BookingChatBubble } from './booking-chat-bubble';
 
 type InfoRowModel = {
@@ -162,6 +163,7 @@ const CASH_FEE_SETTLEMENT_HEADERS = [
 
 export type BookingRecordDetailSectionsProps = {
   cashFeeSettlementPath: CashSettlementPath;
+  chatEvidenceRows: readonly BookingPostMatchChatEvidenceRow[];
   chatMessages: AdminChatMessage[];
   customerProfileId?: string | null;
   customerRows: InfoRowModel[];
@@ -178,6 +180,7 @@ export type BookingRecordDetailSectionsProps = {
 
 export function BookingRecordDetailSections({
   cashFeeSettlementPath,
+  chatEvidenceRows,
   chatMessages,
   customerProfileId,
   customerRows,
@@ -253,6 +256,17 @@ export function BookingRecordDetailSections({
           <p className="muted">
             Admin archive for the booking transcript.
           </p>
+          {chatEvidenceRows.length > 0 && (
+            <div className="booking-chat-evidence-grid is-detail" aria-label="Booking chat evidence snapshot">
+              {chatEvidenceRows.map((row) => (
+                <div className="booking-chat-evidence-item" key={row.label}>
+                  <span>{row.label}</span>
+                  <strong>{row.value}</strong>
+                  <p>{row.helper}</p>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="stack">
             {chatMessages.map((message) => (
               <BookingChatBubble key={message.id} message={message} />

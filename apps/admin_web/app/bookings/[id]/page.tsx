@@ -75,6 +75,7 @@ import {
   BookingRecordDetailSections,
   type BookingRecordDetailSectionsProps,
 } from './booking-record-detail-sections';
+import { bookingPostMatchChatEvidenceRows } from '../booking-post-match-chat-evidence';
 import { bookingRecordFinanceRows as buildBookingRecordFinanceRows } from './booking-record-finance-rows';
 import { bookingRecordPaymentRows as buildBookingRecordPaymentRows } from './booking-record-info-rows';
 import {
@@ -633,6 +634,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingRecordFinanceRows = buildBookingRecordFinanceRows(financeTrace);
   const recordDetailSectionsProps: BookingRecordDetailSectionsProps = {
     cashFeeSettlementPath,
+    chatEvidenceRows: bookingPostMatchChatEvidenceRows({
+      booking,
+      messageCount,
+    }),
     chatMessages: messages,
     customerProfileId: booking.customerProfile?.id,
     customerRows: bookingRecordCustomerRows,
