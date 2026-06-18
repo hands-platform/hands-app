@@ -419,6 +419,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Fee deduction remains until approval.');
     expect(rendered).toContain('Chat (1)');
     expect(rendered).toContain('Fee held');
+    expect(rendered).toContain('After 15m');
     expect(rendered).toContain('30m after match');
     expect(rendered).toContain('Admin review required');
     expect(rendered).toContain('Resolve cancellation');
@@ -428,7 +429,13 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('admin-action-menu booking-post-match-action-menu');
     expect(markup).toContain('admin-action-form');
     expect(markup).toContain('aria-label="Post-match cancellation review priorities"');
+    expect(markup).toContain('aria-label="Cancellation review reasons"');
+    expect(markup).toContain(
+      'title="Partner cancellation happened after the 15-minute auto-approval window."',
+    );
+    expect(markup).toContain('title="Partner fee deduction remains until approval."');
     expect(markup).toContain('vuexy-booking-review-summary');
+    expect(markup).toContain('vuexy-booking-review-reasons');
     expect(markup).toContain('vuexy-booking-review-metric is-warn');
     expect(markup).toContain('vuexy-booking-review-metric is-danger');
     expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
@@ -566,10 +573,14 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Missing chat');
     expect(rendered).toContain('Open detail if no retained chat is attached.');
     expect(rendered).toContain('Chat (0)');
+    expect(rendered).toContain('No chat');
     expect(rendered).toContain('No-show review');
     expect(rendered).toContain('Detail');
     expect(rendered).not.toContain('Resolve cancellation');
     expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
+    expect(markup).toContain('aria-label="Cancellation review reasons"');
+    expect(markup).toContain('title="No-show review needs retained evidence."');
+    expect(markup).toContain('title="No retained chat messages are attached."');
     expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
     expect(markup).toContain('href="/bookings/booking_no_show_after_match"');

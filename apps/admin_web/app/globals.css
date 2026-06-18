@@ -1907,6 +1907,21 @@ a.action-button-card:hover {
   gap: 6px;
 }
 
+.vuexy-booking-review-reasons {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.vuexy-booking-review-reasons .pill {
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 16px;
+  padding: 3px 8px;
+}
+
 .vuexy-booking-actions-cell {
   align-items: flex-start;
   display: flex;

@@ -164,6 +164,12 @@ type BookingNeedsReviewMetric = {
   readonly value: string;
 };
 
+type BookingReviewReasonPill = {
+  readonly label: string;
+  readonly title: string;
+  readonly tone: 'pill-danger' | 'pill-info' | 'pill-warn';
+};
+
 type BookingParticipantTableRow = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly id: string;
@@ -401,6 +407,7 @@ function BookingMonitorListTableRow({
   const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
   const stateChange = bookingStatusChangeState(booking);
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
+  const reviewReasonPills = bookingReviewReasonPills(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
   const requestedPartnerHref = bookingPartnerHref(
     booking.preferredProvider?.id ??
@@ -459,6 +466,7 @@ function BookingMonitorListTableRow({
         <BookingStateChangedCell
           cancellationReviewSignal={cancellationReviewSignal}
           closureState={row.closureState}
+          reviewReasonPills={reviewReasonPills}
           stateChange={stateChange}
         />
       </td>
@@ -682,10 +690,12 @@ function BookingChatMessageRow({ message }: { readonly message: BookingChatMessa
 function BookingStateChangedCell({
   cancellationReviewSignal,
   closureState,
+  reviewReasonPills,
   stateChange,
 }: {
   readonly cancellationReviewSignal: { readonly label: string; readonly tone: string } | null;
   readonly closureState: BookingMonitorPillDetail | null;
+  readonly reviewReasonPills: readonly BookingReviewReasonPill[];
   readonly stateChange: { readonly dateLabel: string; readonly label: string };
 }) {
   return (
@@ -713,6 +723,15 @@ function BookingStateChangedCell({
             )}
           </div>
           <div className="muted">{closureState.detail}</div>
+        </div>
+      )}
+      {reviewReasonPills.length > 0 && (
+        <div className="vuexy-booking-review-reasons" aria-label="Cancellation review reasons">
+          {reviewReasonPills.map((reason) => (
+            <span className={`pill ${reason.tone}`} key={reason.label} title={reason.title}>
+              {reason.label}
+            </span>
+          ))}
         </div>
       )}
     </BookingCompactCell>
@@ -1203,6 +1222,74 @@ function bookingPostMatchNeedsReviewMetrics(
       value: String(feeHeldCount),
     },
   ];
+}
+
+function bookingReviewReasonPills(booking: AdminBooking): readonly BookingReviewReasonPill[] {
+  if (!isPostMatchCancellationReviewBooking(booking)) {
+    return [];
+  }
+
+  const chatCount = booking.chatRoom?.messages?.length ?? 0;
+  const reasons: BookingReviewReasonPill[] = [];
+
+  if (booking.status === 'NO_SHOW') {
+    reasons.push({
+      label: 'No-show',
+      title: 'No-show review needs retained evidence.',
+      tone: 'pill-warn',
+    });
+
+    if (chatCount === 0) {
+      reasons.push({
+        label: 'No chat',
+        title: 'No retained chat messages are attached.',
+        tone: 'pill-warn',
+      });
+    }
+
+    return reasons;
+  }
+
+  if (
+    !isPostMatchCancellationBooking(booking) ||
+    postMatchCancellationResolution(booking) !== 'pending'
+  ) {
+    return [];
+  }
+
+  if (isPostMatchCancellationManualReviewRequired(booking)) {
+    reasons.push({
+      label: 'After 15m',
+      title: 'Partner cancellation happened after the 15-minute auto-approval window.',
+      tone: 'pill-warn',
+    });
+  }
+
+  if (postMatchCancellationFeeState(booking) === 'held') {
+    reasons.push({
+      label: 'Fee held',
+      title: 'Partner fee deduction remains until approval.',
+      tone: 'pill-danger',
+    });
+  }
+
+  if (chatCount === 0) {
+    reasons.push({
+      label: 'No chat',
+      title: 'No retained chat messages are attached.',
+      tone: 'pill-warn',
+    });
+  }
+
+  if (reasons.length === 0) {
+    reasons.push({
+      label: 'Review',
+      title: 'Retained evidence review is pending.',
+      tone: 'pill-info',
+    });
+  }
+
+  return reasons;
 }
 
 function compareBookingTableRows(left: BookingMonitorListRow, right: BookingMonitorListRow) {
