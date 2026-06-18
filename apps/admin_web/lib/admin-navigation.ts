@@ -45,7 +45,7 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/bookings',
         label: 'All Bookings',
         description:
-          'Complete booking workspace with internal filters for urgent work, matching, marketplace, customer choice, chat repair, and no-show evidence.',
+          'Complete booking workspace with internal filters for urgent work, matching, post-match cancellations, chat repair, and closeout evidence.',
       },
     ],
   },

@@ -19,8 +19,8 @@ describe('admin navigation', () => {
 
     expect(bookingSection?.links.map((link) => link.href)).toEqual(['/bookings']);
     expect(bookingSection?.links[0]?.description).toContain('urgent work');
-    expect(bookingSection?.links[0]?.description).toContain('marketplace');
-    expect(bookingSection?.links[0]?.description).toContain('no-show evidence');
+    expect(bookingSection?.links[0]?.description).toContain('post-match cancellations');
+    expect(bookingSection?.links[0]?.description).toContain('closeout evidence');
   });
 
   it('does not repeat the same route across nav categories', () => {
