@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
@@ -15,9 +16,14 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
             hold based on chat evidence.
           </p>
         </div>
-        <div className="booking-post-match-counts" aria-label="Post-match cancellation counts">
-          <span className="pill pill-info">{board.totalCount} total</span>
-          <span className="pill pill-neutral">{board.monthCount} this month</span>
+        <div className="booking-post-match-header-actions">
+          <div className="booking-post-match-counts" aria-label="Post-match cancellation counts">
+            <span className="pill pill-info">{board.totalCount} total</span>
+            <span className="pill pill-neutral">{board.monthCount} this month</span>
+          </div>
+          <Link className="booking-action-button is-secondary" href="/bookings?view=post-match-cancellations">
+            Open queue
+          </Link>
         </div>
       </div>
 
@@ -33,6 +39,12 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
           label="Auto-approved"
           tone="info"
           value={board.autoApprovedCount}
+        />
+        <CancellationMetric
+          helper="Cancellations inside the 15-minute Partner window."
+          label="Within 15m window"
+          tone="info"
+          value={board.autoApprovalWindowCount}
         />
         <CancellationMetric
           helper="Partner fee is still held until approval restores the unpaid earning."

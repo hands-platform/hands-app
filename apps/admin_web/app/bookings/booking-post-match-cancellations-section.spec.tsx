@@ -24,11 +24,15 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(rendered).toContain('5 this month');
     expect(rendered).toContain('Needs admin review');
     expect(rendered).toContain('Auto-approved');
+    expect(rendered).toContain('Within 15m window');
     expect(rendered).toContain('Fee still held');
     expect(rendered).toContain('Fee restored');
+    expect(rendered).toContain('Open queue');
     expect(rendered).toContain('Open chat, check the Partner cancellation note');
     expect(markup).toContain('aria-label="Post-match cancellation counts"');
+    expect(markup).toContain('href="/bookings?view=post-match-cancellations"');
     expect(markup).toContain('booking-post-match-cancellations-card');
+    expect(markup).toContain('booking-post-match-header-actions');
     expect(markup).toContain('booking-post-match-metric is-warn');
     expect(markup).toContain('booking-post-match-metric is-danger');
   });
