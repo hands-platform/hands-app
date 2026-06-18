@@ -16,6 +16,7 @@ describe('CashSettlementPriorityBoardSection', () => {
     expect(rendered).toContain('500.000 VND');
     expect(rendered).toContain('Confirm bank deposit reference');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-scroll-x admin-mt-12', 'table vuexy-data-table']));
   });
 
   it('renders empty state when there are no priority rows', () => {
@@ -71,6 +72,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
