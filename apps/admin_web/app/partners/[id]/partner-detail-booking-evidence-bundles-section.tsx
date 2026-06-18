@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 
 export type PartnerBookingEvidenceRow = {
   readonly bookingLabel: string;
@@ -27,6 +27,16 @@ type PartnerDetailBookingEvidenceBundlesSectionProps = {
   readonly statusPillClass: (status?: string) => string;
 };
 
+const PARTNER_BOOKING_EVIDENCE_HEADERS = [
+  'Booking',
+  'Partner role',
+  'Customer and location',
+  'Chat archive',
+  'Money records',
+  'Ops evidence',
+  'Open',
+] as const;
+
 export function PartnerDetailBookingEvidenceBundlesSection({
   rows,
   statusPillClass,
@@ -45,65 +55,52 @@ export function PartnerDetailBookingEvidenceBundlesSection({
         <span className="pill pill-info">{rows.length} booking bundle(s)</span>
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Partner role</th>
-              <th>Customer and location</th>
-              <th>Chat archive</th>
-              <th>Money records</th>
-              <th>Ops evidence</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={`${row.id}-${row.relation}`}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.roleStatus}</strong>
-                  <p className="muted">{row.roleDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.customerStatus}</strong>
-                  <p className="muted">{row.customerDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.chatStatus}</strong>
-                  <p className="muted">{row.chatDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.moneyStatus}</strong>
-                  <p className="muted">{row.moneyDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.opsStatus}</strong>
-                  <p className="muted">{row.opsDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
+        <AdminDataTable emptyMessage={null} headers={PARTNER_BOOKING_EVIDENCE_HEADERS} rowCount={rows.length}>
+          {rows.map((row) => (
+            <tr key={`${row.id}-${row.relation}`}>
+              <td>
+                <strong>{row.bookingLabel}</strong>
+                <p className="muted">{row.serviceLabel}</p>
+                <span className={`pill ${statusPillClass(row.status)}`}>{row.status}</span>
+              </td>
+              <td>
+                <strong>{row.roleStatus}</strong>
+                <p className="muted">{row.roleDetail}</p>
+              </td>
+              <td>
+                <strong>{row.customerStatus}</strong>
+                <p className="muted">{row.customerDetail}</p>
+              </td>
+              <td>
+                <strong>{row.chatStatus}</strong>
+                <p className="muted">{row.chatDetail}</p>
+              </td>
+              <td>
+                <strong>{row.moneyStatus}</strong>
+                <p className="muted">{row.moneyDetail}</p>
+              </td>
+              <td>
+                <strong>{row.opsStatus}</strong>
+                <p className="muted">{row.opsDetail}</p>
+              </td>
+              <td>
+                <Link className="text-link" href={`/bookings/${row.id}`}>
+                  Booking
+                </Link>
+                {row.customerHref ? (
+                  <Link className="text-link admin-ml-10" href={row.customerHref}>
+                    Customer
                   </Link>
-                  {row.customerHref ? (
-                    <Link className="text-link admin-ml-10" href={row.customerHref}>
-                      Customer
-                    </Link>
-                  ) : null}
-                  {row.chatHref ? (
-                    <Link className="text-link admin-ml-10" href={row.chatHref}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                ) : null}
+                {row.chatHref ? (
+                  <Link className="text-link admin-ml-10" href={row.chatHref}>
+                    Chat
+                  </Link>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
       {rows.length === 0 ? (
         <p className="muted admin-mt-12">

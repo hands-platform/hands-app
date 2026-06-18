@@ -1,0 +1,128 @@
+import { PartnerDetailBookingEvidenceBundlesSection } from './partner-detail-booking-evidence-bundles-section';
+
+describe('PartnerDetailBookingEvidenceBundlesSection', () => {
+  it('renders booking evidence bundles with shared table styling and links', () => {
+    const section = PartnerDetailBookingEvidenceBundlesSection({
+      rows: [
+        {
+          bookingLabel: 'BK-2001 / 10 Jun 2026',
+          chatDetail: '12 retained messages',
+          chatHref: '/chat-archive?q=BK-2001',
+          chatStatus: 'Archive retained',
+          customerDetail: 'Service address saved on booking',
+          customerHref: '/customers/customer-1',
+          customerStatus: 'Customer snapshot',
+          id: 'BK-2001',
+          moneyDetail: 'Cash payment and Partner earning linked',
+          moneyStatus: 'Money trace linked',
+          opsDetail: 'Admin closeout evidence retained',
+          opsStatus: 'Ops reviewed',
+          relation: 'Selected',
+          roleDetail: 'Partner accepted and completed service',
+          roleStatus: 'Selected Partner',
+          serviceLabel: 'Aromatherapy',
+          status: 'COMPLETED',
+        },
+      ],
+      statusPillClass: (status) => (status === 'COMPLETED' ? 'pill-success' : 'pill-neutral'),
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner booking evidence bundles');
+    expect(rendered).toContain('1 booking bundle(s)');
+    expect(rendered).toContain('BK-2001 / 10 Jun 2026');
+    expect(rendered).toContain('Selected Partner');
+    expect(rendered).toContain('Customer snapshot');
+    expect(rendered).toContain('Archive retained');
+    expect(rendered).toContain('Money trace linked');
+    expect(rendered).toContain('Ops reviewed');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['/bookings/BK-2001', '/customers/customer-1', '/chat-archive?q=BK-2001']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'text-link admin-ml-10',
+        'pill pill-success',
+      ]),
+    );
+  });
+
+  it('renders the existing empty message outside the table', () => {
+    const section = PartnerDetailBookingEvidenceBundlesSection({
+      rows: [],
+      statusPillClass: () => 'pill-neutral',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('0 booking bundle(s)');
+    expect(rendered).toContain('No partner booking bundle matched this date filter.');
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
