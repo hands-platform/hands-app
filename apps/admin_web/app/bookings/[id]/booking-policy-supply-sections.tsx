@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { AdminPersonCell } from '../../../components/admin-person-cell';
+import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 type SummaryCard = {
   label: string;
@@ -312,14 +314,16 @@ export function BookingDispatchCandidateDecisionMatrixSection({
               <div className="setup-stage-item" key={`candidate-${row.id}`}>
                 <span>GO</span>
                 <div>
-                  <strong>{row.name}</strong>
-                  <p className="muted">
-                    {row.distance} / {row.locationAge}
-                  </p>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar is-partner"
+                    avatarStatus="online"
+                    className="vuexy-booking-person"
+                    helper={`${row.distance} / ${row.locationAge}`}
+                    href={`/partners/${row.id}`}
+                    label={row.name}
+                    linkClassName="table-link"
+                  />
                 </div>
-                <Link className="text-link" href={`/partners/${row.id}`}>
-                  Open
-                </Link>
               </div>
             ))}
             {marketplaceSupply.topCandidates.length === 0 ? (
@@ -401,14 +405,15 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
         {marketplaceSupply.rows.map((row) => (
           <div className="ops-row" key={row.id}>
             <div>
-              <strong>
-                <Link className="text-link" href={`/partners/${row.id}`}>
-                  {row.name}
-                </Link>
-              </strong>
-              <p className="muted">
-                {row.role} / {row.status} / {row.locationAge}
-              </p>
+              <AdminPersonCell
+                avatarClassName="vuexy-booking-avatar is-partner"
+                avatarStatus={marketplaceSupplyRowAvatarStatus(row.status)}
+                className="vuexy-booking-person"
+                helper={`${row.role} / ${row.status} / ${row.locationAge}`}
+                href={`/partners/${row.id}`}
+                label={row.name}
+                linkClassName="table-link"
+              />
               <p className="muted">{row.detail}</p>
             </div>
             <div>
@@ -433,6 +438,16 @@ export function BookingMarketplaceSupplySection({ marketplaceSupply }: BookingMa
 export type BookingMarketplaceSupplySectionProps = {
   marketplaceSupply: MarketplaceSupply;
 };
+
+function marketplaceSupplyRowAvatarStatus(status: string): AdminAvatarStatus {
+  if (status === 'ONLINE_BUSY') {
+    return 'working';
+  }
+  if (status === 'ONLINE_AVAILABLE' || status === 'ONLINE_AVAILABLE_SOON') {
+    return 'online';
+  }
+  return 'offline';
+}
 
 function SummaryCardGrid({ cards }: SummaryCardGridProps) {
   return (
