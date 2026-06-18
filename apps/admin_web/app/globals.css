@@ -1963,6 +1963,47 @@ a.action-button-card:hover {
   margin-top: 4px;
 }
 
+.booking-chat-evidence-grid {
+  border-bottom: 1px solid var(--admin-border);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 16px 22px;
+}
+
+.booking-chat-evidence-item {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.booking-chat-evidence-item span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.booking-chat-evidence-item strong {
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-chat-evidence-item p {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0;
+}
+
 .booking-chat-close {
   align-items: center;
   background: transparent;

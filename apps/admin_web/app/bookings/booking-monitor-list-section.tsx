@@ -541,7 +541,7 @@ function postMatchCancellationDecisionActions(
   ];
 }
 
-function BookingPostMatchCancellationChatLayer({
+export function BookingPostMatchCancellationChatLayer({
   onClose,
   row,
 }: {
@@ -556,6 +556,14 @@ function BookingPostMatchCancellationChatLayer({
   const autoApproved = isPostMatchCancellationAutoApproved(booking);
   const evidenceLabel =
     booking.status === 'NO_SHOW' ? 'No-show evidence' : 'Post-match cancellation evidence';
+  const evidenceRows = postMatchChatEvidenceRows({
+    autoApproved,
+    booking,
+    feeState,
+    messages,
+    minutesAfterMatch,
+    resolution,
+  });
 
   return (
     <div className="booking-chat-layer" role="presentation">
@@ -585,6 +593,15 @@ function BookingPostMatchCancellationChatLayer({
             <X aria-hidden="true" size={18} />
           </button>
         </div>
+        <div className="booking-chat-evidence-grid" aria-label="Cancellation evidence snapshot">
+          {evidenceRows.map((item) => (
+            <div className="booking-chat-evidence-item" key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <p>{item.helper}</p>
+            </div>
+          ))}
+        </div>
         <div className="booking-chat-message-list">
           {messages.length > 0 ? (
             messages.map((message) => <BookingChatMessageRow key={message.id} message={message} />)
@@ -595,6 +612,48 @@ function BookingPostMatchCancellationChatLayer({
       </div>
     </div>
   );
+}
+
+function postMatchChatEvidenceRows({
+  autoApproved,
+  booking,
+  feeState,
+  messages,
+  minutesAfterMatch,
+  resolution,
+}: {
+  readonly autoApproved: boolean;
+  readonly booking: AdminBooking;
+  readonly feeState: ReturnType<typeof postMatchCancellationFeeState>;
+  readonly messages: readonly BookingChatMessage[];
+  readonly minutesAfterMatch: number | null;
+  readonly resolution: ReturnType<typeof postMatchCancellationResolution>;
+}) {
+  return [
+    {
+      label: 'Review state',
+      value: cancellationResolutionLabel(resolution, autoApproved),
+      helper: `${cancellationMinutesLabel(minutesAfterMatch)} / ${cancellationFeeStateLabel(feeState)}`,
+    },
+    {
+      label: 'Closure source',
+      value: booking.closedByRole ? humanizeBookingToken(booking.closedByRole) : 'Not recorded',
+      helper: booking.closedReason ? humanizeBookingToken(booking.closedReason) : 'No closure reason stored.',
+    },
+    {
+      label: 'Retained chat',
+      value: countLabel(messages.length, 'message'),
+      helper:
+        messages.length > 0
+          ? 'Use this transcript before approving or holding the fee decision.'
+          : 'No retained chat messages are attached to this booking.',
+    },
+    {
+      label: 'Closure note',
+      value: booking.closedNote?.trim() ? booking.closedNote.trim() : 'No note',
+      helper: booking.status === 'NO_SHOW' ? 'No-show context for admin review.' : 'Partner cancellation context.',
+    },
+  ];
 }
 
 function BookingChatMessageRow({ message }: { readonly message: BookingChatMessage }) {
@@ -1042,6 +1101,19 @@ function bookingChatSenderRole(roles?: readonly string[]) {
     return 'Admin';
   }
   return 'User';
+}
+
+function countLabel(count: number, singular: string) {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
+function humanizeBookingToken(value: string) {
+  const label = value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+  return label === 'Provider' ? 'Partner' : label;
 }
 
 function cancellationFeeStateTone(feeState: ReturnType<typeof postMatchCancellationFeeState>) {

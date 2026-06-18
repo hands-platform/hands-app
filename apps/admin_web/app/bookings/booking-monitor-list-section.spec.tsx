@@ -1,7 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminBooking } from '../../lib/admin-api';
 import { normalizedText } from './booking-section-test-utils';
-import { BookingMonitorListSection, type BookingMonitorListRow } from './booking-monitor-list-section';
+import {
+  BookingMonitorListSection,
+  BookingPostMatchCancellationChatLayer,
+  type BookingMonitorListRow,
+} from './booking-monitor-list-section';
 
 describe('BookingMonitorListSection', () => {
   it('renders realtime booking rows with the compact operations columns', () => {
@@ -413,6 +417,67 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
     expect(markup).toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
+  });
+
+  it('renders a Vuexy-style evidence snapshot inside the post-match chat layer', () => {
+    const row = bookingRowFixture({
+      closedAt: '2026-06-13T03:30:00.000Z',
+      closedByRole: 'PROVIDER',
+      closedReason: 'partner_cancelled',
+      customerName: 'Manual Review Customer',
+      id: 'booking_manual_cancelled_after_match',
+      matchedAt: '2026-06-13T03:00:00.000Z',
+      openedDateLabel: '13 Jun 2026, 03:00',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-06-13T03:30:00.000Z',
+    });
+
+    const markup = renderToStaticMarkup(
+      <BookingPostMatchCancellationChatLayer
+        onClose={() => undefined}
+        row={{
+          ...row,
+          booking: {
+            ...row.booking,
+            chatRoom: {
+              id: 'chat_manual_cancelled',
+              messages: [
+                {
+                  id: 'message_1',
+                  body: 'I need to cancel after matching.',
+                  createdAt: '2026-06-13T03:29:00.000Z',
+                  sender: {
+                    fullName: 'Partner Manual',
+                    roles: ['PROVIDER'],
+                  },
+                },
+              ],
+            },
+            closedNote: 'Partner cancelled from chat.',
+            earning: {
+              id: 'earning_manual_cancelled',
+              netAmount: -30000,
+              status: 'PENDING',
+            },
+          } as unknown as AdminBooking,
+        }}
+      />,
+    );
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Cancellation evidence snapshot');
+    expect(rendered).toContain('Review state');
+    expect(rendered).toContain('Pending admin decision');
+    expect(rendered).toContain('30m after match / Fee held');
+    expect(rendered).toContain('Closure source');
+    expect(rendered).toContain('Partner');
+    expect(rendered).toContain('Partner Cancelled');
+    expect(rendered).toContain('Retained chat');
+    expect(rendered).toContain('1 message');
+    expect(rendered).toContain('Closure note');
+    expect(rendered).toContain('Partner cancelled from chat.');
+    expect(markup).toContain('booking-chat-evidence-grid');
+    expect(markup).toContain('booking-chat-evidence-item');
   });
 
   it('distinguishes auto-approved post-match cancellations from manual approvals', () => {
