@@ -6,7 +6,7 @@ import type { BookingLiveMatchingPolicyCard } from '../../lib/booking-live-match
 import type { BookingMatchingEscalationLane } from '../../lib/booking-matching-escalation-board';
 import type { BookingMatchingEscalationRow } from '../../lib/booking-matching-escalation-rows';
 import type { BookingMatchingFlowStep } from '../../lib/booking-matching-flow-timeline';
-import { bookingDashboardTone, commandToneClass, commandToneLabel } from './booking-command-display';
+import { commandToneClass, commandToneLabel } from './booking-command-display';
 import { bookingServiceOptionLabel } from './booking-service-labels';
 
 export type BookingMonitorDispatchPartnerShortcut = {
@@ -52,6 +52,10 @@ const MATCHING_ESCALATION_LANE_TABLE_HEADERS = [
   'Operator Action',
 ] as const;
 
+const LIVE_POLICY_TABLE_HEADERS = ['Policy', 'Value', 'Helper'] as const;
+
+const DISPATCH_PARTNER_SHORTCUT_TABLE_HEADERS = ['Partner Queue', 'Count', 'Detail', 'Action'] as const;
+
 export function BookingMonitorMatchingEscalationSection({
   dispatchPartnerShortcuts,
   getCustomerLabel,
@@ -96,15 +100,26 @@ export function BookingMonitorMatchingEscalationSection({
         </div>
         <span className="pill pill-info">Live policy default</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {livePolicyCards.map((card) => (
-          <div key={card.label}>
-            <span>{card.label}</span>
-            <strong>{card.value}</strong>
-            <small>{card.helper}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table admin-mt-12"
+          emptyMessage="No live matching policy values are loaded."
+          headers={LIVE_POLICY_TABLE_HEADERS}
+          rowCount={livePolicyCards.length}
+        >
+          {livePolicyCards.map((card) => (
+            <tr key={card.label}>
+              <td>
+                <strong>{card.label}</strong>
+              </td>
+              <td>{card.value}</td>
+              <td>
+                <span className="muted">{card.helper}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
       {visibleEscalationLanes.length > 0 && (
         <AdminTableScroll>
           <AdminDataTable
@@ -216,19 +231,35 @@ export function BookingMonitorMatchingEscalationSection({
         <div className="admin-mt-16">
           <h3>Dispatch Partner repair shortcuts</h3>
           <p className="muted">Shortcuts appear when a Partner-side queue has work.</p>
-          <div className="service-trace-summary admin-mt-12">
-            {visibleDispatchPartnerShortcuts.map((item) => (
-              <Link
-                className={`ops-task-breakdown-item ops-task-breakdown-${bookingDashboardTone(item.tone)}`}
-                href={item.href}
-                key={item.title}
-              >
-                <span>{item.title}</span>
-                <strong>{item.value}</strong>
-                <small>{item.detail}</small>
-              </Link>
-            ))}
-          </div>
+          <AdminTableScroll>
+            <AdminDataTable
+              className="vuexy-booking-table admin-mt-12"
+              emptyMessage="No Partner repair shortcuts need action."
+              headers={DISPATCH_PARTNER_SHORTCUT_TABLE_HEADERS}
+              rowCount={visibleDispatchPartnerShortcuts.length}
+            >
+              {visibleDispatchPartnerShortcuts.map((item) => (
+                <tr key={item.title}>
+                  <td>
+                    <Link className="text-link" href={item.href}>
+                      {item.title}
+                    </Link>
+                  </td>
+                  <td>
+                    <strong>{item.value}</strong>
+                  </td>
+                  <td>
+                    <span className="muted">{item.detail}</span>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={item.href}>
+                      Open queue
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
       )}
       {visibleMatchingEscalationRows.length > 0 && (
