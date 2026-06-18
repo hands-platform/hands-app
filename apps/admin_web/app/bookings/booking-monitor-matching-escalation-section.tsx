@@ -35,6 +35,15 @@ const MATCHING_EXCEPTION_TABLE_HEADERS = [
   'Evidence Tags',
 ] as const;
 
+const MATCHING_FLOW_TABLE_HEADERS = [
+  'Stage',
+  'Flow Step',
+  'Status',
+  'Metrics',
+  'Sample Bookings',
+  'Operator Action',
+] as const;
+
 export function BookingMonitorMatchingEscalationSection({
   dispatchPartnerShortcuts,
   getCustomerLabel,
@@ -119,34 +128,58 @@ export function BookingMonitorMatchingEscalationSection({
       <div className="admin-mt-16">
         <h3>Matching flow timeline</h3>
         <p className="muted">Active stage exceptions only; full history remains in booking detail.</p>
-        <div className="ops-task-grid admin-mt-12">
-          {visibleFlowTimeline.map((step) => (
-            <Link className="ops-task-card" href={step.href} key={step.stage}>
-              <span className={`signal ${commandToneClass(step.tone)}`}>{step.stage}</span>
-              <h3>{step.title}</h3>
-              <p>{step.detail}</p>
-              <div className="participant-list">
-                <span className="pill">{step.status}</span>
-                {step.metrics.map((metricItem) => (
-                  <span className="pill" key={`${step.stage}-${metricItem.label}`}>
-                    {metricItem.label}: {metricItem.value}
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table admin-mt-12"
+            emptyMessage="No active matching flow exceptions."
+            headers={MATCHING_FLOW_TABLE_HEADERS}
+            rowCount={visibleFlowTimeline.length}
+          >
+            {visibleFlowTimeline.map((step) => (
+              <tr key={step.stage}>
+                <td>
+                  <Link className="text-link" href={step.href}>
+                    {step.stage}
+                  </Link>
+                </td>
+                <td>
+                  <strong>{step.title}</strong>
+                  <div className="muted">{step.detail}</div>
+                </td>
+                <td>
+                  <span className={`signal ${commandToneClass(step.tone)}`}>
+                    {commandToneLabel(step.tone)}
                   </span>
-                ))}
-              </div>
-              {step.bookings.length > 0 ? (
-                <div className="stack">
-                  {step.bookings.slice(0, 3).map((booking) => (
-                    <span className="muted" key={`${step.stage}-${booking.id}`}>
-                      {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
-                      {getMatchingWindowLabel(booking)}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <small>{step.operatorAction}</small>
-            </Link>
-          ))}
-        </div>
+                  <div className="muted">{step.status}</div>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {step.metrics.map((metricItem) => (
+                      <span className="pill" key={`${step.stage}-${metricItem.label}`}>
+                        {metricItem.label}: {metricItem.value}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  {step.bookings.length > 0 ? (
+                    <div className="stack">
+                      {step.bookings.slice(0, 3).map((booking) => (
+                        <span className="muted" key={`${step.stage}-${booking.id}`}>
+                          {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                          {getMatchingWindowLabel(booking)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="muted">No sample bookings</span>
+                  )}
+                </td>
+                <td>{step.operatorAction}</td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
       {visibleDispatchPartnerShortcuts.length > 0 && (
         <div className="admin-mt-16">
