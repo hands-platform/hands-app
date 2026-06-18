@@ -1,9 +1,6 @@
-import Link from 'next/link';
-import { User } from 'lucide-react';
-
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminAvatar } from '../../components/admin-person-cell';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import type { PartnerMasterRow } from './partner-master-row';
@@ -16,8 +13,7 @@ type PartnerMasterListSectionProps = {
 
 const PARTNER_MASTER_TABLE_HEADERS = [
   'Partner ID',
-  'Profile',
-  'Name / activity name',
+  'Partner',
   'Phone',
   'Gender',
   'Current state',
@@ -31,7 +27,6 @@ const PARTNER_MASTER_TABLE_HEADERS = [
   'Payout',
   'Ops trail',
   'Account',
-  'Open',
 ] as const;
 
 export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps) {
@@ -55,16 +50,16 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
                 <code>{row.provider.id}</code>
               </td>
               <td>
-                <AdminAvatar
-                  className="media-thumb"
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={row.avatarStatus}
+                  className="vuexy-booking-person"
+                  helper={row.legalName}
+                  href={`/partners/${row.provider.id}`}
                   initials={row.initials}
-                  label={`${row.displayName} profile thumbnail placeholder`}
-                  status={row.avatarStatus}
+                  label={row.displayName}
+                  linkClassName="table-link"
                 />
-              </td>
-              <td>
-                <strong>{row.displayName}</strong>
-                <p className="muted">{row.legalName}</p>
               </td>
               <td>{row.phone}</td>
               <td>{row.gender}</td>
@@ -124,12 +119,6 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
                   {row.accountBlocked ? 'Blocked' : 'Open'}
                 </span>
                 <p className="muted">{row.accountNote}</p>
-              </td>
-              <td>
-                <Link className="button button-secondary admin-inline-action" href={`/partners/${row.provider.id}`}>
-                  <User aria-hidden="true" size={14} />
-                  Detail
-                </Link>
               </td>
             </tr>
           ))}

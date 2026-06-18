@@ -27,7 +27,8 @@ describe('PartnerMasterListSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table service-trace',
         'pill pill-success',
-        'button button-secondary admin-inline-action',
+        'table-link',
+        'vuexy-booking-person',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
