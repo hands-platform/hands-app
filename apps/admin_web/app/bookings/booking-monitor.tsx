@@ -22,7 +22,6 @@ import { BookingMonitorFiltersSection } from './booking-monitor-filters-section'
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorListSection } from './booking-monitor-list-section';
 import { buildBookingMonitorNextActions } from './booking-monitor-next-actions-model';
-import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
@@ -33,7 +32,6 @@ import {
   buildBookingMonitorMatchingEscalationRows,
 } from './booking-monitor-matching-escalation-model';
 import { bookingCustomerLabel } from './booking-monitor-labels';
-import { buildBookingMonitorMarketplacePanelModel } from './booking-monitor-marketplace-model';
 import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
@@ -184,17 +182,6 @@ export function BookingMonitor({
         .map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
     [currentTimeMs, nowMs, visibleBookings],
   );
-  const marketplacePanel = useMemo(
-    () =>
-      buildBookingMonitorMarketplacePanelModel({
-        marketplaceRadiusMeters: liveOperationsPolicy.marketplaceRadiusMeters,
-        nowMs: currentTimeMs,
-        orderedBookings,
-        visibleBookings,
-      }),
-    [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, orderedBookings, visibleBookings],
-  );
-
   const statusFilterOptions = useMemo(() => bookingStatusFilterOptions(orderedBookings), [orderedBookings]);
   const paymentFilterOptions = useMemo(() => bookingPaymentFilterOptions(orderedBookings), [orderedBookings]);
 
@@ -334,13 +321,6 @@ export function BookingMonitor({
         />
       )}
 
-      <BookingMonitorMarketplaceSection
-        getCustomerLabel={bookingCustomerLabel}
-        getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
-        marketplaceBookingCoveragePills={marketplacePanel.marketplaceBookingCoveragePills}
-        marketplaceBookingCoverageRows={marketplacePanel.marketplaceBookingCoverageRows}
-        marketplaceBookingCoverageSummary={marketplacePanel.marketplaceBookingCoverageSummary}
-      />
     </div>
   );
 }
