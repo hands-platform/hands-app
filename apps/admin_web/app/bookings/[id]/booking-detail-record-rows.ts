@@ -3,10 +3,8 @@ import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/adm
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingServiceOptionLabel,
-  bookingServicePayoutRuleLabel,
   coordinateLabel,
   formatDate,
-  money,
   providerName,
 } from './booking-formatters';
 import { bookingDetailProviderLocationMetricHelper } from './booking-provider-location-metric';
@@ -38,9 +36,6 @@ export function bookingDetailServiceRows(booking: AdminBookingDetail) {
     optionLabel: bookingServiceOptionLabel(booking),
     serviceName: service?.service?.name ?? 'Service pending',
     durationLabel: `${service?.service?.durationMin ?? '-'} min`,
-    bookingPriceLabel: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
-    adminMinimumLabel: money(service?.service?.basePrice, booking.payment?.currency),
-    payoutRuleLabel: bookingServicePayoutRuleLabel(booking),
     notesLabel: booking.notes ?? 'No notes',
     createdLabel: formatDate(booking.createdAt),
     updatedLabel: formatDate(booking.updatedAt),

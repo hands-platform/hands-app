@@ -116,12 +116,8 @@ describe('booking detail record rows', () => {
       { label: 'Option', value: 'Aromatherapy / 90 min' },
       { label: 'Name', value: 'Aromatherapy' },
       { label: 'Duration', value: '90 min' },
-      { label: 'Booking price', value: '500.000 VND' },
-      { label: 'Admin minimum', value: '400.000 VND' },
-      { label: 'Partner payout rule', value: '350.000 VND payout / 150.000 VND fee' },
       { label: 'Notes', value: 'Customer prefers quiet room' },
-      { label: 'Created', value: '14 Jun 2026, 08:00' },
-      { label: 'Updated', value: '14 Jun 2026, 09:30' },
+      { label: 'Record time', value: '14 Jun 2026, 08:00 / updated 14 Jun 2026, 09:30' },
     ]);
   });
 

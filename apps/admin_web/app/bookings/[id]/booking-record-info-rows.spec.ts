@@ -10,9 +10,6 @@ describe('booking record info rows', () => {
         optionLabel: 'Massage / 60 min',
         serviceName: 'Massage',
         durationLabel: '60 min',
-        bookingPriceLabel: '500.000 VND',
-        adminMinimumLabel: '400.000 VND',
-        payoutRuleLabel: '350.000 VND payout / 150.000 VND fee',
         notesLabel: 'No notes',
         createdLabel: '2026-06-11',
         updatedLabel: '2026-06-12',
@@ -21,12 +18,8 @@ describe('booking record info rows', () => {
       'Option',
       'Name',
       'Duration',
-      'Booking price',
-      'Admin minimum',
-      'Partner payout rule',
       'Notes',
-      'Created',
-      'Updated',
+      'Record time',
     ]);
   });
 

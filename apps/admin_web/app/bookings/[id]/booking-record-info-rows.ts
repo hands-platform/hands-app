@@ -2,9 +2,6 @@ type BookingRecordServiceRowsInput = {
   optionLabel: string;
   serviceName: string;
   durationLabel: string;
-  bookingPriceLabel: string;
-  adminMinimumLabel: string;
-  payoutRuleLabel: string;
   notesLabel: string;
   createdLabel: string;
   updatedLabel: string;
@@ -25,12 +22,8 @@ export function bookingRecordServiceRows(input: BookingRecordServiceRowsInput) {
     { label: 'Option', value: input.optionLabel },
     { label: 'Name', value: input.serviceName },
     { label: 'Duration', value: input.durationLabel },
-    { label: 'Booking price', value: input.bookingPriceLabel },
-    { label: 'Admin minimum', value: input.adminMinimumLabel },
-    { label: 'Partner payout rule', value: input.payoutRuleLabel },
     { label: 'Notes', value: input.notesLabel },
-    { label: 'Created', value: input.createdLabel },
-    { label: 'Updated', value: input.updatedLabel },
+    { label: 'Record time', value: `${input.createdLabel} / updated ${input.updatedLabel}` },
   ];
 }
 
