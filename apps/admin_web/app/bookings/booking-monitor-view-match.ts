@@ -16,16 +16,14 @@ export type BookingMonitorViewMatchReaders = {
   readonly matchingEscalationNeedsOps: () => boolean;
   readonly noSupply: () => boolean;
   readonly paymentNeedsOps: () => boolean;
+  readonly postMatchCancellation: () => boolean;
   readonly pricingPolicyNeedsOps: () => boolean;
   readonly refundReviewNeedsOps: () => boolean;
   readonly stageKey: () => BookingListStageKey;
   readonly status: () => string;
 };
 
-export function bookingMatchesMonitorView(
-  view: BookingPageView,
-  readers: BookingMonitorViewMatchReaders,
-) {
+export function bookingMatchesMonitorView(view: BookingPageView, readers: BookingMonitorViewMatchReaders) {
   switch (view) {
     case 'attention':
       return readers.highPriorityCheck();
@@ -65,6 +63,8 @@ export function bookingMatchesMonitorView(
       return readers.decisionEvidenceMissing();
     case 'refund-review':
       return readers.refundReviewNeedsOps();
+    case 'post-match-cancellations':
+      return readers.postMatchCancellation();
     case 'expired':
       return readers.status() === 'EXPIRED';
     case 'no-show':

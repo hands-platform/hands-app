@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Eye } from 'lucide-react';
+import { CheckCircle2, Eye, MessageSquare, PauseCircle, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import {
   AdminAvatarStatusDot,
@@ -18,8 +18,16 @@ import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
+import { approvePostMatchCancellation, holdPostMatchCancellation } from './actions';
 import { readAddressText } from './booking-address-readers';
 import { formatBookingDate } from './booking-list-time';
+import {
+  isPostMatchCancellationAutoApprovalEligible,
+  isPostMatchCancellationBooking,
+  postMatchCancellationFeeState,
+  postMatchCancellationMinutesAfterMatch,
+  postMatchCancellationResolution,
+} from './booking-post-match-cancellations-model';
 
 type BookingMonitorPillDetail = {
   readonly detail: string;
@@ -168,6 +176,8 @@ type BookingCustomerUserLike =
   | null
   | undefined;
 
+type BookingChatMessage = NonNullable<NonNullable<AdminBooking['chatRoom']>['messages']>[number];
+
 const BOOKING_TABLE_PAGE_SIZE = 10;
 const BOOKING_TABLE_HEADERS = [
   'Request Time',
@@ -178,6 +188,7 @@ const BOOKING_TABLE_HEADERS = [
   'Service Type',
   'Address',
   'State Changed',
+  'Actions',
 ] as const;
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
@@ -218,6 +229,11 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
   const visibleBookingCount = groupedRows.reduce((count, group) => count + group.rows.length, 0);
+  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const activeChatRow = useMemo(
+    () => rows.find((row) => row.booking.id === chatBookingId) ?? null,
+    [chatBookingId, rows],
+  );
 
   return (
     <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
@@ -225,8 +241,8 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
         <div>
           <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
           <p>
-            Grouped by operating state; filters can leave a table empty, and pre-match cancellations
-            are omitted from this queue.
+            Grouped by operating state; filters can leave a table empty, and pre-match cancellations are
+            omitted from this queue.
           </p>
         </div>
         <span className="pill pill-info">
@@ -237,14 +253,23 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
       <div className="vuexy-booking-table-groups">
         {rows.length === 0 && <p className="vuexy-booking-table-empty-hint">{emptyMessage}</p>}
         {groupedRows.map((group) => (
-          <BookingMonitorTableGroup group={group} key={group.key} />
+          <BookingMonitorTableGroup group={group} key={group.key} onOpenChat={setChatBookingId} />
         ))}
       </div>
+      {activeChatRow && (
+        <BookingPostMatchCancellationChatLayer onClose={() => setChatBookingId(null)} row={activeChatRow} />
+      )}
     </section>
   );
 }
 
-function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup }) {
+function BookingMonitorTableGroup({
+  group,
+  onOpenChat,
+}: {
+  readonly group: BookingTableGroup;
+  readonly onOpenChat: (bookingId: string) => void;
+}) {
   const [page, setPage] = useState(1);
   const rowKey = group.rows.map((row) => row.booking.id).join('|');
   const totalPages = Math.max(1, Math.ceil(group.rows.length / BOOKING_TABLE_PAGE_SIZE));
@@ -282,7 +307,7 @@ function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
-            <BookingMonitorListTableRow key={row.booking.id} row={row} />
+            <BookingMonitorListTableRow key={row.booking.id} onOpenChat={onOpenChat} row={row} />
           ))}
         </AdminDataTable>
       </AdminTableScroll>
@@ -304,7 +329,13 @@ function BookingMonitorTableGroup({ group }: { readonly group: BookingTableGroup
   );
 }
 
-function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListRow }) {
+function BookingMonitorListTableRow({
+  onOpenChat,
+  row,
+}: {
+  readonly onOpenChat: (bookingId: string) => void;
+  readonly row: BookingMonitorListRow;
+}) {
   const { booking } = row;
   const participantRows = bookingParticipantRows(booking);
   const addressDisplay = bookingAddressDisplay(booking);
@@ -373,7 +404,156 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
           stateChange={stateChange}
         />
       </td>
+      <td>
+        <BookingPostMatchCancellationActionsCell onOpenChat={onOpenChat} row={row} />
+      </td>
     </tr>
+  );
+}
+
+function BookingPostMatchCancellationActionsCell({
+  onOpenChat,
+  row,
+}: {
+  readonly onOpenChat: (bookingId: string) => void;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const isCancellation = isPostMatchCancellationBooking(booking);
+  const chatCount = booking.chatRoom?.messages?.length ?? 0;
+
+  if (!isCancellation) {
+    return (
+      <Link className="booking-action-button is-secondary" href={`/bookings/${booking.id}`}>
+        <Eye aria-hidden="true" size={14} />
+        Detail
+      </Link>
+    );
+  }
+
+  const resolution = postMatchCancellationResolution(booking);
+  const feeState = postMatchCancellationFeeState(booking);
+  const autoApprovalEligible = isPostMatchCancellationAutoApprovalEligible(booking);
+  const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
+
+  return (
+    <div className="vuexy-booking-actions-cell">
+      <button
+        className="booking-action-button is-secondary"
+        onClick={() => onOpenChat(booking.id)}
+        type="button"
+      >
+        <MessageSquare aria-hidden="true" size={14} />
+        Chat ({chatCount})
+      </button>
+      <span className={`pill ${cancellationFeeStateTone(feeState)}`}>
+        {cancellationFeeStateLabel(feeState)}
+      </span>
+      <span className={`pill ${autoApprovalEligible ? 'pill-info' : 'pill-warn'}`}>
+        {autoApprovalEligible ? 'Within 15m' : cancellationMinutesLabel(minutesAfterMatch)}
+      </span>
+      {resolution === 'pending' ? (
+        <div className="booking-action-form-grid">
+          <form action={approvePostMatchCancellation} className="booking-action-form">
+            <input name="bookingId" type="hidden" value={booking.id} />
+            <input
+              name="note"
+              type="hidden"
+              value={
+                autoApprovalEligible
+                  ? 'Approved within 15-minute post-match cancellation window.'
+                  : 'Approved after admin chat evidence review.'
+              }
+            />
+            <button className="booking-action-button is-success" type="submit">
+              <CheckCircle2 aria-hidden="true" size={14} />
+              Approve
+            </button>
+          </form>
+          <form action={holdPostMatchCancellation} className="booking-action-form">
+            <input name="bookingId" type="hidden" value={booking.id} />
+            <input name="note" type="hidden" value="Held after admin chat evidence review." />
+            <button className="booking-action-button is-warning" type="submit">
+              <PauseCircle aria-hidden="true" size={14} />
+              Hold
+            </button>
+          </form>
+        </div>
+      ) : (
+        <span className={`pill ${resolution === 'approved' ? 'pill-success' : 'pill-danger'}`}>
+          {resolution === 'approved' ? 'Approved' : 'Held'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function BookingPostMatchCancellationChatLayer({
+  onClose,
+  row,
+}: {
+  readonly onClose: () => void;
+  readonly row: BookingMonitorListRow;
+}) {
+  const { booking } = row;
+  const messages = booking.chatRoom?.messages ?? [];
+  const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
+  const feeState = postMatchCancellationFeeState(booking);
+  const resolution = postMatchCancellationResolution(booking);
+
+  return (
+    <div className="booking-chat-layer" role="presentation">
+      <div
+        aria-labelledby={`booking-chat-layer-title-${booking.id}`}
+        aria-modal="true"
+        className="booking-chat-dialog"
+        role="dialog"
+      >
+        <div className="booking-chat-dialog-header">
+          <div>
+            <span className="pill pill-info">Post-match cancellation evidence</span>
+            <h3 id={`booking-chat-layer-title-${booking.id}`}>
+              {bookingCustomerLabel(booking)} / {providerTableLabel(booking.selectedProvider)}
+            </h3>
+            <p>
+              {cancellationMinutesLabel(minutesAfterMatch)} · {cancellationFeeStateLabel(feeState)} ·{' '}
+              {cancellationResolutionLabel(resolution)}
+            </p>
+          </div>
+          <button
+            aria-label="Close chat evidence"
+            className="booking-chat-close"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" size={18} />
+          </button>
+        </div>
+        <div className="booking-chat-message-list">
+          {messages.length > 0 ? (
+            messages.map((message) => <BookingChatMessageRow key={message.id} message={message} />)
+          ) : (
+            <div className="booking-chat-empty">No retained chat messages for this booking.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookingChatMessageRow({ message }: { readonly message: BookingChatMessage }) {
+  const senderName = message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender';
+  const senderRole = bookingChatSenderRole(message.sender?.roles);
+
+  return (
+    <article className="booking-chat-message">
+      <div className="booking-chat-message-meta">
+        <strong>{senderName}</strong>
+        <span className="pill pill-neutral">{senderRole}</span>
+        <time>{formatBookingDate(message.createdAt)}</time>
+      </div>
+      <p>{message.body || 'No message body retained.'}</p>
+    </article>
   );
 }
 
@@ -793,6 +973,59 @@ function bookingCancellationReviewSignal(booking: AdminBooking) {
     label: 'Evidence missing',
     tone: 'pill-danger',
   };
+}
+
+function bookingChatSenderRole(roles?: readonly string[]) {
+  if (roles?.includes('CUSTOMER')) {
+    return 'Customer';
+  }
+  if (roles?.includes('PROVIDER')) {
+    return 'Partner';
+  }
+  if (roles?.includes('ADMIN')) {
+    return 'Admin';
+  }
+  return 'User';
+}
+
+function cancellationFeeStateTone(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
+  switch (feeState) {
+    case 'restored':
+      return 'pill-success';
+    case 'held':
+      return 'pill-danger';
+    default:
+      return 'pill-neutral';
+  }
+}
+
+function cancellationFeeStateLabel(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
+  switch (feeState) {
+    case 'restored':
+      return 'Fee restored';
+    case 'held':
+      return 'Fee held';
+    default:
+      return 'No earning';
+  }
+}
+
+function cancellationMinutesLabel(minutesAfterMatch: number | null) {
+  if (minutesAfterMatch === null) {
+    return 'Match time missing';
+  }
+  return `${minutesAfterMatch}m after match`;
+}
+
+function cancellationResolutionLabel(resolution: ReturnType<typeof postMatchCancellationResolution>) {
+  switch (resolution) {
+    case 'approved':
+      return 'Approved';
+    case 'held':
+      return 'Held';
+    default:
+      return 'Pending admin decision';
+  }
 }
 
 function metadataText(metadata: Record<string, unknown> | null, key: string) {

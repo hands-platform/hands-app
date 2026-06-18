@@ -276,6 +276,14 @@ export class BookingCloseoutDto {
   note?: string;
 }
 
+export class BookingPostMatchCancellationDecisionDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}
+
 export class BookingOpsTaskDto {
   @IsEnum(BookingOpsTaskType)
   type!: BookingOpsTaskType;

@@ -8,24 +8,13 @@ import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matc
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
-import {
-  bookingTimestamp,
-  formatBookingClockTime as formatClockTime,
-} from './booking-list-time';
+import { bookingTimestamp, formatBookingClockTime as formatClockTime } from './booking-list-time';
 import type { BookingGateFilter } from './booking-gate-filters';
-import {
-  bookingPaymentFilterOptions,
-  bookingStatusFilterOptions,
-} from './booking-monitor-filter-options';
-import {
-  bookingEvidenceFilterOptions,
-  bookingViewOptions,
-} from './booking-monitor-options';
+import { bookingPaymentFilterOptions, bookingStatusFilterOptions } from './booking-monitor-filter-options';
+import { bookingEvidenceFilterOptions, bookingViewOptions } from './booking-monitor-options';
 import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
 import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
-import { BookingMonitorCustomerProtectionSection } from './booking-monitor-customer-protection-section';
-import { buildBookingMonitorCustomerProtectionBoard } from './booking-monitor-customer-protection-model';
 import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
 import { bookingMatchingWindowLabel } from './booking-matching-window';
 import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
@@ -35,7 +24,6 @@ import { BookingMonitorListSection } from './booking-monitor-list-section';
 import { buildBookingMonitorNextActions } from './booking-monitor-next-actions-model';
 import { BookingMonitorMarketplaceSection } from './booking-monitor-marketplace-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
-import { BookingMonitorNextActionsSection } from './booking-monitor-next-actions-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
 import { buildBookingMonitorCommandCenter } from './booking-monitor-command-center-model';
@@ -44,16 +32,15 @@ import {
   buildBookingMonitorMatchingEscalationBoard,
   buildBookingMonitorMatchingEscalationRows,
 } from './booking-monitor-matching-escalation-model';
-import {
-  bookingCustomerLabel,
-  bookingProviderLabel,
-} from './booking-monitor-labels';
+import { bookingCustomerLabel } from './booking-monitor-labels';
 import { buildBookingMonitorMarketplacePanelModel } from './booking-monitor-marketplace-model';
 import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
+import { buildBookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
+import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';
 
 type Props = {
   bookings: AdminBooking[];
@@ -141,9 +128,9 @@ export function BookingMonitor({
     () => buildBookingMonitorNextActions(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
-  const customerProtectionBoard = useMemo(
-    () => buildBookingMonitorCustomerProtectionBoard(orderedBookings),
-    [orderedBookings],
+  const postMatchCancellationBoard = useMemo(
+    () => buildBookingPostMatchCancellationBoard(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
   );
   const matchingEscalationBoard = useMemo(
     () => buildBookingMonitorMatchingEscalationBoard(orderedBookings, currentTimeMs),
@@ -208,14 +195,8 @@ export function BookingMonitor({
     [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, orderedBookings, visibleBookings],
   );
 
-  const statusFilterOptions = useMemo(
-    () => bookingStatusFilterOptions(orderedBookings),
-    [orderedBookings],
-  );
-  const paymentFilterOptions = useMemo(
-    () => bookingPaymentFilterOptions(orderedBookings),
-    [orderedBookings],
-  );
+  const statusFilterOptions = useMemo(() => bookingStatusFilterOptions(orderedBookings), [orderedBookings]);
+  const paymentFilterOptions = useMemo(() => bookingPaymentFilterOptions(orderedBookings), [orderedBookings]);
 
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
@@ -314,17 +295,7 @@ export function BookingMonitor({
         matchingFlowTimeline={matchingFlowTimeline}
       />
 
-      <BookingMonitorNextActionsSection
-        getCustomerLabel={bookingCustomerLabel}
-        getProviderLabel={bookingProviderLabel}
-        nextActions={nextActions}
-        nowMs={currentTimeMs}
-      />
-
-      <BookingMonitorCustomerProtectionSection
-        getCustomerLabel={bookingCustomerLabel}
-        lanes={customerProtectionBoard}
-      />
+      <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
 
       <BookingMonitorFiltersSection
         activeView={activeView}
@@ -369,11 +340,6 @@ export function BookingMonitor({
         marketplaceBookingCoveragePills={marketplacePanel.marketplaceBookingCoveragePills}
         marketplaceBookingCoverageRows={marketplacePanel.marketplaceBookingCoverageRows}
         marketplaceBookingCoverageSummary={marketplacePanel.marketplaceBookingCoverageSummary}
-        marketplaceLedgerPills={marketplacePanel.marketplaceLedgerPills}
-        marketplaceLedgerRows={marketplacePanel.marketplaceLedgerRows}
-        marketplaceLedgerSummary={marketplacePanel.marketplaceLedgerSummary}
-        marketplaceOperatingQueue={marketplacePanel.marketplaceOperatingQueue}
-        marketplaceOperationsCards={marketplacePanel.marketplaceOperationsCards}
       />
     </div>
   );

@@ -1,4 +1,13 @@
-import { BookingMatchSource, BookingStatus, ParticipantStatus } from '@prisma/client';
+import {
+  BookingMatchSource,
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
+  BookingStatus,
+  EarningStatus,
+  ParticipantStatus,
+  ProviderWalletLedgerType,
+  Role,
+} from '@prisma/client';
 import { AdminService } from './admin.service';
 
 function deferred<T>() {
@@ -485,6 +494,247 @@ describe('AdminService query orchestration', () => {
       },
     });
     expect(JSON.stringify(prisma.adminAuditLog.create.mock.calls)).not.toContain('raw-fcm-token');
+  });
+
+  it('approves post-match cancellations and restores unpaid partner earning', async () => {
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          notes: null,
+          matchedAt: new Date('2026-06-13T10:00:00.000Z'),
+          selectedProviderId: 'partner-1',
+          closedAt: new Date('2026-06-13T10:10:00.000Z'),
+          closedByRole: Role.PROVIDER,
+          closedReason: 'partner_cancelled',
+          closedNote: 'Partner cancelled from chat.',
+          earning: {
+            id: 'earning-1',
+            bookingId: 'booking-1',
+            providerProfileId: 'partner-1',
+            netAmount: -30000,
+            currency: 'VND',
+            status: EarningStatus.PENDING,
+          },
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          closedReason: 'post_match_cancellation_approved',
+        }),
+      },
+      providerEarning: {
+        update: jest.fn().mockResolvedValue({
+          id: 'earning-1',
+          status: EarningStatus.CANCELLED,
+          netAmount: 0,
+        }),
+      },
+      providerWalletLedgerEntry: {
+        upsert: jest.fn().mockResolvedValue({ id: 'ledger-1' }),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.approvePostMatchCancellation('admin-1', 'booking-1', {
+        note: 'Evidence checked',
+      }),
+    ).resolves.toMatchObject({
+      id: 'booking-1',
+      closedReason: 'post_match_cancellation_approved',
+    });
+
+    expect(tx.providerEarning.update).toHaveBeenCalledWith({
+      where: { bookingId: 'booking-1' },
+      data: {
+        status: EarningStatus.CANCELLED,
+        netAmount: 0,
+      },
+    });
+    expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          providerProfileId: 'partner-1',
+          bookingId: 'booking-1',
+          earningId: 'earning-1',
+          type: ProviderWalletLedgerType.REFUND_REVERSAL,
+          sourceKey: 'earning:earning-1:post-match-cancellation-approval',
+          amount: 30000,
+          currency: 'VND',
+        }),
+      }),
+    );
+    expect(tx.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        data: expect.objectContaining({
+          closedByRole: Role.ADMIN,
+          closedReason: 'post_match_cancellation_approved',
+          closedNote: 'Evidence checked',
+          notes: expect.stringContaining('Post-match cancellation approved by operations'),
+          opsTasks: {
+            upsert: expect.objectContaining({
+              where: {
+                bookingId_type: {
+                  bookingId: 'booking-1',
+                  type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                },
+              },
+              update: expect.objectContaining({
+                status: BookingOpsTaskStatus.DONE,
+                note: 'Evidence checked',
+                actorId: 'admin-1',
+              }),
+            }),
+          },
+        }),
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorId: 'admin-1',
+        action: 'booking.post_match_cancellation.approve',
+        target: 'booking:booking-1',
+        metadata: expect.objectContaining({
+          bookingId: 'booking-1',
+          previousClosedByRole: Role.PROVIDER,
+          previousClosedReason: 'partner_cancelled',
+          minutesAfterMatch: 10,
+          autoApprovalWindow: true,
+          decision: 'APPROVED',
+          note: 'Evidence checked',
+          earningResult: expect.objectContaining({
+            skipped: false,
+            earningId: 'earning-1',
+            previousNetAmount: -30000,
+            netAmount: 0,
+          }),
+        }),
+      }),
+    });
+  });
+
+  it('holds post-match cancellations without restoring the partner fee deduction', async () => {
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          notes: 'existing note',
+          matchedAt: new Date('2026-06-13T10:00:00.000Z'),
+          selectedProviderId: 'partner-1',
+          closedAt: new Date('2026-06-13T10:30:00.000Z'),
+          closedByRole: Role.PROVIDER,
+          closedReason: 'partner_cancelled',
+          closedNote: 'Partner cancelled from chat.',
+          earning: {
+            id: 'earning-1',
+            bookingId: 'booking-1',
+            providerProfileId: 'partner-1',
+            netAmount: -30000,
+            currency: 'VND',
+            status: EarningStatus.PENDING,
+          },
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          closedReason: 'post_match_cancellation_fee_held',
+        }),
+      },
+      providerEarning: {
+        update: jest.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: jest.fn(),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.holdPostMatchCancellation('admin-1', 'booking-1', {
+        note: 'Fee hold remains',
+      }),
+    ).resolves.toMatchObject({
+      id: 'booking-1',
+      closedReason: 'post_match_cancellation_fee_held',
+    });
+
+    expect(tx.providerEarning.update).not.toHaveBeenCalled();
+    expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+    expect(tx.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          closedByRole: Role.ADMIN,
+          closedReason: 'post_match_cancellation_fee_held',
+          closedNote: 'Fee hold remains',
+        }),
+      }),
+    );
+    expect(tx.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.post_match_cancellation.hold',
+        metadata: expect.objectContaining({
+          minutesAfterMatch: 30,
+          autoApprovalWindow: false,
+          decision: 'HELD',
+          earningResult: { skipped: true, reason: 'FEE_HELD_BY_ADMIN_DECISION' },
+        }),
+      }),
+    });
+  });
+
+  it('rejects post-match cancellation decisions for pre-match cancellations', async () => {
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.CANCELLED,
+          notes: null,
+          matchedAt: null,
+          selectedProviderId: null,
+          closedAt: new Date('2026-06-13T10:10:00.000Z'),
+          closedByRole: Role.CUSTOMER,
+          closedReason: 'customer_cancelled_before_match',
+          closedNote: null,
+          earning: null,
+        }),
+        update: jest.fn(),
+      },
+      providerEarning: {
+        update: jest.fn(),
+      },
+      providerWalletLedgerEntry: {
+        upsert: jest.fn(),
+      },
+      adminAuditLog: {
+        create: jest.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.approvePostMatchCancellation('admin-1', 'booking-1')).rejects.toThrow(
+      'Post-match cancellation requires matching evidence',
+    );
+    expect(tx.booking.update).not.toHaveBeenCalled();
+    expect(tx.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('moderates a review, recalculates published rating, and writes an audit log', async () => {

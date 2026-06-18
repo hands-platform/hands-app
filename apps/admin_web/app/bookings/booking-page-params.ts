@@ -22,6 +22,7 @@ export type BookingPageView =
   | 'chat-evidence'
   | 'evidence-missing'
   | 'refund-review'
+  | 'post-match-cancellations'
   | 'expired'
   | 'no-show'
   | 'all';
@@ -58,6 +59,7 @@ const BOOKING_VIEWS = new Set<BookingPageView | 'backup'>([
   'chat-evidence',
   'evidence-missing',
   'refund-review',
+  'post-match-cancellations',
   'expired',
   'no-show',
   'all',

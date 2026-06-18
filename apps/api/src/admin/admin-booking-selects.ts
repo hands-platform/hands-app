@@ -24,8 +24,8 @@ export const adminAddressSnapshotSelect = {
 export const adminChatRoomPresenceSelect = {
   id: true,
   messages: {
-    orderBy: { createdAt: 'desc' },
-    take: 1,
+    orderBy: { createdAt: 'asc' },
+    take: 20,
     select: {
       id: true,
       createdAt: true,

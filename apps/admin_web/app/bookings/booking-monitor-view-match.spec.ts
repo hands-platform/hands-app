@@ -16,6 +16,7 @@ const trueReaderNames = [
   'matchingEscalationNeedsOps',
   'noSupply',
   'paymentNeedsOps',
+  'postMatchCancellation',
   'pricingPolicyNeedsOps',
   'refundReviewNeedsOps',
 ] as const;
@@ -41,6 +42,7 @@ function buildReaders(
     matchingEscalationNeedsOps: () => overrides.matchingEscalationNeedsOps ?? false,
     noSupply: () => overrides.noSupply ?? false,
     paymentNeedsOps: () => overrides.paymentNeedsOps ?? false,
+    postMatchCancellation: () => overrides.postMatchCancellation ?? false,
     pricingPolicyNeedsOps: () => overrides.pricingPolicyNeedsOps ?? false,
     refundReviewNeedsOps: () => overrides.refundReviewNeedsOps ?? false,
     stageKey: () => overrides.stageKey ?? 'handoff',
@@ -65,6 +67,7 @@ describe('bookingMatchesMonitorView', () => {
     ['chat-evidence', { chatEvidenceNeedsOps: true }],
     ['evidence-missing', { decisionEvidenceMissing: true }],
     ['refund-review', { refundReviewNeedsOps: true }],
+    ['post-match-cancellations', { postMatchCancellation: true }],
   ] as const)('matches %s from its dedicated reader', (view, overrides) => {
     expect(bookingMatchesMonitorView(view, buildReaders(overrides))).toBe(true);
     expect(bookingMatchesMonitorView(view, buildReaders())).toBe(false);
@@ -85,8 +88,6 @@ describe('bookingMatchesMonitorView', () => {
     expect(bookingMatchesMonitorView('no-show', buildReaders({ status: 'NO_SHOW' }))).toBe(true);
     expect(bookingMatchesMonitorView('all', buildReaders())).toBe(true);
     expect(bookingMatchesMonitorView('active', buildReaders({ activeStatus: true }))).toBe(true);
-    expect(bookingMatchesMonitorView('blocked-create', buildReaders({ activeStatus: true }))).toBe(
-      true,
-    );
+    expect(bookingMatchesMonitorView('blocked-create', buildReaders({ activeStatus: true }))).toBe(true);
   });
 });

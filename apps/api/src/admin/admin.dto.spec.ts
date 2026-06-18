@@ -42,15 +42,9 @@ describe('admin request DTO validation', () => {
   });
 
   it('uses concrete DTOs for payout administration payloads', () => {
-    expect((bodyMetatype('markEarningPaid', 2) as { name?: string })?.name).toBe(
-      'MarkEarningPaidDto',
-    );
-    expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe(
-      'CreatePayoutBatchDto',
-    );
-    expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe(
-      'UpdatePayoutBatchDto',
-    );
+    expect((bodyMetatype('markEarningPaid', 2) as { name?: string })?.name).toBe('MarkEarningPaidDto');
+    expect((bodyMetatype('createPayoutBatch', 1) as { name?: string })?.name).toBe('CreatePayoutBatchDto');
+    expect((bodyMetatype('updatePayoutBatch', 2) as { name?: string })?.name).toBe('UpdatePayoutBatchDto');
   });
 
   it('rejects blank payout batch partner ids before settlement logic runs', async () => {
@@ -87,12 +81,8 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('createServiceDurationSet', 1) as { name?: string })?.name).toBe(
       'CreateServiceDurationSetDto',
     );
-    expect((bodyMetatype('createService', 1) as { name?: string })?.name).toBe(
-      'CreateAdminServiceDto',
-    );
-    expect((bodyMetatype('updateService', 2) as { name?: string })?.name).toBe(
-      'UpdateAdminServiceDto',
-    );
+    expect((bodyMetatype('createService', 1) as { name?: string })?.name).toBe('CreateAdminServiceDto');
+    expect((bodyMetatype('updateService', 2) as { name?: string })?.name).toBe('UpdateAdminServiceDto');
     expect((bodyMetatype('upsertServicePayoutRule', 2) as { name?: string })?.name).toBe(
       'UpsertServicePayoutRuleDto',
     );
@@ -134,9 +124,7 @@ describe('admin request DTO validation', () => {
         serviceGroupKey: ' body-massage ',
         name: '  Body Massage  ',
         priceStep: '100000',
-        durations: [
-          { durationMin: '60', basePrice: '500000', providerPayoutAmount: '380000', hidden: true },
-        ],
+        durations: [{ durationMin: '60', basePrice: '500000', providerPayoutAmount: '380000', hidden: true }],
       },
       { type: 'body', metatype: bodyMetatype('createServiceDurationSet', 1) as never, data: '' },
     );
@@ -163,21 +151,19 @@ describe('admin request DTO validation', () => {
   });
 
   it('uses concrete DTOs for booking operations payloads', () => {
-    expect((bodyMetatype('addBookingOpsNote', 2) as { name?: string })?.name).toBe(
-      'BookingOpsNoteDto',
-    );
-    expect((bodyMetatype('markBookingNoShow', 2) as { name?: string })?.name).toBe(
-      'BookingOpsReasonDto',
-    );
-    expect((bodyMetatype('expireBooking', 2) as { name?: string })?.name).toBe(
-      'BookingOpsReasonDto',
-    );
+    expect((bodyMetatype('addBookingOpsNote', 2) as { name?: string })?.name).toBe('BookingOpsNoteDto');
+    expect((bodyMetatype('markBookingNoShow', 2) as { name?: string })?.name).toBe('BookingOpsReasonDto');
+    expect((bodyMetatype('expireBooking', 2) as { name?: string })?.name).toBe('BookingOpsReasonDto');
     expect((bodyMetatype('closeoutCompletedBooking', 2) as { name?: string })?.name).toBe(
       'BookingCloseoutDto',
     );
-    expect((bodyMetatype('updateBookingOpsTask', 2) as { name?: string })?.name).toBe(
-      'BookingOpsTaskDto',
+    expect((bodyMetatype('approvePostMatchCancellation', 2) as { name?: string })?.name).toBe(
+      'BookingPostMatchCancellationDecisionDto',
     );
+    expect((bodyMetatype('holdPostMatchCancellation', 2) as { name?: string })?.name).toBe(
+      'BookingPostMatchCancellationDecisionDto',
+    );
+    expect((bodyMetatype('updateBookingOpsTask', 2) as { name?: string })?.name).toBe('BookingOpsTaskDto');
   });
 
   it('trims booking operation notes and strips unsupported fields', async () => {
@@ -224,21 +210,11 @@ describe('admin request DTO validation', () => {
   });
 
   it('uses concrete DTOs for customer and partner management payloads', () => {
-    expect((bodyMetatype('addCustomerOpsNote', 2) as { name?: string })?.name).toBe(
-      'CustomerOpsNoteDto',
-    );
-    expect((bodyMetatype('addProviderOpsNote', 2) as { name?: string })?.name).toBe(
-      'PartnerOpsNoteDto',
-    );
-    expect((bodyMetatype('blockProviderDevice', 2) as { name?: string })?.name).toBe(
-      'AdminReasonDto',
-    );
-    expect((bodyMetatype('blockProviderAccount', 2) as { name?: string })?.name).toBe(
-      'AdminReasonDto',
-    );
-    expect((bodyMetatype('rejectProvider', 2) as { name?: string })?.name).toBe(
-      'AdminReasonDto',
-    );
+    expect((bodyMetatype('addCustomerOpsNote', 2) as { name?: string })?.name).toBe('CustomerOpsNoteDto');
+    expect((bodyMetatype('addProviderOpsNote', 2) as { name?: string })?.name).toBe('PartnerOpsNoteDto');
+    expect((bodyMetatype('blockProviderDevice', 2) as { name?: string })?.name).toBe('AdminReasonDto');
+    expect((bodyMetatype('blockProviderAccount', 2) as { name?: string })?.name).toBe('AdminReasonDto');
+    expect((bodyMetatype('rejectProvider', 2) as { name?: string })?.name).toBe('AdminReasonDto');
   });
 
   it('uses concrete DTOs for reports, sanctions, moderation, coupons, and handoff', () => {
@@ -251,15 +227,9 @@ describe('admin request DTO validation', () => {
     expect((bodyMetatype('createProviderSanction', 2) as { name?: string })?.name).toBe(
       'CreatePartnerSanctionDto',
     );
-    expect((bodyMetatype('moderateReview', 2) as { name?: string })?.name).toBe(
-      'ModerateReviewDto',
-    );
-    expect((bodyMetatype('createCoupon', 1) as { name?: string })?.name).toBe(
-      'CreateCouponDto',
-    );
-    expect((bodyMetatype('updateCoupon', 2) as { name?: string })?.name).toBe(
-      'UpdateCouponDto',
-    );
+    expect((bodyMetatype('moderateReview', 2) as { name?: string })?.name).toBe('ModerateReviewDto');
+    expect((bodyMetatype('createCoupon', 1) as { name?: string })?.name).toBe('CreateCouponDto');
+    expect((bodyMetatype('updateCoupon', 2) as { name?: string })?.name).toBe('UpdateCouponDto');
     expect((bodyMetatype('addOperationsHandoffNote', 1) as { name?: string })?.name).toBe(
       'OperationsHandoffNoteDto',
     );

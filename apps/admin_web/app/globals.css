@@ -1567,7 +1567,7 @@ a.action-button-card:hover {
   box-shadow: none;
   color: var(--admin-text);
   margin: 0;
-  min-width: 1320px;
+  min-width: 1480px;
   width: 100%;
 }
 
@@ -1631,7 +1631,13 @@ a.action-button-card:hover {
 .booking-monitor .vuexy-booking-table th:nth-child(8),
 .booking-monitor .vuexy-booking-table td:nth-child(8) {
   min-width: 210px;
-  width: 18%;
+  width: 15%;
+}
+
+.booking-monitor .vuexy-booking-table th:nth-child(9),
+.booking-monitor .vuexy-booking-table td:nth-child(9) {
+  min-width: 180px;
+  width: 13%;
 }
 
 .booking-monitor .vuexy-booking-table tbody tr:hover td {
@@ -1853,6 +1859,263 @@ a.action-button-card:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.vuexy-booking-actions-cell {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.booking-action-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-action-form {
+  display: inline-flex;
+}
+
+.booking-action-button {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  justify-content: center;
+  line-height: 18px;
+  min-height: 32px;
+  padding: 6px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.booking-action-button:hover {
+  background: var(--admin-action-hover);
+  border-color: rgb(var(--admin-primary-channel) / 0.28);
+  color: var(--admin-accent-strong);
+}
+
+.booking-action-button.is-success {
+  background: rgb(var(--admin-success-channel) / 0.14);
+  border-color: rgb(var(--admin-success-channel) / 0.28);
+  color: var(--admin-success);
+}
+
+.booking-action-button.is-warning {
+  background: rgb(var(--admin-warning-channel) / 0.14);
+  border-color: rgb(var(--admin-warning-channel) / 0.28);
+  color: var(--admin-warning);
+}
+
+.booking-action-button.is-secondary {
+  background: rgb(var(--admin-secondary-channel) / 0.1);
+  border-color: var(--admin-border);
+  color: var(--admin-secondary-text);
+}
+
+.booking-chat-layer {
+  align-items: center;
+  background: rgb(47 43 61 / 0.42);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 32px;
+  position: fixed;
+  z-index: 90;
+}
+
+.booking-chat-dialog {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-lg);
+  color: var(--admin-text);
+  display: grid;
+  max-height: min(760px, calc(100vh - 96px));
+  max-width: 760px;
+  overflow: hidden;
+  width: min(760px, calc(100vw - 96px));
+}
+
+.booking-chat-dialog-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 20px 22px;
+}
+
+.booking-chat-dialog-header h3,
+.booking-chat-dialog-header p {
+  margin: 0;
+}
+
+.booking-chat-dialog-header h3 {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  margin-top: 8px;
+}
+
+.booking-chat-dialog-header p {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin-top: 4px;
+}
+
+.booking-chat-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.booking-chat-close:hover {
+  background: var(--admin-action-hover);
+  color: var(--admin-text);
+}
+
+.booking-chat-message-list {
+  display: grid;
+  gap: 12px;
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 20px 22px 22px;
+}
+
+.booking-chat-message {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.booking-chat-message p {
+  color: var(--admin-text);
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.booking-chat-message-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-chat-message-meta strong {
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.booking-chat-message-meta time {
+  color: var(--admin-disabled);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.booking-chat-empty {
+  border: 1px dashed var(--admin-border);
+  border-radius: 8px;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  padding: 24px;
+  text-align: center;
+}
+
+.booking-post-match-cancellations-card {
+  display: grid;
+  gap: 18px;
+}
+
+.booking-post-match-counts {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.booking-post-match-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.booking-post-match-metric {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.booking-post-match-metric span {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.booking-post-match-metric strong {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 32px;
+}
+
+.booking-post-match-metric p,
+.booking-post-match-operator-note span {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.booking-post-match-metric.is-success {
+  background: rgb(var(--admin-success-channel) / 0.08);
+}
+
+.booking-post-match-metric.is-info {
+  background: rgb(var(--admin-info-channel) / 0.08);
+}
+
+.booking-post-match-metric.is-warn {
+  background: rgb(var(--admin-warning-channel) / 0.08);
+}
+
+.booking-post-match-metric.is-danger {
+  background: rgb(var(--admin-danger-channel) / 0.08);
+}
+
+.booking-post-match-operator-note {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 14px 16px;
 }
 
 .vuexy-booking-table-footer {
@@ -3759,7 +4022,7 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: 999px;
   color: var(--admin-muted);
-  content: "+";
+  content: '+';
   display: inline-flex;
   font-weight: 700;
   height: 30px;
@@ -3768,7 +4031,7 @@ a.action-button-card:hover {
 }
 
 .booking-detail-section-disclosure[open] > .booking-detail-section-summary::after {
-  content: "-";
+  content: '-';
 }
 
 .booking-detail-section-disclosure-body {

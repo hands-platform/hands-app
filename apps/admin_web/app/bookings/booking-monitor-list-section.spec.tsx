@@ -220,6 +220,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Service Type');
     expect(rendered).toContain('Address');
     expect(rendered).toContain('State Changed');
+    expect(rendered).toContain('Actions');
     expect(rendered).not.toContain('Status');
     expect(rendered).toContain('Pre-match');
     expect(rendered).toContain('Post-match / In Progress');
@@ -240,6 +241,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).not.toContain('Booking pin');
     expect(rendered).toContain('Matching opened at');
     expect(rendered).toContain('State changed');
+    expect(rendered).toContain('Detail');
     expect(rendered).toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');
     expect(markup).toContain('href="/bookings/booking_123456789"');
@@ -334,9 +336,15 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Closed 13 Jun 2026, 03:20');
     expect(rendered).toContain('Admin confirmed');
     expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
+    expect(rendered).toContain('Chat (0)');
+    expect(rendered).toContain('Approve');
+    expect(rendered).toContain('Hold');
+    expect(rendered).toContain('No earning');
+    expect(rendered).toContain('Match time missing');
     expect(markup).toContain('vuexy-booking-closure-evidence');
     expect(markup).toContain('vuexy-booking-closure-pills');
     expect(markup).toContain('vuexy-booking-state-cell');
+    expect(markup).toContain('vuexy-booking-actions-cell');
     expect(markup).toContain('aria-label="State changed: Partner cancelled at"');
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');

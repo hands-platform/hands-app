@@ -1,9 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import {
-  FileReviewStatus,
-  Role,
-  VerificationStatus,
-} from '@prisma/client';
+import { FileReviewStatus, Role, VerificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -15,6 +11,7 @@ import {
   BookingOpsNoteDto,
   BookingOpsReasonDto,
   BookingOpsTaskDto,
+  BookingPostMatchCancellationDecisionDto,
   BulkUpsertServicePayoutRulesDto,
   CreateAdminServiceDto,
   CreateCouponDto,
@@ -140,10 +137,7 @@ export class AdminController {
   }
 
   @Post(['provider-reports', 'partner-reports'])
-  createProviderReport(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreatePartnerReportDto,
-  ) {
+  createProviderReport(@CurrentUser() user: AuthenticatedUser, @Body() body: CreatePartnerReportDto) {
     return this.admin.createProviderReport(user.id, body);
   }
 
@@ -259,6 +253,24 @@ export class AdminController {
     return this.admin.closeoutCompletedBooking(user.id, id, body);
   }
 
+  @Post('bookings/:id/post-match-cancellation/approve')
+  approvePostMatchCancellation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: BookingPostMatchCancellationDecisionDto,
+  ) {
+    return this.admin.approvePostMatchCancellation(user.id, id, body);
+  }
+
+  @Post('bookings/:id/post-match-cancellation/hold')
+  holdPostMatchCancellation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: BookingPostMatchCancellationDecisionDto,
+  ) {
+    return this.admin.holdPostMatchCancellation(user.id, id, body);
+  }
+
   @Post('bookings/:id/ops-task')
   updateBookingOpsTask(
     @CurrentUser() user: AuthenticatedUser,
@@ -327,10 +339,7 @@ export class AdminController {
   }
 
   @Post('services')
-  createService(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreateAdminServiceDto,
-  ) {
+  createService(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateAdminServiceDto) {
     return this.admin.createService(user.id, body);
   }
 
@@ -385,10 +394,7 @@ export class AdminController {
   }
 
   @Post('payout-batches')
-  createPayoutBatch(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreatePayoutBatchDto,
-  ) {
+  createPayoutBatch(@CurrentUser() user: AuthenticatedUser, @Body() body: CreatePayoutBatchDto) {
     return this.admin.createPayoutBatch(user.id, body);
   }
 
@@ -421,10 +427,7 @@ export class AdminController {
   }
 
   @Post('coupons')
-  createCoupon(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: CreateCouponDto,
-  ) {
+  createCoupon(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateCouponDto) {
     return this.admin.createCoupon(user.id, body);
   }
 
@@ -443,10 +446,7 @@ export class AdminController {
   }
 
   @Post('operations-handoff/note')
-  addOperationsHandoffNote(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() body: OperationsHandoffNoteDto,
-  ) {
+  addOperationsHandoffNote(@CurrentUser() user: AuthenticatedUser, @Body() body: OperationsHandoffNoteDto) {
     return this.admin.addOperationsHandoffNote(user.id, body);
   }
 

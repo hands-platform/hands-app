@@ -175,6 +175,13 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
       'Use this with the evidence board before releasing, refunding, or reconciling customer payment movement.',
   },
   {
+    view: 'post-match-cancellations',
+    label: 'Post-match cancellations',
+    description: 'matched bookings cancelled after Partner commitment and waiting for approval or fee-hold review.',
+    operatorHint:
+      'Use this to open chat evidence, approve cancellation fee restoration, or hold the Partner fee deduction.',
+  },
+  {
     view: 'expired',
     label: 'Expired',
     description: 'bookings closed by timeout and waiting for payment release or customer follow-up review.',
