@@ -44,6 +44,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.tone).toBe('pill-success');
     expect(review.primaryHref).toBeNull();
     expect(review.primaryLabel).toBeNull();
+    expect(review.postMatchDecision.visible).toBe(false);
     expect(review.rows.map((row) => row.label)).toEqual([
       'Closure record',
       'Chat evidence',
@@ -96,6 +97,13 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.tone).toBe('pill-warn');
     expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
     expect(review.primaryLabel).toBe('Open review queue');
+    expect(review.postMatchDecision).toMatchObject({
+      canResolve: true,
+      feeLabel: 'No earning',
+      resolutionLabel: 'Pending review',
+      timingLabel: 'Manual review',
+      visible: true,
+    });
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       tone: 'pill-warn',
     });
@@ -121,9 +129,38 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.title).toBe('No-show confirmation review');
     expect(review.tone).toBe('pill-danger');
     expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
+    expect(review.postMatchDecision.visible).toBe(false);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
       value: 'No messages',
       tone: 'pill-warn',
+    });
+  });
+
+  it('marks auto-approved post-match cancellations as resolved in detail review', () => {
+    const review = panel({
+      booking: booking({
+        status: 'CANCELLED',
+        selectedProviderId: 'partner-1',
+        matchedAt: '2026-06-13T03:00:00.000Z',
+        closedAt: '2026-06-13T03:10:00.000Z',
+        closedReason: 'post_match_cancellation_approved',
+        earning: {
+          status: 'CANCELLED',
+          netAmount: 0,
+        } as AdminBookingDetail['earning'],
+      }),
+      closureSummary: {
+        status: '13 Jun 2026, 03:10',
+        detail: 'provider closure / approved',
+      },
+    });
+
+    expect(review.postMatchDecision).toMatchObject({
+      canResolve: false,
+      feeLabel: 'Fee restored',
+      resolutionLabel: 'Auto-approved',
+      timingLabel: 'Auto-approved',
+      visible: true,
     });
   });
 });

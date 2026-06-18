@@ -101,6 +101,14 @@ export async function closeoutCompletedBooking(formData: FormData) {
   revalidateBookingAction(bookingId, BOOKING_CLOSEOUT_IMPACT_PATHS);
 }
 
+export async function approvePostMatchCancellationFromDetail(formData: FormData) {
+  await runPostMatchCancellationDecision(formData, 'approve');
+}
+
+export async function holdPostMatchCancellationFromDetail(formData: FormData) {
+  await runPostMatchCancellationDecision(formData, 'hold');
+}
+
 export async function updateBookingOpsTask(formData: FormData) {
   const bookingId = String(formData.get('bookingId') ?? '');
   const type = String(formData.get('type') ?? '');
@@ -123,6 +131,21 @@ async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' |
 
   await adminPost(`/admin/payments/${paymentId}/${action}`, {}, null);
   revalidateBookingAction(bookingId, BOOKING_PAYMENT_IMPACT_PATHS);
+}
+
+async function runPostMatchCancellationDecision(formData: FormData, action: 'approve' | 'hold') {
+  const bookingId = String(formData.get('bookingId') ?? '').trim();
+  const note = String(formData.get('note') ?? '').trim();
+  if (!bookingId) {
+    return;
+  }
+
+  await adminPost(
+    `/admin/bookings/${bookingId}/post-match-cancellation/${action}`,
+    { note: note || undefined },
+    null,
+  );
+  revalidateBookingAction(bookingId, ['/earnings', '/cash-settlements', '/operations-handoff']);
 }
 
 function revalidateBookingAction(bookingId: string, extraPaths: readonly string[] = []) {

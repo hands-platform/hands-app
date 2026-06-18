@@ -3,8 +3,10 @@ import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import {
   addBookingOpsNote,
+  approvePostMatchCancellationFromDetail,
   closeoutCompletedBooking,
   expireBooking,
+  holdPostMatchCancellationFromDetail,
   markBookingNoShow,
   repairBookingChatRoom,
 } from './actions';
@@ -96,7 +98,7 @@ export function BookingActionStatusSections({
       <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
-      <BookingOutcomeReviewSection outcomeReview={outcomeReview} />
+      <BookingOutcomeReviewSection bookingId={bookingId} outcomeReview={outcomeReview} />
       {shouldShowChatRepairSection(chatRepair) && (
         <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
       )}
@@ -115,8 +117,10 @@ function shouldShowChatRepairSection(chatRepair: ChatRepairState) {
 }
 
 function BookingOutcomeReviewSection({
+  bookingId,
   outcomeReview,
 }: {
+  bookingId: string;
   outcomeReview: BookingOutcomeReviewPanel;
 }) {
   if (!outcomeReview.visible) {
@@ -150,7 +154,50 @@ function BookingOutcomeReviewSection({
           </a>
         ))}
       </div>
+      {outcomeReview.postMatchDecision.visible ? (
+        <BookingOutcomePostMatchDecision bookingId={bookingId} outcomeReview={outcomeReview} />
+      ) : null}
     </section>
+  );
+}
+
+function BookingOutcomePostMatchDecision({
+  bookingId,
+  outcomeReview,
+}: {
+  readonly bookingId: string;
+  readonly outcomeReview: BookingOutcomeReviewPanel;
+}) {
+  const decision = outcomeReview.postMatchDecision;
+
+  return (
+    <div className="booking-outcome-decision-panel">
+      <div className="booking-outcome-decision-copy">
+        <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
+        <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
+        <span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>
+      </div>
+      {decision.canResolve ? (
+        <div className="booking-outcome-decision-actions">
+          <form action={approvePostMatchCancellationFromDetail}>
+            <input type="hidden" name="bookingId" value={bookingId} />
+            <input type="hidden" name="note" value={decision.approveNote} />
+            <button className="button button-primary admin-inline-action" type="submit">
+              Approve cancellation
+            </button>
+          </form>
+          <form action={holdPostMatchCancellationFromDetail}>
+            <input type="hidden" name="bookingId" value={bookingId} />
+            <input type="hidden" name="note" value={decision.holdNote} />
+            <button className="button button-secondary admin-inline-action" type="submit">
+              Hold fee deduction
+            </button>
+          </form>
+        </div>
+      ) : (
+        <span className="muted">This cancellation decision is already closed.</span>
+      )}
+    </div>
   );
 }
 

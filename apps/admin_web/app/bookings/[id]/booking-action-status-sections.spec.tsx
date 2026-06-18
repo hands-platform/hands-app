@@ -59,6 +59,7 @@ function props(
     ],
     outcomeReview: {
       helper: '',
+      postMatchDecision: hiddenPostMatchDecision(),
       primaryHref: null,
       primaryLabel: null,
       rows: [],
@@ -129,6 +130,7 @@ describe('BookingActionStatusSections', () => {
     const markup = render({
       outcomeReview: {
         helper: 'Use retained chat before final confirmation.',
+        postMatchDecision: hiddenPostMatchDecision(),
         primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
         primaryLabel: 'Open review queue',
         rows: [],
@@ -144,4 +146,87 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('href="/bookings?view=post-match-cancellations#booking-booking-1"');
     expect(markup).toContain('booking-outcome-review-actions');
   });
+
+  it('renders post-match cancellation decision actions on detail pages', () => {
+    const markup = render({
+      outcomeReview: {
+        helper: 'Use retained chat before final confirmation.',
+        postMatchDecision: {
+          approveNote: 'Approved after admin chat evidence review.',
+          canResolve: true,
+          feeLabel: 'Fee still held',
+          feeTone: 'pill-danger',
+          holdNote: 'Held after admin chat evidence review.',
+          resolutionLabel: 'Pending review',
+          resolutionTone: 'pill-warn',
+          timingLabel: '16m after match',
+          timingTone: 'pill-warn',
+          visible: true,
+        },
+        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryLabel: 'Open review queue',
+        rows: [],
+        status: 'Post-match cancellation',
+        title: 'Post-match cancellation review',
+        tone: 'pill-warn',
+        visible: true,
+      },
+    });
+
+    expect(markup).toContain('Pending review');
+    expect(markup).toContain('Fee still held');
+    expect(markup).toContain('16m after match');
+    expect(markup).toContain('Approve cancellation');
+    expect(markup).toContain('Hold fee deduction');
+    expect(markup).toContain('name="bookingId" value="booking-1"');
+    expect(markup).toContain('booking-outcome-decision-panel');
+  });
+
+  it('locks post-match cancellation decision actions after resolution', () => {
+    const markup = render({
+      outcomeReview: {
+        helper: 'Use retained chat before final confirmation.',
+        postMatchDecision: {
+          approveNote: '',
+          canResolve: false,
+          feeLabel: 'Fee restored',
+          feeTone: 'pill-success',
+          holdNote: '',
+          resolutionLabel: 'Approved',
+          resolutionTone: 'pill-success',
+          timingLabel: 'Review locked',
+          timingTone: 'pill-neutral',
+          visible: true,
+        },
+        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryLabel: 'Open review queue',
+        rows: [],
+        status: 'Post-match cancellation',
+        title: 'Post-match cancellation review',
+        tone: 'pill-warn',
+        visible: true,
+      },
+    });
+
+    expect(markup).toContain('Approved');
+    expect(markup).toContain('Fee restored');
+    expect(markup).toContain('This cancellation decision is already closed.');
+    expect(markup).not.toContain('Approve cancellation');
+    expect(markup).not.toContain('Hold fee deduction');
+  });
 });
+
+function hiddenPostMatchDecision() {
+  return {
+    approveNote: '',
+    canResolve: false,
+    feeLabel: '',
+    feeTone: 'pill-neutral' as const,
+    holdNote: '',
+    resolutionLabel: '',
+    resolutionTone: 'pill-neutral' as const,
+    timingLabel: '',
+    timingTone: 'pill-neutral' as const,
+    visible: false,
+  };
+}

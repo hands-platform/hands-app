@@ -2061,6 +2061,29 @@ a.action-button-card:hover {
   justify-content: flex-end;
 }
 
+.booking-outcome-decision-panel {
+  align-items: center;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.booking-outcome-decision-copy,
+.booking-outcome-decision-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-outcome-decision-actions form {
+  margin: 0;
+}
+
 .booking-post-match-grid {
   display: grid;
   gap: 12px;
