@@ -1748,6 +1748,7 @@ a.action-button-card:hover {
 }
 
 .vuexy-booking-address-cell,
+.vuexy-booking-language-cell,
 .vuexy-booking-service-cell {
   display: grid;
   gap: 8px;
@@ -1755,6 +1756,7 @@ a.action-button-card:hover {
 }
 
 .vuexy-booking-address-cell > strong,
+.vuexy-booking-language-cell > strong,
 .vuexy-booking-service-cell > strong {
   color: var(--admin-text);
   display: block;
@@ -1766,6 +1768,7 @@ a.action-button-card:hover {
 }
 
 .vuexy-booking-address-cell > .pill,
+.vuexy-booking-language-cell > .pill,
 .vuexy-booking-service-cell > .pill {
   justify-self: flex-start;
 }

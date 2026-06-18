@@ -271,6 +271,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
   const { booking } = row;
   const participantRows = bookingParticipantRows(booking);
   const addressDisplay = bookingAddressDisplay(booking);
+  const deviceLanguageDisplay = bookingDeviceLanguageDisplay(bookingDeviceLanguageLabel(booking));
   const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
   const stateChange = bookingStatusChangeState(booking);
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
@@ -318,7 +319,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         )}
       </td>
       <td>
-        <span className="pill pill-neutral">{bookingDeviceLanguageLabel(booking)}</span>
+        <BookingDeviceLanguageCell language={deviceLanguageDisplay} />
       </td>
       <td>
         <BookingServiceCell service={serviceDisplay} />
@@ -344,6 +345,24 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         )}
       </td>
     </tr>
+  );
+}
+
+function BookingDeviceLanguageCell({
+  language,
+}: {
+  readonly language: {
+    readonly fullLabel: string;
+    readonly shortLabel: string;
+  };
+}) {
+  return (
+    <div className="vuexy-booking-language-cell">
+      <span className="pill pill-neutral">Device language</span>
+      <strong aria-label={`Device language: ${language.fullLabel}`} title={language.fullLabel}>
+        {language.shortLabel}
+      </strong>
+    </div>
   );
 }
 
@@ -502,6 +521,15 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
     metadataText(metadata, 'locale');
 
   return metadataLanguage ?? 'Unknown';
+}
+
+function bookingDeviceLanguageDisplay(label: string) {
+  const fullLabel = label.trim() || 'Unknown';
+
+  return {
+    fullLabel,
+    shortLabel: compactTableLabel(fullLabel),
+  } as const;
 }
 
 function bookingAddressDisplay(booking: AdminBooking) {
