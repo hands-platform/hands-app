@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminPersonCell, adminPersonInitials } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
@@ -479,21 +480,15 @@ function BookingPersonCell({
   const className = tone === 'partner' ? 'vuexy-booking-avatar is-partner' : 'vuexy-booking-avatar';
 
   return (
-    <div className="vuexy-booking-person">
-      <span aria-hidden="true" className={className}>
-        {avatarInitials(label)}
-      </span>
-      <div className="vuexy-booking-person-copy">
-        {href ? (
-          <Link className="vuexy-booking-person-link" href={href}>
-            {label}
-          </Link>
-        ) : (
-          <strong>{label}</strong>
-        )}
-        <div className="muted">{helper}</div>
-      </div>
-    </div>
+    <AdminPersonCell
+      avatarClassName={className}
+      className="vuexy-booking-person"
+      copyClassName="vuexy-booking-person-copy"
+      helper={helper}
+      href={href}
+      label={label}
+      linkClassName="vuexy-booking-person-link"
+    />
   );
 }
 
@@ -524,14 +519,14 @@ function BookingParticipantAvatar({ participant }: { readonly participant: Booki
   if (!participant.partnerHref) {
     return (
       <span aria-label={label} className={className} title={label}>
-        {avatarInitials(participant.partnerLabel)}
+        {adminPersonInitials(participant.partnerLabel)}
       </span>
     );
   }
 
   return (
     <Link aria-label={label} className={className} href={participant.partnerHref} title={label}>
-      {avatarInitials(participant.partnerLabel)}
+      {adminPersonInitials(participant.partnerLabel)}
     </Link>
   );
 }
@@ -798,10 +793,4 @@ function bookingPartnerHref(partnerId?: string | null) {
 
 function providerTableLabel(provider: BookingProviderLike) {
   return provider?.displayName ?? provider?.user?.fullName ?? provider?.user?.phone ?? 'Partner';
-}
-
-function avatarInitials(label: string) {
-  const parts = label.trim().split(/\s+/).filter(Boolean);
-  const initials = parts.length > 1 ? `${parts[0][0] ?? ''}${parts[1][0] ?? ''}` : parts[0]?.slice(0, 2);
-  return (initials || 'NA').toUpperCase();
 }
