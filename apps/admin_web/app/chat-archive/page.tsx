@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Briefcase, CalendarCheck, Download, Filter, MessageSquare, User, Users, Wrench, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
+import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -260,12 +262,21 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                     <p className="muted">{row.detail}</p>
                   </td>
                   <td>
-                    <strong>{row.customerName}</strong>
-                    <p className="muted">{row.customerPhone}</p>
+                    <ChatArchivePersonCell
+                      avatarStatus={row.customerAvatarStatus}
+                      href={row.customerId ? `/customers/${row.customerId}#chat-history` : null}
+                      label={row.customerName}
+                      phone={row.customerPhone}
+                    />
                   </td>
                   <td>
-                    <strong>{row.partnerName}</strong>
-                    <p className="muted">{row.partnerPhone}</p>
+                    <ChatArchivePersonCell
+                      avatarStatus={row.partnerAvatarStatus}
+                      href={row.partnerId ? `/partners/${row.partnerId}#booking-chat-records` : null}
+                      label={row.partnerName}
+                      phone={row.partnerPhone}
+                      variant="partner"
+                    />
                   </td>
                   <td>{row.serviceLabel}</td>
                   <td>{row.operatorAction}</td>
@@ -343,12 +354,21 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
                   </span>
                 </td>
                 <td>
-                  <strong>{room.customerName}</strong>
-                  <p className="muted">{room.customerPhone}</p>
+                  <ChatArchivePersonCell
+                    avatarStatus={room.customerAvatarStatus}
+                    href={room.customerId ? `/customers/${room.customerId}#chat-history` : null}
+                    label={room.customerName}
+                    phone={room.customerPhone}
+                  />
                 </td>
                 <td>
-                  <strong>{room.partnerName}</strong>
-                  <p className="muted">{room.partnerPhone}</p>
+                  <ChatArchivePersonCell
+                    avatarStatus={room.partnerAvatarStatus}
+                    href={room.partnerId ? `/partners/${room.partnerId}#booking-chat-records` : null}
+                    label={room.partnerName}
+                    phone={room.partnerPhone}
+                    variant="partner"
+                  />
                 </td>
                 <td>{room.serviceLabel}</td>
                 <td>{room.messages.length}</td>
@@ -440,6 +460,34 @@ type ChatTranscriptMessageProps = {
   readonly message: AdminChatMessage;
 };
 
+type ChatArchivePersonCellProps = {
+  readonly avatarStatus: AdminAvatarStatus;
+  readonly href?: string | null;
+  readonly label: string;
+  readonly phone: string;
+  readonly variant?: 'customer' | 'partner';
+};
+
+function ChatArchivePersonCell({
+  avatarStatus,
+  href,
+  label,
+  phone,
+  variant = 'customer',
+}: ChatArchivePersonCellProps) {
+  return (
+    <AdminPersonCell
+      avatarClassName={`vuexy-booking-avatar${variant === 'partner' ? ' is-partner' : ''}`}
+      avatarStatus={avatarStatus}
+      className="vuexy-booking-person"
+      helper={phone}
+      href={href}
+      label={label}
+      linkClassName="table-link"
+    />
+  );
+}
+
 function ChatTranscriptMessage({ message }: ChatTranscriptMessageProps) {
   const role = senderRole(message);
   const roleClass = role === 'CUSTOMER' ? 'is-customer' : role === 'PROVIDER' ? 'is-partner' : 'is-system';
@@ -528,9 +576,11 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
     customerId: booking.customerProfileId,
     customerName,
     customerPhone,
+    customerAvatarStatus: bookingCustomerChatAvatarStatus(booking),
     partnerId: partner?.id,
     partnerName,
     partnerPhone,
+    partnerAvatarStatus: bookingPartnerChatAvatarStatus(booking),
     serviceLabel,
     latestMessageAt,
     searchText,
@@ -570,9 +620,11 @@ function buildChatRepairRows(
         customerId: booking.customerProfileId,
         customerName,
         customerPhone,
+        customerAvatarStatus: bookingCustomerChatAvatarStatus(booking),
         partnerId: partner?.id,
         partnerName,
         partnerPhone,
+        partnerAvatarStatus: bookingPartnerChatAvatarStatus(booking),
         serviceLabel: bookingServiceLabel(booking),
         pillClass: missingRoom ? 'pill-danger' : 'pill-warn',
       };
@@ -695,6 +747,23 @@ function isActiveStatus(status: string) {
 
 function isClosedStatus(status: string) {
   return ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status);
+}
+
+function bookingCustomerChatAvatarStatus(booking: AdminBookingDetail): AdminAvatarStatus {
+  if (isWorkingStatus(booking.status)) return 'working';
+  if (booking.status === 'OPEN_MATCHING' || booking.status === 'CREATED') return 'matching';
+  return 'offline';
+}
+
+function bookingPartnerChatAvatarStatus(booking: AdminBookingDetail): AdminAvatarStatus {
+  if (isWorkingStatus(booking.status)) return 'working';
+  if (booking.status === 'OPEN_MATCHING') return 'matching';
+  if (booking.selectedProvider || booking.preferredProvider) return 'offline';
+  return 'offline';
+}
+
+function isWorkingStatus(status: string) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status);
 }
 
 function statusPillClass(status: string) {
