@@ -34,7 +34,8 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(markup).toContain('href="/bookings?view=post-match-cancellations"');
     expect(markup).toContain('booking-post-match-cancellations-card');
     expect(markup).toContain('booking-post-match-header-actions');
-    expect(markup).toContain('booking-post-match-metric is-warn');
-    expect(markup).toContain('booking-post-match-metric is-danger');
+    expect(markup).toContain('vuexy-booking-table');
+    expect(markup).toContain('pill-warn');
+    expect(markup).toContain('pill-danger');
   });
 });

@@ -2193,54 +2193,11 @@ a.action-button-card:hover {
   margin: 0;
 }
 
-.booking-post-match-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-}
-
-.booking-post-match-metric {
-  border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  display: grid;
-  gap: 8px;
-  padding: 16px;
-}
-
-.booking-post-match-metric span {
-  color: var(--admin-muted);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.booking-post-match-metric strong {
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 32px;
-}
-
-.booking-post-match-metric p,
 .booking-post-match-operator-note span {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
   margin: 0;
-}
-
-.booking-post-match-metric.is-success {
-  background: rgb(var(--admin-success-channel) / 0.08);
-}
-
-.booking-post-match-metric.is-info {
-  background: rgb(var(--admin-info-channel) / 0.08);
-}
-
-.booking-post-match-metric.is-warn {
-  background: rgb(var(--admin-warning-channel) / 0.08);
-}
-
-.booking-post-match-metric.is-danger {
-  background: rgb(var(--admin-danger-channel) / 0.08);
 }
 
 .booking-post-match-operator-note {

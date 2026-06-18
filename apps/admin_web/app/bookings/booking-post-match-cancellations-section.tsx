@@ -1,11 +1,48 @@
 import Link from 'next/link';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
   readonly board: BookingPostMatchCancellationBoard;
 };
 
+const POST_MATCH_CANCELLATION_TABLE_HEADERS = ['Review Lane', 'Count', 'Handling Rule'] as const;
+
 export function BookingPostMatchCancellationsSection({ board }: BookingPostMatchCancellationsSectionProps) {
+  const metrics = [
+    {
+      count: board.pendingManualReviewCount,
+      helper: 'Cancellations after 15 minutes and no-show reviews need chat evidence before closeout.',
+      label: 'Needs admin review',
+      tone: 'pill-warn',
+    },
+    {
+      count: board.autoApprovedCount,
+      helper:
+        'Partner cancelled within 15 minutes and the API resolved the cancellation fee outcome automatically.',
+      label: 'Auto-approved',
+      tone: 'pill-info',
+    },
+    {
+      count: board.autoApprovalWindowCount,
+      helper: 'Cancellation rows inside the 15-minute Partner window.',
+      label: 'Within 15m window',
+      tone: 'pill-info',
+    },
+    {
+      count: board.feeHeldCount,
+      helper: 'Partner fee is still held until approval restores the unpaid earning.',
+      label: 'Fee held',
+      tone: 'pill-danger',
+    },
+    {
+      count: board.feeRestoredCount,
+      helper: 'Cancellation has been approved or the unpaid earning was restored to zero.',
+      label: 'Fee restored',
+      tone: 'pill-success',
+    },
+  ];
+
   return (
     <section className="card booking-post-match-cancellations-card admin-mt-16">
       <div className="ops-section-header">
@@ -27,40 +64,30 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
         </div>
       </div>
 
-      <div className="booking-post-match-grid">
-        <CancellationMetric
-          helper="Cancellations after 15 minutes and no-show reviews need chat evidence before closeout."
-          label="Needs admin review"
-          tone="warn"
-          value={board.pendingManualReviewCount}
-        />
-        <CancellationMetric
-          helper="Partner cancelled within 15 minutes and the API resolved the cancellation fee outcome automatically."
-          label="Auto-approved"
-          tone="info"
-          value={board.autoApprovedCount}
-        />
-        <CancellationMetric
-          helper="Cancellation rows inside the 15-minute Partner window."
-          label="Within 15m window"
-          tone="info"
-          value={board.autoApprovalWindowCount}
-        />
-        <CancellationMetric
-          helper="Partner fee is still held until approval restores the unpaid earning."
-          label="Fee held"
-          tone="danger"
-          value={board.feeHeldCount}
-        />
-        <CancellationMetric
-          helper="Cancellation has been approved or the unpaid earning was restored to zero."
-          label="Fee restored"
-          tone="success"
-          value={board.feeRestoredCount}
-        />
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          className="vuexy-booking-table admin-mt-14"
+          emptyMessage="No post-match cancellation metrics are available."
+          headers={POST_MATCH_CANCELLATION_TABLE_HEADERS}
+          rowCount={metrics.length}
+        >
+          {metrics.map((metric) => (
+            <tr key={metric.label}>
+              <td>
+                <span className={`pill ${metric.tone}`}>{metric.label}</span>
+              </td>
+              <td>
+                <strong>{metric.count}</strong>
+              </td>
+              <td>
+                <span className="muted">{metric.helper}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
 
-      <div className="booking-post-match-operator-note">
+      <div className="booking-post-match-operator-note admin-mt-14">
         <strong>Admin handling rule</strong>
         <span>
           Open chat, check the Partner cancellation or no-show evidence, then approve eligible cancellation
@@ -68,25 +95,5 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
         </span>
       </div>
     </section>
-  );
-}
-
-function CancellationMetric({
-  helper,
-  label,
-  tone,
-  value,
-}: {
-  readonly helper: string;
-  readonly label: string;
-  readonly tone: 'danger' | 'info' | 'success' | 'warn';
-  readonly value: number;
-}) {
-  return (
-    <div className={`booking-post-match-metric is-${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <p>{helper}</p>
-    </div>
   );
 }
