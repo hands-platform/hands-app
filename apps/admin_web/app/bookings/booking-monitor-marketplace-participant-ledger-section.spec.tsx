@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, headingTextsIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceParticipantLedgerSection } from './booking-monitor-marketplace-participant-ledger-section';
 
 describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
@@ -79,6 +79,9 @@ describe('BookingMonitorMarketplaceParticipantLedgerSection', () => {
     expect(headingTextsIn(section)).toEqual([]);
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/bookings?view=marketplace', '/bookings/booking_123456789']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
     );
   });
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminBooking } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import type {
@@ -16,6 +16,16 @@ type BookingMonitorMarketplaceCoverageSectionProps = {
   readonly marketplaceBookingCoverageRows: readonly MarketplaceBookingCoverageRow<AdminBooking>[];
   readonly marketplaceBookingCoverageSummary: MarketplaceBookingCoverageSummary;
 };
+
+const MARKETPLACE_COVERAGE_HEADERS = [
+  'Booking',
+  'First-pick window',
+  'Participant history',
+  'Customer choice',
+  '10 km alert trace',
+  'Wallet gate',
+  'Next action',
+] as const;
 
 export function BookingMonitorMarketplaceCoverageSection({
   getCustomerLabel,
@@ -50,69 +60,60 @@ export function BookingMonitorMarketplaceCoverageSection({
         </div>
       ) : (
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Booking</th>
-                <th>First-pick window</th>
-                <th>Participant history</th>
-                <th>Customer choice</th>
-                <th>10 km alert trace</th>
-                <th>Wallet gate</th>
-                <th>Next action</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={MARKETPLACE_COVERAGE_HEADERS}
+            rowCount={marketplaceBookingCoverageRows.length}
+          >
+            {marketplaceBookingCoverageRows.slice(0, 30).map((row) => (
+              <tr key={row.booking.id}>
+                <td>
+                  <strong>
+                    <Link className="text-link" href={`/bookings/${row.booking.id}`}>
+                      {shortId(row.booking.id)}
+                    </Link>
+                  </strong>
+                  <div className="muted">{getCustomerLabel(row.booking)}</div>
+                  <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
+                </td>
+                <td>
+                  <span className={`pill ${row.firstPickTone}`}>{row.firstPickLabel}</span>
+                  <div className="muted">{getMatchingWindowLabel(row.booking)}</div>
+                </td>
+                <td>
+                  <strong>{row.participantCount} participant record(s)</strong>
+                  <div className="muted">
+                    {row.marketplaceParticipantCount} marketplace / {row.selectableCount} selectable
+                  </div>
+                </td>
+                <td>
+                  <span className={`pill ${row.selectedPartnerTone}`}>
+                    {row.selectedPartnerLabel}
+                  </span>
+                </td>
+                <td>
+                  <span className={`pill ${row.alertTone}`} title={row.alertDetail}>
+                    {row.alertLabel}
+                  </span>
+                </td>
+                <td>
+                  <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
+                </td>
+                <td>
+                  <span className={`pill ${row.nextActionTone}`} title={row.nextAction}>
+                    {compactCoverageNextActionLabel(row.nextAction)}
+                  </span>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {marketplaceBookingCoverageRows.slice(0, 30).map((row) => (
-                <tr key={row.booking.id}>
-                  <td>
-                    <strong>
-                      <Link className="text-link" href={`/bookings/${row.booking.id}`}>
-                        {shortId(row.booking.id)}
-                      </Link>
-                    </strong>
-                    <div className="muted">{getCustomerLabel(row.booking)}</div>
-                    <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.firstPickTone}`}>{row.firstPickLabel}</span>
-                    <div className="muted">{getMatchingWindowLabel(row.booking)}</div>
-                  </td>
-                  <td>
-                    <strong>{row.participantCount} participant record(s)</strong>
-                    <div className="muted">
-                      {row.marketplaceParticipantCount} marketplace / {row.selectableCount} selectable
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.selectedPartnerTone}`}>
-                      {row.selectedPartnerLabel}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.alertTone}`} title={row.alertDetail}>
-                      {row.alertLabel}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.nextActionTone}`} title={row.nextAction}>
-                      {compactCoverageNextActionLabel(row.nextAction)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {marketplaceBookingCoverageRows.length > 30 && (
-                <tr>
-                  <td colSpan={7}>
-                    Showing first 30 booking coverage rows. Narrow filters to inspect the rest.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            ))}
+            {marketplaceBookingCoverageRows.length > 30 && (
+              <tr>
+                <td colSpan={MARKETPLACE_COVERAGE_HEADERS.length}>
+                  Showing first 30 booking coverage rows. Narrow filters to inspect the rest.
+                </td>
+              </tr>
+            )}
+          </AdminDataTable>
         </AdminTableScroll>
       )}
     </section>

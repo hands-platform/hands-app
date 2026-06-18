@@ -1,5 +1,5 @@
 import type { AdminBooking } from '../../lib/admin-api';
-import { hrefsIn, normalizedText } from './booking-section-test-utils';
+import { classNamesIn, hrefsIn, normalizedText } from './booking-section-test-utils';
 import { BookingMonitorMarketplaceCoverageSection } from './booking-monitor-marketplace-coverage-section';
 
 describe('BookingMonitorMarketplaceCoverageSection', () => {
@@ -65,6 +65,9 @@ describe('BookingMonitorMarketplaceCoverageSection', () => {
     expect(rendered).toContain('8m left');
     expect(rendered).toContain('2 participant record(s)');
     expect(hrefsIn(section)).toContain('/bookings/booking_123456789');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+    );
   });
 
   it('renders the empty state when no coverage rows match', () => {
