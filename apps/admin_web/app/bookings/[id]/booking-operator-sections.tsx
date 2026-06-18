@@ -1,4 +1,4 @@
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import {
   captureBookingPayment,
@@ -81,6 +81,14 @@ export type BookingOpsCommandCenterProps = {
   cashDebtNeedsSettlement: boolean;
 };
 
+const OPERATOR_ACTION_AVAILABILITY_HEADERS = [
+  'Action',
+  'Availability',
+  'Evidence',
+  'Operator rule',
+  'Open',
+] as const;
+
 export function BookingOperatorQueueSections({
   bookingId,
   operatorCommandQueue,
@@ -136,32 +144,25 @@ export function BookingOperatorQueueSections({
           </span>
         </div>
         <AdminTableScroll>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Availability</th>
-                <th>Evidence</th>
-                <th>Operator rule</th>
-                <th>Open</th>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={OPERATOR_ACTION_AVAILABILITY_HEADERS}
+            rowCount={operatorActionMatrix.length}
+          >
+            {operatorActionMatrix.map((row) => (
+              <tr key={row.action}>
+                <td>{row.action}</td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorRule}</td>
+                <td>
+                  <ActionLink href={row.href} label={row.hrefLabel} />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {operatorActionMatrix.map((row) => (
-                <tr key={row.action}>
-                  <td>{row.action}</td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.operatorRule}</td>
-                  <td>
-                    <ActionLink href={row.href} label={row.hrefLabel} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </AdminTableScroll>
       </section>
     </>
