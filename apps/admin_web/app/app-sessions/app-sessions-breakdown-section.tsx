@@ -1,3 +1,4 @@
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { InfoRow } from '../../components/info-row';
 
 export type AppSessionRoleRow = {
@@ -29,6 +30,9 @@ type AppSessionsBreakdownSectionProps = {
   readonly versionRows: readonly AppSessionVersionRow[];
 };
 
+const APP_SESSION_ROLE_HEADERS = ['Role', 'Sessions'] as const;
+const APP_SESSION_PLATFORM_VERSION_HEADERS = ['Platform or version', 'Sessions'] as const;
+
 export function AppSessionsBreakdownSection({
   platformRows,
   roleRows,
@@ -38,8 +42,8 @@ export function AppSessionsBreakdownSection({
     <section className="detail-grid admin-mb-16">
       <div className="card">
         <h2>Role split</h2>
-        <table className="table">
-          <tbody>
+        <AdminTableScroll>
+          <AdminDataTable emptyMessage={null} headers={APP_SESSION_ROLE_HEADERS} rowCount={roleRows.length}>
             {roleRows.map((row) => (
               <InfoRow
                 detail={`${row.recent} recent, ${row.stale} stale, ${row.expired} expired`}
@@ -48,14 +52,18 @@ export function AppSessionsBreakdownSection({
                 value={`${row.live} live / ${row.total} total`}
               />
             ))}
-          </tbody>
-        </table>
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
 
       <div className="card">
         <h2>Platform and version</h2>
-        <table className="table">
-          <tbody>
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={null}
+            headers={APP_SESSION_PLATFORM_VERSION_HEADERS}
+            rowCount={platformRows.length + Math.min(versionRows.length, 4)}
+          >
             {platformRows.map((row) => (
               <InfoRow
                 detail={`${row.live} live session(s) right now`}
@@ -72,8 +80,8 @@ export function AppSessionsBreakdownSection({
                 value={`${row.total} session(s)`}
               />
             ))}
-          </tbody>
-        </table>
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
     </section>
   );
