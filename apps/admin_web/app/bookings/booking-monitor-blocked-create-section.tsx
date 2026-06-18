@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Filter, ScrollText, X } from 'lucide-react';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { AdminAuditLog } from '../../lib/admin-api';
 import { shortId } from '../../lib/admin-format';
 import { commandToneClass } from './booking-command-display';
@@ -20,6 +21,16 @@ type BookingMonitorBlockedCreateSectionProps = {
   readonly visibleBookingCreateRejections: readonly AdminAuditLog[];
 };
 
+const BLOCKED_CREATE_TABLE_HEADERS = [
+  'Attempt',
+  'Create Gate',
+  'Customer',
+  'Service Address',
+  'Distance Evidence',
+  'Location Evidence',
+  'Actions',
+] as const;
+
 export function BookingMonitorBlockedCreateSection({
   bookingGateTriage,
   gateFilter,
@@ -27,6 +38,8 @@ export function BookingMonitorBlockedCreateSection({
   orderedBookingCreateRejections,
   visibleBookingCreateRejections,
 }: BookingMonitorBlockedCreateSectionProps) {
+  const visibleEvidenceRows = visibleBookingCreateRejections.slice(0, 30);
+
   return (
     <section className="card admin-mt-16">
       <div className="ops-section-header">
@@ -57,11 +70,7 @@ export function BookingMonitorBlockedCreateSection({
           </select>
         </label>
         <div className="actions admin-align-end">
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={() => onGateFilterChange('all')}
-          >
+          <button className="button button-secondary" type="button" onClick={() => onGateFilterChange('all')}>
             <X aria-hidden="true" size={16} />
             Clear create gate
           </button>
@@ -98,42 +107,85 @@ export function BookingMonitorBlockedCreateSection({
         {bookingGateFilterOptions.find((option) => option.value === gateFilter)?.operatorHint}
       </p>
       {visibleBookingCreateRejections.length === 0 ? (
-        <div className="empty-state admin-mt-14">
-          No blocked booking create attempts match this create gate filter.
-        </div>
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table admin-mt-14"
+            emptyMessage="No blocked booking create attempts match this create gate filter."
+            headers={BLOCKED_CREATE_TABLE_HEADERS}
+            rowCount={0}
+          >
+            {null}
+          </AdminDataTable>
+        </AdminTableScroll>
       ) : (
-        <div className="ops-task-grid admin-mt-14">
-          {visibleBookingCreateRejections.slice(0, 30).map((log) => {
-            const evidence = bookingGateRejectionInfo(log);
-            return (
-              <article className="ops-task-card" key={log.id}>
-                <span className={`signal ${commandToneClass(evidence.tone)}`}>{evidence.reasonLabel}</span>
-                <h3>{shortId(log.id)}</h3>
-                <p>{evidence.operatorAction}</p>
-                <div className="participant-list">
-                  <span className="pill">Created {formatDate(log.createdAt)}</span>
-                  <span className="pill">{evidence.customerDistanceLabel}</span>
-                  <span className="pill">{evidence.preferredPartnerDistanceLabel}</span>
-                </div>
-                <div className="stack admin-mt-10">
-                  <span className="muted">Address: {evidence.addressText}</span>
-                  <span className="muted">Optional customer GPS: {evidence.currentLocationLabel}</span>
-                  <span className="muted">Booking pin: {evidence.bookingAddressLabel}</span>
-                </div>
-                <div className="actions admin-mt-12">
-                  {evidence.customerHref && (
-                    <Link className="text-link" href={evidence.customerHref}>
-                      Customer detail
-                    </Link>
-                  )}
-                  <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
-                    Audit evidence
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+        <>
+          <AdminTableScroll>
+            <AdminDataTable
+              className="vuexy-booking-table admin-mt-14"
+              emptyMessage="No blocked booking create attempts match this create gate filter."
+              headers={BLOCKED_CREATE_TABLE_HEADERS}
+              rowCount={visibleEvidenceRows.length}
+            >
+              {visibleEvidenceRows.map((log) => {
+                const evidence = bookingGateRejectionInfo(log);
+                return (
+                  <tr key={log.id}>
+                    <td>
+                      <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
+                        {shortId(log.id)}
+                      </Link>
+                      <div className="muted">Created {formatDate(log.createdAt)}</div>
+                    </td>
+                    <td>
+                      <span className={`signal ${commandToneClass(evidence.tone)}`}>
+                        {evidence.reasonLabel}
+                      </span>
+                      <div className="muted">{evidence.operatorAction}</div>
+                    </td>
+                    <td>
+                      {evidence.customerHref ? (
+                        <Link className="text-link" href={evidence.customerHref}>
+                          Customer detail
+                        </Link>
+                      ) : (
+                        <span className="muted">Customer not linked</span>
+                      )}
+                    </td>
+                    <td>
+                      <strong>{evidence.addressText}</strong>
+                      <div className="muted">Booking address selected by customer</div>
+                    </td>
+                    <td>
+                      <div className="stack">
+                        <span className="pill">{evidence.customerDistanceLabel}</span>
+                        <span className="pill">{evidence.preferredPartnerDistanceLabel}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stack">
+                        <span className="muted">Optional customer GPS: {evidence.currentLocationLabel}</span>
+                        <span className="muted">Booking pin: {evidence.bookingAddressLabel}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="actions">
+                        <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
+                          Audit evidence
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </AdminDataTable>
+          </AdminTableScroll>
+          {visibleBookingCreateRejections.length > visibleEvidenceRows.length && (
+            <p className="muted admin-mt-10">
+              Showing the latest {visibleEvidenceRows.length} of {visibleBookingCreateRejections.length}
+              blocked create attempts. Use the audit log for older evidence.
+            </p>
+          )}
+        </>
       )}
     </section>
   );
