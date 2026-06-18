@@ -7,6 +7,7 @@ type SectionsProps = Parameters<typeof BookingRecordDetailSections>[0];
 const participantRow: SectionsProps['participantLedger']['rows'][number] = {
   id: 'participant_1',
   partner: 'Partner One',
+  avatarStatus: 'working',
   identity: '+84900000000',
   href: '/partners/partner_1',
   evidenceTone: 'pill-info',
@@ -131,6 +132,8 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Wallet: Clear');
     expect(markup).toContain('Cash fee settlement path');
     expect(markup).toContain('table vuexy-data-table');
+    expect(markup).toContain('admin-avatar-status-dot is-working');
+    expect(markup).toContain('vuexy-booking-person');
     expect(markup).toContain('href="/customers/customer_1"');
     expect(markup).toContain('href="/partners/partner_1"');
   });

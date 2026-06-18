@@ -1,7 +1,9 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { type AdminChatMessage } from '../../../lib/admin-api';
+import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import { BookingChatBubble } from './booking-chat-bubble';
 
 type InfoRowModel = {
@@ -49,6 +51,7 @@ type ParticipantFact = {
 type ParticipantRow = {
   id: string;
   partner: string;
+  avatarStatus: AdminAvatarStatus;
   identity: string;
   href?: string | null;
   evidenceTone: string;
@@ -410,8 +413,15 @@ function ParticipantEligibilityMatrix({ rows }: ParticipantEligibilityMatrixProp
         {rows.map((row) => (
           <tr key={`eligibility-${row.id}`}>
             <td>
-              <strong>{row.partner}</strong>
-              <p className="muted">{row.identity}</p>
+              <AdminPersonCell
+                avatarClassName="vuexy-booking-avatar is-partner"
+                avatarStatus={row.avatarStatus}
+                className="vuexy-booking-person"
+                helper={row.identity}
+                href={row.href}
+                label={row.partner}
+                linkClassName="table-link"
+              />
             </td>
             <td>
               <span className={`pill ${row.roleTone}`}>{row.role}</span>
@@ -447,13 +457,15 @@ function ParticipantRecordsTable({ rows }: ParticipantRecordsTableProps) {
         {rows.map((row) => (
           <tr key={row.id}>
             <td>
-              <strong>{row.partner}</strong>
-              <p className="muted">{row.identity}</p>
-              {row.href && (
-                <Link className="text-link" href={row.href}>
-                  Open Partner record
-                </Link>
-              )}
+              <AdminPersonCell
+                avatarClassName="vuexy-booking-avatar is-partner"
+                avatarStatus={row.avatarStatus}
+                className="vuexy-booking-person"
+                helper={row.identity}
+                href={row.href}
+                label={row.partner}
+                linkClassName="table-link"
+              />
             </td>
             <td>
               <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>

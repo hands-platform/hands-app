@@ -89,6 +89,7 @@ describe('booking participant ledger', () => {
     );
 
     expect(ledger.rows.find((row) => row.id === 'participant-selected')).toMatchObject({
+      avatarStatus: 'working',
       role: 'Final Partner',
       choiceState: 'Customer final choice',
       eligibilityLabel: 'Final selected by customer',
@@ -109,6 +110,7 @@ describe('booking participant ledger', () => {
       ]),
     );
     expect(ledger.rows.find((row) => row.id === 'participant-marketplace')).toMatchObject({
+      avatarStatus: 'matching',
       role: 'Marketplace',
       choiceState: 'Customer-selectable',
       eligibilityLabel: 'Customer-selectable',
@@ -121,11 +123,13 @@ describe('booking participant ledger', () => {
       ]),
     );
     expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
+      avatarStatus: 'matching',
       role: 'First-pick',
       choiceState: 'Evidence-only',
       eligibilityLabel: 'Not customer-selectable yet',
     });
     expect(ledger.rows.find((row) => row.id === 'participant-rejected')).toMatchObject({
+      avatarStatus: 'offline',
       choiceState: 'Evidence-only',
       evidenceLabel: 'Declined response row',
       eligibilityLabel: 'Not customer-selectable',

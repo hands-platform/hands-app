@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import {
   marketplaceParticipantLedgerBoundaryCopy,
   participantReadableDecision,
@@ -298,6 +299,7 @@ export function bookingParticipantLedger(
       return {
         id: participant.id,
         partner: providerName(participant.providerProfile),
+        avatarStatus: bookingParticipantLedgerAvatarStatus(booking, participant, isFinal),
         identity: `${participant.providerProfile?.user?.phone ?? 'No phone'} / ${providerStatus}`,
         href: partnerId ? `/partners/${partnerId}` : null,
         ...bookingParticipantEvidenceState({
@@ -335,6 +337,30 @@ export function bookingParticipantLedger(
       };
     }),
   };
+}
+
+function bookingParticipantLedgerAvatarStatus(
+  booking: AdminBookingDetail,
+  participant: BookingDetailParticipant,
+  isFinal: boolean,
+): AdminAvatarStatus {
+  if (isFinal || participant.status === 'SELECTED') {
+    return 'working';
+  }
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    return 'offline';
+  }
+  if (booking.status === 'OPEN_MATCHING' && ['ACCEPTED', 'JOINED'].includes(participant.status)) {
+    return 'matching';
+  }
+  const providerStatus = participant.providerStatusAtJoin ?? participant.providerProfile?.status;
+  if (providerStatus === 'ONLINE_BUSY') {
+    return 'working';
+  }
+  if (providerStatus === 'ONLINE_AVAILABLE' || providerStatus === 'ONLINE_AVAILABLE_SOON') {
+    return 'online';
+  }
+  return 'offline';
 }
 
 function bookingParticipantEligibilityState(input: {
