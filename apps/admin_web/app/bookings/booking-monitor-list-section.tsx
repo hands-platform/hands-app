@@ -138,9 +138,15 @@ type BookingMonitorListSectionProps = {
   readonly rows: readonly BookingMonitorListRow[];
 };
 
-type BookingTableGroupKey = 'pre-match' | 'post-match-in-progress' | 'completed' | 'post-match-cancellations';
+type BookingTableGroupKey =
+  | 'pre-match'
+  | 'post-match-in-progress'
+  | 'completed'
+  | 'post-match-cancellations-pending'
+  | 'post-match-cancellations-resolved';
 
 type BookingTableGroupDefinition = {
+  readonly countTone: string;
   readonly description: string;
   readonly emptyMessage: string;
   readonly key: BookingTableGroupKey;
@@ -201,28 +207,39 @@ const BOOKING_TABLE_HEADERS = [
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
+    countTone: 'pill-neutral',
     description: 'Requests before final Partner matching.',
     emptyMessage: 'No pre-match bookings are waiting.',
     key: 'pre-match',
     title: 'Pre-match',
   },
   {
+    countTone: 'pill-info',
     description: 'Matched bookings currently moving through dispatch and service.',
     emptyMessage: 'No post-match bookings are in progress.',
     key: 'post-match-in-progress',
     title: 'Post-match / In Progress',
   },
   {
+    countTone: 'pill-success',
     description: 'Completed bookings ready for normal closeout review.',
     emptyMessage: 'No completed bookings in this result set.',
     key: 'completed',
     title: 'Completed',
   },
   {
-    description: 'Partner-side cancellations and no-show reviews after matching.',
-    emptyMessage: 'No post-match cancellations in this result set.',
-    key: 'post-match-cancellations',
-    title: 'Post-match Cancellations',
+    countTone: 'pill-warn',
+    description: 'Partner-side cancellations and no-show reviews still needing admin evidence review.',
+    emptyMessage: 'No pending post-match cancellation reviews in this result set.',
+    key: 'post-match-cancellations-pending',
+    title: 'Post-match Cancellations / Needs Review',
+  },
+  {
+    countTone: 'pill-success',
+    description: 'Approved, held, or auto-approved cancellation decisions retained for audit.',
+    emptyMessage: 'No resolved post-match cancellation decisions in this result set.',
+    key: 'post-match-cancellations-resolved',
+    title: 'Post-match Cancellations / Resolved',
   },
 ];
 
@@ -305,7 +322,7 @@ function BookingMonitorTableGroup({
           <h3 id={`booking-table-${group.key}`}>{group.title}</h3>
           <p>{group.description}</p>
         </div>
-        <span className="pill pill-neutral">{group.rows.length} booking(s)</span>
+        <span className={`pill ${group.countTone}`}>{group.rows.length} booking(s)</span>
       </div>
       <AdminTableScroll>
         <AdminDataTable
@@ -1161,9 +1178,14 @@ function bookingTableGroupKey(booking: AdminBooking): BookingTableGroupKey | nul
     case 'COMPLETED':
       return 'completed';
     case 'NO_SHOW':
-      return 'post-match-cancellations';
+      return 'post-match-cancellations-pending';
     case 'CANCELLED':
-      return bookingHasPostMatchEvidence(booking) ? 'post-match-cancellations' : null;
+      if (!bookingHasPostMatchEvidence(booking)) {
+        return null;
+      }
+      return postMatchCancellationResolution(booking) === 'pending'
+        ? 'post-match-cancellations-pending'
+        : 'post-match-cancellations-resolved';
     default:
       return null;
   }
