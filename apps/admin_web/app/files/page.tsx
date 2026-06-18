@@ -118,6 +118,8 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
 }
 
 function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
+  const actions = fileReviewActions(row);
+
   return (
     <tr>
       <td>
@@ -164,16 +166,18 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
         )}
       </td>
       <td>
-        <ActionMenu actions={fileReviewActions(row)} label={`File actions for ${row.purposeLabel}`} />
+        {actions.length ? (
+          <ActionMenu actions={actions} label={`File actions for ${row.purposeLabel}`} />
+        ) : (
+          <StatusBadge tone="neutral">Evidence only</StatusBadge>
+        )}
       </td>
     </tr>
   );
 }
 
 function fileReviewActions(row: FileReviewRow): readonly ActionMenuItem[] {
-  const actions: ActionMenuItem[] = [
-    { href: row.partnerHref, kind: 'link', label: 'Open Partner', tone: 'neutral' },
-  ];
+  const actions: ActionMenuItem[] = [];
 
   if (row.kind === 'public-media') {
     actions.push(
