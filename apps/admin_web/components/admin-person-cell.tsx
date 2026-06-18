@@ -1,15 +1,8 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { adminAvatarStatusLabels, type AdminAvatarStatus } from '../lib/admin-avatar-status';
 
-export type AdminAvatarStatus = 'online' | 'matching' | 'working' | 'offline' | 'app-deleted';
-
-const adminAvatarStatusLabels: Record<AdminAvatarStatus, string> = {
-  'app-deleted': 'App delete suspected',
-  matching: 'Matching waiting',
-  offline: 'App offline',
-  online: 'App online',
-  working: 'Work in progress',
-};
+export type { AdminAvatarStatus } from '../lib/admin-avatar-status';
 
 type AdminPersonCellProps = {
   readonly avatarClassName: string;

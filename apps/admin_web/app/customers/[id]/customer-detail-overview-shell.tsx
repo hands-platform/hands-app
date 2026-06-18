@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { BellRing, Bookmark, MapPin, MessageSquareText, Smartphone, Wallet } from 'lucide-react';
+import { AdminAvatarStatusDot } from '../../../components/admin-person-cell';
+import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerDetailOverviewFact = {
   readonly helper: string;
@@ -27,6 +29,7 @@ export type CustomerDetailOverviewNavItem = {
 
 type CustomerDetailOverviewShellProps = {
   readonly actions: readonly CustomerDetailOverviewAction[];
+  readonly avatarStatus: AdminAvatarStatus;
   readonly facts: readonly CustomerDetailOverviewFact[];
   readonly highlights: readonly CustomerDetailOverviewHighlight[];
   readonly name: string;
@@ -37,6 +40,7 @@ type CustomerDetailOverviewShellProps = {
 
 export function CustomerDetailOverviewShell({
   actions,
+  avatarStatus,
   facts,
   highlights,
   name,
@@ -48,8 +52,11 @@ export function CustomerDetailOverviewShell({
     <aside className="customer-detail-sidebar">
       <section className="card customer-detail-overview-card">
         <div className="customer-detail-identity">
-          <span className="customer-detail-avatar" aria-hidden="true">
-            {readInitials(name)}
+          <span className="admin-person-avatar-shell">
+            <span className="customer-detail-avatar" aria-hidden="true">
+              {readInitials(name)}
+            </span>
+            <AdminAvatarStatusDot status={avatarStatus} />
           </span>
           <div>
             <h2>{name}</h2>

@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { compactValue } from '../../lib/admin-format';
 import {
@@ -18,8 +19,11 @@ import {
 import { maskToken } from './partner-list-profile';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
+const MATCHING_BOOKING_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
+const WORKING_BOOKING_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 
 export type PartnerMasterRow = {
+  avatarStatus: AdminAvatarStatus;
   provider: AdminProvider;
   initials: string;
   displayName: string;
@@ -115,7 +119,21 @@ export function buildPartnerMasterRow(
       : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
+    avatarStatus: partnerMasterAvatarStatus(provider, bookingRows),
   };
+}
+
+function partnerMasterAvatarStatus(
+  provider: AdminProvider,
+  bookingRows: ReturnType<typeof partnerBookingRows>,
+): AdminAvatarStatus {
+  return adminAvatarStatusFromSignals({
+    devices: [...(provider.devices ?? []), ...(provider.user?.pushDevices ?? [])],
+    fallbackOnline: provider.status !== 'OFFLINE',
+    matching: bookingRows.some((booking) => MATCHING_BOOKING_STATUSES.has(booking.status)),
+    sessions: provider.sessions,
+    working: bookingRows.some((booking) => WORKING_BOOKING_STATUSES.has(booking.status)),
+  });
 }
 
 function partnerBookingClosureCounts(bookings: ReturnType<typeof partnerBookingRows>) {

@@ -1690,6 +1690,21 @@ a.action-button-card:hover {
   background: #1f1d2b;
 }
 
+.media-thumb + .admin-avatar-status-dot {
+  bottom: 3px;
+  height: 12px;
+  right: 3px;
+  width: 12px;
+}
+
+.customer-detail-identity .admin-avatar-status-dot {
+  border-width: 3px;
+  bottom: 3px;
+  height: 15px;
+  right: 3px;
+  width: 15px;
+}
+
 .vuexy-booking-avatar {
   align-items: center;
   background: rgb(var(--admin-info-channel) / 0.14);

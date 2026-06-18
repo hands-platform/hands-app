@@ -10,6 +10,7 @@ describe('CustomerDetailOverviewShell', () => {
   it('renders overview facts, quick actions, and section navigation', () => {
     const section = CustomerDetailOverviewShell({
       actions: buildActions(),
+      avatarStatus: 'online',
       facts: buildFacts(),
       highlights: buildHighlights(),
       name: 'Customer One',
@@ -33,6 +34,8 @@ describe('CustomerDetailOverviewShell', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'customer-detail-sidebar',
+        'admin-person-avatar-shell',
+        'admin-avatar-status-dot is-online',
         'card customer-detail-overview-card',
         'customer-detail-nav-list',
       ]),

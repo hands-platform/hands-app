@@ -1,5 +1,6 @@
 import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
 import type { AdminPageMetric } from '../../components/admin-page-template';
+import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import type { CustomerRow } from './customer-list-model';
 
 type CustomerSummary = {
@@ -27,6 +28,7 @@ export type CustomerManagementSpotlight = {
 };
 
 export type CustomerManagementTableRow = {
+  readonly avatarStatus: AdminAvatarStatus;
   readonly chatHref: string;
   readonly customerIdLabel: string;
   readonly detailHref: string;
@@ -121,6 +123,7 @@ export function buildCustomerManagementTableRows(
     const customerIdLabel = compactText(row.id, 12);
 
     return {
+      avatarStatus: customerAvatarStatus(row),
       chatHref: `/chat-archive?q=${encodeURIComponent(row.id)}`,
       customerIdLabel,
       detailHref: `/customers/${row.id}`,
@@ -137,6 +140,22 @@ export function buildCustomerManagementTableRows(
       totalWalletAmountLabel: formatMoney(row.capturedSpend),
     };
   });
+}
+
+function customerAvatarStatus(row: CustomerRow): AdminAvatarStatus {
+  if (row.lastSeenAt && !row.pushReachable && Date.now() - dateMs(row.lastSeenAt) >= 30 * 24 * 60 * 60_000) {
+    return 'app-deleted';
+  }
+  if (row.serviceLiveBookings > 0) {
+    return 'working';
+  }
+  if (row.openMatchingBookings > 0 || row.firstPickBookings > 0) {
+    return 'matching';
+  }
+  if (row.isLive) {
+    return 'online';
+  }
+  return 'offline';
 }
 
 function readInitials(name: string) {
@@ -159,4 +178,12 @@ function compactText(value: string, maxLength: number) {
   }
 
   return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function dateMs(value?: string | null) {
+  if (!value) {
+    return 0;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }

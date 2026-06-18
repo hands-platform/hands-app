@@ -33,6 +33,8 @@ describe('CustomersTableSection', () => {
         'admin-action-dropdown vuexy-customer-action-dropdown',
         'admin-action-trigger vuexy-customer-action-trigger',
         'admin-action-menu vuexy-customer-action-menu',
+        'admin-person-avatar-shell',
+        'admin-avatar-status-dot is-online',
       ]),
     );
   });
@@ -54,6 +56,7 @@ describe('CustomersTableSection', () => {
 
 function buildRow(): CustomerManagementTableRow {
   return {
+    avatarStatus: 'online',
     chatHref: '/chat-archive?q=customer-1',
     customerIdLabel: 'customer-1',
     detailHref: '/customers/customer-1',

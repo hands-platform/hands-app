@@ -6,9 +6,14 @@ import {
   AdminAvatarStatusDot,
   AdminPersonCell,
   adminPersonInitials,
-  type AdminAvatarStatus,
 } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import {
+  adminAvatarStatusFromSignals,
+  type AdminAvatarPushDeviceSignal,
+  type AdminAvatarSessionSignal,
+  type AdminAvatarStatus,
+} from '../../lib/admin-avatar-status';
 import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
@@ -140,47 +145,26 @@ type BookingParticipantTableRow = {
 
 type BookingProviderLike =
   | {
+      readonly devices?: readonly AdminAvatarPushDeviceSignal[];
       readonly displayName?: string | null;
-      readonly user?: { readonly fullName?: string | null; readonly phone?: string };
-    }
-  | null
-  | undefined;
-
-type BookingAvatarSession = {
-  readonly active?: boolean;
-  readonly deviceLanguage?: string | null;
-  readonly lastSeenAt?: string | null;
-};
-
-type BookingAvatarPushDelivery = {
-  readonly response?: unknown;
-  readonly status?: string | null;
-};
-
-type BookingAvatarPushDevice = {
-  readonly deliveries?: readonly BookingAvatarPushDelivery[];
-  readonly enabled?: boolean;
-  readonly lastSeenAt?: string | null;
-};
-
-type BookingAvatarUserLike =
-  | {
-      readonly appSessions?: readonly BookingAvatarSession[];
-      readonly pushDevices?: readonly BookingAvatarPushDevice[];
-    }
-  | null
-  | undefined;
-
-type BookingAvatarProviderLike =
-  | (NonNullable<BookingProviderLike> & {
-      readonly devices?: readonly BookingAvatarPushDevice[];
-      readonly sessions?: readonly BookingAvatarSession[];
+      readonly id?: string;
+      readonly sessions?: readonly AdminAvatarSessionSignal[];
       readonly status?: string | null;
-      readonly user?: NonNullable<NonNullable<BookingProviderLike>['user']> & {
-        readonly appSessions?: readonly BookingAvatarSession[];
-        readonly pushDevices?: readonly BookingAvatarPushDevice[];
+      readonly user?: {
+        readonly appSessions?: readonly AdminAvatarSessionSignal[];
+        readonly fullName?: string | null;
+        readonly phone?: string;
+        readonly pushDevices?: readonly AdminAvatarPushDeviceSignal[];
       };
-    })
+    }
+  | null
+  | undefined;
+
+type BookingCustomerUserLike =
+  | {
+      readonly appSessions?: readonly AdminAvatarSessionSignal[];
+      readonly pushDevices?: readonly AdminAvatarPushDeviceSignal[];
+    }
   | null
   | undefined;
 
@@ -230,8 +214,6 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
   'ARRIVED',
   'IN_SERVICE',
 ]);
-const BOOKING_APP_ACTIVE_WINDOW_MS = 5 * 60 * 1000;
-const BOOKING_APP_DELETE_SUSPECT_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
@@ -626,154 +608,53 @@ function bookingParticipantRows(booking: AdminBooking) {
 }
 
 function bookingCustomerAvatarStatus(booking: AdminBooking): AdminAvatarStatus {
-  const user = booking.customerProfile?.user;
-  if (isUserAppDeleteSuspected(user)) {
-    return 'app-deleted';
-  }
-  if (BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status)) {
-    return 'matching';
-  }
-  if (BOOKING_WORKING_AVATAR_STATUSES.has(booking.status)) {
-    return 'working';
-  }
-  return isUserAppOnline(user) ? 'online' : 'offline';
+  const user = booking.customerProfile?.user as BookingCustomerUserLike;
+
+  return adminAvatarStatusFromSignals({
+    devices: user?.pushDevices,
+    matching: BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status),
+    sessions: user?.appSessions,
+    working: BOOKING_WORKING_AVATAR_STATUSES.has(booking.status),
+  });
 }
 
 function bookingRequestedPartnerAvatarStatus(
   booking: AdminBooking,
-  partner: AdminBooking['preferredProvider'] | AdminBooking['selectedProvider'] | null,
+  partner: BookingProviderLike,
 ): AdminAvatarStatus {
   const selectedPartnerId = booking.selectedProvider?.id ?? booking.selectedProviderId ?? null;
   const partnerId = partner?.id ?? null;
 
-  if (isProviderAppDeleteSuspected(partner)) {
-    return 'app-deleted';
-  }
-  if (BOOKING_WORKING_AVATAR_STATUSES.has(booking.status) && partnerId && partnerId === selectedPartnerId) {
-    return 'working';
-  }
-  if (BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status) && partnerId) {
-    return 'matching';
-  }
-  return isProviderAppOnline(partner) ? 'online' : 'offline';
+  return adminAvatarStatusFromSignals({
+    devices: partner?.devices ?? partner?.user?.pushDevices,
+    fallbackOnline: Boolean(partner?.status?.startsWith('ONLINE')),
+    matching: BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status) && Boolean(partnerId),
+    sessions: partner?.sessions ?? partner?.user?.appSessions,
+    working:
+      BOOKING_WORKING_AVATAR_STATUSES.has(booking.status) &&
+      Boolean(partnerId) &&
+      partnerId === selectedPartnerId,
+  });
 }
 
 function bookingParticipantAvatarStatus(
   booking: AdminBooking,
   participant: NonNullable<AdminBooking['participants']>[number],
 ): AdminAvatarStatus {
-  const provider = participant.providerProfile;
+  const provider = participant.providerProfile as BookingProviderLike;
   const selectedPartnerId = booking.selectedProvider?.id ?? booking.selectedProviderId ?? null;
   const participantPartnerId = participant.providerProfile?.id ?? participant.providerProfileId ?? null;
 
-  if (isProviderAppDeleteSuspected(provider)) {
-    return 'app-deleted';
-  }
-  if (
-    BOOKING_WORKING_AVATAR_STATUSES.has(booking.status) &&
-    participantPartnerId &&
-    participantPartnerId === selectedPartnerId
-  ) {
-    return 'working';
-  }
-  if (BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status)) {
-    return 'matching';
-  }
-  return isProviderAppOnline(provider) ? 'online' : 'offline';
-}
-
-function isUserAppDeleteSuspected(user: BookingAvatarUserLike) {
-  return isAppDeleteSuspected(user?.appSessions, user?.pushDevices);
-}
-
-function isProviderAppDeleteSuspected(provider: BookingAvatarProviderLike) {
-  const sessions = provider?.sessions ?? provider?.user?.appSessions;
-  const devices = provider?.devices ?? provider?.user?.pushDevices;
-  return isAppDeleteSuspected(sessions, devices);
-}
-
-function isAppDeleteSuspected(
-  sessions: readonly BookingAvatarSession[] | null | undefined,
-  devices: readonly BookingAvatarPushDevice[] | null | undefined,
-) {
-  const latestSeenAt = latestAvatarSeenAt([...(sessions ?? []), ...(devices ?? [])]);
-  if (latestSeenAt === null || Date.now() - latestSeenAt < BOOKING_APP_DELETE_SUSPECT_MS) {
-    return false;
-  }
-
-  return hasDisabledPushDevice(devices) || hasFailedPushDelivery(devices);
-}
-
-function isUserAppOnline(user: BookingAvatarUserLike) {
-  return hasActiveSession(user?.appSessions);
-}
-
-function isProviderAppOnline(provider: BookingAvatarProviderLike) {
-  if (provider?.status?.startsWith('ONLINE')) {
-    return true;
-  }
-
-  return hasActiveSession(provider?.sessions) || hasActiveSession(provider?.user?.appSessions);
-}
-
-function hasActiveSession(sessions: readonly BookingAvatarSession[] | null | undefined) {
-  const now = Date.now();
-
-  return (sessions ?? []).some((session) => {
-    if (session.active === true) {
-      return true;
-    }
-    const lastSeenAt = parseAvatarTimestamp(session.lastSeenAt);
-    return lastSeenAt !== null && now - lastSeenAt <= BOOKING_APP_ACTIVE_WINDOW_MS;
+  return adminAvatarStatusFromSignals({
+    devices: provider?.devices ?? provider?.user?.pushDevices,
+    fallbackOnline: Boolean(provider?.status?.startsWith('ONLINE')),
+    matching: BOOKING_MATCHING_AVATAR_STATUSES.has(booking.status),
+    sessions: provider?.sessions ?? provider?.user?.appSessions,
+    working:
+      BOOKING_WORKING_AVATAR_STATUSES.has(booking.status) &&
+      Boolean(participantPartnerId) &&
+      participantPartnerId === selectedPartnerId,
   });
-}
-
-function latestAvatarSeenAt(items: readonly { readonly lastSeenAt?: string | null }[]) {
-  const timestamps = items
-    .map((item) => parseAvatarTimestamp(item.lastSeenAt))
-    .filter((value): value is number => value !== null);
-
-  return timestamps.length > 0 ? Math.max(...timestamps) : null;
-}
-
-function parseAvatarTimestamp(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function hasDisabledPushDevice(devices: readonly BookingAvatarPushDevice[] | null | undefined) {
-  return (devices ?? []).some((device) => device.enabled === false);
-}
-
-function hasFailedPushDelivery(devices: readonly BookingAvatarPushDevice[] | null | undefined) {
-  return (devices ?? []).some((device) => (device.deliveries ?? []).some(isFailedPushDelivery));
-}
-
-function isFailedPushDelivery(delivery: BookingAvatarPushDelivery) {
-  const status = delivery.status?.trim().toUpperCase();
-  if (status && !['DELIVERED', 'OK', 'SENT', 'SUCCESS'].includes(status)) {
-    return true;
-  }
-
-  return pushDeliveryResponseText(delivery.response).some((text) =>
-    ['APNS_AUTH_ERROR', 'INVALID_ARGUMENT', 'NOT_FOUND', 'REGISTRATION_TOKEN_NOT_REGISTERED', 'UNREGISTERED'].some(
-      (needle) => text.includes(needle),
-    ),
-  );
-}
-
-function pushDeliveryResponseText(response: unknown) {
-  if (typeof response === 'string') {
-    return [response.toUpperCase()];
-  }
-  try {
-    return [JSON.stringify(response ?? '').toUpperCase()];
-  } catch {
-    return [];
-  }
 }
 
 function bookingDeviceLanguageLabel(booking: AdminBooking) {

@@ -38,6 +38,8 @@ describe('ReviewsTableSection', () => {
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
         'card admin-filter-panel vuexy-review-filter-card admin-mb-16',
+        'admin-person-avatar-shell',
+        'admin-avatar-status-dot is-offline',
       ]),
     );
     expect(dropdownPropsIn(section)).toEqual([
@@ -103,9 +105,11 @@ function buildRow(): ReviewTableRow {
     commentLabel: 'The service arrived late but recovered well.',
     createdAtLabel: '16:08 23/02/2026',
     customerInitials: 'CO',
+    customerAvatarStatus: 'offline',
     customerLabel: 'Customer One',
     customerPhone: '+84900000000',
     id: 'review-1',
+    partnerAvatarStatus: 'offline',
     partnerHint: 'Visible review',
     partnerInitials: 'MP',
     partnerLabel: 'Massage Partner',

@@ -130,6 +130,7 @@ describe('partner master row', () => {
     expect(row.displayName).toBe('Linh Wellness');
     expect(row.phone).toBe('0865907184');
     expect(row.online).toBe(true);
+    expect(row.avatarStatus).toBe('online');
     expect(row.level).toBe('LEVEL_2_ACTIVE');
     expect(row.kycStatus).toBe('APPROVED');
     expect(row.locationState).toBe('recent');

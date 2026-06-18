@@ -1,4 +1,10 @@
 import type { AdminReview } from '../../lib/admin-api';
+import {
+  adminAvatarStatusFromSignals,
+  type AdminAvatarPushDeviceSignal,
+  type AdminAvatarSessionSignal,
+  type AdminAvatarStatus,
+} from '../../lib/admin-avatar-status';
 import { shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
@@ -33,6 +39,18 @@ export type ReviewCommandItem = {
   readonly tone: ReviewCommandTone;
 };
 
+type ReviewAvatarUserSignal = {
+  readonly appSessions?: readonly AdminAvatarSessionSignal[];
+  readonly pushDevices?: readonly AdminAvatarPushDeviceSignal[];
+};
+
+type ReviewAvatarProviderSignal = {
+  readonly devices?: readonly AdminAvatarPushDeviceSignal[];
+  readonly sessions?: readonly AdminAvatarSessionSignal[];
+  readonly status?: string | null;
+  readonly user?: ReviewAvatarUserSignal;
+};
+
 export type ReviewFilters = {
   readonly page: number;
   readonly pageSize: number;
@@ -60,8 +78,10 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     createdAtLabel: formatReviewDate(review.createdAt),
     customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
     customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
+    customerAvatarStatus: reviewCustomerAvatarStatus(review),
     customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
     id: review.id,
+    partnerAvatarStatus: reviewPartnerAvatarStatus(review),
     partnerHint: partnerReviewHint(review),
     partnerInitials: initials(review.providerProfile?.displayName),
     partnerLabel: reviewProviderLabel(review),
@@ -74,6 +94,25 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     statusLabel: reviewStatusLabel(review.status),
     statusMeaning: statusMeaning(review.status),
   }));
+}
+
+function reviewCustomerAvatarStatus(review: AdminReview): AdminAvatarStatus {
+  const user = review.customerProfile?.user as ReviewAvatarUserSignal | undefined;
+
+  return adminAvatarStatusFromSignals({
+    devices: user?.pushDevices,
+    sessions: user?.appSessions,
+  });
+}
+
+function reviewPartnerAvatarStatus(review: AdminReview): AdminAvatarStatus {
+  const provider = review.providerProfile as ReviewAvatarProviderSignal | undefined;
+
+  return adminAvatarStatusFromSignals({
+    devices: provider?.devices ?? provider?.user?.pushDevices,
+    fallbackOnline: Boolean(provider?.status?.startsWith('ONLINE')),
+    sessions: provider?.sessions ?? provider?.user?.appSessions,
+  });
 }
 
 export function sortReviews(reviews: readonly AdminReview[]): AdminReview[] {

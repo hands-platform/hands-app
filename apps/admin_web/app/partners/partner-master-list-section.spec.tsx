@@ -25,6 +25,9 @@ describe('PartnerMasterListSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-table-scroll', 'pill pill-success', 'button button-secondary admin-inline-action']),
     );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-person-avatar-shell', 'admin-avatar-status-dot is-online']),
+    );
   });
 
   it('renders an empty state when no partner rows are visible', () => {
@@ -48,6 +51,7 @@ function buildRows(): PartnerMasterListSectionRow[] {
       adminClosedCount: 0,
       auditLogCount: 2,
       availablePayout: 320000,
+      avatarStatus: 'online',
       bookingCount: 5,
       closedCount: 1,
       completedCount: 4,

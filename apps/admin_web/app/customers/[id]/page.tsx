@@ -42,6 +42,7 @@ import {
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
+import { adminAvatarStatusFromSignals } from '../../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { addCustomerOpsNote } from './actions';
 import {
@@ -91,6 +92,8 @@ const ACTIVE_STATUSES = [
   'ARRIVED',
   'IN_SERVICE',
 ];
+const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
+const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 
 export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
@@ -126,6 +129,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   );
   const latestSession = customer.user?.appSessions?.[0];
   const pushDevices = customer.user?.pushDevices ?? [];
+  const customerAvatarStatus = adminAvatarStatusFromSignals({
+    devices: pushDevices,
+    matching: Boolean(activeBooking && MATCHING_AVATAR_STATUSES.has(activeBooking.status)),
+    sessions: customer.user?.appSessions,
+    working: Boolean(activeBooking && WORKING_AVATAR_STATUSES.has(activeBooking.status)),
+  });
   const notifications = customer.user?.notifications ?? [];
   const activityPlan = buildCustomerActivityPlan(customer, bookings, wallet, bookingStats, addresses);
   const chatRooms = bookings.filter((booking) => booking.chatRoom);
@@ -636,6 +645,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <div className="customer-detail-shell">
         <CustomerDetailOverviewShell
           actions={overviewActions}
+          avatarStatus={customerAvatarStatus}
           facts={overviewFacts}
           highlights={overviewHighlights}
           name={customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer'}

@@ -136,6 +136,7 @@ function masterRow(input: Partial<PartnerMasterRow> = {}): PartnerMasterRow {
     adminClosedCount: 1,
     auditLogCount: 2,
     availablePayout: 220000,
+    avatarStatus: 'online',
     bookingCount: 7,
     closedCount: 3,
     completedCount: 4,
