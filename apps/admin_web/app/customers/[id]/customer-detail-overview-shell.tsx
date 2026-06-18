@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BellRing, Bookmark, MapPin, MessageSquareText, Smartphone, Wallet } from 'lucide-react';
-import { AdminAvatarStatusDot } from '../../../components/admin-person-cell';
+import { AdminAvatar } from '../../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
 export type CustomerDetailOverviewFact = {
@@ -52,12 +52,7 @@ export function CustomerDetailOverviewShell({
     <aside className="customer-detail-sidebar">
       <section className="card customer-detail-overview-card">
         <div className="customer-detail-identity">
-          <span className="admin-person-avatar-shell">
-            <span className="customer-detail-avatar" aria-hidden="true">
-              {readInitials(name)}
-            </span>
-            <AdminAvatarStatusDot status={avatarStatus} />
-          </span>
+          <AdminAvatar className="customer-detail-avatar" initials={readInitials(name)} status={avatarStatus} />
           <div>
             <h2>{name}</h2>
             <p>{subtitle}</p>

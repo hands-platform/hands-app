@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Download, Star, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminAvatarStatusDot } from '../../components/admin-person-cell';
+import { AdminAvatar } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
@@ -139,10 +139,11 @@ export function ReviewsTableSection({
                 </td>
                 <td>
                   <div className="vuexy-review-person">
-                    <span className="admin-person-avatar-shell">
-                      <span className="vuexy-review-avatar vuexy-review-avatar-square">{row.partnerInitials}</span>
-                      <AdminAvatarStatusDot status={row.partnerAvatarStatus} />
-                    </span>
+                    <AdminAvatar
+                      className="vuexy-review-avatar vuexy-review-avatar-square"
+                      initials={row.partnerInitials}
+                      status={row.partnerAvatarStatus}
+                    />
                     <div>
                       <strong>{row.partnerLabel}</strong>
                       <span>{row.partnerHint}</span>
@@ -151,10 +152,11 @@ export function ReviewsTableSection({
                 </td>
                 <td>
                   <div className="vuexy-review-person">
-                    <span className="admin-person-avatar-shell">
-                      <span className="vuexy-review-avatar">{row.customerInitials}</span>
-                      <AdminAvatarStatusDot status={row.customerAvatarStatus} />
-                    </span>
+                    <AdminAvatar
+                      className="vuexy-review-avatar"
+                      initials={row.customerInitials}
+                      status={row.customerAvatarStatus}
+                    />
                     <div>
                       <strong className="vuexy-review-customer">{row.customerLabel}</strong>
                       <span>{row.customerPhone}</span>

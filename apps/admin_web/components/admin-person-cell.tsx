@@ -33,12 +33,12 @@ export function AdminPersonCell({
 }: AdminPersonCellProps) {
   return (
     <div className={className}>
-      <span className="admin-person-avatar-shell">
-        <span aria-hidden="true" className={avatarClassName}>
-          {initials ?? adminPersonInitials(label)}
-        </span>
-        {avatarStatus ? <AdminAvatarStatusDot label={avatarStatusLabel} status={avatarStatus} /> : null}
-      </span>
+      <AdminAvatar
+        className={avatarClassName}
+        initials={initials ?? adminPersonInitials(label)}
+        status={avatarStatus}
+        statusLabel={avatarStatusLabel}
+      />
       <div className={copyClassName}>
         {href ? (
           <Link className={linkClassName} href={href}>
@@ -58,6 +58,25 @@ export function adminPersonInitials(label: string) {
   const initials = parts.length > 1 ? `${parts[0][0] ?? ''}${parts[1][0] ?? ''}` : parts[0]?.slice(0, 2);
 
   return (initials || 'NA').toUpperCase();
+}
+
+type AdminAvatarProps = {
+  readonly className: string;
+  readonly initials: string;
+  readonly label?: string;
+  readonly status?: AdminAvatarStatus;
+  readonly statusLabel?: string;
+};
+
+export function AdminAvatar({ className, initials, label, status, statusLabel }: AdminAvatarProps) {
+  return (
+    <span aria-label={label} className="admin-person-avatar-shell">
+      <span aria-hidden="true" className={className}>
+        {initials}
+      </span>
+      {status ? <AdminAvatarStatusDot label={statusLabel} status={status} /> : null}
+    </span>
+  );
 }
 
 type AdminAvatarStatusDotProps = {

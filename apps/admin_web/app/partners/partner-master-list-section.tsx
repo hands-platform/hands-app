@@ -3,7 +3,7 @@ import { User } from 'lucide-react';
 
 import { AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
-import { AdminAvatarStatusDot } from '../../components/admin-person-cell';
+import { AdminAvatar } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
 import type { PartnerMasterRow } from './partner-master-row';
@@ -52,12 +52,12 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
                   <code>{row.provider.id}</code>
                 </td>
                 <td>
-                  <div className="admin-person-avatar-shell">
-                    <div className="media-thumb" aria-label={`${row.displayName} profile thumbnail placeholder`}>
-                      {row.initials}
-                    </div>
-                    <AdminAvatarStatusDot status={row.avatarStatus} />
-                  </div>
+                  <AdminAvatar
+                    className="media-thumb"
+                    initials={row.initials}
+                    label={`${row.displayName} profile thumbnail placeholder`}
+                    status={row.avatarStatus}
+                  />
                 </td>
                 <td>
                   <strong>{row.displayName}</strong>

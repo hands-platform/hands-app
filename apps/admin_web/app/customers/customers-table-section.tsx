@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminAvatarStatusDot } from '../../components/admin-person-cell';
+import { AdminAvatar } from '../../components/admin-person-cell';
 import { customerActionLinks, type CustomerActionLink } from './customer-action-links';
 import { CustomerActionDropdown } from './customer-action-dropdown';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
@@ -37,10 +37,11 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
               <tr key={row.customerIdLabel}>
                 <td>
                   <div className="vuexy-customer-person">
-                    <span className="admin-person-avatar-shell">
-                      <span className="vuexy-customer-avatar">{row.initials}</span>
-                      <AdminAvatarStatusDot status={row.avatarStatus} />
-                    </span>
+                    <AdminAvatar
+                      className="vuexy-customer-avatar"
+                      initials={row.initials}
+                      status={row.avatarStatus}
+                    />
                     <div>
                       <strong>{row.name}</strong>
                       <span>{row.phone}</span>
