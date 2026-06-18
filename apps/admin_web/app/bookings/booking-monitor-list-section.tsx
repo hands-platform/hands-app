@@ -22,8 +22,10 @@ import { approvePostMatchCancellation, holdPostMatchCancellation } from './actio
 import { readAddressText } from './booking-address-readers';
 import { formatBookingDate } from './booking-list-time';
 import {
+  isPostMatchCancellationAutoApproved,
   isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
+  isPostMatchCancellationManualReviewRequired,
   postMatchCancellationFeeState,
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
@@ -434,6 +436,8 @@ function BookingPostMatchCancellationActionsCell({
   const resolution = postMatchCancellationResolution(booking);
   const feeState = postMatchCancellationFeeState(booking);
   const autoApprovalEligible = isPostMatchCancellationAutoApprovalEligible(booking);
+  const autoApproved = isPostMatchCancellationAutoApproved(booking);
+  const manualReviewRequired = isPostMatchCancellationManualReviewRequired(booking);
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
 
   return (
@@ -449,9 +453,16 @@ function BookingPostMatchCancellationActionsCell({
       <span className={`pill ${cancellationFeeStateTone(feeState)}`}>
         {cancellationFeeStateLabel(feeState)}
       </span>
-      <span className={`pill ${autoApprovalEligible ? 'pill-info' : 'pill-warn'}`}>
-        {autoApprovalEligible ? 'Within 15m' : cancellationMinutesLabel(minutesAfterMatch)}
+      <span
+        className={`pill ${autoApproved ? 'pill-success' : autoApprovalEligible ? 'pill-info' : 'pill-warn'}`}
+      >
+        {autoApproved
+          ? 'Auto-approved'
+          : autoApprovalEligible
+            ? 'Within 15m'
+            : cancellationMinutesLabel(minutesAfterMatch)}
       </span>
+      {manualReviewRequired && <span className="pill pill-warn">Admin review required</span>}
       {resolution === 'pending' ? (
         <div className="booking-action-form-grid">
           <form action={approvePostMatchCancellation} className="booking-action-form">
@@ -481,7 +492,7 @@ function BookingPostMatchCancellationActionsCell({
         </div>
       ) : (
         <span className={`pill ${resolution === 'approved' ? 'pill-success' : 'pill-danger'}`}>
-          {resolution === 'approved' ? 'Approved' : 'Held'}
+          {cancellationResolutionLabel(resolution, autoApproved)}
         </span>
       )}
     </div>
@@ -500,6 +511,7 @@ function BookingPostMatchCancellationChatLayer({
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
   const feeState = postMatchCancellationFeeState(booking);
   const resolution = postMatchCancellationResolution(booking);
+  const autoApproved = isPostMatchCancellationAutoApproved(booking);
 
   return (
     <div className="booking-chat-layer" role="presentation">
@@ -517,7 +529,7 @@ function BookingPostMatchCancellationChatLayer({
             </h3>
             <p>
               {cancellationMinutesLabel(minutesAfterMatch)} · {cancellationFeeStateLabel(feeState)} ·{' '}
-              {cancellationResolutionLabel(resolution)}
+              {cancellationResolutionLabel(resolution, autoApproved)}
             </p>
           </div>
           <button
@@ -1017,10 +1029,13 @@ function cancellationMinutesLabel(minutesAfterMatch: number | null) {
   return `${minutesAfterMatch}m after match`;
 }
 
-function cancellationResolutionLabel(resolution: ReturnType<typeof postMatchCancellationResolution>) {
+function cancellationResolutionLabel(
+  resolution: ReturnType<typeof postMatchCancellationResolution>,
+  autoApproved = false,
+) {
   switch (resolution) {
     case 'approved':
-      return 'Approved';
+      return autoApproved ? 'Auto-approved' : 'Approved';
     case 'held':
       return 'Held';
     default:

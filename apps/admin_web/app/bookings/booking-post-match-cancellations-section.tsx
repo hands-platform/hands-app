@@ -29,10 +29,10 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
           value={board.pendingManualReviewCount}
         />
         <CancellationMetric
-          helper="Within 15 minutes from match; approval is policy-safe unless evidence says otherwise."
-          label="Auto-approval window"
+          helper="Partner cancelled within 15 minutes and the API resolved the fee outcome automatically."
+          label="Auto-approved"
           tone="info"
-          value={board.autoApprovalWindowCount}
+          value={board.autoApprovedCount}
         />
         <CancellationMetric
           helper="Partner fee is still held until approval restores the unpaid earning."

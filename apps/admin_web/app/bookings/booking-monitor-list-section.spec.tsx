@@ -349,6 +349,33 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
   });
+
+  it('distinguishes auto-approved post-match cancellations from manual approvals', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[
+          bookingRowFixture({
+            closedAt: '2026-06-13T03:10:00.000Z',
+            closedByRole: 'PROVIDER',
+            closedReason: 'post_match_cancellation_approved',
+            customerName: 'Auto Customer',
+            id: 'booking_auto_cancelled_after_match',
+            matchedAt: '2026-06-13T03:00:00.000Z',
+            openedDateLabel: '13 Jun 2026, 03:00',
+            status: 'CANCELLED',
+            statusChangedAt: '2026-06-13T03:10:00.000Z',
+          }),
+        ]}
+      />
+    );
+
+    const rendered = normalizedText(renderToStaticMarkup(section));
+
+    expect(rendered).toContain('Auto-approved');
+    expect(rendered).toContain('Fee restored');
+    expect(rendered).not.toContain('Admin review required');
+  });
 });
 
 function bookingRowFixture(input: {
@@ -358,6 +385,7 @@ function bookingRowFixture(input: {
   readonly closureState?: BookingMonitorListRow['closureState'];
   readonly customerName: string;
   readonly id: string;
+  readonly matchedAt?: string;
   readonly openedDateLabel: string;
   readonly status: string;
   readonly statusChangedAt: string;
@@ -377,7 +405,12 @@ function bookingRowFixture(input: {
     closedAt: input.closedAt ?? null,
     closedByRole: input.closedByRole ?? null,
     closedReason: input.closedReason ?? null,
+    earning:
+      input.closedReason === 'post_match_cancellation_approved'
+        ? { id: `${input.id}_earning`, netAmount: 0, status: 'CANCELLED' }
+        : null,
     id: input.id,
+    matchedAt: input.matchedAt ?? null,
     selectedProviderId: input.status === 'CANCELLED' ? `${input.id}_partner` : null,
     status: input.status,
     statusChangedAt: input.statusChangedAt,

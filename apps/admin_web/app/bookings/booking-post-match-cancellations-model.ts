@@ -5,6 +5,7 @@ export const POST_MATCH_CANCELLATION_REVIEW_MINUTES = 15;
 export type BookingPostMatchCancellationResolution = 'approved' | 'held' | 'pending';
 
 export type BookingPostMatchCancellationBoard = {
+  readonly autoApprovedCount: number;
   readonly autoApprovalWindowCount: number;
   readonly feeHeldCount: number;
   readonly feeRestoredCount: number;
@@ -20,6 +21,7 @@ export function buildBookingPostMatchCancellationBoard(
   const cancellations = bookings.filter(isPostMatchCancellationBooking);
 
   return {
+    autoApprovedCount: cancellations.filter(isPostMatchCancellationAutoApproved).length,
     autoApprovalWindowCount: cancellations.filter(isPostMatchCancellationAutoApprovalEligible).length,
     feeHeldCount: cancellations.filter((booking) => postMatchCancellationFeeState(booking) === 'held').length,
     feeRestoredCount: cancellations.filter(
@@ -28,11 +30,7 @@ export function buildBookingPostMatchCancellationBoard(
     monthCount: cancellations.filter((booking) =>
       isSameMonth(bookingPostMatchCancellationTime(booking), nowMs),
     ).length,
-    pendingManualReviewCount: cancellations.filter(
-      (booking) =>
-        postMatchCancellationResolution(booking) === 'pending' &&
-        !isPostMatchCancellationAutoApprovalEligible(booking),
-    ).length,
+    pendingManualReviewCount: cancellations.filter(isPostMatchCancellationManualReviewRequired).length,
     totalCount: cancellations.length,
   };
 }
@@ -48,6 +46,20 @@ export function bookingHasPostMatchEvidence(booking: AdminBooking) {
 export function isPostMatchCancellationAutoApprovalEligible(booking: AdminBooking) {
   const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
   return minutesAfterMatch !== null && minutesAfterMatch <= POST_MATCH_CANCELLATION_REVIEW_MINUTES;
+}
+
+export function isPostMatchCancellationAutoApproved(booking: AdminBooking) {
+  return (
+    postMatchCancellationResolution(booking) === 'approved' &&
+    isPostMatchCancellationAutoApprovalEligible(booking)
+  );
+}
+
+export function isPostMatchCancellationManualReviewRequired(booking: AdminBooking) {
+  return (
+    postMatchCancellationResolution(booking) === 'pending' &&
+    !isPostMatchCancellationAutoApprovalEligible(booking)
+  );
 }
 
 export function postMatchCancellationMinutesAfterMatch(booking: AdminBooking) {
