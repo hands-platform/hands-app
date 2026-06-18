@@ -154,10 +154,10 @@ describe('BookingActionStatusSections', () => {
         postMatchDecision: {
           approveNote: 'Approved after admin chat evidence review.',
           canResolve: true,
-          feeLabel: 'Fee still held',
+          feeLabel: 'Fee held',
           feeTone: 'pill-danger',
           holdNote: 'Held after admin chat evidence review.',
-          resolutionLabel: 'Pending review',
+          resolutionLabel: 'Pending admin decision',
           resolutionTone: 'pill-warn',
           timingLabel: '16m after match',
           timingTone: 'pill-warn',
@@ -173,8 +173,8 @@ describe('BookingActionStatusSections', () => {
       },
     });
 
-    expect(markup).toContain('Pending review');
-    expect(markup).toContain('Fee still held');
+    expect(markup).toContain('Pending admin decision');
+    expect(markup).toContain('Fee held');
     expect(markup).toContain('16m after match');
     expect(markup).toContain('Approve cancellation');
     expect(markup).toContain('Hold fee deduction');

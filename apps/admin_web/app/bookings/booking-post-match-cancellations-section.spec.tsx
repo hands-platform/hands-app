@@ -25,7 +25,7 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(rendered).toContain('Needs admin review');
     expect(rendered).toContain('Auto-approved');
     expect(rendered).toContain('Within 15m window');
-    expect(rendered).toContain('Fee still held');
+    expect(rendered).toContain('Fee held');
     expect(rendered).toContain('Fee restored');
     expect(rendered).toContain('Open queue');
     expect(rendered).toContain('Partner-side cancellations and no-show reviews after matching');

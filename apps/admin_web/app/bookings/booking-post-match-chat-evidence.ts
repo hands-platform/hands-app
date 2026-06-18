@@ -6,6 +6,11 @@ import {
   postMatchCancellationMinutesAfterMatch,
   postMatchCancellationResolution,
 } from './booking-post-match-cancellations-model';
+import {
+  postMatchCancellationFeeStateLabel,
+  postMatchCancellationMinutesLabel,
+  postMatchCancellationResolutionLabel,
+} from './booking-post-match-cancellation-display';
 
 export type BookingPostMatchChatEvidenceRow = {
   readonly label: string;
@@ -37,8 +42,8 @@ export function bookingPostMatchChatEvidenceRows({
   return [
     {
       label: 'Review state',
-      value: cancellationResolutionLabel(resolution, autoApproved),
-      helper: `${cancellationMinutesLabel(minutesAfterMatch)} / ${cancellationFeeStateLabel(feeState)}`,
+      value: postMatchCancellationResolutionLabel(resolution, autoApproved),
+      helper: `${postMatchCancellationMinutesLabel(minutesAfterMatch)} / ${postMatchCancellationFeeStateLabel(feeState)}`,
     },
     {
       label: 'Closure source',
@@ -75,36 +80,4 @@ function humanizeBookingToken(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(' ');
   return label === 'Provider' ? 'Partner' : label;
-}
-
-function cancellationFeeStateLabel(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
-  switch (feeState) {
-    case 'restored':
-      return 'Fee restored';
-    case 'held':
-      return 'Fee held';
-    default:
-      return 'No earning';
-  }
-}
-
-function cancellationMinutesLabel(minutesAfterMatch: number | null) {
-  if (minutesAfterMatch === null) {
-    return 'Match time missing';
-  }
-  return `${minutesAfterMatch}m after match`;
-}
-
-function cancellationResolutionLabel(
-  resolution: ReturnType<typeof postMatchCancellationResolution>,
-  autoApproved = false,
-) {
-  switch (resolution) {
-    case 'approved':
-      return autoApproved ? 'Auto-approved' : 'Approved';
-    case 'held':
-      return 'Held';
-    default:
-      return 'Pending admin decision';
-  }
 }

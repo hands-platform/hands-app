@@ -48,7 +48,7 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
         />
         <CancellationMetric
           helper="Partner fee is still held until approval restores the unpaid earning."
-          label="Fee still held"
+          label="Fee held"
           tone="danger"
           value={board.feeHeldCount}
         />

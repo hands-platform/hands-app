@@ -27,6 +27,15 @@ import {
   bookingPostMatchEvidenceLabel,
 } from './booking-post-match-chat-evidence';
 import {
+  postMatchCancellationFeeStateLabel,
+  postMatchCancellationFeeStateTone,
+  postMatchCancellationMinutesLabel,
+  postMatchCancellationResolutionLabel,
+  postMatchCancellationResolutionTone,
+  postMatchCancellationTimingLabel,
+  postMatchCancellationTimingTone,
+} from './booking-post-match-cancellation-display';
+import {
   isPostMatchCancellationAutoApproved,
   isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
@@ -535,17 +544,23 @@ function BookingPostMatchCancellationActionsCell({
         <MessageSquare aria-hidden="true" size={14} />
         Chat ({chatCount})
       </button>
-      <span className={`pill ${cancellationFeeStateTone(feeState)}`}>
-        {cancellationFeeStateLabel(feeState)}
+      <span className={`pill ${postMatchCancellationFeeStateTone(feeState)}`}>
+        {postMatchCancellationFeeStateLabel(feeState)}
       </span>
       <span
-        className={`pill ${autoApproved ? 'pill-success' : autoApprovalEligible ? 'pill-info' : 'pill-warn'}`}
+        className={`pill ${postMatchCancellationTimingTone({
+          autoApprovalEligible,
+          autoApproved,
+          manualReviewRequired,
+          minutesAfterMatch,
+        })}`}
       >
-        {autoApproved
-          ? 'Auto-approved'
-          : autoApprovalEligible
-            ? 'Within 15m'
-            : cancellationMinutesLabel(minutesAfterMatch)}
+        {postMatchCancellationTimingLabel({
+          autoApprovalEligible,
+          autoApproved,
+          manualReviewRequired,
+          minutesAfterMatch,
+        })}
       </span>
       {manualReviewRequired && <span className="pill pill-warn">Admin review required</span>}
       {resolution === 'pending' ? (
@@ -560,8 +575,8 @@ function BookingPostMatchCancellationActionsCell({
           variant="dropdown"
         />
       ) : (
-        <span className={`pill ${resolution === 'approved' ? 'pill-success' : 'pill-danger'}`}>
-          {cancellationResolutionLabel(resolution, autoApproved)}
+        <span className={`pill ${postMatchCancellationResolutionTone(resolution)}`}>
+          {postMatchCancellationResolutionLabel(resolution, autoApproved)}
         </span>
       )}
     </div>
@@ -637,8 +652,9 @@ export function BookingPostMatchCancellationChatLayer({
               {bookingCustomerLabel(booking)} / {providerTableLabel(booking.selectedProvider)}
             </h3>
             <p>
-              {cancellationMinutesLabel(minutesAfterMatch)} · {cancellationFeeStateLabel(feeState)} ·{' '}
-              {cancellationResolutionLabel(resolution, autoApproved)}
+              {postMatchCancellationMinutesLabel(minutesAfterMatch)} ·{' '}
+              {postMatchCancellationFeeStateLabel(feeState)} ·{' '}
+              {postMatchCancellationResolutionLabel(resolution, autoApproved)}
             </p>
           </div>
           <button
@@ -1127,49 +1143,6 @@ function bookingChatSenderRole(roles?: readonly string[]) {
     return 'Admin';
   }
   return 'User';
-}
-
-function cancellationFeeStateTone(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
-  switch (feeState) {
-    case 'restored':
-      return 'pill-success';
-    case 'held':
-      return 'pill-danger';
-    default:
-      return 'pill-neutral';
-  }
-}
-
-function cancellationFeeStateLabel(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
-  switch (feeState) {
-    case 'restored':
-      return 'Fee restored';
-    case 'held':
-      return 'Fee held';
-    default:
-      return 'No earning';
-  }
-}
-
-function cancellationMinutesLabel(minutesAfterMatch: number | null) {
-  if (minutesAfterMatch === null) {
-    return 'Match time missing';
-  }
-  return `${minutesAfterMatch}m after match`;
-}
-
-function cancellationResolutionLabel(
-  resolution: ReturnType<typeof postMatchCancellationResolution>,
-  autoApproved = false,
-) {
-  switch (resolution) {
-    case 'approved':
-      return autoApproved ? 'Auto-approved' : 'Approved';
-    case 'held':
-      return 'Held';
-    default:
-      return 'Pending admin decision';
-  }
 }
 
 function metadataText(metadata: Record<string, unknown> | null, key: string) {

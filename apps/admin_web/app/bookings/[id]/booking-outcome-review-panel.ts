@@ -1,6 +1,15 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import type { BookingClosureSummary } from '../../../lib/booking-closure-summary';
 import {
+  type BookingPostMatchCancellationPillTone as PillTone,
+  postMatchCancellationFeeStateLabel,
+  postMatchCancellationFeeStateTone,
+  postMatchCancellationResolutionLabel,
+  postMatchCancellationResolutionTone,
+  postMatchCancellationTimingLabel,
+  postMatchCancellationTimingTone,
+} from '../booking-post-match-cancellation-display';
+import {
   isPostMatchCancellationAutoApproved,
   isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
@@ -10,8 +19,6 @@ import {
   postMatchCancellationResolution,
 } from '../booking-post-match-cancellations-model';
 import { formatDate } from './booking-formatters';
-
-type PillTone = 'pill-danger' | 'pill-info' | 'pill-neutral' | 'pill-success' | 'pill-warn';
 
 export type BookingOutcomeReviewRow = {
   label: string;
@@ -145,18 +152,22 @@ function postMatchDecisionPanel(booking: AdminBookingDetail): BookingPostMatchDe
       ? 'Approved within 15-minute post-match cancellation window.'
       : 'Approved after admin chat evidence review.',
     holdNote: 'Held after admin chat evidence review.',
-    feeLabel: cancellationFeeStateLabel(feeState),
-    feeTone: cancellationFeeStateTone(feeState),
-    resolutionLabel: cancellationResolutionLabel(resolution, autoApproved),
-    resolutionTone: resolution === 'approved' ? 'pill-success' : resolution === 'held' ? 'pill-danger' : 'pill-warn',
-    timingLabel: autoApproved
-      ? 'Auto-approved'
-      : autoApprovalEligible
-        ? 'Within 15m'
-        : manualReviewRequired
-          ? cancellationMinutesLabel(minutesAfterMatch)
-          : 'Review locked',
-    timingTone: autoApproved || autoApprovalEligible ? 'pill-info' : manualReviewRequired ? 'pill-warn' : 'pill-neutral',
+    feeLabel: postMatchCancellationFeeStateLabel(feeState),
+    feeTone: postMatchCancellationFeeStateTone(feeState),
+    resolutionLabel: postMatchCancellationResolutionLabel(resolution, autoApproved),
+    resolutionTone: postMatchCancellationResolutionTone(resolution),
+    timingLabel: postMatchCancellationTimingLabel({
+      autoApprovalEligible,
+      autoApproved,
+      manualReviewRequired,
+      minutesAfterMatch,
+    }),
+    timingTone: postMatchCancellationTimingTone({
+      autoApprovalEligible,
+      autoApproved,
+      manualReviewRequired,
+      minutesAfterMatch,
+    }),
   };
 }
 
@@ -250,46 +261,6 @@ function hiddenPostMatchDecisionPanel(): BookingPostMatchDecisionPanel {
     timingLabel: '',
     timingTone: 'pill-neutral',
   };
-}
-
-function cancellationFeeStateTone(feeState: ReturnType<typeof postMatchCancellationFeeState>): PillTone {
-  if (feeState === 'restored') {
-    return 'pill-success';
-  }
-  if (feeState === 'held') {
-    return 'pill-danger';
-  }
-  return 'pill-neutral';
-}
-
-function cancellationFeeStateLabel(feeState: ReturnType<typeof postMatchCancellationFeeState>) {
-  if (feeState === 'restored') {
-    return 'Fee restored';
-  }
-  if (feeState === 'held') {
-    return 'Fee still held';
-  }
-  return 'No earning';
-}
-
-function cancellationMinutesLabel(minutesAfterMatch: number | null) {
-  if (minutesAfterMatch === null) {
-    return 'Manual review';
-  }
-  return `${minutesAfterMatch}m after match`;
-}
-
-function cancellationResolutionLabel(
-  resolution: ReturnType<typeof postMatchCancellationResolution>,
-  autoApproved = false,
-) {
-  if (resolution === 'approved') {
-    return autoApproved ? 'Auto-approved' : 'Approved';
-  }
-  if (resolution === 'held') {
-    return 'Held';
-  }
-  return 'Pending review';
 }
 
 function countLabel(count: number, singular: string) {

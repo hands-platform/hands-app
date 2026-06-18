@@ -100,8 +100,8 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.postMatchDecision).toMatchObject({
       canResolve: true,
       feeLabel: 'No earning',
-      resolutionLabel: 'Pending review',
-      timingLabel: 'Manual review',
+      resolutionLabel: 'Pending admin decision',
+      timingLabel: 'Match time missing',
       visible: true,
     });
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
