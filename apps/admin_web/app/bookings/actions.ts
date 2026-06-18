@@ -12,7 +12,7 @@ export async function holdPostMatchCancellation(formData: FormData) {
 }
 
 async function runPostMatchCancellationAction(formData: FormData, action: 'approve' | 'hold') {
-  const bookingId = String(formData.get('bookingId') ?? '');
+  const bookingId = readFormText(formData, 'bookingId');
   if (!bookingId) {
     return;
   }
@@ -20,7 +20,7 @@ async function runPostMatchCancellationAction(formData: FormData, action: 'appro
   await adminPost(
     `/admin/bookings/${bookingId}/post-match-cancellation/${action}`,
     {
-      note: String(formData.get('note') ?? '') || undefined,
+      note: readFormText(formData, 'note') || undefined,
     },
     null,
   );
@@ -34,4 +34,9 @@ async function runPostMatchCancellationAction(formData: FormData, action: 'appro
   ]) {
     revalidatePath(path);
   }
+}
+
+function readFormText(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' ? value.trim() : '';
 }
