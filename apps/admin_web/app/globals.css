@@ -1747,13 +1747,15 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vuexy-booking-address-cell {
+.vuexy-booking-address-cell,
+.vuexy-booking-service-cell {
   display: grid;
   gap: 8px;
   min-width: 0;
 }
 
-.vuexy-booking-address-cell > strong {
+.vuexy-booking-address-cell > strong,
+.vuexy-booking-service-cell > strong {
   color: var(--admin-text);
   display: block;
   line-height: 20px;
@@ -1763,7 +1765,8 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
-.vuexy-booking-address-cell > .pill {
+.vuexy-booking-address-cell > .pill,
+.vuexy-booking-service-cell > .pill {
   justify-self: flex-start;
 }
 

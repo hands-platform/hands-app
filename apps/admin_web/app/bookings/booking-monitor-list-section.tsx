@@ -271,6 +271,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
   const { booking } = row;
   const participantRows = bookingParticipantRows(booking);
   const addressDisplay = bookingAddressDisplay(booking);
+  const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
   const stateChange = bookingStatusChangeState(booking);
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
   const requestedPartner = booking.preferredProvider ?? booking.selectedProvider ?? null;
@@ -320,7 +321,7 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         <span className="pill pill-neutral">{bookingDeviceLanguageLabel(booking)}</span>
       </td>
       <td>
-        <strong>{row.serviceOptionLabel}</strong>
+        <BookingServiceCell service={serviceDisplay} />
       </td>
       <td>
         <BookingAddressCell address={addressDisplay} />
@@ -343,6 +344,24 @@ function BookingMonitorListTableRow({ row }: { readonly row: BookingMonitorListR
         )}
       </td>
     </tr>
+  );
+}
+
+function BookingServiceCell({
+  service,
+}: {
+  readonly service: {
+    readonly fullLabel: string;
+    readonly shortLabel: string;
+  };
+}) {
+  return (
+    <div className="vuexy-booking-service-cell">
+      <span className="pill pill-neutral">Service type</span>
+      <strong aria-label={`Service type: ${service.fullLabel}`} title={service.fullLabel}>
+        {service.shortLabel}
+      </strong>
+    </div>
   );
 }
 
@@ -496,12 +515,21 @@ function bookingAddressDisplay(booking: AdminBooking) {
 
   return {
     fullLabel,
-    shortLabel: compactAddressLabel(fullLabel),
+    shortLabel: compactTableLabel(fullLabel),
     tone: fullLabel === 'No address' ? 'pill-warn' : 'pill-neutral',
   } as const;
 }
 
-function compactAddressLabel(value: string) {
+function bookingServiceDisplay(label: string) {
+  const fullLabel = label.trim() || 'Service pending';
+
+  return {
+    fullLabel,
+    shortLabel: compactTableLabel(fullLabel),
+  } as const;
+}
+
+function compactTableLabel(value: string) {
   return value.length > 58 ? `${value.slice(0, 55)}...` : value;
 }
 
