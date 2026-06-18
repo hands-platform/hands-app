@@ -257,6 +257,9 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('aria-label="State changed: Matching opened at"');
     expect(markup).toContain('vuexy-booking-avatar-group');
     expect(markup).toContain('aria-label="Partner C (ACCEPTED)"');
+    expect(markup).toContain('admin-person-avatar-shell');
+    expect(markup).toContain('admin-avatar-status-dot is-matching');
+    expect(markup).toContain('aria-label="Matching waiting"');
     expect(markup).toContain('>+1</span>');
     expect(markup).not.toContain('status-badge');
   });

@@ -1652,6 +1652,44 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.admin-person-avatar-shell {
+  display: inline-flex;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.admin-avatar-status-dot {
+  border: 2px solid var(--admin-surface-raised);
+  border-radius: 999px;
+  bottom: 0;
+  box-shadow: var(--admin-shadow-sm);
+  height: 10px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  width: 10px;
+}
+
+.admin-avatar-status-dot.is-online {
+  background: var(--admin-success);
+}
+
+.admin-avatar-status-dot.is-matching {
+  background: var(--admin-warning);
+}
+
+.admin-avatar-status-dot.is-working {
+  background: var(--admin-info);
+}
+
+.admin-avatar-status-dot.is-offline {
+  background: var(--admin-danger);
+}
+
+.admin-avatar-status-dot.is-app-deleted {
+  background: #1f1d2b;
+}
+
 .vuexy-booking-avatar {
   align-items: center;
   background: rgb(var(--admin-info-channel) / 0.14);
@@ -1722,8 +1760,17 @@ a.action-button-card:hover {
   letter-spacing: 0;
   line-height: 1;
   margin-left: -10px;
+  overflow: visible;
+  position: relative;
   text-decoration: none;
   width: 28px;
+}
+
+.vuexy-booking-avatar-group-item .admin-avatar-status-dot {
+  bottom: -2px;
+  height: 9px;
+  right: -2px;
+  width: 9px;
 }
 
 .vuexy-booking-avatar-group-item:first-child {

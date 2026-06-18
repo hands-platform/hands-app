@@ -12,11 +12,15 @@ describe('AdminPersonCell', () => {
         href="/customers/customer_123"
         label="Customer A"
         linkClassName="person-link"
+        avatarStatus="online"
       />,
     );
 
     expect(markup).toContain('class="person"');
+    expect(markup).toContain('class="admin-person-avatar-shell"');
     expect(markup).toContain('class="avatar"');
+    expect(markup).toContain('class="admin-avatar-status-dot is-online"');
+    expect(markup).toContain('aria-label="App online"');
     expect(markup).toContain('CA');
     expect(markup).toContain('href="/customers/customer_123"');
     expect(markup).toContain('class="person-link"');
@@ -31,6 +35,7 @@ describe('AdminPersonCell', () => {
     expect(markup).toContain('<strong>Open marketplace</strong>');
     expect(markup).not.toContain('href=');
     expect(markup).not.toContain('class="muted"');
+    expect(markup).not.toContain('admin-avatar-status-dot');
   });
 
   it('normalizes initials for table avatars', () => {
