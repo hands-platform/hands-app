@@ -11,6 +11,7 @@ describe('file review board', () => {
     const rows = buildFileReviewRows([
       partner({
         displayName: 'Provider Linh',
+        status: 'ONLINE_BUSY',
         user: {
           fileAssets: [
             {
@@ -46,9 +47,9 @@ describe('file review board', () => {
       }),
     ]);
 
-    expect(rows.map((row) => [row.id, row.kind, row.partnerName, row.statusTone])).toEqual([
-      ['private-pending', 'private-verification', 'Partner Linh', 'warning'],
-      ['public-approved', 'public-media', 'Partner Linh', 'success'],
+    expect(rows.map((row) => [row.id, row.kind, row.partnerName, row.partnerAvatarStatus, row.statusTone])).toEqual([
+      ['private-pending', 'private-verification', 'Partner Linh', 'working', 'warning'],
+      ['public-approved', 'public-media', 'Partner Linh', 'working', 'success'],
     ]);
     expect(rows[0]?.fileHref).toBe('/files/private-pending/open');
     expect(rows[1]?.fileHref).toBe('https://cdn.example.test/gallery.png');

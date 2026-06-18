@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { ExternalLink, User } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminPageTemplate } from '../../components/admin-page-template';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
 import { StatusBadge } from '../../components/status-badge';
@@ -125,11 +126,15 @@ function FileReviewTableRow({ row }: { readonly row: FileReviewRow }) {
         <p className="muted">{shortId(row.id, { length: 12, ellipsis: true })}</p>
       </td>
       <td>
-        <Link className="button button-secondary admin-inline-action" href={row.partnerHref}>
-          <User aria-hidden="true" size={14} />
-          {row.partnerName}
-        </Link>
-        <p className="muted">{shortId(row.partnerId, { length: 12, ellipsis: true })}</p>
+        <AdminPersonCell
+          avatarClassName="vuexy-booking-avatar is-partner"
+          avatarStatus={row.partnerAvatarStatus}
+          className="vuexy-booking-person"
+          helper={shortId(row.partnerId, { length: 12, ellipsis: true })}
+          href={row.partnerHref}
+          label={row.partnerName}
+          linkClassName="table-link"
+        />
       </td>
       <td>
         <StatusBadge tone={row.statusTone}>{row.statusLabel}</StatusBadge>

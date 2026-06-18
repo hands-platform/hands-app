@@ -1,4 +1,5 @@
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import { partnerDisplayText } from '../../lib/admin-copy';
 
 type PartnerPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
@@ -24,6 +25,7 @@ export type FileReviewRow = {
   readonly partnerHref: string;
   readonly partnerId: string;
   readonly partnerName: string;
+  readonly partnerAvatarStatus: AdminAvatarStatus;
   readonly purposeLabel: string;
   readonly reviewReason: string | null;
   readonly reviewStatus: string;
@@ -118,6 +120,7 @@ function privateFileRow(provider: AdminProvider, file: PartnerVerificationFile):
     partnerHref: `/partners/${provider.id}#documents`,
     partnerId: provider.id,
     partnerName: filePartnerName(provider),
+    partnerAvatarStatus: filePartnerAvatarStatus(provider),
     purposeLabel: fileReviewPurposeLabel(file.purpose),
     reviewReason: file.reviewReason ?? null,
     reviewStatus,
@@ -144,6 +147,7 @@ function publicMediaRow(provider: AdminProvider, file: PartnerPublicMedia): File
     partnerHref: `/partners/${provider.id}#media`,
     partnerId: provider.id,
     partnerName: filePartnerName(provider),
+    partnerAvatarStatus: filePartnerAvatarStatus(provider),
     purposeLabel: fileReviewPurposeLabel(file.purpose),
     reviewReason: file.reviewReason ?? null,
     reviewStatus,
@@ -171,6 +175,15 @@ function reviewTone(reviewStatus: string, uploadStatus: string): FileReviewStatu
 
 function filePartnerName(provider: AdminProvider) {
   return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
+}
+
+function filePartnerAvatarStatus(provider: AdminProvider): AdminAvatarStatus {
+  return adminAvatarStatusFromSignals({
+    devices: [...(provider.user?.pushDevices ?? []), ...(provider.devices ?? [])],
+    fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
+    sessions: provider.sessions,
+    working: provider.status === 'ONLINE_BUSY',
+  });
 }
 
 function matchesReview(row: FileReviewRow, review: string) {
