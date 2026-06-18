@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffFinanceCloseoutSection } from './operations-handoff-finance-closeout-section';
 
 describe('OperationsHandoffFinanceCloseoutSection', () => {
@@ -36,6 +36,9 @@ describe('OperationsHandoffFinanceCloseoutSection', () => {
         '/partners/partner-1',
         '/bookings/booking-1234567890',
       ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
     );
   });
 

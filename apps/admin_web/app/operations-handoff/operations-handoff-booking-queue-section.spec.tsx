@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffBookingQueueSection } from './operations-handoff-booking-queue-section';
 
 describe('OperationsHandoffBookingQueueSection', () => {
@@ -37,6 +37,9 @@ describe('OperationsHandoffBookingQueueSection', () => {
         '/chat-archive',
         '/bookings/booking-1234567890',
       ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
     );
   });
 

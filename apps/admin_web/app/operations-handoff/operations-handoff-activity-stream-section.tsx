@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Download, ExternalLink, FileClock, MessageSquare } from 'lucide-react';
+import { AdminDataTable } from '../../components/admin-data-table';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import type { ActivityStreamRow } from './operations-handoff-activity-stream';
 
@@ -7,6 +8,8 @@ type OperationsHandoffActivityStreamSectionProps = {
   readonly csvHref: string;
   readonly rows: readonly ActivityStreamRow[];
 };
+
+const ACTIVITY_STREAM_HEADERS = ['When', 'Area', 'Record', 'Summary', 'Continue'] as const;
 
 export function OperationsHandoffActivityStreamSection({
   csvHref,
@@ -42,46 +45,34 @@ export function OperationsHandoffActivityStreamSection({
         </div>
       </div>
       <div className="admin-table-scroll">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Area</th>
-              <th>Record</th>
-              <th>Summary</th>
-              <th>Continue</th>
+        <AdminDataTable
+          emptyMessage="No recent activity stream rows."
+          headers={ACTIVITY_STREAM_HEADERS}
+          rowCount={rows.length}
+        >
+          {rows.map((item) => (
+            <tr key={item.id}>
+              <td>
+                <div>{relativeTime(item.createdAt)}</div>
+                <small className="muted">{formatDateTime(item.createdAt)}</small>
+              </td>
+              <td>
+                <span className={item.className}>{item.area}</span>
+              </td>
+              <td>
+                <div>{item.record}</div>
+                <small className="muted">{item.source}</small>
+              </td>
+              <td>{item.summary}</td>
+              <td>
+                <Link className="button button-secondary admin-inline-action" href={item.href}>
+                  <ExternalLink aria-hidden="true" size={14} />
+                  Open
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {rows.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  <div>{relativeTime(item.createdAt)}</div>
-                  <small className="muted">{formatDateTime(item.createdAt)}</small>
-                </td>
-                <td>
-                  <span className={item.className}>{item.area}</span>
-                </td>
-                <td>
-                  <div>{item.record}</div>
-                  <small className="muted">{item.source}</small>
-                </td>
-                <td>{item.summary}</td>
-                <td>
-                  <Link className="button button-secondary admin-inline-action" href={item.href}>
-                    <ExternalLink aria-hidden="true" size={14} />
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5}>No recent activity stream rows.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </div>
     </section>
   );

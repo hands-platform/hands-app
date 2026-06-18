@@ -1,4 +1,4 @@
-import { hrefsIn, textContent } from './operations-handoff-section-test-utils';
+import { classNamesIn, hrefsIn, textContent } from './operations-handoff-section-test-utils';
 import { OperationsHandoffActivityStreamSection } from './operations-handoff-activity-stream-section';
 
 describe('OperationsHandoffActivityStreamSection', () => {
@@ -33,6 +33,9 @@ describe('OperationsHandoffActivityStreamSection', () => {
         '/chat-archive',
         '/audit-log?bucket=Notification&range=all',
       ]),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
     );
   });
 
