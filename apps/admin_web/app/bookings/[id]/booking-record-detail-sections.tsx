@@ -107,11 +107,7 @@ type ParticipantLifecycleTableProps = {
   rows: ParticipantLifecycleRow[];
 };
 
-type ParticipantEligibilityMatrixProps = {
-  rows: ParticipantRow[];
-};
-
-type ParticipantRecordsTableProps = {
+type ParticipantLedgerTableProps = {
   rows: ParticipantRow[];
 };
 
@@ -153,16 +149,8 @@ const PARTICIPANT_LIFECYCLE_HEADERS = [
 
 const PARTICIPANT_ELIGIBILITY_HEADERS = [
   'Partner',
-  'Source',
-  'Participation',
-  'Customer eligibility',
-  'Reason and next step',
-] as const;
-
-const PARTICIPANT_RECORD_HEADERS = [
-  'Partner',
   'Participation evidence',
-  'Role and status',
+  'Customer eligibility',
   'Timing and distance',
   'Operations record',
 ] as const;
@@ -327,10 +315,9 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
       <ParticipantLifecycleTable rows={lifecycleRows} />
       <h3 className="admin-mt-18">Customer eligibility matrix</h3>
       <p className="muted">
-        Customer-selectable state and reason for each participant row.
+        One row per Partner with booking evidence, customer selection state, distance policy, and operator notes.
       </p>
-      <ParticipantEligibilityMatrix rows={rows} />
-      <ParticipantRecordsTable rows={rows} />
+      <ParticipantLedgerTable rows={rows} />
     </div>
   );
 }
@@ -401,57 +388,13 @@ function ParticipantLifecycleTable({ rows }: ParticipantLifecycleTableProps) {
   );
 }
 
-function ParticipantEligibilityMatrix({ rows }: ParticipantEligibilityMatrixProps) {
+function ParticipantLedgerTable({ rows }: ParticipantLedgerTableProps) {
   return (
     <AdminTableScroll>
       <AdminDataTable
         className="admin-mt-10"
-        emptyMessage="No participant eligibility rows are available yet."
-        headers={PARTICIPANT_ELIGIBILITY_HEADERS}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <tr key={`eligibility-${row.id}`}>
-            <td>
-              <AdminPersonCell
-                avatarClassName="vuexy-booking-avatar is-partner"
-                avatarStatus={row.avatarStatus}
-                className="vuexy-booking-person"
-                helper={row.identity}
-                href={row.href}
-                label={row.partner}
-                linkClassName="table-link"
-              />
-            </td>
-            <td>
-              <span className={`pill ${row.roleTone}`}>{row.role}</span>
-            </td>
-            <td>
-              <span className={`pill ${row.statusTone}`}>{row.status}</span>
-              <p className="muted">{row.timing}</p>
-            </td>
-            <td>
-              <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
-              <p className="muted">{row.choiceState}</p>
-            </td>
-            <td>
-              <strong>{row.eligibilityReason}</strong>
-              <p className="muted">{row.operatorStatus}</p>
-              <p className="muted">{row.eligibilityNextStep}</p>
-            </td>
-          </tr>
-        ))}
-      </AdminDataTable>
-    </AdminTableScroll>
-  );
-}
-
-function ParticipantRecordsTable({ rows }: ParticipantRecordsTableProps) {
-  return (
-    <AdminTableScroll>
-      <AdminDataTable
         emptyMessage="No Partner participation has been recorded for this booking yet."
-        headers={PARTICIPANT_RECORD_HEADERS}
+        headers={PARTICIPANT_ELIGIBILITY_HEADERS}
         rowCount={rows.length}
       >
         {rows.map((row) => (
@@ -468,16 +411,22 @@ function ParticipantRecordsTable({ rows }: ParticipantRecordsTableProps) {
               />
             </td>
             <td>
-              <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-              <p className="muted">{row.evidenceDetail}</p>
+              <div className="filter-row">
+                <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+                <span className={`pill ${row.roleTone}`}>{row.role}</span>
+                <span className={`pill ${row.statusTone}`}>{row.status}</span>
+              </div>
+              <p className="muted admin-mt-6">{row.evidenceDetail}</p>
+              <p className="muted">{row.decision}</p>
             </td>
             <td>
               <div className="filter-row">
-                <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
                 <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
               </div>
-              <p className="muted">{row.decision}</p>
+              <p className="muted admin-mt-6">{row.eligibilityReason}</p>
+              <p className="muted">{row.operatorStatus}</p>
+              <p className="muted">{row.eligibilityNextStep}</p>
             </td>
             <td>
               <strong>{row.distance}</strong>

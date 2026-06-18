@@ -134,6 +134,7 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('table vuexy-data-table');
     expect(markup).toContain('admin-avatar-status-dot is-working');
     expect(markup).toContain('vuexy-booking-person');
+    expect(markup.match(/vuexy-booking-person/g)).toHaveLength(1);
     expect(markup).toContain('href="/customers/customer_1"');
     expect(markup).toContain('href="/partners/partner_1"');
   });
@@ -148,7 +149,6 @@ describe('BookingRecordDetailSections', () => {
     });
 
     expect(markup).toContain('Partner record link pending');
-    expect(markup).toContain('No participant eligibility rows are available yet.');
     expect(markup).toContain('No Partner participation has been recorded for this booking yet.');
   });
 });
