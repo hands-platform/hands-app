@@ -187,6 +187,7 @@ export function BookingMonitor({
 
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
+  const showBookingList = view !== 'blocked-create';
   const commandRouteModel = useMemo(
     () =>
       buildBookingMonitorCommandRouteModel({
@@ -306,10 +307,12 @@ export function BookingMonitor({
         visibleBookingCount={visibleBookings.length}
       />
 
-      <BookingMonitorListSection
-        emptyMessage="No bookings match the current filters."
-        rows={bookingListRows}
-      />
+      {showBookingList && (
+        <BookingMonitorListSection
+          emptyMessage="No bookings match the current filters."
+          rows={bookingListRows}
+        />
+      )}
 
       {view === 'blocked-create' && (
         <BookingMonitorBlockedCreateSection
@@ -320,7 +323,6 @@ export function BookingMonitor({
           visibleBookingCreateRejections={visibleBookingCreateRejections}
         />
       )}
-
     </div>
   );
 }
