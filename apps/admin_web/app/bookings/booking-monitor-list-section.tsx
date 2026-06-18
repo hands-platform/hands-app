@@ -536,8 +536,41 @@ function metadataText(metadata: Record<string, unknown> | null, key: string) {
 function buildBookingTableGroups(rows: readonly BookingMonitorListRow[]): readonly BookingTableGroup[] {
   return BOOKING_TABLE_GROUPS.map((definition) => ({
     ...definition,
-    rows: rows.filter((row) => bookingTableGroupKey(row.booking) === definition.key),
+    rows: rows
+      .filter((row) => bookingTableGroupKey(row.booking) === definition.key)
+      .sort(compareBookingTableRows),
   }));
+}
+
+function compareBookingTableRows(left: BookingMonitorListRow, right: BookingMonitorListRow) {
+  const stateChangedDiff =
+    bookingTableStateChangedTime(right.booking) - bookingTableStateChangedTime(left.booking);
+  if (stateChangedDiff !== 0) {
+    return stateChangedDiff;
+  }
+
+  const requestDiff = bookingRequestTime(right.booking) - bookingRequestTime(left.booking);
+  if (requestDiff !== 0) {
+    return requestDiff;
+  }
+
+  return left.booking.id.localeCompare(right.booking.id);
+}
+
+function bookingTableStateChangedTime(booking: AdminBooking) {
+  return safeBookingTime(booking.statusChangedAt ?? bookingStatusChangedTimestamp(booking));
+}
+
+function bookingRequestTime(booking: AdminBooking) {
+  return safeBookingTime(booking.openedAt ?? booking.createdAt ?? booking.updatedAt ?? null);
+}
+
+function safeBookingTime(value: string | null | undefined) {
+  if (!value) {
+    return 0;
+  }
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
 }
 
 function bookingTableGroupKey(booking: AdminBooking): BookingTableGroupKey | null {

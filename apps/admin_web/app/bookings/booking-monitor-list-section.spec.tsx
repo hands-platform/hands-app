@@ -258,4 +258,150 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Post-match Cancellations');
   });
+
+  it('sorts each status table by latest state change first', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[
+          bookingRowFixture({
+            id: 'booking_completed_older',
+            customerName: 'Older Customer',
+            openedDateLabel: '12 Jun 2026, 10:00',
+            status: 'COMPLETED',
+            statusChangedAt: '2026-06-12T03:15:00.000Z',
+          }),
+          bookingRowFixture({
+            id: 'booking_completed_newer',
+            customerName: 'Newer Customer',
+            openedDateLabel: '13 Jun 2026, 10:00',
+            status: 'COMPLETED',
+            statusChangedAt: '2026-06-13T03:15:00.000Z',
+          }),
+        ]}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+
+    expect(markup.indexOf('Newer Customer')).toBeLessThan(markup.indexOf('Older Customer'));
+  });
 });
+
+function bookingRowFixture(input: {
+  readonly customerName: string;
+  readonly id: string;
+  readonly openedDateLabel: string;
+  readonly status: string;
+  readonly statusChangedAt: string;
+}): BookingMonitorListRow {
+  const booking = {
+    address: {
+      formattedAddress: '24 Le Loi, Da Nang',
+    },
+    customerProfile: {
+      id: `${input.id}_customer`,
+      user: {
+        appSessions: [{ deviceLanguage: 'vi-VN' }],
+        fullName: input.customerName,
+        phone: '+84900000000',
+      },
+    },
+    id: input.id,
+    status: input.status,
+    statusChangedAt: input.statusChangedAt,
+    statusChangedLabel: 'Completed at',
+  } as unknown as AdminBooking;
+
+  return {
+    actionChips: [],
+    addressState: {
+      detail: 'Address snapshot ready.',
+      label: 'Address ready',
+      pin: '16.0471, 108.2062',
+      tone: 'pill-success',
+    },
+    backupAlert: {
+      label: 'No alert delivery gap',
+      pill: 'Alerts clear',
+      tone: 'pill-success',
+    },
+    booking,
+    cashDebtAmountLabel: null,
+    cashDebtNeedsOps: false,
+    chatState: {
+      detail: 'Chat retained.',
+      label: 'Chat ready',
+      tone: 'pill-success',
+    },
+    checkSignal: {
+      helper: 'No check',
+      label: 'Clear',
+      tone: 'signal-success',
+    },
+    closureState: null,
+    commandDecisionStrip: {
+      primaryAction: 'Review closeout',
+      primaryDetail: 'Check retained booking evidence.',
+      status: 'Closeout',
+      tone: 'pill-info',
+    },
+    customerVisibleStateLabel: 'Customer sees completed booking',
+    expiresAtLabel: null,
+    finalGateReason: {
+      detail: 'No gate.',
+      href: `/bookings/${input.id}`,
+      label: 'Clear',
+      tone: 'pill-success',
+    },
+    finalPartnerLabel: null,
+    firstCheckTitle: null,
+    firstPickPhoneLabel: 'No requested Partner',
+    hasMatchingPolicySnapshot: false,
+    location: {
+      pillLabel: 'Location retained',
+      signalLabel: 'Location retained',
+      toneClass: 'pill-success',
+    },
+    matchingPolicySummaryLabel: 'Policy saved',
+    matchingRuleSnapshot: {
+      customerChoiceLabel: 'Customer choice enabled',
+      operatorAction: 'Review closeout.',
+      radiusLabel: '5 km radius',
+      sourceLabel: 'Saved policy',
+      sourceTone: 'pill-info',
+      supplyLabel: '0 partner visible',
+      windowLabel: 'Closed',
+    },
+    marketplaceParticipantOverflowCount: 0,
+    marketplaceParticipants: [],
+    nextActionLabel: 'Review closeout.',
+    openedDateLabel: input.openedDateLabel,
+    opsSignal: null,
+    preferredPartnerLabel: 'none',
+    preferredProviderStateLabel: null,
+    pricingPolicy: {
+      label: 'Pricing ready',
+      status: 'ready',
+      tone: 'pill-success',
+    },
+    recencyLabel: 'Closed',
+    selectedFinalPartnerPillLabel: null,
+    selection: {
+      label: 'Closed',
+      pathLabel: 'Closed booking',
+      toneClass: 'pill-success',
+    },
+    serviceOptionLabel: 'Foot Massage',
+    servicePayoutLabel: null,
+    servicePriceLabel: '150,000 VND',
+    stage: {
+      action: 'Review closeout.',
+      detail: 'Completed booking.',
+      href: `/bookings/${input.id}`,
+      key: 'handoff',
+      label: 'Completed',
+      tone: 'ok',
+    },
+  };
+}
