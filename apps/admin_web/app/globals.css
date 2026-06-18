@@ -2054,6 +2054,13 @@ a.action-button-card:hover {
   justify-content: flex-end;
 }
 
+.booking-outcome-review-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .booking-post-match-grid {
   display: grid;
   gap: 12px;

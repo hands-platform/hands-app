@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import {
@@ -129,7 +130,14 @@ function BookingOutcomeReviewSection({
           <h2>{outcomeReview.title}</h2>
           <p className="muted">{outcomeReview.helper}</p>
         </div>
-        <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
+        <div className="booking-outcome-review-actions">
+          <span className={`pill ${outcomeReview.tone}`}>{outcomeReview.status}</span>
+          {outcomeReview.primaryHref && outcomeReview.primaryLabel ? (
+            <Link className="button button-secondary admin-inline-action" href={outcomeReview.primaryHref}>
+              {outcomeReview.primaryLabel}
+            </Link>
+          ) : null}
+        </div>
       </div>
       <div className="ops-task-grid">
         {outcomeReview.rows.map((row) => (

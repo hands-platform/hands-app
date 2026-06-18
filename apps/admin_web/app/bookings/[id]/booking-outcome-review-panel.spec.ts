@@ -42,6 +42,8 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('Completed booking review');
     expect(review.tone).toBe('pill-success');
+    expect(review.primaryHref).toBeNull();
+    expect(review.primaryLabel).toBeNull();
     expect(review.rows.map((row) => row.label)).toEqual([
       'Closure record',
       'Chat evidence',
@@ -92,6 +94,8 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('Post-match cancellation review');
     expect(review.tone).toBe('pill-warn');
+    expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
+    expect(review.primaryLabel).toBe('Open review queue');
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       tone: 'pill-warn',
     });
@@ -116,6 +120,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('No-show confirmation review');
     expect(review.tone).toBe('pill-danger');
+    expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
       value: 'No messages',
       tone: 'pill-warn',

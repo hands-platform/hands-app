@@ -18,6 +18,8 @@ export type BookingOutcomeReviewPanel = {
   status: string;
   helper: string;
   tone: PillTone;
+  primaryHref: string | null;
+  primaryLabel: string | null;
   rows: BookingOutcomeReviewRow[];
 };
 
@@ -50,6 +52,7 @@ export function bookingOutcomeReviewPanel({
   return {
     visible: true,
     ...outcomeCopy(outcomeKind),
+    ...outcomePrimaryAction(outcomeKind, booking.id),
     rows: [
       {
         label: 'Closure record',
@@ -96,6 +99,20 @@ export function bookingOutcomeReviewPanel({
         href: '#operating-timeline',
       },
     ],
+  };
+}
+
+function outcomePrimaryAction(kind: BookingOutcomeKind, bookingId: string) {
+  if (kind === 'post-match-cancel' || kind === 'no-show') {
+    return {
+      primaryHref: `/bookings?view=post-match-cancellations#booking-${bookingId}`,
+      primaryLabel: 'Open review queue',
+    };
+  }
+
+  return {
+    primaryHref: null,
+    primaryLabel: null,
   };
 }
 
@@ -155,6 +172,8 @@ function hiddenPanel(): BookingOutcomeReviewPanel {
     status: '',
     helper: '',
     tone: 'pill-neutral',
+    primaryHref: null,
+    primaryLabel: null,
     rows: [],
   };
 }

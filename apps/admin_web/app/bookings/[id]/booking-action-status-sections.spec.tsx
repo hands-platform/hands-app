@@ -59,6 +59,8 @@ function props(
     ],
     outcomeReview: {
       helper: '',
+      primaryHref: null,
+      primaryLabel: null,
       rows: [],
       status: '',
       title: '',
@@ -121,5 +123,25 @@ describe('BookingActionStatusSections', () => {
 
     expect(markup).toContain('Chat room repair');
     expect(markup).toContain('Final Partner missing');
+  });
+
+  it('links post-match outcome reviews back to the cancellation queue', () => {
+    const markup = render({
+      outcomeReview: {
+        helper: 'Use retained chat before final confirmation.',
+        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryLabel: 'Open review queue',
+        rows: [],
+        status: 'Post-match cancellation',
+        title: 'Post-match cancellation review',
+        tone: 'pill-warn',
+        visible: true,
+      },
+    });
+
+    expect(markup).toContain('Post-match cancellation review');
+    expect(markup).toContain('Open review queue');
+    expect(markup).toContain('href="/bookings?view=post-match-cancellations#booking-booking-1"');
+    expect(markup).toContain('booking-outcome-review-actions');
   });
 });
