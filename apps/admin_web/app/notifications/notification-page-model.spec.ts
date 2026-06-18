@@ -853,7 +853,6 @@ describe('notification page model', () => {
     });
     expect(rows[0]?.actions.map((action) => action.label)).toEqual([
       'Open booking',
-      'Open Partner',
       'Audit trail',
       'Retry',
     ]);

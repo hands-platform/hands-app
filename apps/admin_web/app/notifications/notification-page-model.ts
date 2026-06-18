@@ -797,7 +797,6 @@ function notificationActionMenuItems(
   actionContext: NotificationActionReturnContext,
 ): readonly ActionMenuItem[] {
   const bookingId = notificationBookingId(notification);
-  const partnerId = notification.user?.providerProfile?.id ?? '';
   const deliveryHealth = notificationDeliveryHealth(notification);
   const actions: ActionMenuItem[] = [];
 
@@ -806,15 +805,6 @@ function notificationActionMenuItems(
       href: `/bookings/${bookingId}`,
       kind: 'link',
       label: 'Open booking',
-      tone: 'neutral',
-    });
-  }
-
-  if (partnerId) {
-    actions.push({
-      href: `/partners/${partnerId}`,
-      kind: 'link',
-      label: 'Open Partner',
       tone: 'neutral',
     });
   }
