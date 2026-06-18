@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { PartnerDailyActionQueue } from './partner-daily-action-queue';
@@ -12,6 +12,17 @@ type PartnerChecklistWorkQueueSectionProps = {
   readonly partnerName: (provider: AdminProvider) => string;
   readonly queue: PartnerChecklistWorkQueueSectionQueue;
 };
+
+const PARTNER_CHECKLIST_QUEUE_HEADERS = [
+  'Order',
+  'Partner',
+  'Work lane',
+  'Current blocker',
+  'Operator move',
+  'SLA',
+  'Record age',
+  'Open',
+] as const;
 
 export function PartnerChecklistWorkQueueSection({
   partnerName,
@@ -35,58 +46,50 @@ export function PartnerChecklistWorkQueueSection({
         title="Partner checklist work queue"
       />
       <AdminTableScroll>
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Order</th>
-              <th>Partner</th>
-              <th>Work lane</th>
-              <th>Current blocker</th>
-              <th>Operator move</th>
-              <th>SLA</th>
-              <th>Record age</th>
-              <th>Open</th>
+        <AdminDataTable
+          className="service-trace"
+          emptyMessage={<PartnerChecklistQueueEmptyState />}
+          headers={PARTNER_CHECKLIST_QUEUE_HEADERS}
+          rowCount={queue.rows.length}
+        >
+          {queue.rows.map((row, index) => (
+            <tr key={`${row.provider.id}-${row.action.status}`}>
+              <td>
+                <span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>
+              </td>
+              <td>
+                <strong>{partnerName(row.provider)}</strong>
+                <p className="muted">{row.provider.user?.phone ?? row.provider.id}</p>
+              </td>
+              <td>{row.lane}</td>
+              <td>
+                <strong>{row.action.status}</strong>
+                <p className="muted">{row.action.detail}</p>
+              </td>
+              <td>{row.action.operatorAction}</td>
+              <td>{row.sla}</td>
+              <td>{row.age}</td>
+              <td>
+                <Link className="text-link" href={row.href}>
+                  Open partner
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {queue.rows.map((row, index) => (
-              <tr key={`${row.provider.id}-${row.action.status}`}>
-                <td>
-                  <span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>
-                </td>
-                <td>
-                  <strong>{partnerName(row.provider)}</strong>
-                  <p className="muted">{row.provider.user?.phone ?? row.provider.id}</p>
-                </td>
-                <td>{row.lane}</td>
-                <td>
-                  <strong>{row.action.status}</strong>
-                  <p className="muted">{row.action.detail}</p>
-                </td>
-                <td>{row.action.operatorAction}</td>
-                <td>{row.sla}</td>
-                <td>{row.age}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open partner
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {queue.rows.length === 0 ? (
-              <tr>
-                <td colSpan={8}>
-                  <strong>No partner work queue items</strong>
-                  <p className="muted">
-                    The current filter has no visible blockers. Keep monitoring dispatch demand and live
-                    booking pressure.
-                  </p>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </section>
+  );
+}
+
+function PartnerChecklistQueueEmptyState() {
+  return (
+    <>
+      <strong>No partner work queue items</strong>
+      <p className="muted">
+        The current filter has no visible blockers. Keep monitoring dispatch demand and live booking
+        pressure.
+      </p>
+    </>
   );
 }

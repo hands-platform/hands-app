@@ -25,7 +25,12 @@ describe('PartnerChecklistWorkQueueSection', () => {
     expect(rendered).toContain('Submitted 2h ago.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1#kyc']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'pill pill-danger', 'text-link']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table service-trace',
+        'pill pill-danger',
+        'text-link',
+      ]),
     );
   });
 
