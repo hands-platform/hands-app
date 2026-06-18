@@ -5,12 +5,9 @@ type BookingRecordFinanceRowsInput = {
   adminMinimum: string;
   payoutRuleStatus: string;
   payoutRuleLine: string;
-  providerPayout: string;
   platformFee: string;
   feeCosts: string;
-  netHandsFee: string;
   withholding: string;
-  companyFeeAfterTax: string;
   walletLedger: string;
   providerNet: string;
 };
