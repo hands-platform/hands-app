@@ -1,4 +1,5 @@
 import { FileClock } from 'lucide-react';
+import { AdminDataTable } from '../../components/admin-data-table';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 import {
   humanizeAuditAction,
@@ -8,6 +9,15 @@ import {
 type ServicePricingAuditTrailSectionProps = {
   readonly rows: readonly ServicePricingAuditRow[];
 };
+
+const SERVICE_PRICING_AUDIT_HEADERS = [
+  'When',
+  'Action',
+  'Actor',
+  'Target',
+  'Changed fields',
+  'Pricing snapshot',
+] as const;
 
 export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTrailSectionProps) {
   return (
@@ -27,52 +37,45 @@ export function ServicePricingAuditTrailSection({ rows }: ServicePricingAuditTra
       </div>
       {rows.length ? (
         <div className="admin-table-scroll">
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Action</th>
-                <th>Actor</th>
-                <th>Target</th>
-                <th>Changed fields</th>
-                <th>Pricing snapshot</th>
+          <AdminDataTable
+            className="service-trace"
+            emptyMessage={null}
+            headers={SERVICE_PRICING_AUDIT_HEADERS}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
+                  <p className="muted">{formatDateTime(row.createdAt)}</p>
+                </td>
+                <td>
+                  <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
+                </td>
+                <td>{row.actorName}</td>
+                <td>
+                  <strong>{row.targetShort}</strong>
+                  <p className="muted">{row.target}</p>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {row.changedFields.map((field) => (
+                      <span className="pill pill-info" key={`${row.id}-${field}`}>
+                        {field}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  <div className="service-matrix-cell">
+                    <small>{row.serviceLabel}</small>
+                    <small>{row.priceLabel}</small>
+                    <small>{row.payoutLabel}</small>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
-                    <p className="muted">{formatDateTime(row.createdAt)}</p>
-                  </td>
-                  <td>
-                    <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
-                  </td>
-                  <td>{row.actorName}</td>
-                  <td>
-                    <strong>{row.targetShort}</strong>
-                    <p className="muted">{row.target}</p>
-                  </td>
-                  <td>
-                    <div className="participant-list">
-                      {row.changedFields.map((field) => (
-                        <span className="pill pill-info" key={`${row.id}-${field}`}>
-                          {field}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="service-matrix-cell">
-                      <small>{row.serviceLabel}</small>
-                      <small>{row.priceLabel}</small>
-                      <small>{row.payoutLabel}</small>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </div>
       ) : (
         <p className="muted">No recent service pricing audit event has been recorded yet.</p>
