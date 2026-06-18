@@ -1,5 +1,7 @@
 ﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
   BookingMatchSource as PrismaBookingMatchSource,
   BookingStatus,
   EarningStatus,
@@ -7,6 +9,7 @@ import {
   PaymentMethod,
   Prisma,
   ProviderStatus,
+  Role,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
@@ -53,6 +56,7 @@ import {
 import {
   clientBookingResponse,
   clientBookingResponses,
+  partnerBookingResponse,
   partnerBookingResponses,
   partnerOpenBookingResponses,
 } from './bookings.response';
@@ -126,6 +130,12 @@ import {
   preferredProviderInitialParticipantCreate,
 } from './bookings.participants';
 import { resolveBookingPriceSummary, resolveCustomerPrice } from './bookings.pricing';
+import {
+  isPostMatchCancellationAutoApprovalWindow,
+  POST_MATCH_CANCELLATION_APPROVED_REASON,
+  POST_MATCH_CANCELLATION_PARTNER_PENDING_REASON,
+  restorePostMatchCancellationEarning,
+} from './post-match-cancellation';
 
 type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   include: typeof matchedBookingForClientInclude;
@@ -231,6 +241,11 @@ const providerBookingHistoryInclude = {
   chatRoom: true,
 } satisfies Prisma.BookingInclude;
 
+const providerCancellationBookingInclude = {
+  ...providerBookingHistoryInclude,
+  customerProfile: true,
+} satisfies Prisma.BookingInclude;
+
 const joinableBookingForPartnerInclude = {
   addressSnapshot: true,
   participants: { select: { providerProfileId: true, status: true } },
@@ -268,6 +283,13 @@ const marketplaceParticipantResponseInclude = {
 const bookingCustomerProfileInclude = {
   customerProfile: true,
 } satisfies Prisma.BookingInclude;
+
+const providerPostMatchCancellableStatuses: BookingStatus[] = [
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+];
 
 @Injectable()
 export class BookingsService {
@@ -1879,6 +1901,187 @@ export class BookingsService {
     return this.updateBookingStatus(bookingId, status);
   }
 
+  async cancelProviderBooking(
+    bookingId: string,
+    providerUserId: string,
+    input: { note?: string } = {},
+  ) {
+    const provider = await this.requireProvider(providerUserId);
+    const cancellation = await this.closeProviderBookingAfterMatch({
+      bookingId,
+      providerProfileId: provider.id,
+      providerUserId: provider.userId,
+      note: input.note,
+    });
+
+    await this.matching.closeBooking(bookingId);
+    const partnerResult = partnerBookingResponse(cancellation.booking, provider.id);
+    await this.announceProviderPostMatchCancellation({
+      bookingId,
+      customerUserId: cancellation.booking.customerProfile.userId,
+      autoApproved: cancellation.autoApproved,
+      matchingPayload: partnerResult,
+    });
+
+    return {
+      ...partnerResult,
+      postMatchCancellation: {
+        autoApproved: cancellation.autoApproved,
+        adminReviewRequired: !cancellation.autoApproved,
+        minutesAfterMatch: cancellation.minutesAfterMatch,
+        earningResult: cancellation.earningResult,
+      },
+    };
+  }
+
+  private async closeProviderBookingAfterMatch(input: {
+    bookingId: string;
+    providerProfileId: string;
+    providerUserId: string;
+    note?: string;
+  }) {
+    const closedAt = new Date();
+    const partnerNote = cleanProviderCancellationNote(input.note);
+
+    return this.prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.findUniqueOrThrow({
+        where: { id: input.bookingId },
+        select: {
+          id: true,
+          status: true,
+          notes: true,
+          matchedAt: true,
+          selectedProviderId: true,
+          earning: {
+            select: {
+              id: true,
+              bookingId: true,
+              providerProfileId: true,
+              netAmount: true,
+              currency: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      if (booking.selectedProviderId !== input.providerProfileId) {
+        throw new BadRequestException('Partner is not selected for this booking');
+      }
+      if (!providerPostMatchCancellableStatuses.includes(booking.status)) {
+        throw new BadRequestException(`Booking status ${booking.status} cannot be cancelled by Partner`);
+      }
+
+      const { minutesAfterMatch, autoApprovalWindow } = isPostMatchCancellationAutoApprovalWindow(
+        booking.matchedAt,
+        closedAt,
+      );
+      const autoApproved = autoApprovalWindow;
+      const closedReason = autoApproved
+        ? POST_MATCH_CANCELLATION_APPROVED_REASON
+        : POST_MATCH_CANCELLATION_PARTNER_PENDING_REASON;
+      const closedNote =
+        partnerNote ??
+        (autoApproved
+          ? 'Partner cancelled within the 15-minute post-match window. Automatically approved.'
+          : 'Partner cancelled after the 15-minute post-match window. Admin review is required.');
+      const notes = appendDatedBookingNote(
+        booking.notes,
+        autoApproved
+          ? `Partner post-match cancellation auto-approved: ${closedNote}`
+          : `Partner post-match cancellation pending admin review: ${closedNote}`,
+        closedAt,
+      );
+      const earningResult = autoApproved
+        ? await restorePostMatchCancellationEarning(tx, booking.earning)
+        : { skipped: true, reason: 'AWAITING_ADMIN_REVIEW' };
+
+      const updated = await tx.booking.update({
+        where: { id: input.bookingId },
+        data: {
+          status: BookingStatus.CANCELLED,
+          closedAt,
+          closedByRole: Role.PROVIDER,
+          closedReason,
+          closedNote,
+          notes,
+          opsTasks: {
+            upsert: {
+              where: {
+                bookingId_type: {
+                  bookingId: input.bookingId,
+                  type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                },
+              },
+              update: {
+                status: autoApproved ? BookingOpsTaskStatus.DONE : BookingOpsTaskStatus.PENDING,
+                note: closedNote,
+                actorId: input.providerUserId,
+              },
+              create: {
+                type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                status: autoApproved ? BookingOpsTaskStatus.DONE : BookingOpsTaskStatus.PENDING,
+                note: closedNote,
+                actorId: input.providerUserId,
+              },
+            },
+          },
+        },
+        include: providerCancellationBookingInclude,
+      });
+
+      await tx.adminAuditLog.create({
+        data: {
+          actorId: input.providerUserId,
+          action: autoApproved
+            ? 'booking.post_match_cancellation.auto_approve'
+            : 'booking.post_match_cancellation.review_required',
+          target: `booking:${input.bookingId}`,
+          metadata: toJson({
+            bookingId: input.bookingId,
+            providerProfileId: input.providerProfileId,
+            previousStatus: booking.status,
+            minutesAfterMatch,
+            autoApprovalWindow: autoApproved,
+            note: closedNote,
+            earningResult,
+          }),
+        },
+      });
+
+      return {
+        booking: updated,
+        autoApproved,
+        minutesAfterMatch,
+        earningResult,
+      };
+    });
+  }
+
+  private async announceProviderPostMatchCancellation(input: {
+    bookingId: string;
+    customerUserId: string;
+    autoApproved: boolean;
+    matchingPayload: unknown;
+  }) {
+    await this.notifications.create({
+      userId: input.customerUserId,
+      targetRole: Role.CUSTOMER,
+      type: 'booking.cancelled',
+      title: 'Booking cancelled',
+      body: input.autoApproved
+        ? 'The Partner cancelled this booking within the approval window.'
+        : 'The Partner cancelled this booking. HANDS operations will review the chat evidence.',
+      data: {
+        bookingId: input.bookingId,
+        postMatchCancellation: true,
+        autoApproved: input.autoApproved,
+        adminReviewRequired: !input.autoApproved,
+      },
+    });
+    this.matchingGateway.emitBookingExpired(input.bookingId, input.matchingPayload);
+  }
+
   private async startProviderService(input: { bookingId: string; providerProfileId: string }) {
     await this.ensureProviderWalletCanJoinMarketplace(input.providerProfileId);
     const updated = await this.prisma.booking.update({
@@ -2045,4 +2248,18 @@ export class BookingsService {
     });
     return booking.customerProfile.userId;
   }
+}
+
+function cleanProviderCancellationNote(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, 1000) : null;
+}
+
+function appendDatedBookingNote(existingNotes: string | null | undefined, message: string, now = new Date()) {
+  const entry = `[${now.toISOString()}] ${message}`;
+  const trimmedNotes = existingNotes?.trim();
+  return trimmedNotes ? `${trimmedNotes}\n${entry}` : entry;
 }

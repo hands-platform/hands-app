@@ -1,5 +1,6 @@
 import {
   BookingMatchSource,
+  BookingOpsTaskStatus,
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
@@ -911,6 +912,185 @@ describe('BookingsService provider service lifecycle', () => {
     );
     expect(matchingGateway.emitServiceStarted).toHaveBeenCalledWith('booking-1', startedBooking);
   });
+
+  it('auto-approves partner post-match cancellations inside the 15-minute window', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-01T10:10:00.000Z'));
+    const earning = {
+      id: 'earning-1',
+      bookingId: 'booking-1',
+      providerProfileId: 'partner-1',
+      netAmount: -100000,
+      currency: 'VND',
+      status: EarningStatus.PENDING,
+    };
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.MATCHED,
+          notes: null,
+          matchedAt: new Date('2026-06-01T10:00:00.000Z'),
+          selectedProviderId: 'partner-1',
+          earning,
+        }),
+        update: jest.fn().mockResolvedValue(providerCancelledBooking()),
+      },
+      providerEarning: {
+        update: jest.fn().mockResolvedValue({ ...earning, status: EarningStatus.CANCELLED, netAmount: 0 }),
+      },
+      providerWalletLedgerEntry: { upsert: jest.fn() },
+      adminAuditLog: { create: jest.fn() },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const matching = { closeBooking: jest.fn() };
+    const matchingGateway = { emitBookingExpired: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    try {
+      const result = await service.cancelProviderBooking('booking-1', 'partner-user-1', {
+        note: 'Cancelled from chat',
+      });
+
+      expect(result.postMatchCancellation).toMatchObject({
+        autoApproved: true,
+        adminReviewRequired: false,
+        minutesAfterMatch: 10,
+      });
+      expect(tx.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: BookingStatus.CANCELLED,
+            closedReason: 'post_match_cancellation_approved',
+            closedNote: 'Cancelled from chat',
+            opsTasks: expect.objectContaining({
+              upsert: expect.objectContaining({
+                update: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
+                create: expect.objectContaining({ status: BookingOpsTaskStatus.DONE }),
+              }),
+            }),
+          }),
+        }),
+      );
+      expect(tx.providerEarning.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: EarningStatus.CANCELLED, netAmount: 0 }),
+        }),
+      );
+      expect(tx.providerWalletLedgerEntry.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { sourceKey: 'earning:earning-1:post-match-cancellation-approval' },
+        }),
+      );
+      expect(tx.adminAuditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'booking.post_match_cancellation.auto_approve',
+          }),
+        }),
+      );
+      expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'customer-user-1',
+          data: expect.objectContaining({ autoApproved: true }),
+        }),
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('queues partner post-match cancellations after 15 minutes for admin review', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-01T10:16:00.000Z'));
+    const tx = {
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.ARRIVED,
+          notes: null,
+          matchedAt: new Date('2026-06-01T10:00:00.000Z'),
+          selectedProviderId: 'partner-1',
+          earning: null,
+        }),
+        update: jest.fn().mockResolvedValue(providerCancelledBooking()),
+      },
+      providerEarning: { update: jest.fn() },
+      providerWalletLedgerEntry: { upsert: jest.fn() },
+      adminAuditLog: { create: jest.fn() },
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const matching = { closeBooking: jest.fn() };
+    const matchingGateway = { emitBookingExpired: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    try {
+      const result = await service.cancelProviderBooking('booking-1', 'partner-user-1');
+
+      expect(result.postMatchCancellation).toMatchObject({
+        autoApproved: false,
+        adminReviewRequired: true,
+        minutesAfterMatch: 16,
+        earningResult: { skipped: true, reason: 'AWAITING_ADMIN_REVIEW' },
+      });
+      expect(tx.booking.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: BookingStatus.CANCELLED,
+            closedReason: 'partner_cancelled',
+            opsTasks: expect.objectContaining({
+              upsert: expect.objectContaining({
+                update: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
+                create: expect.objectContaining({ status: BookingOpsTaskStatus.PENDING }),
+              }),
+            }),
+          }),
+        }),
+      );
+      expect(tx.providerEarning.update).not.toHaveBeenCalled();
+      expect(tx.providerWalletLedgerEntry.upsert).not.toHaveBeenCalled();
+      expect(tx.adminAuditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'booking.post_match_cancellation.review_required',
+          }),
+        }),
+      );
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'customer-user-1',
+          data: expect.objectContaining({ adminReviewRequired: true }),
+        }),
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
 
 describe('BookingsService service completion', () => {
@@ -1535,6 +1715,24 @@ function approvedDocument(type: ProviderDocumentType) {
     type,
     status: ProviderDocumentStatus.APPROVED,
     deletedAt: null,
+  };
+}
+
+function providerCancelledBooking(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'booking-1',
+    status: BookingStatus.CANCELLED,
+    selectedProviderId: 'partner-1',
+    address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+    addressSnapshot: null,
+    payment: null,
+    services: [],
+    participants: [],
+    preferredProvider: null,
+    selectedProvider: approvedPartner(),
+    chatRoom: { id: 'chat-room-1' },
+    customerProfile: { id: 'customer-1', userId: 'customer-user-1' },
+    ...overrides,
   };
 }
 

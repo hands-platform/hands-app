@@ -65,3 +65,10 @@ export class SelectBookingProviderDto {
   @IsString()
   providerId!: string;
 }
+
+export class CancelProviderBookingDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}

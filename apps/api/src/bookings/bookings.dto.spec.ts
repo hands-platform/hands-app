@@ -13,10 +13,25 @@ describe('booking request DTO validation', () => {
     return paramTypes?.[1] as object | undefined;
   }
 
+  function cancelProviderBookingBodyMetatype() {
+    const paramTypes = Reflect.getMetadata(
+      'design:paramtypes',
+      BookingsController.prototype,
+      'cancelProviderBooking',
+    ) as unknown[];
+    return paramTypes?.[2] as object | undefined;
+  }
+
   it('uses a concrete DTO for customer booking creation', () => {
     expect(createCustomerBookingBodyMetatype()?.constructor.name).toBe('Function');
     expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe(
       'CreateCustomerBookingDto',
+    );
+  });
+
+  it('uses a concrete DTO for partner post-match cancellation notes', () => {
+    expect((cancelProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
+      'CancelProviderBookingDto',
     );
   });
 

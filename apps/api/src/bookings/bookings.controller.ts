@@ -5,7 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { CreateCustomerBookingDto, SelectBookingProviderDto } from './bookings.dto';
+import { CancelProviderBookingDto, CreateCustomerBookingDto, SelectBookingProviderDto } from './bookings.dto';
 import { BookingsService } from './bookings.service';
 
 @Controller()
@@ -108,5 +108,16 @@ export class BookingsController {
   @Roles(Role.PROVIDER)
   complete(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.complete(bookingId, user.id);
+  }
+
+  @Post(['partner/bookings/:id/cancel', 'provider/bookings/:id/cancel'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  cancelProviderBooking(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bookingId: string,
+    @Body() body: CancelProviderBookingDto,
+  ) {
+    return this.bookings.cancelProviderBooking(bookingId, user.id, body);
   }
 }
