@@ -2,7 +2,9 @@ import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminProvider } from '../../lib/admin-api';
+import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
 import type { PartnerDailyActionQueue } from './partner-daily-action-queue';
 import { partnerShiftPillClass } from './partner-shift-handoff';
 
@@ -58,8 +60,15 @@ export function PartnerChecklistWorkQueueSection({
                 <span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>
               </td>
               <td>
-                <strong>{partnerName(row.provider)}</strong>
-                <p className="muted">{row.provider.user?.phone ?? row.provider.id}</p>
+                <AdminPersonCell
+                  avatarClassName="vuexy-booking-avatar is-partner"
+                  avatarStatus={partnerChecklistAvatarStatus(row.provider)}
+                  className="vuexy-booking-person"
+                  helper={row.provider.user?.phone ?? row.provider.id}
+                  href={row.href}
+                  label={partnerName(row.provider)}
+                  linkClassName="table-link"
+                />
               </td>
               <td>{row.lane}</td>
               <td>
@@ -80,6 +89,15 @@ export function PartnerChecklistWorkQueueSection({
       </AdminTableScroll>
     </section>
   );
+}
+
+function partnerChecklistAvatarStatus(provider: AdminProvider) {
+  return adminAvatarStatusFromSignals({
+    devices: [...(provider.user?.pushDevices ?? []), ...(provider.devices ?? [])],
+    fallbackOnline: provider.status === 'ONLINE_AVAILABLE' || provider.status === 'ONLINE_AVAILABLE_SOON',
+    sessions: provider.sessions,
+    working: provider.status === 'ONLINE_BUSY',
+  });
 }
 
 function PartnerChecklistQueueEmptyState() {

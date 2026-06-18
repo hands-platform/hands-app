@@ -28,6 +28,7 @@ describe('PartnerChecklistWorkQueueSection', () => {
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table service-trace',
+        'admin-avatar-status-dot is-online',
         'pill pill-danger',
         'text-link',
       ]),
