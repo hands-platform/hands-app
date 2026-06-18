@@ -391,7 +391,6 @@ function BookingStateChangedCell({
       ariaPrefix="State changed"
       className="vuexy-booking-state-cell"
       fullLabel={stateChange.label}
-      pillLabel="State changed"
       shortLabel={stateChange.label}
     >
       <div
@@ -431,7 +430,6 @@ function BookingDeviceLanguageCell({
       ariaPrefix="Device language"
       className="vuexy-booking-language-cell"
       fullLabel={language.fullLabel}
-      pillLabel="Device language"
       shortLabel={language.shortLabel}
     />
   );
@@ -450,7 +448,6 @@ function BookingServiceCell({
       ariaPrefix="Service type"
       className="vuexy-booking-service-cell"
       fullLabel={service.fullLabel}
-      pillLabel="Service type"
       shortLabel={service.shortLabel}
     />
   );
@@ -470,7 +467,6 @@ function BookingAddressCell({
       ariaPrefix="Service address"
       className="vuexy-booking-address-cell"
       fullLabel={address.fullLabel}
-      pillLabel="Service address"
       shortLabel={address.shortLabel}
     >
       {address.tone === 'pill-warn' && <span className="pill pill-warn">Address missing</span>}
@@ -483,19 +479,16 @@ function BookingCompactCell({
   children,
   className,
   fullLabel,
-  pillLabel,
   shortLabel,
 }: {
   readonly ariaPrefix: string;
   readonly children?: ReactNode;
   readonly className: string;
   readonly fullLabel: string;
-  readonly pillLabel: string;
   readonly shortLabel: string;
 }) {
   return (
     <div className={className}>
-      <span className="pill pill-neutral">{pillLabel}</span>
       <strong aria-label={`${ariaPrefix}: ${fullLabel}`} title={fullLabel}>
         {shortLabel}
       </strong>
