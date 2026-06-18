@@ -1868,16 +1868,6 @@ a.action-button-card:hover {
   gap: 8px;
 }
 
-.booking-action-form-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.booking-action-form {
-  display: inline-flex;
-}
-
 .booking-action-button {
   align-items: center;
   background: var(--admin-surface);

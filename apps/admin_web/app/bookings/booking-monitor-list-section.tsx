@@ -8,6 +8,7 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -464,32 +465,16 @@ function BookingPostMatchCancellationActionsCell({
       </span>
       {manualReviewRequired && <span className="pill pill-warn">Admin review required</span>}
       {resolution === 'pending' ? (
-        <div className="booking-action-form-grid">
-          <form action={approvePostMatchCancellation} className="booking-action-form">
-            <input name="bookingId" type="hidden" value={booking.id} />
-            <input
-              name="note"
-              type="hidden"
-              value={
-                autoApprovalEligible
-                  ? 'Approved within 15-minute post-match cancellation window.'
-                  : 'Approved after admin chat evidence review.'
-              }
-            />
-            <button className="booking-action-button is-success" type="submit">
-              <CheckCircle2 aria-hidden="true" size={14} />
-              Approve
-            </button>
-          </form>
-          <form action={holdPostMatchCancellation} className="booking-action-form">
-            <input name="bookingId" type="hidden" value={booking.id} />
-            <input name="note" type="hidden" value="Held after admin chat evidence review." />
-            <button className="booking-action-button is-warning" type="submit">
-              <PauseCircle aria-hidden="true" size={14} />
-              Hold
-            </button>
-          </form>
-        </div>
+        <ActionMenu
+          actions={postMatchCancellationDecisionActions(booking, autoApprovalEligible)}
+          className="booking-post-match-action-dropdown"
+          itemClassName="booking-post-match-action-item"
+          label={`Post-match cancellation actions for ${shortId(booking.id)}`}
+          menuClassName="booking-post-match-action-menu"
+          title="Resolve cancellation"
+          triggerClassName="booking-action-button is-secondary"
+          variant="dropdown"
+        />
       ) : (
         <span className={`pill ${resolution === 'approved' ? 'pill-success' : 'pill-danger'}`}>
           {cancellationResolutionLabel(resolution, autoApproved)}
@@ -497,6 +482,41 @@ function BookingPostMatchCancellationActionsCell({
       )}
     </div>
   );
+}
+
+function postMatchCancellationDecisionActions(
+  booking: AdminBooking,
+  autoApprovalEligible: boolean,
+): readonly ActionMenuItem[] {
+  return [
+    {
+      action: approvePostMatchCancellation,
+      hiddenInputs: [
+        { name: 'bookingId', value: booking.id },
+        {
+          name: 'note',
+          value: autoApprovalEligible
+            ? 'Approved within 15-minute post-match cancellation window.'
+            : 'Approved after admin chat evidence review.',
+        },
+      ],
+      icon: CheckCircle2,
+      kind: 'submit',
+      label: 'Approve',
+      tone: 'success',
+    },
+    {
+      action: holdPostMatchCancellation,
+      hiddenInputs: [
+        { name: 'bookingId', value: booking.id },
+        { name: 'note', value: 'Held after admin chat evidence review.' },
+      ],
+      icon: PauseCircle,
+      kind: 'submit',
+      label: 'Hold',
+      tone: 'warning',
+    },
+  ];
 }
 
 function BookingPostMatchCancellationChatLayer({

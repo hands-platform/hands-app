@@ -404,8 +404,12 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Fee held');
     expect(rendered).toContain('30m after match');
     expect(rendered).toContain('Admin review required');
+    expect(rendered).toContain('Resolve cancellation');
     expect(rendered).toContain('Approve');
     expect(rendered).toContain('Hold');
+    expect(markup).toContain('admin-action-dropdown booking-post-match-action-dropdown');
+    expect(markup).toContain('admin-action-menu booking-post-match-action-menu');
+    expect(markup).toContain('admin-action-form');
     expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
     expect(markup).toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
     expect(markup).toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
