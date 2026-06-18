@@ -1,7 +1,7 @@
 import { bookingRecordFinanceRows } from './booking-record-finance-rows';
 
 describe('booking record finance rows', () => {
-  it('builds the booking record finance rows from finance trace labels', () => {
+  it('builds compact booking record finance rows from finance trace labels', () => {
     const rows = bookingRecordFinanceRows({
       pricingSource: 'Service payout matrix',
       serviceOption: 'Massage / 60 min / qty 1',
@@ -19,8 +19,14 @@ describe('booking record finance rows', () => {
       providerNet: '320.000 VND / AVAILABLE',
     });
 
-    expect(rows).toHaveLength(14);
-    expect(rows[0]).toEqual({ label: 'Pricing source', value: 'Service payout matrix' });
-    expect(rows.at(-1)).toEqual({ label: 'Partner net', value: '320.000 VND / AVAILABLE' });
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toEqual({
+      label: 'Pricing basis',
+      value: 'Service payout matrix / Massage / 60 min / qty 1',
+    });
+    expect(rows.at(-1)).toEqual({
+      label: 'Wallet and Partner net',
+      value: '320.000 VND / 1 entry / 320.000 VND / AVAILABLE',
+    });
   });
 });
