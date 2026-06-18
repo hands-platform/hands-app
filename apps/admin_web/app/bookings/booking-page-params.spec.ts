@@ -14,7 +14,7 @@ describe('booking page search params', () => {
   it('falls back to status-driven archived views before active', () => {
     expect(readBookingView('unknown', 'EXPIRED')).toBe('expired');
     expect(readBookingView(undefined, 'NO_SHOW')).toBe('no-show');
-    expect(readBookingView('unknown', 'COMPLETED')).toBe('active');
+    expect(readBookingView('unknown', 'COMPLETED')).toBe('all');
   });
 
   it('normalizes evidence and gate filters with safe defaults', () => {

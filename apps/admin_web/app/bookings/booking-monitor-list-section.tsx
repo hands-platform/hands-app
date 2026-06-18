@@ -180,7 +180,6 @@ const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
 
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
-  const visibleGroups = groupedRows.filter((group) => group.rows.length > 0);
   const visibleBookingCount = groupedRows.reduce((count, group) => count + group.rows.length, 0);
 
   return (
@@ -188,7 +187,10 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
       <div className="vuexy-booking-table-toolbar">
         <div>
           <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
-          <p>Grouped by operating state; pre-match cancellations are omitted from this queue.</p>
+          <p>
+            Grouped by operating state; filters can leave a table empty, and pre-match cancellations
+            are omitted from this queue.
+          </p>
         </div>
         <span className="pill pill-info">
           {visibleBookingCount} shown / {rows.length} loaded
@@ -196,36 +198,11 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
       </div>
 
       <div className="vuexy-booking-table-groups">
-        {rows.length === 0 ? (
-          <BookingMonitorEmptyTableState emptyMessage={emptyMessage} />
-        ) : (
-          visibleGroups.map((group) => <BookingMonitorTableGroup group={group} key={group.key} />)
-        )}
+        {rows.length === 0 && <p className="vuexy-booking-table-empty-hint">{emptyMessage}</p>}
+        {groupedRows.map((group) => (
+          <BookingMonitorTableGroup group={group} key={group.key} />
+        ))}
       </div>
-    </section>
-  );
-}
-
-function BookingMonitorEmptyTableState({ emptyMessage }: { readonly emptyMessage: string }) {
-  return (
-    <section className="vuexy-booking-table-group" aria-labelledby="booking-table-empty">
-      <div className="vuexy-booking-table-group-header">
-        <div>
-          <h3 id="booking-table-empty">No realtime bookings</h3>
-          <p>Change filters or wait for new booking requests.</p>
-        </div>
-        <span className="pill pill-neutral">0 booking(s)</span>
-      </div>
-      <AdminTableScroll>
-        <AdminDataTable
-          className="vuexy-booking-table"
-          emptyMessage={emptyMessage}
-          headers={BOOKING_TABLE_HEADERS}
-          rowCount={0}
-        >
-          {null}
-        </AdminDataTable>
-      </AdminTableScroll>
     </section>
   );
 }

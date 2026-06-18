@@ -96,7 +96,7 @@ export function readBookingView(
   if (status === 'NO_SHOW') {
     return 'no-show';
   }
-  return 'active';
+  return 'all';
 }
 
 export function readBookingEvidenceFilter(value: string | string[] | undefined): BookingEvidenceFilter {

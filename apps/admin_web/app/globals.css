@@ -1515,6 +1515,15 @@ a.action-button-card:hover {
   display: grid;
 }
 
+.vuexy-booking-table-empty-hint {
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+  padding: 16px 24px;
+}
+
 .vuexy-booking-table-group {
   background: var(--admin-surface-raised);
 }
