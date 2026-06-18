@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { formatDate } from './booking-formatters';
 
 type SummaryCard = {
@@ -107,6 +107,15 @@ type ChatLifecycle = {
   roomLabel: string;
 };
 
+const MARKETPLACE_WALLET_EVIDENCE_HEADERS = [
+  'Evidence lane',
+  'Status',
+  'Record',
+  'Operator use',
+] as const;
+
+const BOOKING_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
+
 export function BookingMarketplaceWalletEvidenceSection({
   marketplaceWalletEvidence,
 }: BookingMarketplaceWalletEvidenceSectionProps) {
@@ -147,31 +156,25 @@ export function BookingMarketplaceWalletEvidenceSection({
         ))}
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Evidence lane</th>
-              <th>Status</th>
-              <th>Record</th>
-              <th>Operator use</th>
+        <AdminDataTable
+          emptyMessage={null}
+          headers={MARKETPLACE_WALLET_EVIDENCE_HEADERS}
+          rowCount={marketplaceWalletEvidence.rows.length}
+        >
+          {marketplaceWalletEvidence.rows.map((row) => (
+            <tr key={row.lane}>
+              <td>
+                <strong>{row.lane}</strong>
+                <p className="muted">{row.scope}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.tone}`}>{row.status}</span>
+              </td>
+              <td>{row.record}</td>
+              <td>{row.operatorUse}</td>
             </tr>
-          </thead>
-          <tbody>
-            {marketplaceWalletEvidence.rows.map((row) => (
-              <tr key={row.lane}>
-                <td>
-                  <strong>{row.lane}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.record}</td>
-                <td>{row.operatorUse}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </section>
   );
@@ -197,30 +200,20 @@ export function BookingOperatingLedgerSection({
         <span className="pill pill-info">{operatingLedger.length} record areas</span>
       </div>
       <AdminTableScroll>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Status</th>
-              <th>Evidence</th>
-              <th>Open</th>
+        <AdminDataTable emptyMessage={null} headers={BOOKING_OPERATING_LEDGER_HEADERS} rowCount={operatingLedger.length}>
+          {operatingLedger.map((row) => (
+            <tr key={row.area}>
+              <td>{row.area}</td>
+              <td>{row.status}</td>
+              <td>{row.evidence}</td>
+              <td>
+                <a className="text-link" href={row.href}>
+                  Open
+                </a>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {operatingLedger.map((row) => (
-              <tr key={row.area}>
-                <td>{row.area}</td>
-                <td>{row.status}</td>
-                <td>{row.evidence}</td>
-                <td>
-                  <a className="text-link" href={row.href}>
-                    Open
-                  </a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
     </section>
   );
