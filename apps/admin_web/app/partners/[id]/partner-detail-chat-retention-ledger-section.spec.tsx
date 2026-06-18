@@ -31,6 +31,7 @@ describe('PartnerDetailChatRetentionLedgerSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
+        'table vuexy-data-table',
         'card admin-mb-16',
         'service-trace-summary admin-mt-12',
         'text-link admin-ml-10',
