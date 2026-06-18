@@ -1,6 +1,3 @@
-import Link from 'next/link';
-import { User } from 'lucide-react';
-
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { RoleBadge } from '../../components/role-badge';
@@ -65,12 +62,6 @@ export function AppSessionsTableSection({ emptyMessage, rows }: AppSessionsTable
             <td>
               <code>{row.deviceIdLabel}</code>
               <div className="muted">{row.ipAddressLabel}</div>
-              {row.partnerHref ? (
-                <Link className="button button-secondary app-session-inline-action" href={row.partnerHref}>
-                  <User aria-hidden="true" size={14} />
-                  Open Partner
-                </Link>
-              ) : null}
             </td>
           </tr>
         ))}

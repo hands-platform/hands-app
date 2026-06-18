@@ -19,7 +19,6 @@ describe('AppSessionsTableSection', () => {
     expect(rendered).toContain('2026-06-09 10:00');
     expect(rendered).toContain('device-123');
     expect(rendered).toContain('127.0.0.1');
-    expect(rendered).toContain('Open Partner');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-avatar-status-dot is-online']));
   });
