@@ -1,6 +1,3 @@
-import Link from 'next/link';
-import { User } from 'lucide-react';
-
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 import { AdminPersonCell } from '../../components/admin-person-cell';
@@ -32,7 +29,6 @@ const PARTNER_OPERATIONS_TABLE_HEADERS = [
   'Money',
   'App/location',
   'Next operator check',
-  'Detail',
 ] as const;
 
 export function PartnerOperationsListSection({
@@ -148,12 +144,6 @@ export function PartnerOperationsListSection({
                 <strong>{row.nextAction.status}</strong>
                 <p className="muted">{row.nextAction.detail}</p>
                 <p className="muted">{row.nextAction.operatorAction}</p>
-              </td>
-              <td>
-                <Link className="button button-secondary admin-inline-action" href={`/partners/${row.provider.id}`}>
-                  <User aria-hidden="true" size={14} />
-                  Open all records
-                </Link>
               </td>
             </tr>
           ))}

@@ -26,7 +26,6 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).toContain('active');
     expect(rendered).toContain('4 completed');
     expect(rendered).toContain('First revenue: yes');
-    expect(rendered).toContain('Open all records');
     expect(rendered).toContain('2 more partner row(s) are hidden for page speed.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
@@ -35,7 +34,8 @@ describe('PartnerOperationsListSection', () => {
         'table vuexy-data-table service-trace',
         'admin-avatar-status-dot is-online',
         'pill pill-success',
-        'button button-secondary admin-inline-action',
+        'table-link',
+        'vuexy-booking-person',
       ]),
     );
   });
