@@ -350,6 +350,67 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('pill-info');
   });
 
+  it('renders manual post-match cancellation decision forms with chat evidence controls', () => {
+    const row = bookingRowFixture({
+      closedAt: '2026-06-13T03:30:00.000Z',
+      closedByRole: 'PROVIDER',
+      closedReason: 'partner_cancelled',
+      customerName: 'Manual Review Customer',
+      id: 'booking_manual_cancelled_after_match',
+      matchedAt: '2026-06-13T03:00:00.000Z',
+      openedDateLabel: '13 Jun 2026, 03:00',
+      status: 'CANCELLED',
+      statusChangedAt: '2026-06-13T03:30:00.000Z',
+    });
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No bookings match filters."
+        rows={[
+          {
+            ...row,
+            booking: {
+              ...row.booking,
+              chatRoom: {
+                id: 'chat_manual_cancelled',
+                messages: [
+                  {
+                    id: 'message_1',
+                    body: 'I need to cancel after matching.',
+                    createdAt: '2026-06-13T03:29:00.000Z',
+                    sender: {
+                      fullName: 'Partner Manual',
+                      roles: ['PROVIDER'],
+                    },
+                  },
+                ],
+              },
+              earning: {
+                id: 'earning_manual_cancelled',
+                netAmount: -30000,
+                status: 'PENDING',
+              },
+            } as unknown as AdminBooking,
+          },
+        ]}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Manual Review Customer');
+    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).toContain('Chat (1)');
+    expect(rendered).toContain('Fee held');
+    expect(rendered).toContain('30m after match');
+    expect(rendered).toContain('Admin review required');
+    expect(rendered).toContain('Approve');
+    expect(rendered).toContain('Hold');
+    expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
+    expect(markup).toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
+    expect(markup).toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
+  });
+
   it('distinguishes auto-approved post-match cancellations from manual approvals', () => {
     const section = (
       <BookingMonitorListSection
