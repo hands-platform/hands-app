@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ExternalLink, User } from 'lucide-react';
 
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { AdminDataTable } from '../../components/admin-data-table';
 import { AdminPageTemplate } from '../../components/admin-page-template';
 import { ConfirmDialog } from '../../components/confirm-dialog';
 import { FilterBar, type FilterBarOption } from '../../components/filter-bar';
@@ -29,6 +30,8 @@ import {
 } from './file-review-board';
 
 type FilesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const FILE_REVIEW_HEADERS = ['File', 'Partner', 'Status', 'Upload', 'Evidence', 'Actions'] as const;
 
 export default async function FilesPage({ searchParams }: { searchParams?: FilesPageSearchParams }) {
   const params = (await searchParams) ?? {};
@@ -97,30 +100,16 @@ export default async function FilesPage({ searchParams }: { searchParams?: Files
           <StatusBadge tone={rows.length ? 'info' : 'neutral'}>{rows.length} visible</StatusBadge>
         </div>
         <div className="admin-table-scroll">
-          <table className="table files-review-table">
-            <thead>
-              <tr>
-                <th>File</th>
-                <th>Partner</th>
-                <th>Status</th>
-                <th>Upload</th>
-                <th>Evidence</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <FileReviewTableRow key={row.id} row={row} />
-              ))}
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>
-                    <p className="muted">No files match this queue.</p>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+          <AdminDataTable
+            className="files-review-table"
+            emptyMessage={<p className="muted">No files match this queue.</p>}
+            headers={FILE_REVIEW_HEADERS}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <FileReviewTableRow key={row.id} row={row} />
+            ))}
+          </AdminDataTable>
         </div>
       </section>
     </AdminPageTemplate>
