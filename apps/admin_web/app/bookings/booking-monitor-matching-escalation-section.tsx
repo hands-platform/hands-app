@@ -44,6 +44,14 @@ const MATCHING_FLOW_TABLE_HEADERS = [
   'Operator Action',
 ] as const;
 
+const MATCHING_ESCALATION_LANE_TABLE_HEADERS = [
+  'Lane',
+  'Status',
+  'Metrics',
+  'Sample Bookings',
+  'Operator Action',
+] as const;
+
 export function BookingMonitorMatchingEscalationSection({
   dispatchPartnerShortcuts,
   getCustomerLabel,
@@ -97,34 +105,57 @@ export function BookingMonitorMatchingEscalationSection({
           </div>
         ))}
       </div>
-      <div className="ops-task-grid admin-mt-14">
-        {visibleEscalationLanes.map((lane) => (
-          <Link className="ops-task-card" href={lane.href} key={lane.title}>
-            <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
-            <h3>{lane.title}</h3>
-            <p>{lane.detail}</p>
-            <div className="participant-list">
-              <span className="pill">{lane.status}</span>
-              {lane.metrics.map((metricItem) => (
-                <span className="pill" key={`${lane.title}-${metricItem.label}`}>
-                  {metricItem.label}: {metricItem.value}
-                </span>
-              ))}
-            </div>
-            {lane.bookings.length > 0 ? (
-              <div className="stack">
-                {lane.bookings.slice(0, 3).map((booking) => (
-                  <span className="muted" key={`${lane.title}-${booking.id}`}>
-                    {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
-                    {getMatchingWindowLabel(booking)}
+      {visibleEscalationLanes.length > 0 && (
+        <AdminTableScroll>
+          <AdminDataTable
+            className="vuexy-booking-table admin-mt-14"
+            emptyMessage="No matching escalation lanes need action."
+            headers={MATCHING_ESCALATION_LANE_TABLE_HEADERS}
+            rowCount={visibleEscalationLanes.length}
+          >
+            {visibleEscalationLanes.map((lane) => (
+              <tr key={lane.title}>
+                <td>
+                  <Link className="text-link" href={lane.href}>
+                    {lane.title}
+                  </Link>
+                  <div className="muted">{lane.detail}</div>
+                </td>
+                <td>
+                  <span className={`signal ${commandToneClass(lane.tone)}`}>
+                    {commandToneLabel(lane.tone)}
                   </span>
-                ))}
-              </div>
-            ) : null}
-            <small>{lane.operatorAction}</small>
-          </Link>
-        ))}
-      </div>
+                  <div className="muted">{lane.status}</div>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {lane.metrics.map((metricItem) => (
+                      <span className="pill" key={`${lane.title}-${metricItem.label}`}>
+                        {metricItem.label}: {metricItem.value}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  {lane.bookings.length > 0 ? (
+                    <div className="stack">
+                      {lane.bookings.slice(0, 3).map((booking) => (
+                        <span className="muted" key={`${lane.title}-${booking.id}`}>
+                          {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                          {getMatchingWindowLabel(booking)}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="muted">No sample bookings</span>
+                  )}
+                </td>
+                <td>{lane.operatorAction}</td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      )}
       <div className="admin-mt-16">
         <h3>Matching flow timeline</h3>
         <p className="muted">Active stage exceptions only; full history remains in booking detail.</p>
