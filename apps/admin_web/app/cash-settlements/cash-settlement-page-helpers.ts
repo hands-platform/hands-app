@@ -1,6 +1,7 @@
 import type { AdminEarning } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
 import { shortRecordId } from '../../lib/admin-format';
+import { isPostMatchCancellationEarning } from '../bookings/booking-post-match-cancellation-earning';
 import type { CashSettlementRow } from './cash-settlement-page-types';
 
 export const CASH_SETTLEMENT_HIGH_DEBT_THRESHOLD = 500_000;
@@ -9,6 +10,9 @@ export const CASH_SETTLEMENT_STALE_MS = CASH_SETTLEMENT_STALE_HOURS * 60 * 60 * 
 
 export function isOpenCashDebt(earning: AdminEarning) {
   if (earning.status === 'PAID' || earning.status === 'CANCELLED') {
+    return false;
+  }
+  if (isPostMatchCancellationEarning(earning)) {
     return false;
   }
   return earning.netAmount < 0 && (earning.booking?.payment?.method === 'CASH' || earning.platformFee > 0);

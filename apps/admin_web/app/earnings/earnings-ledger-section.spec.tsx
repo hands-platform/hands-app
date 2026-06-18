@@ -8,6 +8,10 @@ describe('EarningsLedgerSection', () => {
           bookingHref: '/bookings/booking-1',
           bookingPaymentMethod: 'CASH',
           bookingShortId: 'booking-1',
+          cancellationDecisionLabel: 'Pending admin decision',
+          cancellationDecisionTone: 'pill-warn',
+          cancellationFeeLabel: 'Fee held',
+          cancellationFeeTone: 'pill-danger',
           createdAtLabel: 'Updated just now',
           feePolicyHint: 'Fee policy: manual',
           grossAmountLabel: '1.000.000 VND',
@@ -40,6 +44,8 @@ describe('EarningsLedgerSection', () => {
     expect(section.type).toBe('div');
     expect(rendered).toContain('Recent earnings ledger');
     expect(rendered).toContain('Partner One');
+    expect(rendered).toContain('Pending admin decision');
+    expect(rendered).toContain('Fee held');
     expect(rendered).toContain('Review fee settlement');
     expect(rendered).toContain('Review payout batch');
     expect(hrefsIn(section)).toContain('/bookings/booking-1');

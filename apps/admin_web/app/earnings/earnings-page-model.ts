@@ -1,6 +1,10 @@
 import type { AdminEarning, AdminEarningSummary, AdminPayoutBatch } from '../../lib/admin-api';
 import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  isPostMatchCancellationEarning,
+  postMatchCancellationEarningDisplay,
+} from '../bookings/booking-post-match-cancellation-earning';
 import type { EarningsBatchStateCard } from './earnings-batch-state-filter-section';
 import type { EarningsCashDebtQueueItem } from './earnings-cash-debt-queue-section';
 import type { EarningsFinanceSignal } from './earnings-finance-queue-section';
@@ -144,38 +148,46 @@ export function buildPartnerPayoutQueueGroups(
 }
 
 export function buildEarningsLedgerRows(earnings: readonly AdminEarning[]): EarningsLedgerRow[] {
-  return earnings.map((earning) => ({
-    bookingHref: `/bookings/${earning.bookingId}`,
-    bookingPaymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
-    bookingShortId: shortRecordId(earning.bookingId),
-    canCreatePayout: canCreatePayout(earning),
-    canDirectlyPay: canDirectlyPay(earning),
-    createdAtLabel: earning.createdAt
-      ? formatRelativeTime(earning.createdAt, { includeFuture: true })
-      : 'No create time',
-    feePolicyHint: platformFeePolicyHint(earning),
-    grossAmountLabel: formatMoney(earning.grossAmount, earning.currency),
-    id: earning.id,
-    netAmountLabel: formatMoney(earning.netAmount, earning.currency),
-    netCompanyFeeHint: netCompanyFeeHint(earning),
-    payoutBatchHref: earning.payoutBatchId ? `/payouts#${earning.payoutBatchId}` : null,
-    payoutBatchLabel: earning.payoutBatchId ? shortRecordId(earning.payoutBatchId) : null,
-    platformFeeLabel: `${formatMoney(earning.platformFee, earning.currency)} platform fee`,
-    providerName: providerDisplayName(earning),
-    providerPhone: earning.providerProfile?.user?.phone ?? 'No phone on file',
-    providerProfileId: earning.providerProfileId,
-    settlementMethodLabel: earning.settlementMethod ? settlementMethodLabel(earning.settlementMethod) : null,
-    settlementRef: earning.settlementRef ?? null,
-    signalClassName: earningSignalClass(earning),
-    statusHint: earningHint(earning),
-    statusLabel: earningStatusLabel(earning),
-    taxPolicyHint: taxPolicyHint(earning),
-    transferRef: `MVP-${earning.providerProfileId}`,
-    walletEntries: (earning.walletLedgerEntries ?? [])
-      .slice(0, 2)
-      .map((entry) => `Wallet ${entry.type}: ${formatMoney(entry.amount, entry.currency)}`),
-    withholdingAmountLabel: `${formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld`,
-  }));
+  return earnings.map((earning) => {
+    const cancellationDisplay = postMatchCancellationEarningDisplay(earning);
+
+    return {
+      bookingHref: `/bookings/${earning.bookingId}`,
+      bookingPaymentMethod: earning.booking?.payment?.method ?? 'UNKNOWN',
+      bookingShortId: shortRecordId(earning.bookingId),
+      canCreatePayout: canCreatePayout(earning),
+      canDirectlyPay: canDirectlyPay(earning),
+      cancellationDecisionLabel: cancellationDisplay?.decisionLabel ?? null,
+      cancellationDecisionTone: cancellationDisplay?.decisionTone ?? null,
+      cancellationFeeLabel: cancellationDisplay?.feeLabel ?? null,
+      cancellationFeeTone: cancellationDisplay?.feeTone ?? null,
+      createdAtLabel: earning.createdAt
+        ? formatRelativeTime(earning.createdAt, { includeFuture: true })
+        : 'No create time',
+      feePolicyHint: platformFeePolicyHint(earning),
+      grossAmountLabel: formatMoney(earning.grossAmount, earning.currency),
+      id: earning.id,
+      netAmountLabel: formatMoney(earning.netAmount, earning.currency),
+      netCompanyFeeHint: netCompanyFeeHint(earning),
+      payoutBatchHref: earning.payoutBatchId ? `/payouts#${earning.payoutBatchId}` : null,
+      payoutBatchLabel: earning.payoutBatchId ? shortRecordId(earning.payoutBatchId) : null,
+      platformFeeLabel: `${formatMoney(earning.platformFee, earning.currency)} platform fee`,
+      providerName: providerDisplayName(earning),
+      providerPhone: earning.providerProfile?.user?.phone ?? 'No phone on file',
+      providerProfileId: earning.providerProfileId,
+      settlementMethodLabel: earning.settlementMethod ? settlementMethodLabel(earning.settlementMethod) : null,
+      settlementRef: earning.settlementRef ?? null,
+      signalClassName: earningSignalClass(earning),
+      statusHint: earningHint(earning),
+      statusLabel: earningStatusLabel(earning),
+      taxPolicyHint: taxPolicyHint(earning),
+      transferRef: `MVP-${earning.providerProfileId}`,
+      walletEntries: (earning.walletLedgerEntries ?? [])
+        .slice(0, 2)
+        .map((entry) => `Wallet ${entry.type}: ${formatMoney(entry.amount, entry.currency)}`),
+      withholdingAmountLabel: `${formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld`,
+    };
+  });
 }
 
 export function sortEarnings(earnings: AdminEarning[]) {
@@ -578,7 +590,7 @@ export function buildServiceEarningBridge(earnings: AdminEarning[]): EarningsSer
       if (payoutLine) {
         item.matrixBackedCount += 1;
       }
-      if (earning.netAmount < 0) {
+      if (earning.netAmount < 0 && !isPostMatchCancellationEarning(earning)) {
         item.cashDebtAmount += Math.round(Math.abs(earning.netAmount) * allocationShare);
       }
       if (earning.status === 'PAID') {
@@ -671,7 +683,7 @@ export function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches
       item.unbatchedCount += 1;
       item.unbatchedNet += earning.netAmount;
     }
-    if (!earning.payoutBatchId && earning.netAmount < 0) {
+    if (!earning.payoutBatchId && earning.netAmount < 0 && !isPostMatchCancellationEarning(earning)) {
       item.cashDebtAmount += Math.abs(earning.netAmount);
     }
 
@@ -829,6 +841,9 @@ function earningSignalClass(earning: AdminEarning) {
 }
 
 function earningStatusLabel(earning: AdminEarning) {
+  if (isPostMatchCancellationEarning(earning)) {
+    return 'Post-match cancellation';
+  }
   if (earning.payoutBatchId && earning.status !== 'PAID') {
     return `${earning.status} / batched`;
   }
@@ -836,6 +851,10 @@ function earningStatusLabel(earning: AdminEarning) {
 }
 
 function earningHint(earning: AdminEarning) {
+  const cancellationDisplay = postMatchCancellationEarningDisplay(earning);
+  if (cancellationDisplay) {
+    return `${cancellationDisplay.decisionLabel}; ${cancellationDisplay.feeLabel}.`;
+  }
   if (isCashDebt(earning)) {
     return 'Cash fee debt blocks Partner wallet until settled';
   }
@@ -932,7 +951,8 @@ export function isCashDebt(earning: AdminEarning) {
     earning.netAmount < 0 &&
     earning.status !== 'PAID' &&
     earning.status !== 'CANCELLED' &&
-    !earning.payoutBatchId
+    !earning.payoutBatchId &&
+    !isPostMatchCancellationEarning(earning)
   );
 }
 

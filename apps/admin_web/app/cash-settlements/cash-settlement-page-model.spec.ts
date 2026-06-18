@@ -24,6 +24,16 @@ describe('cash settlement page model', () => {
       earning({ id: 'cash-high', netAmount: -600000, platformFee: 500000, withholdingAmount: 100000 }),
       earning({ id: 'paid', netAmount: -50000, status: 'PAID' }),
       earning({ booking: { payment: { amount: 100000, method: 'CARD', status: 'AUTHORIZED' } }, id: 'card-negative' }),
+      earning({
+        booking: {
+          closedAt: '2026-06-10T08:30:00.000Z',
+          matchedAt: '2026-06-10T08:00:00.000Z',
+          selectedProviderId: 'partner-profile-1',
+          status: 'CANCELLED',
+        },
+        id: 'post-match-held',
+        netAmount: -30000,
+      }),
     ]);
     const providers = buildProviderGroups(rows);
     const summary = buildSummary(rows, providers);

@@ -1,7 +1,62 @@
-import { EarningStatus, PayoutBatchStatus, ProviderWalletLedgerType, Role } from '@prisma/client';
+import { BookingStatus, EarningStatus, PayoutBatchStatus, ProviderWalletLedgerType, Role } from '@prisma/client';
 import { EarningsService } from './earnings.service';
 
 describe('EarningsService payout batches', () => {
+  it('excludes post-match cancellation fee holds from cash settlement debt lists', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.listCashSettlementDebtForAdmin()).resolves.toEqual([]);
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          NOT: {
+            booking: {
+              is: expect.objectContaining({
+                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
+                status: BookingStatus.CANCELLED,
+              }),
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('uses the same post-match cancellation exclusion for cash settlement summaries', async () => {
+    const prisma = {
+      providerEarning: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = new EarningsService(prisma as never);
+
+    await expect(service.cashSettlementSummaryForAdmin()).resolves.toMatchObject({
+      rowCount: 0,
+      totalDebtAmount: 0,
+    });
+
+    expect(prisma.providerEarning.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          NOT: {
+            booking: {
+              is: expect.objectContaining({
+                OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
+                status: BookingStatus.CANCELLED,
+              }),
+            },
+          },
+        }),
+      }),
+    );
+  });
+
   it('notifies the partner when a payout batch status changes', async () => {
     const existingBatch = {
       id: 'payout-batch-1',

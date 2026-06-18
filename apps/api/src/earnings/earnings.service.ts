@@ -46,6 +46,22 @@ type PricedBookingService = {
   quantity: number;
 };
 
+function cashSettlementDebtWhere(): Prisma.ProviderEarningWhereInput {
+  return {
+    status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+    payoutBatchId: null,
+    netAmount: { lt: 0 },
+    NOT: {
+      booking: {
+        is: {
+          status: BookingStatus.CANCELLED,
+          OR: [{ matchedAt: { not: null } }, { selectedProviderId: { not: null } }],
+        },
+      },
+    },
+  };
+}
+
 @Injectable()
 export class EarningsService {
   constructor(
@@ -206,11 +222,7 @@ export class EarningsService {
 
   listCashSettlementDebtForAdmin() {
     return this.prisma.providerEarning.findMany({
-      where: {
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-        netAmount: { lt: 0 },
-      },
+      where: cashSettlementDebtWhere(),
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       take: 500,
       include: {
@@ -225,11 +237,7 @@ export class EarningsService {
 
   async cashSettlementSummaryForAdmin() {
     const debtRows = await this.prisma.providerEarning.findMany({
-      where: {
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-        netAmount: { lt: 0 },
-      },
+      where: cashSettlementDebtWhere(),
       orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
       select: {
         id: true,

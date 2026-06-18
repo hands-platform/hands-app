@@ -77,6 +77,57 @@ describe('earnings page model', () => {
     });
   });
 
+  it('separates post-match cancellation fee holds from cash debt settlement', () => {
+    const rows = [
+      earning({
+        booking: {
+          closedAt: '2026-06-10T08:30:00.000Z',
+          closedReason: 'partner_cancelled',
+          matchedAt: '2026-06-10T08:00:00.000Z',
+          selectedProviderId: 'partner-profile1',
+          status: 'CANCELLED',
+        },
+        id: 'post-match-held',
+        netAmount: -30000,
+        platformFee: 30000,
+      }),
+      earning({ id: 'cash-debt', netAmount: -30000, platformFee: 30000 }),
+      earning({
+        booking: {
+          closedAt: '2026-06-10T08:10:00.000Z',
+          closedReason: 'post_match_cancellation_approved',
+          matchedAt: '2026-06-10T08:00:00.000Z',
+          selectedProviderId: 'partner-profile1',
+          status: 'CANCELLED',
+        },
+        id: 'post-match-restored',
+        netAmount: 0,
+        status: 'CANCELLED',
+      }),
+    ];
+
+    const ledgerRows = buildEarningsLedgerRows(rows);
+
+    expect(buildCashDebtQueue(rows).map((item) => item.earning.id)).toEqual(['cash-debt']);
+    expect(filterEarningsByBatchState(rows, 'cash-debt').map((row) => row.id)).toEqual(['cash-debt']);
+    expect(ledgerRows.find((row) => row.id === 'post-match-held')).toMatchObject({
+      cancellationDecisionLabel: 'Pending admin decision',
+      cancellationDecisionTone: 'pill-warn',
+      cancellationFeeLabel: 'Fee held',
+      cancellationFeeTone: 'pill-danger',
+      canDirectlyPay: false,
+      statusHint: 'Pending admin decision; Fee held.',
+      statusLabel: 'Post-match cancellation',
+    });
+    expect(ledgerRows.find((row) => row.id === 'post-match-restored')).toMatchObject({
+      cancellationDecisionLabel: 'Auto-approved',
+      cancellationDecisionTone: 'pill-success',
+      cancellationFeeLabel: 'Fee restored',
+      cancellationFeeTone: 'pill-success',
+      statusLabel: 'Post-match cancellation',
+    });
+  });
+
   it('builds ledger, service bridge, and money flow rows for the admin view', () => {
     const rows = [
       earning({

@@ -6,6 +6,10 @@ export type EarningsLedgerRow = {
   readonly bookingShortId: string;
   readonly canCreatePayout: boolean;
   readonly canDirectlyPay: boolean;
+  readonly cancellationDecisionLabel: string | null;
+  readonly cancellationDecisionTone: string | null;
+  readonly cancellationFeeLabel: string | null;
+  readonly cancellationFeeTone: string | null;
   readonly createdAtLabel: string;
   readonly feePolicyHint: string;
   readonly grossAmountLabel: string;
@@ -81,6 +85,14 @@ export function EarningsLedgerSection({ rows }: EarningsLedgerSectionProps) {
               </td>
               <td>
                 <span className={row.signalClassName}>{row.statusLabel}</span>
+                {row.cancellationDecisionLabel ? (
+                  <div className="participant-list admin-mt-6">
+                    <span className={`pill ${row.cancellationDecisionTone}`}>{row.cancellationDecisionLabel}</span>
+                    {row.cancellationFeeLabel ? (
+                      <span className={`pill ${row.cancellationFeeTone}`}>{row.cancellationFeeLabel}</span>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="muted admin-mt-6">
                   {row.statusHint}
                 </div>

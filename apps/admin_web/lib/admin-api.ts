@@ -690,6 +690,12 @@ export type AdminEarning = {
   booking?: {
     status?: string;
     scheduledStartAt?: string;
+    selectedProviderId?: string | null;
+    matchedAt?: string | null;
+    closedAt?: string | null;
+    closedReason?: string | null;
+    closedNote?: string | null;
+    updatedAt?: string | null;
     payment?: { method: string; status: string; amount: number; currency?: string } | null;
     services?: Array<{
       id: string;
