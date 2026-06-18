@@ -1,4 +1,4 @@
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import type { PolicyChangeImpactDashboard } from './policy-impact-dashboard';
@@ -7,6 +7,13 @@ type OperationsPolicyChangeImpactSectionProps = {
   readonly dashboard: PolicyChangeImpactDashboard;
   readonly sampledBookingCount: number;
 };
+
+const POLICY_CHANGE_IMPACT_HEADERS = [
+  'Policy',
+  'Current live value',
+  'Saved booking snapshot',
+  'Operator meaning',
+] as const;
 
 export function OperationsPolicyChangeImpactSection({
   dashboard,
@@ -40,31 +47,26 @@ export function OperationsPolicyChangeImpactSection({
         ))}
       </div>
       <AdminTableScroll>
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Policy</th>
-              <th>Current live value</th>
-              <th>Saved booking snapshot</th>
-              <th>Operator meaning</th>
+        <AdminDataTable
+          className="service-trace"
+          emptyMessage={null}
+          headers={POLICY_CHANGE_IMPACT_HEADERS}
+          rowCount={dashboard.snapshotRows.length}
+        >
+          {dashboard.snapshotRows.map((row) => (
+            <tr key={row.policy}>
+              <td>
+                <strong>{displayOperationalWording(row.policy)}</strong>
+                <p className="muted">{row.scope}</p>
+              </td>
+              <td>{row.liveValue}</td>
+              <td>{row.savedValue}</td>
+              <td>
+                <p className="admin-m-0">{row.operatorMeaning}</p>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {dashboard.snapshotRows.map((row) => (
-              <tr key={row.policy}>
-                <td>
-                  <strong>{displayOperationalWording(row.policy)}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>{row.liveValue}</td>
-                <td>{row.savedValue}</td>
-                <td>
-                  <p className="admin-m-0">{row.operatorMeaning}</p>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
       <div className="ops-task-grid admin-mt-14">
         {dashboard.cards.map((card) => (

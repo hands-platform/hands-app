@@ -1,9 +1,21 @@
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import type { MatchingStageImpactPreview } from './matching-stage-impact-preview';
 
 type OperationsPolicyMatchingStageImpactSectionProps = {
   readonly preview: MatchingStageImpactPreview;
 };
+
+const MATCHING_STAGE_IMPACT_HEADERS = [
+  'Scenario',
+  'Value',
+  'Stage 1 first-pick',
+  'Stage 2 marketplace',
+  'Stage 3 choice',
+  'Stage 4 repair',
+  'No supply',
+  'Overdue',
+  'Operator read',
+] as const;
 
 export function OperationsPolicyMatchingStageImpactSection({
   preview,
@@ -31,38 +43,28 @@ export function OperationsPolicyMatchingStageImpactSection({
         ))}
       </div>
       <AdminTableScroll>
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              <th>Value</th>
-              <th>Stage 1 first-pick</th>
-              <th>Stage 2 marketplace</th>
-              <th>Stage 3 choice</th>
-              <th>Stage 4 repair</th>
-              <th>No supply</th>
-              <th>Overdue</th>
-              <th>Operator read</th>
+        <AdminDataTable
+          className="service-trace"
+          emptyMessage={null}
+          headers={MATCHING_STAGE_IMPACT_HEADERS}
+          rowCount={preview.rows.length}
+        >
+          {preview.rows.map((row) => (
+            <tr key={`${row.scenario}-${row.value}`}>
+              <td>
+                <span className={`pill ${row.pillClass}`}>{row.scenario}</span>
+              </td>
+              <td>{row.value}</td>
+              <td>{row.stage1}</td>
+              <td>{row.stage2}</td>
+              <td>{row.stage3}</td>
+              <td>{row.repair}</td>
+              <td>{row.noSupply}</td>
+              <td>{row.overdue}</td>
+              <td>{row.operatorRead}</td>
             </tr>
-          </thead>
-          <tbody>
-            {preview.rows.map((row) => (
-              <tr key={`${row.scenario}-${row.value}`}>
-                <td>
-                  <span className={`pill ${row.pillClass}`}>{row.scenario}</span>
-                </td>
-                <td>{row.value}</td>
-                <td>{row.stage1}</td>
-                <td>{row.stage2}</td>
-                <td>{row.stage3}</td>
-                <td>{row.repair}</td>
-                <td>{row.noSupply}</td>
-                <td>{row.overdue}</td>
-                <td>{row.operatorRead}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
       <div className="ops-task-note admin-mt-14">
         <strong>How to use this preview</strong>

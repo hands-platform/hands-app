@@ -1,8 +1,23 @@
+import { AdminDataTable } from '../../components/admin-data-table';
 import type { PolicySupplySensitivity } from './policy-supply-sensitivity';
 
 type OperationsPolicySensitivityPreviewSectionProps = {
   readonly sensitivity: PolicySupplySensitivity;
 };
+
+const MARKETPLACE_SUPPLY_SENSITIVITY_HEADERS = [
+  'Radius',
+  'Visible Partners',
+  'Fresh location',
+  'Marketplace/payout held',
+  'Operator read',
+] as const;
+const LOCATION_FRESHNESS_SENSITIVITY_HEADERS = [
+  'Freshness',
+  'Eligible Partners',
+  'Stale excluded',
+  'Operator read',
+] as const;
 
 export function OperationsPolicySensitivityPreviewSection({
   sensitivity,
@@ -36,30 +51,24 @@ export function OperationsPolicySensitivityPreviewSection({
             Reference point: {sensitivity.referenceLabel}. Marketplace blockers include account, identity,
             and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout hold.
           </p>
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Radius</th>
-                <th>Visible Partners</th>
-                <th>Fresh location</th>
-                <th>Marketplace/payout held</th>
-                <th>Operator read</th>
+          <AdminDataTable
+            className="service-trace"
+            emptyMessage={null}
+            headers={MARKETPLACE_SUPPLY_SENSITIVITY_HEADERS}
+            rowCount={sensitivity.radiusRows.length}
+          >
+            {sensitivity.radiusRows.map((row) => (
+              <tr key={row.radiusLabel}>
+                <td>
+                  <span className={`pill ${row.pillClass}`}>{row.radiusLabel}</span>
+                </td>
+                <td>{row.eligible}</td>
+                <td>{row.fresh}</td>
+                <td>{row.finalGateHeld}</td>
+                <td>{row.operatorRead}</td>
               </tr>
-            </thead>
-            <tbody>
-              {sensitivity.radiusRows.map((row) => (
-                <tr key={row.radiusLabel}>
-                  <td>
-                    <span className={`pill ${row.pillClass}`}>{row.radiusLabel}</span>
-                  </td>
-                  <td>{row.eligible}</td>
-                  <td>{row.fresh}</td>
-                  <td>{row.finalGateHeld}</td>
-                  <td>{row.operatorRead}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </div>
         <div className="admin-scroll-x">
           <h3>Location freshness sensitivity</h3>
@@ -67,28 +76,23 @@ export function OperationsPolicySensitivityPreviewSection({
             Shows how strict or loose freshness rules affect marketplace matching without real-time
             tracking.
           </p>
-          <table className="table service-trace">
-            <thead>
-              <tr>
-                <th>Freshness</th>
-                <th>Eligible Partners</th>
-                <th>Stale excluded</th>
-                <th>Operator read</th>
+          <AdminDataTable
+            className="service-trace"
+            emptyMessage={null}
+            headers={LOCATION_FRESHNESS_SENSITIVITY_HEADERS}
+            rowCount={sensitivity.freshnessRows.length}
+          >
+            {sensitivity.freshnessRows.map((row) => (
+              <tr key={row.freshnessLabel}>
+                <td>
+                  <span className={`pill ${row.pillClass}`}>{row.freshnessLabel}</span>
+                </td>
+                <td>{row.eligible}</td>
+                <td>{row.staleExcluded}</td>
+                <td>{row.operatorRead}</td>
               </tr>
-            </thead>
-            <tbody>
-              {sensitivity.freshnessRows.map((row) => (
-                <tr key={row.freshnessLabel}>
-                  <td>
-                    <span className={`pill ${row.pillClass}`}>{row.freshnessLabel}</span>
-                  </td>
-                  <td>{row.eligible}</td>
-                  <td>{row.staleExcluded}</td>
-                  <td>{row.operatorRead}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </AdminDataTable>
         </div>
       </div>
     </section>

@@ -10,6 +10,10 @@ export function textContent(value: unknown): string {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return textContent(expanded);
+  }
   const props = readRecord(record?.props);
   return textContent(props?.children);
 }
@@ -27,9 +31,23 @@ export function hrefsIn(value: unknown): string[] {
   }
 
   const record = readRecord(value);
+  const expanded = renderKnownComponent(record);
+  if (expanded !== null) {
+    return hrefsIn(expanded);
+  }
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+type RenderableComponent = (props: Record<string, unknown>) => unknown;
+
+function renderKnownComponent(record: Record<string, unknown> | null) {
+  const component = record?.type;
+  if (typeof component === 'function' && component.name === 'AdminDataTable') {
+    return (component as RenderableComponent)(readRecord(record?.props) ?? {});
+  }
+  return null;
 }
 
 function readRecord(value: unknown): Record<string, unknown> | null {

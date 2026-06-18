@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
-import { AdminTableScroll } from '../../components/admin-data-table';
+import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { formatDateTime, shortDisplayId } from '../../lib/admin-format';
 
 type BookingCreateGateReview = {
@@ -30,6 +30,14 @@ type OperationsPolicyBookingCreateGateSectionProps = {
   readonly review: BookingCreateGateReview;
 };
 
+const BOOKING_CREATE_GATE_HEADERS = [
+  'Gate',
+  'Current',
+  'Default',
+  'Operator meaning',
+  'Evidence',
+] as const;
+
 export function OperationsPolicyBookingCreateGateSection({
   review,
 }: OperationsPolicyBookingCreateGateSectionProps) {
@@ -56,35 +64,29 @@ export function OperationsPolicyBookingCreateGateSection({
         ))}
       </div>
       <AdminTableScroll>
-        <table className="table service-trace">
-          <thead>
-            <tr>
-              <th>Gate</th>
-              <th>Current</th>
-              <th>Default</th>
-              <th>Operator meaning</th>
-              <th>Evidence</th>
+        <AdminDataTable
+          className="service-trace"
+          emptyMessage={null}
+          headers={BOOKING_CREATE_GATE_HEADERS}
+          rowCount={review.rows.length}
+        >
+          {review.rows.map((row) => (
+            <tr key={row.key}>
+              <td>
+                <span className={`pill ${row.pillClass}`}>{row.gate}</span>
+              </td>
+              <td>{row.current}</td>
+              <td>{row.defaultValue}</td>
+              <td>{row.operatorMeaning}</td>
+              <td>
+                <Link className="button button-secondary policy-inline-action" href={row.href}>
+                  <ExternalLink size={14} aria-hidden="true" />
+                  {row.evidence}
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {review.rows.map((row) => (
-              <tr key={row.key}>
-                <td>
-                  <span className={`pill ${row.pillClass}`}>{row.gate}</span>
-                </td>
-                <td>{row.current}</td>
-                <td>{row.defaultValue}</td>
-                <td>{row.operatorMeaning}</td>
-                <td>
-                  <Link className="button button-secondary policy-inline-action" href={row.href}>
-                    <ExternalLink size={14} aria-hidden="true" />
-                    {row.evidence}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </AdminDataTable>
       </AdminTableScroll>
       <div className="ops-section-header admin-mt-18">
         <div>
