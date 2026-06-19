@@ -439,10 +439,6 @@ function providerCurrentLocationLabel(provider: NonNullable<AdminBookingDetail['
   return coordinateLabel(provider.currentLat, provider.currentLng);
 }
 
-type BookingUnifiedProviderProfile =
-  | NonNullable<NonNullable<AdminBookingDetail['participants']>[number]['providerProfile']>
-  | NonNullable<AdminBookingDetail['selectedProvider']>;
-
 function bookingUnifiedParticipantPeople(booking: AdminBookingDetail): BookingUnifiedDetailPerson[] {
   const selectedProviderId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? null;
   const people: BookingUnifiedDetailPerson[] = [];
@@ -765,14 +761,6 @@ function providerLocationCheckpointDetail({
     };
   }
 
-  const profileAddress = providerProfileAddressLabel(selectedProvider);
-  if (profileAddress) {
-    return {
-      detail: `${eventLabel} ${recordedLabel} Live address was not recorded. Pin ${pin}`,
-      value: profileAddress,
-    };
-  }
-
   return {
     detail: `${eventLabel} ${recordedLabel} Pin ${pin}`,
     value: snapshot || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
@@ -810,24 +798,14 @@ function providerLocationAddressDetail({
     return liveLocationAtReservationAddress;
   }
 
-  const profileAddress = providerProfileAddressLabel(selectedProvider);
   const pin = latestLocation
     ? coordinateLabel(latestLocation.lat, latestLocation.lng)
     : providerCurrentLocationLabel(selectedProvider);
 
-  if (profileAddress) {
-    return {
-      detail: latestLocation
-        ? `Latest live address was not recorded. Pin ${pin} / recorded ${formatDate(latestLocation.recordedAt)}`
-        : `Current live address was not recorded. Profile coordinate ${pin}`,
-      value: profileAddress,
-    };
-  }
-
   return {
     detail: latestLocation
       ? `Pin ${pin} / recorded ${formatDate(latestLocation.recordedAt)}`
-      : `Profile coordinate ${pin}`,
+      : `Current live address was not recorded. Coordinate ${pin}`,
     value:
       latestLocation || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };
@@ -864,22 +842,4 @@ function providerLocationAtReservationAddress({
       : `Partner profile location is within ${distanceLabel(distance)} of the reservation address.`,
     value: address,
   };
-}
-
-function providerProfileAddressLabel(provider: BookingUnifiedProviderProfile | null) {
-  if (!provider) {
-    return null;
-  }
-
-  const record = provider as BookingUnifiedProviderProfile & {
-    readonly city?: string | null;
-    readonly residentialAddress?: unknown;
-    readonly serviceArea?: unknown;
-  };
-  const address =
-    readAddressText(record.residentialAddress) ??
-    readAddressText(record.serviceArea) ??
-    readAddressText(record.city);
-
-  return address ? serviceAddressAreaLabel(address) : null;
 }

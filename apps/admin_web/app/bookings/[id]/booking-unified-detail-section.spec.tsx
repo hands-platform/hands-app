@@ -44,7 +44,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Matching location');
     expect(rendered).toContain('Completion location');
     expect(rendered).toContain('Cancellation location');
-    expect(rendered).toContain('Partner base, Ha Noi');
+    expect(rendered).toContain('Location address not recorded');
     expect(rendered).toContain('Participating');
     expect(rendered).toContain('Latest location');
     expect(rendered).toContain('2 Partners');
@@ -208,6 +208,42 @@ describe('BookingUnifiedDetailSection', () => {
 
     expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
     expect(completion?.detail).toContain('Booking action snapshot recorded');
+  });
+
+  it('does not show a Partner profile address as an action location when the snapshot has no address', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        closedAt: '2026-06-19T07:50:00.000Z',
+        matchedAt: '2026-06-19T07:20:00.000Z',
+        snapshots: [
+          {
+            id: 'snapshot-action-without-address',
+            bookingId: 'booking-1',
+            lat: 10.7823,
+            lng: 106.6978,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:50:10.000Z',
+          },
+        ],
+        status: 'COMPLETED',
+        statusChangedAt: '2026-06-19T07:50:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 7,
+    });
+
+    const completion = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Completion location');
+    const latest = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Latest location');
+
+    expect(completion).toMatchObject({ value: 'Location address not recorded' });
+    expect(completion?.detail).toContain('Booking action snapshot recorded');
+    expect(completion?.detail).not.toContain('Partner base');
+    expect(latest).toMatchObject({ value: 'Location address not recorded' });
+    expect(latest?.detail).not.toContain('Partner base');
   });
 });
 
