@@ -28,8 +28,6 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
         ))}
       </div>
 
-      <BookingUnifiedTimeline unifiedDetail={unifiedDetail} />
-
       <BookingUnifiedRows
         helper="Personal profile, reservation address, service request, and the actual customer location signal are separated."
         rows={unifiedDetail.customerRows}
@@ -69,33 +67,6 @@ function BookingUnifiedSummaryCard({ card }: { readonly card: BookingUnifiedDeta
   }
 
   return <div>{content}</div>;
-}
-
-function BookingUnifiedTimeline({ unifiedDetail }: { readonly unifiedDetail: BookingUnifiedDetail }) {
-  return (
-    <>
-      <div className="ops-section-header admin-mt-16">
-        <div>
-          <h3>Booking update timeline</h3>
-          <p className="muted">Each new booking state is appended here instead of splitting the detail page.</p>
-        </div>
-        <span className="pill pill-info">{unifiedDetail.timelineItems.length} update(s)</span>
-      </div>
-      <div className="setup-stage-list admin-mt-12">
-        {unifiedDetail.timelineItems.map((item) => (
-          <div className="setup-stage-item" key={`${item.lane}-${item.title}-${item.at}`}>
-            <span>{item.lane}</span>
-            <div>
-              <strong>{item.title}</strong>
-              <p className="muted">{item.detail}</p>
-              <small>{item.at}</small>
-            </div>
-            <span className={`pill ${item.tone}`}>{item.status}</span>
-          </div>
-        ))}
-      </div>
-    </>
-  );
 }
 
 function BookingUnifiedRows({

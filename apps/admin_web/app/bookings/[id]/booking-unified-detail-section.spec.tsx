@@ -30,7 +30,6 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Customer detail');
     expect(rendered).toContain('Matched Partner detail');
     expect(rendered).toContain('Finance and system detail');
-    expect(rendered).toContain('Post-match / In Progress');
     expect(rendered).toContain('Partner Matched');
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('500.000 VND');
@@ -38,7 +37,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('href="/partners/partner-1"');
   });
 
-  it('keeps post-match cancellation review in the same booking timeline', () => {
+  it('labels post-match cancellation review as one booking detail state', () => {
     const unifiedDetail = bookingUnifiedDetail({
       addressLine: 'District 1, Ho Chi Minh City',
       addressPin: '10.7750, 106.7000',
@@ -56,9 +55,7 @@ describe('BookingUnifiedDetailSection', () => {
     });
 
     expect(unifiedDetail.statusLabel).toBe('Post-match cancellation review');
-    expect(unifiedDetail.timelineItems.some((item) => item.lane === 'Post-match Cancellations / Needs Review')).toBe(
-      true,
-    );
+    expect(unifiedDetail.summaryCards.at(-1)?.helper).toBe('Post-match cancellation review / CANCELLED');
   });
 });
 

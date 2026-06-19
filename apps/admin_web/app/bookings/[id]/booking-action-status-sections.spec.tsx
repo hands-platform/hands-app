@@ -147,6 +147,26 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('booking-outcome-review-actions');
   });
 
+  it('can hide outcome review when the decision is rendered under the lifecycle list', () => {
+    const markup = render({
+      outcomeReview: {
+        helper: 'Use retained chat before final confirmation.',
+        postMatchDecision: hiddenPostMatchDecision(),
+        primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
+        primaryLabel: 'Open review queue',
+        rows: [],
+        status: 'Post-match cancellation',
+        title: 'Post-match cancellation review',
+        tone: 'pill-warn',
+        visible: true,
+      },
+      showOutcomeReview: false,
+    });
+
+    expect(markup).not.toContain('Post-match cancellation review');
+    expect(markup).toContain('Dispatch checklist');
+  });
+
   it('renders post-match cancellation decision actions on detail pages', () => {
     const markup = render({
       outcomeReview: {

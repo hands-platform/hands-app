@@ -14,6 +14,8 @@ import {
   BookingActionStatusSections,
   type BookingActionStatusSectionsProps,
 } from './booking-action-status-sections';
+import { BookingDetailLifecycleListSection } from './booking-detail-lifecycle-list-section';
+import { BookingDetailPostMatchDecisionSection } from './booking-detail-post-match-decision-section';
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import { BookingDetailDisclosureGroup } from './booking-detail-disclosure-group';
 import {
@@ -441,6 +443,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
     latestLocation,
     messageCount,
   });
+  const outcomeReview = bookingOutcomeReviewPanel({
+    booking,
+    closeoutOpenItemCount: closeoutReadiness.openItems.length,
+    closureSummary,
+    messageCount,
+    operatorNoteCount,
+  });
+  const showPostMatchDecisionBelowLifecycle = outcomeReview.postMatchDecision.visible;
   const commandDecisionStrip = bookingCommandDecisionStrip({
     bookingStatus: booking.status,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
@@ -597,13 +607,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     noShow: { canSubmit: canMarkNoShow(booking.status), status: booking.status },
     notes: booking.notes,
     opsTaskCards,
-    outcomeReview: bookingOutcomeReviewPanel({
-      booking,
-      closeoutOpenItemCount: closeoutReadiness.openItems.length,
-      closureSummary,
-      messageCount,
-      operatorNoteCount,
-    }),
+    outcomeReview,
+    showOutcomeReview: !showPostMatchDecisionBelowLifecycle,
   };
   const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
     booking,
@@ -768,6 +773,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingDetailToolbar {...toolbarProps} />
 
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
+
+      <BookingDetailLifecycleListSection booking={booking} />
+
+      {showPostMatchDecisionBelowLifecycle && (
+        <BookingDetailPostMatchDecisionSection
+          bookingId={booking.id}
+          outcomeReview={outcomeReview}
+        />
+      )}
 
       <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
 

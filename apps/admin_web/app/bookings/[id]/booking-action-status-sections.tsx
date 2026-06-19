@@ -71,6 +71,7 @@ export type BookingActionStatusSectionsProps = {
   notes?: string | null;
   opsTaskCards: OpsTaskCard[];
   outcomeReview: BookingOutcomeReviewPanel;
+  showOutcomeReview?: boolean;
 };
 
 type BookingDispatchChecklistSectionProps = {
@@ -92,13 +93,16 @@ export function BookingActionStatusSections({
   notes,
   opsTaskCards,
   outcomeReview,
+  showOutcomeReview = true,
 }: BookingActionStatusSectionsProps) {
   return (
     <>
       <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
-      <BookingOutcomeReviewSection bookingId={bookingId} outcomeReview={outcomeReview} />
+      {showOutcomeReview && (
+        <BookingOutcomeReviewSection bookingId={bookingId} outcomeReview={outcomeReview} />
+      )}
       {shouldShowChatRepairSection(chatRepair) && (
         <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
       )}
