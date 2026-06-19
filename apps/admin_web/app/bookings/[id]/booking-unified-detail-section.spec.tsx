@@ -45,6 +45,14 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('2 Partners');
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('500.000 VND');
+    expect(rendered).toContain('Payment record');
+    expect(rendered).toContain('Pricing basis');
+    expect(rendered).toContain('Partner earning');
+    expect(rendered).toContain('HANDS fee and costs');
+    expect(rendered).toContain('Tax withholding');
+    expect(rendered).toContain('Wallet ledger');
+    expect(rendered).toContain('Service payout matrix');
+    expect(rendered).toContain('500.000 VND customer -&gt; 400.000 VND Partner');
     expect(markup).toContain('id="booking-customer-detail"');
     expect(markup).toContain('id="booking-matched-partner-detail"');
     expect(markup).toContain('id="booking-finance-system-detail"');
@@ -293,11 +301,14 @@ function finalPartnerSummaryFixture(): BookingFinalPartnerSummary {
 function financeTraceFixture(): ReturnType<typeof bookingFinanceTrace> {
   return {
     companyFeeAfterTax: '70.000 VND',
+    adminMinimum: '500.000 VND',
     customerPrice: '500.000 VND',
     feeCosts: '10.000 VND VAT / 20.000 VND other',
     netHandsFee: '80.000 VND',
     paymentMethod: 'CARD',
     platformFee: '100.000 VND',
+    payoutRuleLine: '500.000 VND customer -> 400.000 VND Partner',
+    pricingSource: 'Service payout matrix',
     providerNet: '380.000 VND / PENDING',
     providerPayout: '400.000 VND',
     serviceOption: 'Aromatherapy Massage / 90 min / qty 1',

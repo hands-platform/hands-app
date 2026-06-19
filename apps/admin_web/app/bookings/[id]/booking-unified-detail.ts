@@ -288,6 +288,12 @@ function bookingUnifiedFinanceRows({
   readonly booking: AdminBookingDetail;
   readonly financeTrace: BookingFinanceTrace;
 }): BookingUnifiedDetailRow[] {
+  const walletEntryCount =
+    booking.walletLedgerEntries?.length ?? booking.earning?.walletLedgerEntries?.length ?? 0;
+  const refundCount = booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0;
+  const refundAmount = booking.refunds?.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0);
+  const paymentCurrency = booking.payment?.currency ?? financeTrace.currency;
+
   return [
     {
       label: 'Service state',
@@ -295,41 +301,51 @@ function bookingUnifiedFinanceRows({
       detail: `Changed ${formatDate(booking.statusChangedAt ?? booking.updatedAt ?? null)}`,
     },
     {
-      label: 'Service end',
-      value: formatDate(booking.closedAt ?? booking.scheduledEndAt ?? null),
-      detail: booking.closedReason ?? booking.closedNote ?? 'No closure note.',
+      label: 'Closeout decision',
+      value: booking.closedReason ?? (booking.closedAt ? 'Closed' : 'Open'),
+      detail: booking.closedNote ?? `Closeout time ${formatDate(booking.closedAt ?? null)}`,
     },
     {
-      label: 'Customer charge',
+      label: 'Payment record',
       value: financeTrace.customerPrice,
-      detail: `${financeTrace.paymentMethod} / ${booking.payment?.status ?? 'No payment'}`,
+      detail: `${financeTrace.paymentMethod} / ${booking.payment?.status ?? 'No payment'} / ref ${
+        booking.payment?.providerRef ?? 'no provider ref'
+      }`,
       href: booking.payment?.id ? `/payments/${booking.payment.id}` : undefined,
     },
     {
-      label: 'Partner payout',
+      label: 'Pricing basis',
+      value: financeTrace.pricingSource,
+      detail: `${financeTrace.serviceOption} / min ${financeTrace.adminMinimum}`,
+    },
+    {
+      label: 'Partner earning',
       value: financeTrace.providerPayout,
-      detail: financeTrace.providerNet,
+      detail: `${financeTrace.providerNet} / ${financeTrace.payoutRuleLine}`,
       href: booking.earning?.id ? `/earnings?bookingId=${booking.id}` : undefined,
     },
     {
-      label: 'HANDS fee',
+      label: 'HANDS fee and costs',
       value: financeTrace.platformFee,
       detail: `${financeTrace.feeCosts} / ${financeTrace.netHandsFee} before withholding`,
     },
     {
-      label: 'Tax',
+      label: 'Tax withholding',
       value: financeTrace.withholding,
       detail: `${financeTrace.companyFeeAfterTax} company fee after tax`,
     },
     {
       label: 'Wallet ledger',
       value: financeTrace.walletLedger,
-      detail: `${booking.walletLedgerEntries?.length ?? booking.earning?.walletLedgerEntries?.length ?? 0} ledger row(s)`,
+      detail: `${walletEntryCount} ledger row(s) / Partner wallet impact`,
     },
     {
       label: 'Refunds',
-      value: `${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`,
-      detail: `Payment amount ${money(booking.payment?.amount, booking.payment?.currency)}`,
+      value: `${refundCount}`,
+      detail: `${money(refundAmount ?? 0, paymentCurrency)} refunded / payment amount ${money(
+        booking.payment?.amount,
+        paymentCurrency,
+      )}`,
     },
   ];
 }
