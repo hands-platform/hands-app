@@ -297,6 +297,7 @@ export const adminLocationSnapshotSummarySelect = {
   id: true,
   bookingId: true,
   providerProfileId: true,
+  addressText: true,
   lat: true,
   lng: true,
   recordedAt: true,

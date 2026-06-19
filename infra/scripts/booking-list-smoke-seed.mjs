@@ -400,6 +400,7 @@ async function createCompletedBooking() {
     locationSnapshots: [
       {
         providerProfileId: ids.preferredProviderProfile,
+        addressText: '33 Nguyen Dinh Chieu, Sai Gon, Ho Chi Minh City',
         lat: 10.7778,
         lng: 106.7012,
         recordedAt: closedAt,
@@ -479,6 +480,7 @@ async function createPendingCancellationBooking() {
     locationSnapshots: [
       {
         providerProfileId: ids.marketplaceProviderProfile,
+        addressText: '85/9 Pham Viet Chanh, Thanh My Tay, Ho Chi Minh City',
         lat: 10.7791,
         lng: 106.6997,
         recordedAt: closedAt,
@@ -559,6 +561,7 @@ async function createApprovedCancellationBooking() {
     locationSnapshots: [
       {
         providerProfileId: ids.resolvedProviderProfile,
+        addressText: 'Hem 1 Duong So 9, An Khanh, Ho Chi Minh City',
         lat: 10.7756,
         lng: 106.7041,
         recordedAt: closedAt,
@@ -762,6 +765,14 @@ async function verifySmokeData() {
     rows.find((booking) => booking.id === ids.approvedCancellationBooking)?.snapshots.length === 1,
     'Approved cancellation smoke booking should include one booking action location snapshot.',
   );
+  assertCondition(
+    [ids.completedBooking, ids.pendingCancellationBooking, ids.approvedCancellationBooking].every((bookingId) =>
+      rows
+        .find((booking) => booking.id === bookingId)
+        ?.snapshots.every((snapshot) => snapshot.addressText?.includes('Ho Chi Minh City')),
+    ),
+    'Booking action location snapshots should include operator-readable address text.',
+  );
 
   return {
     totalBookings: rows.length,
@@ -775,6 +786,7 @@ async function verifySmokeData() {
       paymentStatus: booking.payment?.status ?? null,
       earningStatus: booking.earning?.status ?? null,
       locationSnapshotCount: booking.snapshots.length,
+      locationSnapshotAddressText: booking.snapshots.map((snapshot) => snapshot.addressText ?? null),
     })),
   };
 }

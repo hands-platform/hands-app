@@ -188,6 +188,7 @@ describe('ProvidersService location updates', () => {
     );
 
     await service.updateLocation('provider-user-1', {
+      addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
       bookingId: 'booking-1',
       lat: 10.7769,
       lng: 106.7009,
@@ -208,6 +209,7 @@ describe('ProvidersService location updates', () => {
         data: expect.objectContaining({
           locationSnapshots: {
             create: expect.objectContaining({
+              addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
               bookingId: 'booking-1',
               lat: 10.7769,
               lng: 106.7009,

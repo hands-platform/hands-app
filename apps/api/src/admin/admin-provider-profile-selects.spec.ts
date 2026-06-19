@@ -77,6 +77,11 @@ describe('admin provider profile selects', () => {
   });
 
   it('keeps provider booking and payout summaries location/payment aware', () => {
+    expect(adminLocationSnapshotSummarySelect).toMatchObject({
+      addressText: true,
+      lat: true,
+      lng: true,
+    });
     expect(adminBookingDetailProviderSelect).toMatchObject({
       city: true,
       residentialAddress: true,

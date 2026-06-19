@@ -1921,7 +1921,7 @@ export class BookingsService {
   async cancelProviderBooking(
     bookingId: string,
     providerUserId: string,
-    input: { lat?: number; lng?: number; note?: string } = {},
+    input: { lat?: number; lng?: number; addressText?: string; note?: string } = {},
   ) {
     const provider = await this.requireProvider(providerUserId);
     const cancellation = await this.closeProviderBookingAfterMatch({
@@ -1933,6 +1933,7 @@ export class BookingsService {
     await this.recordProviderBookingActionLocation({
       bookingId,
       providerProfileId: provider.id,
+      addressText: input.addressText,
       lat: input.lat,
       lng: input.lng,
     });
@@ -2138,11 +2139,16 @@ export class BookingsService {
     this.matchingGateway.emitServiceStarted(input.bookingId, input.matchingPayload);
   }
 
-  async complete(bookingId: string, providerUserId: string, input: { lat?: number; lng?: number } = {}) {
+  async complete(
+    bookingId: string,
+    providerUserId: string,
+    input: { lat?: number; lng?: number; addressText?: string } = {},
+  ) {
     const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
     await this.recordProviderBookingActionLocation({
       bookingId,
       providerProfileId: provider.id,
+      addressText: input.addressText,
       lat: input.lat,
       lng: input.lng,
     });
@@ -2175,6 +2181,7 @@ export class BookingsService {
   private async recordProviderBookingActionLocation(input: {
     bookingId: string;
     providerProfileId: string;
+    addressText?: string;
     lat?: number;
     lng?: number;
   }) {
@@ -2192,11 +2199,13 @@ export class BookingsService {
     if (!isVietnamBookingCoordinate(lat, lng)) {
       throw new BadRequestException('Partner action location must be inside Vietnam');
     }
+    const addressText = cleanOptionalLocationAddress(input.addressText);
 
     await this.prisma.locationSnapshot.create({
       data: {
         bookingId: input.bookingId,
         providerProfileId: input.providerProfileId,
+        ...(addressText ? { addressText } : {}),
         lat,
         lng,
       },
@@ -2316,6 +2325,14 @@ function cleanProviderCancellationNote(value: string | null | undefined) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 1000) : null;
+}
+
+function cleanOptionalLocationAddress(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, 500) : null;
 }
 
 function appendDatedBookingNote(existingNotes: string | null | undefined, message: string, now = new Date()) {

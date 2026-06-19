@@ -1199,6 +1199,7 @@ describe('BookingsService service completion', () => {
     );
 
     await service.complete('booking-1', 'partner-user-1', {
+      addressText: '33 Nguyen Dinh Chieu, Ho Chi Minh City',
       lat: 10.7769,
       lng: 106.7009,
     });
@@ -1207,6 +1208,7 @@ describe('BookingsService service completion', () => {
       data: {
         bookingId: 'booking-1',
         providerProfileId: 'partner-1',
+        addressText: '33 Nguyen Dinh Chieu, Ho Chi Minh City',
         lat: 10.7769,
         lng: 106.7009,
       },

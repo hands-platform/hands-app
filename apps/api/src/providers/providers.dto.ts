@@ -33,6 +33,12 @@ export class UpdateProviderLocationDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
+  @MaxLength(500)
+  addressText?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
   @MaxLength(128)
   bookingId?: string;
 }

@@ -74,6 +74,11 @@ class ProviderBookingActionLocationDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  addressText?: string;
 }
 
 export class CompleteProviderBookingDto extends ProviderBookingActionLocationDto {}

@@ -322,11 +322,15 @@ export class ProvidersService {
     };
   }
 
-  async updateLocation(userId: string | undefined, input: { lat: number; lng: number; bookingId?: string }) {
+  async updateLocation(
+    userId: string | undefined,
+    input: { lat: number; lng: number; addressText?: string; bookingId?: string },
+  ) {
     const provider = await this.requireProvider(userId);
     assertProviderNotBlocked(provider);
     assertVietnamCoordinate(input.lat, input.lng, 'Partner location must be inside Vietnam');
     const bookingId = normalizeOptional(input.bookingId);
+    const addressText = normalizeOptional(input.addressText);
     if (bookingId) {
       await this.assertProviderLocationBookingContext(provider.id, bookingId);
     }
@@ -337,7 +341,15 @@ export class ProvidersService {
         currentLat: input.lat,
         currentLng: input.lng,
         currentLocationUpdatedAt: recordedAt,
-        locationSnapshots: { create: { bookingId, lat: input.lat, lng: input.lng, recordedAt } },
+        locationSnapshots: {
+          create: {
+            ...(addressText ? { addressText } : {}),
+            bookingId,
+            lat: input.lat,
+            lng: input.lng,
+            recordedAt,
+          },
+        },
       },
     });
     await this.redisState.setProviderLocation(provider.id, {
