@@ -168,6 +168,34 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(rendered).toContain('Post-match cancellation needs admin review');
     expect(rendered).not.toContain('<table');
   });
+
+  it('keeps completed timeline copy concise for operators', () => {
+    const items = bookingDetailLifecycleTimelineItems(
+      bookingFixture({
+        closedAt: '2026-06-19T08:40:00.000Z',
+        closedNote: 'Service Completed / Smoke: service completed; closeout reconciliation still needs review.',
+        closedReason: 'provider_closure',
+        payment: { amount: 500000, method: 'MOMO', status: 'CAPTURED' },
+        status: 'COMPLETED',
+        statusChangedAt: '2026-06-19T08:40:00.000Z',
+      }),
+      new Date('2026-06-19T09:00:00.000Z').getTime(),
+    );
+
+    const completed = items.find((item) => item.groupKey === 'completed');
+
+    expect(completed?.detail).toContain('Service completed; closeout reconciliation still needs review.');
+    expect(completed?.detail).not.toContain('provider closure /');
+    expect(completed?.detail).not.toContain('Smoke:');
+    expect(completed?.meta.find((meta) => meta.label === 'Payment')?.value).toBe('500.000 VND / CAPTURED');
+    expect(completed?.meta.map((meta) => meta.label)).toEqual([
+      'Matched Partner',
+      'Completion location',
+      'Location capture',
+      'Payment',
+      'Partner gate',
+    ]);
+  });
 });
 
 function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDetail {

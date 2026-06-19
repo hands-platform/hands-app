@@ -31,7 +31,11 @@ type BookingDetailLifecycleListSectionProps = {
 };
 
 export function BookingDetailLifecycleListSection({ booking }: BookingDetailLifecycleListSectionProps) {
-  const timelineItems = useMemo(() => bookingDetailLifecycleTimelineItems(booking, Date.now()), [booking]);
+  const currentTimeMs = useMemo(() => bookingDetailLifecycleReferenceTimeMs(booking), [booking]);
+  const timelineItems = useMemo(
+    () => bookingDetailLifecycleTimelineItems(booking, currentTimeMs),
+    [booking, currentTimeMs],
+  );
 
   if (timelineItems.length === 0) {
     return null;
@@ -88,6 +92,21 @@ export function bookingDetailLifecycleTimelineItems(
   return bookingDetailLifecycleListRows(booking, currentTimeMs).map(({ groupKey, row }) =>
     bookingDetailLifecycleTimelineItem(groupKey, row),
   );
+}
+
+function bookingDetailLifecycleReferenceTimeMs(booking: AdminBookingDetail) {
+  const values = [
+    booking.updatedAt,
+    booking.statusChangedAt,
+    booking.closedAt,
+    booking.matchedAt,
+    booking.openedAt,
+    booking.createdAt,
+  ]
+    .map(locationTimeValue)
+    .filter(Number.isFinite);
+
+  return values.length > 0 ? Math.max(...values) : 0;
 }
 
 export function bookingDetailLifecycleListRows(
@@ -251,7 +270,10 @@ function bookingDetailLifecycleTimelineItem(
 
     return {
       detail: lifecycleDetailWithLocation(
-        row.closureState?.detail ?? 'Completed booking is ready for finance and review closeout.',
+        compactLifecycleClosureDetail(
+          row.closureState?.detail ?? 'Completed booking is ready for finance and review closeout.',
+          'Completed booking is ready for finance and review closeout.',
+        ),
         completionLocation,
       ),
       groupKey,
@@ -261,9 +283,8 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Location capture', value: completionLocation.capture },
         {
           label: 'Payment',
-          value: booking.payment ? `${row.servicePriceLabel} / ${booking.payment.status}` : 'No payment',
+          value: compactLifecyclePaymentLabel(row, booking),
         },
-        { label: 'Payout', value: booking.earning ? `${booking.earning.status}` : 'Earning pending' },
         { label: 'Partner gate', value: 'Eligible after completion' },
       ],
       statusLabel: 'Completed',
@@ -282,7 +303,10 @@ function bookingDetailLifecycleTimelineItem(
 
     return {
       detail: lifecycleDetailWithLocation(
-        row.closureState?.detail ?? 'Post-match cancellation has been reviewed by operations.',
+        compactLifecycleClosureDetail(
+          row.closureState?.detail ?? 'Post-match cancellation has been reviewed by operations.',
+          'Post-match cancellation has been reviewed by operations.',
+        ),
         cancellationLocation,
       ),
       groupKey,
@@ -309,7 +333,10 @@ function bookingDetailLifecycleTimelineItem(
 
   return {
     detail: lifecycleDetailWithLocation(
-      row.closureState?.detail ?? 'Admin must review chat evidence and close the cancellation decision.',
+      compactLifecycleClosureDetail(
+        row.closureState?.detail ?? 'Admin must review chat evidence and close the cancellation decision.',
+        'Admin must review chat evidence and close the cancellation decision.',
+      ),
       cancellationLocation,
     ),
     groupKey,
@@ -335,6 +362,31 @@ function compactLifecycleServiceLabel(row: BookingMonitorListRow) {
     .trim();
 
   return amount ? `${row.serviceOptionLabel} / ${amount}` : row.serviceOptionLabel;
+}
+
+function compactLifecyclePaymentLabel(row: BookingMonitorListRow, booking: AdminBookingDetail) {
+  if (!booking.payment) {
+    return 'No payment';
+  }
+
+  const amount = row.servicePriceLabel
+    .replace(/^Customer\s+/i, '')
+    .replace(/\s*\/\s*min\s+.*$/i, '')
+    .trim();
+
+  return amount ? `${amount} / ${booking.payment.status}` : booking.payment.status;
+}
+
+function compactLifecycleClosureDetail(detail: string, fallback: string) {
+  const normalized = detail
+    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
+    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
+    .replace(/^Service Completed\s*\/\s*/i, '')
+    .replace(/^Smoke:\s*/i, '')
+    .replace(/^service completed;\s*/i, 'Service completed; ')
+    .trim();
+
+  return normalized && !/^reason not saved\.?$/i.test(normalized) ? normalized : fallback;
 }
 
 function lifecycleDetailWithLocation(
