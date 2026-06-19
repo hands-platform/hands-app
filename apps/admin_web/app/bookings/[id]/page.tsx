@@ -143,6 +143,11 @@ import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
 import { bookingDetailMetricCards } from './booking-detail-metric-cards';
+import { bookingUnifiedDetail } from './booking-unified-detail';
+import {
+  BookingUnifiedDetailSection,
+  type BookingUnifiedDetailSectionProps,
+} from './booking-unified-detail-section';
 import { bookingLiveServiceSignals } from './booking-live-service-signals';
 import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
@@ -364,6 +369,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     attentionFlags,
     messageCount,
     notificationCount,
+  });
+  const unifiedDetail = bookingUnifiedDetail({
+    addressLine,
+    addressPin,
+    booking,
+    financeTrace,
+    finalPartnerSummary,
+    latestLocation,
+    messageCount,
   });
   const activityRecordCount = bookingActivityRecords.length;
   const operatingTimeline = bookingOperatingTimeline({
@@ -743,12 +757,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const priorityBriefingProps: BookingPriorityBriefingSectionProps = {
     operatorPriorityBriefing,
   };
+  const unifiedDetailProps: BookingUnifiedDetailSectionProps = {
+    unifiedDetail,
+  };
 
   return (
     <div className="booking-detail-page">
       <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
 
       <BookingDetailToolbar {...toolbarProps} />
+
+      <BookingUnifiedDetailSection {...unifiedDetailProps} />
 
       <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
 
