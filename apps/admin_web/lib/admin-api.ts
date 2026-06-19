@@ -505,6 +505,9 @@ export type AdminBooking = {
       currentLat?: string | number | null;
       currentLng?: string | number | null;
       currentLocationUpdatedAt?: string | null;
+      city?: string | null;
+      residentialAddress?: unknown;
+      serviceArea?: unknown;
       locationSnapshots?: AdminLocationSnapshot[];
     };
   }>;
@@ -546,6 +549,9 @@ export type AdminBooking = {
     currentLat?: string | number | null;
     currentLng?: string | number | null;
     currentLocationUpdatedAt?: string | null;
+    city?: string | null;
+    residentialAddress?: unknown;
+    serviceArea?: unknown;
     locationSnapshots?: AdminLocationSnapshot[];
   };
   chatRoom?: { id: string; messages?: AdminChatMessage[] } | null;

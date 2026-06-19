@@ -31,8 +31,15 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Matched Partner detail');
     expect(rendered).toContain('Finance and system detail');
     expect(rendered).toContain('Partner Matched');
+    expect(rendered).toContain('Partner base, Ha Noi');
+    expect(rendered).toContain('2 Partners');
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('500.000 VND');
+    expect(markup).toContain('id="booking-customer-detail"');
+    expect(markup).toContain('id="booking-matched-partner-detail"');
+    expect(markup).toContain('id="booking-finance-system-detail"');
+    expect(markup).toContain('booking-unified-participant-strip');
+    expect(markup).toContain('aria-label="Participating Partners"');
     expect(markup).toContain('href="/customers/customer-profile-1"');
     expect(markup).toContain('href="/partners/partner-1"');
   });
@@ -84,9 +91,20 @@ function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDe
         providerProfile: {
           displayName: 'Partner Matched',
           id: 'partner-1',
+          residentialAddress: 'Partner base, Ha Noi, Vietnam',
           user: { phone: '+84911111111' },
         },
         status: 'ACCEPTED',
+      },
+      {
+        id: 'participant-2',
+        providerProfileId: 'partner-2',
+        providerProfile: {
+          displayName: 'Partner Backup',
+          id: 'partner-2',
+          user: { phone: '+84922222222' },
+        },
+        status: 'JOINED',
       },
     ],
     payment: {
@@ -99,6 +117,7 @@ function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDe
     selectedProvider: {
       displayName: 'Partner Matched',
       id: 'partner-1',
+      residentialAddress: 'Partner base, Ha Noi, Vietnam',
       status: 'APPROVED',
       user: { phone: '+84911111111' },
     },

@@ -413,6 +413,9 @@ export const adminProviderOverviewSelect = {
 
 export const adminBookingDetailProviderSelect = {
   ...adminProviderSummarySelect,
+  city: true,
+  residentialAddress: true,
+  serviceArea: true,
   locationSnapshots: {
     orderBy: { recordedAt: 'desc' },
     take: 1,

@@ -4254,6 +4254,113 @@ a.action-button-card:hover {
   justify-self: flex-start;
 }
 
+.booking-unified-summary-card,
+.booking-unified-detail-card {
+  min-width: 0;
+}
+
+.booking-unified-detail-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.booking-unified-info-card {
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 8px;
+  min-height: 122px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.booking-unified-info-card.is-wide {
+  grid-column: span 2;
+}
+
+.booking-unified-info-label {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-transform: uppercase;
+}
+
+.booking-unified-value,
+.booking-unified-value-link {
+  color: var(--admin-text);
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 22px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.booking-unified-value-link:hover {
+  color: var(--admin-accent-strong);
+}
+
+.booking-unified-info-card > .muted {
+  line-height: 20px;
+  margin: 0;
+}
+
+.booking-unified-open-link {
+  align-self: end;
+  justify-self: flex-start;
+}
+
+.booking-unified-person {
+  min-width: 0;
+}
+
+.booking-unified-person .vuexy-booking-person-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.booking-unified-participant-strip {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.booking-unified-participant-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.booking-unified-participant-row {
+  align-items: baseline;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.booking-unified-participant-link {
+  color: var(--admin-text);
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  max-width: 100%;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-unified-participant-link:hover {
+  color: var(--admin-accent-strong);
+}
+
 .ops-command-center {
   display: flex;
   align-items: flex-start;
