@@ -49,6 +49,7 @@ type Props = {
   initialCustomDateFrom?: string;
   initialCustomDateTo?: string;
   initialDateRangeFilter?: BookingDateRangeFilter;
+  initialNowMs?: number;
   initialView: BookingView;
   initialEvidenceFilter?: BookingEvidenceFilter;
   initialGateFilter?: BookingGateFilter;
@@ -73,6 +74,7 @@ export function BookingMonitor({
   initialCustomDateFrom = '',
   initialCustomDateTo = '',
   initialDateRangeFilter = 'today',
+  initialNowMs = Date.now(),
   initialView,
   initialEvidenceFilter = 'all',
   initialGateFilter = 'all',
@@ -89,7 +91,7 @@ export function BookingMonitor({
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
-  const [nowMs, setNowMs] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState(initialNowMs);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<BookingView>(initialView);
@@ -101,7 +103,7 @@ export function BookingMonitor({
   const [customDateFrom, setCustomDateFrom] = useState(initialCustomDateFrom);
   const [customDateTo, setCustomDateTo] = useState(initialCustomDateTo);
   const [gateFilter, setGateFilter] = useState<BookingGateFilter>(initialGateFilter);
-  const currentTimeMs = nowMs ?? 0;
+  const currentTimeMs = nowMs;
   const markRefreshed = useCallback((refreshedAt: Date) => {
     setLastRefreshLabel(formatClockTime(refreshedAt));
     setNowMs(refreshedAt.getTime());

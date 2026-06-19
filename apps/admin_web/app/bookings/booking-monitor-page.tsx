@@ -123,6 +123,7 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       initialCustomDateTo={model.initialCustomDateTo}
       initialDateRangeFilter={model.initialDateRangeFilter}
       initialView={initialView}
+      initialNowMs={Date.now()}
       initialEvidenceFilter={model.initialEvidenceFilter}
       initialGateFilter={model.initialGateFilter}
       liveOperationsPolicy={model.liveOperationsPolicy}
