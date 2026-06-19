@@ -67,13 +67,11 @@ export class SelectBookingProviderDto {
 }
 
 class ProviderBookingActionLocationDto {
-  @IsOptional()
   @IsNumber()
-  lat?: number;
+  lat!: number;
 
-  @IsOptional()
   @IsNumber()
-  lng?: number;
+  lng!: number;
 
   @IsOptional()
   @IsString()

@@ -88,8 +88,17 @@ describe('booking request DTO validation', () => {
     });
   });
 
-  it('keeps optional partner action coordinates and strips unsupported fields', async () => {
+  it('requires partner action coordinates and strips unsupported fields', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        {
+          note: 'Customer requested cancellation after matching.',
+        },
+        { type: 'body', metatype: cancelProviderBookingBodyMetatype() as never, data: '' },
+      ),
+    ).rejects.toThrow();
 
     const transformed = await pipe.transform(
       {
