@@ -363,6 +363,36 @@ describe('BookingMonitorListSection', () => {
     ).toBe(2);
   });
 
+  it('shows the actual matched Partner in post-match in-progress rows', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No realtime bookings match filters."
+        rows={[
+          bookingRowFixture({
+            customerName: 'Working Customer',
+            id: 'booking_working_matched',
+            matchedAt: '2026-06-12T03:18:00.000Z',
+            openedDateLabel: '12 Jun 2026, 10:05',
+            selectedProviderId: 'partner_selected',
+            selectedProviderName: 'Partner Matched',
+            selectedProviderPhone: '+84922222222',
+            status: 'IN_SERVICE',
+            statusChangedAt: '2026-06-12T03:20:00.000Z',
+          }),
+        ]}
+        visibleGroupKeys={['post-match-in-progress']}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Matched');
+    expect(rendered).toContain('Partner Matched');
+    expect(rendered).toContain('+84922222222');
+    expect(markup).toContain('href="/partners/partner_selected"');
+  });
+
   it('sorts each status table by latest state change first', () => {
     const section = (
       <BookingMonitorListSection
@@ -669,9 +699,25 @@ function bookingRowFixture(input: {
   readonly id: string;
   readonly matchedAt?: string;
   readonly openedDateLabel: string;
+  readonly selectedProviderId?: string;
+  readonly selectedProviderName?: string;
+  readonly selectedProviderPhone?: string;
   readonly status: string;
   readonly statusChangedAt: string;
 }): BookingMonitorListRow {
+  const selectedProviderId =
+    input.selectedProviderId ??
+    (input.status === 'CANCELLED' || input.status === 'NO_SHOW' ? `${input.id}_partner` : null);
+  const selectedProvider =
+    selectedProviderId && input.selectedProviderName
+      ? {
+          displayName: input.selectedProviderName,
+          id: selectedProviderId,
+          user: {
+            phone: input.selectedProviderPhone,
+          },
+        }
+      : null;
   const booking = {
     address: {
       formattedAddress: '24 Le Loi, Da Nang',
@@ -693,8 +739,8 @@ function bookingRowFixture(input: {
         : null,
     id: input.id,
     matchedAt: input.matchedAt ?? null,
-    selectedProviderId:
-      input.status === 'CANCELLED' || input.status === 'NO_SHOW' ? `${input.id}_partner` : null,
+    selectedProvider,
+    selectedProviderId,
     status: input.status,
     statusChangedAt: input.statusChangedAt,
     statusChangedLabel:

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Eye, MessageSquare, PauseCircle, X } from 'lucide-react';
+import { Eye, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
@@ -9,7 +9,6 @@ import {
   adminPersonInitials,
 } from '../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
 import {
   adminAvatarStatusFromSignals,
   type AdminAvatarPushDeviceSignal,
@@ -20,7 +19,6 @@ import type { AdminBooking } from '../../lib/admin-api';
 import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
-import { approvePostMatchCancellation, holdPostMatchCancellation } from './actions';
 import { readAddressText, serviceAddressAreaLabel } from './booking-address-readers';
 import { formatBookingDate } from './booking-list-time';
 import {
@@ -29,16 +27,11 @@ import {
 } from './booking-post-match-chat-evidence';
 import {
   postMatchCancellationFeeStateLabel,
-  postMatchCancellationFeeStateTone,
   postMatchCancellationMinutesLabel,
   postMatchCancellationResolutionLabel,
-  postMatchCancellationResolutionTone,
-  postMatchCancellationTimingLabel,
-  postMatchCancellationTimingTone,
 } from './booking-post-match-cancellation-display';
 import {
   isPostMatchCancellationAutoApproved,
-  isPostMatchCancellationAutoApprovalEligible,
   isPostMatchCancellationBooking,
   isPostMatchCancellationManualReviewRequired,
   isPostMatchCancellationReviewBooking,
@@ -227,6 +220,17 @@ const BOOKING_TABLE_HEADERS = [
   'Address',
   'State',
 ] as const;
+const BOOKING_POST_MATCH_IN_PROGRESS_HEADERS = [
+  'Request Time',
+  'Customer',
+  'Requested',
+  'Participating',
+  'Matched',
+  'Country',
+  'Service Type',
+  'Address',
+  'State',
+] as const;
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
@@ -324,11 +328,17 @@ function BookingMonitorTableGroup({
   const pageTo = Math.min(group.rows.length, pageStartIndex + visibleRows.length);
 
   useEffect(() => {
-    setPage(1);
+    const timer = window.setTimeout(() => setPage(1), 0);
+
+    return () => window.clearTimeout(timer);
   }, [rowKey]);
 
   useEffect(() => {
-    setPage((currentPage) => Math.min(currentPage, totalPages));
+    const timer = window.setTimeout(() => {
+      setPage((currentPage) => Math.min(currentPage, totalPages));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [totalPages]);
 
   return (
@@ -345,11 +355,11 @@ function BookingMonitorTableGroup({
         <AdminDataTable
           className="vuexy-booking-table"
           emptyMessage={emptyMessage}
-          headers={BOOKING_TABLE_HEADERS}
+          headers={bookingTableHeaders(group.key)}
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
-            <BookingMonitorListTableRow key={row.booking.id} row={row} />
+            <BookingMonitorListTableRow groupKey={group.key} key={row.booking.id} row={row} />
           ))}
         </AdminDataTable>
       </AdminTableScroll>
@@ -403,8 +413,10 @@ function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly Boo
 }
 
 function BookingMonitorListTableRow({
+  groupKey,
   row,
 }: {
+  readonly groupKey: BookingTableGroupKey;
   readonly row: BookingMonitorListRow;
 }) {
   const { booking } = row;
@@ -459,6 +471,11 @@ function BookingMonitorListTableRow({
           <span className="muted">No Partner joined yet</span>
         )}
       </td>
+      {groupKey === 'post-match-in-progress' && (
+        <td>
+          <BookingMatchedPartnerCell booking={booking} />
+        </td>
+      )}
       <td>
         <BookingCountryCell country={countryDisplay} />
       </td>
@@ -480,136 +497,10 @@ function BookingMonitorListTableRow({
   );
 }
 
-function BookingPostMatchCancellationActionsCell({
-  onOpenChat,
-  row,
-}: {
-  readonly onOpenChat: (bookingId: string) => void;
-  readonly row: BookingMonitorListRow;
-}) {
-  const { booking } = row;
-  const isCancellation = isPostMatchCancellationBooking(booking);
-  const isReview = isPostMatchCancellationReviewBooking(booking);
-  const chatCount = booking.chatRoom?.messages?.length ?? 0;
-
-  if (!isReview) {
-    return (
-      <Link className="booking-action-button is-secondary" href={`/bookings/${booking.id}`}>
-        <Eye aria-hidden="true" size={14} />
-        Detail
-      </Link>
-    );
-  }
-
-  if (!isCancellation) {
-    return (
-      <div className="vuexy-booking-actions-cell">
-        <button
-          className="booking-action-button is-secondary"
-          onClick={() => onOpenChat(booking.id)}
-          type="button"
-        >
-          <MessageSquare aria-hidden="true" size={14} />
-          Chat ({chatCount})
-        </button>
-        <span className="pill pill-warn">No-show review</span>
-        <Link className="booking-action-button is-secondary" href={`/bookings/${booking.id}`}>
-          <Eye aria-hidden="true" size={14} />
-          Detail
-        </Link>
-      </div>
-    );
-  }
-
-  const resolution = postMatchCancellationResolution(booking);
-  const feeState = postMatchCancellationFeeState(booking);
-  const autoApprovalEligible = isPostMatchCancellationAutoApprovalEligible(booking);
-  const autoApproved = isPostMatchCancellationAutoApproved(booking);
-  const manualReviewRequired = isPostMatchCancellationManualReviewRequired(booking);
-  const minutesAfterMatch = postMatchCancellationMinutesAfterMatch(booking);
-
-  return (
-    <div className="vuexy-booking-actions-cell">
-      <button
-        className="booking-action-button is-secondary"
-        onClick={() => onOpenChat(booking.id)}
-        type="button"
-      >
-        <MessageSquare aria-hidden="true" size={14} />
-        Chat ({chatCount})
-      </button>
-      <span className={`pill ${postMatchCancellationFeeStateTone(feeState)}`}>
-        {postMatchCancellationFeeStateLabel(feeState)}
-      </span>
-      <span
-        className={`pill ${postMatchCancellationTimingTone({
-          autoApprovalEligible,
-          autoApproved,
-          manualReviewRequired,
-          minutesAfterMatch,
-        })}`}
-      >
-        {postMatchCancellationTimingLabel({
-          autoApprovalEligible,
-          autoApproved,
-          manualReviewRequired,
-          minutesAfterMatch,
-        })}
-      </span>
-      {manualReviewRequired && <span className="pill pill-warn">Admin review required</span>}
-      {resolution === 'pending' ? (
-        <ActionMenu
-          actions={postMatchCancellationDecisionActions(booking, autoApprovalEligible)}
-          className="booking-post-match-action-dropdown"
-          itemClassName="booking-post-match-action-item"
-          label={`Post-match cancellation actions for ${shortId(booking.id)}`}
-          menuClassName="booking-post-match-action-menu"
-          title="Resolve cancellation"
-          triggerClassName="booking-action-button is-secondary"
-          variant="dropdown"
-        />
-      ) : (
-        <span className={`pill ${postMatchCancellationResolutionTone(resolution)}`}>
-          {postMatchCancellationResolutionLabel(resolution, autoApproved)}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function postMatchCancellationDecisionActions(
-  booking: AdminBooking,
-  autoApprovalEligible: boolean,
-): readonly ActionMenuItem[] {
-  return [
-    {
-      action: approvePostMatchCancellation,
-      hiddenInputs: [
-        { name: 'bookingId', value: booking.id },
-        {
-          name: 'note',
-          value: autoApprovalEligible
-            ? 'Approved within 15-minute post-match cancellation window.'
-            : 'Approved after admin chat evidence review.',
-        },
-      ],
-      icon: CheckCircle2,
-      kind: 'submit',
-      label: 'Approve',
-      tone: 'success',
-    },
-    {
-      action: holdPostMatchCancellation,
-      hiddenInputs: [
-        { name: 'bookingId', value: booking.id },
-        { name: 'note', value: 'Held after admin chat evidence review.' },
-      ],
-      icon: PauseCircle,
-      kind: 'submit',
-      label: 'Hold',
-      tone: 'warning',
-    },
-  ];
+function bookingTableHeaders(groupKey: BookingTableGroupKey) {
+  return groupKey === 'post-match-in-progress'
+    ? BOOKING_POST_MATCH_IN_PROGRESS_HEADERS
+    : BOOKING_TABLE_HEADERS;
 }
 
 export function BookingPostMatchCancellationChatLayer({
@@ -909,6 +800,31 @@ function BookingParticipantAvatar({ participant }: { readonly participant: Booki
       {adminPersonInitials(participant.partnerLabel)}
       <AdminAvatarStatusDot status={participant.avatarStatus} />
     </Link>
+  );
+}
+
+function BookingMatchedPartnerCell({ booking }: { readonly booking: AdminBooking }) {
+  const selectedPartner = booking.selectedProvider ?? null;
+  const selectedPartnerId = selectedPartner?.id ?? booking.selectedProviderId ?? null;
+  const selectedPartnerHref = bookingPartnerHref(selectedPartnerId);
+
+  if (!selectedPartnerId) {
+    return <span className="muted">Not matched yet</span>;
+  }
+
+  const selectedPartnerFallback = selectedPartner ?? {
+    displayName: `Partner ${shortId(selectedPartnerId)}`,
+    id: selectedPartnerId,
+  };
+
+  return (
+    <BookingPersonCell
+      avatarStatus={bookingRequestedPartnerAvatarStatus(booking, selectedPartnerFallback)}
+      helper={selectedPartner?.user?.phone ?? 'Matched Partner'}
+      href={selectedPartnerHref}
+      label={providerTableLabel(selectedPartnerFallback)}
+      tone="partner"
+    />
   );
 }
 
