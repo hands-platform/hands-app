@@ -263,6 +263,10 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Operator notes');
     expect(markup).toContain('Completed booking review');
     expect(markup).toContain('Completed closeout');
+    expect(markup).toContain('Confirm the final finance state for this completed booking.');
+    expect(markup).toContain('booking-completed-closeout-panel');
+    expect(markup).toContain('Add a short reconciliation note.');
+    expect(markup).toContain('Reconcile booking');
     expect(markup.indexOf('Completed booking review')).toBeLessThan(markup.indexOf('Completed closeout'));
     expect(markup.indexOf('Completed closeout')).toBeLessThan(markup.indexOf('Operator notes'));
   });

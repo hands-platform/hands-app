@@ -2294,6 +2294,44 @@ a.action-button-card:hover {
   line-height: 18px;
 }
 
+.booking-completed-closeout-form {
+  margin-top: 14px;
+}
+
+.booking-completed-closeout-panel {
+  align-items: end;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 14px;
+}
+
+.booking-closeout-note-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.booking-closeout-note-label {
+  color: var(--admin-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.booking-closeout-note-help {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.booking-completed-closeout-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .booking-post-match-detail-evidence-grid {
   display: grid;
   gap: 12px;

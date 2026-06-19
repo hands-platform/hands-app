@@ -395,25 +395,39 @@ function BookingCompletedCloseoutSection({
   closeout: CloseoutState;
 }) {
   return (
-    <section className="card ops-command-center admin-mb-16" id="completed-closeout">
-      <div>
-        <h2>Completed closeout</h2>
-        <p className="muted">
-          Reconcile a completed service after operational edits or partial failure.
-        </p>
+    <section className="card admin-mb-16" id="completed-closeout">
+      <div className="ops-section-header">
+        <div>
+          <h2>Completed closeout</h2>
+          <p className="muted">
+            Confirm the final finance state for this completed booking.
+          </p>
+        </div>
+        <span className={`pill ${closeout.tone}`}>{closeout.label}</span>
       </div>
       {closeout.canSubmit ? (
-        <form action={closeoutCompletedBooking} className="ops-note-form">
+        <form action={closeoutCompletedBooking} className="ops-note-form booking-completed-closeout-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <textarea
-            aria-label="Closeout note"
-            name="note"
-            placeholder="Example: Reconciled after support confirmed service completion."
-          />
-          <button type="submit">Reconcile completed booking</button>
+          <div className="booking-completed-closeout-panel">
+            <div className="booking-closeout-note-field">
+              <span className="booking-closeout-note-label">Closeout note</span>
+              <textarea
+                aria-label="Closeout note"
+                name="note"
+                placeholder="Add a short reconciliation note."
+                rows={3}
+              />
+              <small className="booking-closeout-note-help">Use retained chat, payment, and Partner evidence.</small>
+            </div>
+            <div className="booking-completed-closeout-actions">
+              <button className="button button-primary admin-inline-action" type="submit">
+                Reconcile booking
+              </button>
+            </div>
+          </div>
         </form>
       ) : (
-        <span className={`pill ${closeout.tone}`}>{closeout.label}</span>
+        <p className="muted admin-mt-12">No manual closeout action is available for this booking.</p>
       )}
     </section>
   );
