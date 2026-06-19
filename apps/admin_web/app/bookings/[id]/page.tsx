@@ -130,6 +130,7 @@ import {
 } from './booking-detail-operator-command-queue';
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
+import { bookingDetailSectionVisibility } from './booking-detail-section-visibility';
 import { bookingUnifiedDetail } from './booking-unified-detail';
 import {
   BookingUnifiedDetailSection,
@@ -681,6 +682,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const unifiedDetailProps: BookingUnifiedDetailSectionProps = {
     unifiedDetail,
   };
+  const sectionVisibility = bookingDetailSectionVisibility({
+    hasChatMessages: messageCount > 0,
+    hasCloseoutExceptions: closeoutReadiness.openItems.length > 0,
+    hasEarning: Boolean(booking.earning),
+    hasFinanceFlags: financeFlags.length > 0,
+    hasMatchedAt: Boolean(booking.matchedAt),
+    hasNotifications: notificationCount > 0,
+    hasOperatorNotes: operatorNoteCount > 0,
+    hasPayment: Boolean(booking.payment),
+    hasPostMatchDecision: showPostMatchDecisionBelowLifecycle,
+    hasSelectedPartner: Boolean(booking.selectedProviderId || booking.selectedProvider),
+    status: booking.status,
+  });
 
   return (
     <div className="booking-detail-page">
@@ -701,62 +715,72 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingActionStatusSections {...actionStatusSectionsProps} />
 
-      <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
+      {sectionVisibility.showCloseoutReadiness && (
+        <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
+      )}
 
-      <BookingDetailDisclosureGroup
-        helper="Chat, closeout, operator queue, handoff, and connected records are kept here for decision evidence."
-        label="Evidence"
-        title="Evidence and closeout records"
-      >
-        <BookingEvidenceSections {...evidenceSectionsProps} />
-        <BookingCloseoutSections {...closeoutSectionsProps} />
-        <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
-        <BookingHandoffChecklistSection {...handoffChecklistProps} />
-        <BookingFullRecordIndex {...fullRecordIndexProps} />
-      </BookingDetailDisclosureGroup>
+      {sectionVisibility.showEvidenceDisclosure && (
+        <BookingDetailDisclosureGroup
+          helper="Chat, closeout, operator queue, handoff, and connected records are kept here for decision evidence."
+          label="Evidence"
+          title="Evidence and closeout records"
+        >
+          <BookingEvidenceSections {...evidenceSectionsProps} />
+          <BookingCloseoutSections {...closeoutSectionsProps} />
+          <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
+          <BookingHandoffChecklistSection {...handoffChecklistProps} />
+          <BookingFullRecordIndex {...fullRecordIndexProps} />
+        </BookingDetailDisclosureGroup>
+      )}
 
-      <BookingDetailDisclosureGroup
-        helper="Policy, address radius, customer wait, and marketplace supply checks for Partner matching."
-        label="Dispatch"
-        title="Dispatch and supply checks"
-      >
-        <BookingStageSnapshotSection {...stageSnapshotProps} />
-        <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
-        <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
-        <BookingAppliedPolicySection {...appliedPolicyProps} />
-        <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
-        <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
-        <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
-      </BookingDetailDisclosureGroup>
+      {sectionVisibility.showDispatchDisclosure && (
+        <BookingDetailDisclosureGroup
+          helper="Policy, address radius, customer wait, and marketplace supply checks for Partner matching."
+          label="Dispatch"
+          title="Dispatch and supply checks"
+        >
+          <BookingStageSnapshotSection {...stageSnapshotProps} />
+          <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
+          <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
+          <BookingAppliedPolicySection {...appliedPolicyProps} />
+          <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
+          <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
+          <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
+        </BookingDetailDisclosureGroup>
+      )}
 
-      <BookingDetailDisclosureGroup
-        helper="Live service movement, communication, alerts, audit, and activity timeline."
-        label="History"
-        title="Operating history"
-      >
-        <BookingOperatingLedgerSection {...operatingLedgerProps} />
-        <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
-        <BookingOperatingTimelineSection {...operatingTimelineProps} />
-        <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-        <BookingChatLifecycleSection {...chatLifecycleProps} />
-        <BookingOpsCommandCenter {...opsCommandCenterProps} />
-        <BookingAlertTraceSection {...alertTraceProps} />
-        <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
-        <BookingAttentionChecksSection {...attentionChecksProps} />
-        <BookingActivityPanel {...activityPanelProps} />
-      </BookingDetailDisclosureGroup>
+      {sectionVisibility.showHistoryDisclosure && (
+        <BookingDetailDisclosureGroup
+          helper="Live service movement, communication, alerts, audit, and activity timeline."
+          label="History"
+          title="Operating history"
+        >
+          <BookingOperatingLedgerSection {...operatingLedgerProps} />
+          <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+          <BookingOperatingTimelineSection {...operatingTimelineProps} />
+          <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+          <BookingChatLifecycleSection {...chatLifecycleProps} />
+          <BookingOpsCommandCenter {...opsCommandCenterProps} />
+          <BookingAlertTraceSection {...alertTraceProps} />
+          <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
+          <BookingAttentionChecksSection {...attentionChecksProps} />
+          <BookingActivityPanel {...activityPanelProps} />
+        </BookingDetailDisclosureGroup>
+      )}
 
-      <BookingDetailDisclosureGroup
-        helper="Wallet evidence, finance checks, payout eligibility, service pricing, and complete booking records."
-        label="Records"
-        title="Settlement and record detail"
-      >
-        <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-        <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
-        <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
-        <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
-        <BookingRecordDetailSections {...recordDetailSectionsProps} />
-      </BookingDetailDisclosureGroup>
+      {sectionVisibility.showSettlementDisclosure && (
+        <BookingDetailDisclosureGroup
+          helper="Wallet evidence, finance checks, payout eligibility, service pricing, and complete booking records."
+          label="Records"
+          title="Settlement and record detail"
+        >
+          <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
+          <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
+          <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
+          <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
+          <BookingRecordDetailSections {...recordDetailSectionsProps} />
+        </BookingDetailDisclosureGroup>
+      )}
     </div>
   );
 }
