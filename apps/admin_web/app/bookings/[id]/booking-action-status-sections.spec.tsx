@@ -237,21 +237,19 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Operator notes');
   });
 
-  it('renders operator notes with the Vuexy full editor shell', () => {
+  it('renders operator notes with a simple text area', () => {
     const markup = render();
 
-    expect(markup).toContain('aria-label="Operator note full editor"');
-    expect(markup).toContain('class="vuexy-full-editor"');
-    expect(markup).toContain('class="vuexy-full-editor-content"');
+    expect(markup).toContain('aria-label="Operator note"');
+    expect(markup).toContain('class="ops-note-textarea"');
+    expect(markup).toContain('placeholder="Example: Called Partner, confirmed arrival in 15 minutes."');
     expect(markup).toContain('class="ops-note-panel-header"');
     expect(markup).toContain('class="ops-note-history"');
-    expect(markup).toContain('title="Bold"');
-    expect(markup).toContain('title="Text color"');
-    expect(markup).toContain('aria-label="Apply text color Red"');
-    expect(markup).toContain('placeholder="Image URL"');
-    expect(markup).toContain('Insert image');
     expect(markup).toContain('name="note"');
     expect(markup).toContain('Add note');
+    expect(markup).not.toContain('Operator note full editor');
+    expect(markup).not.toContain('Insert image');
+    expect(markup).not.toContain('Text color');
     expect(markup).not.toContain('Customer contacted');
     expect(markup).not.toContain('Partner contacted');
     expect(markup).not.toContain('Payment reviewed');
