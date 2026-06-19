@@ -49,22 +49,8 @@ describe('BookingMonitorFiltersSection', () => {
         { label: 'Last month', value: '30d' },
         { label: 'Custom dates', value: 'custom' },
       ],
-      evidenceFilter: 'all',
-      evidenceFilterOptions: [
-        { label: 'All evidence', value: 'all' },
-        { label: 'Payment / wallet check', value: 'money' },
-      ],
       onDateRangeFilterChange: jest.fn(),
-      onEvidenceFilterChange: jest.fn(),
-      onPaymentFilterChange: jest.fn(),
-      onSearchQueryChange: jest.fn(),
-      onStatusFilterChange: jest.fn(),
       onViewChange: jest.fn(),
-      paymentFilter: 'all',
-      paymentFilterOptions: ['CASH', 'MOMO'],
-      searchQuery: 'demo',
-      statusFilter: 'all',
-      statusFilterOptions: ['OPEN_MATCHING', 'NO_SHOW'],
       view: 'active',
       viewCounts: new Map([
         ['active', 3],
@@ -83,14 +69,16 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Active bookings');
     expect(rendered).toContain('Current active bookings.');
     expect(rendered).toContain('Showing 3 of 7');
-    expect(rendered).toContain('All statuses');
-    expect(rendered).toContain('CASH');
     expect(rendered).toContain('Today');
     expect(rendered).toContain('Previous day');
     expect(rendered).toContain('Last 7 days');
     expect(rendered).toContain('Last month');
     expect(rendered).toContain('Custom dates');
-    expect(rendered).toContain('Payment / wallet check');
+    expect(rendered).not.toContain('All dates');
+    expect(rendered).not.toContain('All statuses');
+    expect(rendered).not.toContain('Payment method');
+    expect(rendered).not.toContain('Evidence filter');
+    expect(rendered).not.toContain('Search booking/customer/Partner');
     expect(rendered).not.toContain('Clear list filters');
     expect(rendered).toContain('Active bookings (3)');
     expect(rendered).toContain('All bookings (7)');
@@ -101,10 +89,11 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Post-match cancellations (1)');
     expect(rendered).not.toContain('No-show (0)');
     expect(rendered).toContain('Start with active bookings.');
+    expect(renderToStaticMarkup(section)).toContain('aria-pressed="true"');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'admin-form-search booking-monitor-search',
-        'admin-form-select booking-monitor-select',
+        'booking-date-filter-bar admin-mb-14',
+        'booking-date-filter-buttons',
       ]),
     );
   });
@@ -115,18 +104,7 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[4],
           baseVisibleBookingCount: 0,
-          evidenceFilter: 'all',
-          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onEvidenceFilterChange: jest.fn(),
-          onPaymentFilterChange: jest.fn(),
-          onSearchQueryChange: jest.fn(),
-          onStatusFilterChange: jest.fn(),
           onViewChange: jest.fn(),
-          paymentFilter: 'all',
-          paymentFilterOptions: [],
-          searchQuery: '',
-          statusFilter: 'all',
-          statusFilterOptions: [],
           view: 'no-show',
           viewCounts: new Map([
             ['active', 3],
@@ -155,21 +133,10 @@ describe('BookingMonitorFiltersSection', () => {
       customDateTo: '2026-06-19',
       dateRangeFilter: 'custom',
       dateRangeFilterOptions: [{ label: 'Custom dates', value: 'custom' }],
-      evidenceFilter: 'money',
-      evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
       onCustomDateFromChange: jest.fn(),
       onCustomDateToChange: jest.fn(),
       onDateRangeFilterChange: jest.fn(),
-      onEvidenceFilterChange: jest.fn(),
-      onPaymentFilterChange: jest.fn(),
-      onSearchQueryChange: jest.fn(),
-      onStatusFilterChange: jest.fn(),
       onViewChange: jest.fn(),
-      paymentFilter: 'CASH',
-      paymentFilterOptions: [],
-      searchQuery: 'demo',
-      statusFilter: 'NO_SHOW',
-      statusFilterOptions: [],
       view: 'all',
       viewCounts: new Map(),
       viewOptions,
@@ -179,10 +146,11 @@ describe('BookingMonitorFiltersSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Custom dates');
-    expect(markup).toContain('name="bookingCustomDateFrom"');
-    expect(markup).toContain('name="bookingCustomDateTo"');
+    expect(markup).toContain('name="dateFrom"');
+    expect(markup).toContain('name="dateTo"');
     expect(markup).toContain('value="2026-06-01"');
     expect(markup).toContain('value="2026-06-19"');
+    expect(rendered).toContain('Apply dates');
     expect(rendered).toContain('Showing 7 of 7');
   });
 
@@ -192,18 +160,7 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[2],
           baseVisibleBookingCount: 2,
-          evidenceFilter: 'all',
-          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onEvidenceFilterChange: jest.fn(),
-          onPaymentFilterChange: jest.fn(),
-          onSearchQueryChange: jest.fn(),
-          onStatusFilterChange: jest.fn(),
           onViewChange: jest.fn(),
-          paymentFilter: 'all',
-          paymentFilterOptions: [],
-          searchQuery: '',
-          statusFilter: 'all',
-          statusFilterOptions: [],
           view: 'closeout',
           viewCounts: new Map([
             ['active', 3],
@@ -230,19 +187,8 @@ describe('BookingMonitorFiltersSection', () => {
         BookingMonitorFiltersSection({
           activeView: viewOptions[2],
           baseVisibleBookingCount: 2,
-          evidenceFilter: 'all',
-          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onEvidenceFilterChange: jest.fn(),
-          onPaymentFilterChange: jest.fn(),
-          onSearchQueryChange: jest.fn(),
-          onStatusFilterChange: jest.fn(),
           onViewChange: jest.fn(),
-          paymentFilter: 'all',
-          paymentFilterOptions: [],
-          searchQuery: '',
           showEmptyViewOptions: true,
-          statusFilter: 'all',
-          statusFilterOptions: [],
           view: 'closeout',
           viewCounts: new Map([
             ['closeout', 2],

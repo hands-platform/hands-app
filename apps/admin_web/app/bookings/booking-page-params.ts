@@ -1,4 +1,5 @@
 import type { BookingGateFilter } from './booking-gate-filters';
+import type { BookingDateRangeFilter } from './booking-date-range-filter';
 
 export type BookingPageView =
   | 'active'
@@ -83,6 +84,14 @@ const BOOKING_GATE_FILTERS = new Set<BookingGateFilter>([
   'unknown',
 ]);
 
+const BOOKING_DATE_RANGE_FILTERS = new Set<BookingDateRangeFilter>([
+  'today',
+  'yesterday',
+  '7d',
+  '30d',
+  'custom',
+]);
+
 export function readBookingView(
   value: string | string[] | undefined,
   statusValue?: string | string[] | undefined,
@@ -111,6 +120,18 @@ export function readBookingEvidenceFilter(value: string | string[] | undefined):
 export function readBookingGateFilter(value: string | string[] | undefined): BookingGateFilter {
   const gate = readSearchParam(value);
   return BOOKING_GATE_FILTERS.has(gate as BookingGateFilter) ? (gate as BookingGateFilter) : 'all';
+}
+
+export function readBookingDateRangeFilter(value: string | string[] | undefined): BookingDateRangeFilter {
+  const range = readSearchParam(value);
+  return BOOKING_DATE_RANGE_FILTERS.has(range as BookingDateRangeFilter)
+    ? (range as BookingDateRangeFilter)
+    : 'today';
+}
+
+export function readBookingDateInput(value: string | string[] | undefined) {
+  const date = readSearchParam(value);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date ?? '') ? (date as string) : '';
 }
 
 function readSearchParam(value: string | string[] | undefined) {

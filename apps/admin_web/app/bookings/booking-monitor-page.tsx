@@ -25,6 +25,7 @@ const bookingMonitorRouteConfig = {
   all: {
     defaultView: 'all',
     pageDescription: 'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
+    pagePath: '/bookings',
     pageTitle: 'Booking Monitor',
     showMatchingEscalation: false,
     showEmptyViewOptions: false,
@@ -42,6 +43,7 @@ const bookingMonitorRouteConfig = {
   completed: {
     defaultView: 'closeout',
     pageDescription: 'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
+    pagePath: '/bookings/completed',
     pageTitle: 'Completed Bookings',
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
@@ -59,6 +61,7 @@ const bookingMonitorRouteConfig = {
   postMatchCancellations: {
     defaultView: 'post-match-cancellations',
     pageDescription: 'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
+    pagePath: '/bookings/post-match-cancellations',
     pageTitle: 'Post-match Cancellations',
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
@@ -78,6 +81,7 @@ const bookingMonitorRouteConfig = {
   {
     readonly defaultView: BookingPageView;
     readonly pageDescription: string;
+    readonly pagePath: string;
     readonly pageTitle: string;
     readonly showMatchingEscalation: boolean;
     readonly showEmptyViewOptions: boolean;
@@ -113,6 +117,11 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
     <BookingMonitor
       bookings={bookings}
       bookingCreateRejections={model.bookingCreateRejections}
+      dateRangePath={config.pagePath}
+      dateRangeSearchParams={searchParamEntries(params)}
+      initialCustomDateFrom={model.initialCustomDateFrom}
+      initialCustomDateTo={model.initialCustomDateTo}
+      initialDateRangeFilter={model.initialDateRangeFilter}
       initialView={initialView}
       initialEvidenceFilter={model.initialEvidenceFilter}
       initialGateFilter={model.initialGateFilter}
@@ -127,6 +136,20 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       viewOptions={config.viewOptions}
     />
   );
+}
+
+function searchParamEntries(params: Record<string, string | string[] | undefined> | undefined) {
+  const entries: Array<readonly [string, string]> = [];
+
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => entries.push([key, item]));
+    } else if (value !== undefined) {
+      entries.push([key, value]);
+    }
+  }
+
+  return entries;
 }
 
 function resolveInitialViewForRoute(

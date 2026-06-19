@@ -14,8 +14,7 @@ import {
 } from './booking-date-range-filter';
 import { bookingTimestamp, formatBookingClockTime as formatClockTime } from './booking-list-time';
 import type { BookingGateFilter } from './booking-gate-filters';
-import { bookingPaymentFilterOptions, bookingStatusFilterOptions } from './booking-monitor-filter-options';
-import { bookingEvidenceFilterOptions, bookingViewOptions } from './booking-monitor-options';
+import { bookingViewOptions } from './booking-monitor-options';
 import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
@@ -45,6 +44,11 @@ import { BookingPostMatchCancellationsSection } from './booking-post-match-cance
 type Props = {
   bookings: AdminBooking[];
   bookingCreateRejections?: AdminAuditLog[];
+  dateRangePath?: string;
+  dateRangeSearchParams?: readonly (readonly [string, string])[];
+  initialCustomDateFrom?: string;
+  initialCustomDateTo?: string;
+  initialDateRangeFilter?: BookingDateRangeFilter;
   initialView: BookingView;
   initialEvidenceFilter?: BookingEvidenceFilter;
   initialGateFilter?: BookingGateFilter;
@@ -64,6 +68,11 @@ type BookingView = BookingPageView;
 export function BookingMonitor({
   bookings,
   bookingCreateRejections = [],
+  dateRangePath = '/bookings',
+  dateRangeSearchParams = [],
+  initialCustomDateFrom = '',
+  initialCustomDateTo = '',
+  initialDateRangeFilter = 'today',
   initialView,
   initialEvidenceFilter = 'all',
   initialGateFilter = 'all',
@@ -84,13 +93,13 @@ export function BookingMonitor({
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<BookingView>(initialView);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
-  const [dateRangeFilter, setDateRangeFilter] = useState<BookingDateRangeFilter>('all');
-  const [customDateFrom, setCustomDateFrom] = useState('');
-  const [customDateTo, setCustomDateTo] = useState('');
-  const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>(initialEvidenceFilter);
+  const searchQuery = '';
+  const statusFilter = 'all';
+  const paymentFilter = 'all';
+  const evidenceFilter = initialEvidenceFilter;
+  const [dateRangeFilter, setDateRangeFilter] = useState<BookingDateRangeFilter>(initialDateRangeFilter);
+  const [customDateFrom, setCustomDateFrom] = useState(initialCustomDateFrom);
+  const [customDateTo, setCustomDateTo] = useState(initialCustomDateTo);
   const [gateFilter, setGateFilter] = useState<BookingGateFilter>(initialGateFilter);
   const currentTimeMs = nowMs ?? 0;
   const markRefreshed = useCallback((refreshedAt: Date) => {
@@ -198,9 +207,6 @@ export function BookingMonitor({
         .map((booking) => buildBookingMonitorListRow(booking, currentTimeMs, nowMs)),
     [currentTimeMs, nowMs, visibleBookings],
   );
-  const statusFilterOptions = useMemo(() => bookingStatusFilterOptions(orderedBookings), [orderedBookings]);
-  const paymentFilterOptions = useMemo(() => bookingPaymentFilterOptions(orderedBookings), [orderedBookings]);
-
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView =
     viewOptions.find((item) => item.view === view) ??
@@ -239,6 +245,23 @@ export function BookingMonitor({
     });
   };
   const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
+  const dateRangeHrefFor = useCallback(
+    (range: BookingDateRangeFilter) =>
+      bookingDateRangeHref({
+        customDateFrom,
+        customDateTo,
+        path: dateRangePath,
+        range,
+        searchParams: dateRangeSearchParams,
+      }),
+    [customDateFrom, customDateTo, dateRangePath, dateRangeSearchParams],
+  );
+
+  useEffect(() => {
+    setDateRangeFilter(initialDateRangeFilter);
+    setCustomDateFrom(initialCustomDateFrom);
+    setCustomDateTo(initialCustomDateTo);
+  }, [initialCustomDateFrom, initialCustomDateTo, initialDateRangeFilter]);
 
   return (
     <div className="booking-monitor">
@@ -278,24 +301,16 @@ export function BookingMonitor({
         baseVisibleBookingCount={visibleBookingModel.baseVisibleBookingCount}
         customDateFrom={customDateFrom}
         customDateTo={customDateTo}
+        dateRangeFormAction={dateRangePath}
         dateRangeFilter={dateRangeFilter}
+        dateRangeHiddenInputs={dateRangeSearchParams}
+        dateRangeHrefFor={dateRangeHrefFor}
         dateRangeFilterOptions={bookingDateRangeFilterOptions}
-        evidenceFilter={evidenceFilter}
-        evidenceFilterOptions={bookingEvidenceFilterOptions}
         onCustomDateFromChange={setCustomDateFrom}
         onCustomDateToChange={setCustomDateTo}
         onDateRangeFilterChange={setDateRangeFilter}
-        onEvidenceFilterChange={setEvidenceFilter}
-        onPaymentFilterChange={setPaymentFilter}
-        onSearchQueryChange={setSearchQuery}
-        onStatusFilterChange={setStatusFilter}
         onViewChange={setView}
-        paymentFilter={paymentFilter}
-        paymentFilterOptions={paymentFilterOptions}
-        searchQuery={searchQuery}
         showEmptyViewOptions={showEmptyViewOptions}
-        statusFilter={statusFilter}
-        statusFilterOptions={statusFilterOptions}
         view={view}
         viewCounts={bookingViewCounts}
         viewOptions={viewOptions}
@@ -321,6 +336,42 @@ export function BookingMonitor({
       )}
     </div>
   );
+}
+
+function bookingDateRangeHref({
+  customDateFrom,
+  customDateTo,
+  path,
+  range,
+  searchParams,
+}: {
+  readonly customDateFrom: string;
+  readonly customDateTo: string;
+  readonly path: string;
+  readonly range: BookingDateRangeFilter;
+  readonly searchParams: readonly (readonly [string, string])[];
+}) {
+  const params = new URLSearchParams(searchParams.map(([key, value]) => [key, value]));
+  params.set('dateRange', range);
+
+  if (range === 'custom') {
+    setOptionalSearchParam(params, 'dateFrom', customDateFrom);
+    setOptionalSearchParam(params, 'dateTo', customDateTo);
+  } else {
+    params.delete('dateFrom');
+    params.delete('dateTo');
+  }
+
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+function setOptionalSearchParam(params: URLSearchParams, key: string, value: string) {
+  if (value) {
+    params.set(key, value);
+  } else {
+    params.delete(key);
+  }
 }
 
 function compareBookingRequestTimeDescending(left: AdminBooking, right: AdminBooking) {

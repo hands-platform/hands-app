@@ -1,22 +1,13 @@
-import {
-  AdminFormDate,
-  AdminFormSearch,
-  AdminFormSelect,
-} from '../../components/admin-form-controls';
+import { AdminFormDate } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import type { BookingDateRangeFilter } from './booking-date-range-filter';
-import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
+import type { BookingPageView } from './booking-page-params';
 
 export type BookingMonitorViewOption = {
   readonly description: string;
   readonly label: string;
   readonly operatorHint: string;
   readonly view: BookingPageView;
-};
-
-export type BookingMonitorEvidenceFilterOption = {
-  readonly label: string;
-  readonly value: BookingEvidenceFilter;
 };
 
 export type BookingMonitorDateRangeFilterOption = {
@@ -41,24 +32,16 @@ type BookingMonitorFiltersSectionProps = {
   readonly baseVisibleBookingCount: number;
   readonly customDateFrom?: string;
   readonly customDateTo?: string;
+  readonly dateRangeFormAction?: string;
   readonly dateRangeFilter?: BookingDateRangeFilter;
+  readonly dateRangeHiddenInputs?: readonly (readonly [string, string])[];
+  readonly dateRangeHrefFor?: (value: BookingDateRangeFilter) => string;
   readonly dateRangeFilterOptions?: readonly BookingMonitorDateRangeFilterOption[];
-  readonly evidenceFilter: BookingEvidenceFilter;
-  readonly evidenceFilterOptions: readonly BookingMonitorEvidenceFilterOption[];
   readonly onCustomDateFromChange?: (value: string) => void;
   readonly onCustomDateToChange?: (value: string) => void;
   readonly onDateRangeFilterChange?: (value: BookingDateRangeFilter) => void;
-  readonly onEvidenceFilterChange: (value: BookingEvidenceFilter) => void;
-  readonly onPaymentFilterChange: (value: string) => void;
-  readonly onSearchQueryChange: (value: string) => void;
-  readonly onStatusFilterChange: (value: string) => void;
   readonly onViewChange: (value: BookingPageView) => void;
-  readonly paymentFilter: string;
-  readonly paymentFilterOptions: readonly string[];
-  readonly searchQuery: string;
   readonly showEmptyViewOptions?: boolean;
-  readonly statusFilter: string;
-  readonly statusFilterOptions: readonly string[];
   readonly view: BookingPageView;
   readonly viewCounts: ReadonlyMap<string, number>;
   readonly viewOptions: readonly BookingMonitorViewOption[];
@@ -121,24 +104,16 @@ export function BookingMonitorFiltersSection({
   baseVisibleBookingCount,
   customDateFrom = '',
   customDateTo = '',
-  dateRangeFilter = 'all',
+  dateRangeFormAction = '/bookings',
+  dateRangeFilter = 'today',
+  dateRangeHiddenInputs = [],
+  dateRangeHrefFor = defaultDateRangeHrefFor,
   dateRangeFilterOptions = [],
-  evidenceFilter,
-  evidenceFilterOptions,
   onCustomDateFromChange = noop,
   onCustomDateToChange = noop,
   onDateRangeFilterChange = noop,
-  onEvidenceFilterChange,
-  onPaymentFilterChange,
-  onSearchQueryChange,
-  onStatusFilterChange,
   onViewChange,
-  paymentFilter,
-  paymentFilterOptions,
-  searchQuery,
   showEmptyViewOptions = false,
-  statusFilter,
-  statusFilterOptions,
   view,
   viewCounts,
   viewOptions,
@@ -157,6 +132,8 @@ export function BookingMonitorFiltersSection({
       ),
     }))
     .filter(({ options }) => options.length > 0);
+  const visibleDateRangeOptions = dateRangeFilterOptions.filter((option) => option.value !== 'all');
+  const showCustomDateRange = dateRangeFilter === 'custom';
 
   return (
     <AdminFilterPanel
@@ -172,67 +149,49 @@ export function BookingMonitorFiltersSection({
       title="Booking operation filters"
       footer={<p className="muted">{activeView.operatorHint}</p>}
     >
-      <div className="ops-filter-grid admin-mb-14">
-        <AdminFormSearch
-          className="booking-monitor-search"
-          label="Search booking/customer/Partner"
-          name="bookingSearch"
-          onChange={(event) => onSearchQueryChange(event.target.value)}
-          placeholder="Booking ID, phone, Partner, customer, service"
-          value={searchQuery}
-        />
-        <AdminFormSelect
-          className="booking-monitor-select"
-          label="Booking status"
-          name="bookingStatus"
-          onChange={(event) => onStatusFilterChange(event.target.value)}
-          options={[
-            { label: 'All statuses', value: 'all' },
-            ...statusFilterOptions.map((status) => ({ label: status, value: status })),
-          ]}
-          value={statusFilter}
-        />
-        <AdminFormSelect
-          className="booking-monitor-select"
-          label="Payment method"
-          name="paymentMethod"
-          onChange={(event) => onPaymentFilterChange(event.target.value)}
-          options={[
-            { label: 'All methods', value: 'all' },
-            ...paymentFilterOptions.map((method) => ({ label: method, value: method })),
-          ]}
-          value={paymentFilter}
-        />
-        <AdminFormSelect
-          className="booking-monitor-select"
-          label="List date range"
-          name="bookingDateRange"
-          onChange={(event) => onDateRangeFilterChange(event.target.value as BookingDateRangeFilter)}
-          options={dateRangeFilterOptions}
-          value={dateRangeFilter}
-        />
-        <AdminFormDate
-          className="booking-monitor-date"
-          label="Custom date from"
-          name="bookingCustomDateFrom"
-          onChange={(event) => onCustomDateFromChange(event.target.value)}
-          value={customDateFrom}
-        />
-        <AdminFormDate
-          className="booking-monitor-date"
-          label="Custom date to"
-          name="bookingCustomDateTo"
-          onChange={(event) => onCustomDateToChange(event.target.value)}
-          value={customDateTo}
-        />
-        <AdminFormSelect
-          className="booking-monitor-select"
-          label="Evidence filter"
-          name="evidenceFilter"
-          onChange={(event) => onEvidenceFilterChange(event.target.value as BookingEvidenceFilter)}
-          options={evidenceFilterOptions}
-          value={evidenceFilter}
-        />
+      <div className="booking-date-filter-bar admin-mb-14" aria-label="Booking list date range">
+        <div className="booking-date-filter-buttons" role="group" aria-label="Booking list period">
+          {visibleDateRangeOptions.map((option) => (
+            <a
+              key={option.value}
+              aria-pressed={dateRangeFilter === option.value}
+              className={dateRangeFilter === option.value ? 'is-active' : undefined}
+              href={dateRangeHrefFor(option.value)}
+              onClick={(event) => {
+                event.preventDefault();
+                onDateRangeFilterChange(option.value);
+              }}
+              role="button"
+            >
+              {option.label}
+            </a>
+          ))}
+        </div>
+        {showCustomDateRange && (
+          <form className="booking-custom-date-grid" action={dateRangeFormAction} method="get">
+            {dateRangeHiddenInputs
+              .filter(([key]) => !['dateRange', 'dateFrom', 'dateTo'].includes(key))
+              .map(([key, value], index) => (
+                <input key={`${key}-${index}`} type="hidden" name={key} value={value} />
+              ))}
+            <input type="hidden" name="dateRange" value="custom" />
+            <AdminFormDate
+              className="booking-monitor-date"
+              label="Custom date from"
+              name="dateFrom"
+              onChange={(event) => onCustomDateFromChange(event.target.value)}
+              value={customDateFrom}
+            />
+            <AdminFormDate
+              className="booking-monitor-date"
+              label="Custom date to"
+              name="dateTo"
+              onChange={(event) => onCustomDateToChange(event.target.value)}
+              value={customDateTo}
+            />
+            <button className="booking-date-apply-button" type="submit">Apply dates</button>
+          </form>
+        )}
       </div>
       <div className="booking-monitor-view-categories" aria-label="Booking operation categories">
         {categorizedViewOptions.map(({ category, options }) => (
@@ -263,4 +222,8 @@ export function BookingMonitorFiltersSection({
 
 function noop() {
   // Optional handlers let focused unit tests render this component without wiring every control.
+}
+
+function defaultDateRangeHrefFor(value: BookingDateRangeFilter) {
+  return `?dateRange=${value}`;
 }
