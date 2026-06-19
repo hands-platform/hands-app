@@ -103,7 +103,17 @@ function buildProps(overrides: Partial<SectionsProps> = {}): SectionsProps {
     financeRows: [{ label: 'Finance state', value: 'Balanced' }],
     hasLatestPartnerLocation: true,
     handoffRows: [{ label: 'Handoff status', value: 'Ready' }],
-    locationTrailRows: [{ id: 'location_1', coordinate: '10.1, 106.1', recordedAt: 'Just now' }],
+    locationTrailRows: [
+      {
+        badge: 'Action',
+        badgeTone: 'pill-info',
+        coordinate: 'District 1, Ho Chi Minh City',
+        detail: 'Pin 10.1, 106.1',
+        id: 'location_1',
+        label: 'Booking action snapshot',
+        recordedAt: 'Just now',
+      },
+    ],
     participantLedger,
     paymentRows: [{ label: 'Payment status', value: 'Captured' }],
     serviceRows: [{ label: 'Service', value: 'Deep tissue massage' }],
@@ -138,6 +148,9 @@ describe('BookingRecordDetailSections', () => {
     expect(markup.match(/vuexy-booking-person/g)).toHaveLength(1);
     expect(markup.match(/Linked in toolbar/g)).toHaveLength(2);
     expect(markup).toContain('href="/partners/partner_1"');
+    expect(markup).toContain('Booking action snapshot');
+    expect(markup).toContain('District 1, Ho Chi Minh City');
+    expect(markup).toContain('Pin 10.1, 106.1');
   });
 
   it('renders empty participant and handoff states', () => {

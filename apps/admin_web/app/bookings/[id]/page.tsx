@@ -565,7 +565,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     showLiveServiceBoard: booking.status === 'MATCHED' || booking.status === 'IN_SERVICE',
     showOutcomeReview: !showPostMatchDecisionBelowLifecycle,
   };
-  const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
+  const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots, booking.id);
   const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
   const bookingRecordServiceRows = bookingDetailServiceRows(booking);
   const bookingRecordHandoffRows = bookingDetailHandoffRows({

@@ -7,6 +7,7 @@ import {
   formatDate,
   providerName,
 } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import { bookingDetailProviderLocationMetricHelper } from './booking-provider-location-metric';
 import { bookingRecordServiceRows as buildBookingRecordServiceRows } from './booking-record-info-rows';
 
@@ -67,10 +68,28 @@ export function bookingDetailHandoffRows({
   ];
 }
 
-export function bookingDetailLocationTrailRows(locationTrailSnapshots: readonly AdminLocationSnapshot[]) {
+export function bookingDetailLocationTrailRows(
+  locationTrailSnapshots: readonly AdminLocationSnapshot[],
+  bookingId?: string | null,
+) {
   return locationTrailSnapshots.map((snapshot) => ({
+    badge: bookingId && snapshot.bookingId === bookingId ? 'Action' : 'Live',
+    badgeTone: bookingId && snapshot.bookingId === bookingId ? 'pill-info' : 'pill-neutral',
+    coordinate: locationTrailDisplayValue(snapshot),
+    detail: locationTrailDetail(snapshot),
     id: snapshot.id,
-    coordinate: coordinateLabel(snapshot.lat, snapshot.lng),
+    label: bookingId && snapshot.bookingId === bookingId ? 'Booking action snapshot' : 'Partner live snapshot',
     recordedAt: formatDate(snapshot.recordedAt),
   }));
+}
+
+function locationTrailDisplayValue(snapshot: AdminLocationSnapshot) {
+  const address = readAddressText(snapshot);
+  return address ? serviceAddressAreaLabel(address) : coordinateLabel(snapshot.lat, snapshot.lng);
+}
+
+function locationTrailDetail(snapshot: AdminLocationSnapshot) {
+  const address = readAddressText(snapshot);
+  const coordinate = coordinateLabel(snapshot.lat, snapshot.lng);
+  return address ? `Pin ${coordinate}` : 'Address not recorded for this location snapshot.';
 }

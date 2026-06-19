@@ -122,10 +122,39 @@ describe('booking detail record rows', () => {
   });
 
   it('formats location trail rows', () => {
-    expect(bookingDetailLocationTrailRows([location({ id: 'trail-1' })])).toEqual([
+    expect(bookingDetailLocationTrailRows([location({ id: 'trail-1' })], 'booking-detail-record-rows')).toEqual([
       {
+        badge: 'Live',
+        badgeTone: 'pill-neutral',
         coordinate: '10.7627, 106.6603',
+        detail: 'Address not recorded for this location snapshot.',
         id: 'trail-1',
+        label: 'Partner live snapshot',
+        recordedAt: '14 Jun 2026, 09:00',
+      },
+    ]);
+  });
+
+  it('formats booking action location rows with readable area labels', () => {
+    expect(
+      bookingDetailLocationTrailRows(
+        [
+          location({
+            addressText: '22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City',
+            bookingId: 'booking-detail-record-rows',
+            id: 'action-trail-1',
+          }),
+        ],
+        'booking-detail-record-rows',
+      ),
+    ).toEqual([
+      {
+        badge: 'Action',
+        badgeTone: 'pill-info',
+        coordinate: 'District 1, Ho Chi Minh City',
+        detail: 'Pin 10.7627, 106.6603',
+        id: 'action-trail-1',
+        label: 'Booking action snapshot',
         recordedAt: '14 Jun 2026, 09:00',
       },
     ]);

@@ -135,8 +135,12 @@ type CashSettlementPath = {
 };
 
 type LocationTrailRow = {
+  badge: string;
+  badgeTone: string;
   id: string;
+  label: string;
   coordinate: string;
+  detail: string;
   recordedAt: string;
 };
 
@@ -277,6 +281,9 @@ export function BookingRecordDetailSections({
 
         <div className="card" id="location">
           <h2>Location trail</h2>
+          <p className="muted">
+            Partner location snapshots captured for booking actions and live movement checks.
+          </p>
           <div className="route-mini">
             <span className="route-dot route-customer">Customer</span>
             {hasLatestPartnerLocation && <span className="route-dot route-provider">Partner</span>}
@@ -285,10 +292,14 @@ export function BookingRecordDetailSections({
             {locationTrailRows.map((snapshot) => (
               <div className="ops-row" key={snapshot.id}>
                 <div>
-                  <strong>{snapshot.coordinate}</strong>
+                  <span className="muted">{snapshot.label}</span>
+                  <div>
+                    <strong>{snapshot.coordinate}</strong>
+                  </div>
                   <div className="muted">{snapshot.recordedAt}</div>
+                  <p className="muted admin-mt-6">{snapshot.detail}</p>
                 </div>
-                <span className="pill">Partner</span>
+                <span className={`pill ${snapshot.badgeTone}`}>{snapshot.badge}</span>
               </div>
             ))}
             {locationTrailRows.length === 0 && (
