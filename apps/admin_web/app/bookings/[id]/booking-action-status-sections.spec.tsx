@@ -237,6 +237,15 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Operator notes');
   });
 
+  it('renders operator notes with the Vuexy full editor shell', () => {
+    const markup = render();
+
+    expect(markup).toContain('aria-label="Operator note full editor"');
+    expect(markup).toContain('class="vuexy-full-editor"');
+    expect(markup).toContain('title="Bold"');
+    expect(markup).toContain('name="note"');
+  });
+
   it('renders post-match cancellation decision actions on detail pages', () => {
     const markup = render({
       outcomeReview: {

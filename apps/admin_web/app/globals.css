@@ -4415,6 +4415,60 @@ a.action-button-card:hover {
   resize: vertical;
 }
 
+.vuexy-full-editor {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  overflow: hidden;
+}
+
+.vuexy-full-editor:focus-within {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.vuexy-full-editor-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.vuexy-editor-tool {
+  align-items: center;
+  appearance: none;
+  background: var(--admin-primary-soft);
+  border: 0;
+  border-radius: var(--admin-radius);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  padding: 0;
+  pointer-events: none;
+  width: 30px;
+}
+
+.ops-note-form .vuexy-full-editor-input {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--admin-text);
+  display: block;
+  min-height: 154px;
+  outline: none;
+  padding: 18px;
+  resize: vertical;
+  width: 100%;
+}
+
+.ops-note-form .vuexy-full-editor-input::placeholder {
+  color: var(--admin-disabled);
+}
+
 .ops-signal-card {
   display: grid;
   gap: 8px;
