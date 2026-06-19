@@ -3,6 +3,7 @@ import { bookingRecordCreatedAt, bookingRequestOpenedAt } from '../../../lib/adm
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { bookingMatchAuditDetail, bookingMatchAuditSummary } from '../../../lib/booking-match-audit';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import {
   addressLabel,
   bookingServiceOptionLabel,
@@ -241,12 +242,18 @@ export function buildBookingActivityRecords({
   }
 
   for (const snapshot of locationSnapshots) {
+    const isBookingActionSnapshot = snapshot.bookingId === booking.id;
+    const snapshotAddress = readAddressText(snapshot);
+    const locationDetail = snapshotAddress
+      ? serviceAddressAreaLabel(snapshotAddress)
+      : coordinateLabel(snapshot.lat, snapshot.lng);
+
     records.push({
       id: snapshot.id,
       type: 'LOCATION',
       at: snapshot.recordedAt,
-      title: 'Partner location snapshot',
-      detail: coordinateLabel(snapshot.lat, snapshot.lng),
+      title: isBookingActionSnapshot ? 'Partner booking action location' : 'Partner location snapshot',
+      detail: isBookingActionSnapshot ? `Booking action snapshot / ${locationDetail}` : locationDetail,
       href: '#location',
     });
   }
@@ -384,7 +391,7 @@ export function buildBookingActivitySummary(records: BookingActivityRecord[]): B
     {
       label: 'Location',
       value: count((record) => record.type === 'LOCATION').toString(),
-      helper: 'Partner location snapshots linked to this booking.',
+      helper: 'Booking action and Partner location snapshots linked to this booking.',
     },
   ];
 }
