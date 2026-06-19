@@ -156,6 +156,61 @@ void main() {
   });
 
   testWidgets(
+      'blocks post-match cancellation when action location capture fails',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bookingRepository = _CancellableBookingRepository();
+    final profileRepository = _LocationFailureProviderProfileRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              profileRepository,
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChatScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Open latest chat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel this booking'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Cancellation reason'),
+      'Customer asked to change the appointment after matching.',
+    );
+    await tester.tap(find.text('Send cancellation'));
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.cancelledBookingId, isNull);
+    expect(find.text('KYC approval required'), findsOneWidget);
+  });
+
+  testWidgets(
       'captures location before completing service from the chat screen',
       (tester) async {
     tester.view.physicalSize = const Size(1080, 2200);
@@ -209,6 +264,54 @@ void main() {
     expect(bookingRepository.completionAddressText,
         'District 1, Ho Chi Minh City');
     expect(find.textContaining('Service completed'), findsOneWidget);
+  });
+
+  testWidgets('blocks completion when action location capture fails',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bookingRepository = _CompletableBookingRepository();
+    final profileRepository = _LocationFailureProviderProfileRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              profileRepository,
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChatScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Open latest chat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete service'));
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.completedBookingId, isNull);
+    expect(find.text('KYC approval required'), findsOneWidget);
   });
 }
 

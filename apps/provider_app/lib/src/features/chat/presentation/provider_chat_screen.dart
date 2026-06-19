@@ -253,7 +253,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       statusMessage = null;
     });
     try {
-      String? locationCaptureWarning;
       Map<String, dynamic>? actionLocation;
       try {
         actionLocation =
@@ -261,15 +260,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   bookingId: activeBookingId,
                   includeAddressText: true,
                 );
-      } catch (_) {
-        locationCaptureWarning =
-            'Current location could not be attached to the cancellation, but the cancellation request was sent.';
+      } catch (exception) {
+        setState(() => error = providerAppErrorMessage(exception));
+        return;
+      }
+      final lat = _actionLocationLat(actionLocation);
+      final lng = _actionLocationLng(actionLocation);
+      if (lat == null || lng == null) {
+        setState(() => error =
+            'Current location is required before cancelling this booking. Enable location and try again.');
+        return;
       }
       final result = await ref.read(providerRepositoryProvider).cancelBooking(
             activeBookingId,
             note: note,
-            lat: _actionLocationLat(actionLocation),
-            lng: _actionLocationLng(actionLocation),
+            lat: lat,
+            lng: lng,
             addressText: _actionAddressText(actionLocation),
           );
       final cancellation = asMap(result['postMatchCancellation']);
@@ -287,9 +293,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           'id': activeBookingId,
           'status': 'CANCELLED',
         };
-        statusMessage = locationCaptureWarning == null
-            ? nextStatusMessage
-            : '$nextStatusMessage $locationCaptureWarning';
+        statusMessage = nextStatusMessage;
       });
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));
@@ -312,7 +316,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       statusMessage = null;
     });
     try {
-      String? locationCaptureWarning;
       Map<String, dynamic>? actionLocation;
       try {
         actionLocation =
@@ -320,14 +323,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   bookingId: activeBookingId,
                   includeAddressText: true,
                 );
-      } catch (_) {
-        locationCaptureWarning =
-            'Current location could not be attached to the completion, but the completion request was sent.';
+      } catch (exception) {
+        setState(() => error = providerAppErrorMessage(exception));
+        return;
+      }
+      final lat = _actionLocationLat(actionLocation);
+      final lng = _actionLocationLng(actionLocation);
+      if (lat == null || lng == null) {
+        setState(() => error =
+            'Current location is required before completing this booking. Enable location and try again.');
+        return;
       }
       await ref.read(providerRepositoryProvider).completeBooking(
             activeBookingId,
-            lat: _actionLocationLat(actionLocation),
-            lng: _actionLocationLng(actionLocation),
+            lat: lat,
+            lng: lng,
             addressText: _actionAddressText(actionLocation),
           );
       const nextStatusMessage =
@@ -338,9 +348,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           'id': activeBookingId,
           'status': 'COMPLETED',
         };
-        statusMessage = locationCaptureWarning == null
-            ? nextStatusMessage
-            : '$nextStatusMessage $locationCaptureWarning';
+        statusMessage = nextStatusMessage;
       });
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));
