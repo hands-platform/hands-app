@@ -205,10 +205,13 @@ function bookingDetailLifecycleTimelineItem(
   const customerLabel = customer?.fullName || customer?.phone || 'Customer pending';
   const partnerLabel = row.finalPartnerLabel ?? row.preferredPartnerLabel ?? 'Partner pending';
   const addressLabel = bookingAddressSnapshotLabel(booking);
-  const participantLabel = `${booking.participants?.length ?? 0} participating`;
+  const participantCount = booking.participants?.length ?? 0;
+  const participantLabel = `${participantCount} Partner${participantCount === 1 ? '' : 's'}`;
+  const requestedPartnerLabel = row.preferredPartnerLabel === 'none' ? 'Not selected' : row.preferredPartnerLabel;
+  const serviceLabel = compactLifecycleServiceLabel(row);
   const commonMeta = [
     { label: 'Customer', value: customerLabel },
-    { label: 'Service', value: `${row.serviceOptionLabel} / ${row.servicePriceLabel}` },
+    { label: 'Service', value: serviceLabel },
     { label: 'Address', value: addressLabel },
   ];
 
@@ -218,7 +221,7 @@ function bookingDetailLifecycleTimelineItem(
       groupKey,
       meta: [
         ...commonMeta,
-        { label: 'Requested', value: row.preferredPartnerLabel },
+        { label: 'Requested', value: requestedPartnerLabel },
       ],
       statusLabel: row.stage.label,
       timeLabel: row.openedDateLabel,
@@ -234,7 +237,7 @@ function bookingDetailLifecycleTimelineItem(
       meta: [
         { label: 'Matched Partner', value: partnerLabel },
         { label: 'Participating', value: participantLabel },
-        { label: 'Service', value: `${row.serviceOptionLabel} / ${row.servicePriceLabel}` },
+        { label: 'Service', value: serviceLabel },
         { label: 'Next action', value: row.nextActionLabel },
       ],
       statusLabel: 'Post-match',
@@ -289,6 +292,15 @@ function bookingDetailLifecycleTimelineItem(
     title: 'Post-match cancellation needs admin review',
     tone: 'warning',
   };
+}
+
+function compactLifecycleServiceLabel(row: BookingMonitorListRow) {
+  const amount = row.servicePriceLabel
+    .replace(/^Customer\s+/i, '')
+    .replace(/\s*\/\s*min\s+.*$/i, '')
+    .trim();
+
+  return amount ? `${row.serviceOptionLabel} / ${amount}` : row.serviceOptionLabel;
 }
 
 function timelinePillTone(tone: BookingDetailLifecycleTimelineItem['tone']) {

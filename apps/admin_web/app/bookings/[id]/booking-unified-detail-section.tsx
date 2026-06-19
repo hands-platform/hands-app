@@ -37,21 +37,21 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
       </section>
 
       <BookingUnifiedRows
-        helper="Personal profile, reservation address, service request, and the actual customer location signal are separated."
+        helper="Profile, booking address, live location, and service request."
         id="booking-customer-detail"
         rows={unifiedDetail.customerRows}
         title="Customer detail"
       />
 
       <BookingUnifiedRows
-        helper="Actual matched Partner details stay visible regardless of which booking list opened this record."
+        helper="Matched Partner, first-pick record, participation, and latest location."
         id="booking-matched-partner-detail"
         rows={unifiedDetail.matchedPartnerRows}
         title="Matched Partner detail"
       />
 
       <BookingUnifiedRows
-        helper="Service closeout, customer charge, Partner payout, HANDS fee, tax, and wallet evidence in one place."
+        helper="Closeout, charge, payout, fee, tax, and wallet ledger."
         id="booking-finance-system-detail"
         rows={unifiedDetail.financeRows}
         title="Finance and system detail"
@@ -109,11 +109,13 @@ function BookingUnifiedRows({
 }
 
 function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow }) {
+  const detail = row.person && row.detail === row.person.helper ? null : row.detail;
+
   return (
     <div className={`booking-unified-info-card${row.people?.length ? ' is-wide' : ''}`}>
       <span className="booking-unified-info-label">{row.label}</span>
       {row.person ? <BookingUnifiedPerson person={row.person} /> : <BookingUnifiedValue row={row} />}
-      {row.detail ? <p className="muted">{row.detail}</p> : null}
+      {detail ? <p className="muted">{detail}</p> : null}
       {row.people?.length ? <BookingUnifiedPeople people={row.people} /> : null}
       {row.href && !row.person ? (
         <Link className="text-link booking-unified-open-link" href={row.href}>

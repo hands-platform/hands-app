@@ -69,6 +69,11 @@ describe('bookingDetailLifecycleListRows', () => {
       'Partner matched and service is moving',
       'Post-match cancellation needs admin review',
     ]);
+    expect(items[0]?.meta.find((meta) => meta.label === 'Service')?.value).toBe(
+      'Aromatherapy Massage / 90 min / 500.000 VND',
+    );
+    expect(items[0]?.meta.find((meta) => meta.label === 'Requested')?.value).toBe('Not selected');
+    expect(items[1]?.meta.find((meta) => meta.label === 'Participating')?.value).toBe('1 Partner');
     expect(items.at(-1)?.meta.map((meta) => meta.label)).toEqual([
       'Matched Partner',
       'Closed reason',

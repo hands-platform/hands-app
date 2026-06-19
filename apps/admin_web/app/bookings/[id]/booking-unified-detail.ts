@@ -155,15 +155,15 @@ function bookingUnifiedCustomerRows({
     {
       label: 'Device language',
       value: customerDeviceLanguage(booking),
-      detail: 'Latest known customer app session language.',
+      detail: 'Customer app session language.',
     },
     {
       label: 'Reservation address',
       value: addressLine,
       detail:
         addressPin === 'No pin'
-          ? 'Address selected for this service booking.'
-          : `Address selected for this service booking. Pin ${addressPin}`,
+          ? 'Booking address snapshot.'
+          : `Booking address snapshot. Pin ${addressPin}`,
     },
     {
       label: 'Actual customer location',
@@ -359,6 +359,19 @@ function customerActualLocationDetail(booking: AdminBookingDetail) {
     };
   }
 
+  const distance = approximateDistanceMeters(
+    booking.addressSnapshot?.latitude,
+    booking.addressSnapshot?.longitude,
+    booking.lat,
+    booking.lng,
+  );
+  if (distance !== null) {
+    return {
+      detail: `Within ${distanceLabel(distance)} of the reservation address. Pin ${pin}`,
+      value: 'Live customer location captured',
+    };
+  }
+
   return {
     detail: `Separate from the reservation address. Pin ${pin}`,
     value: 'Live customer location captured',
@@ -530,11 +543,10 @@ function providerLocationAtReservationAddress({
     return null;
   }
 
-  const pin = coordinateLabel(lat, lng);
   return {
     detail: latestLocation
-      ? `Latest Partner pin is within ${distanceLabel(distance)} of the reservation address. Pin ${pin} / recorded ${formatDate(latestLocation.recordedAt)}`
-      : `Partner profile coordinate is within ${distanceLabel(distance)} of the reservation address. Pin ${pin}`,
+      ? `Latest Partner location is within ${distanceLabel(distance)} of the reservation address. Recorded ${formatDate(latestLocation.recordedAt)}`
+      : `Partner profile location is within ${distanceLabel(distance)} of the reservation address.`,
     value: address,
   };
 }

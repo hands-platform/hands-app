@@ -30,6 +30,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Customer detail');
     expect(rendered).toContain('Matched Partner detail');
     expect(rendered).toContain('Finance and system detail');
+    expect(rendered).toContain('Profile, booking address, live location, and service request.');
+    expect(rendered).toContain('Matched Partner, first-pick record, participation, and latest location.');
     expect(rendered).toContain('Partner Matched');
     expect(rendered).toContain('Partner base, Ha Noi');
     expect(rendered).toContain('2 Partners');
@@ -42,6 +44,35 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('aria-label="Participating Partners"');
     expect(markup).toContain('href="/customers/customer-profile-1"');
     expect(markup).toContain('href="/partners/partner-1"');
+  });
+
+  it('summarizes live customer location against the reservation address snapshot', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        addressSnapshot: {
+          bookingId: 'booking-1',
+          customerProfileId: 'customer-profile-1',
+          id: 'address-snapshot-1',
+          latitude: 21.036,
+          longitude: 105.782,
+        },
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 3,
+    });
+
+    const liveLocationRow = unifiedDetail.customerRows.find(
+      (row) => row.label === 'Actual customer location',
+    );
+
+    expect(liveLocationRow).toMatchObject({
+      detail: 'Within 0 m of the reservation address. Pin 21.0360, 105.7820',
+      value: 'Live customer location captured',
+    });
   });
 
   it('labels post-match cancellation review as one booking detail state', () => {
