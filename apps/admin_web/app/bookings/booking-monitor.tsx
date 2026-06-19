@@ -13,7 +13,6 @@ import type { BookingGateFilter } from './booking-gate-filters';
 import { bookingPaymentFilterOptions, bookingStatusFilterOptions } from './booking-monitor-filter-options';
 import { bookingEvidenceFilterOptions, bookingViewOptions } from './booking-monitor-options';
 import { bookingMonitorSummaryRows, compactBookingMonitorSummaryRows } from './booking-monitor-summary';
-import { BookingMonitorCommandRouteSections } from './booking-monitor-command-route-sections';
 import { BookingMonitorBlockedCreateSection } from './booking-monitor-blocked-create-section';
 import { buildBookingDispatchPartnerShortcuts } from './booking-dispatch-partner-shortcuts';
 import { bookingMatchingWindowLabel } from './booking-matching-window';
@@ -21,11 +20,8 @@ import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-match
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
 import { BookingMonitorListSection } from './booking-monitor-list-section';
-import { buildBookingMonitorNextActions } from './booking-monitor-next-actions-model';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
-import { buildBookingMonitorCommandRouteModel } from './booking-monitor-command-route-model';
-import { buildBookingMonitorCommandCenter } from './booking-monitor-command-center-model';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
 import {
   buildBookingMonitorMatchingEscalationBoard,
@@ -34,7 +30,6 @@ import {
 import { bookingCustomerLabel } from './booking-monitor-labels';
 import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-model';
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
-import { buildBookingMonitorPrimaryCommandQueue } from './booking-monitor-primary-command-queue-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 import { buildBookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
@@ -96,12 +91,7 @@ export function BookingMonitor({
       }),
     [bookingCreateRejections, currentTimeMs, gateFilter],
   );
-  const {
-    bookingGateRejectionLane,
-    bookingGateTriage,
-    orderedBookingCreateRejections,
-    visibleBookingCreateRejections,
-  } = gateModel;
+  const { bookingGateTriage, orderedBookingCreateRejections, visibleBookingCreateRejections } = gateModel;
 
   const summary = useMemo(
     () =>
@@ -114,18 +104,6 @@ export function BookingMonitor({
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
 
-  const commandCenter = useMemo(
-    () => buildBookingMonitorCommandCenter(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
-  );
-  const primaryCommandQueue = useMemo(
-    () => buildBookingMonitorPrimaryCommandQueue(orderedBookings),
-    [orderedBookings],
-  );
-  const nextActions = useMemo(
-    () => buildBookingMonitorNextActions(orderedBookings, currentTimeMs),
-    [currentTimeMs, orderedBookings],
-  );
   const postMatchCancellationBoard = useMemo(
     () => buildBookingPostMatchCancellationBoard(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
@@ -188,27 +166,6 @@ export function BookingMonitor({
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
   const showBookingList = view !== 'blocked-create';
-  const commandRouteModel = useMemo(
-    () =>
-      buildBookingMonitorCommandRouteModel({
-        activeView,
-        blockedCreateCount: orderedBookingCreateRejections.length,
-        blockedCreateDetail: bookingGateRejectionLane.detail,
-        commandCenter,
-        topNextAction: nextActions[0],
-        view,
-        visibleBookingCount: visibleBookings.length,
-      }),
-    [
-      activeView,
-      bookingGateRejectionLane.detail,
-      commandCenter,
-      nextActions,
-      orderedBookingCreateRejections.length,
-      view,
-      visibleBookings.length,
-    ],
-  );
   const clearFilters = useCallback(() => {
     setSearchQuery('');
     setStatusFilter('all');
@@ -255,15 +212,6 @@ export function BookingMonitor({
         autoRefresh={autoRefresh}
         onRefreshNow={refreshNow}
         onToggleAutoRefresh={toggleAutoRefresh}
-      />
-
-      <BookingMonitorCommandRouteSections
-        autoRefresh={autoRefresh}
-        commandSummaryCards={commandRouteModel.commandSummaryCards}
-        hasMounted={hasMounted}
-        isPending={isPending}
-        lastRefreshLabel={lastRefreshLabel}
-        primaryCommandQueue={primaryCommandQueue}
       />
 
       <BookingMonitorLiveStatusSection
