@@ -1,9 +1,6 @@
 import Link from 'next/link';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
-import {
-  approvePostMatchCancellationFromDetail,
-  holdPostMatchCancellationFromDetail,
-} from './actions';
+import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
 type BookingDetailPostMatchDecisionSectionProps = {
   readonly bookingId: string;
@@ -26,7 +23,8 @@ export function BookingDetailPostMatchDecisionSection({
         <div>
           <h2>Post-match cancellation processing</h2>
           <p className="muted">
-            Review retained chat and close the Partner cancellation decision from this booking detail.
+            Review retained chat, closeout evidence, and operator notes before choosing the final Partner fee
+            outcome.
           </p>
         </div>
         <div className="booking-outcome-review-actions">
@@ -39,11 +37,30 @@ export function BookingDetailPostMatchDecisionSection({
         </div>
       </div>
 
+      <div
+        aria-label="Post-match cancellation evidence checklist"
+        className="booking-post-match-detail-evidence-grid admin-mt-12"
+      >
+        {outcomeReview.rows.map((row) => (
+          <Link className="booking-post-match-detail-evidence-card" href={row.href} key={row.label}>
+            <span className={`pill ${row.tone}`}>{row.label}</span>
+            <strong>{row.value}</strong>
+            <small>{row.helper}</small>
+          </Link>
+        ))}
+      </div>
+
       <div className="booking-outcome-decision-panel">
-        <div className="booking-outcome-decision-copy">
-          <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
-          <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
-          <span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>
+        <div className="booking-outcome-decision-main">
+          <div className="booking-outcome-decision-copy">
+            <span className={`pill ${decision.resolutionTone}`}>{decision.resolutionLabel}</span>
+            <span className={`pill ${decision.feeTone}`}>{decision.feeLabel}</span>
+            <span className={`pill ${decision.timingTone}`}>{decision.timingLabel}</span>
+          </div>
+          <p className="muted">
+            Approve restores the eligible Partner fee impact. Hold keeps the existing Partner fee deduction
+            for this closed booking.
+          </p>
         </div>
         {decision.canResolve ? (
           <div className="booking-outcome-decision-actions">
@@ -53,6 +70,7 @@ export function BookingDetailPostMatchDecisionSection({
               <button className="button button-primary admin-inline-action" type="submit">
                 Approve cancellation
               </button>
+              <small>Restore eligible fee impact</small>
             </form>
             <form action={holdPostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
@@ -60,6 +78,7 @@ export function BookingDetailPostMatchDecisionSection({
               <button className="button button-secondary admin-inline-action" type="submit">
                 Hold fee deduction
               </button>
+              <small>Keep existing deduction</small>
             </form>
           </div>
         ) : (

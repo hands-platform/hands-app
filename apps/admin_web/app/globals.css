@@ -2226,6 +2226,12 @@ a.action-button-card:hover {
   padding: 14px;
 }
 
+.booking-outcome-decision-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 .booking-outcome-decision-copy,
 .booking-outcome-decision-actions {
   align-items: center;
@@ -2235,7 +2241,50 @@ a.action-button-card:hover {
 }
 
 .booking-outcome-decision-actions form {
+  display: grid;
+  gap: 6px;
   margin: 0;
+}
+
+.booking-outcome-decision-actions small {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.booking-post-match-detail-evidence-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.booking-post-match-detail-evidence-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  color: inherit;
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 14px;
+  text-decoration: none;
+}
+
+.booking-post-match-detail-evidence-card strong {
+  color: var(--admin-text);
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.booking-post-match-detail-evidence-card small {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.booking-post-match-detail-evidence-card:hover {
+  border-color: rgba(115, 103, 240, 0.42);
+  box-shadow: var(--admin-shadow-soft);
 }
 
 .booking-post-match-operator-note span {
