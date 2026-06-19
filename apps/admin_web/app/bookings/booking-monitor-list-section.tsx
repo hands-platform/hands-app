@@ -226,7 +226,6 @@ const BOOKING_TABLE_HEADERS = [
   'Service Type',
   'Address',
   'State',
-  'Actions',
 ] as const;
 
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
@@ -285,12 +284,6 @@ export function BookingMonitorListSection({
     () => buildBookingTableGroups(rows, visibleGroupKeys),
     [rows, visibleGroupKeys],
   );
-  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
-  const activeChatRow = useMemo(
-    () => rows.find((row) => row.booking.id === chatBookingId) ?? null,
-    [chatBookingId, rows],
-  );
-
   return (
     <>
       {groupedRows.map((group, index) => (
@@ -298,12 +291,8 @@ export function BookingMonitorListSection({
           emptyMessage={rows.length === 0 && index === 0 ? emptyMessage : group.emptyMessage}
           group={group}
           key={group.key}
-          onOpenChat={setChatBookingId}
         />
       ))}
-      {activeChatRow && (
-        <BookingPostMatchCancellationChatLayer onClose={() => setChatBookingId(null)} row={activeChatRow} />
-      )}
     </>
   );
 }
@@ -311,11 +300,9 @@ export function BookingMonitorListSection({
 function BookingMonitorTableGroup({
   emptyMessage,
   group,
-  onOpenChat,
 }: {
   readonly emptyMessage: string;
   readonly group: BookingTableGroup;
-  readonly onOpenChat: (bookingId: string) => void;
 }) {
   const [page, setPage] = useState(1);
   const rowKey = group.rows.map((row) => row.booking.id).join('|');
@@ -362,7 +349,7 @@ function BookingMonitorTableGroup({
           rowCount={visibleRows.length}
         >
           {visibleRows.map((row) => (
-            <BookingMonitorListTableRow key={row.booking.id} onOpenChat={onOpenChat} row={row} />
+            <BookingMonitorListTableRow key={row.booking.id} row={row} />
           ))}
         </AdminDataTable>
       </AdminTableScroll>
@@ -416,10 +403,8 @@ function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly Boo
 }
 
 function BookingMonitorListTableRow({
-  onOpenChat,
   row,
 }: {
-  readonly onOpenChat: (bookingId: string) => void;
   readonly row: BookingMonitorListRow;
 }) {
   const { booking } = row;
@@ -478,7 +463,7 @@ function BookingMonitorListTableRow({
         <BookingDeviceLanguageCell language={deviceLanguageDisplay} />
       </td>
       <td>
-        <BookingServiceCell service={serviceDisplay} />
+        <BookingServiceCell amount={row.servicePriceLabel} service={serviceDisplay} />
       </td>
       <td>
         <BookingAddressCell address={addressDisplay} />
@@ -490,9 +475,6 @@ function BookingMonitorListTableRow({
           reviewReasonPills={reviewReasonPills}
           stateChange={stateChange}
         />
-      </td>
-      <td>
-        <BookingPostMatchCancellationActionsCell onOpenChat={onOpenChat} row={row} />
       </td>
     </tr>
   );
@@ -785,8 +767,10 @@ function BookingDeviceLanguageCell({
 }
 
 function BookingServiceCell({
+  amount,
   service,
 }: {
+  readonly amount: string;
   readonly service: {
     readonly fullLabel: string;
     readonly shortLabel: string;
@@ -798,7 +782,9 @@ function BookingServiceCell({
       className="vuexy-booking-service-cell"
       fullLabel={service.fullLabel}
       shortLabel={service.shortLabel}
-    />
+    >
+      <div className="muted">{amount}</div>
+    </BookingCompactCell>
   );
 }
 

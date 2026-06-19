@@ -224,7 +224,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Service Type');
     expect(rendered).toContain('Address');
     expect(rendered).toContain('State');
-    expect(rendered).toContain('Actions');
+    expect(rendered).not.toContain('Actions');
     expect(rendered).not.toContain('Status');
     expect(rendered).toContain('Realtime Bookings');
     expect(rendered).toContain(
@@ -249,12 +249,12 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).not.toContain('Booking pin');
     expect(rendered).toContain('Matching opened at');
     expect(rendered).toContain('State changed');
-    expect(rendered).toContain('Detail');
+    expect(rendered).not.toContain('Detail');
     expect(rendered).toContain('+84911111111');
     expect(rendered).not.toContain('First-pick phone');
     expect(rendered).not.toContain('Updated 2m ago');
     expect(rendered).not.toContain('5 participating');
-    expect(rendered).not.toContain('150,000 VND');
+    expect(rendered).toContain('150,000 VND');
     expect(markup).toContain('<div class="muted">12 Jun 2026, 10:00</div>');
     expect(
       markup.split(
@@ -416,15 +416,11 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Closed 13 Jun 2026, 03:20');
     expect(rendered).toContain('Admin confirmed');
     expect(rendered).toContain('admin closure / Provider Cancelled / Partner cancelled from chat.');
-    expect(rendered).toContain('Chat (0)');
-    expect(rendered).toContain('Approve');
-    expect(rendered).toContain('Hold');
-    expect(rendered).toContain('No earning');
-    expect(rendered).toContain('Match time missing');
+    expect(rendered).not.toContain('Chat (0)');
     expect(markup).toContain('vuexy-booking-closure-evidence');
     expect(markup).toContain('vuexy-booking-closure-pills');
     expect(markup).toContain('vuexy-booking-state-cell');
-    expect(markup).toContain('vuexy-booking-actions-cell');
+    expect(markup).not.toContain('vuexy-booking-actions-cell');
     expect(markup).toContain('aria-label="State changed: Partner cancelled at"');
     expect(markup).toContain('pill-success');
     expect(markup).toContain('pill-info');
@@ -436,7 +432,7 @@ describe('BookingMonitorListSection', () => {
     );
   });
 
-  it('renders manual post-match cancellation decision forms with chat evidence controls', () => {
+  it('hides manual post-match cancellation decision controls from the table', () => {
     const row = bookingRowFixture({
       closedAt: '2026-06-13T03:30:00.000Z',
       closedByRole: 'PROVIDER',
@@ -490,17 +486,13 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Partner cancellation after 15m; confirm chat before closing.');
     expect(rendered).toContain('Missing chat');
     expect(rendered).toContain('Fee deduction remains until approval.');
-    expect(rendered).toContain('Chat (1)');
+    expect(rendered).not.toContain('Chat (1)');
     expect(rendered).toContain('Fee held');
     expect(rendered).toContain('After 15m');
-    expect(rendered).toContain('30m after match');
-    expect(rendered).toContain('Admin review required');
-    expect(rendered).toContain('Resolve cancellation');
-    expect(rendered).toContain('Approve');
-    expect(rendered).toContain('Hold');
-    expect(markup).toContain('admin-action-dropdown booking-post-match-action-dropdown');
-    expect(markup).toContain('admin-action-menu booking-post-match-action-menu');
-    expect(markup).toContain('admin-action-form');
+    expect(rendered).not.toContain('Resolve cancellation');
+    expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
+    expect(markup).not.toContain('admin-action-menu booking-post-match-action-menu');
+    expect(markup).not.toContain('admin-action-form');
     expect(markup).toContain('aria-label="Post-match cancellation review priorities"');
     expect(markup).toContain('aria-label="Cancellation review reasons"');
     expect(markup).toContain(
@@ -511,9 +503,9 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('vuexy-booking-review-reasons');
     expect(markup).toContain('vuexy-booking-review-metric is-warn');
     expect(markup).toContain('vuexy-booking-review-metric is-danger');
-    expect(markup).toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
-    expect(markup).toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
-    expect(markup).toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
+    expect(markup).not.toContain('type="hidden" name="bookingId" value="booking_manual_cancelled_after_match"');
+    expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
+    expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
     expect(markup.indexOf('Manual Review Customer')).toBeGreaterThan(
       markup.indexOf('Post-match Cancellations / Needs Review'),
     );
@@ -607,9 +599,9 @@ describe('BookingMonitorListSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Post-match Cancellations / Resolved');
-    expect(rendered).toContain('Auto-approved');
-    expect(rendered).toContain('Fee restored');
     expect(rendered).not.toContain('Admin review required');
+    expect(markup).not.toContain('vuexy-booking-actions-cell');
+    expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
     expect(markup.indexOf('Auto Customer')).toBeGreaterThan(
       markup.indexOf('Post-match Cancellations / Resolved'),
     );
@@ -645,10 +637,10 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Check Partner message and retained evidence.');
     expect(rendered).toContain('Missing chat');
     expect(rendered).toContain('Open detail if no retained chat is attached.');
-    expect(rendered).toContain('Chat (0)');
+    expect(rendered).not.toContain('Chat (0)');
     expect(rendered).toContain('No chat');
     expect(rendered).toContain('No-show review');
-    expect(rendered).toContain('Detail');
+    expect(rendered).not.toContain('Detail');
     expect(rendered).not.toContain('Resolve cancellation');
     expect(markup).not.toContain('admin-action-dropdown booking-post-match-action-dropdown');
     expect(markup).toContain('aria-label="Cancellation review reasons"');
