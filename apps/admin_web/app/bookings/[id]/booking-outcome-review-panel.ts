@@ -78,6 +78,10 @@ export function bookingOutcomeReviewPanel({
   const hasClosureStamp = Boolean(booking.closedAt);
   const closureMissing = closureSummary.status === 'Terminal without closure stamp';
   const outcomeTime = booking.statusChangedAt ?? booking.closedAt ?? booking.updatedAt ?? booking.createdAt;
+  const closureRecordHelper = compactOutcomeClosureDetail(
+    closureSummary.detail,
+    outcomeClosureFallback({ closureMissing, hasClosureStamp, outcomeKind }),
+  );
 
   return {
     visible: true,
@@ -88,7 +92,7 @@ export function bookingOutcomeReviewPanel({
       {
         label: 'Closure record',
         value: closureSummary.status,
-        helper: closureSummary.detail,
+        helper: closureRecordHelper,
         tone: closureMissing ? 'pill-warn' : hasClosureStamp ? 'pill-success' : 'pill-neutral',
         href: '#booking-closeout-checklist',
       },
@@ -261,6 +265,44 @@ function hiddenPostMatchDecisionPanel(): BookingPostMatchDecisionPanel {
     timingLabel: '',
     timingTone: 'pill-neutral',
   };
+}
+
+function compactOutcomeClosureDetail(detail: string, fallback: string) {
+  if (/terminal but has no explicit closure actor\/reason saved/i.test(detail)) {
+    return fallback;
+  }
+  if (/^no closure has been recorded yet\.?$/i.test(detail)) {
+    return fallback;
+  }
+
+  const normalized = detail
+    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
+    .replace(/^\s*[^/]*?\bclosure\s*\/\s*/i, '')
+    .replace(/^Service Completed\s*\/\s*/i, '')
+    .replace(/^Smoke:\s*/i, '')
+    .replace(/^service completed;\s*/i, 'Service completed; ')
+    .replace(/closeout reconciliation still needs review/i, 'closeout reconciliation needs review')
+    .trim();
+
+  return normalized && !/^reason not saved\.?$/i.test(normalized) ? normalized : fallback;
+}
+
+function outcomeClosureFallback({
+  closureMissing,
+  hasClosureStamp,
+  outcomeKind,
+}: {
+  closureMissing: boolean;
+  hasClosureStamp: boolean;
+  outcomeKind: BookingOutcomeKind;
+}) {
+  if (closureMissing) {
+    return 'Closure actor or reason is missing.';
+  }
+  if (!hasClosureStamp) {
+    return 'Closure is not recorded yet.';
+  }
+  return outcomeKind === 'completed' ? 'Service completion recorded.' : 'Closure record saved.';
 }
 
 function countLabel(count: number, singular: string) {

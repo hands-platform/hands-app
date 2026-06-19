@@ -33,7 +33,7 @@ describe('bookingOutcomeReviewPanel', () => {
       }),
       closureSummary: {
         status: '13 Jun 2026, 03:15',
-        detail: 'admin closure / Completed',
+        detail: 'provider closure / Service Completed / Smoke: service completed; closeout reconciliation still needs review.',
       },
       messageCount: 2,
       operatorNoteCount: 1,
@@ -56,6 +56,9 @@ describe('bookingOutcomeReviewPanel', () => {
       value: '2 messages',
       href: '#chat',
       tone: 'pill-success',
+    });
+    expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
+      helper: 'Service completed; closeout reconciliation needs review.',
     });
   });
 
