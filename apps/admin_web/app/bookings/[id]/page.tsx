@@ -696,6 +696,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
     hasSelectedPartner: Boolean(booking.selectedProviderId || booking.selectedProvider),
     status: booking.status,
   });
+  const showAdvancedRecordsDisclosure =
+    sectionVisibility.showDispatchDisclosure ||
+    sectionVisibility.showEvidenceDisclosure ||
+    sectionVisibility.showHistoryDisclosure ||
+    sectionVisibility.showSettlementDisclosure;
 
   return (
     <div className="booking-detail-page">
@@ -722,66 +727,74 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <BookingCloseoutReadinessSection {...closeoutReadinessProps} />
       )}
 
-      {sectionVisibility.showEvidenceDisclosure && (
+      {showAdvancedRecordsDisclosure && (
         <BookingDetailDisclosureGroup
-          helper="Chat, closeout, operator queue, handoff, and connected records are kept here for decision evidence."
-          label="Evidence"
-          title="Evidence and closeout records"
+          helper="Open only when an operator needs deep evidence, dispatch, history, or settlement records."
+          label="Advanced"
+          title="Advanced booking records"
         >
-          <BookingEvidenceSections {...evidenceSectionsProps} />
-          <BookingCloseoutSections {...closeoutSectionsProps} />
-          <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
-          <BookingHandoffChecklistSection {...handoffChecklistProps} />
-          <BookingFullRecordIndex {...fullRecordIndexProps} />
-        </BookingDetailDisclosureGroup>
-      )}
+          {sectionVisibility.showEvidenceDisclosure && (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <span className="pill pill-info">Evidence</span>
+                <strong>Decision and closeout evidence</strong>
+              </div>
+              <BookingEvidenceSections {...evidenceSectionsProps} />
+              <BookingCloseoutSections {...closeoutSectionsProps} />
+              <BookingOperatorQueueSections {...operatorQueueSectionsProps} />
+              <BookingHandoffChecklistSection {...handoffChecklistProps} />
+              <BookingFullRecordIndex {...fullRecordIndexProps} />
+            </div>
+          )}
 
-      {sectionVisibility.showDispatchDisclosure && (
-        <BookingDetailDisclosureGroup
-          helper="Policy, address radius, customer wait, and marketplace supply checks for Partner matching."
-          label="Dispatch"
-          title="Dispatch and supply checks"
-        >
-          <BookingStageSnapshotSection {...stageSnapshotProps} />
-          <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
-          <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
-          <BookingAppliedPolicySection {...appliedPolicyProps} />
-          <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
-          <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
-          <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
-        </BookingDetailDisclosureGroup>
-      )}
+          {sectionVisibility.showDispatchDisclosure && (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <span className="pill pill-success">Dispatch</span>
+                <strong>Matching policy and supply checks</strong>
+              </div>
+              <BookingStageSnapshotSection {...stageSnapshotProps} />
+              <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
+              <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
+              <BookingAppliedPolicySection {...appliedPolicyProps} />
+              <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
+              <BookingDispatchCandidateDecisionMatrixSection {...dispatchCandidateDecisionMatrixProps} />
+              <BookingMarketplaceSupplySection {...marketplaceSupplyProps} />
+            </div>
+          )}
 
-      {sectionVisibility.showHistoryDisclosure && (
-        <BookingDetailDisclosureGroup
-          helper="Live service movement, communication, alerts, audit, and activity timeline."
-          label="History"
-          title="Operating history"
-        >
-          <BookingOperatingLedgerSection {...operatingLedgerProps} />
-          <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
-          <BookingOperatingTimelineSection {...operatingTimelineProps} />
-          <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
-          <BookingChatLifecycleSection {...chatLifecycleProps} />
-          <BookingOpsCommandCenter {...opsCommandCenterProps} />
-          <BookingAlertTraceSection {...alertTraceProps} />
-          <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
-          <BookingAttentionChecksSection {...attentionChecksProps} />
-          <BookingActivityPanel {...activityPanelProps} />
-        </BookingDetailDisclosureGroup>
-      )}
+          {sectionVisibility.showHistoryDisclosure && (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <span className="pill pill-warn">History</span>
+                <strong>Operating movement and audit trail</strong>
+              </div>
+              <BookingOperatingLedgerSection {...operatingLedgerProps} />
+              <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
+              <BookingOperatingTimelineSection {...operatingTimelineProps} />
+              <BookingCommunicationMovementHandoffSection {...communicationMovementHandoffProps} />
+              <BookingChatLifecycleSection {...chatLifecycleProps} />
+              <BookingOpsCommandCenter {...opsCommandCenterProps} />
+              <BookingAlertTraceSection {...alertTraceProps} />
+              <BookingOperationsAuditTraceSection {...operationsAuditTraceProps} />
+              <BookingAttentionChecksSection {...attentionChecksProps} />
+              <BookingActivityPanel {...activityPanelProps} />
+            </div>
+          )}
 
-      {sectionVisibility.showSettlementDisclosure && (
-        <BookingDetailDisclosureGroup
-          helper="Wallet evidence, finance checks, payout eligibility, service pricing, and complete booking records."
-          label="Records"
-          title="Settlement and record detail"
-        >
-          <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
-          <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
-          <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
-          <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
-          <BookingRecordDetailSections {...recordDetailSectionsProps} />
+          {sectionVisibility.showSettlementDisclosure && (
+            <div className="booking-detail-advanced-section">
+              <div className="booking-detail-advanced-heading">
+                <span className="pill pill-neutral">Settlement</span>
+                <strong>Wallet, payout, pricing, and full records</strong>
+              </div>
+              <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
+              <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />
+              <BookingPayoutBatchEligibilitySection {...payoutBatchEligibilityProps} />
+              <BookingServicePricingSnapshotSection {...servicePricingSnapshotProps} />
+              <BookingRecordDetailSections {...recordDetailSectionsProps} />
+            </div>
+          )}
         </BookingDetailDisclosureGroup>
       )}
     </div>

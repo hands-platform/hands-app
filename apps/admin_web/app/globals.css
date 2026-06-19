@@ -4308,6 +4308,32 @@ a.action-button-card:hover {
   padding: 16px;
 }
 
+.booking-detail-section-disclosure:not([open]) > .booking-detail-section-disclosure-body {
+  display: none;
+}
+
+.booking-detail-advanced-section {
+  display: grid;
+  gap: 16px;
+}
+
+.booking-detail-advanced-section + .booking-detail-advanced-section {
+  border-top: 1px solid var(--admin-border);
+  padding-top: 16px;
+}
+
+.booking-detail-advanced-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.booking-detail-advanced-heading strong {
+  color: var(--admin-text);
+  font-size: 0.95rem;
+}
+
 .booking-detail-section-disclosure-body > .card,
 .booking-detail-section-disclosure-body > section.card {
   margin: 0;
