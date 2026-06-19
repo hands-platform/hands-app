@@ -71,8 +71,13 @@ export function BookingDetailLifecycleListSection({ booking }: BookingDetailLife
               <p className="muted">{item.detail}</p>
               <div className="vuexy-basic-timeline-meta">
                 {item.meta.map((meta) => (
-                  <div className="vuexy-basic-timeline-meta-item" key={meta.label}>
+                  <div
+                    aria-label={`${meta.label}: ${meta.value}`}
+                    className="vuexy-basic-timeline-meta-item"
+                    key={meta.label}
+                  >
                     <span>{meta.label}</span>
+                    {' '}
                     <strong>{meta.value}</strong>
                   </div>
                 ))}
