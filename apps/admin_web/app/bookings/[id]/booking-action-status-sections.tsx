@@ -354,18 +354,18 @@ function BookingOperatorNotesSection({
 
   return (
     <section className="card ops-note-panel admin-mb-16" id="operator-notes">
-      <div>
+      <div className="ops-note-panel-header">
         <h2>Operator notes</h2>
         <p className="muted">
           Internal handling notes retained with the booking audit trail.
         </p>
-        <div className="ops-note-history">
-          {recentNotes.length > 0 ? (
-            recentNotes.map((note) => <p key={note}>{note}</p>)
-          ) : (
-            <p className="muted">No internal notes yet.</p>
-          )}
-        </div>
+      </div>
+      <div className="ops-note-history">
+        {recentNotes.length > 0 ? (
+          recentNotes.map((note) => <p key={note}>{note}</p>)
+        ) : (
+          <p className="muted">No internal notes yet.</p>
+        )}
       </div>
       <form action={addBookingOpsNote} className="ops-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />

@@ -242,7 +242,9 @@ describe('BookingActionStatusSections', () => {
 
     expect(markup).toContain('aria-label="Operator note full editor"');
     expect(markup).toContain('class="vuexy-full-editor"');
-    expect(markup).toContain('contentEditable="true"');
+    expect(markup).toContain('class="vuexy-full-editor-content"');
+    expect(markup).toContain('class="ops-note-panel-header"');
+    expect(markup).toContain('class="ops-note-history"');
     expect(markup).toContain('title="Bold"');
     expect(markup).toContain('name="note"');
     expect(markup).toContain('Add note');
