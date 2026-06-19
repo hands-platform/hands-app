@@ -144,6 +144,8 @@ void main() {
 
     expect(bookingRepository.cancelledBookingId, 'booking-chat-ready');
     expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
+    expect(bookingRepository.cancellationLat, 10.7769);
+    expect(bookingRepository.cancellationLng, 106.7009);
     expect(
       bookingRepository.cancellationNote,
       'Customer asked to change the appointment after matching.',
@@ -200,6 +202,8 @@ void main() {
 
     expect(bookingRepository.completedBookingId, 'booking-chat-ready');
     expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
+    expect(bookingRepository.completionLat, 10.7769);
+    expect(bookingRepository.completionLng, 106.7009);
     expect(find.textContaining('Service completed'), findsOneWidget);
   });
 }
@@ -294,12 +298,21 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
 
   @override
-  Future<Map<String, dynamic>> completeBooking(String bookingId) async => {};
+  Future<Map<String, dynamic>> completeBooking(
+    String bookingId, {
+    double? lat,
+    double? lng,
+    String? addressText,
+  }) async =>
+      {};
 
   @override
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
+    double? lat,
+    double? lng,
+    String? addressText,
   }) async =>
       {};
 }
@@ -388,22 +401,40 @@ class _ChatReadyBookingRepository implements ProviderBookingRepository {
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
 
   @override
-  Future<Map<String, dynamic>> completeBooking(String bookingId) async => {};
+  Future<Map<String, dynamic>> completeBooking(
+    String bookingId, {
+    double? lat,
+    double? lng,
+    String? addressText,
+  }) async =>
+      {};
 
   @override
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
+    double? lat,
+    double? lng,
+    String? addressText,
   }) async =>
       {};
 }
 
 class _CompletableBookingRepository extends _ChatReadyBookingRepository {
   String? completedBookingId;
+  double? completionLat;
+  double? completionLng;
 
   @override
-  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
+  Future<Map<String, dynamic>> completeBooking(
+    String bookingId, {
+    double? lat,
+    double? lng,
+    String? addressText,
+  }) async {
     completedBookingId = bookingId;
+    completionLat = lat;
+    completionLng = lng;
     return {
       'id': bookingId,
       'status': 'COMPLETED',
@@ -414,6 +445,8 @@ class _CompletableBookingRepository extends _ChatReadyBookingRepository {
 class _CancellableBookingRepository extends _ChatReadyBookingRepository {
   String? cancelledBookingId;
   String? cancellationNote;
+  double? cancellationLat;
+  double? cancellationLng;
 
   @override
   Future<List<dynamic>> listBookings() async => [
@@ -432,9 +465,14 @@ class _CancellableBookingRepository extends _ChatReadyBookingRepository {
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
+    double? lat,
+    double? lng,
+    String? addressText,
   }) async {
     cancelledBookingId = bookingId;
     cancellationNote = note;
+    cancellationLat = lat;
+    cancellationLng = lng;
     return {
       'id': bookingId,
       'status': 'CANCELLED',

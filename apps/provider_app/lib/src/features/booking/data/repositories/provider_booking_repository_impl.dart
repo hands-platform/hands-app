@@ -84,9 +84,20 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
-    final result =
-        await _api.postJson('/partner/bookings/$bookingId/complete', {});
+  Future<Map<String, dynamic>> completeBooking(
+    String bookingId, {
+    double? lat,
+    double? lng,
+    String? addressText,
+  }) async {
+    final result = await _api.postJson(
+      '/partner/bookings/$bookingId/complete',
+      _bookingActionPayload(
+        lat: lat,
+        lng: lng,
+        addressText: addressText,
+      ),
+    );
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -94,11 +105,41 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
+    double? lat,
+    double? lng,
+    String? addressText,
   }) async {
     final result = await _api.postJson(
       '/partner/bookings/$bookingId/cancel',
-      {'note': note},
+      _bookingActionPayload(
+        note: note,
+        lat: lat,
+        lng: lng,
+        addressText: addressText,
+      ),
     );
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
+}
+
+Map<String, dynamic> _bookingActionPayload({
+  String? note,
+  double? lat,
+  double? lng,
+  String? addressText,
+}) {
+  final payload = <String, dynamic>{};
+  if (note != null) {
+    payload['note'] = note;
+  }
+  if (lat != null && lng != null) {
+    payload['lat'] = lat;
+    payload['lng'] = lng;
+  }
+
+  final normalizedAddressText = addressText?.trim();
+  if (normalizedAddressText != null && normalizedAddressText.isNotEmpty) {
+    payload['addressText'] = normalizedAddressText;
+  }
+  return payload;
 }

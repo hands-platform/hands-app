@@ -254,17 +254,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     try {
       String? locationCaptureWarning;
+      Map<String, double>? actionLocation;
       try {
-        await ref
+        actionLocation = await ref
             .read(providerRepositoryProvider)
             .updateLocation(bookingId: activeBookingId);
       } catch (_) {
         locationCaptureWarning =
             'Current location could not be attached to the cancellation, but the cancellation request was sent.';
       }
-      final result = await ref
-          .read(providerRepositoryProvider)
-          .cancelBooking(activeBookingId, note: note);
+      final result = await ref.read(providerRepositoryProvider).cancelBooking(
+            activeBookingId,
+            note: note,
+            lat: _actionLocationLat(actionLocation),
+            lng: _actionLocationLng(actionLocation),
+          );
       final cancellation = asMap(result['postMatchCancellation']);
       final autoApproved = cancellation?['autoApproved'] == true;
       final adminReviewRequired =
@@ -306,17 +310,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     try {
       String? locationCaptureWarning;
+      Map<String, double>? actionLocation;
       try {
-        await ref
+        actionLocation = await ref
             .read(providerRepositoryProvider)
             .updateLocation(bookingId: activeBookingId);
       } catch (_) {
         locationCaptureWarning =
             'Current location could not be attached to the completion, but the completion request was sent.';
       }
-      await ref
-          .read(providerRepositoryProvider)
-          .completeBooking(activeBookingId);
+      await ref.read(providerRepositoryProvider).completeBooking(
+            activeBookingId,
+            lat: _actionLocationLat(actionLocation),
+            lng: _actionLocationLng(actionLocation),
+          );
       const nextStatusMessage =
           'Service completed. HANDS operations can now review the final booking record.';
       setState(() {
@@ -375,8 +382,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(providerRepositoryProvider)
           .updateLocation(bookingId: activeBookingId);
       setState(() {
-        lastSharedLat = asNum(location['lat'])?.toDouble();
-        lastSharedLng = asNum(location['lng'])?.toDouble();
+        lastSharedLat = _actionLocationLat(location);
+        lastSharedLng = _actionLocationLng(location);
         lastSharedAt = DateTime.now();
         statusMessage =
             'Your current location was shared with the customer at ${formatCoordinate(lastSharedLat)} / ${formatCoordinate(lastSharedLng)}.';
@@ -510,6 +517,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+}
+
+double? _actionLocationLat(Map<String, double>? location) {
+  return location?['lat'] ?? location?['latitude'];
+}
+
+double? _actionLocationLng(Map<String, double>? location) {
+  return location?['lng'] ?? location?['longitude'];
 }
 
 class MessageTile extends StatelessWidget {

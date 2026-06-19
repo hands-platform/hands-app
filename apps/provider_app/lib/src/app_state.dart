@@ -141,15 +141,34 @@ class ProviderRepository {
     return _bookingRepository.startBooking(bookingId);
   }
 
-  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
-    return _bookingRepository.completeBooking(bookingId);
+  Future<Map<String, dynamic>> completeBooking(
+    String bookingId, {
+    double? lat,
+    double? lng,
+    String? addressText,
+  }) async {
+    return _bookingRepository.completeBooking(
+      bookingId,
+      lat: lat,
+      lng: lng,
+      addressText: addressText,
+    );
   }
 
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
+    double? lat,
+    double? lng,
+    String? addressText,
   }) async {
-    return _bookingRepository.cancelBooking(bookingId, note: note);
+    return _bookingRepository.cancelBooking(
+      bookingId,
+      note: note,
+      lat: lat,
+      lng: lng,
+      addressText: addressText,
+    );
   }
 
   Future<List<dynamic>> listChatMessages(String chatRoomId) async {
