@@ -1,16 +1,20 @@
 import type { BookingMonitorSummaryRow } from './booking-monitor-summary';
 
 type BookingMonitorLiveStatusSectionProps = {
+  readonly autoRefresh: boolean;
   readonly hasMounted: boolean;
   readonly isPending: boolean;
   readonly lastRefreshLabel: string;
+  readonly refreshIntervalSeconds: number;
   readonly summary: readonly BookingMonitorSummaryRow[];
 };
 
 export function BookingMonitorLiveStatusSection({
+  autoRefresh,
   hasMounted,
   isPending,
   lastRefreshLabel,
+  refreshIntervalSeconds,
   summary,
 }: BookingMonitorLiveStatusSectionProps) {
   return (
@@ -26,6 +30,7 @@ export function BookingMonitorLiveStatusSection({
 
       <div className="monitor-meta">
         <span>{isPending ? 'Refreshing...' : 'Ready'}</span>
+        <span>{autoRefresh ? `Live updates every ${refreshIntervalSeconds}s` : 'Live updates paused'}</span>
         <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
       </div>
     </>

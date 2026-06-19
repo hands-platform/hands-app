@@ -6,7 +6,6 @@ import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
-import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import {
   bookingDateRangeFilterOptions,
@@ -65,6 +64,7 @@ type Props = {
 };
 
 type BookingView = BookingPageView;
+const BOOKING_AUTO_REFRESH_INTERVAL_MS = 5000;
 
 export function BookingMonitor({
   bookings,
@@ -74,7 +74,7 @@ export function BookingMonitor({
   initialCustomDateFrom = '',
   initialCustomDateTo = '',
   initialDateRangeFilter = 'today',
-  initialNowMs = Date.now(),
+  initialNowMs,
   initialView,
   initialEvidenceFilter = 'all',
   initialGateFilter = 'all',
@@ -91,7 +91,7 @@ export function BookingMonitor({
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
-  const [nowMs, setNowMs] = useState(initialNowMs);
+  const [nowMs, setNowMs] = useState(initialNowMs ?? 0);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<BookingView>(initialView);
@@ -108,6 +108,12 @@ export function BookingMonitor({
     setLastRefreshLabel(formatClockTime(refreshedAt));
     setNowMs(refreshedAt.getTime());
   }, []);
+  const refreshBookingData = useCallback(() => {
+    markRefreshed(new Date());
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [markRefreshed, router]);
 
   const orderedBookings = useMemo(
     () =>
@@ -227,25 +233,25 @@ export function BookingMonitor({
       return () => window.clearTimeout(mountTimer);
     }
 
-    const timer = window.setInterval(() => {
-      startTransition(() => {
-        router.refresh();
-        markRefreshed(new Date());
-      });
-    }, 10000);
+    const timer = window.setInterval(refreshBookingData, BOOKING_AUTO_REFRESH_INTERVAL_MS);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshBookingData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshBookingData);
 
     return () => {
       window.clearTimeout(mountTimer);
       window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshBookingData);
     };
-  }, [autoRefresh, markRefreshed, router]);
+  }, [autoRefresh, markRefreshed, refreshBookingData]);
 
-  const refreshNow = () => {
-    startTransition(() => {
-      router.refresh();
-      markRefreshed(new Date());
-    });
-  };
+  const refreshNow = refreshBookingData;
   const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
   const dateRangeHrefFor = useCallback(
     (range: BookingDateRangeFilter) =>
@@ -260,9 +266,13 @@ export function BookingMonitor({
   );
 
   useEffect(() => {
-    setDateRangeFilter(initialDateRangeFilter);
-    setCustomDateFrom(initialCustomDateFrom);
-    setCustomDateTo(initialCustomDateTo);
+    const syncTimer = window.setTimeout(() => {
+      setDateRangeFilter(initialDateRangeFilter);
+      setCustomDateFrom(initialCustomDateFrom);
+      setCustomDateTo(initialCustomDateTo);
+    }, 0);
+
+    return () => window.clearTimeout(syncTimer);
   }, [initialCustomDateFrom, initialCustomDateTo, initialDateRangeFilter]);
 
   return (
@@ -276,9 +286,11 @@ export function BookingMonitor({
       />
 
       <BookingMonitorLiveStatusSection
+        autoRefresh={autoRefresh}
         hasMounted={hasMounted}
         isPending={isPending}
         lastRefreshLabel={lastRefreshLabel}
+        refreshIntervalSeconds={BOOKING_AUTO_REFRESH_INTERVAL_MS / 1000}
         summary={summary}
       />
 
