@@ -255,6 +255,7 @@ describe('BookingActionStatusSections', () => {
         tone: 'pill-success',
         visible: true,
       },
+      operatorNotesPlacement: 'after-actions',
       showStructuredOpsStatus: false,
     });
 
@@ -262,6 +263,8 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Operator notes');
     expect(markup).toContain('Completed booking review');
     expect(markup).toContain('Completed closeout');
+    expect(markup.indexOf('Completed booking review')).toBeLessThan(markup.indexOf('Completed closeout'));
+    expect(markup.indexOf('Completed closeout')).toBeLessThan(markup.indexOf('Operator notes'));
   });
 
   it('renders operator notes with a simple text area', () => {

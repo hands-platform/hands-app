@@ -71,6 +71,7 @@ export type BookingActionStatusSectionsProps = {
   noShow: NoShowState;
   notes?: string | null;
   opsTaskCards: OpsTaskCard[];
+  operatorNotesPlacement?: 'before-actions' | 'after-actions';
   outcomeReview: BookingOutcomeReviewPanel;
   showDispatchChecklist?: boolean;
   showLiveServiceBoard?: boolean;
@@ -95,6 +96,7 @@ export function BookingActionStatusSections({
   matchingExpiry,
   noShow,
   notes,
+  operatorNotesPlacement = 'before-actions',
   opsTaskCards,
   outcomeReview,
   showDispatchChecklist = true,
@@ -102,13 +104,15 @@ export function BookingActionStatusSections({
   showOutcomeReview = true,
   showStructuredOpsStatus = true,
 }: BookingActionStatusSectionsProps) {
+  const operatorNotes = <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />;
+
   return (
     <>
       {showDispatchChecklist && <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />}
       {showStructuredOpsStatus && (
         <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       )}
-      <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
+      {operatorNotesPlacement === 'before-actions' && operatorNotes}
       {showOutcomeReview && (
         <BookingOutcomeReviewSection bookingId={bookingId} outcomeReview={outcomeReview} />
       )}
@@ -121,6 +125,7 @@ export function BookingActionStatusSections({
       )}
       {noShow.canSubmit && <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />}
       {showLiveServiceBoard && <BookingLiveServiceBoardSection liveSignals={liveSignals} />}
+      {operatorNotesPlacement === 'after-actions' && operatorNotes}
     </>
   );
 }

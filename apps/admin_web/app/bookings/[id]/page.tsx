@@ -560,6 +560,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     noShow: { canSubmit: canMarkNoShow(booking.status), status: booking.status },
     notes: booking.notes,
     opsTaskCards,
+    operatorNotesPlacement: booking.status === 'COMPLETED' ? 'after-actions' : 'before-actions',
     outcomeReview,
     showDispatchChecklist: !TERMINAL_BOOKING_STATUSES.has(booking.status),
     showLiveServiceBoard: booking.status === 'MATCHED' || booking.status === 'IN_SERVICE',
