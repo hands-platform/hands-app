@@ -135,7 +135,13 @@ describe('BookingUnifiedDetailSection', () => {
       }),
       financeTrace: financeTraceFixture(),
       finalPartnerSummary: finalPartnerSummaryFixture(),
-      latestLocation: null,
+      latestLocation: {
+        id: 'latest-general-location',
+        lat: 10.7769,
+        lng: 106.7009,
+        providerProfileId: 'partner-1',
+        recordedAt: '2026-06-19T07:49:30.000Z',
+      } as AdminLocationSnapshot,
       messageCount: 7,
     });
 
@@ -149,6 +155,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(matching).toMatchObject({ value: 'Cau Giay, Ha Noi' });
     expect(matching?.detail).toContain('Recorded');
     expect(cancellation).toMatchObject({ value: 'Cau Giay, Ha Noi' });
+    expect(cancellation?.detail).toContain('Booking action snapshot recorded');
     expect(cancellation?.detail).toContain('State time');
   });
 });

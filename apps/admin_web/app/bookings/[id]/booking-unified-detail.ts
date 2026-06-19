@@ -590,7 +590,13 @@ function bookingUnifiedPartnerLocationCheckpointRow({
     };
   }
 
-  const snapshot = bookingUnifiedLocationSnapshotForEvent(snapshots, eventAt);
+  const preferBookingActionSnapshot =
+    label === 'Completion location' || label === 'Cancellation location';
+  const snapshot = bookingUnifiedLocationSnapshotForEvent(
+    snapshots,
+    eventAt,
+    preferBookingActionSnapshot ? booking.id : undefined,
+  );
   const location = providerLocationCheckpointDetail({
     addressLine,
     booking,
@@ -655,6 +661,7 @@ function bookingUnifiedSelectedProviderLocationSnapshots({
 function bookingUnifiedLocationSnapshotForEvent(
   snapshots: readonly AdminLocationSnapshot[],
   eventAt?: string | null,
+  preferBookingId?: string,
 ) {
   if (snapshots.length === 0) {
     return null;
@@ -668,8 +675,20 @@ function bookingUnifiedLocationSnapshotForEvent(
   const beforeOrAt = snapshots.filter(
     (snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) <= eventTime,
   );
+  const bookingLinkedBeforeOrAt = preferBookingId
+    ? beforeOrAt.filter((snapshot) => snapshot.bookingId === preferBookingId)
+    : [];
+  const bookingLinkedAfter = preferBookingId
+    ? snapshots.find(
+        (snapshot) =>
+          snapshot.bookingId === preferBookingId &&
+          bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime,
+      )
+    : null;
   return (
+    bookingLinkedBeforeOrAt.at(-1) ??
     beforeOrAt.at(-1) ??
+    bookingLinkedAfter ??
     snapshots.find((snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime) ??
     null
   );
@@ -704,7 +723,9 @@ function providerLocationCheckpointDetail({
   const snapshotAddress = readAddressText(snapshot);
   const eventLabel = eventAt ? `State time ${formatDate(eventAt)}.` : 'State time not recorded.';
   const recordedLabel = snapshot
-    ? `Recorded ${formatDate(snapshot.recordedAt)}.`
+    ? snapshot.bookingId === booking.id
+      ? `Booking action snapshot recorded ${formatDate(snapshot.recordedAt)}.`
+      : `Recorded ${formatDate(snapshot.recordedAt)}.`
     : 'No Partner location snapshot is linked to this checkpoint.';
   const pin = snapshot
     ? coordinateLabel(snapshot.lat, snapshot.lng)
