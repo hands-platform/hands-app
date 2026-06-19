@@ -410,7 +410,7 @@ function BookingMonitorListTableRow({
   const { booking } = row;
   const participantRows = bookingParticipantRows(booking);
   const addressDisplay = bookingAddressDisplay(booking);
-  const deviceLanguageDisplay = bookingDeviceLanguageDisplay(bookingDeviceLanguageLabel(booking));
+  const countryDisplay = bookingCountryDisplay(bookingDeviceLanguageLabel(booking));
   const serviceDisplay = bookingServiceDisplay(row.serviceOptionLabel);
   const stateChange = bookingStatusChangeState(booking);
   const cancellationReviewSignal = bookingCancellationReviewSignal(booking);
@@ -460,7 +460,7 @@ function BookingMonitorListTableRow({
         )}
       </td>
       <td>
-        <BookingDeviceLanguageCell language={deviceLanguageDisplay} />
+        <BookingCountryCell country={countryDisplay} />
       </td>
       <td>
         <BookingServiceCell amount={row.servicePriceLabel} service={serviceDisplay} />
@@ -748,21 +748,32 @@ function BookingStateChangedCell({
   );
 }
 
-function BookingDeviceLanguageCell({
-  language,
+function BookingCountryCell({
+  country,
 }: {
-  readonly language: {
+  readonly country: {
+    readonly flag: string | null;
+    readonly flagLabel: string;
     readonly fullLabel: string;
     readonly shortLabel: string;
   };
 }) {
   return (
-    <BookingCompactCell
-      ariaPrefix="Device language"
-      className="vuexy-booking-language-cell"
-      fullLabel={language.fullLabel}
-      shortLabel={language.shortLabel}
-    />
+    <div
+      aria-label={`Country: ${country.fullLabel}`}
+      className="vuexy-booking-country-cell"
+      title={country.fullLabel}
+    >
+      <span
+        aria-label={country.flag ? country.flagLabel : undefined}
+        aria-hidden={country.flag ? undefined : true}
+        className="vuexy-booking-country-flag"
+        role={country.flag ? 'img' : undefined}
+      >
+        {country.flag ?? '--'}
+      </span>
+      <strong>{country.shortLabel}</strong>
+    </div>
   );
 }
 
@@ -1000,13 +1011,61 @@ function bookingDeviceLanguageLabel(booking: AdminBooking) {
   return metadataLanguage ?? 'Unknown';
 }
 
-function bookingDeviceLanguageDisplay(label: string) {
-  const fullLabel = label.trim() || 'Unknown';
+function bookingCountryDisplay(label: string) {
+  const sourceLabel = label.trim();
+  const region = bookingCountryRegion(sourceLabel);
+  const fullLabel = region ? bookingCountryName(region) : 'Unknown country';
 
   return {
+    flag: region ? countryFlagFromRegion(region) : null,
+    flagLabel: region ? `${fullLabel} flag` : 'Unknown country',
     fullLabel,
     shortLabel: compactTableLabel(fullLabel),
   } as const;
+}
+
+function bookingCountryRegion(label: string) {
+  if (!label || label === 'Unknown') {
+    return null;
+  }
+
+  const normalized = label.replace(/_/g, '-').trim();
+  const parts = normalized.split('-').filter(Boolean);
+  const lastPart = parts.at(-1);
+
+  if (lastPart && /^[a-z]{2}$/i.test(lastPart) && parts.length > 1) {
+    return lastPart.toUpperCase();
+  }
+
+  if (/^[a-z]{2}$/i.test(normalized) && normalized.toLowerCase() === 'vi') {
+    return 'VN';
+  }
+
+  return null;
+}
+
+function bookingCountryName(region: string) {
+  const countryNames: Record<string, string> = {
+    CN: 'China',
+    JP: 'Japan',
+    KR: 'South Korea',
+    SG: 'Singapore',
+    TH: 'Thailand',
+    US: 'United States',
+    VN: 'Vietnam',
+  };
+
+  return countryNames[region] ?? region;
+}
+
+function countryFlagFromRegion(region: string) {
+  if (!/^[A-Z]{2}$/.test(region)) {
+    return null;
+  }
+
+  return String.fromCodePoint(
+    ...region.split('').map((letter) => 127397 + letter.charCodeAt(0)),
+  );
 }
 
 function bookingAddressDisplay(booking: AdminBooking) {

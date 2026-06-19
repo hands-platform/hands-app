@@ -1875,8 +1875,41 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
+.vuexy-booking-country-cell {
+  align-items: center;
+  color: var(--admin-text);
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.vuexy-booking-country-cell > strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vuexy-booking-country-flag {
+  align-items: center;
+  background: var(--admin-surface-muted);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--admin-border-subtle);
+  display: inline-flex;
+  flex: 0 0 24px;
+  font-size: 18px;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  overflow: hidden;
+  width: 24px;
+}
+
 .vuexy-booking-address-cell,
-.vuexy-booking-language-cell,
 .vuexy-booking-service-cell,
 .vuexy-booking-state-cell {
   display: grid;
@@ -1885,7 +1918,6 @@ a.action-button-card:hover {
 }
 
 .vuexy-booking-address-cell > strong,
-.vuexy-booking-language-cell > strong,
 .vuexy-booking-service-cell > strong,
 .vuexy-booking-state-cell > strong {
   color: var(--admin-text);
@@ -1898,7 +1930,6 @@ a.action-button-card:hover {
 }
 
 .vuexy-booking-address-cell > .pill,
-.vuexy-booking-language-cell > .pill,
 .vuexy-booking-service-cell > .pill,
 .vuexy-booking-state-cell > .pill {
   justify-self: flex-start;

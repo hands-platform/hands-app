@@ -241,8 +241,8 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('Partner A');
-    expect(rendered).toContain('vi-VN');
-    expect(rendered).toContain('Device language');
+    expect(rendered).toContain('Vietnam');
+    expect(rendered).not.toContain('vi-VN');
     expect(rendered).toContain('12 Nguyen Hue, Da Nang');
     expect(rendered).toContain('Service type');
     expect(rendered).toContain('Service address');
@@ -266,8 +266,10 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('href="/customers/customer_123"');
     expect(markup).toContain('href="/partners/partner_preferred"');
     expect(markup).toContain('href="/partners/partner_participant"');
-    expect(markup).toContain('vuexy-booking-language-cell');
-    expect(markup).toContain('aria-label="Device language: vi-VN"');
+    expect(markup).toContain('vuexy-booking-country-cell');
+    expect(markup).toContain('vuexy-booking-country-flag');
+    expect(markup).toContain('aria-label="Country: Vietnam"');
+    expect(markup).toContain('aria-label="Vietnam flag"');
     expect(markup).toContain('vuexy-booking-service-cell');
     expect(markup).toContain('aria-label="Service type: Foot Massage"');
     expect(markup).toContain('vuexy-booking-address-cell');
