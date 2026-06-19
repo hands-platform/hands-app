@@ -141,6 +141,10 @@ class ProviderRepository {
     return _bookingRepository.startBooking(bookingId);
   }
 
+  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
+    return _bookingRepository.completeBooking(bookingId);
+  }
+
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,

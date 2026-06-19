@@ -150,6 +150,58 @@ void main() {
     );
     expect(find.textContaining('HANDS operations for review'), findsOneWidget);
   });
+
+  testWidgets(
+      'captures location before completing service from the chat screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final bookingRepository = _CompletableBookingRepository();
+    final profileRepository = _FakeProviderProfileRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) {
+            final repository = _FakeAuthRepository();
+            return AuthController(
+              restoreAuthSession: RestoreAuthSession(repository),
+              requestOtp: RequestOtp(repository),
+              signInWithOtp: SignInWithOtp(repository),
+              signOut: SignOut(repository),
+            );
+          }),
+          providerRepositoryProvider.overrideWithValue(
+            ProviderRepository(
+              profileRepository,
+              bookingRepository,
+              _FakeChatRepository(),
+              _FakeProviderEarningsRepository(),
+              _FakePushNotificationRepository(),
+              _FakeProviderVerificationRepository(),
+              _FakeProviderOnboardingRepository(),
+            ),
+          ),
+          realtimeSocketProvider.overrideWithValue(_NoopRealtimeSocket()),
+        ],
+        child: const MaterialApp(home: Scaffold(body: ChatScreen())),
+      ),
+    );
+
+    await tester.tap(find.text('Open latest chat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Complete service'), findsOneWidget);
+    await tester.tap(find.text('Complete service'));
+    await tester.pumpAndSettle();
+
+    expect(bookingRepository.completedBookingId, 'booking-chat-ready');
+    expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
+    expect(find.textContaining('Service completed'), findsOneWidget);
+  });
 }
 
 class _FakeAuthRepository implements AuthRepository {
@@ -240,6 +292,9 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
 
   @override
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
+
+  @override
+  Future<Map<String, dynamic>> completeBooking(String bookingId) async => {};
 
   @override
   Future<Map<String, dynamic>> cancelBooking(
@@ -333,11 +388,27 @@ class _ChatReadyBookingRepository implements ProviderBookingRepository {
   Future<Map<String, dynamic>> startBooking(String bookingId) async => {};
 
   @override
+  Future<Map<String, dynamic>> completeBooking(String bookingId) async => {};
+
+  @override
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
   }) async =>
       {};
+}
+
+class _CompletableBookingRepository extends _ChatReadyBookingRepository {
+  String? completedBookingId;
+
+  @override
+  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
+    completedBookingId = bookingId;
+    return {
+      'id': bookingId,
+      'status': 'COMPLETED',
+    };
+  }
 }
 
 class _CancellableBookingRepository extends _ChatReadyBookingRepository {

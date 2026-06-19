@@ -42,6 +42,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Map<String, dynamic>? currentBooking;
   bool loading = false;
   bool cancellationSubmitting = false;
+  bool completionSubmitting = false;
 
   @override
   void initState() {
@@ -292,6 +293,51 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  Future<void> completeService() async {
+    final activeBookingId = bookingId;
+    if (activeBookingId == null || !isServiceCompletionAvailable) {
+      return;
+    }
+
+    setState(() {
+      completionSubmitting = true;
+      error = null;
+      statusMessage = null;
+    });
+    try {
+      String? locationCaptureWarning;
+      try {
+        await ref
+            .read(providerRepositoryProvider)
+            .updateLocation(bookingId: activeBookingId);
+      } catch (_) {
+        locationCaptureWarning =
+            'Current location could not be attached to the completion, but the completion request was sent.';
+      }
+      await ref
+          .read(providerRepositoryProvider)
+          .completeBooking(activeBookingId);
+      const nextStatusMessage =
+          'Service completed. HANDS operations can now review the final booking record.';
+      setState(() {
+        currentBooking = {
+          ...?currentBooking,
+          'id': activeBookingId,
+          'status': 'COMPLETED',
+        };
+        statusMessage = locationCaptureWarning == null
+            ? nextStatusMessage
+            : '$nextStatusMessage $locationCaptureWarning';
+      });
+    } catch (exception) {
+      setState(() => error = providerAppErrorMessage(exception));
+    } finally {
+      if (mounted) {
+        setState(() => completionSubmitting = false);
+      }
+    }
+  }
+
   bool get isPostMatchCancellationAvailable {
     final status = currentBooking?['status']?.toString();
     return bookingId != null &&
@@ -301,6 +347,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           'ARRIVED',
           'IN_SERVICE',
         }.contains(status);
+  }
+
+  bool get isServiceCompletionAvailable {
+    return bookingId != null &&
+        currentBooking?['status']?.toString() == 'IN_SERVICE';
   }
 
   Future<String?> _showCancellationReasonDialog() async {
@@ -395,12 +446,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               icon: const Icon(Icons.my_location_outlined),
               label: const Text('Share current location'),
             ),
+            if (isServiceCompletionAvailable) ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed:
+                    completionSubmitting || cancellationSubmitting || loading
+                        ? null
+                        : completeService,
+                icon: completionSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_circle_outline),
+                label: const Text('Complete service'),
+              ),
+            ],
             if (isPostMatchCancellationAvailable) ...[
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed: cancellationSubmitting || loading
-                    ? null
-                    : requestPostMatchCancellation,
+                onPressed:
+                    cancellationSubmitting || completionSubmitting || loading
+                        ? null
+                        : requestPostMatchCancellation,
                 icon: cancellationSubmitting
                     ? const SizedBox(
                         width: 18,

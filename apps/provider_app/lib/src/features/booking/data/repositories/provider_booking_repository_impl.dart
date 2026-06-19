@@ -84,6 +84,13 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> completeBooking(String bookingId) async {
+    final result =
+        await _api.postJson('/partner/bookings/$bookingId/complete', {});
+    return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+
+  @override
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,

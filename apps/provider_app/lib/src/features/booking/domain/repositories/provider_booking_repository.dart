@@ -13,6 +13,8 @@ abstract class ProviderBookingRepository {
 
   Future<Map<String, dynamic>> startBooking(String bookingId);
 
+  Future<Map<String, dynamic>> completeBooking(String bookingId);
+
   Future<Map<String, dynamic>> cancelBooking(
     String bookingId, {
     required String note,
