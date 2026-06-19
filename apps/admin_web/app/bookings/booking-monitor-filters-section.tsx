@@ -20,6 +20,18 @@ export type BookingMonitorEvidenceFilterOption = {
   readonly value: BookingEvidenceFilter;
 };
 
+type BookingMonitorViewCategoryKey =
+  | 'realtime'
+  | 'completed'
+  | 'postMatchCancellations'
+  | 'archive';
+
+type BookingMonitorViewCategory = {
+  readonly description: string;
+  readonly key: BookingMonitorViewCategoryKey;
+  readonly title: string;
+};
+
 type BookingMonitorFiltersSectionProps = {
   readonly activeView: BookingMonitorViewOption;
   readonly baseVisibleBookingCount: number;
@@ -40,6 +52,57 @@ type BookingMonitorFiltersSectionProps = {
   readonly viewCounts: ReadonlyMap<string, number>;
   readonly viewOptions: readonly BookingMonitorViewOption[];
   readonly visibleBookingCount: number;
+};
+
+const bookingMonitorViewCategories: readonly BookingMonitorViewCategory[] = [
+  {
+    key: 'realtime',
+    title: 'Realtime Bookings',
+    description: 'Live request, matching, Partner handoff, address, location, and chat repair views.',
+  },
+  {
+    key: 'completed',
+    title: 'Completed',
+    description: 'Closeout, payment, cash debt, pricing, refund, and expired booking review views.',
+  },
+  {
+    key: 'postMatchCancellations',
+    title: 'Post-match Cancellations',
+    description: 'Cancellation approval, evidence, no-show, and manual decision review views.',
+  },
+  {
+    key: 'archive',
+    title: 'Archive',
+    description: 'Full booking history for investigation and audit review.',
+  },
+];
+
+const bookingMonitorViewCategoryByView: Record<BookingPageView, BookingMonitorViewCategoryKey> = {
+  active: 'realtime',
+  address: 'realtime',
+  all: 'archive',
+  attention: 'realtime',
+  'blocked-create': 'realtime',
+  'cash-debt': 'completed',
+  chat: 'realtime',
+  'chat-evidence': 'postMatchCancellations',
+  'chat-repair': 'realtime',
+  closeout: 'completed',
+  'customer-choice': 'realtime',
+  'evidence-missing': 'postMatchCancellations',
+  expired: 'completed',
+  'first-pick': 'realtime',
+  'handoff-repair': 'realtime',
+  location: 'realtime',
+  'manual-decision': 'postMatchCancellations',
+  marketplace: 'realtime',
+  matching: 'realtime',
+  'no-show': 'postMatchCancellations',
+  'no-supply': 'realtime',
+  payment: 'completed',
+  'post-match-cancellations': 'postMatchCancellations',
+  pricing: 'completed',
+  'refund-review': 'completed',
 };
 
 export function BookingMonitorFiltersSection({
@@ -67,6 +130,14 @@ export function BookingMonitorFiltersSection({
     (option) =>
       option.view === view || option.view === 'all' || (viewCounts.get(option.view) ?? 0) > 0,
   );
+  const categorizedViewOptions = bookingMonitorViewCategories
+    .map((category) => ({
+      category,
+      options: visibleViewOptions.filter(
+        (option) => bookingMonitorViewCategoryByView[option.view] === category.key,
+      ),
+    }))
+    .filter(({ options }) => options.length > 0);
 
   return (
     <AdminFilterPanel
@@ -132,17 +203,27 @@ export function BookingMonitorFiltersSection({
           </AdminFormControlButton>
         </div>
       </div>
-      <div className="participant-list">
-        {visibleViewOptions.map((option) => (
-          <button
-            key={option.view}
-            type="button"
-            onClick={() => onViewChange(option.view)}
-            disabled={view === option.view}
-            title={option.description}
-          >
-            {option.label} ({viewCounts.get(option.view) ?? 0})
-          </button>
+      <div className="booking-monitor-view-categories" aria-label="Booking operation categories">
+        {categorizedViewOptions.map(({ category, options }) => (
+          <section className="booking-monitor-view-category" key={category.key}>
+            <div className="booking-monitor-view-category-heading">
+              <h3>{category.title}</h3>
+              <p>{category.description}</p>
+            </div>
+            <div className="participant-list">
+              {options.map((option) => (
+                <button
+                  key={option.view}
+                  type="button"
+                  onClick={() => onViewChange(option.view)}
+                  disabled={view === option.view}
+                  title={option.description}
+                >
+                  {option.label} ({viewCounts.get(option.view) ?? 0})
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </AdminFilterPanel>

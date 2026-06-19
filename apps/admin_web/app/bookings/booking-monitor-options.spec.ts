@@ -28,6 +28,7 @@ describe('booking monitor options', () => {
       'chat-evidence',
       'evidence-missing',
       'refund-review',
+      'post-match-cancellations',
       'expired',
       'no-show',
       'all',

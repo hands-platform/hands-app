@@ -2199,6 +2199,44 @@ a.action-button-card:hover {
   align-self: end;
 }
 
+.booking-monitor-view-categories {
+  display: grid;
+  gap: 14px;
+}
+
+.booking-monitor-view-category {
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: 8px;
+  padding-top: 14px;
+}
+
+.booking-monitor-view-category:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.booking-monitor-view-category-heading {
+  display: grid;
+  gap: 3px;
+}
+
+.booking-monitor-view-category-heading h3 {
+  color: rgb(var(--admin-main-channel) / 0.88);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.booking-monitor-view-category-heading p {
+  color: var(--admin-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .booking-monitor .participant-list button {
   background: var(--admin-surface);
   border-color: var(--admin-border-strong);

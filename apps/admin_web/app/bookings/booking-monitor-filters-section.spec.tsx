@@ -18,6 +18,18 @@ describe('BookingMonitorFiltersSection', () => {
       view: 'all' as const,
     },
     {
+      description: 'Completed booking closeout.',
+      label: 'Closeout ops',
+      operatorHint: 'Use this for closeout review.',
+      view: 'closeout' as const,
+    },
+    {
+      description: 'Bookings waiting for post-match cancellation review.',
+      label: 'Post-match cancellations',
+      operatorHint: 'Use this for post-match cancellation review.',
+      view: 'post-match-cancellations' as const,
+    },
+    {
       description: 'Bookings closed as no-show.',
       label: 'No-show',
       operatorHint: 'Use this for no-show evidence review.',
@@ -49,6 +61,8 @@ describe('BookingMonitorFiltersSection', () => {
       viewCounts: new Map([
         ['active', 3],
         ['all', 7],
+        ['closeout', 2],
+        ['post-match-cancellations', 1],
         ['no-show', 0],
       ]),
       viewOptions,
@@ -66,6 +80,11 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Payment / wallet check');
     expect(rendered).toContain('Active bookings (3)');
     expect(rendered).toContain('All bookings (7)');
+    expect(rendered).toContain('Realtime Bookings');
+    expect(rendered).toContain('Completed');
+    expect(rendered).toContain('Closeout ops (2)');
+    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).toContain('Post-match cancellations (1)');
     expect(rendered).not.toContain('No-show (0)');
     expect(rendered).toContain('Start with active bookings.');
     expect(classNamesIn(section)).toEqual(
@@ -81,7 +100,7 @@ describe('BookingMonitorFiltersSection', () => {
     const rendered = normalizedText(
       renderToStaticMarkup(
         BookingMonitorFiltersSection({
-          activeView: viewOptions[2],
+          activeView: viewOptions[4],
           baseVisibleBookingCount: 0,
           evidenceFilter: 'all',
           evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
@@ -100,6 +119,8 @@ describe('BookingMonitorFiltersSection', () => {
           viewCounts: new Map([
             ['active', 3],
             ['all', 7],
+            ['closeout', 2],
+            ['post-match-cancellations', 0],
             ['no-show', 0],
           ]),
           viewOptions,
@@ -110,6 +131,8 @@ describe('BookingMonitorFiltersSection', () => {
 
     expect(rendered).toContain('No-show (0)');
     expect(rendered).toContain('All bookings (7)');
+    expect(rendered).toContain('Post-match Cancellations');
+    expect(rendered).not.toContain('Post-match cancellations (0)');
   });
 
   it('wires the clear filters action', () => {
