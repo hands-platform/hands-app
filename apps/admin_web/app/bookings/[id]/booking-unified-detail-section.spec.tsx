@@ -30,18 +30,23 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Customer detail');
     expect(rendered).toContain('Matched Partner detail');
     expect(rendered).toContain('Finance and system detail');
-    expect(rendered).toContain('Profile, booking address, live location, and service request.');
+    expect(rendered).toContain('Customer profile, service address, live location, and service request.');
+    expect(rendered).toContain('Request time');
+    expect(rendered).toContain('Customer booking request opened.');
+    expect(rendered).toContain('Service address');
+    expect(rendered).toContain('Live customer location');
+    expect(rendered).toContain('Service request');
+    expect(rendered).toContain('Requested, matched, participating Partner, and location checkpoints.');
     expect(rendered).toContain('Requested');
-    expect(rendered).toContain('Initial customer booking request.');
-    expect(rendered).toContain(
-      'Requested Partner, Matched Partner, participation, and location checkpoints.',
-    );
-    expect(rendered).toContain('Requested Partner');
+    expect(rendered).toContain('Matched');
+    expect(rendered).toContain('Profile');
     expect(rendered).toContain('Partner Matched');
     expect(rendered).toContain('Matching location');
     expect(rendered).toContain('Completion location');
     expect(rendered).toContain('Cancellation location');
     expect(rendered).toContain('Partner base, Ha Noi');
+    expect(rendered).toContain('Participating');
+    expect(rendered).toContain('Latest location');
     expect(rendered).toContain('2 Partners');
     expect(rendered).toContain('Cau Giay, Ha Noi');
     expect(rendered).toContain('500.000 VND');
@@ -81,9 +86,7 @@ describe('BookingUnifiedDetailSection', () => {
       messageCount: 3,
     });
 
-    const liveLocationRow = unifiedDetail.customerRows.find(
-      (row) => row.label === 'Actual customer location',
-    );
+    const liveLocationRow = unifiedDetail.customerRows.find((row) => row.label === 'Live customer location');
 
     expect(liveLocationRow).toMatchObject({
       detail: 'Within 0 m of the reservation address. Pin 21.0360, 105.7820',
@@ -153,7 +156,7 @@ describe('BookingUnifiedDetailSection', () => {
       messageCount: 7,
     });
 
-    const requested = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Requested Partner');
+    const requested = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Requested');
     const matching = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Matching location');
     const cancellation = unifiedDetail.matchedPartnerRows.find(
       (row) => row.label === 'Cancellation location',

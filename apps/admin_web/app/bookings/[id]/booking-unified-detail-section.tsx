@@ -37,14 +37,14 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
       </section>
 
       <BookingUnifiedRows
-        helper="Profile, booking address, live location, and service request."
+        helper="Customer profile, service address, live location, and service request."
         id="booking-customer-detail"
         rows={unifiedDetail.customerRows}
         title="Customer detail"
       />
 
       <BookingUnifiedRows
-        helper="Requested Partner, Matched Partner, participation, and location checkpoints."
+        helper="Requested, matched, participating Partner, and location checkpoints."
         id="booking-matched-partner-detail"
         rows={unifiedDetail.matchedPartnerRows}
         title="Matched Partner detail"

@@ -140,12 +140,12 @@ function bookingUnifiedCustomerRows({
 
   return [
     {
-      label: 'Requested',
+      label: 'Request time',
       value: formatDate(bookingRequestOpenedAt(booking)),
-      detail: 'Initial customer booking request.',
+      detail: 'Customer booking request opened.',
     },
     {
-      label: 'Personal information',
+      label: 'Customer',
       value: booking.customerProfile?.user?.fullName ?? 'Customer',
       detail: booking.customerProfile?.user?.phone ?? 'No phone',
       href: customerProfileId ? `/customers/${customerProfileId}` : undefined,
@@ -163,18 +163,18 @@ function bookingUnifiedCustomerRows({
       detail: 'Customer app session language.',
     },
     {
-      label: 'Reservation address',
+      label: 'Service address',
       value: addressLine,
       detail:
         addressPin === 'No pin' ? 'Booking address snapshot.' : `Booking address snapshot. Pin ${addressPin}`,
     },
     {
-      label: 'Actual customer location',
+      label: 'Live customer location',
       value: actualLocation.value,
       detail: actualLocation.detail,
     },
     {
-      label: 'Service details',
+      label: 'Service request',
       value: bookingServiceOptionLabel(booking),
       detail: booking.notes ?? 'No customer note saved.',
     },
@@ -212,7 +212,7 @@ function bookingUnifiedMatchedPartnerRows({
   return [
     bookingUnifiedRequestedPartnerRow(booking),
     {
-      label: 'Matched Partner',
+      label: 'Matched',
       value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not matched',
       detail: selectedProvider?.user?.phone ?? 'No matched Partner phone',
       href: partnerHref,
@@ -227,7 +227,7 @@ function bookingUnifiedMatchedPartnerRows({
         : undefined,
     },
     {
-      label: 'Profile status',
+      label: 'Profile',
       value: selectedProvider?.status ?? 'Unknown',
       detail: selectedProvider?.id
         ? `Partner ${shortId(selectedProvider.id)}`
@@ -240,7 +240,7 @@ function bookingUnifiedMatchedPartnerRows({
     },
     ...partnerLocationRows,
     {
-      label: 'Participating Partners',
+      label: 'Participating',
       value: `${participantPeople.length} Partner${participantPeople.length === 1 ? '' : 's'}`,
       detail:
         participantPeople.length > 0
@@ -249,7 +249,7 @@ function bookingUnifiedMatchedPartnerRows({
       people: participantPeople,
     },
     {
-      label: 'Latest Partner location',
+      label: 'Latest location',
       value: latestPartnerLocation.value,
       detail: latestPartnerLocation.detail,
     },
@@ -261,7 +261,7 @@ function bookingUnifiedRequestedPartnerRow(booking: AdminBookingDetail): Booking
   const requestedId = requested?.id ?? booking.preferredProviderId ?? null;
 
   return {
-    label: 'Requested Partner',
+    label: 'Requested',
     value: requested ? providerName(requested) : 'No requested Partner',
     detail: requested?.user?.phone ?? 'No requested Partner phone',
     href: requestedId ? `/partners/${requestedId}` : undefined,
