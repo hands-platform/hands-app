@@ -1473,10 +1473,11 @@ a.action-button-card:hover {
 }
 
 .booking-custom-date-grid {
+  align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(2, minmax(132px, 1fr));
-  min-width: 288px;
+  grid-template-columns: repeat(2, minmax(132px, 1fr)) auto;
+  min-width: 418px;
 }
 
 .booking-custom-date-grid .admin-form-date {
@@ -1495,6 +1496,7 @@ a.action-button-card:hover {
   font-weight: 700;
   justify-content: center;
   min-height: 38px;
+  white-space: nowrap;
   padding: 0 16px;
 }
 
