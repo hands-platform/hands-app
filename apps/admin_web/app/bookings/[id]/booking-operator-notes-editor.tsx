@@ -6,8 +6,8 @@ export function BookingOperatorNotesEditor() {
       aria-label="Operator note"
       className="ops-note-textarea"
       name="note"
-      placeholder="Example: Called Partner, confirmed arrival in 15 minutes."
-      rows={5}
+      placeholder="Add a short operator note."
+      rows={3}
     />
   );
 }

@@ -352,6 +352,13 @@ function compactOpsTaskHelper(helper: string): string {
   return helper;
 }
 
+function countLabel(count: number, singular: string) {
+  if (count === 0) {
+    return `No ${singular}s`;
+  }
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
 function BookingOperatorNotesSection({
   bookingId,
   notes,
@@ -362,12 +369,15 @@ function BookingOperatorNotesSection({
   const recentNotes = notes?.trim() ? notes.trim().split('\n').slice(-6) : [];
 
   return (
-    <section className="card ops-note-panel admin-mb-16" id="operator-notes">
-      <div className="ops-note-panel-header">
-        <h2>Operator notes</h2>
-        <p className="muted">
-          Internal handling notes retained with the booking audit trail.
-        </p>
+    <section className="card admin-mb-16" id="operator-notes">
+      <div className="ops-section-header">
+        <div>
+          <h2>Operator notes</h2>
+          <p className="muted">
+            Keep short internal notes for the booking audit trail.
+          </p>
+        </div>
+        <span className="pill pill-info">{countLabel(recentNotes.length, 'note')}</span>
       </div>
       <div className="ops-note-history">
         {recentNotes.length > 0 ? (
@@ -376,11 +386,19 @@ function BookingOperatorNotesSection({
           <p className="muted">No internal notes yet.</p>
         )}
       </div>
-      <form action={addBookingOpsNote} className="ops-note-form">
+      <form action={addBookingOpsNote} className="ops-note-form booking-action-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
-        <BookingOperatorNotesEditor />
-        <div className="actions">
-          <button type="submit">Add note</button>
+        <div className="booking-action-note-panel">
+          <div className="booking-action-note-field">
+            <span className="booking-action-note-label">Operator note</span>
+            <BookingOperatorNotesEditor />
+            <small className="booking-action-note-help">Use one short note per action or decision.</small>
+          </div>
+          <div className="booking-action-note-actions">
+            <button className="button button-primary admin-inline-action" type="submit">
+              Add note
+            </button>
+          </div>
         </div>
       </form>
     </section>
@@ -406,20 +424,20 @@ function BookingCompletedCloseoutSection({
         <span className={`pill ${closeout.tone}`}>{closeout.label}</span>
       </div>
       {closeout.canSubmit ? (
-        <form action={closeoutCompletedBooking} className="ops-note-form booking-completed-closeout-form">
+        <form action={closeoutCompletedBooking} className="ops-note-form booking-action-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <div className="booking-completed-closeout-panel">
-            <div className="booking-closeout-note-field">
-              <span className="booking-closeout-note-label">Closeout note</span>
+          <div className="booking-action-note-panel">
+            <div className="booking-action-note-field">
+              <span className="booking-action-note-label">Closeout note</span>
               <textarea
                 aria-label="Closeout note"
                 name="note"
                 placeholder="Add a short reconciliation note."
                 rows={3}
               />
-              <small className="booking-closeout-note-help">Use retained chat, payment, and Partner evidence.</small>
+              <small className="booking-action-note-help">Use retained chat, payment, and Partner evidence.</small>
             </div>
-            <div className="booking-completed-closeout-actions">
+            <div className="booking-action-note-actions">
               <button className="button button-primary admin-inline-action" type="submit">
                 Reconcile booking
               </button>

@@ -264,7 +264,7 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Completed booking review');
     expect(markup).toContain('Completed closeout');
     expect(markup).toContain('Confirm the final finance state for this completed booking.');
-    expect(markup).toContain('booking-completed-closeout-panel');
+    expect(markup).toContain('booking-action-note-panel');
     expect(markup).toContain('Add a short reconciliation note.');
     expect(markup).toContain('Reconcile booking');
     expect(markup.indexOf('Completed booking review')).toBeLessThan(markup.indexOf('Completed closeout'));
@@ -276,8 +276,10 @@ describe('BookingActionStatusSections', () => {
 
     expect(markup).toContain('aria-label="Operator note"');
     expect(markup).toContain('class="ops-note-textarea"');
-    expect(markup).toContain('placeholder="Example: Called Partner, confirmed arrival in 15 minutes."');
-    expect(markup).toContain('class="ops-note-panel-header"');
+    expect(markup).toContain('placeholder="Add a short operator note."');
+    expect(markup).toContain('Keep short internal notes for the booking audit trail.');
+    expect(markup).toContain('Use one short note per action or decision.');
+    expect(markup).toContain('booking-action-note-panel');
     expect(markup).toContain('class="ops-note-history"');
     expect(markup).toContain('name="note"');
     expect(markup).toContain('Add note');
