@@ -1,5 +1,10 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
-import { bookingDetailLifecycleListRows } from './booking-detail-lifecycle-list-section';
+import { renderToStaticMarkup } from 'react-dom/server';
+import {
+  BookingDetailLifecycleListSection,
+  bookingDetailLifecycleListRows,
+  bookingDetailLifecycleTimelineItems,
+} from './booking-detail-lifecycle-list-section';
 
 describe('bookingDetailLifecycleListRows', () => {
   it('keeps realtime and post-match list rows for an in-progress booking detail', () => {
@@ -46,6 +51,47 @@ describe('bookingDetailLifecycleListRows', () => {
       'post-match-in-progress',
       'post-match-cancellations-pending',
     ]);
+  });
+
+  it('builds compact timeline items instead of repeating full table rows', () => {
+    const items = bookingDetailLifecycleTimelineItems(
+      bookingFixture({
+        closedAt: '2026-06-19T08:40:00.000Z',
+        closedReason: 'partner_cancelled',
+        status: 'CANCELLED',
+        statusChangedAt: '2026-06-19T08:40:00.000Z',
+      }),
+      new Date('2026-06-19T09:00:00.000Z').getTime(),
+    );
+
+    expect(items.map((item) => item.title)).toEqual([
+      'Realtime booking request',
+      'Partner matched and service is moving',
+      'Post-match cancellation needs admin review',
+    ]);
+    expect(items.at(-1)?.meta.map((meta) => meta.label)).toEqual([
+      'Matched Partner',
+      'Closed reason',
+      'Review',
+    ]);
+  });
+
+  it('renders Vuexy-style lifecycle timeline markup', () => {
+    const rendered = renderToStaticMarkup(
+      <BookingDetailLifecycleListSection
+        booking={bookingFixture({
+          closedAt: '2026-06-19T08:40:00.000Z',
+          closedReason: 'partner_cancelled',
+          status: 'CANCELLED',
+          statusChangedAt: '2026-06-19T08:40:00.000Z',
+        })}
+      />,
+    );
+
+    expect(rendered).toContain('Booking lifecycle timeline');
+    expect(rendered).toContain('vuexy-basic-timeline');
+    expect(rendered).toContain('Post-match cancellation needs admin review');
+    expect(rendered).not.toContain('<table');
   });
 });
 

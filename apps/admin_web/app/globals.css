@@ -4702,6 +4702,136 @@ a.ops-task-card {
   margin-top: 4px;
 }
 
+.vuexy-basic-timeline {
+  display: grid;
+  gap: 0;
+  padding: 2px 0 0;
+}
+
+.vuexy-basic-timeline-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.vuexy-basic-timeline-separator {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.vuexy-basic-timeline-dot {
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgb(var(--admin-primary-channel) / 0.12);
+  display: block;
+  flex: 0 0 auto;
+  height: 12px;
+  margin: 6px 0 8px;
+  width: 12px;
+}
+
+.vuexy-basic-timeline-dot.is-primary {
+  background: var(--admin-accent);
+  box-shadow: 0 0 0 3px rgb(var(--admin-primary-channel) / 0.14);
+}
+
+.vuexy-basic-timeline-dot.is-info {
+  background: #00bad1;
+  box-shadow: 0 0 0 3px rgb(0 186 209 / 0.14);
+}
+
+.vuexy-basic-timeline-dot.is-success {
+  background: #28c76f;
+  box-shadow: 0 0 0 3px rgb(var(--admin-success-channel) / 0.14);
+}
+
+.vuexy-basic-timeline-dot.is-warning {
+  background: #ff9f43;
+  box-shadow: 0 0 0 3px rgb(var(--admin-warning-channel) / 0.16);
+}
+
+.vuexy-basic-timeline-dot.is-danger {
+  background: var(--admin-danger);
+  box-shadow: 0 0 0 3px rgb(var(--admin-danger-channel) / 0.14);
+}
+
+.vuexy-basic-timeline-connector {
+  background: var(--admin-border);
+  display: block;
+  flex: 1 1 auto;
+  min-height: 76px;
+  width: 1px;
+}
+
+.vuexy-basic-timeline-content {
+  min-width: 0;
+  padding: 0 0 22px 12px;
+}
+
+.vuexy-basic-timeline-title-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.vuexy-basic-timeline-title-row > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vuexy-basic-timeline-title-row h3 {
+  color: var(--admin-text);
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.vuexy-basic-timeline-title-row time {
+  color: var(--admin-muted);
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vuexy-basic-timeline-content > p {
+  margin: 8px 0 0;
+}
+
+.vuexy-basic-timeline-meta {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.vuexy-basic-timeline-meta-item {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.vuexy-basic-timeline-meta-item span {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.vuexy-basic-timeline-meta-item strong {
+  color: var(--admin-text);
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .setup-backlog {
   display: grid;
   gap: 10px;
