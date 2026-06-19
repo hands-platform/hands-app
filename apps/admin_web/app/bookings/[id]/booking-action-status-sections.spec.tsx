@@ -88,6 +88,64 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Structured ops status');
   });
 
+  it('summarizes completed structured ops checkpoints without repeating action cards', () => {
+    const markup = render({
+      opsTaskCards: [
+        {
+          helper: 'Confirm the customer has been updated.',
+          label: 'Customer update',
+          note: null,
+          status: 'DONE',
+          type: 'CUSTOMER_UPDATE',
+          updatedBy: 'System',
+        },
+        {
+          helper: 'Confirm the Partner has been reached.',
+          label: 'Partner update',
+          note: null,
+          status: 'DONE',
+          type: 'PARTNER_UPDATE',
+          updatedBy: 'System',
+        },
+      ],
+    });
+
+    expect(markup).toContain('Structured ops status');
+    expect(markup).toContain('All done');
+    expect(markup).toContain('All structured handling checkpoints are complete.');
+    expect(markup).not.toContain('Customer update checkpoint.');
+    expect(markup).not.toContain('Mark done');
+  });
+
+  it('keeps open structured ops checkpoints actionable', () => {
+    const markup = render({
+      opsTaskCards: [
+        {
+          helper: 'Confirm the customer has been updated.',
+          label: 'Customer update',
+          note: null,
+          status: 'PENDING',
+          type: 'CUSTOMER_UPDATE',
+          updatedBy: 'System',
+        },
+        {
+          helper: 'Confirm the Partner has been reached.',
+          label: 'Partner update',
+          note: null,
+          status: 'DONE',
+          type: 'PARTNER_UPDATE',
+          updatedBy: 'System',
+        },
+      ],
+    });
+
+    expect(markup).toContain('1 open / 2');
+    expect(markup).toContain('Customer update checkpoint.');
+    expect(markup).toContain('Mark done');
+    expect(markup).toContain('Blocked');
+    expect(markup).not.toContain('Partner contact checkpoint.');
+  });
+
   it('shows only actionable booking controls', () => {
     const markup = render({
       chatRepair: {

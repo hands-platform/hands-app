@@ -241,27 +241,12 @@ export function BookingCloseoutReadinessSection({
       <p className="muted admin-mt-8">
         {closeoutReadiness.helper}
       </p>
-      <div className="setup-stage-list admin-mt-12">
-        {closeoutReadiness.items.map((item) => (
-          <div className="setup-stage-item" key={item.id}>
-            <span>{item.label}</span>
-            <div>
-              <strong>{item.status}</strong>
-              <p className="muted">{item.detail}</p>
-              <small>{item.owner}</small>
-            </div>
-            <a className="text-link" href={item.href}>
-              Open
-            </a>
-          </div>
-        ))}
-      </div>
       <div className="ops-task-note admin-mt-14">
         <div className="ops-section-header">
           <div>
-            <strong>Closeout exception register</strong>
+            <strong>Closeout focus</strong>
             <p className="muted">
-              Unresolved closeout items only.
+              Only items that still need admin attention are shown here.
             </p>
           </div>
           <span className={`pill ${closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}`}>
@@ -276,9 +261,7 @@ export function BookingCloseoutReadinessSection({
               <div className="setup-stage-item" key={`exception-${item.id}`}>
                 <span>{item.owner}</span>
                 <div>
-                  <strong>
-                    {item.label}: {item.status}
-                  </strong>
+                  <strong>{`${item.label}: ${item.status}`}</strong>
                   <p className="muted">{item.detail}</p>
                   <small>
                     {bookingStatus === 'COMPLETED'

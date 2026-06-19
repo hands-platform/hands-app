@@ -1,5 +1,6 @@
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import {
+  BookingCloseoutReadinessSection,
   BookingMarketplaceWalletEvidenceSection,
   BookingOperatingLedgerSection,
 } from './booking-operating-sections';
@@ -72,5 +73,71 @@ describe('Booking operating sections', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
     );
+  });
+
+  it('renders closeout readiness with only unresolved focus items', () => {
+    const section = BookingCloseoutReadinessSection({
+      bookingStatus: 'CANCELLED',
+      closeoutReadiness: {
+        helper: 'Payment should be checked before the next handoff or closeout.',
+        items: [
+          {
+            detail: 'Customer linked.',
+            href: '#customer',
+            id: 'customer-record',
+            label: 'Customer',
+            owner: 'Support',
+            status: 'Customer and address linked',
+          },
+          {
+            detail: 'MOMO / AUTHORIZED / 500.000 VND',
+            href: '#payment',
+            id: 'payment-state',
+            label: 'Payment',
+            owner: 'Finance',
+            status: 'Payment closeout pending',
+          },
+        ],
+        openItems: [
+          {
+            detail: 'MOMO / AUTHORIZED / 500.000 VND',
+            href: '#payment',
+            id: 'payment-state',
+            label: 'Payment',
+            owner: 'Finance',
+            status: 'Payment closeout pending',
+          },
+        ],
+        status: '1 closeout item(s)',
+        tone: 'pill-warn',
+      },
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Closeout readiness');
+    expect(rendered).toContain('Closeout focus');
+    expect(rendered).toContain('Payment: Payment closeout pending');
+    expect(rendered).toContain('Clear before the next handoff.');
+    expect(rendered).not.toContain('Customer and address linked');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#payment']));
+  });
+
+  it('renders a compact closeout success state when there are no exceptions', () => {
+    const section = BookingCloseoutReadinessSection({
+      bookingStatus: 'COMPLETED',
+      closeoutReadiness: {
+        helper: 'All factual records needed for this booking stage are aligned.',
+        items: [],
+        openItems: [],
+        status: 'Ready',
+        tone: 'pill-success',
+      },
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No closeout exceptions for the current booking stage.');
+    expect(rendered).toContain('No exceptions');
   });
 });

@@ -278,7 +278,13 @@ function BookingStructuredOpsStatusSection({
   bookingId: string;
   opsTaskCards: OpsTaskCard[];
 }) {
+  if (opsTaskCards.length === 0) {
+    return null;
+  }
+
   const doneCount = opsTaskCards.filter((task) => task.status === 'DONE').length;
+  const visibleTasks = opsTaskCards.filter((task) => task.status !== 'DONE' || task.note);
+  const allDone = doneCount === opsTaskCards.length;
 
   return (
     <section className="card admin-mb-16">
@@ -286,37 +292,44 @@ function BookingStructuredOpsStatusSection({
         <div>
           <h2>Structured ops status</h2>
           <p className="muted">
-            Saved handling statuses for this booking.
+            Open handling checkpoints for this booking.
           </p>
         </div>
-        <span className={`pill ${doneCount === opsTaskCards.length ? 'pill-success' : 'pill-info'}`}>
-          {doneCount}/{opsTaskCards.length} done
+        <span className={`pill ${allDone ? 'pill-success' : 'pill-info'}`}>
+          {allDone ? 'All done' : `${visibleTasks.length} open / ${opsTaskCards.length}`}
         </span>
       </div>
-      <div className="ops-task-grid">
-        {opsTaskCards.map((task) => (
-          <div className={`ops-task-card ops-task-${task.status.toLowerCase()}`} key={task.type}>
-            <div>
-              <span className={`pill ${opsTaskTone(task.status)}`}>{task.status}</span>
-              <h3>{task.label}</h3>
-              <p title={task.helper}>{compactOpsTaskHelper(task.helper)}</p>
-              <small>{task.updatedBy}</small>
-              {task.note && <small className="ops-task-note">Note: {task.note}</small>}
+      {visibleTasks.length > 0 ? (
+        <div className="ops-task-grid">
+          {visibleTasks.map((task) => (
+            <div className={`ops-task-card ops-task-${task.status.toLowerCase()}`} key={task.type}>
+              <div>
+                <span className={`pill ${opsTaskTone(task.status)}`}>{task.status}</span>
+                <h3>{task.label}</h3>
+                <p title={task.helper}>{compactOpsTaskHelper(task.helper)}</p>
+                <small>{task.updatedBy}</small>
+                {task.note && <small className="ops-task-note">Note: {task.note}</small>}
+              </div>
+              <div className="ops-task-actions">
+                <OpsTaskAction bookingId={bookingId} type={task.type} status="DONE" label="Mark done" />
+                <OpsTaskAction bookingId={bookingId} type={task.type} status="BLOCKED" label="Blocked" />
+                <OpsTaskAction bookingId={bookingId} type={task.type} status="PENDING" label="Reset" />
+              </div>
             </div>
-            <div className="ops-task-actions">
-              <OpsTaskAction bookingId={bookingId} type={task.type} status="DONE" label="Mark done" />
-              <OpsTaskAction bookingId={bookingId} type={task.type} status="BLOCKED" label="Blocked" />
-              <OpsTaskAction bookingId={bookingId} type={task.type} status="PENDING" label="Reset" />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted admin-mt-12">All structured handling checkpoints are complete.</p>
+      )}
     </section>
   );
 }
 
 function compactOpsTaskHelper(helper: string): string {
-  if (helper.startsWith('Confirm the guest has been updated')) {
+  if (
+    helper.startsWith('Confirm the guest has been updated') ||
+    helper.startsWith('Confirm the customer has been updated')
+  ) {
     return 'Customer update checkpoint.';
   }
   if (helper.startsWith('Confirm the Partner has been reached')) {
