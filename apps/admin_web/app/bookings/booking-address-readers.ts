@@ -13,6 +13,8 @@ const ADDRESS_TEXT_FIELDS = [
 const ADDRESS_PART_FIELDS = ['line1', 'street', 'ward', 'district', 'city', 'province', 'country'] as const;
 const ADDRESS_LABEL_FIELDS = ['label', 'name'] as const;
 const COORDINATE_PAIR_TEXT_RE = /^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/;
+const COUNTRY_SUFFIX_RE = /(?:,?\s*(?:Vietnam|Viet Nam|Việt Nam|베트남))\.?$/iu;
+const TRAILING_POSTAL_CODE_RE = /\s+\d{4,6}$/;
 
 export function coordinatePairLabel(lat: unknown, lng: unknown) {
   const parsedLat = coordinatePart(lat);
@@ -61,6 +63,21 @@ export function readAddressText(value: unknown): string | null {
   return null;
 }
 
+export function serviceAddressAreaLabel(value: string) {
+  const normalized = value.trim().replace(/\s+/g, ' ');
+  if (!normalized || isPinLikeAddressText(normalized)) {
+    return normalized;
+  }
+
+  const withoutCountry = normalized.replace(COUNTRY_SUFFIX_RE, '').replace(/,\s*$/, '').trim();
+  const parts = withoutCountry.split(',').map(compactAddressAreaPart).filter(Boolean);
+  if (parts.length < 2) {
+    return compactAddressAreaPart(withoutCountry) ?? normalized;
+  }
+
+  return parts.slice(-2).join(', ');
+}
+
 function coordinatePart(value: unknown) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount.toFixed(4) : null;
@@ -76,6 +93,11 @@ function trimmedAddressText(value: unknown) {
     return null;
   }
   return text;
+}
+
+function compactAddressAreaPart(value: string) {
+  const text = value.trim().replace(/\s+/g, ' ').replace(TRAILING_POSTAL_CODE_RE, '').trim();
+  return text || null;
 }
 
 function isPinLikeAddressText(value: string) {

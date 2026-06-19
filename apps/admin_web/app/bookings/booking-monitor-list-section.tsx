@@ -21,7 +21,7 @@ import { readPlainRecord, shortId } from '../../lib/admin-format';
 import type { BookingListActionChip } from '../../lib/booking-list-action-chips';
 import type { BookingListStage } from '../../lib/booking-list-stage';
 import { approvePostMatchCancellation, holdPostMatchCancellation } from './actions';
-import { readAddressText } from './booking-address-readers';
+import { readAddressText, serviceAddressAreaLabel } from './booking-address-readers';
 import { formatBookingDate } from './booking-list-time';
 import {
   bookingPostMatchChatEvidenceRows,
@@ -1076,10 +1076,11 @@ function bookingAddressDisplay(booking: AdminBooking) {
     readAddressText(booking.addressSnapshot?.address) ??
     readAddressText(booking.addressSnapshot);
   const fullLabel = apiAddress ?? legacyAddress ?? snapshotAddress ?? 'No address';
+  const displayLabel = fullLabel === 'No address' ? fullLabel : serviceAddressAreaLabel(fullLabel);
 
   return {
     fullLabel,
-    shortLabel: compactTableLabel(fullLabel),
+    shortLabel: compactTableLabel(displayLabel),
     tone: fullLabel === 'No address' ? 'pill-warn' : 'pill-neutral',
   } as const;
 }

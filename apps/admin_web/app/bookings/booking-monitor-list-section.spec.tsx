@@ -94,7 +94,7 @@ describe('BookingMonitorListSection', () => {
       },
       customerProfileId: 'customer_123',
       address: {
-        formattedAddress: '12 Nguyen Hue, Da Nang',
+        formattedAddress: 'Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남',
       },
       addressSnapshot: {
         address: {
@@ -243,7 +243,7 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Partner A');
     expect(rendered).toContain('Vietnam');
     expect(rendered).not.toContain('vi-VN');
-    expect(rendered).toContain('12 Nguyen Hue, Da Nang');
+    expect(rendered).toContain('Cầu Giấy, Hà Nội');
     expect(rendered).toContain('Service type');
     expect(rendered).toContain('Service address');
     expect(rendered).not.toContain('Booking pin');
@@ -273,8 +273,12 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('vuexy-booking-service-cell');
     expect(markup).toContain('aria-label="Service type: Foot Massage"');
     expect(markup).toContain('vuexy-booking-address-cell');
-    expect(markup).toContain('title="12 Nguyen Hue, Da Nang"');
-    expect(markup).toContain('aria-label="Service address: 12 Nguyen Hue, Da Nang"');
+    expect(markup).toContain(
+      'title="Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남"',
+    );
+    expect(markup).toContain(
+      'aria-label="Service address: Đ. Xuân Thủy/241 P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội 10000 베트남"',
+    );
     expect(markup).toContain('vuexy-booking-state-cell');
     expect(markup).toContain('aria-label="State changed: Matching opened at"');
     expect(markup).toContain('vuexy-booking-avatar-group');
