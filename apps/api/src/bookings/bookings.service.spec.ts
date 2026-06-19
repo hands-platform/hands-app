@@ -945,6 +945,9 @@ describe('BookingsService provider service lifecycle', () => {
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue(approvedPartner()),
       },
+      locationSnapshot: {
+        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
       $transaction: jest.fn((callback) => callback(tx)),
     };
     const matching = { closeBooking: jest.fn() };
@@ -961,6 +964,9 @@ describe('BookingsService provider service lifecycle', () => {
 
     try {
       const result = await service.cancelProviderBooking('booking-1', 'partner-user-1', {
+        addressText: '  Lang, Ha Noi  ',
+        lat: 10.7769,
+        lng: 106.7009,
         note: 'Cancelled from chat',
       });
 
@@ -1001,6 +1007,15 @@ describe('BookingsService provider service lifecycle', () => {
           }),
         }),
       );
+      expect(prisma.locationSnapshot.create).toHaveBeenCalledWith({
+        data: {
+          bookingId: 'booking-1',
+          providerProfileId: 'partner-1',
+          addressText: 'Lang, Ha Noi',
+          lat: 10.7769,
+          lng: 106.7009,
+        },
+      });
       expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
       expect(notifications.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1199,7 +1214,7 @@ describe('BookingsService service completion', () => {
     );
 
     await service.complete('booking-1', 'partner-user-1', {
-      addressText: '33 Nguyen Dinh Chieu, Ho Chi Minh City',
+      addressText: '  33 Nguyen Dinh Chieu, Ho Chi Minh City  ',
       lat: 10.7769,
       lng: 106.7009,
     });
