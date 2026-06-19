@@ -167,6 +167,18 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Dispatch checklist');
   });
 
+  it('can hide dispatch and live-service sections for terminal booking details', () => {
+    const markup = render({
+      showDispatchChecklist: false,
+      showLiveServiceBoard: false,
+    });
+
+    expect(markup).not.toContain('Dispatch checklist');
+    expect(markup).not.toContain('Live service board');
+    expect(markup).toContain('Structured ops status');
+    expect(markup).toContain('Operator notes');
+  });
+
   it('renders post-match cancellation decision actions on detail pages', () => {
     const markup = render({
       outcomeReview: {

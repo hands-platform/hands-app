@@ -71,6 +71,8 @@ export type BookingActionStatusSectionsProps = {
   notes?: string | null;
   opsTaskCards: OpsTaskCard[];
   outcomeReview: BookingOutcomeReviewPanel;
+  showDispatchChecklist?: boolean;
+  showLiveServiceBoard?: boolean;
   showOutcomeReview?: boolean;
 };
 
@@ -93,11 +95,13 @@ export function BookingActionStatusSections({
   notes,
   opsTaskCards,
   outcomeReview,
+  showDispatchChecklist = true,
+  showLiveServiceBoard = true,
   showOutcomeReview = true,
 }: BookingActionStatusSectionsProps) {
   return (
     <>
-      <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />
+      {showDispatchChecklist && <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />}
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
       {showOutcomeReview && (
@@ -111,7 +115,7 @@ export function BookingActionStatusSections({
         <BookingMatchingExpirySection bookingId={bookingId} matchingExpiry={matchingExpiry} />
       )}
       {noShow.canSubmit && <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />}
-      <BookingLiveServiceBoardSection liveSignals={liveSignals} />
+      {showLiveServiceBoard && <BookingLiveServiceBoardSection liveSignals={liveSignals} />}
     </>
   );
 }

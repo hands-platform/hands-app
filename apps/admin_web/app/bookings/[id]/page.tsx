@@ -19,21 +19,9 @@ import { BookingDetailPostMatchDecisionSection } from './booking-detail-post-mat
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import { BookingDetailDisclosureGroup } from './booking-detail-disclosure-group';
 import {
-  BookingCommandDecisionStripSection,
-  type BookingCommandDecisionStripSectionProps,
   BookingDetailToolbar,
   BookingMatchingRuleSnapshotSection,
   type BookingMatchingRuleSnapshotSectionProps,
-  BookingMetricGridSection,
-  type BookingMetricGridSectionProps,
-  BookingMvpAuthorityContractSection,
-  type BookingMvpAuthorityContractSectionProps,
-  BookingOperatorFirstReadSection,
-  type BookingOperatorFirstReadSectionProps,
-  BookingPriorityBriefingSection,
-  type BookingPriorityBriefingSectionProps,
-  BookingRecentOperationsTimelineSection,
-  type BookingRecentOperationsTimelineSectionProps,
 } from './booking-command-briefing-sections';
 import {
   BookingAlertTraceSection,
@@ -111,7 +99,6 @@ import {
 import { bookingDetailActionEvidenceGate } from './booking-detail-action-evidence-gate';
 import { bookingDetailChatEvidenceDecisionBoard } from './booking-detail-chat-evidence-decision-board';
 import { bookingDetailGateAndNotes } from './booking-detail-gate-and-notes';
-import { bookingDetailOperatorFirstRead } from './booking-detail-operator-first-read';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
@@ -141,10 +128,8 @@ import {
   bookingDetailOperatorCommandQueue,
   bookingDetailOpsTaskCards,
 } from './booking-detail-operator-command-queue';
-import { bookingDetailOperatorPriorityBriefing } from './booking-detail-operator-priority-briefing';
 import { bookingDetailOpsCommandCenter } from './booking-detail-ops-command-center';
 import { bookingDetailToolbarProps } from './booking-detail-toolbar-props';
-import { bookingDetailMetricCards } from './booking-detail-metric-cards';
 import { bookingUnifiedDetail } from './booking-unified-detail';
 import {
   BookingUnifiedDetailSection,
@@ -155,7 +140,6 @@ import { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import { bookingOperatingSnapshot } from './booking-operating-snapshot';
 import { bookingOperatingTimeline } from './booking-operating-timeline';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
-import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
 import {
   bookingNotificationTrace,
   humanizeNotificationType,
@@ -198,7 +182,6 @@ import {
 } from '../../../lib/admin-api';
 import { attentionLevel } from '../../../lib/admin-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
-import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingPayoutBatchEligibility as buildBookingPayoutBatchEligibilityFromFacts } from '../../../lib/booking-payout-batch-eligibility';
 import {
@@ -292,15 +275,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const marketplaceSupply = bookingMarketplacePartnerSupply(booking, providers, operationalPolicies);
   const addressRadiusContract = bookingAddressRadiusContract(booking, marketplaceSupply);
   const customerWaitPanel = bookingCustomerWaitPanel(booking, marketplaceSupply, operationalPolicies);
-  const mvpAuthorityContract = bookingMvpAuthorityContract({
-    booking,
-    operationalPolicies,
-    marketplaceSupply,
-    messageCount,
-    financeTrace,
-    walletDebt: cashFeeDebtNeedsSettlement,
-    terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
-  });
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, marketplaceSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const notificationCount = notificationTrace.rows.length;
@@ -435,14 +409,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
     latestLocation,
   });
   const operatorActionMatrix = bookingDetailOperatorActionMatrix(booking);
-  const operatorPriorityBriefing = bookingDetailOperatorPriorityBriefing({
-    booking,
-    operatorCommandQueue,
-    closeoutReadiness,
-    financeFlags,
-    latestLocation,
-    messageCount,
-  });
   const outcomeReview = bookingOutcomeReviewPanel({
     booking,
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
@@ -451,21 +417,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteCount,
   });
   const showPostMatchDecisionBelowLifecycle = outcomeReview.postMatchDecision.visible;
-  const commandDecisionStrip = bookingCommandDecisionStrip({
-    bookingStatus: booking.status,
-    hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressLabel: addressLine,
-    participantCount: booking.participants?.length ?? 0,
-    customerChoiceCandidateCount: customerChoiceCandidates,
-    marketplaceEligibleCount: marketplaceSupply.eligibleCount,
-    hasFinalPartner: finalPartnerSummary.selected,
-    hasChatRoom: Boolean(booking.chatRoom),
-    messageCount,
-    paymentMethod: booking.payment?.method ?? 'NONE',
-    paymentStatus: booking.payment?.status ?? 'NONE',
-    cashDebtNeedsSettlement: cashFeeDebtNeedsSettlement,
-    closeoutOpenItemCount: closeoutReadiness.openItems.length,
-  });
   const evidencePacket = bookingDetailEvidencePacket({
     booking,
     messages,
@@ -608,27 +559,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     notes: booking.notes,
     opsTaskCards,
     outcomeReview,
+    showDispatchChecklist: !TERMINAL_BOOKING_STATUSES.has(booking.status),
+    showLiveServiceBoard: booking.status === 'MATCHED' || booking.status === 'IN_SERVICE',
     showOutcomeReview: !showPostMatchDecisionBelowLifecycle,
   };
-  const bookingOperatorFirstRead = bookingDetailOperatorFirstRead({
-    booking,
-    addressLine,
-    addressPin,
-    matchingRuleStatus: matchingRuleSnapshot.status,
-    customerWaitSignalStatus: customerWaitPanel.signalStatus,
-    eligibleMarketplaceCount: marketplaceSupply.eligibleCount,
-    finalPartnerSummary,
-    participantCounts,
-    messageCount,
-    paymentEvidence,
-    financeTrace,
-  });
-  const bookingMetricCards = bookingDetailMetricCards({
-    booking,
-    closureSummary,
-    messageCount,
-    attentionSummary,
-  });
   const locationTrailRows = bookingDetailLocationTrailRows(locationTrailSnapshots);
   const bookingRecordCustomerRows = bookingDetailCustomerRows({ booking, addressLine, addressPin });
   const bookingRecordServiceRows = bookingDetailServiceRows(booking);
@@ -741,26 +675,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const marketplaceSupplyProps: BookingMarketplaceSupplySectionProps = {
     marketplaceSupply,
   };
-  const operatorFirstReadProps: BookingOperatorFirstReadSectionProps = {
-    rows: bookingOperatorFirstRead,
-  };
-  const metricGridProps: BookingMetricGridSectionProps = {
-    metrics: bookingMetricCards,
-  };
   const matchingRuleSnapshotProps: BookingMatchingRuleSnapshotSectionProps = {
     matchingRuleSnapshot,
-  };
-  const mvpAuthorityContractProps: BookingMvpAuthorityContractSectionProps = {
-    rows: mvpAuthorityContract,
-  };
-  const recentOperationsTimelineProps: BookingRecentOperationsTimelineSectionProps = {
-    operatingTimeline,
-  };
-  const commandDecisionStripProps: BookingCommandDecisionStripSectionProps = {
-    commandDecisionStrip,
-  };
-  const priorityBriefingProps: BookingPriorityBriefingSectionProps = {
-    operatorPriorityBriefing,
   };
   const unifiedDetailProps: BookingUnifiedDetailSectionProps = {
     unifiedDetail,
@@ -782,20 +698,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
           outcomeReview={outcomeReview}
         />
       )}
-
-      <BookingOperatorFirstReadSection {...operatorFirstReadProps} />
-
-      <BookingMetricGridSection {...metricGridProps} />
-
-      <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
-
-      <BookingMvpAuthorityContractSection {...mvpAuthorityContractProps} />
-
-      <BookingRecentOperationsTimelineSection {...recentOperationsTimelineProps} />
-
-      <BookingCommandDecisionStripSection {...commandDecisionStripProps} />
-
-      <BookingPriorityBriefingSection {...priorityBriefingProps} />
 
       <BookingActionStatusSections {...actionStatusSectionsProps} />
 
@@ -819,6 +721,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         title="Dispatch and supply checks"
       >
         <BookingStageSnapshotSection {...stageSnapshotProps} />
+        <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
         <BookingCustomerWaitPanelSection {...customerWaitPanelProps} />
         <BookingAppliedPolicySection {...appliedPolicyProps} />
         <BookingAddressRadiusContractSection {...addressRadiusContractProps} />
