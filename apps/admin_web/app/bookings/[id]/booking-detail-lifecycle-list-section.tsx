@@ -232,6 +232,7 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Matched Partner', value: partnerLabel },
         { label: 'Participating', value: participantLabel },
         { label: 'Service', value: serviceLabel },
+        { label: 'Partner gate', value: 'Blocked until completion' },
         { label: 'Next action', value: row.nextActionLabel },
       ],
       statusLabel: 'Post-match',
@@ -263,6 +264,7 @@ function bookingDetailLifecycleTimelineItem(
           value: booking.payment ? `${row.servicePriceLabel} / ${booking.payment.status}` : 'No payment',
         },
         { label: 'Payout', value: booking.earning ? `${booking.earning.status}` : 'Earning pending' },
+        { label: 'Partner gate', value: 'Eligible after completion' },
       ],
       statusLabel: 'Completed',
       timeLabel: formatDate(booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt),
@@ -290,6 +292,7 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Location capture', value: cancellationLocation.capture },
         { label: 'Closed reason', value: booking.closedReason ?? 'No reason recorded' },
         { label: 'Fee state', value: row.cashDebtAmountLabel ?? row.closureState?.label ?? 'Resolved' },
+        { label: 'Partner gate', value: 'Eligible after cancellation' },
       ],
       statusLabel: 'Resolved',
       timeLabel: formatDate(booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt),
@@ -315,6 +318,7 @@ function bookingDetailLifecycleTimelineItem(
       { label: 'Cancellation location', value: cancellationLocation.value },
       { label: 'Location capture', value: cancellationLocation.capture },
       { label: 'Closed reason', value: booking.closedReason ?? 'No reason recorded' },
+      { label: 'Partner gate', value: 'Eligible during review' },
       { label: 'Review', value: row.nextActionLabel },
     ],
     statusLabel: 'Needs review',
@@ -366,8 +370,8 @@ function partnerLifecycleLocationCheckpoint(
     capture: `Recorded ${formatDate(snapshot.recordedAt)}`,
     detail:
       checkpoint === 'completion'
-        ? 'Completion location is the Partner snapshot nearest the completed state.'
-        : 'Cancellation location is the Partner snapshot nearest the cancellation state.',
+        ? 'Completion location is captured only when the Partner taps complete.'
+        : 'Cancellation location is captured only when the Partner cancels after match.',
     value: locationLabel,
   };
 }

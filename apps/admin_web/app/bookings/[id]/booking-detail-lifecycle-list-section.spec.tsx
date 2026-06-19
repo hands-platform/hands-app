@@ -80,18 +80,25 @@ describe('bookingDetailLifecycleListRows', () => {
     );
     expect(items[0]?.meta.find((meta) => meta.label === 'Requested')?.value).toBe('Not selected');
     expect(items[1]?.meta.find((meta) => meta.label === 'Participating')?.value).toBe('1 Partner');
+    expect(items[1]?.meta.find((meta) => meta.label === 'Partner gate')?.value).toBe(
+      'Blocked until completion',
+    );
     expect(items.at(-1)?.meta.map((meta) => meta.label)).toEqual([
       'Matched Partner',
       'Cancellation location',
       'Location capture',
       'Closed reason',
+      'Partner gate',
       'Review',
     ]);
     expect(items.at(-1)?.meta.find((meta) => meta.label === 'Cancellation location')?.value).toBe(
       'Cau Giay, Ha Noi',
     );
+    expect(items.at(-1)?.meta.find((meta) => meta.label === 'Partner gate')?.value).toBe(
+      'Eligible during review',
+    );
     expect(items.at(-1)?.detail).toContain(
-      'Cancellation location is the Partner snapshot nearest the cancellation state.',
+      'Cancellation location is captured only when the Partner cancels after match.',
     );
   });
 
@@ -138,6 +145,10 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(completed?.meta.find((meta) => meta.label === 'Location capture')?.value).toContain(
       '19 Jun 2026, 15:40',
     );
+    expect(completed?.meta.find((meta) => meta.label === 'Partner gate')?.value).toBe(
+      'Eligible after completion',
+    );
+    expect(completed?.detail).toContain('Completion location is captured only when the Partner taps complete.');
   });
 
   it('renders Vuexy-style lifecycle timeline markup', () => {
