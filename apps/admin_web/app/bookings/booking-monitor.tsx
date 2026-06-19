@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Socket } from 'socket.io-client';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matching-policy-cards';
@@ -28,6 +29,10 @@ import {
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
+import {
+  BOOKING_MONITOR_REALTIME_EVENTS,
+  type BookingMonitorRealtimeState,
+} from './booking-monitor-realtime';
 import {
   buildBookingMonitorMatchingEscalationBoard,
   buildBookingMonitorMatchingEscalationRows,
@@ -64,7 +69,6 @@ type Props = {
 };
 
 type BookingView = BookingPageView;
-const BOOKING_AUTO_REFRESH_INTERVAL_MS = 5000;
 
 export function BookingMonitor({
   bookings,
@@ -89,11 +93,12 @@ export function BookingMonitor({
   viewOptions = bookingViewOptions,
 }: Props) {
   const router = useRouter();
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [liveUpdates, setLiveUpdates] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
   const [nowMs, setNowMs] = useState(initialNowMs ?? 0);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [realtimeState, setRealtimeState] = useState<BookingMonitorRealtimeState>('connecting');
   const [view, setView] = useState<BookingView>(initialView);
   const searchQuery = '';
   const statusFilter = 'all';
@@ -229,30 +234,87 @@ export function BookingMonitor({
       markRefreshed(mountedAt);
     }, 0);
 
-    if (!autoRefresh) {
+    if (!liveUpdates) {
       return () => window.clearTimeout(mountTimer);
     }
 
-    const timer = window.setInterval(refreshBookingData, BOOKING_AUTO_REFRESH_INTERVAL_MS);
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') {
+    let socket: Socket | null = null;
+    let refreshTimer: number | null = null;
+    let closed = false;
+    const realtimeStateTimer = window.setTimeout(() => {
+      setRealtimeState('connecting');
+    }, 0);
+
+    const scheduleRealtimeRefresh = () => {
+      if (refreshTimer !== null) {
+        return;
+      }
+
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
         refreshBookingData();
+      }, 120);
+    };
+
+    const connectRealtime = async () => {
+      try {
+        const response = await fetch('/api/admin/realtime-token', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('Realtime token unavailable');
+        }
+
+        const body = (await response.json()) as { socketBaseUrl?: string; token?: string };
+        if (!body.socketBaseUrl || !body.token || closed) {
+          throw new Error('Realtime token response incomplete');
+        }
+
+        const { io } = await import('socket.io-client');
+        if (closed) {
+          return;
+        }
+
+        socket = io(body.socketBaseUrl, {
+          auth: { token: body.token },
+          transports: ['websocket', 'polling'],
+          withCredentials: true,
+        });
+
+        socket.on('connect', () => {
+          setRealtimeState('live');
+          scheduleRealtimeRefresh();
+        });
+        socket.on('connect_error', () => setRealtimeState('error'));
+        socket.on('disconnect', () => {
+          if (!closed) {
+            setRealtimeState('connecting');
+          }
+        });
+
+        for (const eventName of BOOKING_MONITOR_REALTIME_EVENTS) {
+          socket.on(eventName, scheduleRealtimeRefresh);
+        }
+      } catch {
+        if (!closed) {
+          setRealtimeState('error');
+        }
       }
     };
 
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    window.addEventListener('focus', refreshBookingData);
+    void connectRealtime();
 
     return () => {
+      closed = true;
       window.clearTimeout(mountTimer);
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-      window.removeEventListener('focus', refreshBookingData);
+      window.clearTimeout(realtimeStateTimer);
+      if (refreshTimer !== null) {
+        window.clearTimeout(refreshTimer);
+      }
+      socket?.disconnect();
     };
-  }, [autoRefresh, markRefreshed, refreshBookingData]);
+  }, [liveUpdates, markRefreshed, refreshBookingData]);
 
-  const refreshNow = refreshBookingData;
-  const toggleAutoRefresh = () => setAutoRefresh((value) => !value);
+  const toggleLiveUpdates = () => setLiveUpdates((value) => !value);
+  const realtimeDisplayState = liveUpdates ? realtimeState : 'paused';
   const dateRangeHrefFor = useCallback(
     (range: BookingDateRangeFilter) =>
       bookingDateRangeHref({
@@ -278,19 +340,17 @@ export function BookingMonitor({
   return (
     <div className="booking-monitor">
       <BookingMonitorToolbarSection
-        autoRefresh={autoRefresh}
         description={pageDescription}
-        onRefreshNow={refreshNow}
-        onToggleAutoRefresh={toggleAutoRefresh}
+        liveUpdates={liveUpdates}
+        onToggleLiveUpdates={toggleLiveUpdates}
         title={pageTitle}
       />
 
       <BookingMonitorLiveStatusSection
-        autoRefresh={autoRefresh}
         hasMounted={hasMounted}
         isPending={isPending}
         lastRefreshLabel={lastRefreshLabel}
-        refreshIntervalSeconds={BOOKING_AUTO_REFRESH_INTERVAL_MS / 1000}
+        realtimeState={realtimeDisplayState}
         summary={summary}
       />
 

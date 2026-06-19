@@ -2,6 +2,7 @@ export const SOCKET_ROOMS = {
   user: (userId: string) => `user:${userId}`,
   provider: (providerId: string) => `provider:${providerId}`,
   providers: () => 'providers:online',
+  adminBookings: () => 'admin:bookings',
   booking: (bookingId: string) => `booking:${bookingId}`,
   chat: (chatRoomId: string) => `chat:${chatRoomId}`,
 };

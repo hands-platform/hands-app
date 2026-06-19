@@ -2,37 +2,34 @@ import { normalizedText } from './booking-section-test-utils';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 
 describe('BookingMonitorToolbarSection', () => {
-  it('renders refresh controls when auto refresh is enabled', () => {
+  it('renders live update controls when realtime is enabled', () => {
     const section = BookingMonitorToolbarSection({
-      autoRefresh: true,
-      onRefreshNow: jest.fn(),
-      onToggleAutoRefresh: jest.fn(),
+      liveUpdates: true,
+      onToggleLiveUpdates: jest.fn(),
     });
     const rendered = normalizedText(section);
 
     expect(section.type).toBe('section');
     expect(rendered).toContain('Booking Monitor');
     expect(rendered).toContain('Live operational view for matching');
-    expect(rendered).toContain('Pause refresh');
-    expect(rendered).toContain('Refresh now');
+    expect(rendered).toContain('Pause live');
+    expect(rendered).not.toContain('Refresh now');
   });
 
-  it('shows resume copy when auto refresh is paused', () => {
+  it('shows resume copy when realtime is paused', () => {
     const section = BookingMonitorToolbarSection({
-      autoRefresh: false,
-      onRefreshNow: jest.fn(),
-      onToggleAutoRefresh: jest.fn(),
+      liveUpdates: false,
+      onToggleLiveUpdates: jest.fn(),
     });
 
-    expect(normalizedText(section)).toContain('Resume refresh');
+    expect(normalizedText(section)).toContain('Resume live');
   });
 
   it('allows route-specific workspace copy', () => {
     const section = BookingMonitorToolbarSection({
-      autoRefresh: true,
+      liveUpdates: true,
       description: 'Completed booking workspace for closeout.',
-      onRefreshNow: jest.fn(),
-      onToggleAutoRefresh: jest.fn(),
+      onToggleLiveUpdates: jest.fn(),
       title: 'Completed Bookings',
     });
     const rendered = normalizedText(section);

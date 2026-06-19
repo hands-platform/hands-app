@@ -27,6 +27,9 @@ export class MatchingGateway implements OnGatewayConnection {
     try {
       const user = await this.socketAuth.authenticate(client);
       await client.join(SOCKET_ROOMS.user(user.id));
+      if (user.roles.includes(Role.ADMIN)) {
+        await client.join(SOCKET_ROOMS.adminBookings());
+      }
       if (user.roles.includes(Role.PROVIDER)) {
         await client.join(SOCKET_ROOMS.providers());
       }
@@ -48,48 +51,53 @@ export class MatchingGateway implements OnGatewayConnection {
   }
 
   emitProviderJoined(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('provider.joined', payload);
+    this.emitBookingMonitorEvent(bookingId, 'provider.joined', payload);
   }
 
   emitProviderAccepted(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('provider.accepted', payload);
+    this.emitBookingMonitorEvent(bookingId, 'provider.accepted', payload);
   }
 
   emitProviderRejected(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('provider.rejected', payload);
+    this.emitBookingMonitorEvent(bookingId, 'provider.rejected', payload);
   }
 
   emitBookingOpened(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.opened', payload);
+    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
     this.server.to(SOCKET_ROOMS.providers()).emit('booking.opened', payload);
   }
 
   emitDirectBookingRequested(userId: string, bookingId: string, payload: unknown) {
     this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', payload);
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.opened', payload);
+    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
   emitBackupBookingAvailable(userIds: string[], bookingId: string, payload: unknown) {
     for (const userId of userIds) {
       this.server.to(SOCKET_ROOMS.user(userId)).emit('booking.opened', payload);
     }
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.opened', payload);
+    this.emitBookingMonitorEvent(bookingId, 'booking.opened', payload);
   }
 
   emitBookingMatched(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.matched', payload);
+    this.emitBookingMonitorEvent(bookingId, 'booking.matched', payload);
   }
 
   emitBookingExpired(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.expired', payload);
+    this.emitBookingMonitorEvent(bookingId, 'booking.expired', payload);
   }
 
   emitServiceCompleted(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('service.completed', payload);
+    this.emitBookingMonitorEvent(bookingId, 'service.completed', payload);
   }
 
   emitServiceStarted(bookingId: string, payload: unknown) {
-    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('service.started', payload);
+    this.emitBookingMonitorEvent(bookingId, 'service.started', payload);
+  }
+
+  private emitBookingMonitorEvent(bookingId: string, eventName: string, payload: unknown) {
+    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit(eventName, payload);
+    this.server.to(SOCKET_ROOMS.adminBookings()).emit(eventName, payload);
   }
 
   private async canAccessBookingRoom(bookingId: string, userId: string, roles: Role[]) {

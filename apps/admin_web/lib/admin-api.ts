@@ -1140,7 +1140,13 @@ export async function adminPatch<T>(path: string, body: unknown, fallback: T): P
   }
 }
 
-async function getAdminAccessToken() {
+export function adminRealtimeSocketBaseUrl() {
+  const explicitSocketBaseUrl = process.env.ADMIN_SOCKET_BASE_URL;
+  const fallbackSocketBaseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
+  return (explicitSocketBaseUrl ?? fallbackSocketBaseUrl).replace(/\/$/, '');
+}
+
+export async function getAdminAccessToken() {
   if (process.env.ADMIN_ACCESS_TOKEN) {
     return process.env.ADMIN_ACCESS_TOKEN;
   }

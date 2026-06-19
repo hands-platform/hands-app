@@ -1,22 +1,27 @@
 import type { BookingMonitorSummaryRow } from './booking-monitor-summary';
+import {
+  bookingMonitorRealtimeLabel,
+  type BookingMonitorRealtimeState,
+} from './booking-monitor-realtime';
 
 type BookingMonitorLiveStatusSectionProps = {
-  readonly autoRefresh: boolean;
   readonly hasMounted: boolean;
   readonly isPending: boolean;
   readonly lastRefreshLabel: string;
-  readonly refreshIntervalSeconds: number;
+  readonly realtimeState: BookingMonitorRealtimeState;
   readonly summary: readonly BookingMonitorSummaryRow[];
 };
 
 export function BookingMonitorLiveStatusSection({
-  autoRefresh,
   hasMounted,
   isPending,
   lastRefreshLabel,
-  refreshIntervalSeconds,
+  realtimeState,
   summary,
 }: BookingMonitorLiveStatusSectionProps) {
+  const realtimeLabel = bookingMonitorRealtimeLabel(realtimeState);
+  const realtimeDetail = bookingMonitorRealtimeDetail(realtimeState);
+
   return (
     <>
       <section className="grid">
@@ -29,10 +34,26 @@ export function BookingMonitorLiveStatusSection({
       </section>
 
       <div className="monitor-meta">
-        <span>{isPending ? 'Refreshing...' : 'Ready'}</span>
-        <span>{autoRefresh ? `Live updates every ${refreshIntervalSeconds}s` : 'Live updates paused'}</span>
+        <span>{isPending ? 'Syncing...' : realtimeLabel}</span>
+        <span>{realtimeDetail}</span>
         <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
       </div>
     </>
   );
+}
+
+function bookingMonitorRealtimeDetail(state: BookingMonitorRealtimeState) {
+  if (state === 'live') {
+    return 'Socket push updates active';
+  }
+
+  if (state === 'paused') {
+    return 'Socket push updates paused';
+  }
+
+  if (state === 'error') {
+    return 'Waiting for realtime connection';
+  }
+
+  return 'Opening realtime socket';
 }
