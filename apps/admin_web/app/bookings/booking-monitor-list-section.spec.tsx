@@ -226,7 +226,10 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('State Changed');
     expect(rendered).toContain('Actions');
     expect(rendered).not.toContain('Status');
-    expect(rendered).toContain('Pre-match');
+    expect(rendered).toContain('Realtime Bookings');
+    expect(rendered).toContain(
+      'Live requests from booking submission through matching wait before final Partner assignment.',
+    );
     expect(rendered).toContain('Post-match / In Progress');
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Post-match Cancellations / Needs Review');
@@ -277,7 +280,7 @@ describe('BookingMonitorListSection', () => {
     const rendered = normalizedText(renderToStaticMarkup(section));
 
     expect(rendered).toContain('No bookings match filters.');
-    expect(rendered).toContain('Pre-match');
+    expect(rendered).toContain('Realtime Bookings');
     expect(rendered).toContain('Post-match / In Progress');
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Post-match Cancellations / Needs Review');
@@ -581,7 +584,9 @@ describe('BookingMonitorListSection', () => {
     expect(markup).toContain('aria-label="Cancellation review reasons"');
     expect(markup).toContain('title="No-show review needs retained evidence."');
     expect(markup).toContain('title="No retained chat messages are attached."');
-    expect(markup).not.toContain('type="hidden" name="note" value="Approved after admin chat evidence review."');
+    expect(markup).not.toContain(
+      'type="hidden" name="note" value="Approved after admin chat evidence review."',
+    );
     expect(markup).not.toContain('type="hidden" name="note" value="Held after admin chat evidence review."');
     expect(markup).toContain('href="/bookings/booking_no_show_after_match"');
   });

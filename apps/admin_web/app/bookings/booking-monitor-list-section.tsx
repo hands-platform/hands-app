@@ -230,10 +230,11 @@ const BOOKING_TABLE_HEADERS = [
 const BOOKING_TABLE_GROUPS: readonly BookingTableGroupDefinition[] = [
   {
     countTone: 'pill-neutral',
-    description: 'Requests before final Partner matching.',
-    emptyMessage: 'No pre-match bookings are waiting.',
+    description:
+      'Live requests from booking submission through matching wait before final Partner assignment.',
+    emptyMessage: 'No realtime bookings are waiting.',
     key: 'pre-match',
-    title: 'Pre-match',
+    title: 'Realtime Bookings',
   },
   {
     countTone: 'pill-info',
@@ -286,7 +287,7 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
     <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
       <div className="vuexy-booking-table-toolbar">
         <div>
-          <h2 id="booking-monitor-table-title">Realtime Bookings</h2>
+          <h2 id="booking-monitor-table-title">Bookings</h2>
           <p>
             Grouped by operating state; filters can leave a table empty, and pre-match cancellations are
             omitted from this queue.
@@ -384,11 +385,7 @@ function BookingMonitorTableGroup({
   );
 }
 
-function BookingNeedsReviewSummary({
-  metrics,
-}: {
-  readonly metrics: readonly BookingNeedsReviewMetric[];
-}) {
+function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly BookingNeedsReviewMetric[] }) {
   return (
     <div className="vuexy-booking-review-summary" aria-label="Post-match cancellation review priorities">
       {metrics.map((metric) => (
@@ -1223,10 +1220,7 @@ function bookingReviewReasonPills(booking: AdminBooking): readonly BookingReview
     return reasons;
   }
 
-  if (
-    !isPostMatchCancellationBooking(booking) ||
-    postMatchCancellationResolution(booking) !== 'pending'
-  ) {
+  if (!isPostMatchCancellationBooking(booking) || postMatchCancellationResolution(booking) !== 'pending') {
     return [];
   }
 
