@@ -322,10 +322,14 @@ export class ProvidersService {
     };
   }
 
-  async updateLocation(userId: string | undefined, input: { lat: number; lng: number }) {
+  async updateLocation(userId: string | undefined, input: { lat: number; lng: number; bookingId?: string }) {
     const provider = await this.requireProvider(userId);
     assertProviderNotBlocked(provider);
     assertVietnamCoordinate(input.lat, input.lng, 'Partner location must be inside Vietnam');
+    const bookingId = normalizeOptional(input.bookingId);
+    if (bookingId) {
+      await this.assertProviderLocationBookingContext(provider.id, bookingId);
+    }
     const recordedAt = new Date();
     const updated = await this.prisma.providerProfile.update({
       where: { id: provider.id },
@@ -333,14 +337,31 @@ export class ProvidersService {
         currentLat: input.lat,
         currentLng: input.lng,
         currentLocationUpdatedAt: recordedAt,
-        locationSnapshots: { create: { lat: input.lat, lng: input.lng, recordedAt } },
+        locationSnapshots: { create: { bookingId, lat: input.lat, lng: input.lng, recordedAt } },
       },
     });
     await this.redisState.setProviderLocation(provider.id, {
-      ...input,
+      lat: input.lat,
+      lng: input.lng,
       recordedAt: recordedAt.toISOString(),
     });
     return { ...updated, currentLocationUpdatedAt: recordedAt.toISOString(), locationUpdated: true };
+  }
+
+  private async assertProviderLocationBookingContext(providerProfileId: string, bookingId: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id: bookingId,
+        OR: [
+          { selectedProviderId: providerProfileId },
+          { participants: { some: { providerProfileId } } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (!booking) {
+      throw new BadRequestException('Partner location booking context is invalid');
+    }
   }
 
   async listServices(userId: string | undefined) {

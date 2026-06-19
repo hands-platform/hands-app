@@ -252,6 +252,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       statusMessage = null;
     });
     try {
+      String? locationCaptureWarning;
+      try {
+        await ref
+            .read(providerRepositoryProvider)
+            .updateLocation(bookingId: activeBookingId);
+      } catch (_) {
+        locationCaptureWarning =
+            'Current location could not be attached to the cancellation, but the cancellation request was sent.';
+      }
       final result = await ref
           .read(providerRepositoryProvider)
           .cancelBooking(activeBookingId, note: note);
@@ -259,17 +268,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final autoApproved = cancellation?['autoApproved'] == true;
       final adminReviewRequired =
           cancellation?['adminReviewRequired'] == true || !autoApproved;
+      final nextStatusMessage = autoApproved
+          ? 'Cancellation approved automatically. This booking is now closed.'
+          : adminReviewRequired
+              ? 'Cancellation sent to HANDS operations for review. The chat and your note will stay available for admin review.'
+              : 'Cancellation request sent.';
       setState(() {
         currentBooking = {
           ...?currentBooking,
           'id': activeBookingId,
           'status': 'CANCELLED',
         };
-        statusMessage = autoApproved
-            ? 'Cancellation approved automatically. This booking is now closed.'
-            : adminReviewRequired
-                ? 'Cancellation sent to HANDS operations for review. The chat and your note will stay available for admin review.'
-                : 'Cancellation request sent.';
+        statusMessage = locationCaptureWarning == null
+            ? nextStatusMessage
+            : '$nextStatusMessage $locationCaptureWarning';
       });
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));

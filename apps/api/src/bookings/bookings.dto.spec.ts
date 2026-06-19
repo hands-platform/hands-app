@@ -22,6 +22,15 @@ describe('booking request DTO validation', () => {
     return paramTypes?.[2] as object | undefined;
   }
 
+  function completeProviderBookingBodyMetatype() {
+    const paramTypes = Reflect.getMetadata(
+      'design:paramtypes',
+      BookingsController.prototype,
+      'complete',
+    ) as unknown[];
+    return paramTypes?.[2] as object | undefined;
+  }
+
   it('uses a concrete DTO for customer booking creation', () => {
     expect(createCustomerBookingBodyMetatype()?.constructor.name).toBe('Function');
     expect((createCustomerBookingBodyMetatype() as { name?: string })?.name).toBe(
@@ -32,6 +41,9 @@ describe('booking request DTO validation', () => {
   it('uses a concrete DTO for partner post-match cancellation notes', () => {
     expect((cancelProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
       'CancelProviderBookingDto',
+    );
+    expect((completeProviderBookingBodyMetatype() as { name?: string })?.name).toBe(
+      'CompleteProviderBookingDto',
     );
   });
 
@@ -74,5 +86,26 @@ describe('booking request DTO validation', () => {
       selectedLocationId: 'saved-location-1',
       serviceId: 'service-1',
     });
+  });
+
+  it('keeps optional partner action coordinates and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        lat: 10.7769,
+        lng: 106.7009,
+        note: 'Customer requested cancellation after matching.',
+        walletBalance: -100000,
+      },
+      { type: 'body', metatype: cancelProviderBookingBodyMetatype() as never, data: '' },
+    );
+
+    expect(transformed).toMatchObject({
+      lat: 10.7769,
+      lng: 106.7009,
+      note: 'Customer requested cancellation after matching.',
+    });
+    expect(transformed).not.toHaveProperty('walletBalance');
   });
 });

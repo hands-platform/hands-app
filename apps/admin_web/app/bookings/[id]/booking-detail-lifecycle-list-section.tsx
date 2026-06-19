@@ -1,14 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { AdminBookingDetail } from '../../../lib/admin-api';
+import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import {
   isPostMatchCancellationReviewBooking,
   postMatchCancellationResolution,
 } from '../booking-post-match-cancellations-model';
 import { type BookingMonitorListRow, type BookingTableGroupKey } from '../booking-monitor-list-section';
 import { buildBookingMonitorListRow } from '../booking-monitor-list-row-model';
-import { bookingAddressSnapshotLabel, formatDate } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
+import { bookingAddressSnapshotLabel, coordinateLabel, formatDate } from './booking-formatters';
 
 export type BookingDetailLifecycleListRow = {
   readonly groupKey: BookingTableGroupKey;
@@ -248,11 +249,22 @@ function bookingDetailLifecycleTimelineItem(
   }
 
   if (groupKey === 'completed') {
+    const completionLocation = partnerLifecycleLocationCheckpoint(
+      booking,
+      booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt,
+      'completion',
+    );
+
     return {
-      detail: row.closureState?.detail ?? 'Completed booking is ready for finance and review closeout.',
+      detail: lifecycleDetailWithLocation(
+        row.closureState?.detail ?? 'Completed booking is ready for finance and review closeout.',
+        completionLocation,
+      ),
       groupKey,
       meta: [
         { label: 'Matched Partner', value: partnerLabel },
+        { label: 'Completion location', value: completionLocation.value },
+        { label: 'Location capture', value: completionLocation.capture },
         { label: 'Payment', value: booking.payment ? `${row.servicePriceLabel} / ${booking.payment.status}` : 'No payment' },
         { label: 'Payout', value: booking.earning ? `${booking.earning.status}` : 'Earning pending' },
       ],
@@ -264,11 +276,22 @@ function bookingDetailLifecycleTimelineItem(
   }
 
   if (groupKey === 'post-match-cancellations-resolved') {
+    const cancellationLocation = partnerLifecycleLocationCheckpoint(
+      booking,
+      booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt,
+      'cancellation',
+    );
+
     return {
-      detail: row.closureState?.detail ?? 'Post-match cancellation has been reviewed by operations.',
+      detail: lifecycleDetailWithLocation(
+        row.closureState?.detail ?? 'Post-match cancellation has been reviewed by operations.',
+        cancellationLocation,
+      ),
       groupKey,
       meta: [
         { label: 'Matched Partner', value: partnerLabel },
+        { label: 'Cancellation location', value: cancellationLocation.value },
+        { label: 'Location capture', value: cancellationLocation.capture },
         { label: 'Closed reason', value: booking.closedReason ?? 'No reason recorded' },
         { label: 'Fee state', value: row.cashDebtAmountLabel ?? row.closureState?.label ?? 'Resolved' },
       ],
@@ -279,11 +302,22 @@ function bookingDetailLifecycleTimelineItem(
     };
   }
 
+  const cancellationLocation = partnerLifecycleLocationCheckpoint(
+    booking,
+    booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt,
+    'cancellation',
+  );
+
   return {
-    detail: row.closureState?.detail ?? 'Admin must review chat evidence and close the cancellation decision.',
+    detail: lifecycleDetailWithLocation(
+      row.closureState?.detail ?? 'Admin must review chat evidence and close the cancellation decision.',
+      cancellationLocation,
+    ),
     groupKey,
     meta: [
       { label: 'Matched Partner', value: partnerLabel },
+      { label: 'Cancellation location', value: cancellationLocation.value },
+      { label: 'Location capture', value: cancellationLocation.capture },
       { label: 'Closed reason', value: booking.closedReason ?? 'No reason recorded' },
       { label: 'Review', value: row.nextActionLabel },
     ],
@@ -301,6 +335,87 @@ function compactLifecycleServiceLabel(row: BookingMonitorListRow) {
     .trim();
 
   return amount ? `${row.serviceOptionLabel} / ${amount}` : row.serviceOptionLabel;
+}
+
+function lifecycleDetailWithLocation(
+  detail: string,
+  location: ReturnType<typeof partnerLifecycleLocationCheckpoint>,
+) {
+  return `${detail} ${location.detail}`;
+}
+
+function partnerLifecycleLocationCheckpoint(
+  booking: AdminBookingDetail,
+  eventAt: string | null | undefined,
+  checkpoint: 'completion' | 'cancellation',
+) {
+  const snapshot = selectedProviderLocationSnapshotForEvent(booking, eventAt);
+  if (!snapshot) {
+    return {
+      capture: 'Request only at action time',
+      detail:
+        checkpoint === 'completion'
+          ? 'Completion location should be captured once when the Partner taps complete.'
+          : 'Cancellation location should be captured once when the Partner cancels after match.',
+      value: 'No checkpoint location',
+    };
+  }
+
+  const address = readAddressText(snapshot);
+  const locationLabel = address
+    ? serviceAddressAreaLabel(address)
+    : `Pin ${coordinateLabel(snapshot.lat, snapshot.lng)}`;
+
+  return {
+    capture: `Recorded ${formatDate(snapshot.recordedAt)}`,
+    detail:
+      checkpoint === 'completion'
+        ? 'Completion location is the Partner snapshot nearest the completed state.'
+        : 'Cancellation location is the Partner snapshot nearest the cancellation state.',
+    value: locationLabel,
+  };
+}
+
+function selectedProviderLocationSnapshotForEvent(
+  booking: AdminBookingDetail,
+  eventAt: string | null | undefined,
+) {
+  const selectedProviderId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? null;
+  const snapshots: AdminLocationSnapshot[] = [];
+
+  snapshots.push(...(booking.snapshots ?? []));
+  snapshots.push(...(booking.selectedProvider?.locationSnapshots ?? []));
+  for (const participant of booking.participants ?? []) {
+    const participantProviderId = participant.providerProfileId ?? participant.providerProfile?.id ?? null;
+    if (!selectedProviderId || participantProviderId === selectedProviderId) {
+      snapshots.push(...(participant.providerProfile?.locationSnapshots ?? []));
+    }
+  }
+
+  const filtered = snapshots
+    .filter(
+      (snapshot) =>
+        !selectedProviderId || !snapshot.providerProfileId || snapshot.providerProfileId === selectedProviderId,
+    )
+    .sort((left, right) => locationTimeValue(left.recordedAt) - locationTimeValue(right.recordedAt));
+  if (filtered.length === 0) {
+    return null;
+  }
+
+  const eventTime = locationTimeValue(eventAt);
+  if (!Number.isFinite(eventTime)) {
+    return filtered.at(-1) ?? null;
+  }
+
+  const beforeOrAt = filtered.filter((snapshot) => locationTimeValue(snapshot.recordedAt) <= eventTime);
+  return beforeOrAt.at(-1) ?? filtered.find((snapshot) => locationTimeValue(snapshot.recordedAt) > eventTime) ?? null;
+}
+
+function locationTimeValue(value?: string | null) {
+  if (!value) {
+    return Number.NaN;
+  }
+  return new Date(value).getTime();
 }
 
 function timelinePillTone(tone: BookingDetailLifecycleTimelineItem['tone']) {

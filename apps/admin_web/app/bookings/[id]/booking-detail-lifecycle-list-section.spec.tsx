@@ -58,6 +58,16 @@ describe('bookingDetailLifecycleListRows', () => {
       bookingFixture({
         closedAt: '2026-06-19T08:40:00.000Z',
         closedReason: 'partner_cancelled',
+        snapshots: [
+          {
+            addressText: 'Cau Giay, Ha Noi',
+            id: 'location-cancel',
+            lat: 21.0362,
+            lng: 105.7822,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T08:39:00.000Z',
+          },
+        ],
         status: 'CANCELLED',
         statusChangedAt: '2026-06-19T08:40:00.000Z',
       }),
@@ -76,9 +86,17 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(items[1]?.meta.find((meta) => meta.label === 'Participating')?.value).toBe('1 Partner');
     expect(items.at(-1)?.meta.map((meta) => meta.label)).toEqual([
       'Matched Partner',
+      'Cancellation location',
+      'Location capture',
       'Closed reason',
       'Review',
     ]);
+    expect(items.at(-1)?.meta.find((meta) => meta.label === 'Cancellation location')?.value).toBe(
+      'Cau Giay, Ha Noi',
+    );
+    expect(items.at(-1)?.detail).toContain(
+      'Cancellation location is the Partner snapshot nearest the cancellation state.',
+    );
   });
 
   it('renders Vuexy-style lifecycle timeline markup', () => {

@@ -29,6 +29,12 @@ export class UpdateProviderLocationDto {
 
   @IsNumber()
   lng!: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(128)
+  bookingId?: string;
 }
 
 export class UpdateProviderProfileDto {

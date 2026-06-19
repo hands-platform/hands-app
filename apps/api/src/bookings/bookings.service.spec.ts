@@ -1154,6 +1154,65 @@ describe('BookingsService service completion', () => {
       }),
     );
   });
+
+  it('records a booking-linked partner action location before completion when provided', async () => {
+    const completedBooking = completedBookingWithAddressSnapshot();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            selectedProviderId: 'partner-1',
+            status: BookingStatus.IN_SERVICE,
+          })
+          .mockResolvedValueOnce({
+            customerProfile: { userId: 'customer-user-1' },
+          }),
+        update: jest.fn().mockResolvedValue(completedBooking),
+        count: jest.fn().mockResolvedValue(2),
+      },
+      locationSnapshot: {
+        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
+    };
+    const matching = {
+      completeBooking: jest.fn().mockReturnValue({
+        bookingId: 'booking-1',
+        event: 'service.completed',
+        booking: completedBooking,
+      }),
+    };
+    const matchingGateway = { emitServiceCompleted: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const earnings = { createForCompletedBooking: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      earnings as never,
+    );
+
+    await service.complete('booking-1', 'partner-user-1', {
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(prisma.locationSnapshot.create).toHaveBeenCalledWith({
+      data: {
+        bookingId: 'booking-1',
+        providerProfileId: 'partner-1',
+        lat: 10.7769,
+        lng: 106.7009,
+      },
+    });
+    expect(prisma.booking.update).toHaveBeenCalled();
+  });
 });
 
 describe('BookingsService customer cancellation', () => {
@@ -1259,6 +1318,33 @@ describe('BookingsService marketplace participation', () => {
     ]);
 
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('hides new open requests while the partner has unfinished selected work', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(
+          approvedPartner({
+            selectedBookings: [{ id: 'active-booking-1', status: BookingStatus.IN_SERVICE }],
+          }),
+        ),
+      },
+      booking: {
+        findMany: jest.fn(),
+      },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.getOpenBookings('partner-user-1')).resolves.toEqual([]);
+
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
   });
 
   it('allows a negative-wallet partner to join before final acceptance', async () => {

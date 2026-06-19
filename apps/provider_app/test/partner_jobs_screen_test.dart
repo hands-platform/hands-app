@@ -97,6 +97,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final bookingRepository = _CancellableBookingRepository();
+    final profileRepository = _FakeProviderProfileRepository();
 
     await tester.pumpWidget(
       ProviderScope(
@@ -112,7 +113,7 @@ void main() {
           }),
           providerRepositoryProvider.overrideWithValue(
             ProviderRepository(
-              _FakeProviderProfileRepository(),
+              profileRepository,
               bookingRepository,
               _FakeChatRepository(),
               _FakeProviderEarningsRepository(),
@@ -142,6 +143,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(bookingRepository.cancelledBookingId, 'booking-chat-ready');
+    expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
     expect(
       bookingRepository.cancellationNote,
       'Customer asked to change the appointment after matching.',
@@ -248,6 +250,8 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
 }
 
 class _FakeProviderProfileRepository implements ProviderProfileRepository {
+  String? lastLocationBookingId;
+
   @override
   Future<void> goOnline() async {}
 
@@ -258,10 +262,13 @@ class _FakeProviderProfileRepository implements ProviderProfileRepository {
   Future<Map<String, dynamic>> recordDeviceSession() async => {};
 
   @override
-  Future<Map<String, double>> updateLocation({String? bookingId}) async => {
-        'latitude': 10.7769,
-        'longitude': 106.7009,
-      };
+  Future<Map<String, double>> updateLocation({String? bookingId}) async {
+    lastLocationBookingId = bookingId;
+    return {
+      'latitude': 10.7769,
+      'longitude': 106.7009,
+    };
+  }
 
   @override
   Future<Map<String, dynamic>> providerMe() async => {};

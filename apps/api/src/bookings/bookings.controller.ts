@@ -5,7 +5,12 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { CancelProviderBookingDto, CreateCustomerBookingDto, SelectBookingProviderDto } from './bookings.dto';
+import {
+  CancelProviderBookingDto,
+  CompleteProviderBookingDto,
+  CreateCustomerBookingDto,
+  SelectBookingProviderDto,
+} from './bookings.dto';
 import { BookingsService } from './bookings.service';
 
 @Controller()
@@ -106,8 +111,12 @@ export class BookingsController {
   @Post(['partner/bookings/:id/complete', 'provider/bookings/:id/complete'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  complete(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
-    return this.bookings.complete(bookingId, user.id);
+  complete(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bookingId: string,
+    @Body() body: CompleteProviderBookingDto,
+  ) {
+    return this.bookings.complete(bookingId, user.id, body);
   }
 
   @Post(['partner/bookings/:id/cancel', 'provider/bookings/:id/cancel'])

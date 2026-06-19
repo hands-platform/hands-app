@@ -66,7 +66,19 @@ export class SelectBookingProviderDto {
   providerId!: string;
 }
 
-export class CancelProviderBookingDto {
+class ProviderBookingActionLocationDto {
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
+}
+
+export class CompleteProviderBookingDto extends ProviderBookingActionLocationDto {}
+
+export class CancelProviderBookingDto extends ProviderBookingActionLocationDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)

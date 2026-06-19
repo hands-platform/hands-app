@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  BookingStatus,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
@@ -14,10 +15,21 @@ export const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.SELFIE,
 ];
 
+const PROVIDER_ACTIVE_WORK_STATUSES = new Set<BookingStatus>([
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+]);
+
 export function assertProviderCanReceiveBooking(provider: {
   blockedAt: Date | null;
   blockedReason: string | null;
   status: ProviderStatus;
+  selectedBookings?: Array<{
+    id?: string;
+    status: BookingStatus;
+  }>;
   verification?: { status: VerificationStatus } | null;
   kyc?: { status: ProviderKycStatus } | null;
   documents?: Array<{
@@ -39,6 +51,11 @@ export function assertProviderCanReceiveBooking(provider: {
   }
   if (provider.status === ProviderStatus.OFFLINE) {
     throw new BadRequestException('Partner must be online before receiving bookings');
+  }
+  if (providerHasActiveSelectedBooking(provider)) {
+    throw new BadRequestException(
+      'Partner must complete the current booking before receiving or joining another booking',
+    );
   }
   if (provider.verification?.status !== VerificationStatus.APPROVED) {
     throw new BadRequestException('Partner verification must be approved before receiving bookings');
@@ -65,6 +82,14 @@ export function assertProviderCanReceiveBooking(provider: {
   if (!hasApprovedBank) {
     throw new BadRequestException('Partner bank account must be approved before receiving bookings');
   }
+}
+
+export function providerHasActiveSelectedBooking(provider: {
+  selectedBookings?: Array<{ status: BookingStatus }>;
+}) {
+  return Boolean(
+    provider.selectedBookings?.some((booking) => PROVIDER_ACTIVE_WORK_STATUSES.has(booking.status)),
+  );
 }
 
 export function assertProviderOffersRequestedService(input: {

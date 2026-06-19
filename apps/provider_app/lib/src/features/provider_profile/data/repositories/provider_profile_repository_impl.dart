@@ -38,11 +38,10 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     final identity = await _deviceIdentityDataSource.currentIdentity();
     final result =
         await _api.postJson('/partner/device-session', identity.toJson());
-    final record = result is Map<String, dynamic>
-        ? result
-        : <String, dynamic>{'ok': true};
-    final providerBlocked =
-        record['providerBlocked'] == true || record['blockedScope'] == 'provider';
+    final record =
+        result is Map<String, dynamic> ? result : <String, dynamic>{'ok': true};
+    final providerBlocked = record['providerBlocked'] == true ||
+        record['blockedScope'] == 'provider';
     if (record['blocked'] == true || providerBlocked) {
       final device = _asMap(record['device']);
       final reason = record['blockReason']?.toString() ??
@@ -75,7 +74,11 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       throw StateError(
           'Location permission is required before sharing partner location.');
     }
-    await _api.postJson('/partner/location', {'lat': lat, 'lng': lng});
+    final body = <String, dynamic>{'lat': lat, 'lng': lng};
+    if (bookingId != null && bookingId.isNotEmpty) {
+      body['bookingId'] = bookingId;
+    }
+    await _api.postJson('/partner/location', body);
     _socket.updateLocation(lat: lat, lng: lng, bookingId: bookingId);
     return {'lat': lat, 'lng': lng};
   }

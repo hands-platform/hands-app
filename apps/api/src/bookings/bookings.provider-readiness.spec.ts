@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
+  BookingStatus,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
@@ -51,6 +52,28 @@ describe('booking provider readiness helpers', () => {
     expect(() =>
       assertProviderCanReceiveBooking(readyProvider({ kyc: { status: ProviderKycStatus.PENDING } })),
     ).toThrow(new BadRequestException('Partner KYC must be approved before receiving bookings'));
+  });
+
+  it('rejects partners with unfinished selected work but ignores closed cancellations', () => {
+    expect(() =>
+      assertProviderCanReceiveBooking(
+        readyProvider({
+          selectedBookings: [{ id: 'booking-active', status: BookingStatus.IN_SERVICE }],
+        }),
+      ),
+    ).toThrow(
+      new BadRequestException(
+        'Partner must complete the current booking before receiving or joining another booking',
+      ),
+    );
+
+    expect(() =>
+      assertProviderCanReceiveBooking(
+        readyProvider({
+          selectedBookings: [{ id: 'booking-cancelled', status: BookingStatus.CANCELLED }],
+        }),
+      ),
+    ).not.toThrow();
   });
 
   it('rejects missing booking documents and approved bank accounts', () => {

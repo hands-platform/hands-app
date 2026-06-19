@@ -160,6 +160,95 @@ describe('ProvidersService nearby discovery', () => {
   });
 });
 
+describe('ProvidersService location updates', () => {
+  it('links action-time partner location snapshots to the booking context', async () => {
+    const setProviderLocation = jest.fn();
+    const prisma = {
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+      },
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          blockedAt: null,
+          blockedReason: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          currentLat: 10.7769,
+          currentLng: 106.7009,
+          currentLocationUpdatedAt: new Date('2026-06-19T08:00:00.000Z'),
+        }),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      { setProviderLocation } as never,
+      { get: jest.fn() } as never,
+    );
+
+    await service.updateLocation('provider-user-1', {
+      bookingId: 'booking-1',
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        OR: [
+          { selectedProviderId: 'partner-1' },
+          { participants: { some: { providerProfileId: 'partner-1' } } },
+        ],
+      },
+      select: { id: true },
+    });
+    expect(prisma.providerProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          locationSnapshots: {
+            create: expect.objectContaining({
+              bookingId: 'booking-1',
+              lat: 10.7769,
+              lng: 106.7009,
+            }),
+          },
+        }),
+      }),
+    );
+  });
+
+  it('rejects booking-linked partner locations for unrelated bookings', async () => {
+    const prisma = {
+      booking: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          blockedAt: null,
+          blockedReason: null,
+        }),
+        update: jest.fn(),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      { setProviderLocation: jest.fn() } as never,
+      { get: jest.fn() } as never,
+    );
+
+    await expect(
+      service.updateLocation('provider-user-1', {
+        bookingId: 'other-booking',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    ).rejects.toThrow('Partner location booking context is invalid');
+    expect(prisma.providerProfile.update).not.toHaveBeenCalled();
+  });
+});
+
 function createServiceWithNearbyProviders(providers: unknown[]) {
   return new ProvidersService(
     {

@@ -108,6 +108,7 @@ import {
 import {
   assertProviderCanReceiveBooking,
   assertProviderOffersRequestedService,
+  providerHasActiveSelectedBooking,
 } from './bookings.provider-readiness';
 import { openBookingWhereForProvider, providerBookingHistoryWhere } from './bookings.provider-query';
 import {
@@ -259,11 +260,23 @@ const participantResponseBookingInclude = {
   services: { select: { serviceId: true } },
 } satisfies Prisma.BookingInclude;
 
+const providerActiveWorkStatuses: BookingStatus[] = [
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+];
+
 const providerBookingReadinessInclude = {
   verification: true,
   kyc: true,
   documents: { where: { deletedAt: null } },
   bankAccounts: { where: { deletedAt: null } },
+  selectedBookings: {
+    where: { status: { in: providerActiveWorkStatuses } },
+    select: { id: true, status: true },
+    take: 1,
+  },
 } satisfies Prisma.ProviderProfileInclude;
 
 const preferredProviderBookingReadinessInclude = {
@@ -1138,6 +1151,10 @@ export class BookingsService {
 
   async getOpenBookings(providerUserId?: string) {
     const provider = providerUserId ? await this.requireProvider(providerUserId) : null;
+    if (provider && providerHasActiveSelectedBooking(provider)) {
+      return [];
+    }
+
     const bookings = await this.prisma.booking.findMany({
       where: openBookingWhereForProvider(provider?.id),
       include: clientBookingListInclude,
@@ -1904,7 +1921,7 @@ export class BookingsService {
   async cancelProviderBooking(
     bookingId: string,
     providerUserId: string,
-    input: { note?: string } = {},
+    input: { lat?: number; lng?: number; note?: string } = {},
   ) {
     const provider = await this.requireProvider(providerUserId);
     const cancellation = await this.closeProviderBookingAfterMatch({
@@ -1912,6 +1929,12 @@ export class BookingsService {
       providerProfileId: provider.id,
       providerUserId: provider.userId,
       note: input.note,
+    });
+    await this.recordProviderBookingActionLocation({
+      bookingId,
+      providerProfileId: provider.id,
+      lat: input.lat,
+      lng: input.lng,
     });
 
     await this.matching.closeBooking(bookingId);
@@ -2115,8 +2138,14 @@ export class BookingsService {
     this.matchingGateway.emitServiceStarted(input.bookingId, input.matchingPayload);
   }
 
-  async complete(bookingId: string, providerUserId: string) {
+  async complete(bookingId: string, providerUserId: string, input: { lat?: number; lng?: number } = {}) {
     const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
+    await this.recordProviderBookingActionLocation({
+      bookingId,
+      providerProfileId: provider.id,
+      lat: input.lat,
+      lng: input.lng,
+    });
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: bookingCompletedUpdateData(),
@@ -2141,6 +2170,37 @@ export class BookingsService {
       providerLifecycleAllowedPreviousStatuses(BookingStatus.COMPLETED) ?? [BookingStatus.IN_SERVICE],
     );
     return provider;
+  }
+
+  private async recordProviderBookingActionLocation(input: {
+    bookingId: string;
+    providerProfileId: string;
+    lat?: number;
+    lng?: number;
+  }) {
+    const hasLat = input.lat !== undefined;
+    const hasLng = input.lng !== undefined;
+    if (!hasLat && !hasLng) {
+      return;
+    }
+    if (!hasLat || !hasLng) {
+      throw new BadRequestException('Partner action location requires both lat and lng');
+    }
+
+    const lat = normalizeBookingCoordinate(input.lat, 'lat');
+    const lng = normalizeBookingCoordinate(input.lng, 'lng');
+    if (!isVietnamBookingCoordinate(lat, lng)) {
+      throw new BadRequestException('Partner action location must be inside Vietnam');
+    }
+
+    await this.prisma.locationSnapshot.create({
+      data: {
+        bookingId: input.bookingId,
+        providerProfileId: input.providerProfileId,
+        lat,
+        lng,
+      },
+    });
   }
 
   private async announceServiceCompleted(input: {

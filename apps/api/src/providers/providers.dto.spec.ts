@@ -33,14 +33,15 @@ describe('provider request DTO validation', () => {
     );
   });
 
-  it('strips unsupported partner location fields', async () => {
+  it('keeps booking context and strips unsupported partner location fields', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
     const transformed = await pipe.transform(
-      { lat: 10.7769, lng: 106.7009, walletBalance: -100000 },
+      { bookingId: ' booking-1 ', lat: 10.7769, lng: 106.7009, walletBalance: -100000 },
       { type: 'body', metatype: bodyMetatype('updateLocation', 1) as never, data: '' },
     );
 
+    expect(transformed).toHaveProperty('bookingId', 'booking-1');
     expect(transformed).toHaveProperty('lat', 10.7769);
     expect(transformed).not.toHaveProperty('walletBalance');
   });
