@@ -397,6 +397,14 @@ async function createCompletedBooking() {
         senderId: ids.preferredProviderUser,
       },
     ],
+    locationSnapshots: [
+      {
+        providerProfileId: ids.preferredProviderProfile,
+        lat: 10.7778,
+        lng: 106.7012,
+        recordedAt: closedAt,
+      },
+    ],
     metadata: {
       smoke: 'booking-list',
       deviceLanguage: 'vi-VN',
@@ -466,6 +474,14 @@ async function createPendingCancellationBooking() {
         body: 'Smoke: customer asks admin to review the cancellation.',
         createdAt: new Date(closedAt.getTime() + 60_000),
         senderId: ids.customerUser,
+      },
+    ],
+    locationSnapshots: [
+      {
+        providerProfileId: ids.marketplaceProviderProfile,
+        lat: 10.7791,
+        lng: 106.6997,
+        recordedAt: closedAt,
       },
     ],
     metadata: {
@@ -540,6 +556,14 @@ async function createApprovedCancellationBooking() {
         senderId: ids.customerUser,
       },
     ],
+    locationSnapshots: [
+      {
+        providerProfileId: ids.resolvedProviderProfile,
+        lat: 10.7756,
+        lng: 106.7041,
+        recordedAt: closedAt,
+      },
+    ],
     metadata: {
       smoke: 'booking-list',
       deviceLanguage: 'vi-VN',
@@ -564,6 +588,7 @@ async function createBooking({
   createdAt,
   earning,
   id,
+  locationSnapshots = [],
   matchSource,
   matchedAt,
   metadata,
@@ -635,6 +660,13 @@ async function createBooking({
       participants: {
         create: participants,
       },
+      ...(locationSnapshots.length > 0
+        ? {
+            snapshots: {
+              create: locationSnapshots,
+            },
+          }
+        : {}),
       ...(payment
         ? {
             payment: {
@@ -708,6 +740,7 @@ async function verifySmokeData() {
       participants: true,
       payment: true,
       services: true,
+      snapshots: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -716,6 +749,18 @@ async function verifySmokeData() {
   assertCondition(
     rows.every((booking) => booking.addressSnapshot?.addressText?.includes('Ho Chi Minh City')),
     'Smoke bookings should expose real service addresses.',
+  );
+  assertCondition(
+    rows.find((booking) => booking.id === ids.completedBooking)?.snapshots.length === 1,
+    'Completed smoke booking should include one booking action location snapshot.',
+  );
+  assertCondition(
+    rows.find((booking) => booking.id === ids.pendingCancellationBooking)?.snapshots.length === 1,
+    'Pending cancellation smoke booking should include one booking action location snapshot.',
+  );
+  assertCondition(
+    rows.find((booking) => booking.id === ids.approvedCancellationBooking)?.snapshots.length === 1,
+    'Approved cancellation smoke booking should include one booking action location snapshot.',
   );
 
   return {
@@ -729,6 +774,7 @@ async function verifySmokeData() {
       chatMessageCount: booking.chatRoom?.messages.length ?? 0,
       paymentStatus: booking.payment?.status ?? null,
       earningStatus: booking.earning?.status ?? null,
+      locationSnapshotCount: booking.snapshots.length,
     })),
   };
 }
@@ -755,7 +801,43 @@ async function cleanupSmokeData() {
   await prisma.adminAuditLog.deleteMany({
     where: { target: { in: bookingIds.map((bookingId) => `booking:${bookingId}`) } },
   });
+  const providerTaxLogs = await prisma.providerTaxLog.findMany({
+    where: {
+      OR: [
+        { bookingId: { in: bookingIds } },
+        { earningId: { in: earningIds } },
+        { providerProfileId: { in: providerProfileIds } },
+      ],
+    },
+    select: { id: true },
+  });
+  await prisma.withholdingLog.deleteMany({
+    where: { providerTaxLogId: { in: providerTaxLogs.map((log) => log.id) } },
+  });
+  await prisma.providerTaxLog.deleteMany({
+    where: {
+      OR: [
+        { bookingId: { in: bookingIds } },
+        { earningId: { in: earningIds } },
+        { providerProfileId: { in: providerProfileIds } },
+      ],
+    },
+  });
+  await prisma.providerPlatformFeeLog.deleteMany({
+    where: {
+      OR: [
+        { bookingId: { in: bookingIds } },
+        { earningId: { in: earningIds } },
+        { providerProfileId: { in: providerProfileIds } },
+      ],
+    },
+  });
   await prisma.bookingAddressSnapshot.deleteMany({ where: { bookingId: { in: bookingIds } } });
+  await prisma.locationSnapshot.deleteMany({
+    where: {
+      OR: [{ bookingId: { in: bookingIds } }, { providerProfileId: { in: providerProfileIds } }],
+    },
+  });
   await prisma.bookingParticipant.deleteMany({ where: { bookingId: { in: bookingIds } } });
   await prisma.bookingService.deleteMany({ where: { bookingId: { in: bookingIds } } });
   await prisma.providerEarning.deleteMany({
