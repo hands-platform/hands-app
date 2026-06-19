@@ -1924,6 +1924,7 @@ export class BookingsService {
     input: { lat?: number; lng?: number; addressText?: string; note?: string } = {},
   ) {
     const provider = await this.requireProvider(providerUserId);
+    this.assertProviderBookingActionLocationInput(input);
     const cancellation = await this.closeProviderBookingAfterMatch({
       bookingId,
       providerProfileId: provider.id,
@@ -2145,6 +2146,7 @@ export class BookingsService {
     input: { lat?: number; lng?: number; addressText?: string } = {},
   ) {
     const provider = await this.requireProviderCanCompleteBooking(bookingId, providerUserId);
+    this.assertProviderBookingActionLocationInput(input);
     await this.recordProviderBookingActionLocation({
       bookingId,
       providerProfileId: provider.id,
@@ -2178,6 +2180,14 @@ export class BookingsService {
     return provider;
   }
 
+  private assertProviderBookingActionLocationInput<T extends { lat?: number; lng?: number }>(
+    input: T,
+  ): asserts input is T & { lat: number; lng: number } {
+    if (input.lat === undefined || input.lng === undefined) {
+      throw new BadRequestException('Partner action location requires both lat and lng');
+    }
+  }
+
   private async recordProviderBookingActionLocation(input: {
     bookingId: string;
     providerProfileId: string;
@@ -2185,15 +2195,7 @@ export class BookingsService {
     lat?: number;
     lng?: number;
   }) {
-    const hasLat = input.lat !== undefined;
-    const hasLng = input.lng !== undefined;
-    if (!hasLat && !hasLng) {
-      return;
-    }
-    if (!hasLat || !hasLng) {
-      throw new BadRequestException('Partner action location requires both lat and lng');
-    }
-
+    this.assertProviderBookingActionLocationInput(input);
     const lat = normalizeBookingCoordinate(input.lat, 'lat');
     const lng = normalizeBookingCoordinate(input.lng, 'lng');
     if (!isVietnamBookingCoordinate(lat, lng)) {

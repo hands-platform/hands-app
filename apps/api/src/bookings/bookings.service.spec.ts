@@ -1028,6 +1028,33 @@ describe('BookingsService provider service lifecycle', () => {
     }
   });
 
+  it('rejects partner post-match cancellations before closeout when action location is missing', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      locationSnapshot: {
+        create: jest.fn(),
+      },
+      $transaction: jest.fn(),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.cancelProviderBooking('booking-1', 'partner-user-1', { note: 'Cancelled from chat' }),
+    ).rejects.toThrow('Partner action location requires both lat and lng');
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.locationSnapshot.create).not.toHaveBeenCalled();
+  });
+
   it('queues partner post-match cancellations after 15 minutes for admin review', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-06-01T10:16:00.000Z'));
     const tx = {
@@ -1050,6 +1077,9 @@ describe('BookingsService provider service lifecycle', () => {
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue(approvedPartner()),
       },
+      locationSnapshot: {
+        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
       $transaction: jest.fn((callback) => callback(tx)),
     };
     const matching = { closeBooking: jest.fn() };
@@ -1065,7 +1095,11 @@ describe('BookingsService provider service lifecycle', () => {
     );
 
     try {
-      const result = await service.cancelProviderBooking('booking-1', 'partner-user-1');
+      const result = await service.cancelProviderBooking('booking-1', 'partner-user-1', {
+        addressText: '  Cau Giay, Ha Noi  ',
+        lat: 21.0285,
+        lng: 105.8542,
+      });
 
       expect(result.postMatchCancellation).toMatchObject({
         autoApproved: false,
@@ -1096,6 +1130,15 @@ describe('BookingsService provider service lifecycle', () => {
           }),
         }),
       );
+      expect(prisma.locationSnapshot.create).toHaveBeenCalledWith({
+        data: {
+          bookingId: 'booking-1',
+          providerProfileId: 'partner-1',
+          addressText: 'Cau Giay, Ha Noi',
+          lat: 21.0285,
+          lng: 105.8542,
+        },
+      });
       expect(notifications.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'customer-user-1',
@@ -1129,6 +1172,9 @@ describe('BookingsService service completion', () => {
         update: jest.fn().mockResolvedValue(completedBooking),
         count: jest.fn().mockResolvedValue(2),
       },
+      locationSnapshot: {
+        create: jest.fn().mockResolvedValue({ id: 'snapshot-1' }),
+      },
     };
     const matching = {
       completeBooking: jest.fn().mockReturnValue({
@@ -1149,7 +1195,10 @@ describe('BookingsService service completion', () => {
       earnings as never,
     );
 
-    await service.complete('booking-1', 'partner-user-1');
+    await service.complete('booking-1', 'partner-user-1', {
+      lat: 10.7769,
+      lng: 106.7009,
+    });
 
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1229,6 +1278,40 @@ describe('BookingsService service completion', () => {
       },
     });
     expect(prisma.booking.update).toHaveBeenCalled();
+  });
+
+  it('rejects completion before closeout when Partner action location is missing', async () => {
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          selectedProviderId: 'partner-1',
+          status: BookingStatus.IN_SERVICE,
+        }),
+        update: jest.fn(),
+      },
+      locationSnapshot: {
+        create: jest.fn(),
+      },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.complete('booking-1', 'partner-user-1')).rejects.toThrow(
+      'Partner action location requires both lat and lng',
+    );
+
+    expect(prisma.locationSnapshot.create).not.toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 });
 
