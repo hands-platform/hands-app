@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Eye, MessageSquare, PauseCircle, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import {
   AdminAvatarStatusDot,
   AdminPersonCell,
@@ -276,7 +277,6 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
 
 export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
   const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
-  const visibleBookingCount = groupedRows.reduce((count, group) => count + group.rows.length, 0);
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const activeChatRow = useMemo(
     () => rows.find((row) => row.booking.id === chatBookingId) ?? null,
@@ -284,37 +284,28 @@ export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitor
   );
 
   return (
-    <section className="vuexy-booking-table-card admin-mt-16" aria-labelledby="booking-monitor-table-title">
-      <div className="vuexy-booking-table-toolbar">
-        <div>
-          <h2 id="booking-monitor-table-title">Bookings</h2>
-          <p>
-            Grouped by operating state; filters can leave a table empty, and pre-match cancellations are
-            omitted from this queue.
-          </p>
-        </div>
-        <span className="pill pill-info">
-          {visibleBookingCount} shown / {rows.length} loaded
-        </span>
-      </div>
-
-      <div className="vuexy-booking-table-groups">
-        {rows.length === 0 && <p className="vuexy-booking-table-empty-hint">{emptyMessage}</p>}
-        {groupedRows.map((group) => (
-          <BookingMonitorTableGroup group={group} key={group.key} onOpenChat={setChatBookingId} />
-        ))}
-      </div>
+    <>
+      {groupedRows.map((group, index) => (
+        <BookingMonitorTableGroup
+          emptyMessage={rows.length === 0 && index === 0 ? emptyMessage : group.emptyMessage}
+          group={group}
+          key={group.key}
+          onOpenChat={setChatBookingId}
+        />
+      ))}
       {activeChatRow && (
         <BookingPostMatchCancellationChatLayer onClose={() => setChatBookingId(null)} row={activeChatRow} />
       )}
-    </section>
+    </>
   );
 }
 
 function BookingMonitorTableGroup({
+  emptyMessage,
   group,
   onOpenChat,
 }: {
+  readonly emptyMessage: string;
   readonly group: BookingTableGroup;
   readonly onOpenChat: (bookingId: string) => void;
 }) {
@@ -346,19 +337,19 @@ function BookingMonitorTableGroup({
   }, [totalPages]);
 
   return (
-    <section className="vuexy-booking-table-group" aria-labelledby={`booking-table-${group.key}`}>
-      <div className="vuexy-booking-table-group-header">
-        <div>
-          <h3 id={`booking-table-${group.key}`}>{group.title}</h3>
-          <p>{group.description}</p>
-        </div>
-        <span className={`pill ${group.countTone}`}>{group.rows.length} booking(s)</span>
-      </div>
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"
+      description={group.description}
+      id={`booking-table-${group.key}`}
+      resultLabel={`${group.rows.length} booking(s)`}
+      resultTone={bookingTableGroupResultTone(group)}
+      title={group.title}
+    >
       {needsReviewMetrics.length > 0 && <BookingNeedsReviewSummary metrics={needsReviewMetrics} />}
       <AdminTableScroll>
         <AdminDataTable
           className="vuexy-booking-table"
-          emptyMessage={group.emptyMessage}
+          emptyMessage={emptyMessage}
           headers={BOOKING_TABLE_HEADERS}
           rowCount={visibleRows.length}
         >
@@ -381,8 +372,25 @@ function BookingMonitorTableGroup({
           totalPages={totalPages}
         />
       </div>
-    </section>
+    </AdminFilterPanel>
   );
+}
+
+function bookingTableGroupResultTone(
+  group: BookingTableGroup,
+): 'danger' | 'info' | 'neutral' | 'success' | 'warning' {
+  switch (group.countTone) {
+    case 'pill-danger':
+      return 'danger';
+    case 'pill-info':
+      return 'info';
+    case 'pill-success':
+      return 'success';
+    case 'pill-warn':
+      return 'warning';
+    default:
+      return 'neutral';
+  }
 }
 
 function BookingNeedsReviewSummary({ metrics }: { readonly metrics: readonly BookingNeedsReviewMetric[] }) {

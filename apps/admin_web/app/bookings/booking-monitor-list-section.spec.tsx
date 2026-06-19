@@ -253,6 +253,12 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Detail');
     expect(rendered).toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');
+    expect(
+      markup.split(
+        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+      ).length - 1,
+    ).toBe(5);
+    expect(markup).not.toContain('vuexy-booking-table-groups');
     expect(markup).toContain('href="/bookings/booking_123456789"');
     expect(markup).toContain('href="/customers/customer_123"');
     expect(markup).toContain('href="/partners/partner_preferred"');
