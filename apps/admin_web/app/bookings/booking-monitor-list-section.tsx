@@ -220,12 +220,12 @@ const BOOKING_TABLE_PAGE_SIZE = 10;
 const BOOKING_TABLE_HEADERS = [
   'Request Time',
   'Customer',
-  'Requested Partner',
-  'Participating Partners',
-  'Device Language',
+  'Requested',
+  'Participating',
+  'Country',
   'Service Type',
   'Address',
-  'State Changed',
+  'State',
   'Actions',
 ] as const;
 

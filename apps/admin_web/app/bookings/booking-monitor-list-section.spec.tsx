@@ -218,12 +218,12 @@ describe('BookingMonitorListSection', () => {
 
     expect(rendered).toContain('Request Time');
     expect(rendered).toContain('Customer');
-    expect(rendered).toContain('Requested Partner');
-    expect(rendered).toContain('Participating Partners');
-    expect(rendered).toContain('Device Language');
+    expect(rendered).toContain('Requested');
+    expect(rendered).toContain('Participating');
+    expect(rendered).toContain('Country');
     expect(rendered).toContain('Service Type');
     expect(rendered).toContain('Address');
-    expect(rendered).toContain('State Changed');
+    expect(rendered).toContain('State');
     expect(rendered).toContain('Actions');
     expect(rendered).not.toContain('Status');
     expect(rendered).toContain('Realtime Bookings');
