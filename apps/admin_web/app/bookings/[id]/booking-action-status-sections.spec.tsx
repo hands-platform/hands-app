@@ -237,6 +237,33 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('Operator notes');
   });
 
+  it('can hide structured ops status while keeping notes and outcome actions visible', () => {
+    const markup = render({
+      closeout: {
+        canSubmit: true,
+        label: 'Completed closeout needs reconciliation',
+        tone: 'pill-warn',
+      },
+      outcomeReview: {
+        helper: 'Review completed service before final closeout.',
+        postMatchDecision: hiddenPostMatchDecision(),
+        primaryHref: null,
+        primaryLabel: null,
+        rows: [],
+        status: 'Completed',
+        title: 'Completed booking review',
+        tone: 'pill-success',
+        visible: true,
+      },
+      showStructuredOpsStatus: false,
+    });
+
+    expect(markup).not.toContain('Structured ops status');
+    expect(markup).toContain('Operator notes');
+    expect(markup).toContain('Completed booking review');
+    expect(markup).toContain('Completed closeout');
+  });
+
   it('renders operator notes with a simple text area', () => {
     const markup = render();
 

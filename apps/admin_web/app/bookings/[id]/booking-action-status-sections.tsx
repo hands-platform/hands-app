@@ -75,6 +75,7 @@ export type BookingActionStatusSectionsProps = {
   showDispatchChecklist?: boolean;
   showLiveServiceBoard?: boolean;
   showOutcomeReview?: boolean;
+  showStructuredOpsStatus?: boolean;
 };
 
 type BookingDispatchChecklistSectionProps = {
@@ -99,11 +100,14 @@ export function BookingActionStatusSections({
   showDispatchChecklist = true,
   showLiveServiceBoard = true,
   showOutcomeReview = true,
+  showStructuredOpsStatus = true,
 }: BookingActionStatusSectionsProps) {
   return (
     <>
       {showDispatchChecklist && <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />}
-      <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
+      {showStructuredOpsStatus && (
+        <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
+      )}
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
       {showOutcomeReview && (
         <BookingOutcomeReviewSection bookingId={bookingId} outcomeReview={outcomeReview} />
