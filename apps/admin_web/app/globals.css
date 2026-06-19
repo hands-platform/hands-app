@@ -2208,6 +2208,43 @@ a.action-button-card:hover {
   justify-content: flex-end;
 }
 
+.booking-post-match-decision-flow {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.booking-post-match-decision-step {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  min-height: 126px;
+  padding: 14px;
+}
+
+.booking-post-match-decision-step span {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.booking-post-match-decision-step strong {
+  color: var(--admin-text);
+  font-size: 17px;
+  line-height: 24px;
+}
+
+.booking-post-match-decision-step p {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+}
+
 .booking-outcome-review-actions {
   align-items: center;
   display: flex;

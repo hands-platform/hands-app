@@ -24,7 +24,8 @@ type BookingMonitorRouteProps = {
 const bookingMonitorRouteConfig = {
   all: {
     defaultView: 'all',
-    pageDescription: 'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
+    pageDescription:
+      'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
     pagePath: '/bookings',
     pageTitle: 'Booking Monitor',
     showMatchingEscalation: false,
@@ -42,30 +43,26 @@ const bookingMonitorRouteConfig = {
   },
   completed: {
     defaultView: 'closeout',
-    pageDescription: 'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
+    pageDescription:
+      'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
     pagePath: '/bookings/completed',
     pageTitle: 'Completed Bookings',
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
-    summaryLabels: [
-      'Closeout checks',
-      'Payment checks',
-      'Pricing checks',
-      'Refund review',
-      'Expired',
-    ],
+    summaryLabels: ['Closeout checks', 'Payment checks', 'Pricing checks', 'Refund review', 'Expired'],
     tableGroupKeys: ['completed'],
     viewOptions: completedBookingViewOptions,
   },
   postMatchCancellations: {
     defaultView: 'post-match-cancellations',
-    pageDescription: 'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
+    pageDescription:
+      'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
     pagePath: '/bookings/post-match-cancellations',
     pageTitle: 'Post-match Cancellations',
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
-    showPostMatchCancellationBoard: false,
+    showPostMatchCancellationBoard: true,
     summaryLabels: [
       'No-show',
       'Chat evidence review',

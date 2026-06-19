@@ -7,6 +7,23 @@ type BookingPostMatchCancellationsSectionProps = {
 };
 
 const POST_MATCH_CANCELLATION_TABLE_HEADERS = ['Review Lane', 'Count', 'Handling Rule'] as const;
+const POST_MATCH_CANCELLATION_DECISION_FLOW = [
+  {
+    helper: 'Use the retained chat layer or booking detail to read Partner cancellation and no-show context.',
+    label: '1. Review evidence',
+    value: 'Chat and notes',
+  },
+  {
+    helper: 'Approve restores eligible Partner fee impact; hold keeps the existing fee deduction.',
+    label: '2. Decide fee outcome',
+    value: 'Approve or hold',
+  },
+  {
+    helper: 'Resolved rows stay in the cancellation page for audit, month counts, and operator handoff.',
+    label: '3. Keep audit trail',
+    value: 'Resolved record',
+  },
+] as const;
 
 export function BookingPostMatchCancellationsSection({ board }: BookingPostMatchCancellationsSectionProps) {
   const metrics = [
@@ -62,6 +79,16 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
             Open queue
           </Link>
         </div>
+      </div>
+
+      <div className="booking-post-match-decision-flow admin-mt-14" aria-label="Post-match decision flow">
+        {POST_MATCH_CANCELLATION_DECISION_FLOW.map((item) => (
+          <div className="booking-post-match-decision-step" key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <p>{item.helper}</p>
+          </div>
+        ))}
       </div>
 
       <AdminTableScroll>
