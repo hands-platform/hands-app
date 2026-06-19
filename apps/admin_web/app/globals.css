@@ -4266,7 +4266,7 @@ a.action-button-card:hover {
   display: none;
 }
 
-.booking-detail-section-summary > span:last-child {
+.booking-detail-section-summary-copy {
   display: grid;
   gap: 4px;
   margin-right: auto;

@@ -15,10 +15,15 @@ export function BookingDetailDisclosureGroup({
 }: BookingDetailDisclosureGroupProps) {
   return (
     <details className="booking-detail-section-disclosure">
-      <summary className="booking-detail-section-summary">
+      <summary
+        aria-label={`${label}: ${title}. ${helper}`}
+        className="booking-detail-section-summary"
+      >
         <span className="pill pill-info">{label}</span>
-        <span>
+        {' '}
+        <span className="booking-detail-section-summary-copy">
           <strong>{title}</strong>
+          {' '}
           <small>{helper}</small>
         </span>
       </summary>

@@ -732,7 +732,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <BookingDetailDisclosureGroup
           helper="Open only when an operator needs deep evidence, dispatch, history, or settlement records."
           label="Advanced"
-          title="Advanced booking records"
+          title="Booking records"
         >
           {sectionVisibility.showEvidenceDisclosure && (
             <div className="booking-detail-advanced-section">

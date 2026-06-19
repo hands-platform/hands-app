@@ -15,6 +15,10 @@ describe('BookingDetailDisclosureGroup', () => {
     ).replace(/\s+/g, ' ');
 
     expect(markup).toContain('<details class="booking-detail-section-disclosure">');
+    expect(markup).toContain(
+      '<summary aria-label="Details: Evidence and records. Open only when an operator needs the full record."',
+    );
+    expect(markup).toContain('class="booking-detail-section-summary-copy"');
     expect(markup).toContain('Details');
     expect(markup).toContain('Evidence and records');
     expect(markup).toContain('Open only when an operator needs the full record.');
