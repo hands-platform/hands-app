@@ -4437,10 +4437,11 @@ a.action-button-card:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
-  padding: 24px 24px 16px;
+  padding: 24px 24px 12px;
 }
 
-.vuexy-editor-tool {
+.vuexy-editor-tool,
+.vuexy-editor-color-tool {
   align-items: center;
   appearance: none;
   background: var(--admin-primary-soft);
@@ -4459,22 +4460,173 @@ a.action-button-card:hover {
   width: 30px;
 }
 
-.vuexy-editor-tool:disabled {
+.vuexy-editor-color-tool {
+  cursor: pointer;
+  position: relative;
+}
+
+.vuexy-editor-tool:disabled,
+.vuexy-editor-color-tool:has(.vuexy-editor-color-input:disabled) {
   cursor: default;
   opacity: 0.56;
 }
 
 .vuexy-editor-tool:hover,
 .vuexy-editor-tool:focus-visible,
-.vuexy-editor-tool.is-active {
+.vuexy-editor-tool.is-active,
+.vuexy-editor-color-tool:hover,
+.vuexy-editor-color-tool:focus-within {
   background: var(--admin-accent);
   box-shadow: var(--admin-primary-shadow-sm);
   color: var(--admin-inverse-text);
   outline: none;
 }
 
-.vuexy-editor-tool:active {
+.vuexy-editor-tool:active,
+.vuexy-editor-color-tool:active {
   transform: translateY(1px);
+}
+
+.vuexy-editor-color-swatch {
+  border: 1px solid rgb(var(--admin-surface-channel) / 0.8);
+  border-radius: 999px;
+  block-size: 8px;
+  box-shadow: 0 0 0 1px rgb(var(--admin-main-channel) / 0.08);
+  inline-size: 8px;
+  inset-block-end: 5px;
+  inset-inline-end: 5px;
+  position: absolute;
+}
+
+.vuexy-editor-color-input {
+  block-size: 100%;
+  cursor: pointer;
+  inline-size: 100%;
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+}
+
+.vuexy-editor-color-palette {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  padding-inline-start: 2px;
+}
+
+.vuexy-editor-swatch {
+  appearance: none;
+  block-size: 18px;
+  border: 2px solid var(--admin-surface);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgb(var(--admin-main-channel) / 0.16);
+  cursor: pointer;
+  inline-size: 18px;
+  padding: 0;
+  transition:
+    box-shadow var(--admin-transition),
+    transform var(--admin-transition);
+}
+
+.vuexy-editor-swatch:hover,
+.vuexy-editor-swatch:focus-visible,
+.vuexy-editor-swatch.is-active {
+  box-shadow:
+    0 0 0 2px var(--admin-surface),
+    0 0 0 4px var(--admin-accent);
+  outline: none;
+}
+
+.vuexy-editor-swatch:active {
+  transform: translateY(1px);
+}
+
+.vuexy-editor-swatch:disabled {
+  cursor: default;
+  opacity: 0.56;
+}
+
+.vuexy-editor-media-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  padding: 0 24px 16px;
+}
+
+.vuexy-editor-media-input-wrap {
+  align-items: center;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-muted);
+  display: flex;
+  gap: 8px;
+  min-block-size: 38px;
+  padding-inline: 12px;
+}
+
+.vuexy-editor-media-input-wrap:focus-within {
+  border-color: var(--admin-accent);
+  box-shadow: var(--admin-focus-ring);
+  color: var(--admin-accent-strong);
+}
+
+.vuexy-editor-image-url {
+  background: transparent;
+  border: 0;
+  color: var(--admin-text);
+  font: inherit;
+  inline-size: 100%;
+  min-inline-size: 0;
+  outline: none;
+}
+
+.vuexy-editor-image-url::placeholder {
+  color: var(--admin-disabled);
+}
+
+.vuexy-editor-insert-button {
+  align-items: center;
+  appearance: none;
+  background: var(--admin-primary-soft);
+  border: 0;
+  border-radius: var(--admin-radius);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  justify-content: center;
+  min-block-size: 38px;
+  padding: 0 14px;
+  transition:
+    background var(--admin-transition),
+    box-shadow var(--admin-transition),
+    color var(--admin-transition),
+    transform var(--admin-transition);
+  white-space: nowrap;
+}
+
+.vuexy-editor-insert-button:hover,
+.vuexy-editor-insert-button:focus-visible {
+  background: var(--admin-accent);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
+  outline: none;
+}
+
+.vuexy-editor-insert-button:active {
+  transform: translateY(1px);
+}
+
+.vuexy-editor-insert-button:disabled {
+  background: var(--admin-surface-soft);
+  box-shadow: none;
+  color: var(--admin-disabled);
+  cursor: default;
+  transform: none;
 }
 
 .ops-note-form .vuexy-full-editor-content {
@@ -4544,6 +4696,11 @@ a.action-button-card:hover {
 
 .vuexy-full-editor .ProseMirror img {
   block-size: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-xs);
+  display: block;
+  margin-block: 12px;
   max-inline-size: 100%;
 }
 

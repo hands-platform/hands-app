@@ -246,6 +246,10 @@ describe('BookingActionStatusSections', () => {
     expect(markup).toContain('class="ops-note-panel-header"');
     expect(markup).toContain('class="ops-note-history"');
     expect(markup).toContain('title="Bold"');
+    expect(markup).toContain('title="Text color"');
+    expect(markup).toContain('aria-label="Apply text color Red"');
+    expect(markup).toContain('placeholder="Image URL"');
+    expect(markup).toContain('Insert image');
     expect(markup).toContain('name="note"');
     expect(markup).toContain('Add note');
     expect(markup).not.toContain('Customer contacted');

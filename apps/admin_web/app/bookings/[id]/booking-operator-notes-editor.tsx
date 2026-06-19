@@ -6,16 +6,21 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  Image as ImageIcon,
   Italic,
+  Palette,
   Strikethrough,
   Underline,
   type LucideIcon,
 } from 'lucide-react';
 import { Bold as BoldExtension } from '@tiptap/extension-bold';
+import { Color } from '@tiptap/extension-color';
+import { Image as TiptapImage } from '@tiptap/extension-image';
 import { Italic as ItalicExtension } from '@tiptap/extension-italic';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { Strike } from '@tiptap/extension-strike';
 import { TextAlign } from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
 import { Underline as UnderlineExtension } from '@tiptap/extension-underline';
 import type { Editor } from '@tiptap/react';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
@@ -102,8 +107,45 @@ const EMPTY_EDITOR_STATE: EditorState = {
   isUnderline: false,
 };
 
+const DEFAULT_TEXT_COLOR = '#7367f0';
+const TEXT_COLOR_SWATCHES = [
+  { label: 'Purple', value: '#7367f0' },
+  { label: 'Red', value: '#ff4c51' },
+  { label: 'Orange', value: '#ff9f43' },
+  { label: 'Green', value: '#28c76f' },
+  { label: 'Slate', value: '#4b465c' },
+] as const;
+
+type TiptapJsonNode = {
+  attrs?: {
+    src?: unknown;
+  };
+  content?: TiptapJsonNode[];
+  type?: string;
+};
+
+function collectImageUrls(node: TiptapJsonNode): string[] {
+  const urls =
+    node.type === 'image' && typeof node.attrs?.src === 'string' ? [node.attrs.src] : [];
+
+  if (!Array.isArray(node.content)) {
+    return urls;
+  }
+
+  return [...urls, ...node.content.flatMap(collectImageUrls)];
+}
+
+function getNoteValue(editor: Editor) {
+  const text = editor.getText().trim();
+  const imageLines = collectImageUrls(editor.getJSON()).map((src) => `[image] ${src}`);
+
+  return [text, ...imageLines].filter(Boolean).join('\n').trim();
+}
+
 export function BookingOperatorNotesEditor() {
+  const [imageUrl, setImageUrl] = useState('');
   const [note, setNote] = useState('');
+  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR);
 
   const editor = useEditor({
     editorProps: {
@@ -124,6 +166,15 @@ export function BookingOperatorNotesEditor() {
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      TextStyle,
+      Color,
+      TiptapImage.configure({
+        allowBase64: false,
+        HTMLAttributes: {
+          class: 'vuexy-editor-image',
+        },
+        inline: false,
+      }),
       BoldExtension,
       ItalicExtension,
       Strike,
@@ -131,9 +182,38 @@ export function BookingOperatorNotesEditor() {
     ],
     immediatelyRender: false,
     onUpdate: ({ editor: currentEditor }) => {
-      setNote(currentEditor.getText().trim());
+      setNote(getNoteValue(currentEditor));
     },
   });
+
+  function syncNoteValue(currentEditor: Editor) {
+    setNote(getNoteValue(currentEditor));
+  }
+
+  function insertImage() {
+    if (!editor) {
+      return;
+    }
+
+    const src = imageUrl.trim();
+
+    if (!src) {
+      return;
+    }
+
+    editor.chain().focus().setImage({ src }).run();
+    syncNoteValue(editor);
+    setImageUrl('');
+  }
+
+  function applyTextColor(nextColor: string) {
+    setTextColor(nextColor);
+
+    if (editor) {
+      editor.chain().focus().setColor(nextColor).run();
+      syncNoteValue(editor);
+    }
+  }
 
   const editorState = useEditorState({
     editor,
@@ -169,7 +249,7 @@ export function BookingOperatorNotesEditor() {
             onClick={() => {
               if (editor) {
                 run(editor);
-                setNote(editor.getText().trim());
+                syncNoteValue(editor);
               }
             }}
             title={label}
@@ -178,6 +258,64 @@ export function BookingOperatorNotesEditor() {
             <Icon aria-hidden="true" size={16} strokeWidth={2} />
           </button>
         ))}
+        <label className="vuexy-editor-color-tool" title="Text color">
+          <Palette aria-hidden="true" size={16} strokeWidth={2} />
+          <span className="sr-only">Text color</span>
+          <span className="vuexy-editor-color-swatch" style={{ backgroundColor: textColor }} />
+          <input
+            aria-label="Text color"
+            className="vuexy-editor-color-input"
+            disabled={!editor}
+            onChange={(event) => {
+              applyTextColor(event.target.value);
+            }}
+            type="color"
+            value={textColor}
+          />
+        </label>
+        <div className="vuexy-editor-color-palette" aria-label="Preset text colors">
+          {TEXT_COLOR_SWATCHES.map(({ label, value }) => (
+            <button
+              aria-label={`Apply text color ${label}`}
+              className={`vuexy-editor-swatch${textColor === value ? ' is-active' : ''}`}
+              disabled={!editor}
+              key={value}
+              onClick={() => applyTextColor(value)}
+              style={{ backgroundColor: value }}
+              title={label}
+              type="button"
+            />
+          ))}
+        </div>
+      </div>
+      <div className="vuexy-editor-media-row">
+        <div className="vuexy-editor-media-input-wrap">
+          <ImageIcon aria-hidden="true" size={16} strokeWidth={2} />
+          <input
+            aria-label="Image URL"
+            className="vuexy-editor-image-url"
+            disabled={!editor}
+            onChange={(event) => setImageUrl(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                insertImage();
+              }
+            }}
+            placeholder="Image URL"
+            type="url"
+            value={imageUrl}
+          />
+        </div>
+        <button
+          className="vuexy-editor-insert-button"
+          disabled={!editor || !imageUrl.trim()}
+          onClick={insertImage}
+          type="button"
+        >
+          <ImageIcon aria-hidden="true" size={16} strokeWidth={2} />
+          Insert image
+        </button>
       </div>
       <EditorContent editor={editor} className="vuexy-full-editor-content" />
     </div>
