@@ -174,7 +174,7 @@ function postMatchDecisionPanel(booking: AdminBookingDetail): BookingPostMatchDe
 function outcomePrimaryAction(kind: BookingOutcomeKind, bookingId: string) {
   if (kind === 'post-match-cancel' || kind === 'no-show') {
     return {
-      primaryHref: `/bookings?view=post-match-cancellations#booking-${bookingId}`,
+      primaryHref: `/bookings/post-match-cancellations?view=post-match-cancellations#booking-${bookingId}`,
       primaryLabel: 'Open review queue',
     };
   }

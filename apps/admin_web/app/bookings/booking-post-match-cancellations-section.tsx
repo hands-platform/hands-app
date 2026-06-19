@@ -58,7 +58,7 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
             <span className="pill pill-info">{board.totalCount} total</span>
             <span className="pill pill-neutral">{board.monthCount} this month</span>
           </div>
-          <Link className="booking-action-button is-secondary" href="/bookings?view=post-match-cancellations">
+          <Link className="booking-action-button is-secondary" href="/bookings/post-match-cancellations">
             Open queue
           </Link>
         </div>

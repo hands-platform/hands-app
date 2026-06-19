@@ -95,7 +95,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('Post-match cancellation review');
     expect(review.tone).toBe('pill-warn');
-    expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
+    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-test');
     expect(review.primaryLabel).toBe('Open review queue');
     expect(review.postMatchDecision).toMatchObject({
       canResolve: true,
@@ -128,7 +128,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.visible).toBe(true);
     expect(review.title).toBe('No-show confirmation review');
     expect(review.tone).toBe('pill-danger');
-    expect(review.primaryHref).toBe('/bookings?view=post-match-cancellations#booking-booking-test');
+    expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-test');
     expect(review.postMatchDecision.visible).toBe(false);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
       value: 'No messages',

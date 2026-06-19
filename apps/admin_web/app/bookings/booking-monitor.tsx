@@ -42,6 +42,12 @@ type Props = {
   initialEvidenceFilter?: BookingEvidenceFilter;
   initialGateFilter?: BookingGateFilter;
   liveOperationsPolicy: AdminLiveOperationsPolicy;
+  pageDescription?: string;
+  pageTitle?: string;
+  showEmptyViewOptions?: boolean;
+  showMatchingEscalation?: boolean;
+  showPostMatchCancellationBoard?: boolean;
+  viewOptions?: typeof bookingViewOptions;
 };
 
 type BookingView = BookingPageView;
@@ -53,6 +59,12 @@ export function BookingMonitor({
   initialEvidenceFilter = 'all',
   initialGateFilter = 'all',
   liveOperationsPolicy,
+  pageDescription,
+  pageTitle,
+  showEmptyViewOptions = false,
+  showMatchingEscalation = true,
+  showPostMatchCancellationBoard = true,
+  viewOptions = bookingViewOptions,
 }: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -164,7 +176,11 @@ export function BookingMonitor({
   const paymentFilterOptions = useMemo(() => bookingPaymentFilterOptions(orderedBookings), [orderedBookings]);
 
   const bookingViewCounts = visibleBookingModel.bookingViewCounts;
-  const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
+  const activeView =
+    viewOptions.find((item) => item.view === view) ??
+    bookingViewOptions.find((item) => item.view === view) ??
+    viewOptions[0] ??
+    bookingViewOptions[0];
   const showBookingList = view !== 'blocked-create';
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -210,8 +226,10 @@ export function BookingMonitor({
     <div className="booking-monitor">
       <BookingMonitorToolbarSection
         autoRefresh={autoRefresh}
+        description={pageDescription}
         onRefreshNow={refreshNow}
         onToggleAutoRefresh={toggleAutoRefresh}
+        title={pageTitle}
       />
 
       <BookingMonitorLiveStatusSection
@@ -221,17 +239,21 @@ export function BookingMonitor({
         summary={summary}
       />
 
-      <BookingMonitorMatchingEscalationSection
-        dispatchPartnerShortcuts={dispatchPartnerShortcuts}
-        getCustomerLabel={bookingCustomerLabel}
-        getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
-        livePolicyCards={livePolicyCards}
-        matchingEscalationBoard={matchingEscalationBoard}
-        matchingEscalationRows={matchingEscalationRows}
-        matchingFlowTimeline={matchingFlowTimeline}
-      />
+      {showMatchingEscalation && (
+        <BookingMonitorMatchingEscalationSection
+          dispatchPartnerShortcuts={dispatchPartnerShortcuts}
+          getCustomerLabel={bookingCustomerLabel}
+          getMatchingWindowLabel={(booking) => bookingMatchingWindowLabel(booking, currentTimeMs)}
+          livePolicyCards={livePolicyCards}
+          matchingEscalationBoard={matchingEscalationBoard}
+          matchingEscalationRows={matchingEscalationRows}
+          matchingFlowTimeline={matchingFlowTimeline}
+        />
+      )}
 
-      <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
+      {showPostMatchCancellationBoard && (
+        <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
+      )}
 
       <BookingMonitorFiltersSection
         activeView={activeView}
@@ -247,11 +269,12 @@ export function BookingMonitor({
         paymentFilter={paymentFilter}
         paymentFilterOptions={paymentFilterOptions}
         searchQuery={searchQuery}
+        showEmptyViewOptions={showEmptyViewOptions}
         statusFilter={statusFilter}
         statusFilterOptions={statusFilterOptions}
         view={view}
         viewCounts={bookingViewCounts}
-        viewOptions={bookingViewOptions}
+        viewOptions={viewOptions}
         visibleBookingCount={visibleBookings.length}
       />
 

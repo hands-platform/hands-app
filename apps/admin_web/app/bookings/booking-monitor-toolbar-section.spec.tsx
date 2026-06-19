@@ -26,4 +26,18 @@ describe('BookingMonitorToolbarSection', () => {
 
     expect(normalizedText(section)).toContain('Resume refresh');
   });
+
+  it('allows route-specific workspace copy', () => {
+    const section = BookingMonitorToolbarSection({
+      autoRefresh: true,
+      description: 'Completed booking workspace for closeout.',
+      onRefreshNow: jest.fn(),
+      onToggleAutoRefresh: jest.fn(),
+      title: 'Completed Bookings',
+    });
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Completed Bookings');
+    expect(rendered).toContain('Completed booking workspace for closeout.');
+  });
 });

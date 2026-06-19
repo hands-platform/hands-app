@@ -1,6 +1,10 @@
 import {
+  bookingMonitorPagePathForView,
   bookingEvidenceFilterOptions,
   bookingViewOptions,
+  completedBookingViewOptions,
+  postMatchCancellationBookingViewOptions,
+  realtimeBookingViewOptions,
 } from './booking-monitor-options';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
@@ -56,5 +60,49 @@ describe('booking monitor options', () => {
 
     expect(optionFilters).toEqual(expectedFilters);
     expect(new Set(optionFilters).size).toBe(optionFilters.length);
+  });
+
+  it('splits booking view options by route workspace', () => {
+    expect(realtimeBookingViewOptions.map((option) => option.view)).toEqual([
+      'active',
+      'attention',
+      'matching',
+      'first-pick',
+      'marketplace',
+      'customer-choice',
+      'handoff-repair',
+      'no-supply',
+      'blocked-create',
+      'address',
+      'location',
+      'chat',
+      'chat-repair',
+      'all',
+    ]);
+    expect(completedBookingViewOptions.map((option) => option.view)).toEqual([
+      'payment',
+      'cash-debt',
+      'closeout',
+      'pricing',
+      'refund-review',
+      'expired',
+    ]);
+    expect(postMatchCancellationBookingViewOptions.map((option) => option.view)).toEqual([
+      'manual-decision',
+      'chat-evidence',
+      'evidence-missing',
+      'post-match-cancellations',
+      'no-show',
+    ]);
+  });
+
+  it('routes completed and post-match cancellation views to dedicated pages', () => {
+    expect(bookingMonitorPagePathForView('active')).toBe('/bookings');
+    expect(bookingMonitorPagePathForView('closeout')).toBe('/bookings/completed');
+    expect(bookingMonitorPagePathForView('refund-review')).toBe('/bookings/completed');
+    expect(bookingMonitorPagePathForView('post-match-cancellations')).toBe(
+      '/bookings/post-match-cancellations',
+    );
+    expect(bookingMonitorPagePathForView('no-show')).toBe('/bookings/post-match-cancellations');
   });
 });

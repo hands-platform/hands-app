@@ -11,11 +11,24 @@ export function hrefMatchesPath(href: string, pathname: string, search: string) 
 
   if (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) {
     if (hrefPath === '/bookings') {
-      return true;
+      return pathname === '/bookings' || isBookingDetailPath(pathname);
+    }
+    if (hrefPath === '/bookings/completed' || hrefPath === '/bookings/post-match-cancellations') {
+      return pathname === hrefPath;
     }
 
     return !search || pathname !== hrefPath;
   }
 
   return false;
+}
+
+function isBookingDetailPath(pathname: string) {
+  const bookingSubpath = pathname.slice('/bookings/'.length);
+
+  if (!bookingSubpath || bookingSubpath.includes('/')) {
+    return false;
+  }
+
+  return !new Set(['completed', 'post-match-cancellations']).has(bookingSubpath);
 }

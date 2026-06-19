@@ -4,24 +4,26 @@ import { Pause, Play, RefreshCw } from 'lucide-react';
 
 type BookingMonitorToolbarSectionProps = {
   readonly autoRefresh: boolean;
+  readonly description?: string;
   readonly onRefreshNow: () => void;
   readonly onToggleAutoRefresh: () => void;
+  readonly title?: string;
 };
 
 export function BookingMonitorToolbarSection({
   autoRefresh,
+  description = 'Live operational view for matching, Partner selection, chat, and payment readiness.',
   onRefreshNow,
   onToggleAutoRefresh,
+  title = 'Booking Monitor',
 }: BookingMonitorToolbarSectionProps) {
   const AutoRefreshIcon = autoRefresh ? Pause : Play;
 
   return (
     <section className="toolbar">
       <div>
-        <h1>Booking Monitor</h1>
-        <p className="muted">
-          Live operational view for matching, Partner selection, chat, and payment readiness.
-        </p>
+        <h1>{title}</h1>
+        <p className="muted">{description}</p>
       </div>
       <div className="actions">
         <button className="button button-secondary" type="button" onClick={onToggleAutoRefresh}>

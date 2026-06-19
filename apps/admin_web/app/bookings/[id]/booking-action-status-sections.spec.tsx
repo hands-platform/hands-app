@@ -131,7 +131,7 @@ describe('BookingActionStatusSections', () => {
       outcomeReview: {
         helper: 'Use retained chat before final confirmation.',
         postMatchDecision: hiddenPostMatchDecision(),
-        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
         primaryLabel: 'Open review queue',
         rows: [],
         status: 'Post-match cancellation',
@@ -143,7 +143,7 @@ describe('BookingActionStatusSections', () => {
 
     expect(markup).toContain('Post-match cancellation review');
     expect(markup).toContain('Open review queue');
-    expect(markup).toContain('href="/bookings?view=post-match-cancellations#booking-booking-1"');
+    expect(markup).toContain('href="/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1"');
     expect(markup).toContain('booking-outcome-review-actions');
   });
 
@@ -163,7 +163,7 @@ describe('BookingActionStatusSections', () => {
           timingTone: 'pill-warn',
           visible: true,
         },
-        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
         primaryLabel: 'Open review queue',
         rows: [],
         status: 'Post-match cancellation',
@@ -198,7 +198,7 @@ describe('BookingActionStatusSections', () => {
           timingTone: 'pill-neutral',
           visible: true,
         },
-        primaryHref: '/bookings?view=post-match-cancellations#booking-booking-1',
+        primaryHref: '/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-1',
         primaryLabel: 'Open review queue',
         rows: [],
         status: 'Post-match cancellation',

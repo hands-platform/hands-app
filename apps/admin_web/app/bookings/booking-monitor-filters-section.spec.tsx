@@ -166,6 +166,80 @@ describe('BookingMonitorFiltersSection', () => {
     expect(onClearFilters).toHaveBeenCalledTimes(1);
     expect(normalizedText(renderToStaticMarkup(section))).toContain('Showing 7 of 7');
   });
+
+  it('renders only the provided route workspace categories', () => {
+    const rendered = normalizedText(
+      renderToStaticMarkup(
+        BookingMonitorFiltersSection({
+          activeView: viewOptions[2],
+          baseVisibleBookingCount: 2,
+          evidenceFilter: 'all',
+          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
+          onClearFilters: jest.fn(),
+          onEvidenceFilterChange: jest.fn(),
+          onPaymentFilterChange: jest.fn(),
+          onSearchQueryChange: jest.fn(),
+          onStatusFilterChange: jest.fn(),
+          onViewChange: jest.fn(),
+          paymentFilter: 'all',
+          paymentFilterOptions: [],
+          searchQuery: '',
+          statusFilter: 'all',
+          statusFilterOptions: [],
+          view: 'closeout',
+          viewCounts: new Map([
+            ['active', 3],
+            ['all', 7],
+            ['closeout', 2],
+            ['post-match-cancellations', 1],
+          ]),
+          viewOptions: [viewOptions[2]],
+          visibleBookingCount: 2,
+        }),
+      ),
+    );
+
+    expect(rendered).toContain('Completed');
+    expect(rendered).toContain('Closeout ops (2)');
+    expect(rendered).not.toContain('Realtime Bookings');
+    expect(rendered).not.toContain('Post-match Cancellations');
+    expect(rendered).not.toContain('All bookings');
+  });
+
+  it('can show empty route workspace options on dedicated pages', () => {
+    const rendered = normalizedText(
+      renderToStaticMarkup(
+        BookingMonitorFiltersSection({
+          activeView: viewOptions[2],
+          baseVisibleBookingCount: 2,
+          evidenceFilter: 'all',
+          evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
+          onClearFilters: jest.fn(),
+          onEvidenceFilterChange: jest.fn(),
+          onPaymentFilterChange: jest.fn(),
+          onSearchQueryChange: jest.fn(),
+          onStatusFilterChange: jest.fn(),
+          onViewChange: jest.fn(),
+          paymentFilter: 'all',
+          paymentFilterOptions: [],
+          searchQuery: '',
+          showEmptyViewOptions: true,
+          statusFilter: 'all',
+          statusFilterOptions: [],
+          view: 'closeout',
+          viewCounts: new Map([
+            ['closeout', 2],
+            ['post-match-cancellations', 0],
+          ]),
+          viewOptions: [viewOptions[2], viewOptions[3]],
+          visibleBookingCount: 2,
+        }),
+      ),
+    );
+
+    expect(rendered).toContain('Closeout ops (2)');
+    expect(rendered).toContain('Post-match cancellations (0)');
+  });
 });
 
 type TestButton = {

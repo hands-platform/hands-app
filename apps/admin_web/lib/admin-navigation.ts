@@ -45,7 +45,19 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/bookings',
         label: 'All Bookings',
         description:
-          'Complete booking workspace with internal filters for urgent work, matching, post-match cancellations, chat repair, and closeout evidence.',
+          'Live booking workspace for request intake, matching, Partner handoff, chat repair, and active service checks.',
+      },
+      {
+        href: '/bookings/completed',
+        label: 'Completed',
+        description:
+          'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
+      },
+      {
+        href: '/bookings/post-match-cancellations',
+        label: 'Post-match Cancellations',
+        description:
+          'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
       },
     ],
   },

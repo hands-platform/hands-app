@@ -202,3 +202,59 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     operatorHint: 'Use this when you need cancelled, completed, refunded, or old matching records.',
   },
 ];
+
+const realtimeBookingMonitorViews = new Set<BookingPageView>([
+  'active',
+  'attention',
+  'matching',
+  'first-pick',
+  'marketplace',
+  'customer-choice',
+  'handoff-repair',
+  'no-supply',
+  'blocked-create',
+  'address',
+  'location',
+  'chat',
+  'chat-repair',
+  'all',
+]);
+
+const completedBookingMonitorViews = new Set<BookingPageView>([
+  'payment',
+  'cash-debt',
+  'closeout',
+  'pricing',
+  'refund-review',
+  'expired',
+]);
+
+const postMatchCancellationBookingMonitorViews = new Set<BookingPageView>([
+  'manual-decision',
+  'chat-evidence',
+  'evidence-missing',
+  'post-match-cancellations',
+  'no-show',
+]);
+
+export const realtimeBookingViewOptions = bookingViewOptions.filter((option) =>
+  realtimeBookingMonitorViews.has(option.view),
+);
+
+export const completedBookingViewOptions = bookingViewOptions.filter((option) =>
+  completedBookingMonitorViews.has(option.view),
+);
+
+export const postMatchCancellationBookingViewOptions = bookingViewOptions.filter((option) =>
+  postMatchCancellationBookingMonitorViews.has(option.view),
+);
+
+export function bookingMonitorPagePathForView(view: BookingPageView) {
+  if (completedBookingMonitorViews.has(view)) {
+    return '/bookings/completed';
+  }
+  if (postMatchCancellationBookingMonitorViews.has(view)) {
+    return '/bookings/post-match-cancellations';
+  }
+  return '/bookings';
+}

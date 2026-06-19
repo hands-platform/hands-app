@@ -31,7 +31,7 @@ describe('BookingPostMatchCancellationsSection', () => {
     expect(rendered).toContain('Partner-side cancellations and no-show reviews after matching');
     expect(rendered).toContain('Open chat, check the Partner cancellation or no-show evidence');
     expect(markup).toContain('aria-label="Post-match cancellation counts"');
-    expect(markup).toContain('href="/bookings?view=post-match-cancellations"');
+    expect(markup).toContain('href="/bookings/post-match-cancellations"');
     expect(markup).toContain('booking-post-match-cancellations-card');
     expect(markup).toContain('booking-post-match-header-actions');
     expect(markup).toContain('vuexy-booking-table');

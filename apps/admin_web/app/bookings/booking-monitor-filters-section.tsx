@@ -46,6 +46,7 @@ type BookingMonitorFiltersSectionProps = {
   readonly paymentFilter: string;
   readonly paymentFilterOptions: readonly string[];
   readonly searchQuery: string;
+  readonly showEmptyViewOptions?: boolean;
   readonly statusFilter: string;
   readonly statusFilterOptions: readonly string[];
   readonly view: BookingPageView;
@@ -119,6 +120,7 @@ export function BookingMonitorFiltersSection({
   paymentFilter,
   paymentFilterOptions,
   searchQuery,
+  showEmptyViewOptions = false,
   statusFilter,
   statusFilterOptions,
   view,
@@ -128,6 +130,7 @@ export function BookingMonitorFiltersSection({
 }: BookingMonitorFiltersSectionProps) {
   const visibleViewOptions = viewOptions.filter(
     (option) =>
+      showEmptyViewOptions ||
       option.view === view || option.view === 'all' || (viewCounts.get(option.view) ?? 0) > 0,
   );
   const categorizedViewOptions = bookingMonitorViewCategories
