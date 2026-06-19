@@ -699,7 +699,6 @@ function bookingUnifiedLocationSnapshotForEvent(
     bookingLinkedBeforeOrAt.at(-1) ??
     bookingLinkedAfter ??
     beforeOrAt.at(-1) ??
-    snapshots.find((snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime) ??
     null
   );
 }
@@ -730,16 +729,21 @@ function providerLocationCheckpointDetail({
   readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
   readonly snapshot?: AdminLocationSnapshot | null;
 }) {
-  const snapshotAddress = readAddressText(snapshot);
   const eventLabel = eventAt ? `State time ${formatDate(eventAt)}.` : 'State time not recorded.';
   const recordedLabel = snapshot
     ? snapshot.bookingId === booking.id
       ? `Booking action snapshot recorded ${formatDate(snapshot.recordedAt)}.`
       : `Recorded ${formatDate(snapshot.recordedAt)}.`
     : 'No Partner location snapshot is linked to this checkpoint.';
-  const pin = snapshot
-    ? coordinateLabel(snapshot.lat, snapshot.lng)
-    : providerCurrentLocationLabel(selectedProvider);
+  if (!snapshot) {
+    return {
+      detail: `${eventLabel} ${recordedLabel}`,
+      value: selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
+    };
+  }
+
+  const snapshotAddress = readAddressText(snapshot);
+  const pin = coordinateLabel(snapshot.lat, snapshot.lng);
 
   if (snapshotAddress) {
     return {

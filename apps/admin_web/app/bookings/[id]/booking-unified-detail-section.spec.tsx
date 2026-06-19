@@ -188,6 +188,15 @@ describe('BookingUnifiedDetailSection', () => {
             recordedAt: '2026-06-19T07:50:30.000Z',
           },
         ],
+        selectedProvider: {
+          displayName: 'Partner Matched',
+          currentLat: 21.036,
+          currentLng: 105.782,
+          id: 'partner-1',
+          residentialAddress: 'Partner base, Ha Noi, Vietnam',
+          status: 'APPROVED',
+          user: { phone: '+84911111111' },
+        },
         status: 'COMPLETED',
         statusChangedAt: '2026-06-19T07:50:00.000Z',
       }),
@@ -208,6 +217,40 @@ describe('BookingUnifiedDetailSection', () => {
 
     expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
     expect(completion?.detail).toContain('Booking action snapshot recorded');
+  });
+
+  it('does not reuse a later closeout action snapshot as the matching location', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        matchedAt: '2026-06-19T07:20:00.000Z',
+        snapshots: [
+          {
+            id: 'snapshot-action-after-closeout',
+            addressText: 'Ng. 91 P. Chua Lang, Lang, Ha Noi, Vietnam',
+            bookingId: 'booking-1',
+            lat: 21.0245,
+            lng: 105.8067,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:50:30.000Z',
+          },
+        ],
+        status: 'COMPLETED',
+        statusChangedAt: '2026-06-19T07:50:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 7,
+    });
+
+    const matching = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Matching location');
+    const completion = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Completion location');
+
+    expect(matching).toMatchObject({ value: 'Location address not recorded' });
+    expect(matching?.detail).toContain('No Partner location snapshot is linked to this checkpoint.');
+    expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
   });
 
   it('does not show a Partner profile address as an action location when the snapshot has no address', () => {
