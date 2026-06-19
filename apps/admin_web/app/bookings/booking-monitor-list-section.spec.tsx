@@ -293,6 +293,67 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Post-match Cancellations / Resolved');
   });
 
+  it('limits visible booking table groups for route-specific workspaces', () => {
+    const section = (
+      <BookingMonitorListSection
+        emptyMessage="No realtime bookings match filters."
+        rows={[
+          bookingRowFixture({
+            customerName: 'Waiting Customer',
+            id: 'booking_waiting',
+            openedDateLabel: '12 Jun 2026, 10:00',
+            status: 'OPEN_MATCHING',
+            statusChangedAt: '2026-06-12T03:15:00.000Z',
+          }),
+          bookingRowFixture({
+            customerName: 'Working Customer',
+            id: 'booking_working',
+            openedDateLabel: '12 Jun 2026, 10:05',
+            status: 'IN_SERVICE',
+            statusChangedAt: '2026-06-12T03:20:00.000Z',
+          }),
+          bookingRowFixture({
+            customerName: 'Completed Customer',
+            id: 'booking_completed',
+            openedDateLabel: '12 Jun 2026, 10:10',
+            status: 'COMPLETED',
+            statusChangedAt: '2026-06-12T03:25:00.000Z',
+          }),
+          bookingRowFixture({
+            closedAt: '2026-06-12T03:30:00.000Z',
+            customerName: 'Cancelled Customer',
+            id: 'booking_cancelled',
+            openedDateLabel: '12 Jun 2026, 10:15',
+            status: 'CANCELLED',
+            statusChangedAt: '2026-06-12T03:30:00.000Z',
+          }),
+        ]}
+        visibleGroupKeys={['pre-match', 'post-match-in-progress']}
+      />
+    );
+
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('Realtime Bookings');
+    expect(rendered).toContain('Post-match / In Progress');
+    expect(rendered).toContain('Waiting Customer');
+    expect(rendered).toContain('Working Customer');
+    expect(markup).not.toContain('id="booking-table-completed-title"');
+    expect(markup).not.toContain('id="booking-table-post-match-cancellations-pending-title"');
+    expect(markup).not.toContain('id="booking-table-post-match-cancellations-resolved-title"');
+    expect(markup).not.toContain('>Completed</h2>');
+    expect(markup).not.toContain('>Post-match Cancellations / Needs Review</h2>');
+    expect(markup).not.toContain('>Post-match Cancellations / Resolved</h2>');
+    expect(rendered).not.toContain('Completed Customer');
+    expect(rendered).not.toContain('Cancelled Customer');
+    expect(
+      markup.split(
+        'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
+      ).length - 1,
+    ).toBe(2);
+  });
+
   it('sorts each status table by latest state change first', () => {
     const section = (
       <BookingMonitorListSection

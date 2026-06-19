@@ -146,9 +146,10 @@ export type BookingMonitorListRow = {
 type BookingMonitorListSectionProps = {
   readonly emptyMessage: string;
   readonly rows: readonly BookingMonitorListRow[];
+  readonly visibleGroupKeys?: readonly BookingTableGroupKey[];
 };
 
-type BookingTableGroupKey =
+export type BookingTableGroupKey =
   | 'pre-match'
   | 'post-match-in-progress'
   | 'completed'
@@ -275,8 +276,15 @@ const BOOKING_WORKING_AVATAR_STATUSES = new Set<string>([
   'IN_SERVICE',
 ]);
 
-export function BookingMonitorListSection({ emptyMessage, rows }: BookingMonitorListSectionProps) {
-  const groupedRows = useMemo(() => buildBookingTableGroups(rows), [rows]);
+export function BookingMonitorListSection({
+  emptyMessage,
+  rows,
+  visibleGroupKeys,
+}: BookingMonitorListSectionProps) {
+  const groupedRows = useMemo(
+    () => buildBookingTableGroups(rows, visibleGroupKeys),
+    [rows, visibleGroupKeys],
+  );
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const activeChatRow = useMemo(
     () => rows.find((row) => row.booking.id === chatBookingId) ?? null,
@@ -1155,8 +1163,15 @@ function metadataText(metadata: Record<string, unknown> | null, key: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function buildBookingTableGroups(rows: readonly BookingMonitorListRow[]): readonly BookingTableGroup[] {
-  return BOOKING_TABLE_GROUPS.map((definition) => ({
+function buildBookingTableGroups(
+  rows: readonly BookingMonitorListRow[],
+  visibleGroupKeys?: readonly BookingTableGroupKey[],
+): readonly BookingTableGroup[] {
+  const visibleKeySet = visibleGroupKeys ? new Set(visibleGroupKeys) : null;
+
+  return BOOKING_TABLE_GROUPS.filter(
+    (definition) => !visibleKeySet || visibleKeySet.has(definition.key),
+  ).map((definition) => ({
     ...definition,
     rows: rows
       .filter((row) => bookingTableGroupKey(row.booking) === definition.key)

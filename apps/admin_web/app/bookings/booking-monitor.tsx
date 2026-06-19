@@ -19,7 +19,10 @@ import { bookingMatchingWindowLabel } from './booking-matching-window';
 import { buildBookingMonitorMatchingFlowTimeline } from './booking-monitor-matching-flow';
 import { BookingMonitorFiltersSection } from './booking-monitor-filters-section';
 import { BookingMonitorLiveStatusSection } from './booking-monitor-live-status-section';
-import { BookingMonitorListSection } from './booking-monitor-list-section';
+import {
+  BookingMonitorListSection,
+  type BookingTableGroupKey,
+} from './booking-monitor-list-section';
 import { BookingMonitorMatchingEscalationSection } from './booking-monitor-matching-escalation-section';
 import { BookingMonitorToolbarSection } from './booking-monitor-toolbar-section';
 import { buildBookingMonitorSummaryFact } from './booking-monitor-summary-model';
@@ -47,6 +50,7 @@ type Props = {
   showEmptyViewOptions?: boolean;
   showMatchingEscalation?: boolean;
   showPostMatchCancellationBoard?: boolean;
+  tableGroupKeys?: readonly BookingTableGroupKey[];
   viewOptions?: typeof bookingViewOptions;
 };
 
@@ -64,6 +68,7 @@ export function BookingMonitor({
   showEmptyViewOptions = false,
   showMatchingEscalation = true,
   showPostMatchCancellationBoard = true,
+  tableGroupKeys,
   viewOptions = bookingViewOptions,
 }: Props) {
   const router = useRouter();
@@ -282,6 +287,7 @@ export function BookingMonitor({
         <BookingMonitorListSection
           emptyMessage="No bookings match the current filters."
           rows={bookingListRows}
+          visibleGroupKeys={tableGroupKeys}
         />
       )}
 

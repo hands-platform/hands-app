@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { AdminAuditLog, AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
 import { BookingMonitor } from './booking-monitor';
+import type { BookingTableGroupKey } from './booking-monitor-list-section';
 import {
   bookingMonitorPagePathForView,
   completedBookingViewOptions,
@@ -25,9 +26,10 @@ const bookingMonitorRouteConfig = {
     defaultView: 'all',
     pageDescription: 'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
     pageTitle: 'Booking Monitor',
-    showMatchingEscalation: true,
+    showMatchingEscalation: false,
     showEmptyViewOptions: false,
     showPostMatchCancellationBoard: false,
+    tableGroupKeys: ['pre-match', 'post-match-in-progress'],
     viewOptions: realtimeBookingViewOptions,
   },
   completed: {
@@ -37,6 +39,7 @@ const bookingMonitorRouteConfig = {
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
+    tableGroupKeys: ['completed'],
     viewOptions: completedBookingViewOptions,
   },
   postMatchCancellations: {
@@ -45,7 +48,8 @@ const bookingMonitorRouteConfig = {
     pageTitle: 'Post-match Cancellations',
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
-    showPostMatchCancellationBoard: true,
+    showPostMatchCancellationBoard: false,
+    tableGroupKeys: ['post-match-cancellations-pending', 'post-match-cancellations-resolved'],
     viewOptions: postMatchCancellationBookingViewOptions,
   },
 } satisfies Record<
@@ -57,6 +61,7 @@ const bookingMonitorRouteConfig = {
     readonly showMatchingEscalation: boolean;
     readonly showEmptyViewOptions: boolean;
     readonly showPostMatchCancellationBoard: boolean;
+    readonly tableGroupKeys: readonly BookingTableGroupKey[];
     readonly viewOptions: typeof realtimeBookingViewOptions;
   }
 >;
@@ -95,6 +100,7 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       showEmptyViewOptions={config.showEmptyViewOptions}
       showMatchingEscalation={config.showMatchingEscalation}
       showPostMatchCancellationBoard={config.showPostMatchCancellationBoard}
+      tableGroupKeys={config.tableGroupKeys}
       viewOptions={config.viewOptions}
     />
   );
