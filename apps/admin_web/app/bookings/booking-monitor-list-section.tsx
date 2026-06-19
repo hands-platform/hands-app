@@ -447,8 +447,7 @@ function BookingMonitorListTableRow({
             {shortId(booking.id)}
           </Link>
         </div>
-        <strong>{row.openedDateLabel}</strong>
-        <div className="muted">{row.recencyLabel}</div>
+        <div className="muted">{row.openedDateLabel}</div>
       </td>
       <td>
         <BookingPersonCell
@@ -882,7 +881,7 @@ function BookingParticipantAvatarGroup({
   readonly participants: readonly BookingParticipantTableRow[];
 }) {
   return (
-    <div className="vuexy-booking-participants" aria-label={`${participants.length} participating Partners`}>
+    <div className="vuexy-booking-participants" aria-label="Participating Partners">
       <div className="vuexy-booking-avatar-group">
         {participants.slice(0, 4).map((participant) => (
           <BookingParticipantAvatar key={participant.id} participant={participant} />
@@ -891,7 +890,6 @@ function BookingParticipantAvatarGroup({
           <span className="vuexy-booking-avatar-group-item is-overflow">+{participants.length - 4}</span>
         )}
       </div>
-      <span className="vuexy-booking-participant-count">{participants.length} participating</span>
     </div>
   );
 }
@@ -931,11 +929,11 @@ function requestedPartnerLabel(
 }
 
 function requestedPartnerHint(row: BookingMonitorListRow) {
+  if (row.preferredPartnerLabel !== 'none') {
+    return row.firstPickPhoneLabel.replace(/^First-pick phone\s+/i, '').trim();
+  }
   if (row.finalPartnerLabel) {
     return `Final Partner: ${row.finalPartnerLabel}`;
-  }
-  if (row.preferredPartnerLabel !== 'none') {
-    return row.firstPickPhoneLabel;
   }
   return 'Open marketplace request';
 }

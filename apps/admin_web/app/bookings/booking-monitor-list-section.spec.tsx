@@ -241,7 +241,6 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Foot Massage');
     expect(rendered).toContain('Customer A');
     expect(rendered).toContain('Partner A');
-    expect(rendered).toContain('Partner B');
     expect(rendered).toContain('vi-VN');
     expect(rendered).toContain('Device language');
     expect(rendered).toContain('12 Nguyen Hue, Da Nang');
@@ -251,8 +250,12 @@ describe('BookingMonitorListSection', () => {
     expect(rendered).toContain('Matching opened at');
     expect(rendered).toContain('State changed');
     expect(rendered).toContain('Detail');
-    expect(rendered).toContain('5 participating');
+    expect(rendered).toContain('+84911111111');
+    expect(rendered).not.toContain('First-pick phone');
+    expect(rendered).not.toContain('Updated 2m ago');
+    expect(rendered).not.toContain('5 participating');
     expect(rendered).not.toContain('150,000 VND');
+    expect(markup).toContain('<div class="muted">12 Jun 2026, 10:00</div>');
     expect(
       markup.split(
         'class="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group"',
