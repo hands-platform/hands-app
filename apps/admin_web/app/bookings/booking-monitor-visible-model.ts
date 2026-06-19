@@ -1,4 +1,8 @@
 import type { AdminBooking } from '../../lib/admin-api';
+import {
+  bookingMatchesDateRangeFilter,
+  type BookingDateRangeFilter,
+} from './booking-date-range-filter';
 import { bookingMatchesMonitorBasicFilters } from './booking-monitor-basic-filters';
 import { bookingMonitorMatchesEvidenceFilter } from './booking-monitor-evidence-model';
 import { bookingViewOptions } from './booking-monitor-options';
@@ -17,8 +21,12 @@ type BookingMonitorVisibleMatchers = {
 type BuildBookingMonitorVisibleModelInput = {
   readonly blockedCreateCount: number;
   readonly bookings: readonly AdminBooking[];
+  readonly customDateFrom?: string;
+  readonly customDateTo?: string;
+  readonly dateRangeFilter?: BookingDateRangeFilter;
   readonly evidenceFilter: BookingEvidenceFilter;
   readonly matchers: BookingMonitorVisibleMatchers;
+  readonly nowMs?: number;
   readonly paymentFilter: string;
   readonly searchQuery: string;
   readonly statusFilter: string;
@@ -28,8 +36,12 @@ type BuildBookingMonitorVisibleModelInput = {
 export function buildBookingMonitorVisibleModel({
   blockedCreateCount,
   bookings,
+  customDateFrom,
+  customDateTo,
+  dateRangeFilter = 'all',
   evidenceFilter,
   matchers,
+  nowMs = Date.now(),
   paymentFilter,
   searchQuery,
   statusFilter,
@@ -50,6 +62,12 @@ export function buildBookingMonitorVisibleModel({
     visibleBookings: baseVisibleBookings.filter(
       (booking) =>
         bookingMatchesSearch(booking, searchQuery) &&
+        bookingMatchesDateRangeFilter(booking, {
+          customDateFrom,
+          customDateTo,
+          dateRangeFilter,
+          nowMs,
+        }) &&
         bookingMatchesMonitorBasicFilters({
           paymentFilter,
           paymentMethod: booking.payment?.method,
@@ -64,6 +82,9 @@ export function buildBookingMonitorVisibleModel({
 export function buildAdminBookingMonitorVisibleModel({
   blockedCreateCount,
   bookings,
+  customDateFrom,
+  customDateTo,
+  dateRangeFilter,
   evidenceFilter,
   nowMs,
   paymentFilter,
@@ -74,12 +95,16 @@ export function buildAdminBookingMonitorVisibleModel({
   return buildBookingMonitorVisibleModel({
     blockedCreateCount,
     bookings,
+    customDateFrom,
+    customDateTo,
+    dateRangeFilter,
     evidenceFilter,
     matchers: {
       matchesEvidenceFilter: (booking, filter) =>
         bookingMonitorMatchesEvidenceFilter(booking, filter, nowMs),
       matchesView: (booking, bookingView) => bookingMonitorMatchesView(booking, bookingView, nowMs),
     },
+    nowMs,
     paymentFilter,
     searchQuery,
     statusFilter,

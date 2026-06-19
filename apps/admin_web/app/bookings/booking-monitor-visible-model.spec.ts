@@ -10,11 +10,13 @@ function booking(
     readonly customerName?: string;
     readonly paymentMethod?: string | null;
     readonly status?: string;
+    readonly statusChangedAt?: string;
   } = {},
 ): AdminBooking {
   return {
     id,
     status: input.status ?? 'MATCHED',
+    statusChangedAt: input.statusChangedAt,
     customerProfile: {
       user: {
         fullName: input.customerName,
@@ -56,6 +58,75 @@ describe('buildBookingMonitorVisibleModel', () => {
 
     expect(model.visibleBookings.map((item) => item.id)).toEqual(['kept']);
     expect(model.baseVisibleBookingCount).toBe(4);
+  });
+
+  it('filters visible bookings by operational date range', () => {
+    const model = buildBookingMonitorVisibleModel({
+      blockedCreateCount: 0,
+      bookings: [
+        booking('today', {
+          customerName: 'Linh Nguyen',
+          status: 'MATCHED',
+          statusChangedAt: '2026-06-19T03:00:00.000Z',
+        }),
+        booking('yesterday', {
+          customerName: 'Linh Nguyen',
+          status: 'MATCHED',
+          statusChangedAt: '2026-06-18T03:00:00.000Z',
+        }),
+        booking('older', {
+          customerName: 'Linh Nguyen',
+          status: 'MATCHED',
+          statusChangedAt: '2026-05-01T03:00:00.000Z',
+        }),
+      ],
+      dateRangeFilter: '7d',
+      evidenceFilter: 'all',
+      matchers: {
+        matchesEvidenceFilter: () => true,
+        matchesView: (_item, view) => view === 'active',
+      },
+      nowMs: new Date('2026-06-19T12:00:00.000Z').getTime(),
+      paymentFilter: 'all',
+      searchQuery: '',
+      statusFilter: 'all',
+      view: 'active',
+    });
+
+    expect(model.visibleBookings.map((item) => item.id)).toEqual(['today', 'yesterday']);
+  });
+
+  it('filters visible bookings by custom operational dates', () => {
+    const model = buildBookingMonitorVisibleModel({
+      blockedCreateCount: 0,
+      bookings: [
+        booking('inside', {
+          customerName: 'Linh Nguyen',
+          status: 'MATCHED',
+          statusChangedAt: '2026-06-13T03:00:00.000Z',
+        }),
+        booking('outside', {
+          customerName: 'Linh Nguyen',
+          status: 'MATCHED',
+          statusChangedAt: '2026-06-20T03:00:00.000Z',
+        }),
+      ],
+      customDateFrom: '2026-06-12',
+      customDateTo: '2026-06-19',
+      dateRangeFilter: 'custom',
+      evidenceFilter: 'all',
+      matchers: {
+        matchesEvidenceFilter: () => true,
+        matchesView: (_item, view) => view === 'active',
+      },
+      nowMs: new Date('2026-06-19T12:00:00.000Z').getTime(),
+      paymentFilter: 'all',
+      searchQuery: '',
+      statusFilter: 'all',
+      view: 'active',
+    });
+
+    expect(model.visibleBookings.map((item) => item.id)).toEqual(['inside']);
   });
 
   it('keeps blocked-create visible bookings empty and counts blocked attempts separately', () => {

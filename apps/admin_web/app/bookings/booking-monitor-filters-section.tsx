@@ -1,11 +1,10 @@
-import { X } from 'lucide-react';
-
 import {
-  AdminFormControlButton,
+  AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import type { BookingDateRangeFilter } from './booking-date-range-filter';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
 
 export type BookingMonitorViewOption = {
@@ -18,6 +17,11 @@ export type BookingMonitorViewOption = {
 export type BookingMonitorEvidenceFilterOption = {
   readonly label: string;
   readonly value: BookingEvidenceFilter;
+};
+
+export type BookingMonitorDateRangeFilterOption = {
+  readonly label: string;
+  readonly value: BookingDateRangeFilter;
 };
 
 type BookingMonitorViewCategoryKey =
@@ -35,9 +39,15 @@ type BookingMonitorViewCategory = {
 type BookingMonitorFiltersSectionProps = {
   readonly activeView: BookingMonitorViewOption;
   readonly baseVisibleBookingCount: number;
+  readonly customDateFrom?: string;
+  readonly customDateTo?: string;
+  readonly dateRangeFilter?: BookingDateRangeFilter;
+  readonly dateRangeFilterOptions?: readonly BookingMonitorDateRangeFilterOption[];
   readonly evidenceFilter: BookingEvidenceFilter;
   readonly evidenceFilterOptions: readonly BookingMonitorEvidenceFilterOption[];
-  readonly onClearFilters: () => void;
+  readonly onCustomDateFromChange?: (value: string) => void;
+  readonly onCustomDateToChange?: (value: string) => void;
+  readonly onDateRangeFilterChange?: (value: BookingDateRangeFilter) => void;
   readonly onEvidenceFilterChange: (value: BookingEvidenceFilter) => void;
   readonly onPaymentFilterChange: (value: string) => void;
   readonly onSearchQueryChange: (value: string) => void;
@@ -109,9 +119,15 @@ const bookingMonitorViewCategoryByView: Record<BookingPageView, BookingMonitorVi
 export function BookingMonitorFiltersSection({
   activeView,
   baseVisibleBookingCount,
+  customDateFrom = '',
+  customDateTo = '',
+  dateRangeFilter = 'all',
+  dateRangeFilterOptions = [],
   evidenceFilter,
   evidenceFilterOptions,
-  onClearFilters,
+  onCustomDateFromChange = noop,
+  onCustomDateToChange = noop,
+  onDateRangeFilterChange = noop,
   onEvidenceFilterChange,
   onPaymentFilterChange,
   onSearchQueryChange,
@@ -189,22 +205,34 @@ export function BookingMonitorFiltersSection({
         />
         <AdminFormSelect
           className="booking-monitor-select"
+          label="List date range"
+          name="bookingDateRange"
+          onChange={(event) => onDateRangeFilterChange(event.target.value as BookingDateRangeFilter)}
+          options={dateRangeFilterOptions}
+          value={dateRangeFilter}
+        />
+        <AdminFormDate
+          className="booking-monitor-date"
+          label="Custom date from"
+          name="bookingCustomDateFrom"
+          onChange={(event) => onCustomDateFromChange(event.target.value)}
+          value={customDateFrom}
+        />
+        <AdminFormDate
+          className="booking-monitor-date"
+          label="Custom date to"
+          name="bookingCustomDateTo"
+          onChange={(event) => onCustomDateToChange(event.target.value)}
+          value={customDateTo}
+        />
+        <AdminFormSelect
+          className="booking-monitor-select"
           label="Evidence filter"
           name="evidenceFilter"
           onChange={(event) => onEvidenceFilterChange(event.target.value as BookingEvidenceFilter)}
           options={evidenceFilterOptions}
           value={evidenceFilter}
         />
-        <div className="actions ops-filter-actions">
-          <AdminFormControlButton
-            className="booking-monitor-clear"
-            type="button"
-            onClick={onClearFilters}
-          >
-            <X aria-hidden="true" size={16} />
-            Clear list filters
-          </AdminFormControlButton>
-        </div>
       </div>
       <div className="booking-monitor-view-categories" aria-label="Booking operation categories">
         {categorizedViewOptions.map(({ category, options }) => (
@@ -231,4 +259,8 @@ export function BookingMonitorFiltersSection({
       </div>
     </AdminFilterPanel>
   );
+}
+
+function noop() {
+  // Optional handlers let focused unit tests render this component without wiring every control.
 }

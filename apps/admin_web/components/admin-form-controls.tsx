@@ -30,7 +30,7 @@ type AdminFormDateProps = {
   readonly className?: string;
   readonly label: string;
   readonly name: string;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'onChange' | 'value'>;
+} & Pick<InputHTMLAttributes<HTMLInputElement>, 'defaultValue' | 'disabled' | 'onChange' | 'value'>;
 
 type AdminFormTextareaProps = {
   readonly className?: string;
@@ -103,6 +103,7 @@ export function AdminFormSearch({
 export function AdminFormDate({
   className,
   defaultValue,
+  disabled,
   label,
   name,
   onChange,
@@ -111,7 +112,14 @@ export function AdminFormDate({
   return (
     <label className={joinClassNames('admin-form-date', className)}>
       <span className="sr-only">{label}</span>
-      <input defaultValue={defaultValue} name={name} onChange={onChange} type="date" value={value} />
+      <input
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+        onChange={onChange}
+        type="date"
+        value={value}
+      />
     </label>
   );
 }

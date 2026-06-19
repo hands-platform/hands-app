@@ -41,12 +41,20 @@ describe('BookingMonitorFiltersSection', () => {
     const section = BookingMonitorFiltersSection({
       activeView: viewOptions[0],
       baseVisibleBookingCount: 7,
+      dateRangeFilter: '7d',
+      dateRangeFilterOptions: [
+        { label: 'Today', value: 'today' },
+        { label: 'Previous day', value: 'yesterday' },
+        { label: 'Last 7 days', value: '7d' },
+        { label: 'Last month', value: '30d' },
+        { label: 'Custom dates', value: 'custom' },
+      ],
       evidenceFilter: 'all',
       evidenceFilterOptions: [
         { label: 'All evidence', value: 'all' },
         { label: 'Payment / wallet check', value: 'money' },
       ],
-      onClearFilters: jest.fn(),
+      onDateRangeFilterChange: jest.fn(),
       onEvidenceFilterChange: jest.fn(),
       onPaymentFilterChange: jest.fn(),
       onSearchQueryChange: jest.fn(),
@@ -77,7 +85,13 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Showing 3 of 7');
     expect(rendered).toContain('All statuses');
     expect(rendered).toContain('CASH');
+    expect(rendered).toContain('Today');
+    expect(rendered).toContain('Previous day');
+    expect(rendered).toContain('Last 7 days');
+    expect(rendered).toContain('Last month');
+    expect(rendered).toContain('Custom dates');
     expect(rendered).toContain('Payment / wallet check');
+    expect(rendered).not.toContain('Clear list filters');
     expect(rendered).toContain('Active bookings (3)');
     expect(rendered).toContain('All bookings (7)');
     expect(rendered).toContain('Realtime Bookings');
@@ -91,7 +105,6 @@ describe('BookingMonitorFiltersSection', () => {
       expect.arrayContaining([
         'admin-form-search booking-monitor-search',
         'admin-form-select booking-monitor-select',
-        'admin-form-control-button booking-monitor-clear',
       ]),
     );
   });
@@ -104,7 +117,6 @@ describe('BookingMonitorFiltersSection', () => {
           baseVisibleBookingCount: 0,
           evidenceFilter: 'all',
           evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onClearFilters: jest.fn(),
           onEvidenceFilterChange: jest.fn(),
           onPaymentFilterChange: jest.fn(),
           onSearchQueryChange: jest.fn(),
@@ -135,14 +147,19 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).not.toContain('Post-match cancellations (0)');
   });
 
-  it('wires the clear filters action', () => {
-    const onClearFilters = jest.fn();
+  it('renders custom date inputs when the custom list period is selected', () => {
     const section = BookingMonitorFiltersSection({
       activeView: viewOptions[1],
       baseVisibleBookingCount: 7,
+      customDateFrom: '2026-06-01',
+      customDateTo: '2026-06-19',
+      dateRangeFilter: 'custom',
+      dateRangeFilterOptions: [{ label: 'Custom dates', value: 'custom' }],
       evidenceFilter: 'money',
       evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-      onClearFilters,
+      onCustomDateFromChange: jest.fn(),
+      onCustomDateToChange: jest.fn(),
+      onDateRangeFilterChange: jest.fn(),
       onEvidenceFilterChange: jest.fn(),
       onPaymentFilterChange: jest.fn(),
       onSearchQueryChange: jest.fn(),
@@ -158,13 +175,15 @@ describe('BookingMonitorFiltersSection', () => {
       viewOptions,
       visibleBookingCount: 7,
     });
-    const clearButton = buttonsIn(section).find((button) =>
-      normalizedText(button.props?.children).includes('Clear list filters'),
-    );
+    const markup = renderToStaticMarkup(section);
+    const rendered = normalizedText(markup);
 
-    clearButton?.props?.onClick?.();
-    expect(onClearFilters).toHaveBeenCalledTimes(1);
-    expect(normalizedText(renderToStaticMarkup(section))).toContain('Showing 7 of 7');
+    expect(rendered).toContain('Custom dates');
+    expect(markup).toContain('name="bookingCustomDateFrom"');
+    expect(markup).toContain('name="bookingCustomDateTo"');
+    expect(markup).toContain('value="2026-06-01"');
+    expect(markup).toContain('value="2026-06-19"');
+    expect(rendered).toContain('Showing 7 of 7');
   });
 
   it('renders only the provided route workspace categories', () => {
@@ -175,7 +194,6 @@ describe('BookingMonitorFiltersSection', () => {
           baseVisibleBookingCount: 2,
           evidenceFilter: 'all',
           evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onClearFilters: jest.fn(),
           onEvidenceFilterChange: jest.fn(),
           onPaymentFilterChange: jest.fn(),
           onSearchQueryChange: jest.fn(),
@@ -214,7 +232,6 @@ describe('BookingMonitorFiltersSection', () => {
           baseVisibleBookingCount: 2,
           evidenceFilter: 'all',
           evidenceFilterOptions: [{ label: 'All evidence', value: 'all' }],
-          onClearFilters: jest.fn(),
           onEvidenceFilterChange: jest.fn(),
           onPaymentFilterChange: jest.fn(),
           onSearchQueryChange: jest.fn(),
@@ -241,28 +258,6 @@ describe('BookingMonitorFiltersSection', () => {
     expect(rendered).toContain('Post-match cancellations (0)');
   });
 });
-
-type TestButton = {
-  readonly props?: {
-    readonly children?: unknown;
-    readonly onClick?: () => void;
-  };
-};
-
-function buttonsIn(value: unknown): TestButton[] {
-  value = resolveElement(value);
-  if (value === null || value === undefined || typeof value !== 'object') {
-    return [];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(buttonsIn);
-  }
-
-  const record = readRecord(value);
-  const props = readRecord(record?.props);
-  const current = record?.type === 'button' ? [value as TestButton] : [];
-  return [...current, ...buttonsIn(props?.children)];
-}
 
 function classNamesIn(value: unknown): string[] {
   value = resolveElement(value);

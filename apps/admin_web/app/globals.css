@@ -1307,7 +1307,7 @@ a.action-button-card:hover {
   align-items: end;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(180px, 0.8fr)) auto;
+  grid-template-columns: minmax(240px, 1.2fr) repeat(6, minmax(120px, 0.7fr));
   min-width: 0;
 }
 
@@ -1416,6 +1416,11 @@ a.action-button-card:hover {
   box-shadow: var(--admin-shadow-xs);
   margin-top: 14px;
   padding: 16px;
+}
+
+.booking-monitor .ops-filter-grid .admin-form-date,
+.booking-monitor .ops-filter-grid .admin-form-select {
+  min-width: 0;
 }
 
 .booking-monitor .admin-table-scroll .table {

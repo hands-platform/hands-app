@@ -29,6 +29,13 @@ const bookingMonitorRouteConfig = {
     showMatchingEscalation: false,
     showEmptyViewOptions: false,
     showPostMatchCancellationBoard: false,
+    summaryLabels: [
+      'Active bookings',
+      'Open matching',
+      'Matched',
+      'Follow-up queue',
+      'Blocked create attempts',
+    ],
     tableGroupKeys: ['pre-match', 'post-match-in-progress'],
     viewOptions: realtimeBookingViewOptions,
   },
@@ -39,6 +46,13 @@ const bookingMonitorRouteConfig = {
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
+    summaryLabels: [
+      'Closeout checks',
+      'Payment checks',
+      'Pricing checks',
+      'Refund review',
+      'Expired',
+    ],
     tableGroupKeys: ['completed'],
     viewOptions: completedBookingViewOptions,
   },
@@ -49,6 +63,13 @@ const bookingMonitorRouteConfig = {
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
+    summaryLabels: [
+      'No-show',
+      'Chat evidence review',
+      'Evidence missing',
+      'Payment checks',
+      'Follow-up queue',
+    ],
     tableGroupKeys: ['post-match-cancellations-pending', 'post-match-cancellations-resolved'],
     viewOptions: postMatchCancellationBookingViewOptions,
   },
@@ -61,6 +82,7 @@ const bookingMonitorRouteConfig = {
     readonly showMatchingEscalation: boolean;
     readonly showEmptyViewOptions: boolean;
     readonly showPostMatchCancellationBoard: boolean;
+    readonly summaryLabels: readonly string[];
     readonly tableGroupKeys: readonly BookingTableGroupKey[];
     readonly viewOptions: typeof realtimeBookingViewOptions;
   }
@@ -100,6 +122,7 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       showEmptyViewOptions={config.showEmptyViewOptions}
       showMatchingEscalation={config.showMatchingEscalation}
       showPostMatchCancellationBoard={config.showPostMatchCancellationBoard}
+      summaryLabels={config.summaryLabels}
       tableGroupKeys={config.tableGroupKeys}
       viewOptions={config.viewOptions}
     />

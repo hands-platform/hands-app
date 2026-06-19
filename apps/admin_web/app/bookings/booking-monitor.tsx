@@ -8,6 +8,10 @@ import { buildBookingLiveMatchingPolicyCards } from '../../lib/booking-live-matc
 import { compareBookingMonitorListOrder } from '../../lib/booking-monitor-list-order';
 import { readPlainRecord } from '../../lib/admin-format';
 import { type AdminLiveOperationsPolicy } from '../../lib/operations-policy';
+import {
+  bookingDateRangeFilterOptions,
+  type BookingDateRangeFilter,
+} from './booking-date-range-filter';
 import { bookingTimestamp, formatBookingClockTime as formatClockTime } from './booking-list-time';
 import type { BookingGateFilter } from './booking-gate-filters';
 import { bookingPaymentFilterOptions, bookingStatusFilterOptions } from './booking-monitor-filter-options';
@@ -50,6 +54,7 @@ type Props = {
   showEmptyViewOptions?: boolean;
   showMatchingEscalation?: boolean;
   showPostMatchCancellationBoard?: boolean;
+  summaryLabels?: readonly string[];
   tableGroupKeys?: readonly BookingTableGroupKey[];
   viewOptions?: typeof bookingViewOptions;
 };
@@ -68,6 +73,7 @@ export function BookingMonitor({
   showEmptyViewOptions = false,
   showMatchingEscalation = true,
   showPostMatchCancellationBoard = true,
+  summaryLabels,
   tableGroupKeys,
   viewOptions = bookingViewOptions,
 }: Props) {
@@ -81,6 +87,9 @@ export function BookingMonitor({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<BookingDateRangeFilter>('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
   const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>(initialEvidenceFilter);
   const [gateFilter, setGateFilter] = useState<BookingGateFilter>(initialGateFilter);
   const currentTimeMs = nowMs ?? 0;
@@ -111,14 +120,20 @@ export function BookingMonitor({
   const { bookingGateTriage, orderedBookingCreateRejections, visibleBookingCreateRejections } = gateModel;
 
   const summary = useMemo(
-    () =>
-      compactBookingMonitorSummaryRows(
-        bookingMonitorSummaryRows({
-          blockedCreateAttemptCount: orderedBookingCreateRejections.length,
-          bookings: orderedBookings.map((booking) => buildBookingMonitorSummaryFact(booking, currentTimeMs)),
-        }),
-      ),
-    [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
+    () => {
+      const rows = bookingMonitorSummaryRows({
+        blockedCreateAttemptCount: orderedBookingCreateRejections.length,
+        bookings: orderedBookings.map((booking) => buildBookingMonitorSummaryFact(booking, currentTimeMs)),
+      });
+
+      if (summaryLabels) {
+        const rowMap = new Map(rows);
+        return summaryLabels.map((label) => [label, rowMap.get(label) ?? '0'] as const);
+      }
+
+      return compactBookingMonitorSummaryRows(rows);
+    },
+    [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings, summaryLabels],
   );
 
   const postMatchCancellationBoard = useMemo(
@@ -151,6 +166,9 @@ export function BookingMonitor({
       buildAdminBookingMonitorVisibleModel({
         blockedCreateCount: orderedBookingCreateRejections.length,
         bookings: orderedBookings,
+        customDateFrom,
+        customDateTo,
+        dateRangeFilter,
         evidenceFilter,
         nowMs: currentTimeMs,
         paymentFilter,
@@ -160,6 +178,9 @@ export function BookingMonitor({
       }),
     [
       currentTimeMs,
+      customDateFrom,
+      customDateTo,
+      dateRangeFilter,
       evidenceFilter,
       orderedBookingCreateRejections.length,
       orderedBookings,
@@ -187,14 +208,6 @@ export function BookingMonitor({
     viewOptions[0] ??
     bookingViewOptions[0];
   const showBookingList = view !== 'blocked-create';
-  const clearFilters = useCallback(() => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setPaymentFilter('all');
-    setEvidenceFilter('all');
-    setGateFilter('all');
-  }, []);
-
   useEffect(() => {
     const mountTimer = window.setTimeout(() => {
       const mountedAt = new Date();
@@ -263,9 +276,15 @@ export function BookingMonitor({
       <BookingMonitorFiltersSection
         activeView={activeView}
         baseVisibleBookingCount={visibleBookingModel.baseVisibleBookingCount}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
+        dateRangeFilter={dateRangeFilter}
+        dateRangeFilterOptions={bookingDateRangeFilterOptions}
         evidenceFilter={evidenceFilter}
         evidenceFilterOptions={bookingEvidenceFilterOptions}
-        onClearFilters={clearFilters}
+        onCustomDateFromChange={setCustomDateFrom}
+        onCustomDateToChange={setCustomDateTo}
+        onDateRangeFilterChange={setDateRangeFilter}
         onEvidenceFilterChange={setEvidenceFilter}
         onPaymentFilterChange={setPaymentFilter}
         onSearchQueryChange={setSearchQuery}
