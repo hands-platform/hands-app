@@ -5,7 +5,10 @@ abstract class ProviderProfileRepository {
 
   Future<Map<String, dynamic>> recordDeviceSession();
 
-  Future<Map<String, double>> updateLocation({String? bookingId});
+  Future<Map<String, dynamic>> updateLocation({
+    String? bookingId,
+    bool includeAddressText = false,
+  });
 
   Future<Map<String, dynamic>> providerMe();
 

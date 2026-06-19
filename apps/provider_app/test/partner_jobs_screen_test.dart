@@ -146,6 +146,8 @@ void main() {
     expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
     expect(bookingRepository.cancellationLat, 10.7769);
     expect(bookingRepository.cancellationLng, 106.7009);
+    expect(bookingRepository.cancellationAddressText,
+        'District 1, Ho Chi Minh City');
     expect(
       bookingRepository.cancellationNote,
       'Customer asked to change the appointment after matching.',
@@ -204,6 +206,8 @@ void main() {
     expect(profileRepository.lastLocationBookingId, 'booking-chat-ready');
     expect(bookingRepository.completionLat, 10.7769);
     expect(bookingRepository.completionLng, 106.7009);
+    expect(bookingRepository.completionAddressText,
+        'District 1, Ho Chi Minh City');
     expect(find.textContaining('Service completed'), findsOneWidget);
   });
 }
@@ -319,6 +323,7 @@ class _WalletBlockedBookingRepository implements ProviderBookingRepository {
 
 class _FakeProviderProfileRepository implements ProviderProfileRepository {
   String? lastLocationBookingId;
+  bool? lastIncludeAddressText;
 
   @override
   Future<void> goOnline() async {}
@@ -330,11 +335,16 @@ class _FakeProviderProfileRepository implements ProviderProfileRepository {
   Future<Map<String, dynamic>> recordDeviceSession() async => {};
 
   @override
-  Future<Map<String, double>> updateLocation({String? bookingId}) async {
+  Future<Map<String, dynamic>> updateLocation({
+    String? bookingId,
+    bool includeAddressText = false,
+  }) async {
     lastLocationBookingId = bookingId;
+    lastIncludeAddressText = includeAddressText;
     return {
       'latitude': 10.7769,
       'longitude': 106.7009,
+      if (includeAddressText) 'addressText': 'District 1, Ho Chi Minh City',
     };
   }
 
@@ -359,7 +369,10 @@ class _FakeProviderProfileRepository implements ProviderProfileRepository {
 class _LocationFailureProviderProfileRepository
     extends _FakeProviderProfileRepository {
   @override
-  Future<Map<String, double>> updateLocation({String? bookingId}) async {
+  Future<Map<String, dynamic>> updateLocation({
+    String? bookingId,
+    bool includeAddressText = false,
+  }) async {
     throw ApiException(403, {
       'message': 'Partner KYC must be approved before sharing live location.',
       'error': 'Forbidden',
@@ -424,6 +437,7 @@ class _CompletableBookingRepository extends _ChatReadyBookingRepository {
   String? completedBookingId;
   double? completionLat;
   double? completionLng;
+  String? completionAddressText;
 
   @override
   Future<Map<String, dynamic>> completeBooking(
@@ -435,6 +449,7 @@ class _CompletableBookingRepository extends _ChatReadyBookingRepository {
     completedBookingId = bookingId;
     completionLat = lat;
     completionLng = lng;
+    completionAddressText = addressText;
     return {
       'id': bookingId,
       'status': 'COMPLETED',
@@ -447,6 +462,7 @@ class _CancellableBookingRepository extends _ChatReadyBookingRepository {
   String? cancellationNote;
   double? cancellationLat;
   double? cancellationLng;
+  String? cancellationAddressText;
 
   @override
   Future<List<dynamic>> listBookings() async => [
@@ -473,6 +489,7 @@ class _CancellableBookingRepository extends _ChatReadyBookingRepository {
     cancellationNote = note;
     cancellationLat = lat;
     cancellationLng = lng;
+    cancellationAddressText = addressText;
     return {
       'id': bookingId,
       'status': 'CANCELLED',

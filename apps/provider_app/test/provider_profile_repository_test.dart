@@ -12,8 +12,7 @@ import 'package:provider_app/src/features/provider_profile/data/datasources/prov
 import 'package:provider_app/src/features/provider_profile/data/repositories/provider_profile_repository_impl.dart';
 
 void main() {
-  test('rolls partner offline when goOnline cannot save a location',
-      () async {
+  test('rolls partner offline when goOnline cannot save a location', () async {
     final requests = <String>[];
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 
@@ -200,6 +199,56 @@ void main() {
 
     await server.close(force: true);
   });
+
+  test('attaches action address text only when explicitly requested', () async {
+    Map<String, dynamic>? locationRequestBody;
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    unawaited(
+      server.forEach((request) async {
+        request.response.headers.contentType = ContentType.json;
+
+        if (request.method == 'POST' &&
+            request.uri.path == '/partner/location') {
+          locationRequestBody =
+              jsonDecode(await utf8.decoder.bind(request).join())
+                  as Map<String, dynamic>;
+        }
+
+        request.response.write(jsonEncode({'ok': true}));
+        await request.response.close();
+      }),
+    );
+
+    final repository = ProviderProfileRepositoryImpl(
+      api: ApiClient(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        tokenRefreshMode: TokenRefreshMode.disabled,
+      ),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
+      locationDataSource: _VietnamAddressLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
+    );
+
+    final location = await repository.updateLocation(
+      bookingId: 'booking-1',
+      includeAddressText: true,
+    );
+
+    expect(location, {
+      'lat': 10.7769,
+      'lng': 106.7009,
+      'addressText': 'District 1, Ho Chi Minh City',
+    });
+    expect(locationRequestBody, {
+      'lat': 10.7769,
+      'lng': 106.7009,
+      'bookingId': 'booking-1',
+      'addressText': 'District 1, Ho Chi Minh City',
+    });
+
+    await server.close(force: true);
+  });
 }
 
 class _NoLocationDataSource extends ProviderDeviceLocationDataSource {
@@ -222,6 +271,13 @@ class _VietnamLocationDataSource extends ProviderDeviceLocationDataSource {
       speed: 0,
       speedAccuracy: 0,
     );
+  }
+}
+
+class _VietnamAddressLocationDataSource extends _VietnamLocationDataSource {
+  @override
+  Future<String?> addressTextForPosition(Position position) async {
+    return ' District 1, Ho Chi Minh City ';
   }
 }
 

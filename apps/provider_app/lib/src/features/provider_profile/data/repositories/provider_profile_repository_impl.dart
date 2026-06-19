@@ -3,6 +3,7 @@ import '../../../../core/realtime_socket.dart';
 import '../../../map/data/datasources/provider_device_location_datasource.dart';
 import '../datasources/provider_device_identity_datasource.dart';
 import '../../domain/repositories/provider_profile_repository.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 
 class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
@@ -62,7 +63,10 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   }
 
   @override
-  Future<Map<String, double>> updateLocation({String? bookingId}) async {
+  Future<Map<String, dynamic>> updateLocation({
+    String? bookingId,
+    bool includeAddressText = false,
+  }) async {
     final position = await _locationDataSource.currentPosition();
     final resolved = await _resolveProviderLocation(
       lat: position?.latitude,
@@ -78,9 +82,18 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     if (bookingId != null && bookingId.isNotEmpty) {
       body['bookingId'] = bookingId;
     }
+    final addressText =
+        await _actionAddressText(position, lat, lng, includeAddressText);
+    if (addressText != null) {
+      body['addressText'] = addressText;
+    }
     await _api.postJson('/partner/location', body);
     _socket.updateLocation(lat: lat, lng: lng, bookingId: bookingId);
-    return {'lat': lat, 'lng': lng};
+    return {
+      'lat': lat,
+      'lng': lng,
+      if (addressText != null) 'addressText': addressText,
+    };
   }
 
   @override
@@ -181,6 +194,30 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     }
 
     return {'lat': null, 'lng': null};
+  }
+
+  Future<String?> _actionAddressText(
+    Position? position,
+    double lat,
+    double lng,
+    bool includeAddressText,
+  ) async {
+    if (!includeAddressText || position == null) {
+      return null;
+    }
+    final positionLat = _asNum(position.latitude)?.toDouble();
+    final positionLng = _asNum(position.longitude)?.toDouble();
+    if (positionLat != lat || positionLng != lng) {
+      return null;
+    }
+    final addressText = await _locationDataSource.addressTextForPosition(
+      position,
+    );
+    final normalizedAddressText = addressText?.trim();
+    if (normalizedAddressText == null || normalizedAddressText.isEmpty) {
+      return null;
+    }
+    return normalizedAddressText;
   }
 }
 

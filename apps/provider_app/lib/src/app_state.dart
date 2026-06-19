@@ -85,8 +85,14 @@ class ProviderRepository {
     return _profileRepository.recordDeviceSession();
   }
 
-  Future<Map<String, double>> updateLocation({String? bookingId}) async {
-    return _profileRepository.updateLocation(bookingId: bookingId);
+  Future<Map<String, dynamic>> updateLocation({
+    String? bookingId,
+    bool includeAddressText = false,
+  }) async {
+    return _profileRepository.updateLocation(
+      bookingId: bookingId,
+      includeAddressText: includeAddressText,
+    );
   }
 
   Future<Map<String, dynamic>> providerMe() async {

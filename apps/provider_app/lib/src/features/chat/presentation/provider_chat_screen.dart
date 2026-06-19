@@ -254,11 +254,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     try {
       String? locationCaptureWarning;
-      Map<String, double>? actionLocation;
+      Map<String, dynamic>? actionLocation;
       try {
-        actionLocation = await ref
-            .read(providerRepositoryProvider)
-            .updateLocation(bookingId: activeBookingId);
+        actionLocation =
+            await ref.read(providerRepositoryProvider).updateLocation(
+                  bookingId: activeBookingId,
+                  includeAddressText: true,
+                );
       } catch (_) {
         locationCaptureWarning =
             'Current location could not be attached to the cancellation, but the cancellation request was sent.';
@@ -268,6 +270,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             note: note,
             lat: _actionLocationLat(actionLocation),
             lng: _actionLocationLng(actionLocation),
+            addressText: _actionAddressText(actionLocation),
           );
       final cancellation = asMap(result['postMatchCancellation']);
       final autoApproved = cancellation?['autoApproved'] == true;
@@ -310,11 +313,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     try {
       String? locationCaptureWarning;
-      Map<String, double>? actionLocation;
+      Map<String, dynamic>? actionLocation;
       try {
-        actionLocation = await ref
-            .read(providerRepositoryProvider)
-            .updateLocation(bookingId: activeBookingId);
+        actionLocation =
+            await ref.read(providerRepositoryProvider).updateLocation(
+                  bookingId: activeBookingId,
+                  includeAddressText: true,
+                );
       } catch (_) {
         locationCaptureWarning =
             'Current location could not be attached to the completion, but the completion request was sent.';
@@ -323,6 +328,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             activeBookingId,
             lat: _actionLocationLat(actionLocation),
             lng: _actionLocationLng(actionLocation),
+            addressText: _actionAddressText(actionLocation),
           );
       const nextStatusMessage =
           'Service completed. HANDS operations can now review the final booking record.';
@@ -519,12 +525,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-double? _actionLocationLat(Map<String, double>? location) {
-  return location?['lat'] ?? location?['latitude'];
+double? _actionLocationLat(Map<String, dynamic>? location) {
+  return asNum(location?['lat'] ?? location?['latitude'])?.toDouble();
 }
 
-double? _actionLocationLng(Map<String, double>? location) {
-  return location?['lng'] ?? location?['longitude'];
+double? _actionLocationLng(Map<String, dynamic>? location) {
+  return asNum(location?['lng'] ?? location?['longitude'])?.toDouble();
+}
+
+String? _actionAddressText(Map<String, dynamic>? location) {
+  final addressText = location?['addressText']?.toString().trim();
+  if (addressText == null || addressText.isEmpty) {
+    return null;
+  }
+  return addressText;
 }
 
 class MessageTile extends StatelessWidget {
