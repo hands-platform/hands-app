@@ -53,9 +53,16 @@ describe('bookingOutcomeReviewPanel', () => {
       'Outcome time',
     ]);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
+      helper: 'Retained chat attached.',
       value: '2 messages',
       href: '#chat',
       tone: 'pill-success',
+    });
+    expect(review.rows.find((row) => row.label === 'Operator notes')).toMatchObject({
+      helper: 'Operator note attached.',
+    });
+    expect(review.rows.find((row) => row.label === 'Closeout readiness')).toMatchObject({
+      helper: 'No closeout exceptions.',
     });
     expect(review.rows.find((row) => row.label === 'Closure record')).toMatchObject({
       helper: 'Service completed; closeout reconciliation needs review.',
@@ -111,6 +118,7 @@ describe('bookingOutcomeReviewPanel', () => {
       tone: 'pill-warn',
     });
     expect(review.rows.find((row) => row.label === 'Closeout readiness')).toMatchObject({
+      helper: 'Open closeout items need review.',
       value: '2 open items',
       tone: 'pill-warn',
     });
@@ -134,6 +142,7 @@ describe('bookingOutcomeReviewPanel', () => {
     expect(review.primaryHref).toBe('/bookings/post-match-cancellations?view=post-match-cancellations#booking-booking-test');
     expect(review.postMatchDecision.visible).toBe(false);
     expect(review.rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
+      helper: 'Retained chat is missing.',
       value: 'No messages',
       tone: 'pill-warn',
     });

@@ -99,10 +99,7 @@ export function bookingOutcomeReviewPanel({
       {
         label: 'Chat evidence',
         value: countLabel(messageCount, 'message'),
-        helper:
-          messageCount > 0
-            ? 'Open the retained chat before confirming cancellation, no-show, or completed closeout.'
-            : 'No retained chat messages are attached to this booking yet.',
+        helper: chatEvidenceHelper({ messageCount, outcomeKind }),
         tone: messageCount > 0 ? 'pill-success' : outcomeKind === 'completed' ? 'pill-neutral' : 'pill-warn',
         href: '#chat',
       },
@@ -110,9 +107,7 @@ export function bookingOutcomeReviewPanel({
         label: 'Operator notes',
         value: countLabel(operatorNoteCount, 'note'),
         helper:
-          operatorNoteCount > 0
-            ? 'Internal notes are available for the final decision trail.'
-            : 'Add an operator note when the final decision depends on support context.',
+          operatorNoteCount > 0 ? 'Operator note attached.' : 'Add a note if support context matters.',
         tone: operatorNoteCount > 0 ? 'pill-success' : 'pill-neutral',
         href: '#operator-notes',
       },
@@ -121,8 +116,8 @@ export function bookingOutcomeReviewPanel({
         value: closeoutOpenItemCount > 0 ? countLabel(closeoutOpenItemCount, 'open item') : 'Ready',
         helper:
           closeoutOpenItemCount > 0
-            ? 'Resolve open closeout items before final finance handling.'
-            : 'No closeout exception is visible for this booking stage.',
+            ? 'Open closeout items need review.'
+            : 'No closeout exceptions.',
         tone: closeoutOpenItemCount > 0 ? 'pill-warn' : 'pill-success',
         href: '#booking-closeout-readiness',
       },
@@ -303,6 +298,19 @@ function outcomeClosureFallback({
     return 'Closure is not recorded yet.';
   }
   return outcomeKind === 'completed' ? 'Service completion recorded.' : 'Closure record saved.';
+}
+
+function chatEvidenceHelper({
+  messageCount,
+  outcomeKind,
+}: {
+  messageCount: number;
+  outcomeKind: BookingOutcomeKind;
+}) {
+  if (messageCount > 0) {
+    return outcomeKind === 'completed' ? 'Retained chat attached.' : 'Review retained chat before final decision.';
+  }
+  return outcomeKind === 'completed' ? 'No retained chat yet.' : 'Retained chat is missing.';
 }
 
 function countLabel(count: number, singular: string) {
