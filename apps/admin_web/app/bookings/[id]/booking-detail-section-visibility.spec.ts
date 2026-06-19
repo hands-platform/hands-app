@@ -47,7 +47,7 @@ describe('bookingDetailSectionVisibility', () => {
     });
   });
 
-  it('shows closeout and settlement records for completed bookings', () => {
+  it('keeps healthy completed bookings focused on review and settlement records', () => {
     expect(
       bookingDetailSectionVisibility(
         input({
@@ -59,10 +59,28 @@ describe('bookingDetailSectionVisibility', () => {
         }),
       ),
     ).toEqual({
-      showCloseoutReadiness: true,
+      showCloseoutReadiness: false,
       showDispatchDisclosure: false,
       showEvidenceDisclosure: false,
       showHistoryDisclosure: true,
+      showSettlementDisclosure: true,
+    });
+  });
+
+  it('keeps completed closeout issues inside the completed review flow', () => {
+    expect(
+      bookingDetailSectionVisibility(
+        input({
+          hasCloseoutExceptions: true,
+          hasEarning: true,
+          hasMatchedAt: true,
+          hasPayment: true,
+          hasSelectedPartner: true,
+          status: 'COMPLETED',
+        }),
+      ),
+    ).toMatchObject({
+      showCloseoutReadiness: false,
       showSettlementDisclosure: true,
     });
   });

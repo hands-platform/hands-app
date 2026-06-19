@@ -37,13 +37,14 @@ export function bookingDetailSectionVisibility({
   hasSelectedPartner,
 }: BookingDetailSectionVisibilityInput): BookingDetailSectionVisibility {
   const isTerminal = TERMINAL_BOOKING_STATUSES.has(status);
+  const isCompleted = status === 'COMPLETED';
   const hasLiveServiceState = LIVE_BOOKING_STATUSES.has(status);
-  const hasPostMatchState = hasLiveServiceState || hasMatchedAt || hasSelectedPartner || status === 'COMPLETED';
+  const hasPostMatchState = hasLiveServiceState || hasMatchedAt || hasSelectedPartner || isCompleted;
   const hasDecisionEvidence = hasPostMatchDecision || hasOperatorNotes || hasChatMessages;
   const hasFinanceEvidence = hasPayment || hasEarning || hasFinanceFlags;
 
   return {
-    showCloseoutReadiness: isTerminal || hasCloseoutExceptions || hasFinanceFlags,
+    showCloseoutReadiness: !isCompleted && (hasCloseoutExceptions || hasFinanceFlags),
     showDispatchDisclosure: !isTerminal,
     showEvidenceDisclosure: hasDecisionEvidence || status === 'NO_SHOW' || status === 'REFUNDED',
     showHistoryDisclosure: hasPostMatchState || hasChatMessages || hasNotifications,
