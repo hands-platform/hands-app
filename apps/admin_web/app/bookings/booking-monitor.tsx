@@ -42,6 +42,7 @@ import { buildAdminBookingMonitorVisibleModel } from './booking-monitor-visible-
 import { buildBookingMonitorListRow } from './booking-monitor-list-row-model';
 import { buildBookingMonitorGateModel } from './booking-monitor-gate-model';
 import type { BookingEvidenceFilter, BookingPageView } from './booking-page-params';
+import { BookingCompletedCloseoutSection } from './booking-completed-closeout-section';
 import { buildBookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 import { BookingPostMatchCancellationsSection } from './booking-post-match-cancellations-section';
 
@@ -60,6 +61,7 @@ type Props = {
   liveOperationsPolicy: AdminLiveOperationsPolicy;
   pageDescription?: string;
   pageTitle?: string;
+  showCompletedCloseoutBoard?: boolean;
   showEmptyViewOptions?: boolean;
   showMatchingEscalation?: boolean;
   showPostMatchCancellationBoard?: boolean;
@@ -85,6 +87,7 @@ export function BookingMonitor({
   liveOperationsPolicy,
   pageDescription,
   pageTitle,
+  showCompletedCloseoutBoard = false,
   showEmptyViewOptions = false,
   showMatchingEscalation = true,
   showPostMatchCancellationBoard = true,
@@ -369,6 +372,8 @@ export function BookingMonitor({
       {showPostMatchCancellationBoard && (
         <BookingPostMatchCancellationsSection board={postMatchCancellationBoard} />
       )}
+
+      {showCompletedCloseoutBoard && <BookingCompletedCloseoutSection />}
 
       <BookingMonitorFiltersSection
         activeView={activeView}

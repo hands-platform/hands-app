@@ -28,6 +28,7 @@ const bookingMonitorRouteConfig = {
       'Live operational view for request intake, matching, Partner handoff, chat, and active service checks.',
     pagePath: '/bookings',
     pageTitle: 'Booking Monitor',
+    showCompletedCloseoutBoard: false,
     showMatchingEscalation: false,
     showEmptyViewOptions: false,
     showPostMatchCancellationBoard: false,
@@ -47,6 +48,7 @@ const bookingMonitorRouteConfig = {
       'Completed booking workspace for closeout, payment, wallet debt, pricing, refund, and expired records.',
     pagePath: '/bookings/completed',
     pageTitle: 'Completed Bookings',
+    showCompletedCloseoutBoard: true,
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: false,
@@ -60,6 +62,7 @@ const bookingMonitorRouteConfig = {
       'Post-match cancellation workspace for fee restoration, evidence review, no-show checks, and final admin decisions.',
     pagePath: '/bookings/post-match-cancellations',
     pageTitle: 'Post-match Cancellations',
+    showCompletedCloseoutBoard: false,
     showMatchingEscalation: false,
     showEmptyViewOptions: true,
     showPostMatchCancellationBoard: true,
@@ -80,6 +83,7 @@ const bookingMonitorRouteConfig = {
     readonly pageDescription: string;
     readonly pagePath: string;
     readonly pageTitle: string;
+    readonly showCompletedCloseoutBoard: boolean;
     readonly showMatchingEscalation: boolean;
     readonly showEmptyViewOptions: boolean;
     readonly showPostMatchCancellationBoard: boolean;
@@ -126,6 +130,7 @@ export async function renderBookingMonitorRoute({ kind, searchParams }: BookingM
       liveOperationsPolicy={model.liveOperationsPolicy}
       pageDescription={config.pageDescription}
       pageTitle={config.pageTitle}
+      showCompletedCloseoutBoard={config.showCompletedCloseoutBoard}
       showEmptyViewOptions={config.showEmptyViewOptions}
       showMatchingEscalation={config.showMatchingEscalation}
       showPostMatchCancellationBoard={config.showPostMatchCancellationBoard}

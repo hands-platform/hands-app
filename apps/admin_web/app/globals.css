@@ -2193,6 +2193,11 @@ a.action-button-card:hover {
   gap: 18px;
 }
 
+.booking-completed-closeout-card {
+  display: grid;
+  gap: 18px;
+}
+
 .booking-post-match-counts {
   align-items: center;
   display: flex;
