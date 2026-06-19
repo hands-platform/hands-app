@@ -1,15 +1,6 @@
 import Link from 'next/link';
-import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Italic,
-  Strikethrough,
-  Underline,
-} from 'lucide-react';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
+import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import {
   addBookingOpsNote,
@@ -378,59 +369,12 @@ function BookingOperatorNotesSection({
       </div>
       <form action={addBookingOpsNote} className="ops-note-form">
         <input type="hidden" name="bookingId" value={bookingId} />
-        <OperatorNotesFullEditor />
+        <BookingOperatorNotesEditor />
         <div className="actions">
           <button type="submit">Add note</button>
-          <button name="preset" type="submit" value="Customer contacted and updated about the booking status.">
-            Customer contacted
-          </button>
-          <button name="preset" type="submit" value="Partner contacted and asked to confirm location/status.">
-            Partner contacted
-          </button>
-          <button name="preset" type="submit" value="Payment reviewed by operations.">
-            Payment reviewed
-          </button>
         </div>
       </form>
     </section>
-  );
-}
-
-function OperatorNotesFullEditor() {
-  const tools = [
-    { icon: Bold, label: 'Bold' },
-    { icon: Underline, label: 'Underline' },
-    { icon: Italic, label: 'Italic' },
-    { icon: Strikethrough, label: 'Strikethrough' },
-    { icon: AlignLeft, label: 'Align left' },
-    { icon: AlignCenter, label: 'Align center' },
-    { icon: AlignRight, label: 'Align right' },
-    { icon: AlignJustify, label: 'Justify' },
-  ];
-
-  return (
-    <div className="vuexy-full-editor" role="group" aria-label="Operator note full editor">
-      <div className="vuexy-full-editor-toolbar" aria-hidden="true">
-        {tools.map(({ icon: Icon, label }) => (
-          <button
-            className="vuexy-editor-tool"
-            key={label}
-            tabIndex={-1}
-            title={label}
-            type="button"
-          >
-            <Icon aria-hidden="true" size={16} strokeWidth={2} />
-          </button>
-        ))}
-      </div>
-      <textarea
-        aria-label="Operator note"
-        className="vuexy-full-editor-input"
-        name="note"
-        placeholder="Example: Called Partner, confirmed arrival in 15 minutes."
-        rows={6}
-      />
-    </div>
   );
 }
 

@@ -242,8 +242,13 @@ describe('BookingActionStatusSections', () => {
 
     expect(markup).toContain('aria-label="Operator note full editor"');
     expect(markup).toContain('class="vuexy-full-editor"');
+    expect(markup).toContain('contentEditable="true"');
     expect(markup).toContain('title="Bold"');
     expect(markup).toContain('name="note"');
+    expect(markup).toContain('Add note');
+    expect(markup).not.toContain('Customer contacted');
+    expect(markup).not.toContain('Partner contacted');
+    expect(markup).not.toContain('Payment reviewed');
   });
 
   it('renders post-match cancellation decision actions on detail pages', () => {
