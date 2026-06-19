@@ -30,13 +30,8 @@ type BookingDetailLifecycleListSectionProps = {
   readonly booking: AdminBookingDetail;
 };
 
-export function BookingDetailLifecycleListSection({
-  booking,
-}: BookingDetailLifecycleListSectionProps) {
-  const timelineItems = useMemo(
-    () => bookingDetailLifecycleTimelineItems(booking, Date.now()),
-    [booking],
-  );
+export function BookingDetailLifecycleListSection({ booking }: BookingDetailLifecycleListSectionProps) {
+  const timelineItems = useMemo(() => bookingDetailLifecycleTimelineItems(booking, Date.now()), [booking]);
 
   if (timelineItems.length === 0) {
     return null;
@@ -177,14 +172,14 @@ function bookingPostMatchSnapshot(booking: AdminBookingDetail): AdminBookingDeta
 function bookingHasPostMatchSignal(booking: AdminBookingDetail) {
   return Boolean(
     booking.matchedAt ||
-      booking.selectedProviderId ||
-      booking.selectedProvider ||
-      booking.status === 'MATCHED' ||
-      booking.status === 'PROVIDER_ON_THE_WAY' ||
-      booking.status === 'ARRIVED' ||
-      booking.status === 'IN_SERVICE' ||
-      booking.status === 'COMPLETED' ||
-      isPostMatchCancellationReviewBooking(booking),
+    booking.selectedProviderId ||
+    booking.selectedProvider ||
+    booking.status === 'MATCHED' ||
+    booking.status === 'PROVIDER_ON_THE_WAY' ||
+    booking.status === 'ARRIVED' ||
+    booking.status === 'IN_SERVICE' ||
+    booking.status === 'COMPLETED' ||
+    isPostMatchCancellationReviewBooking(booking),
   );
 }
 
@@ -208,7 +203,8 @@ function bookingDetailLifecycleTimelineItem(
   const addressLabel = bookingAddressSnapshotLabel(booking);
   const participantCount = booking.participants?.length ?? 0;
   const participantLabel = `${participantCount} Partner${participantCount === 1 ? '' : 's'}`;
-  const requestedPartnerLabel = row.preferredPartnerLabel === 'none' ? 'Not selected' : row.preferredPartnerLabel;
+  const requestedPartnerLabel =
+    row.preferredPartnerLabel === 'none' ? 'Not selected' : row.preferredPartnerLabel;
   const serviceLabel = compactLifecycleServiceLabel(row);
   const commonMeta = [
     { label: 'Customer', value: customerLabel },
@@ -220,10 +216,7 @@ function bookingDetailLifecycleTimelineItem(
     return {
       detail: row.stage.action,
       groupKey,
-      meta: [
-        ...commonMeta,
-        { label: 'Requested', value: requestedPartnerLabel },
-      ],
+      meta: [...commonMeta, { label: 'Requested', value: requestedPartnerLabel }],
       statusLabel: row.stage.label,
       timeLabel: row.openedDateLabel,
       title: 'Realtime booking request',
@@ -265,7 +258,10 @@ function bookingDetailLifecycleTimelineItem(
         { label: 'Matched Partner', value: partnerLabel },
         { label: 'Completion location', value: completionLocation.value },
         { label: 'Location capture', value: completionLocation.capture },
-        { label: 'Payment', value: booking.payment ? `${row.servicePriceLabel} / ${booking.payment.status}` : 'No payment' },
+        {
+          label: 'Payment',
+          value: booking.payment ? `${row.servicePriceLabel} / ${booking.payment.status}` : 'No payment',
+        },
         { label: 'Payout', value: booking.earning ? `${booking.earning.status}` : 'Earning pending' },
       ],
       statusLabel: 'Completed',
@@ -395,7 +391,9 @@ function selectedProviderLocationSnapshotForEvent(
   const filtered = snapshots
     .filter(
       (snapshot) =>
-        !selectedProviderId || !snapshot.providerProfileId || snapshot.providerProfileId === selectedProviderId,
+        !selectedProviderId ||
+        !snapshot.providerProfileId ||
+        snapshot.providerProfileId === selectedProviderId,
     )
     .sort((left, right) => locationTimeValue(left.recordedAt) - locationTimeValue(right.recordedAt));
   if (filtered.length === 0) {
@@ -408,7 +406,17 @@ function selectedProviderLocationSnapshotForEvent(
   }
 
   const beforeOrAt = filtered.filter((snapshot) => locationTimeValue(snapshot.recordedAt) <= eventTime);
-  return beforeOrAt.at(-1) ?? filtered.find((snapshot) => locationTimeValue(snapshot.recordedAt) > eventTime) ?? null;
+  const bookingLinkedBeforeOrAt = beforeOrAt.filter((snapshot) => snapshot.bookingId === booking.id);
+  const bookingLinkedAfter = filtered.find(
+    (snapshot) => snapshot.bookingId === booking.id && locationTimeValue(snapshot.recordedAt) > eventTime,
+  );
+  return (
+    bookingLinkedBeforeOrAt.at(-1) ??
+    bookingLinkedAfter ??
+    beforeOrAt.at(-1) ??
+    filtered.find((snapshot) => locationTimeValue(snapshot.recordedAt) > eventTime) ??
+    null
+  );
 }
 
 function locationTimeValue(value?: string | null) {

@@ -28,11 +28,7 @@ describe('bookingDetailLifecycleListRows', () => {
       new Date('2026-06-19T09:00:00.000Z').getTime(),
     );
 
-    expect(rows.map((row) => row.groupKey)).toEqual([
-      'pre-match',
-      'post-match-in-progress',
-      'completed',
-    ]);
+    expect(rows.map((row) => row.groupKey)).toEqual(['pre-match', 'post-match-in-progress', 'completed']);
   });
 
   it('adds the pending post-match cancellation review row when admin processing is required', () => {
@@ -96,6 +92,51 @@ describe('bookingDetailLifecycleListRows', () => {
     );
     expect(items.at(-1)?.detail).toContain(
       'Cancellation location is the Partner snapshot nearest the cancellation state.',
+    );
+  });
+
+  it('prefers booking action location snapshots over generic Partner locations around closeout', () => {
+    const items = bookingDetailLifecycleTimelineItems(
+      bookingFixture({
+        closedAt: '2026-06-19T08:40:00.000Z',
+        snapshots: [
+          {
+            addressText: 'Ng. 91 P. Chua Lang, Lang, Ha Noi, Vietnam',
+            bookingId: 'booking-1',
+            id: 'action-location-after-closeout',
+            lat: 21.0245,
+            lng: 105.8067,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T08:40:30.000Z',
+          },
+        ],
+        status: 'COMPLETED',
+        statusChangedAt: '2026-06-19T08:40:00.000Z',
+        selectedProvider: {
+          displayName: 'Partner Matched',
+          id: 'partner-1',
+          locationSnapshots: [
+            {
+              addressText: '33 Nguyen Dinh Chieu, Sai Gon, Ho Chi Minh City, Vietnam',
+              id: 'generic-location-before-closeout',
+              lat: 10.7823,
+              lng: 106.6978,
+              providerProfileId: 'partner-1',
+              recordedAt: '2026-06-19T08:39:50.000Z',
+            },
+          ],
+          status: 'ONLINE_BUSY',
+          user: { phone: '+84911111111' },
+        },
+      }),
+      new Date('2026-06-19T09:00:00.000Z').getTime(),
+    );
+
+    const completed = items.find((item) => item.groupKey === 'completed');
+
+    expect(completed?.meta.find((meta) => meta.label === 'Completion location')?.value).toBe('Lang, Ha Noi');
+    expect(completed?.meta.find((meta) => meta.label === 'Location capture')?.value).toContain(
+      '19 Jun 2026, 15:40',
     );
   });
 

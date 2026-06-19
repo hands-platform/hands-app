@@ -590,8 +590,7 @@ function bookingUnifiedPartnerLocationCheckpointRow({
     };
   }
 
-  const preferBookingActionSnapshot =
-    label === 'Completion location' || label === 'Cancellation location';
+  const preferBookingActionSnapshot = label === 'Completion location' || label === 'Cancellation location';
   const snapshot = bookingUnifiedLocationSnapshotForEvent(
     snapshots,
     eventAt,
@@ -681,14 +680,13 @@ function bookingUnifiedLocationSnapshotForEvent(
   const bookingLinkedAfter = preferBookingId
     ? snapshots.find(
         (snapshot) =>
-          snapshot.bookingId === preferBookingId &&
-          bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime,
+          snapshot.bookingId === preferBookingId && bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime,
       )
     : null;
   return (
     bookingLinkedBeforeOrAt.at(-1) ??
-    beforeOrAt.at(-1) ??
     bookingLinkedAfter ??
+    beforeOrAt.at(-1) ??
     snapshots.find((snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime) ??
     null
   );

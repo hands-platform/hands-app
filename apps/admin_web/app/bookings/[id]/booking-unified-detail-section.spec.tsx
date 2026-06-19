@@ -158,6 +158,46 @@ describe('BookingUnifiedDetailSection', () => {
     expect(cancellation?.detail).toContain('Booking action snapshot recorded');
     expect(cancellation?.detail).toContain('State time');
   });
+
+  it('prefers booking action location snapshots over generic Partner locations around closeout', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        closedAt: '2026-06-19T07:50:00.000Z',
+        matchedAt: '2026-06-19T07:20:00.000Z',
+        snapshots: [
+          {
+            id: 'snapshot-action-after-closeout',
+            addressText: 'Ng. 91 P. Chua Lang, Lang, Ha Noi, Vietnam',
+            bookingId: 'booking-1',
+            lat: 21.0245,
+            lng: 105.8067,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:50:30.000Z',
+          },
+        ],
+        status: 'COMPLETED',
+        statusChangedAt: '2026-06-19T07:50:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: {
+        id: 'generic-location-before-closeout',
+        addressText: '33 Nguyen Dinh Chieu, Sai Gon, Ho Chi Minh City, Vietnam',
+        lat: 10.7823,
+        lng: 106.6978,
+        providerProfileId: 'partner-1',
+        recordedAt: '2026-06-19T07:49:50.000Z',
+      } as AdminLocationSnapshot,
+      messageCount: 7,
+    });
+
+    const completion = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Completion location');
+
+    expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
+    expect(completion?.detail).toContain('Booking action snapshot recorded');
+  });
 });
 
 function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDetail {
