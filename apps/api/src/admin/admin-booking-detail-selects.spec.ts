@@ -13,11 +13,12 @@ describe('admin booking detail selects', () => {
     });
   });
 
-  it('keeps booking detail chat transcript bounded', () => {
+  it('keeps booking detail chat transcript complete for admin review', () => {
     expect(adminBookingDetailSelect.chatRoom.select.messages).toMatchObject({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      select: expect.any(Object),
     });
+    expect(adminBookingDetailSelect.chatRoom.select.messages).not.toHaveProperty('take');
   });
 
   it('keeps payment detail attached to booking detail and refunds', () => {

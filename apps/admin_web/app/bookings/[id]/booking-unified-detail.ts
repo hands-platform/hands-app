@@ -140,6 +140,11 @@ function bookingUnifiedCustomerRows({
 
   return [
     {
+      label: 'Requested',
+      value: formatDate(bookingRequestOpenedAt(booking)),
+      detail: 'Initial customer booking request.',
+    },
+    {
       label: 'Personal information',
       value: booking.customerProfile?.user?.fullName ?? 'Customer',
       detail: booking.customerProfile?.user?.phone ?? 'No phone',
@@ -161,9 +166,7 @@ function bookingUnifiedCustomerRows({
       label: 'Reservation address',
       value: addressLine,
       detail:
-        addressPin === 'No pin'
-          ? 'Booking address snapshot.'
-          : `Booking address snapshot. Pin ${addressPin}`,
+        addressPin === 'No pin' ? 'Booking address snapshot.' : `Booking address snapshot. Pin ${addressPin}`,
     },
     {
       label: 'Actual customer location',
@@ -199,8 +202,15 @@ function bookingUnifiedMatchedPartnerRows({
     latestLocation,
     selectedProvider,
   });
+  const partnerLocationRows = bookingUnifiedPartnerLocationRows({
+    addressLine,
+    booking,
+    latestLocation,
+    selectedProvider,
+  });
 
   return [
+    bookingUnifiedRequestedPartnerRow(booking),
     {
       label: 'Matched Partner',
       value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not matched',
@@ -219,19 +229,16 @@ function bookingUnifiedMatchedPartnerRows({
     {
       label: 'Profile status',
       value: selectedProvider?.status ?? 'Unknown',
-      detail: selectedProvider?.id ? `Partner ${shortId(selectedProvider.id)}` : 'No selected Partner profile.',
+      detail: selectedProvider?.id
+        ? `Partner ${shortId(selectedProvider.id)}`
+        : 'No selected Partner profile.',
     },
     {
       label: 'Match source',
       value: booking.matchSource ?? booking.matchingEvidence?.finalSelection ?? 'Not recorded',
       detail: formatDate(booking.matchedAt),
     },
-    {
-      label: 'Preferred Partner',
-      value: providerName(booking.preferredProvider),
-      detail: booking.preferredProvider?.user?.phone ?? 'No preferred Partner phone',
-      href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : undefined,
-    },
+    ...partnerLocationRows,
     {
       label: 'Participating Partners',
       value: `${participantPeople.length} Partner${participantPeople.length === 1 ? '' : 's'}`,
@@ -247,6 +254,31 @@ function bookingUnifiedMatchedPartnerRows({
       detail: latestPartnerLocation.detail,
     },
   ];
+}
+
+function bookingUnifiedRequestedPartnerRow(booking: AdminBookingDetail): BookingUnifiedDetailRow {
+  const requested = booking.preferredProvider ?? null;
+  const requestedId = requested?.id ?? booking.preferredProviderId ?? null;
+
+  return {
+    label: 'Requested Partner',
+    value: requested ? providerName(requested) : 'No requested Partner',
+    detail: requested?.user?.phone ?? 'No requested Partner phone',
+    href: requestedId ? `/partners/${requestedId}` : undefined,
+    person: requested
+      ? {
+          helper: requested.user?.phone ?? 'No requested Partner phone',
+          href: requestedId ? `/partners/${requestedId}` : undefined,
+          id: requestedId ?? 'requested-partner',
+          label: providerName(requested),
+          status:
+            requestedId && requestedId === (booking.selectedProviderId ?? booking.selectedProvider?.id)
+              ? 'working'
+              : 'matching',
+          statusLabel: 'Requested',
+        }
+      : undefined,
+  };
 }
 
 function bookingUnifiedFinanceRows({
@@ -337,13 +369,18 @@ function bookingUnifiedStatusTone(status: string) {
 
 function customerDeviceLanguage(booking: AdminBookingDetail) {
   return (
-    booking.customerProfile?.user?.appSessions?.find((session) => session.deviceLanguage)
-      ?.deviceLanguage ?? 'Unknown'
+    booking.customerProfile?.user?.appSessions?.find((session) => session.deviceLanguage)?.deviceLanguage ??
+    'Unknown'
   );
 }
 
 function customerActualLocationLabel(booking: AdminBookingDetail) {
-  if (booking.lat === undefined || booking.lat === null || booking.lng === undefined || booking.lng === null) {
+  if (
+    booking.lat === undefined ||
+    booking.lat === null ||
+    booking.lng === undefined ||
+    booking.lng === null
+  ) {
     return 'No live customer location';
   }
 
@@ -378,9 +415,7 @@ function customerActualLocationDetail(booking: AdminBookingDetail) {
   };
 }
 
-function providerCurrentLocationLabel(
-  provider: NonNullable<AdminBookingDetail['selectedProvider']> | null,
-) {
+function providerCurrentLocationLabel(provider: NonNullable<AdminBookingDetail['selectedProvider']> | null) {
   if (!provider) {
     return 'No matched Partner location';
   }
@@ -467,6 +502,248 @@ function bookingUserStatus(booking: AdminBookingDetail, role: 'customer' | 'part
   return 'offline';
 }
 
+function bookingUnifiedPartnerLocationRows({
+  addressLine,
+  booking,
+  latestLocation,
+  selectedProvider,
+}: {
+  readonly addressLine: string;
+  readonly booking: AdminBookingDetail;
+  readonly latestLocation?: AdminLocationSnapshot | null;
+  readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
+}): BookingUnifiedDetailRow[] {
+  const snapshots = bookingUnifiedSelectedProviderLocationSnapshots({
+    booking,
+    latestLocation,
+    selectedProvider,
+  });
+  const hasMatchedPartner = Boolean(booking.matchedAt || selectedProvider || booking.selectedProviderId);
+  const hasCompletion = booking.status === 'COMPLETED';
+  const hasPostMatchCancellation =
+    isPostMatchCancellationReviewBooking(booking) ||
+    ((booking.status === 'CANCELLED' || booking.status === 'NO_SHOW') && hasMatchedPartner);
+
+  return [
+    bookingUnifiedPartnerLocationCheckpointRow({
+      addressLine,
+      booking,
+      eventAt: booking.matchedAt ?? booking.statusChangedAt ?? booking.createdAt,
+      inactiveDetail: 'No matching location is available before a Partner is selected.',
+      inactiveValue: 'Not matched yet',
+      label: 'Matching location',
+      selectedProvider,
+      showCheckpoint: hasMatchedPartner,
+      snapshots,
+    }),
+    bookingUnifiedPartnerLocationCheckpointRow({
+      addressLine,
+      booking,
+      eventAt: booking.closedAt ?? booking.scheduledEndAt ?? booking.statusChangedAt ?? booking.updatedAt,
+      inactiveDetail: 'The Partner has not completed this booking yet.',
+      inactiveValue: 'Not completed',
+      label: 'Completion location',
+      selectedProvider,
+      showCheckpoint: hasCompletion,
+      snapshots,
+    }),
+    bookingUnifiedPartnerLocationCheckpointRow({
+      addressLine,
+      booking,
+      eventAt: booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt,
+      inactiveDetail: 'No post-match cancellation location is required for this booking.',
+      inactiveValue: 'No cancellation record',
+      label: 'Cancellation location',
+      selectedProvider,
+      showCheckpoint: hasPostMatchCancellation,
+      snapshots,
+    }),
+  ];
+}
+
+function bookingUnifiedPartnerLocationCheckpointRow({
+  addressLine,
+  booking,
+  eventAt,
+  inactiveDetail,
+  inactiveValue,
+  label,
+  selectedProvider,
+  showCheckpoint,
+  snapshots,
+}: {
+  readonly addressLine: string;
+  readonly booking: AdminBookingDetail;
+  readonly eventAt?: string | null;
+  readonly inactiveDetail: string;
+  readonly inactiveValue: string;
+  readonly label: string;
+  readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
+  readonly showCheckpoint: boolean;
+  readonly snapshots: readonly AdminLocationSnapshot[];
+}): BookingUnifiedDetailRow {
+  if (!showCheckpoint) {
+    return {
+      detail: inactiveDetail,
+      label,
+      value: inactiveValue,
+    };
+  }
+
+  const snapshot = bookingUnifiedLocationSnapshotForEvent(snapshots, eventAt);
+  const location = providerLocationCheckpointDetail({
+    addressLine,
+    booking,
+    eventAt,
+    selectedProvider,
+    snapshot,
+  });
+
+  return {
+    detail: location.detail,
+    label,
+    value: location.value,
+  };
+}
+
+function bookingUnifiedSelectedProviderLocationSnapshots({
+  booking,
+  latestLocation,
+  selectedProvider,
+}: {
+  readonly booking: AdminBookingDetail;
+  readonly latestLocation?: AdminLocationSnapshot | null;
+  readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
+}) {
+  const selectedProviderId = booking.selectedProviderId ?? selectedProvider?.id ?? null;
+  const snapshots: AdminLocationSnapshot[] = [];
+
+  snapshots.push(...(booking.snapshots ?? []));
+
+  if (selectedProvider?.locationSnapshots) {
+    snapshots.push(...selectedProvider.locationSnapshots);
+  }
+
+  for (const participant of booking.participants ?? []) {
+    const participantProviderId = participant.providerProfileId ?? participant.providerProfile?.id ?? null;
+    if (!selectedProviderId || participantProviderId === selectedProviderId) {
+      snapshots.push(...(participant.providerProfile?.locationSnapshots ?? []));
+    }
+  }
+
+  if (latestLocation) {
+    snapshots.push(latestLocation);
+  }
+
+  const unique = new Map<string, AdminLocationSnapshot>();
+  for (const snapshot of snapshots) {
+    if (
+      selectedProviderId &&
+      snapshot.providerProfileId &&
+      snapshot.providerProfileId !== selectedProviderId
+    ) {
+      continue;
+    }
+    unique.set(bookingUnifiedLocationSnapshotKey(snapshot), snapshot);
+  }
+
+  return [...unique.values()].sort(
+    (left, right) => bookingUnifiedTimeValue(left.recordedAt) - bookingUnifiedTimeValue(right.recordedAt),
+  );
+}
+
+function bookingUnifiedLocationSnapshotForEvent(
+  snapshots: readonly AdminLocationSnapshot[],
+  eventAt?: string | null,
+) {
+  if (snapshots.length === 0) {
+    return null;
+  }
+
+  const eventTime = bookingUnifiedTimeValue(eventAt);
+  if (!Number.isFinite(eventTime)) {
+    return snapshots.at(-1) ?? null;
+  }
+
+  const beforeOrAt = snapshots.filter(
+    (snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) <= eventTime,
+  );
+  return (
+    beforeOrAt.at(-1) ??
+    snapshots.find((snapshot) => bookingUnifiedTimeValue(snapshot.recordedAt) > eventTime) ??
+    null
+  );
+}
+
+function bookingUnifiedLocationSnapshotKey(snapshot: AdminLocationSnapshot) {
+  return (
+    snapshot.id || `${snapshot.providerProfileId}:${snapshot.recordedAt}:${snapshot.lat}:${snapshot.lng}`
+  );
+}
+
+function bookingUnifiedTimeValue(value?: string | null) {
+  if (!value) {
+    return Number.NaN;
+  }
+  return new Date(value).getTime();
+}
+
+function providerLocationCheckpointDetail({
+  addressLine,
+  booking,
+  eventAt,
+  selectedProvider,
+  snapshot,
+}: {
+  readonly addressLine: string;
+  readonly booking: AdminBookingDetail;
+  readonly eventAt?: string | null;
+  readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
+  readonly snapshot?: AdminLocationSnapshot | null;
+}) {
+  const snapshotAddress = readAddressText(snapshot);
+  const eventLabel = eventAt ? `State time ${formatDate(eventAt)}.` : 'State time not recorded.';
+  const recordedLabel = snapshot
+    ? `Recorded ${formatDate(snapshot.recordedAt)}.`
+    : 'No Partner location snapshot is linked to this checkpoint.';
+  const pin = snapshot
+    ? coordinateLabel(snapshot.lat, snapshot.lng)
+    : providerCurrentLocationLabel(selectedProvider);
+
+  if (snapshotAddress) {
+    return {
+      detail: `${eventLabel} ${recordedLabel} Pin ${pin}`,
+      value: serviceAddressAreaLabel(snapshotAddress),
+    };
+  }
+
+  const atReservationAddress = providerLocationAtReservationAddress({
+    addressLine,
+    booking,
+    latestLocation: snapshot,
+    selectedProvider,
+  });
+  if (atReservationAddress) {
+    return {
+      detail: `${eventLabel} ${recordedLabel} ${atReservationAddress.detail}`,
+      value: atReservationAddress.value,
+    };
+  }
+
+  const profileAddress = providerProfileAddressLabel(selectedProvider);
+  if (profileAddress) {
+    return {
+      detail: `${eventLabel} ${recordedLabel} Live address was not recorded. Pin ${pin}`,
+      value: profileAddress,
+    };
+  }
+
+  return {
+    detail: `${eventLabel} ${recordedLabel} Pin ${pin}`,
+    value: snapshot || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
+  };
+}
+
 function providerLocationAddressDetail({
   addressLine,
   booking,
@@ -516,7 +793,8 @@ function providerLocationAddressDetail({
     detail: latestLocation
       ? `Pin ${pin} / recorded ${formatDate(latestLocation.recordedAt)}`
       : `Profile coordinate ${pin}`,
-    value: latestLocation || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
+    value:
+      latestLocation || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };
 }
 
@@ -538,7 +816,9 @@ function providerLocationAtReservationAddress({
 
   const lat = latestLocation?.lat ?? selectedProvider?.currentLat;
   const lng = latestLocation?.lng ?? selectedProvider?.currentLng;
-  const distance = approximateDistanceMeters(booking.lat, booking.lng, lat, lng);
+  const reservationLat = booking.addressSnapshot?.latitude ?? booking.lat;
+  const reservationLng = booking.addressSnapshot?.longitude ?? booking.lng;
+  const distance = approximateDistanceMeters(reservationLat, reservationLng, lat, lng);
   if (distance === null || distance > 150) {
     return null;
   }

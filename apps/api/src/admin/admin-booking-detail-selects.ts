@@ -95,7 +95,6 @@ export const adminBookingDetailSelect = {
       createdAt: true,
       messages: {
         orderBy: { createdAt: 'desc' },
-        take: 100,
         select: adminChatMessageSummarySelect,
       },
     },

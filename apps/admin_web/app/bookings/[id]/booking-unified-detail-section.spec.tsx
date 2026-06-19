@@ -31,8 +31,16 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Matched Partner detail');
     expect(rendered).toContain('Finance and system detail');
     expect(rendered).toContain('Profile, booking address, live location, and service request.');
-    expect(rendered).toContain('Matched Partner, first-pick record, participation, and latest location.');
+    expect(rendered).toContain('Requested');
+    expect(rendered).toContain('Initial customer booking request.');
+    expect(rendered).toContain(
+      'Requested Partner, Matched Partner, participation, and location checkpoints.',
+    );
+    expect(rendered).toContain('Requested Partner');
     expect(rendered).toContain('Partner Matched');
+    expect(rendered).toContain('Matching location');
+    expect(rendered).toContain('Completion location');
+    expect(rendered).toContain('Cancellation location');
     expect(rendered).toContain('Partner base, Ha Noi');
     expect(rendered).toContain('2 Partners');
     expect(rendered).toContain('Cau Giay, Ha Noi');
@@ -95,6 +103,54 @@ describe('BookingUnifiedDetailSection', () => {
     expect(unifiedDetail.statusLabel).toBe('Post-match cancellation review');
     expect(unifiedDetail.summaryCards.at(-1)?.helper).toBe('Post-match cancellation review / CANCELLED');
   });
+
+  it('resolves Partner location checkpoints from selected Partner snapshots', () => {
+    const unifiedDetail = bookingUnifiedDetail({
+      addressLine: 'Cau Giay, Ha Noi',
+      addressPin: '21.0360, 105.7820',
+      booking: bookingFixture({
+        closedAt: '2026-06-19T07:50:00.000Z',
+        closedReason: 'partner_cancelled',
+        matchedAt: '2026-06-19T07:20:00.000Z',
+        snapshots: [
+          {
+            id: 'snapshot-match',
+            bookingId: 'booking-1',
+            lat: 21.036,
+            lng: 105.782,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:18:00.000Z',
+          },
+          {
+            id: 'snapshot-cancel',
+            bookingId: 'booking-1',
+            lat: 21.0362,
+            lng: 105.7822,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T07:49:00.000Z',
+          },
+        ],
+        status: 'CANCELLED',
+        statusChangedAt: '2026-06-19T07:50:00.000Z',
+      }),
+      financeTrace: financeTraceFixture(),
+      finalPartnerSummary: finalPartnerSummaryFixture(),
+      latestLocation: null,
+      messageCount: 7,
+    });
+
+    const requested = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Requested Partner');
+    const matching = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Matching location');
+    const cancellation = unifiedDetail.matchedPartnerRows.find(
+      (row) => row.label === 'Cancellation location',
+    );
+
+    expect(requested).toMatchObject({ value: 'Partner Matched' });
+    expect(matching).toMatchObject({ value: 'Cau Giay, Ha Noi' });
+    expect(matching?.detail).toContain('Recorded');
+    expect(cancellation).toMatchObject({ value: 'Cau Giay, Ha Noi' });
+    expect(cancellation?.detail).toContain('State time');
+  });
 });
 
 function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDetail {
@@ -145,6 +201,13 @@ function bookingFixture(input: Partial<AdminBookingDetail> = {}): AdminBookingDe
       method: 'CARD',
       status: 'CAPTURED',
     },
+    preferredProvider: {
+      displayName: 'Partner Matched',
+      id: 'partner-1',
+      residentialAddress: 'Partner base, Ha Noi, Vietnam',
+      user: { phone: '+84911111111' },
+    },
+    preferredProviderId: 'partner-1',
     selectedProvider: {
       displayName: 'Partner Matched',
       id: 'partner-1',
@@ -197,5 +260,8 @@ function financeTraceFixture(): ReturnType<typeof bookingFinanceTrace> {
 }
 
 function normalizedText(markup: string) {
-  return markup.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return markup
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

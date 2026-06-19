@@ -15,6 +15,7 @@ import {
   type BookingActionStatusSectionsProps,
 } from './booking-action-status-sections';
 import { BookingDetailLifecycleListSection } from './booking-detail-lifecycle-list-section';
+import { BookingDetailChatTranscriptSection } from './booking-detail-chat-transcript-section';
 import { BookingDetailPostMatchDecisionSection } from './booking-detail-post-match-decision-section';
 import { BookingCloseoutSections, type BookingCloseoutSectionsProps } from './booking-closeout-sections';
 import { BookingDetailDisclosureGroup } from './booking-detail-disclosure-group';
@@ -703,6 +704,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingDetailToolbar {...toolbarProps} />
 
       <BookingUnifiedDetailSection {...unifiedDetailProps} />
+
+      <BookingDetailChatTranscriptSection messages={messages} />
 
       <BookingDetailLifecycleListSection booking={booking} />
 

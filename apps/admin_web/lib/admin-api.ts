@@ -599,6 +599,8 @@ export type AdminBookingOpsTask = {
 };
 
 export type AdminLocationSnapshot = {
+  address?: unknown;
+  addressText?: string | null;
   id: string;
   bookingId?: string | null;
   providerProfileId: string;

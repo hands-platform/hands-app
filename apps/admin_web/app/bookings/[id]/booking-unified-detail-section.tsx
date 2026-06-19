@@ -44,7 +44,7 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
       />
 
       <BookingUnifiedRows
-        helper="Matched Partner, first-pick record, participation, and latest location."
+        helper="Requested Partner, Matched Partner, participation, and location checkpoints."
         id="booking-matched-partner-detail"
         rows={unifiedDetail.matchedPartnerRows}
         title="Matched Partner detail"
