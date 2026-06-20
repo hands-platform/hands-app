@@ -269,9 +269,8 @@ export function ReviewsTableSection({
                   <span>{row.serviceLabel}</span>
                   {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
                 </td>
-                <td>
+                <td className="vuexy-review-visibility-cell">
                   <span className={row.statusClassName}>{row.statusLabel}</span>
-                  <small>{row.statusMeaning}</small>
                   <small>{row.appVisibilityLabel}</small>
                 </td>
                 <td>

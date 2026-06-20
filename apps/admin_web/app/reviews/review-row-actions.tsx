@@ -48,6 +48,7 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
   const rootRef = useRef<HTMLDivElement>(null);
   const search = searchParams.toString();
   const returnTo = `${pathname}${search ? `?${search}` : ''}`;
+  const visibleActions = visibleReviewActionItems(actions);
 
   useEffect(() => {
     if (!open) {
@@ -101,7 +102,7 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
               <Pencil aria-hidden="true" size={16} />
               <span>Edit Review</span>
             </button>
-            {actions.map((action) => (
+            {visibleActions.map((action) => (
               <ReviewActionLink action={action} key={action.label} onSelect={() => setOpen(false)} />
             ))}
           </div>
@@ -113,6 +114,10 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
       ) : null}
     </>
   );
+}
+
+export function visibleReviewActionItems(actions: readonly ReviewActionItem[]) {
+  return actions.filter((action) => !action.disabled);
 }
 
 function ReviewActionLink({

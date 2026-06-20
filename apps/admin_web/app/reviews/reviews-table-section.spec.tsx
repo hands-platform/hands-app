@@ -38,7 +38,8 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('The service arrived late but recovered well.');
     expect(rendered).toContain('Aromatherapy');
     expect(rendered).toContain('Published');
-    expect(rendered).toContain('Visible in app');
+    expect(rendered).toContain('App visible');
+    expect(rendered).not.toContain('Visible in app');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
     expect(hrefsIn(section)).toContain('data:text/csv;charset=utf-8,Review');
     expect(hrefsIn(section)).toEqual(
@@ -73,6 +74,7 @@ describe('ReviewsTableSection', () => {
         'vuexy-booking-person',
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-avatar',
+        'vuexy-review-visibility-cell',
       ]),
     );
     expect(rowActionPropsIn(section)).toEqual([
