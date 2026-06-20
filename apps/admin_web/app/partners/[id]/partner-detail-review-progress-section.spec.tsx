@@ -18,6 +18,10 @@ describe('PartnerDetailReviewControlPanelSection', () => {
 
     expect(rendered).toContain('Partner review control panel');
     expect(rendered).toContain('Partner on hold');
+    expect(rendered).toContain('Current approval issues');
+    expect(rendered).toContain('3 approval need(s)');
+    expect(rendered).toContain('verification review');
+    expect(rendered).toContain('bank MISSING');
     expect(rendered).toContain('Submitted');
     expect(rendered).toContain('Hold state');
     expect(rendered).toContain('KYC identity review');
@@ -210,6 +214,11 @@ function buildPanel(): PartnerReviewControlPanelView {
         value: 'On hold',
         helper: 'Missing bank evidence.',
       },
+    ],
+    reviewIssues: [
+      { label: 'verification review', severity: 'high' },
+      { label: 'bank MISSING', severity: 'medium' },
+      { label: 'push missing', severity: 'medium' },
     ],
     items: [
       {

@@ -99,6 +99,8 @@ import {
   syncRoleRequiresApprovedVerificationDescription,
   unblockPartnerAccountDescription,
 } from '../partner-action-copy';
+import { buildProviderOpsPolicy } from '../partner-list-ops';
+import { providerReviewIssues, type PartnerReviewIssue } from '../partner-list-readiness';
 import {
   buildPartnerDeviceActionConfirmation,
   partnerDeviceActionConfirmHref,
@@ -455,6 +457,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     return <PartnerDetailFastOverview dispatchPolicy={dispatchPolicy} provider={provider} />;
   }
 
+  const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
+  const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
   const partnerTaxProfile = buildPartnerTaxProfileView(provider);
@@ -475,6 +479,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     resubmissionPlan,
     reviewHistoryRows,
     cashFeeDebtAmount(provider),
+    partnerApprovalIssues,
   );
   const providerServicePricing = buildProviderServicePricing(provider);
   const partnerServicePricingDisplayRows = buildPartnerServicePricingDisplayRows(providerServicePricing.rows);
@@ -3937,6 +3942,7 @@ function buildPartnerReviewControlPanel(
   resubmissionPlan: ReturnType<typeof buildProviderResubmissionPlan>,
   reviewHistoryRows: PartnerReviewHistoryRow[],
   cashDebtAmount: number,
+  reviewIssues: PartnerReviewIssue[],
 ): PartnerReviewControlPanelView {
   const firstDossierGap = dossier.items.find((item) => !item.ok);
   const latestReview = reviewHistoryRows[0];
@@ -3961,6 +3967,7 @@ function buildPartnerReviewControlPanel(
   return {
     status: panelStatus,
     tone: panelTone,
+    reviewIssues,
     metrics: [
       {
         label: 'Submitted',

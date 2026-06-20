@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import type { PartnerReviewIssue } from '../partner-list-readiness';
 
 type PartnerReviewPanelTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 
@@ -59,6 +60,7 @@ export type PartnerReviewControlPanelItem = {
 export type PartnerReviewControlPanelView = {
   readonly items: readonly PartnerReviewControlPanelItem[];
   readonly metrics: readonly PartnerReviewControlPanelMetric[];
+  readonly reviewIssues: readonly PartnerReviewIssue[];
   readonly status: string;
   readonly tone: PartnerReviewPanelTone;
 };
@@ -190,6 +192,23 @@ export function PartnerDetailReviewControlPanelSection({
             <small>{metric.helper}</small>
           </div>
         ))}
+      </div>
+      <div className="participant-list admin-mt-12" aria-label="Current approval issues">
+        <span className="muted">Current approval issues</span>
+        <span className={`pill ${panel.reviewIssues.length ? 'pill-warn' : 'pill-success'}`}>
+          {panel.reviewIssues.length ? `${panel.reviewIssues.length} approval need(s)` : 'Approval clear'}
+        </span>
+        {panel.reviewIssues.slice(0, 5).map((issue) => (
+          <span
+            className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
+            key={issue.label}
+          >
+            {issue.label}
+          </span>
+        ))}
+        {panel.reviewIssues.length > 5 ? (
+          <span className="pill pill-neutral">+{panel.reviewIssues.length - 5} more</span>
+        ) : null}
       </div>
       <AdminTableScroll>
         <AdminDataTable
