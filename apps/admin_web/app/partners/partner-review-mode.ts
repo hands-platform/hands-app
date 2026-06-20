@@ -22,6 +22,10 @@ export function shouldRenderPartnerDeepOpsSections(review: string) {
   return !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
 }
 
+export function shouldRenderPartnerOperationsList(review: string) {
+  return !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
+}
+
 export function partnerReviewModeContent(review: string): PartnerReviewModeContent | null {
   if (review === 'unapproved') {
     return {

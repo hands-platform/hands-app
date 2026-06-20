@@ -1,6 +1,7 @@
 import {
   partnerPrimaryListMode,
   partnerReviewModeContent,
+  shouldRenderPartnerOperationsList,
   shouldRenderPartnerDeepOpsSections,
 } from './partner-review-mode';
 
@@ -40,5 +41,12 @@ describe('partner review mode content', () => {
     expect(shouldRenderPartnerDeepOpsSections('unapproved')).toBe(false);
     expect(shouldRenderPartnerDeepOpsSections('unsettled')).toBe(false);
     expect(shouldRenderPartnerDeepOpsSections('kyc')).toBe(true);
+  });
+
+  it('keeps the secondary operations list out of the three primary partner pages', () => {
+    expect(shouldRenderPartnerOperationsList('')).toBe(false);
+    expect(shouldRenderPartnerOperationsList('unapproved')).toBe(false);
+    expect(shouldRenderPartnerOperationsList('unsettled')).toBe(false);
+    expect(shouldRenderPartnerOperationsList('kyc')).toBe(true);
   });
 });

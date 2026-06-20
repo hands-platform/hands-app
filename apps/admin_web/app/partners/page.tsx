@@ -73,7 +73,11 @@ import { PartnerPushDevicesCell } from './partner-push-devices-cell';
 import { PartnerOnboardingCell } from './partner-onboarding-cell';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
-import { partnerPrimaryListMode, shouldRenderPartnerDeepOpsSections } from './partner-review-mode';
+import {
+  partnerPrimaryListMode,
+  shouldRenderPartnerDeepOpsSections,
+  shouldRenderPartnerOperationsList,
+} from './partner-review-mode';
 import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import {
   buildPartnerChecklistLaneItems,
@@ -156,6 +160,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const activeFilters = buildProviderActiveFilters(filters);
   const primaryPartnerListMode = partnerPrimaryListMode(filters.review);
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
+  const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
   const filterSummary = buildPartnerFilterSummary(
     providers,
     allProviders,
@@ -518,13 +523,15 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         ))}
       </div>
       <PartnerMasterListSection mode={partnerMasterListMode} rows={partnerMasterRows} />
-      <PartnerOperationsListSection
-        directReadyCount={directReadyPartnerCount}
-        hiddenPartnerCount={hiddenProviderCount}
-        rows={partnerOperationRows}
-        settlementWarningCount={settlementWarningPartnerCount}
-        totalPartnerCount={providers.length}
-      />
+      {showPartnerOperationsList ? (
+        <PartnerOperationsListSection
+          directReadyCount={directReadyPartnerCount}
+          hiddenPartnerCount={hiddenProviderCount}
+          rows={partnerOperationRows}
+          settlementWarningCount={settlementWarningPartnerCount}
+          totalPartnerCount={providers.length}
+        />
+      ) : null}
       {showDeepPartnerOpsSections ? (
         <>
           <PartnerChecklistWorkQueueSection partnerName={providerDisplayName} queue={dailyActionQueue} />
