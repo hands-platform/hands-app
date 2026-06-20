@@ -32,12 +32,19 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('Partner daily activity digest');
     expect(rendered).toContain('Date-grouped factual partner operations records');
     expect(rendered).toContain('1 day(s)');
+    expect(rendered).toContain('Day');
+    expect(rendered).toContain('Events');
+    expect(rendered).toContain('Highlights');
+    expect(rendered).toContain('Latest');
     expect(rendered).toContain('Jun 1');
     expect(rendered).toContain('2 event(s)');
     expect(rendered).toContain('BOOKING 1 / CHAT 1');
     expect(rendered).toContain('Marketplace joined');
     expect(rendered).toContain('Partner joined the open marketplace request.');
     expect(rendered).toContain('BOOKING / formatted 2026-06-01T10:00:00.000Z');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'partner-daily-highlight-list']),
+    );
   });
 
   it('renders an empty state when no daily digest rows match the filters', () => {
@@ -51,6 +58,7 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('0 day(s)');
     expect(rendered).toContain('No partner daily activity matched this filter');
     expect(rendered).toContain('Clear the date filter or choose a wider range.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 });
 
@@ -73,6 +81,21 @@ function textContent(value: unknown): string {
 
 function normalizedText(value: unknown): string {
   return textContent(value).replace(/\s+/g, ' ').trim();
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

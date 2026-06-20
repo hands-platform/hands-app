@@ -1,3 +1,5 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerDetailDailyActivityRecord = {
   readonly at: string;
   readonly detail: string;
@@ -20,6 +22,8 @@ type PartnerDetailDailyActivityDigestSectionProps = {
   readonly formatDate: (value: string) => string;
 };
 
+const dailyActivityDigestHeaders = ['Day', 'Events', 'Highlights', 'Latest'];
+
 export function PartnerDetailDailyActivityDigestSection({
   days,
   formatDate,
@@ -36,45 +40,55 @@ export function PartnerDetailDailyActivityDigestSection({
         </div>
         <span className="pill pill-info">{days.length} day(s)</span>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {days.length ? (
-          days.map((day) => (
-            <div className="setup-stage-item" key={day.key}>
-              <span>{day.label}</span>
-              <div>
-                <strong>{day.total} event(s)</strong>
-                <p className="muted">{day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}</p>
-                <div className="setup-stage-list admin-mt-10">
-                  {day.highlights.map((record, index) => (
-                    <div
-                      className="service-matrix-cell"
-                      key={`${record.type}-${record.id}-${record.at}-${index}`}
-                    >
-                      <strong>{record.title}</strong>
-                      <small>
-                        {record.type} / {formatDate(record.at)}
-                      </small>
-                      <p className="muted admin-m-0">
-                        {record.detail}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
-            <div>
-              <strong>No partner daily activity matched this filter</strong>
-              <p className="muted">Clear the date filter or choose a wider range.</p>
-            </div>
-            <small>0</small>
-          </div>
-        )}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerDailyActivityDigestEmptyState />}
+            headers={dailyActivityDigestHeaders}
+            rowCount={days.length}
+          >
+            {days.map((day) => (
+              <tr key={day.key}>
+                <td>
+                  <strong>{day.label}</strong>
+                </td>
+                <td>
+                  <strong>{day.total} event(s)</strong>
+                  <p className="muted">{day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}</p>
+                </td>
+                <td>
+                  <div className="partner-daily-highlight-list">
+                    {day.highlights.map((record, index) => (
+                      <div
+                        className="service-matrix-cell"
+                        key={`${record.type}-${record.id}-${record.at}-${index}`}
+                      >
+                        <strong>{record.title}</strong>
+                        <small>
+                          {record.type} / {formatDate(record.at)}
+                        </small>
+                        <p className="muted admin-m-0">{record.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerDailyActivityDigestEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No partner daily activity matched this filter</strong>
+      <p className="muted">Clear the date filter or choose a wider range.</p>
     </div>
   );
 }
