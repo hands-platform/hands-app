@@ -180,6 +180,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
   const partnerMasterListMode =
     filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
+  const focusedPartnerReviewMode = partnerMasterListMode !== 'default';
   const partnerExportRows = buildPartnerExportRows({
     filterLabel: partnerExportFilterLabel,
     filters,
@@ -525,65 +526,72 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         totalPartnerCount={providers.length}
         walletHoldCount={walletMarketplaceHoldCount}
       />
-      <PartnerChecklistWorkQueueSection partnerName={providerDisplayName} queue={dailyActionQueue} />
-      <PartnerDispatchHandoffSection handoff={dispatchHandoff} />
-      <PartnerShiftHandoffSection handoff={shiftHandoff} />
-      <PartnerCommandCenterSection lanes={commandCenter} />
-      <PartnerMarketplaceHoldBoardSection board={acceptanceBlockerBoard} />
-      <PartnerKycReviewBoardSection board={kycReviewBoard} />
-      <PartnerDispatchForecastSection
-        forecast={dispatchForecast}
-        staleLocationMinutes={opsPolicy.staleLocationMinutes}
-      />
-      <PartnerReviewQueueSection queue={reviewQueue} />
-      <PartnerChecklistLaneSection blockedCount={priorityLane.blockedCount} items={priorityLaneItems} />
-      <PartnerLegacyOperationsTableSection
-        emptyMessage={emptyProviderMessage(activeFilters)}
-        hiddenPartnerCount={hiddenProviderCount}
-        partnerName={providerDisplayName}
-        providers={visibleProviders}
-        renderActions={(provider) => (
-          <PartnerActionsCell
-            actions={partnerAccountActionMenuItems(provider)}
-            partnerName={providerDisplayName(provider)}
+      {focusedPartnerReviewMode ? null : (
+        <>
+          <PartnerChecklistWorkQueueSection partnerName={providerDisplayName} queue={dailyActionQueue} />
+          <PartnerDispatchHandoffSection handoff={dispatchHandoff} />
+          <PartnerShiftHandoffSection handoff={shiftHandoff} />
+          <PartnerCommandCenterSection lanes={commandCenter} />
+          <PartnerMarketplaceHoldBoardSection board={acceptanceBlockerBoard} />
+          <PartnerKycReviewBoardSection board={kycReviewBoard} />
+          <PartnerDispatchForecastSection
+            forecast={dispatchForecast}
+            staleLocationMinutes={opsPolicy.staleLocationMinutes}
           />
-        )}
-        renderFiles={(provider) => (
-          <PartnerFilesCell
-            partnerName={providerDisplayName(provider)}
-            provider={provider}
-            publicMediaActions={partnerPublicMediaReviewActionMenuItems}
+          <PartnerReviewQueueSection queue={reviewQueue} />
+          <PartnerChecklistLaneSection
+            blockedCount={priorityLane.blockedCount}
+            items={priorityLaneItems}
           />
-        )}
-        renderLocation={(provider) => <PartnerLocationCell provider={provider} opsPolicy={opsPolicy} />}
-        renderOnboarding={(provider) => (
-          <PartnerOnboardingCell
-            bankActions={partnerBankReviewActionMenuItems}
-            documentActions={partnerDocumentReviewActionMenuItems}
-            kycActions={partnerKycReviewActionMenuItems}
-            partnerName={providerDisplayName(provider)}
-            provider={provider}
-            taxActions={partnerTaxReviewActionMenuItems}
+          <PartnerLegacyOperationsTableSection
+            emptyMessage={emptyProviderMessage(activeFilters)}
+            hiddenPartnerCount={hiddenProviderCount}
+            partnerName={providerDisplayName}
+            providers={visibleProviders}
+            renderActions={(provider) => (
+              <PartnerActionsCell
+                actions={partnerAccountActionMenuItems(provider)}
+                partnerName={providerDisplayName(provider)}
+              />
+            )}
+            renderFiles={(provider) => (
+              <PartnerFilesCell
+                partnerName={providerDisplayName(provider)}
+                provider={provider}
+                publicMediaActions={partnerPublicMediaReviewActionMenuItems}
+              />
+            )}
+            renderLocation={(provider) => <PartnerLocationCell provider={provider} opsPolicy={opsPolicy} />}
+            renderOnboarding={(provider) => (
+              <PartnerOnboardingCell
+                bankActions={partnerBankReviewActionMenuItems}
+                documentActions={partnerDocumentReviewActionMenuItems}
+                kycActions={partnerKycReviewActionMenuItems}
+                partnerName={providerDisplayName(provider)}
+                provider={provider}
+                taxActions={partnerTaxReviewActionMenuItems}
+              />
+            )}
+            renderOpsReadiness={(provider) => (
+              <PartnerOpsReadinessCell
+                actionHint={providerActionHint(provider, opsPolicy)}
+                eligibility={partnerBackupMatchingEligibility(provider, opsPolicy)}
+                hasOpenControl={hasOpenPartnerControl(provider)}
+                issues={providerReviewIssues(provider, opsPolicy)}
+                nextAction={nextProviderListAction(provider, opsPolicy)}
+                opsBadges={buildPartnerOpsBadges(provider, opsPolicy, {
+                  canAcceptBookingNow: partnerCanAcceptBookingNow,
+                })}
+                opsPolicy={opsPolicy}
+                provider={provider}
+              />
+            )}
+            renderPushDevices={(provider) => <PartnerPushDevicesCell provider={provider} />}
+            renderSecurity={(provider) => <PartnerSecurityCell provider={provider} />}
+            renderServices={(provider) => <PartnerServicesCell provider={provider} />}
           />
-        )}
-        renderOpsReadiness={(provider) => (
-          <PartnerOpsReadinessCell
-            actionHint={providerActionHint(provider, opsPolicy)}
-            eligibility={partnerBackupMatchingEligibility(provider, opsPolicy)}
-            hasOpenControl={hasOpenPartnerControl(provider)}
-            issues={providerReviewIssues(provider, opsPolicy)}
-            nextAction={nextProviderListAction(provider, opsPolicy)}
-            opsBadges={buildPartnerOpsBadges(provider, opsPolicy, {
-              canAcceptBookingNow: partnerCanAcceptBookingNow,
-            })}
-            opsPolicy={opsPolicy}
-            provider={provider}
-          />
-        )}
-        renderPushDevices={(provider) => <PartnerPushDevicesCell provider={provider} />}
-        renderSecurity={(provider) => <PartnerSecurityCell provider={provider} />}
-        renderServices={(provider) => <PartnerServicesCell provider={provider} />}
-      />
+        </>
+      )}
     </div>
   );
 }
