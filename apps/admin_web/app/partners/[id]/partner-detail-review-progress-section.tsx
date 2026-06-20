@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 type PartnerReviewPanelTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 
 export type PartnerLevelPlanItem = {
@@ -111,23 +113,37 @@ export function PartnerDetailApprovalEvidenceSummarySection({
           {openRows ? `${openRows} check(s)` : 'Evidence clear'}
         </span>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {rows.map((row) => (
-          <div className="setup-stage-item" key={row.id}>
-            <span>{row.label}</span>
-            <div>
-              <Link className="text-link" href={row.href}>
-                <strong>{row.title}</strong>
-              </Link>
-              <p className="muted">{row.detail}</p>
-              <span className={`pill ${row.tone}`}>{row.status}</span>
-            </div>
-            <Link className="text-link" href={row.href}>
-              Open
-            </Link>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerReviewTableEmptyState message="No Partner approval evidence rows." />}
+          headers={approvalEvidenceHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td>
+                <span className="muted">{row.label}</span>
+                <p>
+                  <Link className="text-link" href={row.href}>
+                    <strong>{row.title}</strong>
+                  </Link>
+                </p>
+              </td>
+              <td>
+                <span className={`pill ${row.tone}`}>{row.status}</span>
+              </td>
+              <td>
+                <p className="muted">{row.detail}</p>
+              </td>
+              <td>
+                <Link className="text-link" href={row.href}>
+                  Open
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -156,25 +172,39 @@ export function PartnerDetailReviewControlPanelSection({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {panel.items.map((item) => (
-          <div className="setup-stage-item" key={item.id}>
-            <span>{item.label}</span>
-            <div>
-              <strong>{item.title}</strong>
-              <p className="muted">{item.detail}</p>
-              <span className={`pill ${item.tone}`}>{item.status}</span>
-            </div>
-            {item.href ? (
-              <Link className="text-link" href={item.href}>
-                Open
-              </Link>
-            ) : (
-              <small>Review</small>
-            )}
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerReviewTableEmptyState message="No Partner review control rows." />}
+          headers={reviewControlPanelHeaders}
+          rowCount={panel.items.length}
+        >
+          {panel.items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                <span className="muted">{item.label}</span>
+                <p>
+                  <strong>{item.title}</strong>
+                </p>
+              </td>
+              <td>
+                <span className={`pill ${item.tone}`}>{item.status}</span>
+              </td>
+              <td>
+                <p className="muted">{item.detail}</p>
+              </td>
+              <td>
+                {item.href ? (
+                  <Link className="text-link" href={item.href}>
+                    Open
+                  </Link>
+                ) : (
+                  <span className="muted">Review</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -293,5 +323,17 @@ export function PartnerDetailReviewHistorySection({
         </p>
       )}
     </div>
+  );
+}
+
+const approvalEvidenceHeaders = ['Evidence', 'Status', 'Detail', 'Action'] as const;
+const reviewControlPanelHeaders = ['Review gate', 'Status', 'Detail', 'Action'] as const;
+
+function PartnerReviewTableEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }

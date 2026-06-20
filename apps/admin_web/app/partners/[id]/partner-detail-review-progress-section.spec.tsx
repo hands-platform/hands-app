@@ -19,6 +19,10 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Hold state');
     expect(rendered).toContain('KYC identity review');
     expect(rendered).toContain('Partner must upload a clearer selfie.');
+    expect(rendered).toContain('Review gate');
+    expect(rendered).toContain('Status');
+    expect(rendered).toContain('Detail');
+    expect(rendered).toContain('Action');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#partner-connected-operations-records',
@@ -27,7 +31,13 @@ describe('PartnerDetailReviewControlPanelSection', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'pill pill-info']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-danger',
+        'pill pill-warn',
+        'pill pill-info',
+      ]),
     );
   });
 
@@ -44,9 +54,19 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Required documents approved');
     expect(rendered).toContain('Payout bank needs review');
     expect(rendered).toContain('Tax can stay deferred');
+    expect(rendered).toContain('Evidence');
+    expect(rendered).toContain('Status');
+    expect(rendered).toContain('Detail');
+    expect(rendered).toContain('Action');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#kyc', '#documents', '#bank', '#tax']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['pill pill-warn', 'pill pill-success', 'pill pill-neutral']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-warn',
+        'pill pill-success',
+        'pill pill-neutral',
+      ]),
     );
   });
 });
