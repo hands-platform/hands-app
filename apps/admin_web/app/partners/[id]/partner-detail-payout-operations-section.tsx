@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerPayoutOperationsTone = 'done' | 'pending' | 'blocked';
 
 export type PartnerPayoutOperationsCard = {
@@ -86,33 +88,60 @@ export function PartnerDetailPayoutOperationsSection({
         ))}
       </div>
       {operations.hold ? (
-        <div className="setup-stage-item admin-mt-16">
-          <span>HELD</span>
-          <div>
-            <strong>Active payout hold</strong>
-            <p className="muted">{operations.hold.reason}</p>
-            <p className="muted">
-              Started {operations.hold.startsAtLabel} / expires {operations.hold.expiresAtLabel}
-            </p>
-          </div>
-          <Link className="text-link" href={partnerControlsHref}>
-            Reports desk
-          </Link>
-        </div>
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerPayoutTableEmptyState message="No active payout hold." />}
+            headers={payoutHoldHeaders}
+            rowCount={1}
+          >
+            <tr>
+              <td>
+                <span className="pill pill-danger">HELD</span>
+                <p>
+                  <strong>Active payout hold</strong>
+                </p>
+              </td>
+              <td>
+                <p className="muted">{operations.hold.reason ?? 'No hold reason recorded.'}</p>
+              </td>
+              <td>
+                <span className="muted">Started {operations.hold.startsAtLabel}</span>
+                <p className="muted">Expires {operations.hold.expiresAtLabel}</p>
+              </td>
+              <td>
+                <Link className="text-link" href={partnerControlsHref}>
+                  Reports desk
+                </Link>
+              </td>
+            </tr>
+          </AdminDataTable>
+        </AdminTableScroll>
       ) : null}
       {operations.blockers.length ? (
-        <div className="setup-stage-list">
-          {operations.blockers.map((blocker) => (
-            <div className="setup-stage-item" key={blocker}>
-              <span>GATE</span>
-              <div>
-                <strong>Payout blocker</strong>
-                <p className="muted">{blocker}</p>
-              </div>
-              <small>Resolve</small>
-            </div>
-          ))}
-        </div>
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerPayoutTableEmptyState message="No payout blockers." />}
+            headers={payoutBlockerHeaders}
+            rowCount={operations.blockers.length}
+          >
+            {operations.blockers.map((blocker) => (
+              <tr key={blocker}>
+                <td>
+                  <span className="pill pill-warn">GATE</span>
+                  <p>
+                    <strong>Payout blocker</strong>
+                  </p>
+                </td>
+                <td>
+                  <p className="muted">{blocker}</p>
+                </td>
+                <td>
+                  <span className="muted">Resolve</span>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       ) : null}
       <div className="detail-grid admin-mt-16">
         <div>
@@ -129,36 +158,52 @@ export function PartnerDetailPayoutOperationsSection({
               </Link>
             </div>
           </div>
-          {earningsRows.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={
+                <PartnerPayoutTableEmptyState message="No earnings yet. Payout eligibility starts after the first completed service." />
+              }
+              headers={earningHeaders}
+              rowCount={earningsRows.length}
+            >
               {earningsRows.map((earning) => (
-                <div className="setup-stage-item" key={earning.id}>
-                  <span>{earning.statusLabel}</span>
-                  <div>
-                    <strong>{earning.title}</strong>
-                    <p className="muted">{earning.amountLine}</p>
+                <tr key={earning.id}>
+                  <td>
+                    <span className="muted">{earning.statusLabel}</span>
+                    <p>
+                      <strong>{earning.title}</strong>
+                    </p>
                     <p className="muted">{earning.detailLine}</p>
+                  </td>
+                  <td>
+                    <span>{earning.amountLine}</span>
+                  </td>
+                  <td>
                     {earning.settlementRef ? (
-                      <p className="muted">Settlement ref {earning.settlementRef}</p>
-                    ) : null}
-                    {earning.settlementNotes ? (
-                      <p className="muted">{earning.settlementNotes}</p>
-                    ) : null}
-                    {earning.walletLines.map((line, index) => (
-                      <p className="muted" key={`${earning.id}-wallet-${index}`}>
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                  <small>{earning.smallLabel}</small>
-                </div>
+                      <span className="muted">Settlement ref {earning.settlementRef}</span>
+                    ) : (
+                      <span className="muted">No settlement ref</span>
+                    )}
+                    {earning.settlementNotes ? <p className="muted">{earning.settlementNotes}</p> : null}
+                  </td>
+                  <td>
+                    {earning.walletLines.length ? (
+                      earning.walletLines.map((line, index) => (
+                        <p className="muted" key={`${earning.id}-wallet-${index}`}>
+                          {line}
+                        </p>
+                      ))
+                    ) : (
+                      <span className="muted">No wallet adjustment</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="muted">{earning.smallLabel}</span>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">
-              No earnings yet. Payout eligibility starts after the first completed service.
-            </p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
         <div>
           <div className="ops-section-header">
@@ -167,27 +212,63 @@ export function PartnerDetailPayoutOperationsSection({
               Open payouts
             </Link>
           </div>
-          {payoutBatchRows.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={
+                <PartnerPayoutTableEmptyState message="No payout batch has been created for this partner yet." />
+              }
+              headers={payoutBatchHeaders}
+              rowCount={payoutBatchRows.length}
+            >
               {payoutBatchRows.map((batch) => (
-                <div className="setup-stage-item" key={batch.id}>
-                  <span>{batch.status}</span>
-                  <div>
+                <tr key={batch.id}>
+                  <td>
                     <strong>{batch.totalNetLabel}</strong>
-                    <p className="muted">{batch.createdLine}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${payoutBatchPill(batch.status)}`}>{batch.status}</span>
+                  </td>
+                  <td>
+                    <span className="muted">{batch.createdLine}</span>
                     {batch.paidLine ? <p className="muted">{batch.paidLine}</p> : null}
-                  </div>
-                  <Link className="text-link" href={batch.href}>
-                    View
-                  </Link>
-                </div>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={batch.href}>
+                      View
+                    </Link>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">No payout batch has been created for this partner yet.</p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
       </div>
     </div>
+  );
+}
+
+const payoutHoldHeaders = ['Hold', 'Reason', 'Timeline', 'Action'] as const;
+const payoutBlockerHeaders = ['Gate', 'Detail', 'Action'] as const;
+const earningHeaders = ['Earning', 'Amount', 'Settlement', 'Wallet', 'Action'] as const;
+const payoutBatchHeaders = ['Batch', 'Status', 'Timeline', 'Action'] as const;
+
+function payoutBatchPill(status: string) {
+  const normalizedStatus = status.toUpperCase();
+
+  if (normalizedStatus.includes('PAID') || normalizedStatus.includes('COMPLETED')) {
+    return 'pill-success';
+  }
+  if (normalizedStatus.includes('FAILED') || normalizedStatus.includes('HELD')) {
+    return 'pill-danger';
+  }
+  return 'pill-warn';
+}
+
+function PartnerPayoutTableEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }

@@ -1,0 +1,173 @@
+import { PartnerDetailPayoutOperationsSection } from './partner-detail-payout-operations-section';
+
+describe('PartnerDetailPayoutOperationsSection', () => {
+  it('renders payout holds, blockers, earnings, and payout batches as Vuexy tables', () => {
+    const section = PartnerDetailPayoutOperationsSection({
+      cardClassForTone: (tone) => `card-${tone}`,
+      earningsRows: [
+        {
+          amountLine: 'Gross 400,000 VND / withholding 20,000 VND / net 380,000 VND',
+          detailLine: 'Completed booking on 20 Jun 2026.',
+          id: 'earning-1',
+          settlementNotes: 'Cash fee was deducted from wallet.',
+          settlementRef: 'settlement-1',
+          smallLabel: 'Review',
+          statusLabel: 'UNPAID',
+          title: 'Completed massage service',
+          walletLines: ['Wallet debit 40,000 VND', 'Wallet balance -15,000 VND'],
+        },
+      ],
+      hasCashFeeDebt: true,
+      operations: {
+        blockers: ['Negative wallet balance blocks payout release.'],
+        cards: [
+          {
+            action: 'Settle before payout',
+            detail: 'Partner wallet is below zero.',
+            status: 'BLOCKED',
+            title: 'Wallet debt',
+            tone: 'blocked',
+          },
+        ],
+        hold: {
+          expiresAtLabel: '21 Jun 2026, 09:00',
+          reason: 'Open customer report blocks payout release.',
+          startsAtLabel: '20 Jun 2026, 09:00',
+        },
+        status: 'Payout locked',
+        tone: 'blocked',
+      },
+      partnerControlsHref: '#partner-controls',
+      payoutBatchRows: [
+        {
+          createdLine: 'Created 20 Jun 2026, 10:00',
+          href: '/payouts?payoutId=batch-1',
+          id: 'batch-1',
+          paidLine: 'Paid 20 Jun 2026, 11:00',
+          status: 'PAID',
+          totalNetLabel: '380,000 VND',
+        },
+      ],
+      pillClassForTone: (tone) => `pill-${tone}`,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Payout operations');
+    expect(rendered).toContain('Payout locked');
+    expect(rendered).toContain('Active payout hold');
+    expect(rendered).toContain('Open customer report blocks payout release.');
+    expect(rendered).toContain('Negative wallet balance blocks payout release.');
+    expect(rendered).toContain('Recent earnings');
+    expect(rendered).toContain('Cash debt queue');
+    expect(rendered).toContain('Completed massage service');
+    expect(rendered).toContain('Settlement ref settlement-1');
+    expect(rendered).toContain('Recent payout batches');
+    expect(rendered).toContain('380,000 VND');
+    expect(rendered).toContain('Hold');
+    expect(rendered).toContain('Gate');
+    expect(rendered).toContain('Earning');
+    expect(rendered).toContain('Batch');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining(['#partner-controls', '/cash-settlements', '/earnings', '/payouts', '/payouts?payoutId=batch-1']),
+    );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-danger',
+        'pill pill-warn',
+        'pill pill-success',
+      ]),
+    );
+  });
+
+  it('renders empty earning and payout batch states as table rows', () => {
+    const section = PartnerDetailPayoutOperationsSection({
+      cardClassForTone: (tone) => `card-${tone}`,
+      earningsRows: [],
+      hasCashFeeDebt: false,
+      operations: {
+        blockers: [],
+        cards: [],
+        hold: null,
+        status: 'Payout ready',
+        tone: 'done',
+      },
+      partnerControlsHref: '#partner-controls',
+      payoutBatchRows: [],
+      pillClassForTone: (tone) => `pill-${tone}`,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('No records found');
+    expect(rendered).toContain('No earnings yet. Payout eligibility starts after the first completed service.');
+    expect(rendered).toContain('No payout batch has been created for this partner yet.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
