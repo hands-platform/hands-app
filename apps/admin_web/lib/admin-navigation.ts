@@ -62,22 +62,23 @@ export const adminNavSections: AdminNavSection[] = [
     ],
   },
   {
-    label: 'Users',
-    description: 'Customer records, Partner onboarding, readiness, controls, and support evidence.',
+    label: 'Customers',
+    description: 'Customer account, booking, payment, review, and support records.',
     links: [
       {
         href: '/customers',
-        label: 'Customer List',
+        label: 'Customers',
         description: 'Customer account list with booking and payment facts.',
       },
-      {
-        href: '/app-sessions?role=CUSTOMER&state=live',
-        label: 'Live Customers',
-        description: 'Customers currently active in the app.',
-      },
+    ],
+  },
+  {
+    label: 'Partners',
+    description: 'Partner onboarding, readiness, controls, and support evidence.',
+    links: [
       {
         href: '/partners',
-        label: 'Partner List',
+        label: 'Partners',
         description: 'List and detail records for every Partner.',
       },
       {

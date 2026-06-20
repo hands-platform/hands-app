@@ -17,10 +17,14 @@ describe('admin navigation', () => {
   it('keeps booking filter views inside the bookings workspace instead of repeating sidebar links', () => {
     const bookingSection = adminNavSections.find((section) => section.label === 'Bookings');
 
-    expect(bookingSection?.links.map((link) => link.href)).toEqual(['/bookings']);
-    expect(bookingSection?.links[0]?.description).toContain('urgent work');
-    expect(bookingSection?.links[0]?.description).toContain('post-match cancellations');
-    expect(bookingSection?.links[0]?.description).toContain('closeout evidence');
+    expect(bookingSection?.links.map((link) => link.href)).toEqual([
+      '/bookings',
+      '/bookings/completed',
+      '/bookings/post-match-cancellations',
+    ]);
+    expect(bookingSection?.links[0]?.description).toContain('request intake');
+    expect(bookingSection?.links[2]?.description).toContain('Post-match cancellation');
+    expect(bookingSection?.links[1]?.description).toContain('closeout');
   });
 
   it('does not repeat the same route across nav categories', () => {
@@ -43,20 +47,24 @@ describe('admin navigation', () => {
     expect(duplicates).toEqual([]);
   });
 
-  it('keeps customer and partner operations in one user-management category', () => {
-    const userSection = adminNavSections.find((section) => section.label === 'Users');
+  it('separates customer and partner operations into their own user categories', () => {
+    const customerSection = adminNavSections.find((section) => section.label === 'Customers');
+    const partnerSection = adminNavSections.find((section) => section.label === 'Partners');
 
-    expect(adminNavSections.map((section) => section.label)).not.toContain('Customers');
-    expect(adminNavSections.map((section) => section.label)).not.toContain('Partners');
-    expect(userSection?.links.map((link) => link.href)).toEqual([
+    expect(adminNavSections.map((section) => section.label)).not.toContain('Users');
+    expect(customerSection?.links.map((link) => link.href)).toEqual([
       '/customers',
-      '/app-sessions?role=CUSTOMER&state=live',
+    ]);
+    expect(partnerSection?.links.map((link) => link.href)).toEqual([
       '/partners',
       '/partners?review=kyc',
       '/partners?review=acceptance-blocked',
       '/partners?review=marketplace-ready',
       '/partner-controls',
     ]);
+    expect(
+      adminNavSections.flatMap((section) => section.links.map((link) => link.href)),
+    ).not.toContain('/app-sessions?role=CUSTOMER&state=live');
   });
 
   it('keeps policy and retained evidence in one system category', () => {
