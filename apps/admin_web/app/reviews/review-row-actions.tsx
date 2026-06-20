@@ -183,7 +183,10 @@ function ReviewEditDrawer({
         <div className="calendar-drawer-body review-edit-drawer-body">
           <section className="review-edit-original-card" aria-label="Original review">
             <div className="review-edit-original-header">
-              <span className="pill pill-info">Original review</span>
+              <div>
+                <span className="calendar-drawer-eyebrow">Original review</span>
+                <strong>Current app copy</strong>
+              </div>
               <div aria-label={`Original rating ${editReview.ratingLabel}`} className="vuexy-review-stars">
                 {Array.from({ length: 5 }, (_, index) => (
                   <Star
@@ -195,56 +198,38 @@ function ReviewEditDrawer({
                 ))}
               </div>
             </div>
-            <p>{editReview.commentLabel}</p>
-            <dl className="review-edit-original-meta">
-              <div>
-                <dt>Booking</dt>
-                <dd>
-                  {editReview.bookingHref ? (
-                    <Link href={editReview.bookingHref}>{editReview.bookingLabel}</Link>
-                  ) : (
-                    editReview.bookingLabel
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>Request Time</dt>
-                <dd>{editReview.requestTimeLabel}</dd>
-              </div>
-              <div>
-                <dt>Partner</dt>
-                <dd>{editReview.partnerLabel}</dd>
-              </div>
-              <div>
-                <dt>Customer</dt>
-                <dd>{editReview.customerLabel}</dd>
-              </div>
-            </dl>
+            <blockquote className="review-edit-original-copy">{editReview.commentLabel}</blockquote>
           </section>
 
           <form action={moderateReview} className="calendar-form-grid review-edit-drawer-form">
             <input name="reviewId" type="hidden" value={editReview.reviewId} />
             <input name="status" type="hidden" value={editReview.status} />
             <input name="reportReason" type="hidden" value={editReview.reportReasonValue} />
-            <label className="calendar-field">
-              <span>Revised rating</span>
-              <select defaultValue={String(editReview.rating)} name="rating">
-                {reviewRatingOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="calendar-field calendar-field-wide">
-              <span>Revised review content</span>
-              <textarea
-                defaultValue={editReview.commentValue}
-                name="comment"
-                placeholder="Write the review copy that should be shown across the admin and app surfaces."
-                rows={6}
-              />
-            </label>
+            <section className="review-edit-form-card" aria-label="Revised review">
+              <div className="review-edit-section-heading">
+                <span className="calendar-drawer-eyebrow">Replacement</span>
+                <strong>Edited review</strong>
+              </div>
+              <label className="calendar-field">
+                <span>Revised rating</span>
+                <select defaultValue={String(editReview.rating)} name="rating">
+                  {reviewRatingOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="calendar-field calendar-field-wide">
+                <span>Revised review content</span>
+                <textarea
+                  defaultValue={editReview.commentValue}
+                  name="comment"
+                  placeholder="Write the review copy that should be shown across the admin and app surfaces."
+                  rows={7}
+                />
+              </label>
+            </section>
             <div className="calendar-drawer-footer review-edit-drawer-footer">
               <button className="button button-primary" type="submit">
                 <Save aria-hidden="true" size={16} />

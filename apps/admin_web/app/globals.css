@@ -7945,70 +7945,62 @@ textarea:focus-visible {
 }
 
 .review-edit-drawer-body {
+  align-content: start;
   display: grid;
   gap: 18px;
 }
 
-.review-edit-original-card {
+.review-edit-original-card,
+.review-edit-form-card {
+  align-content: start;
   background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   display: grid;
   gap: 14px;
-  padding: 16px;
+  grid-auto-rows: max-content;
+  padding: 18px;
 }
 
 .review-edit-original-header {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 12px;
   justify-content: space-between;
 }
 
-.review-edit-original-card p {
+.review-edit-original-header > div:first-child,
+.review-edit-section-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.review-edit-original-header .calendar-drawer-eyebrow,
+.review-edit-section-heading .calendar-drawer-eyebrow {
+  font-size: 12px;
+  line-height: 18px;
+  margin-bottom: 0;
+}
+
+.review-edit-original-header strong,
+.review-edit-section-heading strong {
   color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+}
+
+.review-edit-original-copy {
+  background: color-mix(in srgb, var(--admin-accent-soft) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--admin-accent) 18%, var(--admin-border));
+  border-radius: 8px;
+  color: var(--admin-text);
+  display: block;
   font-size: 15px;
   line-height: 24px;
   margin: 0;
-}
-
-.review-edit-original-meta {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0;
-}
-
-.review-edit-original-meta div {
-  min-width: 0;
-}
-
-.review-edit-original-meta dt {
-  color: var(--admin-muted);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 18px;
-  margin: 0 0 2px;
-  text-transform: uppercase;
-}
-
-.review-edit-original-meta dd {
-  color: var(--admin-text);
-  font-size: 14px;
-  line-height: 20px;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.review-edit-original-meta a {
-  color: var(--admin-accent-strong);
-  text-decoration: none;
-}
-
-.review-edit-original-meta a:hover {
-  text-decoration: underline;
+  min-height: 0;
+  padding: 14px 16px;
 }
 
 .review-edit-drawer-form {
