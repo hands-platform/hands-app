@@ -13,7 +13,9 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('1 visible row(s)');
     expect(rendered).toContain('partner-1');
     expect(rendered).toContain('Linh Wellness');
-    expect(rendered).toContain('Linh Legal');
+    expect(rendered).toContain('Linh Legal | 0865907184 | partner-1');
+    expect(rendered).not.toContain('Partner ID');
+    expect(rendered).not.toContain('Phone');
     expect(rendered).toContain('ONLINE_AVAILABLE');
     expect(rendered).toContain('KYC APPROVED');
     expect(rendered).toContain('12 feedback record(s)');

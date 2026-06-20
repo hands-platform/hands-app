@@ -21,9 +21,7 @@ type PartnerMasterListSectionCopy = {
 };
 
 const PARTNER_MASTER_TABLE_HEADERS = [
-  'Partner ID',
   'Partner',
-  'Phone',
   'Gender',
   'Current state',
   'Level',
@@ -58,21 +56,17 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
           {rows.map((row) => (
             <tr key={row.provider.id}>
               <td>
-                <code>{row.provider.id}</code>
-              </td>
-              <td>
                 <AdminPersonCell
                   avatarClassName="vuexy-booking-avatar is-partner"
                   avatarStatus={row.avatarStatus}
                   className="vuexy-booking-person"
-                  helper={row.legalName}
+                  helper={`${row.legalName} | ${row.phone} | ${row.provider.id}`}
                   href={`/partners/${row.provider.id}`}
                   initials={row.initials}
                   label={row.displayName}
                   linkClassName="table-link"
                 />
               </td>
-              <td>{row.phone}</td>
               <td>{row.gender}</td>
               <td>
                 <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>
