@@ -117,13 +117,6 @@ type ChatLifecycle = {
   roomLabel: string;
 };
 
-const MARKETPLACE_WALLET_EVIDENCE_HEADERS = [
-  'Evidence lane',
-  'Status',
-  'Record',
-  'Operator use',
-] as const;
-
 const BOOKING_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
 
 export function BookingMarketplaceWalletEvidenceSection({
@@ -151,41 +144,31 @@ export function BookingMarketplaceWalletEvidenceSection({
           </a>
         ))}
       </div>
-      <div className="setup-stage-list admin-mt-14">
+      <div className="booking-settlement-ledger admin-mt-14" aria-label="Marketplace wallet command rows">
         {marketplaceWalletEvidence.commandStrip.map((command) => (
-          <div className="setup-stage-item" key={command.label}>
-            <span>{command.label}</span>
-            <div>
-              <strong>{command.value}</strong>
-              <p className="muted">{command.helper}</p>
-            </div>
+          <div className="booking-settlement-ledger-row is-command" key={command.label}>
+            <span className="booking-settlement-ledger-label">{command.label}</span>
+            <strong className="booking-settlement-ledger-value">{command.value}</strong>
+            <p className="muted">{command.helper}</p>
             <a className="text-link" href={command.href}>
               Open
             </a>
           </div>
         ))}
       </div>
-      <AdminTableScroll>
-        <AdminDataTable
-          emptyMessage={null}
-          headers={MARKETPLACE_WALLET_EVIDENCE_HEADERS}
-          rowCount={marketplaceWalletEvidence.rows.length}
-        >
-          {marketplaceWalletEvidence.rows.map((row) => (
-            <tr key={row.lane}>
-              <td>
-                <strong>{row.lane}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-              </td>
-              <td>{row.record}</td>
-              <td>{row.operatorUse}</td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+      <div className="booking-settlement-ledger admin-mt-12" aria-label="Marketplace wallet evidence rows">
+        {marketplaceWalletEvidence.rows.map((row) => (
+          <div className="booking-settlement-ledger-row" key={row.lane}>
+            <div>
+              <span className="booking-settlement-ledger-label">{row.lane}</span>
+              <p className="muted">{row.scope}</p>
+            </div>
+            <span className={`pill ${row.tone}`}>{row.status}</span>
+            <p>{row.record}</p>
+            <p>{row.operatorUse}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

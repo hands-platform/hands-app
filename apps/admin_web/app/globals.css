@@ -4619,6 +4619,10 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.booking-settlement-ledger-row.is-command {
+  grid-template-columns: minmax(170px, 0.8fr) minmax(160px, 0.7fr) minmax(260px, 1.2fr) minmax(64px, auto);
+}
+
 .booking-settlement-ledger-row > .pill {
   justify-self: flex-start;
 }
@@ -4638,6 +4642,15 @@ a.action-button-card:hover {
   font-size: 13px;
   font-weight: 700;
   line-height: 20px;
+}
+
+.booking-settlement-ledger-value {
+  color: var(--admin-text);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
 .booking-unified-open-link {

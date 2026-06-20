@@ -11,7 +11,7 @@ import {
 } from './booking-operating-sections';
 
 describe('Booking operating sections', () => {
-  it('renders marketplace wallet evidence rows with shared table styling', () => {
+  it('renders marketplace wallet evidence rows as compact ledgers', () => {
     const section = BookingMarketplaceWalletEvidenceSection({
       marketplaceWalletEvidence: {
         cards: [
@@ -52,8 +52,15 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('No negative wallet balance.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#marketplace', '#wallet']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success']),
+      expect.arrayContaining([
+        'booking-settlement-ledger admin-mt-14',
+        'booking-settlement-ledger admin-mt-12',
+        'booking-settlement-ledger-row is-command',
+        'booking-settlement-ledger-row',
+        'pill pill-success',
+      ]),
     );
+    expect(classNamesIn(section)).not.toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 
   it('renders booking operating ledger rows with shared table styling and links', () => {
