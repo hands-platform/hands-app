@@ -111,9 +111,16 @@ function BookingUnifiedRows({
 
 function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow }) {
   const detail = row.person && row.detail === row.person.helper ? null : row.detail;
+  const className = [
+    'booking-unified-info-card',
+    row.people?.length ? 'is-wide' : null,
+    row.variant === 'inactive' ? 'is-inactive' : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={`booking-unified-info-card${row.people?.length ? ' is-wide' : ''}`}>
+    <div className={className}>
       <span className="booking-unified-info-label">{row.label}</span>
       {row.person ? <BookingUnifiedPerson person={row.person} /> : <BookingUnifiedValue row={row} />}
       {detail ? <p className="muted">{detail}</p> : null}

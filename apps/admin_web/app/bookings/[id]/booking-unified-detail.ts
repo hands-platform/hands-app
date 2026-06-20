@@ -44,6 +44,7 @@ export type BookingUnifiedDetailRow = {
   readonly href?: string;
   readonly people?: readonly BookingUnifiedDetailPerson[];
   readonly person?: BookingUnifiedDetailPerson;
+  readonly variant?: 'inactive';
 };
 
 export type BookingUnifiedDetail = {
@@ -571,8 +572,8 @@ function bookingUnifiedPartnerLocationRows({
       addressLine,
       booking,
       eventAt: booking.closedAt ?? booking.statusChangedAt ?? booking.updatedAt,
-      inactiveDetail: 'No post-match cancellation location is required for this booking.',
-      inactiveValue: 'No cancellation record',
+      inactiveDetail: 'Only shown for post-match cancellation review.',
+      inactiveValue: 'Not applicable',
       label: 'Cancellation location',
       selectedProvider,
       showCheckpoint: hasPostMatchCancellation,
@@ -607,6 +608,7 @@ function bookingUnifiedPartnerLocationCheckpointRow({
       detail: inactiveDetail,
       label,
       value: inactiveValue,
+      variant: 'inactive',
     };
   }
 

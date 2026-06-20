@@ -4444,6 +4444,18 @@ a.action-button-card:hover {
   grid-column: span 2;
 }
 
+.booking-unified-info-card.is-inactive {
+  align-self: start;
+  background: var(--admin-surface);
+  border-style: dashed;
+  min-height: 94px;
+}
+
+.booking-unified-info-card.is-inactive .booking-unified-value {
+  color: var(--admin-muted);
+  font-weight: 600;
+}
+
 .booking-unified-info-label {
   color: var(--admin-muted);
   font-size: 12px;

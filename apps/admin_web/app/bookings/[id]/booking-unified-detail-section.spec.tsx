@@ -46,6 +46,8 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Matching location');
     expect(rendered).toContain('Completion location');
     expect(rendered).toContain('Cancellation location');
+    expect(rendered).toContain('Not applicable');
+    expect(rendered).toContain('Only shown for post-match cancellation review.');
     expect(rendered).toContain('Location address not recorded');
     expect(rendered).toContain('Participating');
     expect(rendered).toContain('Latest location');
@@ -68,6 +70,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('aria-label="Participating Partners"');
     expect(markup).toContain('href="/customers/customer-profile-1"');
     expect(markup).toContain('href="/partners/partner-1"');
+    expect(markup).toContain('booking-unified-info-card is-inactive');
   });
 
   it('summarizes live customer location against the reservation address snapshot', () => {
