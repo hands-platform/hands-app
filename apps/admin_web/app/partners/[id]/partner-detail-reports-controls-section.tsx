@@ -5,6 +5,7 @@ import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormInput,
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
@@ -79,10 +80,15 @@ export function PartnerDetailReportsControlsSection({
       </div>
       <form className="form-grid admin-mb-16" action={createProviderReport}>
         <input type="hidden" name="providerProfileId" value={providerId} />
-        <label>
-          Category
-          <input name="category" placeholder="safety, payout, behavior, identity" required />
-        </label>
+        <div className="field">
+          <span>Category</span>
+          <AdminFormInput
+            label="Category"
+            name="category"
+            placeholder="safety, payout, behavior, identity"
+            required
+          />
+        </div>
         <div className="field">
           <span>Severity</span>
           <AdminFormSelect
@@ -96,10 +102,10 @@ export function PartnerDetailReportsControlsSection({
           <span>Source</span>
           <AdminFormSelect label="Source" name="source" defaultValue="ADMIN" options={reportSourceOptions} />
         </div>
-        <label className="full-span">
-          Summary
-          <input name="summary" placeholder="Short report summary" required />
-        </label>
+        <div className="field full-span">
+          <span>Summary</span>
+          <AdminFormInput label="Summary" name="summary" placeholder="Short report summary" required />
+        </div>
         <div className="field full-span">
           <span>Details</span>
           <AdminFormTextarea
@@ -162,20 +168,21 @@ export function PartnerDetailReportsControlsSection({
               options={accountControlTypeOptions}
             />
           </div>
-          <label>
-            Expires at
-            <input name="expiresAt" type="datetime-local" />
-          </label>
-          <label className="full-span">
-            Reason
-            <input
+          <div className="field">
+            <span>Expires at</span>
+            <AdminFormInput label="Expires at" name="expiresAt" type="datetime-local" />
+          </div>
+          <div className="field full-span">
+            <span>Reason</span>
+            <AdminFormInput
+              label="Reason"
               name="reason"
               placeholder="Clear operator reason, visible in audit and payout controls"
               required
               minLength={12}
               maxLength={500}
             />
-          </label>
+          </div>
           <div className="actions full-span">
             <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
             <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
@@ -237,7 +244,11 @@ export function PartnerDetailReportsControlsSection({
                         defaultValue={report.severity}
                         options={reportSeverityOptions}
                       />
-                      <input name="resolutionNote" placeholder="Resolution note" />
+                      <AdminFormInput
+                        label="Resolution note"
+                        name="resolutionNote"
+                        placeholder="Resolution note"
+                      />
                       <AdminFormControlButton type="submit">Update</AdminFormControlButton>
                     </form>
                     <form className="actions admin-mt-8" action={createProviderSanction}>
@@ -249,7 +260,8 @@ export function PartnerDetailReportsControlsSection({
                         defaultValue={report.defaultControlType}
                         options={accountControlTypeOptions}
                       />
-                      <input
+                      <AdminFormInput
+                        label="Control reason"
                         name="reason"
                         placeholder="Control reason"
                         required

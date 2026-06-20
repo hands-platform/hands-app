@@ -2,6 +2,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
   AdminFormTextarea,
@@ -44,6 +45,29 @@ describe('Admin form controls', () => {
 
     expect(date.props.className).toBe('admin-form-date partner-date-filter');
     expect(textContent(date)).toContain('From date');
+  });
+
+  it('renders input controls with the same field contract', () => {
+    const input = AdminFormInput({
+      className: 'partner-reason',
+      label: 'Control reason',
+      maxLength: 500,
+      minLength: 12,
+      name: 'reason',
+      placeholder: 'Clear operator reason',
+      required: true,
+    });
+
+    expect(input.props.className).toBe('admin-form-input partner-reason');
+    expect(textContent(input)).toContain('Control reason');
+    expect(input.props.children[1].props).toMatchObject({
+      maxLength: 500,
+      minLength: 12,
+      name: 'reason',
+      placeholder: 'Clear operator reason',
+      required: true,
+      type: 'text',
+    });
   });
 
   it('renders textarea controls with the same field contract', () => {

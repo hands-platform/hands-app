@@ -70,6 +70,7 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table',
         'admin-form-select',
+        'admin-form-input',
         'admin-form-textarea',
         'admin-form-control-button',
         'admin-form-control-link',
@@ -78,6 +79,7 @@ describe('PartnerDetailReportsControlsSection', () => {
       ]),
     );
     expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(6);
+    expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(6);
     expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
   });
 

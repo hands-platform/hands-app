@@ -6691,6 +6691,7 @@ textarea:focus-visible {
 
 .admin-form-search,
 .admin-form-date,
+.admin-form-input,
 .admin-form-select,
 .vuexy-customer-number-field,
 .vuexy-customer-search,
@@ -6713,6 +6714,7 @@ textarea:focus-visible {
 
 .admin-form-search input,
 .admin-form-date input,
+.admin-form-input input,
 .admin-form-select select,
 .vuexy-customer-number-field input,
 .vuexy-customer-search input,
@@ -6729,6 +6731,7 @@ textarea:focus-visible {
 
 .admin-form-search input,
 .admin-form-date input,
+.admin-form-input input,
 .vuexy-customer-number-field input,
 .vuexy-customer-search input {
   flex: 1;
@@ -6736,6 +6739,7 @@ textarea:focus-visible {
 }
 
 .admin-form-search input::placeholder,
+.admin-form-input input::placeholder,
 .vuexy-customer-number-field input::placeholder,
 .vuexy-customer-search input::placeholder {
   color: var(--admin-disabled);
@@ -6743,6 +6747,7 @@ textarea:focus-visible {
 
 .admin-form-select,
 .admin-form-date,
+.admin-form-input,
 .vuexy-customer-number-field,
 .vuexy-customer-select {
   justify-content: space-between;
