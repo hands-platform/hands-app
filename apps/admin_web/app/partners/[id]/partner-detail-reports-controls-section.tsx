@@ -3,6 +3,12 @@ import Link from 'next/link';
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
+  AdminFormControlButton,
+  AdminFormControlLink,
+  AdminFormSelect,
+  AdminFormTextarea,
+} from '../../../components/admin-form-controls';
+import {
   createProviderReport,
   createProviderSanction,
   updateProviderReport,
@@ -77,34 +83,33 @@ export function PartnerDetailReportsControlsSection({
           Category
           <input name="category" placeholder="safety, payout, behavior, identity" required />
         </label>
-        <label>
-          Severity
-          <select name="severity" defaultValue="MEDIUM">
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">Major</option>
-            <option value="CRITICAL">Urgent</option>
-          </select>
-        </label>
-        <label>
-          Source
-          <select name="source" defaultValue="ADMIN">
-            <option value="ADMIN">Admin</option>
-            <option value="CUSTOMER">Customer</option>
-            <option value="PROVIDER">Partner</option>
-            <option value="SYSTEM">System</option>
-          </select>
-        </label>
+        <div className="field">
+          <span>Severity</span>
+          <AdminFormSelect
+            label="Severity"
+            name="severity"
+            defaultValue="MEDIUM"
+            options={reportSeverityOptions}
+          />
+        </div>
+        <div className="field">
+          <span>Source</span>
+          <AdminFormSelect label="Source" name="source" defaultValue="ADMIN" options={reportSourceOptions} />
+        </div>
         <label className="full-span">
           Summary
           <input name="summary" placeholder="Short report summary" required />
         </label>
-        <label className="full-span">
-          Details
-          <textarea name="details" placeholder="Evidence, timeline, follow-up, or staff note" />
-        </label>
+        <div className="field full-span">
+          <span>Details</span>
+          <AdminFormTextarea
+            label="Details"
+            name="details"
+            placeholder="Evidence, timeline, follow-up, or staff note"
+          />
+        </div>
         <div className="actions full-span">
-          <button type="submit">Create report</button>
+          <AdminFormControlButton type="submit">Create report</AdminFormControlButton>
         </div>
       </form>
       <div className="ops-task-card ops-task-pending admin-mb-16">
@@ -115,10 +120,10 @@ export function PartnerDetailReportsControlsSection({
               Use this for immediate operating controls when a report is not yet required.
             </p>
           </div>
-        <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
-          {payoutHold ? 'Payout locked' : 'No payout hold'}
-        </span>
-      </div>
+          <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
+            {payoutHold ? 'Payout locked' : 'No payout hold'}
+          </span>
+        </div>
         <div className="admin-mb-12">
           <AdminTableScroll>
             <AdminDataTable
@@ -148,15 +153,15 @@ export function PartnerDetailReportsControlsSection({
         </div>
         <form className="form-grid" action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
-          <label>
-            Control type
-            <select name="type" defaultValue="PAYOUT_HOLD">
-              <option value="WARNING">Warning</option>
-              <option value="PAYOUT_HOLD">Payout hold</option>
-              <option value="ACCOUNT_BLOCK">Account block</option>
-              <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
-            </select>
-          </label>
+          <div className="field">
+            <span>Control type</span>
+            <AdminFormSelect
+              label="Control type"
+              name="type"
+              defaultValue="PAYOUT_HOLD"
+              options={accountControlTypeOptions}
+            />
+          </div>
           <label>
             Expires at
             <input name="expiresAt" type="datetime-local" />
@@ -172,10 +177,8 @@ export function PartnerDetailReportsControlsSection({
             />
           </label>
           <div className="actions full-span">
-            <button type="submit">Apply account control</button>
-            <Link className="text-link" href="/payouts">
-              Open payouts
-            </Link>
+            <AdminFormControlButton type="submit">Apply account control</AdminFormControlButton>
+            <AdminFormControlLink href="/payouts">Open payouts</AdminFormControlLink>
           </div>
         </form>
       </div>
@@ -317,6 +320,27 @@ export function PartnerDetailReportsControlsSection({
 const reportTableHeaders = ['Report', 'Severity', 'Status', 'Linked record', 'Actions'] as const;
 const accountControlTableHeaders = ['Control', 'Status', 'Timeline', 'Actions'] as const;
 const payoutHoldTableHeaders = ['State', 'Control', 'Timeline', 'ID'] as const;
+
+const reportSeverityOptions = [
+  { label: 'Low', value: 'LOW' },
+  { label: 'Medium', value: 'MEDIUM' },
+  { label: 'Major', value: 'HIGH' },
+  { label: 'Urgent', value: 'CRITICAL' },
+] as const;
+
+const reportSourceOptions = [
+  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Customer', value: 'CUSTOMER' },
+  { label: 'Partner', value: 'PROVIDER' },
+  { label: 'System', value: 'SYSTEM' },
+] as const;
+
+const accountControlTypeOptions = [
+  { label: 'Warning', value: 'WARNING' },
+  { label: 'Payout hold', value: 'PAYOUT_HOLD' },
+  { label: 'Account block', value: 'ACCOUNT_BLOCK' },
+  { label: 'Profile review hold', value: 'TRUST_BADGE_REMOVAL' },
+] as const;
 
 function reportSeverityPill(severity: string) {
   if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';

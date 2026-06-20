@@ -60,12 +60,17 @@ describe('PartnerDetailReportsControlsSection', () => {
         '/partner-controls?q=partner-1',
         '/bookings/booking-1',
         '/partners/partner-1?controlAction=lift',
+        '/payouts',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table',
+        'admin-form-select',
+        'admin-form-textarea',
+        'admin-form-control-button',
+        'admin-form-control-link',
         'pill pill-danger',
         'admin-action-dropdown action-menu-dropdown',
       ]),
