@@ -1,6 +1,8 @@
 import {
+  PartnerDetailAgreementsCard,
   PartnerDetailBasicProfileCard,
   PartnerDetailLocationActivityCard,
+  PartnerDetailRecentPayoutRecordsCard,
 } from './partner-detail-profile-finance-summary-section';
 
 describe('partner detail profile and location sections', () => {
@@ -46,6 +48,50 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('21.02776, 105.83416');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-neutral']),
+    );
+  });
+
+  it('renders accepted agreements as table rows', () => {
+    const section = PartnerDetailAgreementsCard({
+      agreements: [
+        { id: 'agreement-1', label: 'Partner Terms v1' },
+        { id: 'agreement-2', label: 'Privacy Policy v2' },
+      ],
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Agreements');
+    expect(rendered).toContain('2 accepted');
+    expect(rendered).toContain('Partner Terms v1');
+    expect(rendered).toContain('Privacy Policy v2');
+    expect(rendered).toContain('ACCEPTED');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success']),
+    );
+  });
+
+  it('renders recent payout evidence as summary and earning rows', () => {
+    const section = PartnerDetailRecentPayoutRecordsCard({
+      earningCount: 3,
+      earnings: [
+        {
+          id: 'earning-1',
+          label: 'COMPLETED: gross 400,000 VND / withholding 20,000 VND / net 380,000 VND',
+        },
+      ],
+      payoutBatchCount: 1,
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Recent payout records');
+    expect(rendered).toContain('3 earning(s)');
+    expect(rendered).toContain('Recent earnings');
+    expect(rendered).toContain('Recent payout batches');
+    expect(rendered).toContain('COMPLETED: gross 400,000 VND');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
     );
   });
 });

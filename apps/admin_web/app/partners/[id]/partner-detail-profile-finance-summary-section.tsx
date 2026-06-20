@@ -81,18 +81,33 @@ export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasic
 export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreementsCardProps) {
   return (
     <div className="card">
-      <h2>Agreements</h2>
-      {agreements.length ? (
-        <div className="participant-list">
-          {agreements.map((agreement) => (
-            <span className="pill pill-success" key={agreement.id}>
-              {agreement.label}
-            </span>
-          ))}
+      <div className="ops-section-header">
+        <div>
+          <h2>Agreements</h2>
+          <p className="muted">Legal agreement acceptance records connected to this Partner account.</p>
         </div>
-      ) : (
-        <p className="muted">No legal agreements accepted yet.</p>
-      )}
+        <span className={`pill ${agreements.length ? 'pill-success' : 'pill-warn'}`}>
+          {agreements.length} accepted
+        </span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<ProfileEmptyState message="No legal agreements accepted yet." />}
+          headers={agreementTableHeaders}
+          rowCount={agreements.length}
+        >
+          {agreements.map((agreement) => (
+            <tr key={agreement.id}>
+              <td>
+                <strong>{agreement.label}</strong>
+              </td>
+              <td>
+                <span className="pill pill-success">ACCEPTED</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -104,14 +119,47 @@ export function PartnerDetailRecentPayoutRecordsCard({
 }: PartnerDetailRecentPayoutRecordsCardProps) {
   return (
     <div className="card">
-      <h2>Recent payout records</h2>
-      <InfoLine label="Recent earnings" value={earningCount.toString()} />
-      <InfoLine label="Recent payout batches" value={payoutBatchCount.toString()} />
-      {earnings.map((earning) => (
-        <p className="muted" key={earning.id}>
-          {earning.label}
-        </p>
-      ))}
+      <div className="ops-section-header">
+        <div>
+          <h2>Recent payout records</h2>
+          <p className="muted">Latest earning and payout batch evidence for finance handoff.</p>
+        </div>
+        <span className="pill pill-info">{earningCount} earning(s)</span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<ProfileEmptyState message="No recent payout records loaded." />}
+          headers={payoutRecordTableHeaders}
+          rowCount={2 + earnings.length}
+        >
+          <tr>
+            <td>
+              <strong>Recent earnings</strong>
+            </td>
+            <td>
+              <span>{earningCount}</span>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Recent payout batches</strong>
+            </td>
+            <td>
+              <span>{payoutBatchCount}</span>
+            </td>
+          </tr>
+          {earnings.map((earning) => (
+            <tr key={earning.id}>
+              <td>
+                <strong>Recent earning</strong>
+              </td>
+              <td>
+                <span className="muted">{earning.label}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -178,6 +226,8 @@ export function PartnerDetailLocationActivityCard({
 
 const profileTableHeaders = ['Field', 'Value'] as const;
 const locationTableHeaders = ['Signal', 'Evidence'] as const;
+const agreementTableHeaders = ['Agreement', 'Status'] as const;
+const payoutRecordTableHeaders = ['Record', 'Evidence'] as const;
 
 function ProfileValue({ value }: { readonly value?: string | null }) {
   return <span>{value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}</span>;
@@ -189,13 +239,5 @@ function ProfileEmptyState({ message }: { readonly message: string }) {
       <strong>No profile evidence found</strong>
       <p className="muted">{message}</p>
     </>
-  );
-}
-
-function InfoLine({ label, value }: { readonly label: string; readonly value?: string | null }) {
-  return (
-    <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
-    </p>
   );
 }
