@@ -51,114 +51,127 @@ export function CustomerFilterBoard({
     >
       <form action="/customers" className="vuexy-customer-form">
         <input name="pageSize" type="hidden" value={filters.pageSize} />
-        <div className="vuexy-customer-form-primary">
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.booking}
-            label="Completed reservations"
-            name="booking"
-            options={bookingFilterOptions}
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.country}
-            label="Country"
-            name="country"
-            options={countryFilterOptions}
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.gender}
-            label="Gender"
-            name="gender"
-            options={genderFilterOptions}
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.payment}
-            label="Wallet state"
-            name="payment"
-            options={paymentFilterOptions}
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.seen}
-            label="Last login state"
-            name="seen"
-            options={seenFilterOptions}
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.sort}
-            label="Sort customers"
-            name="sort"
-            options={sortFilterOptions}
-          />
-          <AdminFormSearch
-            className="vuexy-customer-search"
-            defaultValue={filters.q}
-            label="Search customer"
-            name="q"
-            placeholder="Search Customer"
-          />
-          <AdminFormControlLink
-            className="vuexy-customer-export"
-            download="hands-customers.csv"
-            href={csvHref}
-          >
-            <Download aria-hidden="true" size={16} />
-            Export
-          </AdminFormControlLink>
-          <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+        <div className="vuexy-customer-filter-grid">
+          <div className="vuexy-customer-filter-group is-primary" aria-label="Customer list filters">
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.booking}
+              label="Completed reservations"
+              name="booking"
+              options={bookingFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.country}
+              label="Country"
+              name="country"
+              options={countryFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.gender}
+              label="Gender"
+              name="gender"
+              options={genderFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.payment}
+              label="Wallet state"
+              name="payment"
+              options={paymentFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.seen}
+              label="Last login state"
+              name="seen"
+              options={seenFilterOptions}
+            />
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.sort}
+              label="Sort customers"
+              name="sort"
+              options={sortFilterOptions}
+            />
+            <AdminFormSearch
+              className="vuexy-customer-search"
+              defaultValue={filters.q}
+              label="Search customer"
+              name="q"
+              placeholder="Search Customer"
+            />
+          </div>
+          <div className="vuexy-customer-filter-actions" aria-label="Customer filter actions">
+            <AdminFormControlLink
+              className="vuexy-customer-export"
+              download="hands-customers.csv"
+              href={csvHref}
+            >
+              <Download aria-hidden="true" size={16} />
+              Export
+            </AdminFormControlLink>
+            <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+          </div>
         </div>
-        <div className="vuexy-customer-advanced-grid">
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.joinedRange}
-            label="Sign-up date"
-            name="joinedRange"
-            options={dateRangeFilterOptions('Sign-up')}
-          />
-          <AdminFormDate
-            className="vuexy-customer-date"
-            defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedFrom)}
-            label="Sign-up from"
-            name="joinedFrom"
-          />
-          <AdminFormDate
-            className="vuexy-customer-date"
-            defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedTo)}
-            label="Sign-up to"
-            name="joinedTo"
-          />
-          <AdminFormSelect
-            className="vuexy-customer-select"
-            defaultValue={filters.lastBookingRange}
-            label="Last reservation"
-            name="lastBookingRange"
-            options={dateRangeFilterOptions('Last reservation')}
-          />
-          <AdminFormDate
-            className="vuexy-customer-date"
-            defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingFrom)}
-            label="Last reservation from"
-            name="lastBookingFrom"
-          />
-          <AdminFormDate
-            className="vuexy-customer-date"
-            defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingTo)}
-            label="Last reservation to"
-            name="lastBookingTo"
-          />
-          <AdminFormInput
-            className="vuexy-customer-number-field"
-            defaultValue={filters.minBookings ?? ''}
-            label="Minimum reservations"
-            min="0"
-            name="minBookings"
-            placeholder="Min reservations"
-            type="number"
-          />
+        <div className="vuexy-customer-date-filter-grid" aria-label="Customer date filters">
+          <div className="vuexy-customer-date-filter-group">
+            <span className="vuexy-customer-filter-group-label">Sign-up Date</span>
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.joinedRange}
+              label="Sign-up date"
+              name="joinedRange"
+              options={dateRangeFilterOptions('Sign-up')}
+            />
+            <AdminFormDate
+              className="vuexy-customer-date"
+              defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedFrom)}
+              label="Sign-up from"
+              name="joinedFrom"
+            />
+            <AdminFormDate
+              className="vuexy-customer-date"
+              defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedTo)}
+              label="Sign-up to"
+              name="joinedTo"
+            />
+          </div>
+          <div className="vuexy-customer-date-filter-group">
+            <span className="vuexy-customer-filter-group-label">Last Reservation</span>
+            <AdminFormSelect
+              className="vuexy-customer-select"
+              defaultValue={filters.lastBookingRange}
+              label="Last reservation"
+              name="lastBookingRange"
+              options={dateRangeFilterOptions('Last reservation')}
+            />
+            <AdminFormDate
+              className="vuexy-customer-date"
+              defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingFrom)}
+              label="Last reservation from"
+              name="lastBookingFrom"
+            />
+            <AdminFormDate
+              className="vuexy-customer-date"
+              defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingTo)}
+              label="Last reservation to"
+              name="lastBookingTo"
+            />
+          </div>
+          <div className="vuexy-customer-date-filter-group is-compact">
+            <span className="vuexy-customer-filter-group-label">Reservation Count</span>
+            <AdminFormInput
+              className="vuexy-customer-number-field"
+              defaultValue={filters.minBookings ?? ''}
+              label="Minimum reservations"
+              min="0"
+              name="minBookings"
+              placeholder="Min reservations"
+              type="number"
+            />
+          </div>
         </div>
       </form>
     </AdminFilterPanel>

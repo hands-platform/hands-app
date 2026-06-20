@@ -6677,16 +6677,43 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  gap: 16px;
 }
 
-.vuexy-customer-form-primary {
+.vuexy-customer-filter-grid {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.vuexy-customer-filter-group {
   align-items: center;
+  background: color-mix(in srgb, var(--admin-surface) 86%, transparent);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.vuexy-customer-filter-group.is-primary .vuexy-customer-select {
+  min-width: 176px;
+}
+
+.vuexy-customer-filter-group.is-primary .vuexy-customer-search {
+  flex: 1 1 280px;
+}
+
+.vuexy-customer-filter-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  min-width: 218px;
 }
 
 .admin-form-search,
@@ -6719,8 +6746,8 @@ textarea:focus-visible {
 .vuexy-customer-number-field input,
 .vuexy-customer-search input,
 .vuexy-customer-select select,
-.vuexy-customer-advanced-grid input,
-.vuexy-customer-advanced-grid select {
+.vuexy-customer-date-filter-grid input,
+.vuexy-customer-date-filter-grid select {
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -6828,26 +6855,59 @@ textarea:focus-visible {
   color: var(--admin-inverse-text);
 }
 
-.vuexy-customer-advanced-grid {
+.vuexy-customer-date-filter-grid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
-.vuexy-customer-advanced-grid label {
+.vuexy-customer-date-filter-group {
+  align-items: center;
+  background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 150px minmax(200px, 1fr) minmax(160px, 0.7fr) minmax(160px, 0.7fr);
+  min-width: 0;
+  padding: 12px;
+}
+
+.vuexy-customer-date-filter-group.is-compact {
+  grid-template-columns: 150px minmax(220px, 320px);
+  justify-content: start;
+}
+
+.vuexy-customer-filter-group-label {
+  align-self: center;
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vuexy-customer-date-filter-grid label {
   color: var(--admin-muted);
   display: flex;
-  flex-direction: column;
   font-size: 13px;
   gap: 8px;
 }
 
-.vuexy-customer-advanced-grid input,
-.vuexy-customer-advanced-grid select {
-  border: 1px solid var(--admin-input-border);
-  border-radius: var(--admin-radius);
-  min-height: 40px;
-  padding: 0 12px;
+.vuexy-customer-date-filter-grid .vuexy-customer-date,
+.vuexy-customer-date-filter-grid .vuexy-customer-number-field,
+.vuexy-customer-date-filter-grid .vuexy-customer-select {
+  min-width: 0;
+  width: 100%;
+}
+
+.vuexy-customer-date-filter-grid input,
+.vuexy-customer-date-filter-grid select {
+  border: 0;
+  border-radius: 0;
+  min-height: 0;
+  padding: 0;
 }
 
 .vuexy-customer-filter-footer {
