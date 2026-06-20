@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminFormControlButton } from '../../../components/admin-form-controls';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
 import { approvePostMatchCancellationFromDetail, holdPostMatchCancellationFromDetail } from './actions';
 
@@ -67,17 +68,17 @@ export function BookingDetailPostMatchDecisionSection({
             <form action={approvePostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.approveNote} />
-              <button className="button button-primary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
                 Approve cancellation
-              </button>
+              </AdminFormControlButton>
               <small>Restore eligible fee impact</small>
             </form>
             <form action={holdPostMatchCancellationFromDetail}>
               <input type="hidden" name="bookingId" value={bookingId} />
               <input type="hidden" name="note" value={decision.holdNote} />
-              <button className="button button-secondary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
                 Hold fee deduction
-              </button>
+              </AdminFormControlButton>
               <small>Keep existing deduction</small>
             </form>
           </div>
