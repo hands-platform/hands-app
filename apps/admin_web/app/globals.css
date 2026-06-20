@@ -4425,7 +4425,7 @@ a.action-button-card:hover {
 
 .booking-unified-detail-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -4434,10 +4434,10 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border-subtle);
   border-radius: var(--admin-radius-lg);
   display: grid;
-  gap: 8px;
-  min-height: 122px;
+  gap: 6px;
+  min-height: 112px;
   min-width: 0;
-  padding: 14px;
+  padding: 12px;
 }
 
 .booking-unified-info-card.is-wide {
@@ -4458,7 +4458,7 @@ a.action-button-card:hover {
 .booking-unified-info-card.is-secondary {
   align-self: start;
   background: var(--admin-surface);
-  min-height: 104px;
+  min-height: 94px;
 }
 
 .booking-unified-info-card.is-secondary .booking-unified-value,
@@ -4477,7 +4477,7 @@ a.action-button-card:hover {
   align-self: start;
   background: var(--admin-surface);
   border-style: dashed;
-  min-height: 94px;
+  min-height: 86px;
 }
 
 .booking-unified-info-card.is-inactive .booking-unified-value {
@@ -4510,7 +4510,7 @@ a.action-button-card:hover {
 }
 
 .booking-unified-info-card > .muted {
-  line-height: 20px;
+  line-height: 19px;
   margin: 0;
 }
 
@@ -4531,14 +4531,14 @@ a.action-button-card:hover {
 .booking-unified-participant-strip {
   align-items: start;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   grid-template-columns: auto minmax(0, 1fr);
   min-width: 0;
 }
 
 .booking-unified-participant-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
