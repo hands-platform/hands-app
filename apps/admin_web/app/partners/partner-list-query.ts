@@ -208,6 +208,12 @@ export function partnerMatchesReviewQueue(
   if (review === 'blocked') {
     return Boolean(provider.blockedAt);
   }
+  if (review === 'unapproved') {
+    return partnerNeedsApprovalReview(provider);
+  }
+  if (review === 'unsettled') {
+    return partnerUnsettledWalletBalance(provider) < 0;
+  }
   if (review === 'kyc') {
     return partnerNeedsKycReview(provider);
   }
@@ -258,6 +264,21 @@ export function partnerMatchesReviewQueue(
     return !deps.marketplaceEligibility(provider, opsPolicy).eligible;
   }
   return true;
+}
+
+export function partnerNeedsApprovalReview(provider: AdminProvider) {
+  return (
+    Boolean(provider.blockedAt) ||
+    (provider.verification?.status ?? 'DRAFT') !== 'APPROVED' ||
+    partnerNeedsKycReview(provider) ||
+    (provider.documents ?? []).some((document) =>
+      ['PENDING_REVIEW', 'REJECTED'].includes(document.status),
+    ) ||
+    providerPublicMediaNeedsReview(provider) ||
+    !hasApprovedBankAccount(provider) ||
+    partnerPayoutSetupNeedsReview(provider) ||
+    partnerTaxNeedsReview(provider)
+  );
 }
 
 export function partnerSearchText(provider: AdminProvider) {

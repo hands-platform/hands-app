@@ -57,10 +57,13 @@ describe('admin navigation', () => {
     ]);
     expect(partnerSection?.links.map((link) => link.href)).toEqual([
       '/partners',
-      '/partners?review=kyc',
-      '/partners?review=acceptance-blocked',
-      '/partners?review=marketplace-ready',
-      '/partner-controls',
+      '/partners?review=unapproved',
+      '/partners?review=unsettled',
+    ]);
+    expect(partnerSection?.links.map((link) => link.label)).toEqual([
+      'Partners',
+      'Unapproved Partners',
+      'Unsettled Partners',
     ]);
     expect(
       adminNavSections.flatMap((section) => section.links.map((link) => link.href)),

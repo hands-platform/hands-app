@@ -187,6 +187,12 @@ export function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'cash-debt') {
     return 'Cash fee debt highlights partners whose marketplace alerts and participation wait until HANDS commission is settled.';
   }
+  if (kind === 'review' && value === 'unapproved') {
+    return 'Unapproved Partners combines registration, KYC, document, bank, tax, public media, and hold items that need admin approval from the Partner detail page.';
+  }
+  if (kind === 'review' && value === 'unsettled') {
+    return 'Unsettled Partners shows only Partners whose wallet balance is negative from unpaid HANDS commission.';
+  }
   if (kind === 'review' && value === 'acceptance-blocked') {
     return 'Direct request held highlights partners still waiting on account, identity, bank, device, location, or alert gates before preferred direct requests.';
   }
@@ -228,6 +234,8 @@ export function partnerSortLabel(sort: string) {
 
 export function partnerReviewFilterLabel(review: string) {
   const labels: Record<string, string> = {
+    unapproved: 'Unapproved Partners',
+    unsettled: 'Unsettled Partners',
     kyc: 'KYC updates',
     documents: 'Document review',
     'public-media': 'Public media review',

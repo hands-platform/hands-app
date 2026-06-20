@@ -20,5 +20,7 @@ describe('admin shell navigation', () => {
       ),
     ).toBe(true);
     expect(hrefMatchesPath('/partners', '/partners', 'review=kyc')).toBe(false);
+    expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unapproved')).toBe(true);
+    expect(hrefMatchesPath('/partners?review=unapproved', '/partners', 'review=unsettled')).toBe(false);
   });
 });

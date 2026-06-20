@@ -3,6 +3,7 @@ import type { ProviderFilters } from './partner-filters';
 import { DEFAULT_PROVIDER_OPS_POLICY } from './partner-list-ops';
 import {
   filterPartners,
+  partnerNeedsApprovalReview,
   partnerMatchesBookingFlow,
   partnerMatchesReviewQueue,
   partnerReadiness,
@@ -50,6 +51,26 @@ function partner(input: Partial<AdminProvider> = {}): AdminProvider {
     },
     ...input,
   } as AdminProvider;
+}
+
+function approvedPartner(input: Partial<AdminProvider> = {}): AdminProvider {
+  return partner({
+    bankAccounts: [
+      {
+        id: 'bank-1',
+        bankName: 'VCB',
+        accountHolderName: 'Linh Wellness',
+        status: 'APPROVED',
+        isPrimary: true,
+      },
+    ],
+    documents: ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'].map((type) => ({
+      id: `document-${type.toLowerCase()}`,
+      type,
+      status: 'APPROVED',
+    })),
+    ...input,
+  });
 }
 
 function booking(input: Partial<AdminBooking> = {}): AdminBooking {
@@ -195,6 +216,39 @@ describe('partner list query', () => {
       partnerMatchesReviewQueue(
         partner({ id: 'marketplace-blocked' }),
         'marketplace-blocked',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(true);
+    expect(partnerNeedsApprovalReview(approvedPartner())).toBe(false);
+    expect(
+      partnerMatchesReviewQueue(
+        approvedPartner({ verification: { id: 'verification-2', status: 'SUBMITTED' } }),
+        'unapproved',
+        DEFAULT_PROVIDER_OPS_POLICY,
+        deps,
+      ),
+    ).toBe(true);
+    expect(
+      partnerMatchesReviewQueue(
+        approvedPartner({
+          id: 'wallet-debt',
+          earnings: [
+            {
+              id: 'earning-debt',
+              providerProfileId: 'wallet-debt',
+              bookingId: 'booking-cash',
+              grossAmount: 450000,
+              platformFee: 120000,
+              withholdingAmount: 0,
+              netAmount: -120000,
+              currency: 'VND',
+              status: 'PENDING',
+              createdAt: now.toISOString(),
+            },
+          ],
+        }),
+        'unsettled',
         DEFAULT_PROVIDER_OPS_POLICY,
         deps,
       ),

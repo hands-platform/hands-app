@@ -368,6 +368,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             name="review"
             options={[
               { label: 'All', value: '' },
+              { label: 'Unapproved Partners', value: 'unapproved' },
+              { label: 'Unsettled Partners', value: 'unsettled' },
               { label: 'KYC updates', value: 'kyc' },
               { label: 'Document review', value: 'documents' },
               { label: 'Public media review', value: 'public-media' },

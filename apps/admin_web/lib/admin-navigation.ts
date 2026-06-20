@@ -74,33 +74,23 @@ export const adminNavSections: AdminNavSection[] = [
   },
   {
     label: 'Partners',
-    description: 'Partner onboarding, readiness, controls, and support evidence.',
+    description: 'Approved Partners, approval queues, and wallet settlement risk.',
     links: [
       {
         href: '/partners',
         label: 'Partners',
-        description: 'List and detail records for every Partner.',
+        description: 'Approved and active Partner records with detail review access.',
       },
       {
-        href: '/partners?review=kyc',
-        label: 'KYC Review',
-        description: 'Partner identity and document review queue.',
-      },
-      {
-        href: '/partners?review=acceptance-blocked',
-        label: 'Direct Request Held',
+        href: '/partners?review=unapproved',
+        label: 'Unapproved Partners',
         description:
-          'Partners held from preferred direct requests by account, identity, bank, device, location, or alert gates.',
+          'Partner registration, KYC, document, bank, tax, media, or hold items waiting for admin approval.',
       },
       {
-        href: '/partners?review=marketplace-ready',
-        label: 'Marketplace Ready',
-        description: 'Partners ready for marketplace participation.',
-      },
-      {
-        href: '/partner-controls',
-        label: 'Partner Controls',
-        description: 'Manual Partner state, hold, and account controls.',
+        href: '/partners?review=unsettled',
+        label: 'Unsettled Partners',
+        description: 'Partners whose wallet balance is negative from unpaid HANDS commission.',
       },
     ],
   },
