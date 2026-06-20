@@ -47,6 +47,32 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('No partner rows found');
     expect(rendered).toContain('Change the filters or clear search to view partner records.');
   });
+
+  it('renders approval-focused copy for unapproved partners', () => {
+    const section = PartnerMasterListSection({
+      mode: 'unapproved',
+      rows: buildRows(),
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Unapproved Partners');
+    expect(rendered).toContain('Approval-first list for Partners who cannot operate yet');
+    expect(rendered).toContain('1 approval row(s)');
+  });
+
+  it('renders settlement-focused copy for unsettled partners', () => {
+    const section = PartnerMasterListSection({
+      mode: 'unsettled',
+      rows: buildRows(),
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Unsettled Partners');
+    expect(rendered).toContain('Settlement-first list for Partners with negative wallet balance');
+    expect(rendered).toContain('1 settlement row(s)');
+  });
 });
 
 function buildRows(): PartnerMasterListSectionRow[] {

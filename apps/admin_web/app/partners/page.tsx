@@ -178,6 +178,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerMasterRows = visibleProviders.map((provider) =>
     buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
   );
+  const partnerMasterListMode =
+    filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
   const partnerExportRows = buildPartnerExportRows({
     filterLabel: partnerExportFilterLabel,
     filters,
@@ -515,7 +517,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
-      <PartnerMasterListSection rows={partnerMasterRows} />
+      <PartnerMasterListSection mode={partnerMasterListMode} rows={partnerMasterRows} />
       <PartnerOperationsListSection
         directReadyCount={directReadyPartnerCount}
         hiddenPartnerCount={hiddenProviderCount}

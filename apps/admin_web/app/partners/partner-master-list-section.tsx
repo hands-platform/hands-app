@@ -8,7 +8,16 @@ import type { PartnerMasterRow } from './partner-master-row';
 export type PartnerMasterListSectionRow = PartnerMasterRow;
 
 type PartnerMasterListSectionProps = {
+  readonly mode?: PartnerMasterListSectionMode;
   readonly rows: readonly PartnerMasterListSectionRow[];
+};
+
+type PartnerMasterListSectionMode = 'default' | 'unapproved' | 'unsettled';
+
+type PartnerMasterListSectionCopy = {
+  description: string;
+  statusLabel: string;
+  title: string;
 };
 
 const PARTNER_MASTER_TABLE_HEADERS = [
@@ -29,13 +38,18 @@ const PARTNER_MASTER_TABLE_HEADERS = [
   'Account',
 ] as const;
 
-export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps) {
+export function PartnerMasterListSection({
+  mode = 'default',
+  rows,
+}: PartnerMasterListSectionProps) {
+  const copy = buildPartnerMasterListSectionCopy(mode, rows.length);
+
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="Compact admin list for ID, profile, contact, onboarding level, app status, location freshness, booking volume, feedback records, revenue, payout readiness, and account state."
-        status={<span className="pill pill-info">{rows.length} visible row(s)</span>}
-        title="Partner master list"
+        description={copy.description}
+        status={<span className="pill pill-info">{copy.statusLabel}</span>}
+        title={copy.title}
       />
       <AdminTableScroll>
         <AdminDataTable
@@ -126,6 +140,36 @@ export function PartnerMasterListSection({ rows }: PartnerMasterListSectionProps
       </AdminTableScroll>
     </section>
   );
+}
+
+function buildPartnerMasterListSectionCopy(
+  mode: PartnerMasterListSectionMode,
+  rowCount: number,
+): PartnerMasterListSectionCopy {
+  if (mode === 'unapproved') {
+    return {
+      description:
+        'Approval-first list for Partners who cannot operate yet because registration, KYC, documents, public media, bank, tax, device, or account-hold facts still need admin review.',
+      statusLabel: `${rowCount} approval row(s)`,
+      title: 'Unapproved Partners',
+    };
+  }
+
+  if (mode === 'unsettled') {
+    return {
+      description:
+        'Settlement-first list for Partners with negative wallet balance from unpaid HANDS commission. Check debt, payout, and account state before releasing marketplace participation.',
+      statusLabel: `${rowCount} settlement row(s)`,
+      title: 'Unsettled Partners',
+    };
+  }
+
+  return {
+    description:
+      'Compact admin list for ID, profile, contact, onboarding level, app status, location freshness, booking volume, feedback records, revenue, payout readiness, and account state.',
+    statusLabel: `${rowCount} visible row(s)`,
+    title: 'Partner master list',
+  };
 }
 
 function PartnerMasterEmptyState() {
