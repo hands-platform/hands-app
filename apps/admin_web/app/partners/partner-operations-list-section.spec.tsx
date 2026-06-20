@@ -4,7 +4,7 @@ import {
 } from './partner-operations-list-section';
 
 describe('PartnerOperationsListSection', () => {
-  it('renders operations rows with gate, marketplace, money, and detail facts', () => {
+  it('renders operations rows with approval, booking access, wallet, and app check facts', () => {
     const section = PartnerOperationsListSection({
       directReadyCount: 1,
       hiddenPartnerCount: 2,
@@ -16,6 +16,16 @@ describe('PartnerOperationsListSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Partner operations list');
+    expect(rendered).toContain('Approval');
+    expect(rendered).toContain('Booking access');
+    expect(rendered).toContain('App / next check');
+    expect(rendered).not.toContain('Basic checklist');
+    expect(rendered).not.toContain('Direct request gate');
+    expect(rendered).not.toContain('Matching flow');
+    expect(rendered).not.toContain('Marketplace access');
+    expect(rendered).not.toContain('Money');
+    expect(rendered).not.toContain('App/location');
+    expect(rendered).not.toContain('Next operator check');
     expect(rendered).toContain('3 partner(s)');
     expect(rendered).toContain('1 can receive direct requests');
     expect(rendered).toContain('1 wallet marketplace hold');

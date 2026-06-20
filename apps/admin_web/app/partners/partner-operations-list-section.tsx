@@ -4,10 +4,7 @@ import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
-import {
-  partnerOperationPillClass,
-  type PartnerOperationRow,
-} from './partner-operation-row';
+import { partnerOperationPillClass, type PartnerOperationRow } from './partner-operation-row';
 
 export type PartnerOperationsListSectionRow = PartnerOperationRow;
 
@@ -21,14 +18,11 @@ type PartnerOperationsListSectionProps = {
 
 const PARTNER_OPERATIONS_TABLE_HEADERS = [
   'Partner',
-  'Basic checklist',
-  'Direct request gate',
-  'Matching flow',
-  'Marketplace access',
-  'Work history',
-  'Money',
-  'App/location',
-  'Next operator check',
+  'Approval',
+  'Booking access',
+  'Work',
+  'Wallet',
+  'App / next check',
 ] as const;
 
 export function PartnerOperationsListSection({
@@ -41,7 +35,7 @@ export function PartnerOperationsListSection({
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="List-first partner control view. Operators can check onboarding, direct and marketplace readiness, completed work, last work, wallet, location, push, services, and app activity before opening the full partner record."
+        description="List-first partner control view. Operators can check approval readiness, booking access, work history, wallet state, app activity, and the next operator check before opening the full partner record."
         status={
           <div className="participant-list">
             <span className="pill pill-info">{totalPartnerCount} partner(s)</span>
@@ -91,9 +85,14 @@ export function PartnerOperationsListSection({
                   {row.acceptanceLabel}
                 </span>
                 <p className="muted admin-mt-8">{row.acceptanceDetail}</p>
-              </td>
-              <td>
-                <div className="participant-list">
+                <span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>
+                  {row.marketplaceAccessLabel}
+                </span>
+                <p className="muted admin-mt-8">{row.marketplaceAccessDetail}</p>
+                {row.marketplacePartnerAppMessage ? (
+                  <p className="muted admin-mt-8">Partner app message: {row.marketplacePartnerAppMessage}</p>
+                ) : null}
+                <div className="participant-list admin-mt-8">
                   {row.matchingFlow.map((item) => (
                     <span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>
                       {item.label}: {item.status}
@@ -101,17 +100,6 @@ export function PartnerOperationsListSection({
                   ))}
                 </div>
                 <p className="muted admin-mt-8">{row.matchingFlowDetail}</p>
-              </td>
-              <td>
-                <span className={`signal ${partnerOperationSignalClass(row.marketplaceAccessTone)}`}>
-                  {row.marketplaceAccessLabel}
-                </span>
-                <p className="muted admin-mt-8">{row.marketplaceAccessDetail}</p>
-                {row.marketplacePartnerAppMessage ? (
-                  <p className="muted admin-mt-8">
-                    Partner app message: {row.marketplacePartnerAppMessage}
-                  </p>
-                ) : null}
               </td>
               <td>
                 <strong>{row.completedWorkCount} completed</strong>
@@ -139,8 +127,6 @@ export function PartnerOperationsListSection({
                 <p className="muted">
                   Last app activity: {row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'}
                 </p>
-              </td>
-              <td>
                 <strong>{row.nextAction.status}</strong>
                 <p className="muted">{row.nextAction.detail}</p>
                 <p className="muted">{row.nextAction.operatorAction}</p>
@@ -151,8 +137,8 @@ export function PartnerOperationsListSection({
             <tr>
               <td colSpan={PARTNER_OPERATIONS_TABLE_HEADERS.length}>
                 <p className="muted">
-                  {hiddenPartnerCount} more partner row(s) are hidden for page speed. Use search or
-                  filters to narrow this list.
+                  {hiddenPartnerCount} more partner row(s) are hidden for page speed. Use search or filters to
+                  narrow this list.
                 </p>
               </td>
             </tr>
