@@ -283,6 +283,36 @@ describe('admin request DTO validation', () => {
     ).rejects.toThrow();
   });
 
+  it('accepts admin review rating and content edits with validation', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        status: 'PUBLISHED',
+        rating: '4',
+        comment: '  updated review copy  ',
+        reportReason: '  typo correction  ',
+        unsupported: 'drop me',
+      },
+      { type: 'body', metatype: bodyMetatype('moderateReview', 2) as never, data: '' },
+    );
+
+    expect(transformed).toMatchObject({
+      status: 'PUBLISHED',
+      rating: 4,
+      comment: 'updated review copy',
+      reportReason: 'typo correction',
+    });
+    expect(transformed).not.toHaveProperty('unsupported');
+
+    await expect(
+      pipe.transform(
+        { status: 'PUBLISHED', rating: '6' },
+        { type: 'body', metatype: bodyMetatype('moderateReview', 2) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
   it('preserves coupon discount payloads while stripping unsupported coupon fields', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 

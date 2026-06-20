@@ -18,9 +18,14 @@ describe('ReviewsTableSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Customer Review');
+    expect(rendered).toContain('Review operation filters');
     expect(rendered).toContain('Search Review');
+    expect(rendered).toContain('Published');
+    expect(rendered).toContain('Held');
+    expect(rendered).toContain('Follow-up');
+    expect(rendered).toContain('Reported');
     expect(rendered).toContain('Export');
+    expect(rendered).toContain('Customer review list');
     expect(rendered).toContain('Massage Partner');
     expect(rendered).toContain('Visible review');
     expect(rendered).toContain('Customer One');
@@ -29,17 +34,47 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Aromatherapy');
     expect(rendered).toContain('Published');
     expect(rendered).toContain('Visible in app');
+    expect(rendered).toContain('Edit Review');
+    expect(rendered).toContain('5 stars');
+    expect(rendered).toContain('Save');
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
     expect(hrefsIn(section)).toContain('data:text/csv;charset=utf-8,Review');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/reviews',
+        '/reviews?review=published',
+        '/reviews?review=held',
+        '/reviews?review=follow-up',
+        '/reviews?review=reported',
+      ]),
+    );
+    expect(inputPropsIn(section)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'reviewId', value: 'review-1' }),
+        expect.objectContaining({ name: 'status', value: 'PUBLISHED' }),
+        expect.objectContaining({ name: 'reportReason', value: '' }),
+      ]),
+    );
+    expect(textareaPropsIn(section)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          defaultValue: 'The service arrived late but recovered well.',
+          name: 'comment',
+        }),
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-form-search vuexy-review-search',
         'admin-form-select vuexy-review-select',
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
-        'card admin-filter-panel vuexy-review-filter-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel vuexy-review-filter-card admin-mb-16',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-review-card',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-offline',
+        'vuexy-review-edit-form',
+        'vuexy-review-save-button',
       ]),
     );
     expect(dropdownPropsIn(section)).toEqual([
@@ -104,6 +139,7 @@ function buildRow(): ReviewTableRow {
     appVisibilityLabel: 'App visible',
     bookingLabel: 'booking',
     commentLabel: 'The service arrived late but recovered well.',
+    commentValue: 'The service arrived late but recovered well.',
     createdAtLabel: '16:08 23/02/2026',
     customerInitials: 'CO',
     customerAvatarStatus: 'offline',
@@ -116,9 +152,11 @@ function buildRow(): ReviewTableRow {
     partnerLabel: 'Massage Partner',
     rating: 5,
     ratingLabel: '5/5',
+    reportReasonValue: '',
     reportReasonLabel: '',
     serviceLabel: 'Aromatherapy',
     shortIdLabel: 'review',
+    status: 'PUBLISHED',
     statusClassName: 'review-status-chip review-status-published',
     statusLabel: 'Published',
     statusMeaning: 'Visible in app',
@@ -196,6 +234,36 @@ function classNamesIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const className = typeof props?.className === 'string' ? [props.className] : [];
   return [...className, ...classNamesIn(props?.children)];
+}
+
+function inputPropsIn(value: unknown): Record<string, unknown>[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(inputPropsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const current = record?.type === 'input' && props ? [props] : [];
+  return [...current, ...inputPropsIn(props?.children)];
+}
+
+function textareaPropsIn(value: unknown): Record<string, unknown>[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(textareaPropsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const current = record?.type === 'textarea' && props ? [props] : [];
+  return [...current, ...textareaPropsIn(props?.children)];
 }
 
 function dropdownPropsIn(value: unknown): Record<string, unknown>[] {

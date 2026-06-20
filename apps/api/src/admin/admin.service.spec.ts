@@ -765,6 +765,8 @@ describe('AdminService query orchestration', () => {
     await expect(
       service.moderateReview('admin-1', 'review-1', {
         status: 'HIDDEN' as never,
+        rating: 4,
+        comment: '  Updated review copy  ',
         reportReason: 'Held by admin',
       }),
     ).resolves.toMatchObject({
@@ -776,6 +778,8 @@ describe('AdminService query orchestration', () => {
       where: { id: 'review-1' },
       data: {
         status: 'HIDDEN',
+        rating: 4,
+        comment: 'Updated review copy',
         reportReason: 'Held by admin',
         moderatedAt: expect.any(Date),
       },
@@ -799,6 +803,8 @@ describe('AdminService query orchestration', () => {
         target: 'review:review-1',
         metadata: {
           status: 'HIDDEN',
+          rating: 4,
+          comment: 'Updated review copy',
           reportReason: 'Held by admin',
         },
       },

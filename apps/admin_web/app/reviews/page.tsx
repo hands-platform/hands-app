@@ -46,6 +46,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
 
   return (
     <AdminPageTemplate
+      contentClassName="reviews-page booking-monitor"
       description="All customer-written reviews, Partner service context, and app visibility moderation in one board."
       metrics={[
         { label: 'Total reviews', value: summary.total, helper: 'Customer review records loaded.' },

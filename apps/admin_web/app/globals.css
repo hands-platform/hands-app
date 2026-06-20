@@ -7757,6 +7757,190 @@ textarea:focus-visible {
   color: #8f85f3;
 }
 
+.reviews-page .vuexy-review-filter-card {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-shadow-md);
+}
+
+.vuexy-review-filter-bar {
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+.vuexy-review-filter-bar .vuexy-review-controls {
+  flex: 1 1 460px;
+  justify-content: flex-end;
+}
+
+.reviews-page .vuexy-review-card .admin-filter-panel-body {
+  gap: 0;
+}
+
+.reviews-page .vuexy-review-card .admin-table-scroll {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 0;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.reviews-page .vuexy-review-card .table {
+  background: var(--admin-surface-raised);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--admin-text);
+  margin: 0;
+  min-width: 1540px;
+  width: 100%;
+}
+
+.reviews-page .vuexy-review-card .table th,
+.reviews-page .vuexy-review-card .table td {
+  background: var(--admin-surface-raised);
+  border-bottom: 1px solid var(--admin-border);
+  min-width: 0;
+  padding: 10px 16px;
+  vertical-align: top;
+}
+
+.reviews-page .vuexy-review-card .table th {
+  background: var(--admin-table-header-bg);
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 500;
+  height: 56px;
+  letter-spacing: 0.2px;
+  line-height: 24px;
+  overflow-wrap: normal;
+  position: relative;
+  text-transform: uppercase;
+  word-break: normal;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(1),
+.reviews-page .vuexy-review-card .table td:nth-child(1),
+.reviews-page .vuexy-review-card .table th:nth-child(2),
+.reviews-page .vuexy-review-card .table td:nth-child(2) {
+  min-width: 210px;
+  width: 15%;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(3),
+.reviews-page .vuexy-review-card .table td:nth-child(3) {
+  min-width: 340px;
+  width: 24%;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(4),
+.reviews-page .vuexy-review-card .table td:nth-child(4) {
+  min-width: 140px;
+  width: 10%;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(5),
+.reviews-page .vuexy-review-card .table td:nth-child(5) {
+  min-width: 170px;
+  width: 12%;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(6),
+.reviews-page .vuexy-review-card .table td:nth-child(6) {
+  min-width: 300px;
+  width: 22%;
+}
+
+.reviews-page .vuexy-review-card .table th:nth-child(7),
+.reviews-page .vuexy-review-card .table td:nth-child(7) {
+  min-width: 96px;
+  width: 7%;
+}
+
+.reviews-page .vuexy-review-card .table tbody tr:hover td {
+  background: var(--admin-action-hover);
+}
+
+.vuexy-review-edit-form {
+  display: grid;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.vuexy-review-rating-field {
+  align-items: center;
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-muted);
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+}
+
+.vuexy-review-rating-field span {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+
+.vuexy-review-rating-field select {
+  background: transparent;
+  border: 0;
+  color: var(--admin-text);
+  font: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.vuexy-review-comment-field {
+  border: 0;
+  padding: 0;
+}
+
+.vuexy-review-comment-textarea {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  font: inherit;
+  line-height: 20px;
+  min-height: 82px;
+  outline: none;
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+}
+
+.vuexy-review-comment-textarea:focus {
+  border-color: rgb(var(--admin-primary-channel) / 0.5);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.vuexy-review-save-button {
+  align-items: center;
+  background: var(--admin-accent);
+  border: 1px solid var(--admin-accent);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-primary-shadow-sm);
+  color: var(--admin-inverse-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.vuexy-review-save-button:hover {
+  filter: brightness(1.04);
+}
+
 .notification-table-shell {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);

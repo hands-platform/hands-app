@@ -2025,13 +2025,16 @@ export class AdminService {
   async moderateReview(
     actorId: string,
     reviewId: string,
-    input: { status: ReviewStatus; reportReason?: string },
+    input: { status: ReviewStatus; rating?: number; comment?: string; reportReason?: string },
   ) {
     return this.prisma.$transaction(async (tx) => {
+      const normalizedComment = input.comment === undefined ? undefined : normalizeNullable(input.comment);
       const review = await tx.review.update({
         where: { id: reviewId },
         data: {
           status: input.status,
+          rating: input.rating,
+          comment: normalizedComment,
           reportReason: input.reportReason,
           moderatedAt: new Date(),
         },
@@ -2056,7 +2059,12 @@ export class AdminService {
           actorId,
           action: 'review.moderate',
           target: `review:${review.id}`,
-          metadata: toJson({ status: input.status, reportReason: input.reportReason }),
+          metadata: toJson({
+            status: input.status,
+            rating: input.rating,
+            comment: normalizedComment,
+            reportReason: input.reportReason,
+          }),
         },
       });
 

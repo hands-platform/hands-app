@@ -423,6 +423,19 @@ export class ModerateReviewDto {
   status!: ReviewStatus;
 
   @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(2000)
+  comment?: string;
+
+  @IsOptional()
   @Transform(({ value }) => trimString(value))
   @IsString()
   @MaxLength(1000)
