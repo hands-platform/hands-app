@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerBookingGateAttemptRow = {
   readonly addressLabel: string;
   readonly at: string;
@@ -26,6 +28,7 @@ export function PartnerDetailBookingGateEvidenceSection({
   loadedAttempts,
 }: PartnerDetailBookingGateEvidenceSectionProps) {
   const latestAttempt = loadedAttempts[0];
+  const visibleAttempts = filteredAttempts.slice(0, 12);
 
   return (
     <div className="card admin-mb-16" id="partner-booking-create-gates">
@@ -58,26 +61,36 @@ export function PartnerDetailBookingGateEvidenceSection({
           <small>{latestAttempt ? formatDate(latestAttempt.at) : 'No gate row'}</small>
         </div>
       </div>
-      {filteredAttempts.length === 0 ? (
-        <p className="muted admin-mt-12">
-          No first-pick booking create gate attempt matched this date filter.
-        </p>
-      ) : (
-        <div className="setup-stage-list admin-mt-14">
-          {filteredAttempts.slice(0, 12).map((attempt) => (
-            <div className="setup-stage-item" key={attempt.id}>
-              <span>{attempt.gateLabel}</span>
-              <div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={
+            <PartnerBookingGateEvidenceEmptyState message="No first-pick booking create gate attempt matched this date filter." />
+          }
+          headers={bookingGateEvidenceHeaders}
+          rowCount={visibleAttempts.length}
+        >
+          {visibleAttempts.map((attempt) => (
+            <tr key={attempt.id}>
+              <td>
+                <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
+              </td>
+              <td>
                 <Link className="text-link" href={attempt.bookingMonitorHref}>
                   <strong>{attempt.reasonLabel}</strong>
                 </Link>
                 <p className="muted">{attempt.detail}</p>
-                <div className="participant-list admin-mt-8">
-                  <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
-                  <span className="pill pill-neutral">{attempt.addressLabel}</span>
-                  <span className="pill pill-neutral">{attempt.distanceLabel}</span>
-                </div>
-                <div className="participant-list admin-mt-8">
+              </td>
+              <td>
+                <span className="pill pill-neutral">{attempt.addressLabel}</span>
+              </td>
+              <td>
+                <span className="pill pill-neutral">{attempt.distanceLabel}</span>
+              </td>
+              <td>
+                <span className="muted">{formatDate(attempt.at)}</span>
+              </td>
+              <td>
+                <div className="participant-list">
                   <Link className="text-link" href={attempt.bookingMonitorHref}>
                     Booking gate queue
                   </Link>
@@ -85,12 +98,22 @@ export function PartnerDetailBookingGateEvidenceSection({
                     Audit evidence
                   </Link>
                 </div>
-              </div>
-              <small>{formatDate(attempt.at)}</small>
-            </div>
+              </td>
+            </tr>
           ))}
-        </div>
-      )}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const bookingGateEvidenceHeaders = ['Gate', 'Reason', 'Address', 'Distance', 'Attempted', 'Action'] as const;
+
+function PartnerBookingGateEvidenceEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
