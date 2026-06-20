@@ -1,3 +1,5 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerAppActivitySummaryItem = {
   readonly helper: string;
   readonly label: string;
@@ -42,32 +44,41 @@ export function PartnerDetailAppActivitySection({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {rows.length ? (
-          rows.map((record) => (
-            <div className="setup-stage-item" key={record.key}>
-              <span>{record.type}</span>
-              <div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={
+            <PartnerAppActivityEmptyState message="Clear the date filter or choose a wider range to review app, location, payout, and verification records." />
+          }
+          headers={activityHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((record) => (
+            <tr key={record.key}>
+              <td>
+                <span className="pill pill-info">{record.type}</span>
+              </td>
+              <td>
                 <strong>{record.title}</strong>
                 <p className="muted">{record.detail}</p>
-              </div>
-              <small>{record.atLabel}</small>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
-            <div>
-              <strong>No activity matched this date filter</strong>
-              <p className="muted">
-                Clear the date filter or choose a wider range to review app, location, payout, and
-                verification records.
-              </p>
-            </div>
-            <small>0</small>
-          </div>
-        )}
-      </div>
+              </td>
+              <td>
+                <span className="muted">{record.atLabel}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const activityHeaders = ['Type', 'Activity', 'Timeline'] as const;
+
+function PartnerAppActivityEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No activity matched this date filter</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
