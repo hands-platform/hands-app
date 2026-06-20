@@ -2,7 +2,6 @@ import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import type { BookingPostMatchChatEvidenceRow } from '../booking-post-match-chat-evidence';
-import { BookingChatBubble } from './booking-chat-bubble';
 
 type InfoRowModel = {
   label: string;
@@ -234,10 +233,13 @@ export function BookingRecordDetailSections({
         </div>
 
         <div className="card" id="chat">
-          <h2>Chat transcript</h2>
-          <p className="muted">
-            Admin archive for the booking transcript.
-          </p>
+          <div className="ops-section-header">
+            <div>
+              <h2>Chat evidence</h2>
+              <p className="muted">Compact archive state. The full retained transcript stays in the chat history panel.</p>
+            </div>
+            <span className="pill pill-info">{countLabel(chatMessages.length, 'message')}</span>
+          </div>
           {chatEvidenceRows.length > 0 && (
             <div className="booking-chat-evidence-grid is-detail" aria-label="Booking chat evidence snapshot">
               {chatEvidenceRows.map((row) => (
@@ -249,39 +251,37 @@ export function BookingRecordDetailSections({
               ))}
             </div>
           )}
-          <div className="stack">
-            {chatMessages.map((message) => (
-              <BookingChatBubble key={message.id} message={message} />
-            ))}
-            {chatMessages.length === 0 && <p className="muted">No chat messages yet.</p>}
-          </div>
+          {chatEvidenceRows.length === 0 && <p className="muted">No chat evidence snapshot linked to this booking yet.</p>}
         </div>
 
         <div className="card" id="location">
-          <h2>Location trail</h2>
-          <p className="muted">
-            Partner location snapshots captured for booking actions and live movement checks.
-          </p>
+          <div className="ops-section-header">
+            <div>
+              <h2>Location evidence</h2>
+              <p className="muted">Partner snapshots captured only for booking actions and live movement checks.</p>
+            </div>
+            <span className="pill pill-neutral">{countLabel(locationTrailRows.length, 'snapshot')}</span>
+          </div>
           <div className="route-mini">
             <span className="route-dot route-customer">Customer</span>
             {hasLatestPartnerLocation && <span className="route-dot route-provider">Partner</span>}
           </div>
-          <div className="stack admin-mt-12">
+          <div className="booking-settlement-ledger booking-location-evidence-ledger admin-mt-12" aria-label="Booking location evidence rows">
             {locationTrailRows.map((snapshot) => (
-              <div className="ops-row" key={snapshot.id}>
+              <div className="booking-settlement-ledger-row is-location-evidence" key={snapshot.id}>
                 <div>
-                  <span className="muted">{snapshot.label}</span>
-                  <div>
-                    <strong>{snapshot.coordinate}</strong>
-                  </div>
-                  <div className="muted">{snapshot.recordedAt}</div>
-                  <p className="muted admin-mt-6">{snapshot.detail}</p>
+                  <span className="booking-settlement-ledger-label">{snapshot.label}</span>
+                  <p className="muted">{snapshot.recordedAt}</p>
                 </div>
+                <strong className="booking-settlement-ledger-value">{snapshot.coordinate}</strong>
+                <p className="muted">{snapshot.detail}</p>
                 <span className={`pill ${snapshot.badgeTone}`}>{snapshot.badge}</span>
               </div>
             ))}
             {locationTrailRows.length === 0 && (
-              <p className="muted">No Partner location snapshots linked to this booking yet.</p>
+              <p className="muted booking-location-evidence-empty">
+                No Partner location snapshots linked to this booking yet.
+              </p>
             )}
           </div>
         </div>
@@ -496,4 +496,12 @@ function InfoRows({ rows }: InfoRowsProps) {
       ))}
     </>
   );
+}
+
+function countLabel(count: number, singular: string) {
+  if (count === 0) {
+    return `No ${singular}s`;
+  }
+
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }

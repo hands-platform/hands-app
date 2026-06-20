@@ -155,6 +155,9 @@ describe('BookingRecordDetailSections', () => {
     expect(markup.match(/vuexy-booking-person/g)).toHaveLength(1);
     expect(markup.match(/Linked in toolbar/g)).toHaveLength(2);
     expect(markup).toContain('href="/partners/partner_1"');
+    expect(markup).toContain('Location evidence');
+    expect(markup).toContain('1 snapshot');
+    expect(markup).toContain('aria-label="Booking location evidence rows"');
     expect(markup).toContain('Booking action snapshot');
     expect(markup).toContain('District 1, Ho Chi Minh City');
     expect(markup).toContain('Pin 10.1, 106.1');
@@ -201,12 +204,14 @@ describe('BookingRecordDetailSections', () => {
       ],
     });
 
+    expect(markup).toContain('Chat evidence');
+    expect(markup).toContain('1 message');
     expect(markup).toContain('Booking chat evidence snapshot');
     expect(markup).toContain('Review state');
     expect(markup).toContain('Pending admin decision');
     expect(markup).toContain('30m after match / Fee held');
     expect(markup).toContain('Retained chat');
-    expect(markup).toContain('1 message');
     expect(markup).toContain('booking-chat-evidence-grid is-detail');
+    expect(markup).not.toContain('I need to cancel after matching.');
   });
 });

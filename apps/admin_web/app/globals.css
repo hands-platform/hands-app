@@ -4623,6 +4623,10 @@ a.action-button-card:hover {
   grid-template-columns: minmax(170px, 0.8fr) minmax(160px, 0.7fr) minmax(260px, 1.2fr) minmax(64px, auto);
 }
 
+.booking-settlement-ledger-row.is-location-evidence {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
 .booking-settlement-ledger-row > .pill {
   justify-self: flex-start;
 }
@@ -4683,6 +4687,11 @@ a.action-button-card:hover {
 
 .booking-participant-row-card .vuexy-booking-person {
   align-self: start;
+}
+
+.booking-location-evidence-empty {
+  margin: 0;
+  padding: 12px 14px;
 }
 
 .booking-unified-open-link {
