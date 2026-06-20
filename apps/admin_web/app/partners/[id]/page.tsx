@@ -1,15 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type {
-  AdminAuditLog,
-  AdminOperationalPolicySetting,
-  AdminProvider,
-} from '../../../lib/admin-api';
-import {
-  adminGet,
-  providerDocumentLabel,
-  providerDocumentReviewHint,
-} from '../../../lib/admin-api';
+import type { AdminAuditLog, AdminOperationalPolicySetting, AdminProvider } from '../../../lib/admin-api';
+import { adminGet, providerDocumentLabel, providerDocumentReviewHint } from '../../../lib/admin-api';
 import { ActionMenu } from '../../../components/action-menu';
 import type { ActionMenuItem } from '../../../components/action-menu';
 import { ConfirmDialog } from '../../../components/confirm-dialog';
@@ -56,9 +48,7 @@ import {
   unblockProviderAccount,
   unblockProviderDevice,
 } from '../actions';
-import {
-  liftProviderSanction,
-} from '../../partner-controls/actions';
+import { liftProviderSanction } from '../../partner-controls/actions';
 import {
   PARTNER_ACTIVITY_TYPE_OPTIONS,
   orderPartnerActivityRecords,
@@ -237,14 +227,10 @@ import {
 } from './partner-detail-service-pricing-section';
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
-import {
-  PartnerDetailChatRetentionLedgerSection,
-} from './partner-detail-chat-retention-ledger-section';
+import { PartnerDetailChatRetentionLedgerSection } from './partner-detail-chat-retention-ledger-section';
 import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
 import { buildPartnerConnectedRecordLinks } from './partner-detail-connected-records-model';
-import {
-  PartnerDetailOperationsDigestSection,
-} from './partner-detail-operations-digest-section';
+import { PartnerDetailOperationsDigestSection } from './partner-detail-operations-digest-section';
 import { buildPartnerOperationsDigest } from './partner-detail-operations-digest-model';
 import { buildPartnerOperatingLedger } from './partner-detail-operating-ledger-model';
 import { PartnerDetailOperatingLedgerSection } from './partner-detail-operating-ledger-section';
@@ -488,6 +474,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     registrationDossier,
     resubmissionPlan,
     reviewHistoryRows,
+    cashFeeDebtAmount(provider),
   );
   const providerServicePricing = buildProviderServicePricing(provider);
   const partnerServicePricingDisplayRows = buildPartnerServicePricingDisplayRows(providerServicePricing.rows);
@@ -903,10 +890,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
 
-      <PartnerDetailOperatingChecklistSection
-        pillClassForTone={pillClass}
-        rows={partnerOperatingChecklist}
-      />
+      <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
 
       <PartnerDetailRecordDateFilterSection
         activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
@@ -944,10 +928,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailAppActivitySection rows={partnerAppActivityRows} summary={partnerActivitySummary} />
 
-      <PartnerDetailDailyActivityDigestSection
-        days={partnerDailyActivityDigest}
-        formatDate={formatDate}
-      />
+      <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} formatDate={formatDate} />
 
       <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
 
@@ -1159,7 +1140,9 @@ function partnerDetailAccountActionMenuItems(provider: ProviderDetail): readonly
       tone: 'danger',
     },
     {
-      description: syncDisabled ? syncRoleRequiresApprovedVerificationDescription : syncInfrastructureRoleDescription,
+      description: syncDisabled
+        ? syncRoleRequiresApprovedVerificationDescription
+        : syncInfrastructureRoleDescription,
       disabled: syncDisabled,
       href: partnerAccountActionConfirmHref(provider.id, 'sync-role', { baseHref: detailBaseHref }),
       kind: 'link',
@@ -1287,7 +1270,7 @@ function PartnerDetailFastOverview({
       value: cashDebt > 0 ? 'Company fee unpaid' : 'Clear',
       detail:
         cashDebt > 0
-          ? `${formatCurrency(cashDebt)} cash-booking fee must be settled before marketplace alerts and participation.`
+          ? `${formatCurrency(cashDebt)} company fee debt is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.`
           : 'No partner cash-fee debt is loaded.',
       href: fullSectionHref('#cash-debt-origin'),
       tone: cashDebt > 0 ? 'pill-danger' : 'pill-success',
@@ -1470,6 +1453,7 @@ type BookingAcceptanceGate = {
   ok: boolean;
   detail: string;
   action: string;
+  tone?: PartnerOpsTone;
 };
 
 type PartnerOperatingChecklistItem = {
@@ -1567,10 +1551,10 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'cash-fee-debt',
       label: 'CASH',
-      title: 'Cash fee debt blocks marketplace alerts',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner receives marketplace alerts, participates in marketplace requests, or receives payout release. Customers never carry this wallet debt.`,
+      title: 'Cash fee debt needs settlement review',
+      detail: `${formatCurrency(cashDebt)} must be settled before final acceptance, service start, or payout release. Marketplace visibility and participation stay visible as a warning state. Customers never carry this wallet debt.`,
       owner: 'Finance',
-      tone: 'blocked',
+      tone: 'pending',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
     });
   }
@@ -1772,7 +1756,10 @@ function buildPartnerOperatorCommandQueue({
       {
         label: 'Cash fee debt',
         value: formatCurrency(cashDebt),
-        helper: cashDebt > 0 ? 'Holds marketplace participation until settled.' : 'No cash fee debt.',
+        helper:
+          cashDebt > 0
+            ? 'Settlement warning before final acceptance, service start, and payout release.'
+            : 'No cash fee debt.',
       },
       {
         label: 'First revenue',
@@ -1795,10 +1782,7 @@ function buildPartnerBookingChatRecordRows(
   return records.slice(0, 10).map((record) => {
     const booking = record.booking;
     const messages = readPartnerChatMessages(booking);
-    const paymentAmount = formatCurrency(
-      booking.payment?.amount ?? 0,
-      booking.payment?.currency ?? 'VND',
-    );
+    const paymentAmount = formatCurrency(booking.payment?.amount ?? 0, booking.payment?.currency ?? 'VND');
     const lastMessage = record.lastMessage ? ` / last: ${record.lastMessage}` : '';
 
     return {
@@ -2612,14 +2596,18 @@ function buildPartnerOperatingChecklist(
     {
       area: 'Booking',
       status: bookingAcceptance.canJoinMarketplace
-        ? 'Marketplace participation clear'
+        ? cashDebt > 0
+          ? 'Marketplace participation warning'
+          : 'Marketplace participation clear'
         : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
       nextAction: bookingAcceptance.canJoinMarketplace
-        ? 'Ready for marketplace participation'
+        ? cashDebt > 0
+          ? 'Clear settlement before final acceptance'
+          : 'Ready for marketplace participation'
         : 'Resolve marketplace participation gate',
       href: `/partners/${provider.id}?section=full#booking-chat-records`,
-      tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
+      tone: bookingAcceptance.canJoinMarketplace ? (cashDebt > 0 ? 'pending' : 'done') : 'blocked',
     },
     {
       area: 'Cash',
@@ -2627,7 +2615,7 @@ function buildPartnerOperatingChecklist(
       detail:
         cashDebt > 0
           ? `Partner wallet has ${formatCurrency(cashDebt)} unpaid HANDS commission from cash bookings.`
-          : 'No unpaid cash commission is gating marketplace participation.',
+          : 'No unpaid cash commission is open.',
       nextAction: cashDebt > 0 ? 'Collect or offset debt' : 'No cash action',
       href: '/cash-settlements',
       tone: cashDebt > 0 ? 'blocked' : 'done',
@@ -2937,13 +2925,14 @@ function buildProviderBookingAcceptance(
     {
       label: 'Wallet and cash debt',
       ok: cashDebt <= 0,
+      tone: cashDebt > 0 ? 'pending' : 'done',
       detail:
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash fee/tax settlement.`
           : 'No open negative wallet debt is visible.',
       action:
         cashDebt > 0
-          ? 'Record Partner deposit or admin offset before marketplace alerts, participation, and payout release resume.'
+          ? 'Record Partner deposit or admin offset before final acceptance, service start, and payout release resume.'
           : 'Clear',
     },
     {
@@ -3018,19 +3007,34 @@ function buildProviderBookingAcceptance(
   ];
 
   const blockers = gates.filter((gate) => !gate.ok);
+  const marketplaceBlockers = blockers.filter((gate) => gate.label !== 'Wallet and cash debt');
+  const hasSettlementWarning = cashDebt > 0;
   const directFirstPickBlockers = blockers.filter((gate) => gate.label !== 'Wallet and cash debt');
-  const primaryReason = blockers[0]?.detail ?? 'All marketplace participation gates are clear.';
+  const primaryReason =
+    marketplaceBlockers[0]?.detail ??
+    (hasSettlementWarning
+      ? 'Cash fee debt is a settlement warning before final acceptance, service start, or payout release.'
+      : 'All marketplace participation gates are clear.');
   const directFirstPickReason =
     directFirstPickBlockers[0]?.detail ??
     (cashDebt > 0
       ? 'Wallet debt does not block direct first-pick or already-matched service flow.'
       : 'Direct first-pick gates are clear.');
+  const canJoinMarketplace = marketplaceBlockers.length === 0;
 
   return {
-    canJoinMarketplace: blockers.length === 0,
+    canJoinMarketplace,
     canDirectFirstPick: directFirstPickBlockers.length === 0,
-    status: blockers.length === 0 ? 'CAN ACCEPT' : `${blockers.length} BLOCKER(S)`,
-    tone: blockers.length === 0 ? ('done' as const) : ('blocked' as const),
+    status: canJoinMarketplace
+      ? hasSettlementWarning
+        ? 'SETTLEMENT WARNING'
+        : 'CAN ACCEPT'
+      : `${marketplaceBlockers.length} BLOCKER(S)`,
+    tone: canJoinMarketplace
+      ? hasSettlementWarning
+        ? ('pending' as const)
+        : ('done' as const)
+      : ('blocked' as const),
     primaryReason,
     directFirstPickReason,
     cashDebt,
@@ -3047,33 +3051,43 @@ function buildPartnerAcceptanceRepairCommand(
   dispatchPolicy: PartnerDispatchPolicy,
 ): PartnerAcceptanceRepairCommandView {
   const blockedGates = bookingAcceptance.gates.filter((gate) => !gate.ok);
-  const status = bookingAcceptance.canJoinMarketplace
-    ? 'MARKETPLACE READY'
-    : `${blockedGates.length} REPAIR STEP(S)`;
+  const hardBlockedGates = blockedGates.filter((gate) => gate.label !== 'Wallet and cash debt');
+  const walletWarningGate = blockedGates.find((gate) => gate.label === 'Wallet and cash debt');
+  const status = hardBlockedGates.length
+    ? `${hardBlockedGates.length} REPAIR STEP(S)`
+    : walletWarningGate
+      ? 'SETTLEMENT WARNING'
+      : 'MARKETPLACE READY';
   const partnerAppMessage = partnerAppBlockMessage(provider, bookingAcceptance, payoutOps, dispatchPolicy);
-  const hasWalletBlock = blockedGates.some((gate) => gate.label === 'Wallet and cash debt');
-  const hasHardVisibilityBlock = blockedGates.some((gate) =>
+  const hasWalletBlock = Boolean(walletWarningGate);
+  const hasHardVisibilityBlock = hardBlockedGates.some((gate) =>
     ['Account controls', 'Identity and approval'].includes(gate.label),
   );
-  const customerImpact = bookingAcceptance.canJoinMarketplace
-    ? 'Can appear in customer booking flow and final partner choice.'
-    : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Customer balances are unaffected; this wallet gate blocks marketplace alerts and booking participation until settlement.'
-      : hasHardVisibilityBlock
-        ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
-        : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
-  const operatorDecision = bookingAcceptance.canJoinMarketplace
-    ? 'No manual repair required. Monitor service quality and response speed.'
-    : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Finance must clear cash debt before marketplace alerts, participation, or payout release.'
-      : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
-  const marketplaceRouting = bookingAcceptance.canJoinMarketplace
-    ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
-    : hasWalletBlock
-      ? 'Partner can view marketplace requests, but marketplace alerts and booking participation are blocked until cash fee debt is settled or offset.'
-      : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
+  const customerImpact =
+    bookingAcceptance.canJoinMarketplace && !hasWalletBlock
+      ? 'Can appear in customer booking flow and final partner choice.'
+      : hasWalletBlock && !hardBlockedGates.length
+        ? 'Customer balances are unaffected; this wallet warning keeps visibility open, but final choice and service start wait for settlement.'
+        : hasHardVisibilityBlock
+          ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
+          : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
+  const operatorDecision =
+    bookingAcceptance.canJoinMarketplace && !hasWalletBlock
+      ? 'No manual repair required. Monitor service quality and response speed.'
+      : hasWalletBlock && !hardBlockedGates.length
+        ? 'Finance must clear cash debt before final acceptance, service start, or payout release.'
+        : `Start with ${hardBlockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
+  const marketplaceRouting =
+    bookingAcceptance.canJoinMarketplace && !hasWalletBlock
+      ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
+      : hasWalletBlock && !hardBlockedGates.length
+        ? 'Partner can view and participate in marketplace requests as a warning state; final acceptance, service start, and payout release wait for settlement.'
+        : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
-  const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
+  const steps = hardBlockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
+  if (walletWarningGate) {
+    steps.push(partnerAcceptanceRepairStep(provider, walletWarningGate));
+  }
   if (!steps.length) {
     steps.push({
       owner: 'Ops',
@@ -3103,7 +3117,7 @@ function buildPartnerAcceptanceRepairCommand(
 
   return {
     status,
-    tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
+    tone: hardBlockedGates.length ? 'blocked' : walletWarningGate ? 'pending' : 'done',
     partnerAppMessage,
     customerImpact,
     operatorDecision,
@@ -3129,7 +3143,7 @@ function partnerAcceptanceRepairStep(
       owner: 'Finance',
       href: '/cash-settlements',
       actionLabel: 'Open settlement',
-      tone: 'blocked',
+      tone: 'pending',
     },
     'Account controls': {
       owner: 'Account',
@@ -3216,7 +3230,7 @@ function partnerAppBlockMessage(
   if (payoutOps.hold) {
     return 'Payout is held by admin review; booking may require operator confirmation.';
   }
-  return 'Partner needs operator review before marketplace alerts or participation.';
+  return 'Partner needs operator review before final acceptance, service start, or payout release.';
 }
 
 function buildPartnerAcceptanceUnblockPlaybook(
@@ -3380,20 +3394,25 @@ function buildPartnerDetailOpsBadges(
     },
     {
       label: bookingAcceptance.canJoinMarketplace
-        ? 'Marketplace participation ready'
+        ? cashDebt > 0
+          ? 'Marketplace participation warning'
+          : 'Marketplace participation ready'
         : 'Marketplace participation blocked',
-      tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
-      detail: bookingAcceptance.canJoinMarketplace
-        ? `Can participate in marketplace bookings inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
-        : 'Marketplace participation uses wallet, account, identity, bank, reachability, location, and pricing gates.',
+      tone: bookingAcceptance.canJoinMarketplace ? (cashDebt > 0 ? 'pending' : 'done') : 'blocked',
+      detail:
+        bookingAcceptance.canJoinMarketplace && cashDebt <= 0
+          ? `Can participate in marketplace bookings inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
+          : cashDebt > 0 && bookingAcceptance.canJoinMarketplace
+            ? 'Marketplace visibility and participation stay open; final acceptance, service start, and payout release wait for settlement.'
+            : 'Marketplace participation uses account, identity, bank, reachability, location, and pricing gates.',
     },
     {
-      label: cashDebt > 0 ? 'Cash debt' : 'Wallet clear',
-      tone: cashDebt > 0 ? 'blocked' : 'done',
+      label: cashDebt > 0 ? 'Cash debt warning' : 'Wallet clear',
+      tone: cashDebt > 0 ? 'pending' : 'done',
       detail:
         cashDebt > 0
-          ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement.`
-          : 'No cash-settlement debt is gating marketplace participation.',
+          ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement before final acceptance, service start, or payout release.`
+          : 'No cash-settlement debt is open.',
     },
     {
       label: identityGate?.ok ? 'KYC and docs ok' : 'KYC/doc review',
@@ -3917,11 +3936,14 @@ function buildPartnerReviewControlPanel(
   dossier: ReturnType<typeof buildProviderRegistrationDossier>,
   resubmissionPlan: ReturnType<typeof buildProviderResubmissionPlan>,
   reviewHistoryRows: PartnerReviewHistoryRow[],
+  cashDebtAmount: number,
 ): PartnerReviewControlPanelView {
   const firstDossierGap = dossier.items.find((item) => !item.ok);
   const latestReview = reviewHistoryRows[0];
   const hasHold = Boolean(provider.blockedAt);
   const resubmissionCount = resubmissionPlan.items.length;
+  const hasCashDebt = cashDebtAmount > 0;
+  const approvalReady = dossier.ready && !resubmissionCount && !hasHold;
   const submittedLabel = formatDate(provider.kyc?.submittedAt ?? provider.user?.createdAt);
   const panelTone = hasHold
     ? 'pill-danger'
@@ -3943,12 +3965,14 @@ function buildPartnerReviewControlPanel(
       {
         label: 'Submitted',
         value: submittedLabel,
-        helper: provider.kyc?.submittedAt ? 'Latest KYC submission timestamp.' : 'Using account creation timestamp.',
+        helper: provider.kyc?.submittedAt
+          ? 'Latest KYC submission timestamp.'
+          : 'Using account creation timestamp.',
       },
       {
         label: 'Hold state',
         value: hasHold ? 'On hold' : 'Clear',
-        helper: hasHold ? provider.blockedReason ?? 'Hold reason is missing.' : 'No active account hold.',
+        helper: hasHold ? (provider.blockedReason ?? 'Hold reason is missing.') : 'No active account hold.',
       },
       {
         label: 'Resubmission',
@@ -3960,7 +3984,9 @@ function buildPartnerReviewControlPanel(
       {
         label: 'Latest review',
         value: latestReview?.atLabel ?? 'No log',
-        helper: latestReview ? `${latestReview.statusLabel} / ${latestReview.actorLabel}` : 'No review log loaded.',
+        helper: latestReview
+          ? `${latestReview.statusLabel} / ${latestReview.actorLabel}`
+          : 'No review log loaded.',
       },
     ],
     items: [
@@ -3976,11 +4002,52 @@ function buildPartnerReviewControlPanel(
         href: '#partner-connected-operations-records',
       },
       {
+        id: 'approval-decision',
+        label: 'APPROVE',
+        title: 'Approval decision',
+        detail: hasHold
+          ? 'Partner remains on hold. Release hold or record the required correction before approval.'
+          : resubmissionCount
+            ? `${resubmissionPlan.items[0]?.target}: ${resubmissionPlan.items[0]?.reason}`
+            : firstDossierGap
+              ? `${firstDossierGap.label}: ${firstDossierGap.detail}`
+              : 'Profile, KYC, required documents, payout bank, and account checks are clear for approval.',
+        status: hasHold ? 'HOLD' : approvalReady ? 'READY' : 'REVIEW',
+        tone: hasHold ? 'pill-danger' : approvalReady ? 'pill-success' : 'pill-warn',
+        href: '#partner-operator-command-queue',
+      },
+      {
+        id: 'booking-access-state',
+        label: 'BOOK',
+        title: 'Booking access',
+        detail: hasHold
+          ? 'Account hold blocks booking access until the correction is reviewed. Negative wallet is handled separately.'
+          : dossier.ready
+            ? hasCashDebt
+              ? 'Negative wallet is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.'
+              : 'Booking access can stay open after approval, subject to location freshness, service pricing, and app reachability.'
+            : 'Dossier gaps keep booking access under review until identity, bank, and account readiness are clear.',
+        status: hasHold ? 'BLOCKED' : hasCashDebt ? 'WARNING' : dossier.ready ? 'CLEAR' : 'REVIEW',
+        tone: hasHold ? 'pill-danger' : hasCashDebt || !dossier.ready ? 'pill-warn' : 'pill-success',
+        href: '#partner-booking-gate-decision',
+      },
+      {
+        id: 'settlement-warning',
+        label: 'SETTLE',
+        title: hasCashDebt ? 'Settlement warning' : 'No settlement warning',
+        detail: hasCashDebt
+          ? `${formatCurrency(cashDebtAmount)} company fee debt is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.`
+          : 'No company fee debt is loaded. Settlement does not add a warning for this Partner.',
+        status: hasCashDebt ? 'WARNING' : 'CLEAR',
+        tone: hasCashDebt ? 'pill-warn' : 'pill-success',
+        href: '#cash-debt-origin',
+      },
+      {
         id: 'account-hold-state',
         label: 'HOLD',
         title: hasHold ? 'Active Partner hold' : 'No active Partner hold',
         detail: hasHold
-          ? provider.blockedReason ?? 'Hold reason is missing. Add a clear operator note before release.'
+          ? (provider.blockedReason ?? 'Hold reason is missing. Add a clear operator note before release.')
           : 'Partner is not on account hold. Use Hold Partner only when correction is required.',
         status: hasHold ? 'ON HOLD' : 'CLEAR',
         tone: hasHold ? 'pill-danger' : 'pill-success',
@@ -4024,8 +4091,12 @@ function buildPartnerApprovalEvidenceSummaryRows({
   hasFirstRevenue: boolean;
 }): PartnerApprovalEvidenceSummaryRow[] {
   const requiredDocumentRows = kycEvidence.rows;
-  const approvedRequiredDocumentCount = requiredDocumentRows.filter((row) => row.status === 'APPROVED').length;
-  const rejectedRequiredDocumentCount = requiredDocumentRows.filter((row) => row.status === 'REJECTED').length;
+  const approvedRequiredDocumentCount = requiredDocumentRows.filter(
+    (row) => row.status === 'APPROVED',
+  ).length;
+  const rejectedRequiredDocumentCount = requiredDocumentRows.filter(
+    (row) => row.status === 'REJECTED',
+  ).length;
   const kycStatus = provider.kyc?.status ?? 'MISSING';
   const bankStatus = primaryBank?.status ?? 'MISSING';
   const taxStatus = provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED');
@@ -4553,10 +4624,7 @@ function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
-function buildPartnerKycReviewActions(
-  provider: ProviderDetail,
-  canApproveKyc: boolean,
-): ActionMenuItem[] {
+function buildPartnerKycReviewActions(provider: ProviderDetail, canApproveKyc: boolean): ActionMenuItem[] {
   return [
     {
       description: canApproveKyc ? approvePartnerKycDescription : kycRequiresApprovedDocumentsDescription,
@@ -4595,10 +4663,7 @@ function buildPartnerTypedDocumentRows(provider: ProviderDetail): PartnerTypedDo
   }));
 }
 
-function buildPartnerDocumentReviewActions(
-  providerId: string,
-  document: ProviderDocument,
-): ActionMenuItem[] {
+function buildPartnerDocumentReviewActions(providerId: string, document: ProviderDocument): ActionMenuItem[] {
   return [
     {
       description: approveIdentityDocumentDescription,
@@ -4698,10 +4763,7 @@ function buildPartnerBankPayoutGateView(
   };
 }
 
-function buildPartnerBankReviewActions(
-  providerId: string,
-  bank: ProviderBankAccount,
-): ActionMenuItem[] {
+function buildPartnerBankReviewActions(providerId: string, bank: ProviderBankAccount): ActionMenuItem[] {
   return [
     {
       description: approvePayoutBankDescription,
@@ -4741,10 +4803,7 @@ function buildPartnerTaxProfileView(provider: ProviderDetail): PartnerTaxProfile
   };
 }
 
-function buildPartnerTaxReviewActions(
-  providerId: string,
-  taxProfile: ProviderTaxProfile,
-): ActionMenuItem[] {
+function buildPartnerTaxReviewActions(providerId: string, taxProfile: ProviderTaxProfile): ActionMenuItem[] {
   return [
     {
       description: approveTaxProfileDescription,
@@ -4946,7 +5005,11 @@ function buildPartnerPayoutEarningRows(
       id: earning.id,
       settlementNotes: earning.settlementNotes,
       settlementRef: earning.settlementRef,
-      smallLabel: earning.paidAt ? `Settled ${formatDate(earning.paidAt)}` : cashDebt ? 'Blocks booking' : 'Unpaid',
+      smallLabel: earning.paidAt
+        ? `Settled ${formatDate(earning.paidAt)}`
+        : cashDebt
+          ? 'Settlement warning'
+          : 'Unpaid',
       statusLabel: cashDebt ? 'CASH DEBT' : earning.status,
       title: cashDebt
         ? `Owes HANDS ${formatCurrency(Math.abs(amountValue(earning.netAmount)))}`
@@ -5109,9 +5172,7 @@ function buildPartnerAccountControlRows(provider: ProviderDetail): PartnerAccoun
     liftControlHref:
       sanction.status === 'ACTIVE' ? partnerControlActionConfirmHref(provider.id, sanction.id) : undefined,
     reason: sanction.reason,
-    reportLine: sanction.report
-      ? `Report: ${sanction.report.category} / ${sanction.report.severity}`
-      : null,
+    reportLine: sanction.report ? `Report: ${sanction.report.category} / ${sanction.report.severity}` : null,
     smallLabel: shortRecordId(sanction.id),
     status: sanction.status,
     timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`,

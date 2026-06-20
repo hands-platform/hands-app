@@ -38,7 +38,8 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(rendered).toContain('Booking BK-1001 / payment CASH / created 20 Jun 2026, 10:00');
     expect(rendered).toContain('HANDS fee 100,000 VND');
     expect(rendered).toContain('Tax 20,000 VND');
-    expect(rendered).toContain('Marketplace reopen rule');
+    expect(rendered).toContain('Warning state');
+    expect(rendered).toContain('Settlement rule');
     expect(rendered).toContain('Needs ref');
     expect(rendered).toContain('Direct first-pick not wallet-blocked');
     expect(rendered).toContain('Booking evidence');
@@ -71,7 +72,9 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(rendered).toContain('No open cash debt');
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No open cash-service fee debt is visible for this partner.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+    );
   });
 });
 

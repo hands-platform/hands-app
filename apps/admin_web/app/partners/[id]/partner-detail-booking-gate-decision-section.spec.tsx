@@ -8,16 +8,17 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
       decision: {
         backupRadiusLabel: '5 km',
         bookableServices: '3 service(s)',
-        canDirectFirstPick: false,
-        canJoinMarketplace: false,
+        canDirectFirstPick: true,
+        canJoinMarketplace: true,
         cashDebtLabel: '-40,000 VND',
-        directFirstPickReason: 'Wallet debt must be settled first.',
+        directFirstPickReason: 'Wallet debt does not block direct first-pick.',
         gates: [
           {
             action: 'Settle cash debt',
-            detail: 'Negative wallet blocks marketplace alerts and participation.',
+            detail: 'Negative wallet warns before final acceptance, service start, or payout release.',
             label: 'Cash settlement',
             ok: false,
+            tone: 'pending',
           },
           {
             action: 'No action',
@@ -28,19 +29,19 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
         ],
         locationAge: '4m ago',
         locationFreshnessLabel: '10m',
-        primaryReason: 'Cash debt blocks marketplace matching.',
+        primaryReason: 'Cash debt needs settlement before final acceptance.',
         responseWindowLabel: '90 seconds',
-        status: 'Join held',
-        tone: 'blocked',
+        status: 'Settlement warning',
+        tone: 'pending',
       },
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Marketplace booking gate decision');
-    expect(rendered).toContain('Join held');
+    expect(rendered).toContain('Settlement warning');
     expect(rendered).toContain('Direct first-pick');
-    expect(rendered).toContain('Needs repair');
+    expect(rendered).toContain('Not wallet-blocked');
     expect(rendered).toContain('First response window: 90 seconds');
     expect(rendered).toContain('Marketplace radius: 5 km');
     expect(rendered).toContain('Gate');
@@ -48,8 +49,13 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
     expect(rendered).toContain('Detail');
     expect(rendered).toContain('Action');
     expect(rendered).toContain('Cash settlement');
-    expect(rendered).toContain('BLOCK');
-    expect(rendered).toContain('Negative wallet blocks marketplace alerts and participation.');
+    expect(rendered).toContain('WARN');
+    expect(rendered).toContain(
+      'Negative wallet is a settlement warning before final acceptance and service start',
+    );
+    expect(rendered).toContain(
+      'Negative wallet warns before final acceptance, service start, or payout release.',
+    );
     expect(rendered).toContain('Location freshness');
     expect(rendered).toContain('OK');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy']));
@@ -57,7 +63,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table',
-        'pill pill-danger',
+        'pill pill-warn',
         'pill pill-success',
       ]),
     );
@@ -88,7 +94,9 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
 
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No marketplace booking gate rows.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+    );
   });
 });
 

@@ -1079,7 +1079,7 @@ if (providerLinkMatch) {
       'Direct first-pick',
       'Marketplace repair command',
       'Partner app block message',
-      'Partner can view marketplace requests',
+      'Marketplace visibility',
       'Partner marketplace/payout unblock playbook',
       'id="payout"',
       'id="kyc"',

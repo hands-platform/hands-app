@@ -9,9 +9,9 @@ describe('partner detail readiness command sections', () => {
       snapshot: {
         badges: [
           {
-            detail: 'Negative wallet balance blocks marketplace matching.',
-            label: 'Cash debt',
-            tone: 'blocked',
+            detail: 'Negative wallet warns before final acceptance and service start.',
+            label: 'Cash debt warning',
+            tone: 'pending',
           },
           {
             detail: 'Latest location is fresh.',
@@ -20,50 +20,49 @@ describe('partner detail readiness command sections', () => {
           },
         ],
         gate: {
-          detail: 'Wallet is negative.',
-          helper: 'Settle before marketplace.',
+          detail: 'Wallet is negative, but marketplace visibility stays open.',
+          helper: 'Settle before final acceptance.',
           label: 'GATE',
-          title: 'Marketplace blocked',
+          title: 'Settlement warning',
         },
-        status: 'Needs repair',
-        tone: 'blocked',
+        status: 'Settlement warning',
+        tone: 'pending',
       },
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Partner readiness snapshot');
-    expect(rendered).toContain('Needs repair');
-    expect(rendered).toContain('Cash debt');
+    expect(rendered).toContain('Settlement warning');
+    expect(rendered).toContain('Cash debt warning');
     expect(rendered).toContain('Location fresh');
     expect(rendered).toContain('Gate');
     expect(rendered).toContain('Readiness');
     expect(rendered).toContain('Operator helper');
-    expect(rendered).toContain('Marketplace blocked');
-    expect(rendered).toContain('Wallet is negative.');
-    expect(rendered).toContain('Settle before marketplace.');
+    expect(rendered).toContain('Wallet is negative, but marketplace visibility stays open.');
+    expect(rendered).toContain('Settle before final acceptance.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-danger']),
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-warn']),
     );
   });
 
   it('renders marketplace repair steps as a Vuexy command table', () => {
     const section = PartnerAcceptanceRepairCommandSection({
       command: {
-        customerImpact: 'Customer choices skip this partner.',
-        marketplaceRouting: 'Route live demand to nearby ready partners.',
-        operatorDecision: 'Hold matching until cash debt is cleared.',
-        partnerAppMessage: 'Settle wallet balance before accepting new requests.',
-        status: 'Repair required',
+        customerImpact: 'Customer choices stay visible, but final choice waits for settlement.',
+        marketplaceRouting: 'Marketplace visibility stays open as a warning state.',
+        operatorDecision: 'Clear settlement before final acceptance.',
+        partnerAppMessage: 'Settle wallet balance before final acceptance or service start.',
+        status: 'Settlement warning',
         steps: [
           {
             actionLabel: 'Open wallet',
             blocker: 'Negative wallet',
             href: '/partners/partner-1#wallet',
-            operatorAction: 'Collect outstanding cash fee and retry marketplace check.',
+            operatorAction: 'Collect outstanding cash fee before final acceptance.',
             owner: 'Finance',
             reason: 'Partner wallet is below zero.',
-            tone: 'blocked',
+            tone: 'pending',
           },
           {
             actionLabel: 'Review activity',
@@ -75,14 +74,14 @@ describe('partner detail readiness command sections', () => {
             tone: 'done',
           },
         ],
-        tone: 'blocked',
+        tone: 'pending',
       },
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Marketplace repair command');
-    expect(rendered).toContain('Repair required');
+    expect(rendered).toContain('Settlement warning');
     expect(rendered).toContain('Partner app block message');
     expect(rendered).toContain('Customer impact');
     expect(rendered).toContain('Operator decision');
@@ -94,7 +93,7 @@ describe('partner detail readiness command sections', () => {
     expect(rendered).toContain('Status');
     expect(rendered).toContain('Action');
     expect(rendered).toContain('Finance : Negative wallet');
-    expect(rendered).toContain('Blocks booking');
+    expect(rendered).toContain('Operator check');
     expect(rendered).toContain('Dispatch : Location freshness');
     expect(rendered).toContain('Clear');
     expect(hrefsIn(section)).toEqual(
@@ -104,7 +103,7 @@ describe('partner detail readiness command sections', () => {
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table',
-        'pill pill-danger',
+        'pill pill-warn',
         'pill pill-success',
         'text-link',
       ]),
@@ -128,7 +127,9 @@ describe('partner detail readiness command sections', () => {
 
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No repair command steps loaded.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+    );
   });
 });
 

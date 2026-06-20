@@ -22,15 +22,20 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Hold state');
     expect(rendered).toContain('KYC identity review');
     expect(rendered).toContain('Partner must upload a clearer selfie.');
-    expect(rendered).toContain('Review gate');
+    expect(rendered).toContain('Decision area');
     expect(rendered).toContain('Status');
-    expect(rendered).toContain('Detail');
-    expect(rendered).toContain('Action');
+    expect(rendered).toContain('Operator read');
+    expect(rendered).toContain('Open section');
+    expect(rendered).toContain('Approval decision');
+    expect(rendered).toContain('Booking access');
+    expect(rendered).toContain('Settlement warning');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#partner-connected-operations-records',
         '#partner-operator-command-queue',
         '#partner-review-history',
+        '#partner-booking-gate-decision',
+        '#cash-debt-origin',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
@@ -144,11 +149,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(emptyRendered).toContain('No records found');
     expect(emptyRendered).toContain('No resubmission request needed.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'admin-table-scroll',
-        'table vuexy-data-table',
-        'pill pill-danger',
-      ]),
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-danger']),
     );
   });
 
@@ -183,11 +184,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(emptyRendered).toContain('No records found');
     expect(emptyRendered).toContain('No partner review logs yet.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining([
-        'admin-table-scroll',
-        'table vuexy-data-table',
-        'pill pill-danger',
-      ]),
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-danger']),
     );
   });
 });
@@ -217,6 +214,35 @@ function buildPanel(): PartnerReviewControlPanelView {
         status: 'READY',
         title: 'Submitted dossier is complete',
         tone: 'pill-success',
+      },
+      {
+        detail: 'Hold must be released or corrected before approval.',
+        href: '#partner-operator-command-queue',
+        id: 'approval-decision',
+        label: 'APPROVE',
+        status: 'HOLD',
+        title: 'Approval decision',
+        tone: 'pill-danger',
+      },
+      {
+        detail:
+          'Account hold blocks booking access until the correction is reviewed. Negative wallet is handled separately.',
+        href: '#partner-booking-gate-decision',
+        id: 'booking-access-state',
+        label: 'BOOK',
+        status: 'BLOCKED',
+        title: 'Booking access',
+        tone: 'pill-danger',
+      },
+      {
+        detail:
+          '120,000 VND company fee debt is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.',
+        href: '#cash-debt-origin',
+        id: 'settlement-warning',
+        label: 'SETTLE',
+        status: 'WARNING',
+        title: 'Settlement warning',
+        tone: 'pill-warn',
       },
       {
         detail: 'Missing bank evidence.',

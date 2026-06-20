@@ -105,8 +105,8 @@ export function PartnerDetailApprovalEvidenceSummarySection({
         <div>
           <h2>Partner approval evidence summary</h2>
           <p className="muted">
-            Compact approval read for KYC, required documents, payout bank, and tax evidence. Open the
-            detail card only when this row needs a decision.
+            Compact approval read for KYC, required documents, payout bank, and tax evidence. Open the detail
+            card only when this row needs a decision.
           </p>
         </div>
         <span className={`pill ${openRows ? 'pill-warn' : 'pill-success'}`}>
@@ -157,8 +157,8 @@ export function PartnerDetailReviewControlPanelSection({
         <div>
           <h2>Partner review control panel</h2>
           <p className="muted">
-            One-screen review map for submitted Partner information, active hold reason, resubmission
-            needs, and the latest admin decision trail.
+            One-screen review map for submitted Partner information, active hold reason, resubmission needs,
+            and the latest admin decision trail.
           </p>
         </div>
         <span className={`pill ${panel.tone}`}>{panel.status}</span>
@@ -262,8 +262,7 @@ export function PartnerDetailResubmissionGuidanceSection({
         <div>
           <h2>Resubmission guidance</h2>
           <p className="muted">
-            Use this when a partner asks what to fix after rejection. Keep the message specific and
-            auditable.
+            Use this when a partner asks what to fix after rejection. Keep the message specific and auditable.
           </p>
         </div>
         <span className={`pill ${plan.items.length ? 'pill-danger' : 'pill-success'}`}>
@@ -353,9 +352,15 @@ export function PartnerDetailReviewHistorySection({
 }
 
 const approvalEvidenceHeaders = ['Evidence', 'Status', 'Detail', 'Action'] as const;
-const reviewControlPanelHeaders = ['Review gate', 'Status', 'Detail', 'Action'] as const;
+const reviewControlPanelHeaders = ['Decision area', 'Status', 'Operator read', 'Open section'] as const;
 const levelPathHeaders = ['Level', 'Status', 'Detail', 'Operator action', 'Outcome'] as const;
-const resubmissionGuidanceHeaders = ['Target', 'Status', 'Reason', 'Partner instruction', 'Operator action'] as const;
+const resubmissionGuidanceHeaders = [
+  'Target',
+  'Status',
+  'Reason',
+  'Partner instruction',
+  'Operator action',
+] as const;
 const reviewHistoryHeaders = ['Review event', 'Status', 'Timeline', 'Preview', 'Action'] as const;
 
 function levelPathPill(item: PartnerLevelPlanItem) {

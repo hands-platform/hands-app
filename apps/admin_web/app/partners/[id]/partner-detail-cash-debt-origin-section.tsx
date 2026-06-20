@@ -39,8 +39,8 @@ export function PartnerDetailCashDebtOriginSection({
           <h2>Cash debt origin and settlement</h2>
           <p className="muted">
             Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or
-            approved offset has evidence. Marketplace visibility is not logged here; direct
-            first-pick and already-matched service flow are not retroactively blocked by wallet debt.
+            approved offset has evidence. Marketplace visibility is not logged here; direct first-pick and
+            already-matched service flow are not retroactively blocked by wallet debt.
           </p>
         </div>
         <span className={`pill ${hasCashFeeDebt ? 'pill-danger' : 'pill-success'}`}>
@@ -60,8 +60,10 @@ export function PartnerDetailCashDebtOriginSection({
         </div>
         <div>
           <span>Marketplace</span>
-          <strong>{hasCashFeeDebt ? 'Participation blocked' : 'Participation open'}</strong>
-          <small>Partner can view marketplace requests; marketplace alerts and booking participation are blocked.</small>
+          <strong>{hasCashFeeDebt ? 'Warning state' : 'Participation open'}</strong>
+          <small>
+            Partner visibility and participation stay open; final acceptance and service start wait.
+          </small>
         </div>
         <div>
           <span>Direct first-pick</span>
@@ -110,8 +112,8 @@ export function PartnerDetailCashDebtOriginSection({
                 </td>
                 <td>
                   <p className="muted">
-                    Marketplace reopen rule: once deposit reference or admin offset clears this debt, the
-                    partner can participate in marketplace bookings again.
+                    Settlement rule: once deposit reference or admin offset clears this debt, final
+                    acceptance, service start, and payout release can resume.
                   </p>
                   <div className="participant-list">
                     <span className="pill pill-info">{row.evidenceLabel}</span>

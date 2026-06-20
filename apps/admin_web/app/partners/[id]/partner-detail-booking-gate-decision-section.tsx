@@ -9,6 +9,7 @@ export type PartnerBookingGateDecisionGate = {
   readonly detail: string;
   readonly label: string;
   readonly ok: boolean;
+  readonly tone?: PartnerOpsTone;
 };
 
 export type PartnerBookingGateDecisionView = {
@@ -64,7 +65,7 @@ export function PartnerDetailBookingGateDecisionSection({
         <div>
           <span>Cash debt</span>
           <strong>{decision.cashDebtLabel}</strong>
-          <small>Negative wallet blocks marketplace alerts and participation</small>
+          <small>Negative wallet is a settlement warning before final acceptance and service start</small>
         </div>
         <div>
           <span>Location</span>
@@ -80,9 +81,7 @@ export function PartnerDetailBookingGateDecisionSection({
       <div className="participant-list admin-mt-12">
         <span className="pill pill-info">First response window: {decision.responseWindowLabel}</span>
         <span className="pill pill-info">Marketplace radius: {decision.backupRadiusLabel}</span>
-        <span className="pill pill-info">
-          Marketplace location: {decision.locationFreshnessLabel} fresh
-        </span>
+        <span className="pill pill-info">Marketplace location: {decision.locationFreshnessLabel} fresh</span>
         <Link className="text-link" href="/operations-policy">
           Edit matching policy
         </Link>
@@ -99,9 +98,7 @@ export function PartnerDetailBookingGateDecisionSection({
                 <strong>{gate.label}</strong>
               </td>
               <td>
-                <span className={`pill ${gate.ok ? 'pill-success' : 'pill-danger'}`}>
-                  {gate.ok ? 'OK' : 'BLOCK'}
-                </span>
+                <span className={`pill ${bookingGatePillClass(gate)}`}>{bookingGateStatusLabel(gate)}</span>
               </td>
               <td>
                 <p className="muted">{gate.detail}</p>
@@ -118,6 +115,20 @@ export function PartnerDetailBookingGateDecisionSection({
 }
 
 const bookingGateDecisionHeaders = ['Gate', 'Status', 'Detail', 'Action'] as const;
+
+function bookingGatePillClass(gate: PartnerBookingGateDecisionGate) {
+  if (gate.tone === 'pending') {
+    return 'pill-warn';
+  }
+  return gate.ok ? 'pill-success' : 'pill-danger';
+}
+
+function bookingGateStatusLabel(gate: PartnerBookingGateDecisionGate) {
+  if (gate.tone === 'pending') {
+    return 'WARN';
+  }
+  return gate.ok ? 'OK' : 'BLOCK';
+}
 
 function PartnerBookingGateDecisionEmptyState({ message }: { readonly message: string }) {
   return (
