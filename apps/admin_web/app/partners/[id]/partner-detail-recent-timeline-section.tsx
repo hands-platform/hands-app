@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerDetailRecentTimelineRecord = {
@@ -15,6 +16,8 @@ type PartnerDetailRecentTimelineSectionProps = {
   readonly formatDate: (value: string) => string;
   readonly records: readonly PartnerDetailRecentTimelineRecord[];
 };
+
+const recentTimelineHeaders = ['Type', 'Event', 'Detail', 'Latest'];
 
 export function PartnerDetailRecentTimelineSection({
   formatDate,
@@ -34,34 +37,43 @@ export function PartnerDetailRecentTimelineSection({
           Open full timeline
         </Link>
       </div>
-      <div className="setup-stage-list admin-mt-12">
-        {records.length ? (
-          records.slice(0, 8).map((record, index) => (
-            <div
-              className="setup-stage-item"
-              key={`recent-${record.type}-${record.id}-${record.at}-${index}`}
-            >
-              <span>{record.type}</span>
-              <div>
-                <Link className="text-link" href={record.href}>
-                  <strong>{adminActionTitleText(record.title)}</strong>
-                </Link>
-                <p className="muted">{marketplaceDisplayText(record.detail)}</p>
-              </div>
-              <small>{formatDate(record.at)}</small>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
-            <div>
-              <strong>No partner event matched this filter</strong>
-              <p className="muted">Clear the date filter or choose a wider period.</p>
-            </div>
-            <small>0</small>
-          </div>
-        )}
+      <div className="admin-mt-12">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerRecentTimelineEmptyState />}
+            headers={recentTimelineHeaders}
+            rowCount={records.length}
+          >
+            {records.slice(0, 8).map((record, index) => (
+              <tr key={`recent-${record.type}-${record.id}-${record.at}-${index}`}>
+                <td>
+                  <span className="pill pill-info">{record.type}</span>
+                </td>
+                <td>
+                  <Link className="text-link" href={record.href}>
+                    {adminActionTitleText(record.title)}
+                  </Link>
+                </td>
+                <td>
+                  <p className="muted">{marketplaceDisplayText(record.detail)}</p>
+                </td>
+                <td>
+                  <small>{formatDate(record.at)}</small>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerRecentTimelineEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No partner event matched this filter</strong>
+      <p className="muted">Clear the date filter or choose a wider period.</p>
     </div>
   );
 }

@@ -21,11 +21,18 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('Partner recent operations timeline');
     expect(rendered).toContain('Latest factual partner events');
     expect(rendered).toContain('Open full timeline');
+    expect(rendered).toContain('Type');
+    expect(rendered).toContain('Event');
+    expect(rendered).toContain('Detail');
+    expect(rendered).toContain('Latest');
     expect(rendered).toContain('BOOKING');
     expect(rendered).toContain('First-pick accepted');
     expect(rendered).toContain('Partner accepted a first-pick request.');
     expect(rendered).toContain('formatted 2026-06-01T10:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#app-activity', '#booking-chat-records']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-info', 'text-link']),
+    );
   });
 
   it('renders an empty state when no records match the filters', () => {
@@ -38,6 +45,7 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
     expect(rendered).toContain('No partner event matched this filter');
     expect(rendered).toContain('Clear the date filter or choose a wider period.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 
   it('normalizes internal provider wording in timeline titles and details', () => {
@@ -120,6 +128,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {
