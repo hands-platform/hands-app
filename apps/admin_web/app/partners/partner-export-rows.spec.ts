@@ -134,6 +134,7 @@ function masterRow(input: Partial<PartnerMasterRow> = {}): PartnerMasterRow {
     accountBlocked: false,
     accountNote: 'Normal account',
     adminClosedCount: 1,
+    approvalIssues: [],
     auditLogCount: 2,
     availablePayout: 220000,
     avatarStatus: 'online',

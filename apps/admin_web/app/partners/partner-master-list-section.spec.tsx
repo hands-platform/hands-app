@@ -18,6 +18,9 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).not.toContain('Phone');
     expect(rendered).toContain('ONLINE_AVAILABLE');
     expect(rendered).toContain('KYC APPROVED');
+    expect(rendered).toContain('2 approval need(s)');
+    expect(rendered).toContain('verification review');
+    expect(rendered).toContain('bank MISSING');
     expect(rendered).toContain('12 feedback record(s)');
     expect(rendered).toContain('Open');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
@@ -80,6 +83,10 @@ function buildRows(): PartnerMasterListSectionRow[] {
       accountBlocked: false,
       accountNote: 'Normal account',
       adminClosedCount: 0,
+      approvalIssues: [
+        { label: 'verification review', severity: 'high' },
+        { label: 'bank MISSING', severity: 'medium' },
+      ],
       auditLogCount: 2,
       availablePayout: 320000,
       avatarStatus: 'online',

@@ -122,6 +122,26 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
                   {row.accountBlocked ? 'Blocked' : 'Open'}
                 </span>
                 <p className="muted">{row.accountNote}</p>
+                {row.approvalIssues.length ? (
+                  <>
+                    <div className="participant-list admin-mt-8" aria-label="Approval needs">
+                      <span className="pill pill-warn">{row.approvalIssues.length} approval need(s)</span>
+                      {row.approvalIssues.slice(0, 3).map((issue) => (
+                        <span
+                          className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
+                          key={issue.label}
+                        >
+                          {issue.label}
+                        </span>
+                      ))}
+                    </div>
+                    {row.approvalIssues.length > 3 ? (
+                      <p className="muted">+{row.approvalIssues.length - 3} more approval item(s)</p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="muted">Approval clear</p>
+                )}
               </td>
             </tr>
           ))}

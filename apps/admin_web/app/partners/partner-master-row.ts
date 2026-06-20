@@ -10,6 +10,7 @@ import {
   partnerLastSessionAt,
   partnerPendingPayout,
 } from './partner-activity-facts';
+import { providerReviewIssues, type PartnerReviewIssue } from './partner-list-readiness';
 import {
   dateMs,
   providerLocationStatus,
@@ -58,6 +59,7 @@ export type PartnerMasterRow = {
   latestAuditDetail: string;
   accountBlocked: boolean;
   accountNote: string;
+  approvalIssues: readonly PartnerReviewIssue[];
 };
 
 export type PartnerMasterRowDeps = {
@@ -119,6 +121,7 @@ export function buildPartnerMasterRow(
       : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
+    approvalIssues: providerReviewIssues(provider, opsPolicy),
     avatarStatus: partnerMasterAvatarStatus(provider, bookingRows),
   };
 }
