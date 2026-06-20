@@ -44,15 +44,19 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
   approve: {
     confirmLabel: 'Approve Partner',
     description: (provider) =>
-      `Approve Partner ${partnerLabel(provider)} after identity, profile, and operating readiness review.`,
+      `Approve Partner ${partnerLabel(
+        provider,
+      )} as an official Partner after identity, profile, bank, app reachability, and operating readiness review.`,
     title: (provider) => `Approve Partner ${shortId(provider.id)}?`,
     tone: 'success',
   },
   block: {
     confirmLabel: 'Hold Partner',
     description: (provider) =>
-      `Place Partner ${partnerLabel(provider)} on hold from going online, updating location, or appearing to customers.`,
-    reasonPlaceholder: 'Partner hold reason',
+      `Place Partner ${partnerLabel(
+        provider,
+      )} on hold from going online, updating location, or appearing to customers. The reason is saved for audit and shown in the Partner app as correction guidance.`,
+    reasonPlaceholder: 'Partner app hold reason and correction request',
     title: (provider) => `Hold Partner ${shortId(provider.id)}?`,
     tone: 'warning',
   },
@@ -60,7 +64,7 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     confirmLabel: 'Reject Partner',
     description: (provider) =>
       `Reject Partner ${partnerLabel(provider)} and keep the reason clear for audit and re-submission.`,
-    reasonPlaceholder: 'Partner rejection reason',
+    reasonPlaceholder: 'Partner rejection reason for resubmission',
     title: (provider) => `Reject Partner ${shortId(provider.id)}?`,
     tone: 'danger',
   },

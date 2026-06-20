@@ -20,7 +20,8 @@ describe('partner account action confirmation', () => {
       action: 'approve',
       cancelHref: '/partners',
       confirmLabel: 'Approve Partner',
-      description: 'Approve Partner Linh Wellness after identity, profile, and operating readiness review.',
+      description:
+        'Approve Partner Linh Wellness as an official Partner after identity, profile, bank, app reachability, and operating readiness review.',
       disabled: false,
       hiddenInputs: [{ name: 'providerId', value: partner.id }],
       providerId: partner.id,
@@ -40,11 +41,15 @@ describe('partner account action confirmation', () => {
         maxLength: 500,
         minLength: 12,
         name: 'reason',
-        placeholder: 'Partner rejection reason',
+        placeholder: 'Partner rejection reason for resubmission',
         required: true,
       },
     ]);
-    expect(block?.textInputs[0]?.placeholder).toBe('Partner hold reason');
+    expect(block?.description).toBe(
+      'Place Partner Linh Wellness on hold from going online, updating location, or appearing to customers. The reason is saved for audit and shown in the Partner app as correction guidance.',
+    );
+    expect(block?.textInputs[0]?.placeholder).toBe('Partner app hold reason and correction request');
+    expect(reject?.textInputs[0]?.placeholder).toBe('Partner rejection reason for resubmission');
   });
 
   it('disables Supabase role sync until verification is approved', () => {

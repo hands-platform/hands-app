@@ -160,7 +160,7 @@ function buildDocumentConfirmation(
     ],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Document rejection reason' : '',
+    reasonPlaceholder: isReject ? 'Document rejection reason for Partner app correction' : '',
     title: `${isReject ? 'Reject' : 'Approve'} ${documentLabel} ${shortId(document.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
@@ -194,7 +194,7 @@ function buildBankConfirmation(
     ],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Bank rejection reason' : '',
+    reasonPlaceholder: isReject ? 'Bank rejection reason for Partner app correction' : '',
     title: `${isReject ? 'Reject' : 'Approve'} bank ${shortId(bankAccount.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
@@ -229,7 +229,7 @@ function buildMediaConfirmation(
     ],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Media rejection reason' : '',
+    reasonPlaceholder: isReject ? 'Media rejection reason for Partner app correction' : '',
     title: `${isReject ? 'Reject' : 'Approve'} media ${shortId(file.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
@@ -257,14 +257,16 @@ function buildKycConfirmation(
   return baseConfirmation({
     action,
     confirmLabel: isReject ? 'Reject KYC' : 'Approve KYC',
-    description: `${isReject ? 'Reject' : 'Approve'} KYC for Partner ${partnerLabel(
-      provider,
-    )} after reviewing required identity evidence.`,
+    description: isReject
+      ? `Reject KYC for Partner ${partnerLabel(
+          provider,
+        )} and show the reason in the Partner app correction checklist for resubmission.`
+      : `Approve KYC for Partner ${partnerLabel(provider)} after reviewing required identity evidence.`,
     disabledReason,
     hiddenInputs: [{ name: 'providerId', value: provider.id }],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'KYC rejection reason' : '',
+    reasonPlaceholder: isReject ? 'KYC rejection reason for Partner app correction' : '',
     title: `${isReject ? 'Reject' : 'Approve'} KYC for Partner ${shortId(provider.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
@@ -293,7 +295,7 @@ function buildTaxConfirmation(
     hiddenInputs: [{ name: 'providerId', value: provider.id }],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Tax rejection reason' : '',
+    reasonPlaceholder: isReject ? 'Tax rejection reason for Partner app correction' : '',
     title: `${isReject ? 'Reject' : 'Approve'} tax profile ${shortId(provider.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });

@@ -64,6 +64,11 @@ describe('PartnerDetailKycDecisionSection', () => {
     expect(rendered).toContain('Review note');
     expect(rendered).toContain('Selfie is pending review.');
     expect(rendered).toContain('Rejection: Face is unclear.');
+    expect(rendered).toContain('Partner app correction: Selfie image is too dark.');
+    expect(rendered).toContain('Partner app correction guidance');
+    expect(rendered).toContain(
+      'Reject KYC only when the Partner must resubmit. The reason appears in the Partner app correction checklist.',
+    );
     expect(rendered).toContain('Approve required evidence before final KYC decision.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-kyc']));
     expect(classNamesIn(section)).toEqual(

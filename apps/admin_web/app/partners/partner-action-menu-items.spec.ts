@@ -90,7 +90,13 @@ describe('partner action menu items', () => {
     );
 
     expect(actions[0]).toEqual(expect.objectContaining({ disabled: true, label: 'Approve KYC' }));
-    expect(actions[1]).toEqual(expect.objectContaining({ disabled: false, label: 'Reject KYC' }));
+    expect(actions[1]).toEqual(
+      expect.objectContaining({
+        description: 'Review and enter the Partner app correction reason before requesting KYC resubmission.',
+        disabled: false,
+        label: 'Reject KYC',
+      }),
+    );
     expect(taxActions[0]).toEqual(expect.objectContaining({ disabled: true, label: 'Approve tax' }));
     expect(taxActions[1]).toEqual(expect.objectContaining({ disabled: false, label: 'Reject tax' }));
   });

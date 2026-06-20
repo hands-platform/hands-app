@@ -80,7 +80,7 @@ describe('partner review action confirmation', () => {
         maxLength: 500,
         minLength: 12,
         name: 'reason',
-        placeholder: 'Bank rejection reason',
+        placeholder: 'Bank rejection reason for Partner app correction',
         required: true,
       },
     ]);
@@ -125,7 +125,7 @@ describe('partner review action confirmation', () => {
     expect(mediaConfirmation?.confirmLabel).toBe('Approve media');
     expect(mediaConfirmation?.hiddenInputs).toContainEqual({ name: 'fileId', value: 'media-file-123456' });
     expect(taxConfirmation?.confirmLabel).toBe('Reject tax');
-    expect(taxConfirmation?.textInputs[0]?.placeholder).toBe('Tax rejection reason');
+    expect(taxConfirmation?.textInputs[0]?.placeholder).toBe('Tax rejection reason for Partner app correction');
   });
 
   it('returns null when the provider or target is not loaded', () => {
@@ -180,5 +180,24 @@ describe('partner review action confirmation', () => {
         baseHref: '/partners/partner-review-123456?section=full',
       }),
     ).toBe('/partners/partner-review-123456?section=full&providerId=partner-review-123456&reviewAction=approve-kyc');
+  });
+
+  it('builds Partner app correction copy for KYC rejection from detail', () => {
+    const confirmation = buildPartnerReviewActionConfirmation(
+      [partner()],
+      'reject-kyc',
+      {
+        bankAccountId: '',
+        documentId: '',
+        fileId: '',
+        providerId: 'partner-review-123456',
+      },
+      { cancelHref: '/partners/partner-review-123456?section=full' },
+    );
+
+    expect(confirmation?.description).toBe(
+      'Reject KYC for Partner Linh Wellness and show the reason in the Partner app correction checklist for resubmission.',
+    );
+    expect(confirmation?.textInputs[0]?.placeholder).toBe('KYC rejection reason for Partner app correction');
   });
 });

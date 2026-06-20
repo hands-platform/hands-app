@@ -67,7 +67,7 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
               <td>
                 <strong>{marketplaceDisplayText(document.assetLabel)}</strong>
                 {document.rejectionReason ? (
-                  <p className="muted">Rejection reason: {document.rejectionReason}</p>
+                  <p className="muted">Partner app correction: {document.rejectionReason}</p>
                 ) : null}
               </td>
               <td>

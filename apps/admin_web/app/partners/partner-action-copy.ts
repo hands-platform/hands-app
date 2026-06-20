@@ -9,7 +9,8 @@ export const rejectIdentityDocumentDescription = 'Review and enter a document re
 export const approvePartnerKycDescription = 'Review before approving Partner KYC.';
 export const kycRequiresApprovedDocumentsDescription =
   'Required identity documents must be approved before KYC approval.';
-export const rejectPartnerKycDescription = 'Review and enter a KYC rejection reason.';
+export const rejectPartnerKycDescription =
+  'Review and enter the Partner app correction reason before requesting KYC resubmission.';
 export const approvePayoutBankDescription = 'Review before approving this payout bank account.';
 export const rejectPayoutBankDescription = 'Review and enter a bank rejection reason.';
 export const approveTaxProfileDescription = 'Review before approving this tax profile.';

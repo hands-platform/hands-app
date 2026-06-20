@@ -60,9 +60,19 @@ export function PartnerDetailKycDecisionSection({
       <p className="muted">CCCD last 4: {cccdNumberLast4 ? `****${cccdNumberLast4}` : 'Missing'}</p>
       <p className="muted">Submitted: {submittedLabel}</p>
       <p className="muted">Reviewed: {reviewedLabel}</p>
-      {rejectionReason ? <p className="muted">Rejection reason: {rejectionReason}</p> : null}
+      {rejectionReason ? <p className="muted">Partner app correction: {rejectionReason}</p> : null}
       <div className="actions admin-mt-12">
         <ActionMenu actions={reviewActions} label="KYC review actions" variant="dropdown" />
+      </div>
+      <div className="service-trace-summary admin-mt-12">
+        <div>
+          <span>Partner app correction guidance</span>
+          <strong>{canApprove ? 'Ready for approval' : 'Correction required'}</strong>
+          <small>
+            Reject KYC only when the Partner must resubmit. The reason appears in the Partner app correction
+            checklist.
+          </small>
+        </div>
       </div>
       {!canApprove ? (
         <p className="muted admin-mt-10">

@@ -12,7 +12,7 @@ describe('partner detail document and media sections', () => {
           fileHref: '/files/file-1/open',
           fileLabel: 'private/cccd-front.jpg',
           id: 'doc-1',
-          rejectionReason: null,
+          rejectionReason: 'Upload the full front side again.',
           reviewActions: [
             {
               href: '/partners/partner-1?reviewAction=approve-document',
@@ -36,6 +36,7 @@ describe('partner detail document and media sections', () => {
     expect(rendered).toContain('1 document(s)');
     expect(rendered).toContain('CCCD front');
     expect(rendered).toContain('Front side must match the KYC identity.');
+    expect(rendered).toContain('Partner app correction: Upload the full front side again.');
     expect(rendered).toContain('PENDING_REVIEW');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining(['/files/file-1/open', '/partners/partner-1?reviewAction=approve-document']),
