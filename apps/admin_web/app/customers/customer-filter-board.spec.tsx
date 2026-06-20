@@ -57,6 +57,8 @@ function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
     minBookings: null,
     minCompleted: null,
     minSpend: null,
+    page: 1,
+    pageSize: 10,
     payment: '',
     q: '',
     reachability: '',

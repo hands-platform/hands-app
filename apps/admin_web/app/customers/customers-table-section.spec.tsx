@@ -1,10 +1,12 @@
 import { CustomersTableSection } from './customers-table-section';
+import type { CustomerFilters } from './customer-filters';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 describe('CustomersTableSection', () => {
   it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
-      rows: [buildRow()],
+      filters: buildFilters({ country: 'VN', gender: 'female' }),
+      pagination: pagination([buildRow()], { page: 1, totalRows: 12 }),
       sortLabel: 'last booking',
     });
 
@@ -17,25 +19,37 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('Female');
     expect(rendered).toContain('13 Jun 2026');
     expect(rendered).toContain('Not captured');
-    expect(rendered).toContain('12');
+    expect(rendered).toContain('13 Jun 2026, 03:15 (12)');
     expect(rendered).toContain('1,200,000');
     expect(rendered).toContain('Country');
     expect(rendered).toContain('Gender');
+    expect(rendered).toContain('Last Completed');
+    expect(rendered).toContain('Showing 1 to 10 of 12 entries');
     expect(rendered).not.toContain('Device Language');
+    expect(rendered).not.toContain('Total Reservations Completed');
     expect(rendered).not.toContain('Actions');
     expect(rendered).not.toContain('View profile');
     expect(rendered).not.toContain('Payment records');
     expect(rendered).not.toContain('Chat archive');
-    expect(hrefsIn(section)).toEqual(['/customers/customer-1']);
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/customers/customer-1',
+        '/customers?country=VN&gender=female',
+        '/customers?country=VN&gender=female&page=2',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-customer-table',
         'vuexy-booking-person vuexy-customer-person',
+        'vuexy-booking-avatar',
         'vuexy-booking-person-link',
         'vuexy-booking-country-cell',
         'vuexy-booking-country-flag',
+        'vuexy-booking-table-footer vuexy-customer-table-footer',
+        'vuexy-booking-pagination',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-online',
       ]),
@@ -45,7 +59,8 @@ describe('CustomersTableSection', () => {
 
   it('renders the empty state when no customers match filters', () => {
     const section = CustomersTableSection({
-      rows: [],
+      filters: buildFilters(),
+      pagination: pagination([]),
       sortLabel: 'name',
     });
 
@@ -77,8 +92,49 @@ function buildRow(): CustomerManagementTableRow {
     name: 'Customer One',
     paymentsHref: '/payments?customer=customer-1',
     phone: '+84900000000',
-    totalReservationsCompletedLabel: '12',
+    lastCompletedLabel: '13 Jun 2026, 03:15 (12)',
     totalWalletAmountLabel: '1,200,000',
+  };
+}
+
+function buildFilters(input: Partial<CustomerFilters> = {}): CustomerFilters {
+  return {
+    address: '',
+    booking: '',
+    bookingFlow: '',
+    chat: '',
+    country: '',
+    gender: '',
+    joinedFrom: '',
+    joinedTo: '',
+    memo: '',
+    minBookings: null,
+    minCompleted: null,
+    minSpend: null,
+    page: 1,
+    pageSize: 10,
+    payment: '',
+    q: '',
+    reachability: '',
+    seen: '',
+    sort: 'last-booking',
+    ...input,
+  };
+}
+
+function pagination(
+  rows: readonly CustomerManagementTableRow[],
+  input: { readonly page?: number; readonly totalRows?: number } = {},
+) {
+  const totalRows = input.totalRows ?? rows.length;
+  return {
+    from: totalRows === 0 ? 0 : 1,
+    page: input.page ?? 1,
+    pageSize: 10,
+    rows,
+    to: Math.min(10, totalRows),
+    totalPages: Math.max(1, Math.ceil(totalRows / 10)),
+    totalRows,
   };
 }
 

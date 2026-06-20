@@ -10,6 +10,7 @@ import {
   buildCustomerRow,
   buildCustomerSummary,
   filterCustomerRows,
+  paginateCustomerRows,
   sortCustomerRows,
 } from './customer-list-model';
 import {
@@ -28,7 +29,9 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const summary = buildCustomerSummary(rows);
   const activeFilters = buildCustomerActiveFilters(filters);
   const metrics = buildCustomerManagementMetrics(summary, allRows.length);
-  const tableRows = buildCustomerManagementTableRows(rows);
+  const pagination = paginateCustomerRows(rows, filters);
+  const tableRows = buildCustomerManagementTableRows(pagination.rows);
+  const tablePagination = { ...pagination, rows: tableRows };
   const customerListCsvHref = buildCsvDataHref(
     rows.map((row) => ({
       customer_id: row.id,
@@ -151,7 +154,11 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         totalCount={allRows.length}
       />
 
-      <CustomersTableSection rows={tableRows} sortLabel={customerSortLabel(filters.sort)} />
+      <CustomersTableSection
+        filters={filters}
+        pagination={tablePagination}
+        sortLabel={customerSortLabel(filters.sort)}
+      />
     </AdminPageTemplate>
   );
 }

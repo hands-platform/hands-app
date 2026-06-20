@@ -39,13 +39,13 @@ export type CustomerManagementTableRow = {
   readonly email: string;
   readonly genderLabel: string;
   readonly initials: string;
+  readonly lastCompletedLabel: string;
   readonly lastLoginAddressLabel: string;
   readonly lastLoginDateLabel: string;
   readonly joinedLabel: string;
   readonly name: string;
   readonly paymentsHref: string;
   readonly phone: string;
-  readonly totalReservationsCompletedLabel: string;
   readonly totalWalletAmountLabel: string;
 };
 
@@ -140,16 +140,21 @@ export function buildCustomerManagementTableRows(
       email: row.email,
       genderLabel: row.genderLabel,
       initials: readInitials(row.name),
+      lastCompletedLabel: customerLastCompletedLabel(row.lastCompletedAt, row.completedBookings),
       lastLoginAddressLabel: row.lastLoginAddress,
       lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured',
       joinedLabel: row.joinedAt ? formatDate(row.joinedAt) : 'Join date missing',
       name: row.name,
       paymentsHref: `/payments?customer=${encodeURIComponent(row.id)}`,
       phone: row.phone,
-      totalReservationsCompletedLabel: String(row.completedBookings),
       totalWalletAmountLabel: formatMoney(row.capturedSpend),
     };
   });
+}
+
+function customerLastCompletedLabel(lastCompletedAt: string | null | undefined, completedBookings: number) {
+  const countLabel = `(${completedBookings})`;
+  return lastCompletedAt ? `${formatDate(lastCompletedAt)} ${countLabel}` : `No completed work ${countLabel}`;
 }
 
 function customerAvatarStatus(row: CustomerRow): AdminAvatarStatus {

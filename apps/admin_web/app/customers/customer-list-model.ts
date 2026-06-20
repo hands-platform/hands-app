@@ -244,6 +244,34 @@ export function buildCustomerRow(customer: AdminCustomer) {
 
 export type CustomerRow = ReturnType<typeof buildCustomerRow>;
 
+export type CustomerPagination<T> = {
+  readonly from: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly rows: readonly T[];
+  readonly to: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
+};
+
+export function paginateCustomerRows<T>(rows: readonly T[], filters: CustomerFilters): CustomerPagination<T> {
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+  const paginatedRows = rows.slice(start, start + filters.pageSize);
+
+  return {
+    from: totalRows === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows: paginatedRows,
+    to: Math.min(start + filters.pageSize, totalRows),
+    totalPages,
+    totalRows,
+  };
+}
+
 export function buildCustomerSummary(rows: CustomerRow[]) {
   return {
     total: rows.length,

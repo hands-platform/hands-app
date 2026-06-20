@@ -1,7 +1,12 @@
 import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 
+export const DEFAULT_CUSTOMER_PAGE_SIZE = 10;
+export const CUSTOMER_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
 export type CustomerFilters = {
+  page: number;
+  pageSize: number;
   q: string;
   booking: string;
   bookingFlow: string;
@@ -25,6 +30,8 @@ export function buildCustomerFilters(
   params: Record<string, string | string[] | undefined>,
 ): CustomerFilters {
   return {
+    page: readPageNumber(params.page),
+    pageSize: readPageSize(params.pageSize),
     q: readSearchParam(params.q),
     booking: readSearchParam(params.booking),
     bookingFlow: normalizeCustomerBookingFlowFilter(readSearchParam(params.bookingFlow)),
@@ -43,6 +50,46 @@ export function buildCustomerFilters(
     minCompleted: readPositiveNumber(params.minCompleted),
     minSpend: readPositiveNumber(params.minSpend),
   };
+}
+
+export function buildCustomerListHref(filters: CustomerFilters, overrides: Partial<CustomerFilters> = {}) {
+  const next: CustomerFilters = {
+    ...filters,
+    ...overrides,
+    page: overrides.page ?? 1,
+  };
+  const params = new URLSearchParams();
+
+  appendTextParam(params, 'q', next.q);
+  appendTextParam(params, 'booking', next.booking);
+  appendTextParam(params, 'bookingFlow', next.bookingFlow);
+  appendTextParam(params, 'country', next.country);
+  appendTextParam(params, 'gender', next.gender);
+  appendTextParam(params, 'reachability', next.reachability);
+  appendTextParam(params, 'address', next.address);
+  appendTextParam(params, 'payment', next.payment);
+  appendTextParam(params, 'chat', next.chat);
+  appendTextParam(params, 'memo', next.memo);
+  appendTextParam(params, 'joinedFrom', next.joinedFrom);
+  appendTextParam(params, 'joinedTo', next.joinedTo);
+  appendNumberParam(params, 'minBookings', next.minBookings);
+  appendNumberParam(params, 'minCompleted', next.minCompleted);
+  appendNumberParam(params, 'minSpend', next.minSpend);
+
+  if (next.seen) {
+    params.set('seen', next.seen);
+  }
+  if (next.sort !== 'last-booking') {
+    params.set('sort', next.sort);
+  }
+  if (next.pageSize !== DEFAULT_CUSTOMER_PAGE_SIZE) {
+    params.set('pageSize', String(next.pageSize));
+  }
+  if (next.page > 1) {
+    params.set('page', String(next.page));
+  }
+
+  return params.size ? `/customers?${params.toString()}` : '/customers';
 }
 
 export function customerSortLabel(sort: string) {
@@ -105,6 +152,30 @@ function readPositiveNumber(value: string | string[] | undefined) {
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.floor(parsed);
+}
+
+function readPageNumber(value: string | string[] | undefined) {
+  const parsed = readPositiveNumber(value);
+  return parsed && parsed > 0 ? parsed : 1;
+}
+
+function readPageSize(value: string | string[] | undefined) {
+  const parsed = readPositiveNumber(value);
+  return parsed && CUSTOMER_PAGE_SIZE_OPTIONS.includes(parsed as (typeof CUSTOMER_PAGE_SIZE_OPTIONS)[number])
+    ? parsed
+    : DEFAULT_CUSTOMER_PAGE_SIZE;
+}
+
+function appendTextParam(params: URLSearchParams, key: string, value: string) {
+  if (value) {
+    params.set(key, value);
+  }
+}
+
+function appendNumberParam(params: URLSearchParams, key: string, value: number | null) {
+  if (value !== null) {
+    params.set(key, String(value));
+  }
 }
 
 function normalizeCustomerBookingFlowFilter(value: string) {

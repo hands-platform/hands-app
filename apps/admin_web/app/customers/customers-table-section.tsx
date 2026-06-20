@@ -1,20 +1,27 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
+import type { CustomerFilters } from './customer-filters';
+import { buildCustomerListHref } from './customer-filters';
+import type { CustomerPagination } from './customer-list-model';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 type CustomersTableSectionProps = {
-  readonly rows: readonly CustomerManagementTableRow[];
+  readonly filters: CustomerFilters;
+  readonly pagination: CustomerPagination<CustomerManagementTableRow>;
   readonly sortLabel: string;
 };
 
-export function CustomersTableSection({ rows, sortLabel }: CustomersTableSectionProps) {
+export function CustomersTableSection({ filters, pagination, sortLabel }: CustomersTableSectionProps) {
+  const rows = pagination.rows;
+
   return (
     <AdminFilterPanel
       className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card"
       description={`Sorted by ${sortLabel}`}
       id="customer-directory"
-      resultLabel={`${rows.length} customer(s)`}
+      resultLabel={`${pagination.totalRows} customer(s)`}
       resultTone="info"
       title="Customer directory"
     >
@@ -29,7 +36,7 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
             <tr key={row.customerIdLabel}>
               <td>
                 <AdminPersonCell
-                  avatarClassName="vuexy-customer-avatar"
+                  avatarClassName="vuexy-booking-avatar"
                   avatarStatus={row.avatarStatus}
                   className="vuexy-booking-person vuexy-customer-person"
                   copyClassName="vuexy-booking-person-copy"
@@ -56,7 +63,7 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
                 <strong>{row.lastLoginAddressLabel}</strong>
               </td>
               <td>
-                <strong>{row.totalReservationsCompletedLabel}</strong>
+                <strong>{row.lastCompletedLabel}</strong>
               </td>
               <td>
                 <strong>{row.totalWalletAmountLabel}</strong>
@@ -65,6 +72,20 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+
+      <div className="vuexy-booking-table-footer vuexy-customer-table-footer">
+        <span>
+          Showing {pagination.from} to {pagination.to} of {pagination.totalRows} entries
+        </span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel="Customer directory pages"
+          className="vuexy-booking-pagination"
+          hrefForPage={(page) => buildCustomerListHref(filters, { page })}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </AdminFilterPanel>
   );
 }
@@ -76,7 +97,7 @@ const customerTableHeaders = [
   'Sign-up Date',
   'Last Login Date',
   'Last Login Address',
-  'Total Reservations Completed',
+  'Last Completed',
   'Total Wallet Amount',
 ] as const;
 
