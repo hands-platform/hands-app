@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
 export type PartnerBookingGateDecisionGate = {
@@ -85,18 +87,43 @@ export function PartnerDetailBookingGateDecisionSection({
           Edit matching policy
         </Link>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {decision.gates.map((gate) => (
-          <div className="setup-stage-item" key={gate.label}>
-            <span>{gate.ok ? 'OK' : 'BLOCK'}</span>
-            <div>
-              <strong>{gate.label}</strong>
-              <p className="muted">{gate.detail}</p>
-            </div>
-            <small>{gate.action}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerBookingGateDecisionEmptyState message="No marketplace booking gate rows." />}
+          headers={bookingGateDecisionHeaders}
+          rowCount={decision.gates.length}
+        >
+          {decision.gates.map((gate) => (
+            <tr key={gate.label}>
+              <td>
+                <strong>{gate.label}</strong>
+              </td>
+              <td>
+                <span className={`pill ${gate.ok ? 'pill-success' : 'pill-danger'}`}>
+                  {gate.ok ? 'OK' : 'BLOCK'}
+                </span>
+              </td>
+              <td>
+                <p className="muted">{gate.detail}</p>
+              </td>
+              <td>
+                <span className="muted">{gate.action}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const bookingGateDecisionHeaders = ['Gate', 'Status', 'Detail', 'Action'] as const;
+
+function PartnerBookingGateDecisionEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
