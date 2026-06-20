@@ -75,6 +75,7 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Showing 0 of 3');
     expect(rendered).toContain('reviews held from app visibility but retained for evidence.');
     expect(rendered).toContain('Clear filters');
+    expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary vuexy-review-clear-filter');
     expect(rendered).toContain('Showing 0 to 0 of 0 entries');
   });
 });

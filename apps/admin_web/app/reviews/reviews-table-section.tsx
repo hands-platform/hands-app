@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Download, Star, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
@@ -78,13 +77,13 @@ export function ReviewsTableSection({
               </span>
             ))}
             {activeFilterLabels.length > 0 ? (
-              <Link
+              <AdminFormControlLink
                 className="button button-secondary vuexy-review-clear-filter"
                 href={buildReviewListHref(filters, { q: '', review: '' })}
               >
                 <X aria-hidden="true" size={14} />
                 Clear filters
-              </Link>
+              </AdminFormControlLink>
             ) : null}
           </div>
         )}
