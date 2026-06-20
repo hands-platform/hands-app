@@ -1,5 +1,7 @@
 import {
   PartnerDetailApprovalEvidenceSummarySection,
+  PartnerDetailLevelPathSection,
+  PartnerDetailResubmissionGuidanceSection,
   PartnerDetailReviewControlPanelSection,
   type PartnerApprovalEvidenceSummaryRow,
   type PartnerReviewControlPanelView,
@@ -66,6 +68,85 @@ describe('PartnerDetailReviewControlPanelSection', () => {
         'pill pill-warn',
         'pill pill-success',
         'pill pill-neutral',
+      ]),
+    );
+  });
+
+  it('renders the partner level path as a Vuexy table', () => {
+    const section = PartnerDetailLevelPathSection({
+      plan: {
+        currentLevel: 'Level 2',
+        items: [
+          {
+            blocked: false,
+            detail: 'Signup and KYC are complete.',
+            level: 'Level 1 signup',
+            operatorAction: 'No action needed.',
+            ready: true,
+            status: 'CLEAR',
+          },
+          {
+            blocked: true,
+            detail: 'Payout bank is not approved.',
+            level: 'Level 3 payout',
+            operatorAction: 'Approve bank account before payout.',
+            ready: false,
+            status: 'BLOCKED',
+          },
+        ],
+      },
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner level path');
+    expect(rendered).toContain('Level 2');
+    expect(rendered).toContain('Level');
+    expect(rendered).toContain('Operator action');
+    expect(rendered).toContain('Level 3 payout');
+    expect(rendered).toContain('Approve bank account before payout.');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-success',
+        'pill pill-danger',
+      ]),
+    );
+  });
+
+  it('renders resubmission guidance and clear empty state as Vuexy tables', () => {
+    const section = PartnerDetailResubmissionGuidanceSection({
+      plan: {
+        items: [
+          {
+            operatorAction: 'Request a clearer selfie.',
+            providerInstruction: 'Upload a bright selfie with your full face visible.',
+            reason: 'Selfie is too dark.',
+            status: 'REJECTED',
+            target: 'KYC selfie',
+          },
+        ],
+      },
+    });
+    const emptySection = PartnerDetailResubmissionGuidanceSection({ plan: { items: [] } });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const emptyRendered = normalizeSpaces(textContent(emptySection));
+
+    expect(rendered).toContain('Resubmission guidance');
+    expect(rendered).toContain('1 item(s)');
+    expect(rendered).toContain('Target');
+    expect(rendered).toContain('Partner instruction');
+    expect(rendered).toContain('KYC selfie');
+    expect(rendered).toContain('Upload a bright selfie with your full face visible.');
+    expect(emptyRendered).toContain('No records found');
+    expect(emptyRendered).toContain('No resubmission request needed.');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-danger',
       ]),
     );
   });

@@ -222,19 +222,33 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
         </div>
         <span className="pill pill-info">{plan.currentLevel}</span>
       </div>
-      <div className="setup-stage-list">
-        {plan.items.map((item) => (
-          <div className="setup-stage-item" key={item.level}>
-            <span>{item.status}</span>
-            <div>
-              <strong>{item.level}</strong>
-              <p className="muted">{item.detail}</p>
-              <p className="muted">{item.operatorAction}</p>
-            </div>
-            <small>{item.ready ? 'Clear' : item.blocked ? 'Blocked' : 'Next'}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerReviewTableEmptyState message="No Partner level path rows." />}
+          headers={levelPathHeaders}
+          rowCount={plan.items.length}
+        >
+          {plan.items.map((item) => (
+            <tr key={item.level}>
+              <td>
+                <strong>{item.level}</strong>
+              </td>
+              <td>
+                <span className={`pill ${levelPathPill(item)}`}>{item.status}</span>
+              </td>
+              <td>
+                <p className="muted">{item.detail}</p>
+              </td>
+              <td>
+                <p className="muted">{item.operatorAction}</p>
+              </td>
+              <td>
+                <span className="muted">{item.ready ? 'Clear' : item.blocked ? 'Blocked' : 'Next'}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -256,32 +270,35 @@ export function PartnerDetailResubmissionGuidanceSection({
           {plan.items.length} item(s)
         </span>
       </div>
-      <div className="setup-stage-list">
-        {plan.items.length ? (
-          plan.items.map((item) => (
-            <div className="setup-stage-item" key={item.target}>
-              <span>{item.status}</span>
-              <div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={
+            <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected Partner documents, bank accounts, KYC, or tax profiles." />
+          }
+          headers={resubmissionGuidanceHeaders}
+          rowCount={plan.items.length}
+        >
+          {plan.items.map((item) => (
+            <tr key={item.target}>
+              <td>
                 <strong>{item.target}</strong>
+              </td>
+              <td>
+                <span className={`pill ${resubmissionPill(item.status)}`}>{item.status}</span>
+              </td>
+              <td>
                 <p className="muted">{item.reason}</p>
+              </td>
+              <td>
                 <p className="muted">{item.providerInstruction}</p>
-              </div>
-              <small>{item.operatorAction}</small>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>CLEAR</span>
-            <div>
-              <strong>No resubmission request needed</strong>
-              <p className="muted">
-                There are no rejected partner documents, bank accounts, KYC, or tax profiles.
-              </p>
-            </div>
-            <small>OK</small>
-          </div>
-        )}
-      </div>
+              </td>
+              <td>
+                <span className="muted">{item.operatorAction}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -328,6 +345,20 @@ export function PartnerDetailReviewHistorySection({
 
 const approvalEvidenceHeaders = ['Evidence', 'Status', 'Detail', 'Action'] as const;
 const reviewControlPanelHeaders = ['Review gate', 'Status', 'Detail', 'Action'] as const;
+const levelPathHeaders = ['Level', 'Status', 'Detail', 'Operator action', 'Outcome'] as const;
+const resubmissionGuidanceHeaders = ['Target', 'Status', 'Reason', 'Partner instruction', 'Operator action'] as const;
+
+function levelPathPill(item: PartnerLevelPlanItem) {
+  if (item.ready) return 'pill-success';
+  if (item.blocked) return 'pill-danger';
+  return 'pill-warn';
+}
+
+function resubmissionPill(status: string) {
+  if (status === 'CLEAR' || status === 'APPROVED') return 'pill-success';
+  if (status === 'REJECTED' || status === 'BLOCKED') return 'pill-danger';
+  return 'pill-warn';
+}
 
 function PartnerReviewTableEmptyState({ message }: { readonly message: string }) {
   return (
