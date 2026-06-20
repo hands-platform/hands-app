@@ -144,6 +144,7 @@ function bookingUnifiedCustomerRows({
       label: 'Request time',
       value: formatDate(bookingRequestOpenedAt(booking)),
       detail: 'Customer booking request opened.',
+      variant: 'secondary',
     },
     {
       label: 'Customer',
@@ -162,6 +163,7 @@ function bookingUnifiedCustomerRows({
       label: 'Device language',
       value: customerDeviceLanguage(booking),
       detail: 'Customer app session language.',
+      variant: 'secondary',
     },
     {
       label: 'Service address',
@@ -173,6 +175,7 @@ function bookingUnifiedCustomerRows({
       label: 'Live customer location',
       value: actualLocation.value,
       detail: actualLocation.detail,
+      variant: 'secondary',
     },
     {
       label: 'Service request',
