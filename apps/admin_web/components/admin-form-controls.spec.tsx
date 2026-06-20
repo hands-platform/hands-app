@@ -89,10 +89,12 @@ describe('Admin form controls', () => {
 
   it('renders link and button controls without owning behavior', () => {
     const link = AdminFormControlLink({
+      'aria-current': 'page',
       children: 'Export',
       className: 'customer-export',
       download: 'hands-customers.csv',
       href: 'data:text/csv,name',
+      title: 'Export customers',
     });
     const button = AdminFormControlButton({
       children: 'Apply',
@@ -103,7 +105,9 @@ describe('Admin form controls', () => {
       className: 'admin-form-control-link customer-export',
       download: 'hands-customers.csv',
       href: 'data:text/csv,name',
+      title: 'Export customers',
     });
+    expect(link.props['aria-current']).toBe('page');
     expect(button.props).toMatchObject({
       className: 'admin-form-control-button customer-apply',
       type: 'submit',

@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 
 export type NotificationFilterLink = {
   readonly href: string;
@@ -75,20 +74,20 @@ export function NotificationFilterBoardSection({
           ) : null}
           <div className="participant-list">
             {isFiltered ? (
-              <Link className="pill pill-success" href="/notifications">
+              <AdminFormControlLink className="pill pill-success" href="/notifications">
                 Clear filter
-              </Link>
+              </AdminFormControlLink>
             ) : null}
             {activeBookingLabel ? <span className="pill pill-info">Booking {activeBookingLabel}</span> : null}
             {links.map((link) => (
-              <Link
+              <AdminFormControlLink
                 aria-current={activeReview === link.review ? 'page' : undefined}
                 className={`pill ${activeReview === link.review ? 'pill-warn' : 'pill-neutral'}`}
                 href={link.href}
                 key={link.href}
               >
                 {link.label}
-              </Link>
+              </AdminFormControlLink>
             ))}
           </div>
         </>

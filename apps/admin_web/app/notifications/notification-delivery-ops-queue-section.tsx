@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 
 export type NotificationDeliveryOpsQueueItem = {
   readonly count: number;
@@ -34,9 +34,9 @@ export function NotificationDeliveryOpsQueueSection({ items }: NotificationDeliv
               <span className={`pill ${item.tone}`}>{item.label}</span>
               <h3 className="admin-mt-10">{item.count}</h3>
               <p className="muted">{item.detail}</p>
-              <Link className="pill pill-neutral" href={item.href}>
+              <AdminFormControlLink className="pill pill-neutral" href={item.href}>
                 Open queue
-              </Link>
+              </AdminFormControlLink>
             </div>
           ))
         ) : (

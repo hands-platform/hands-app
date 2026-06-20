@@ -1,4 +1,5 @@
 import type {
+  AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
@@ -61,9 +62,8 @@ type AdminFormTextareaProps = {
 type AdminFormControlLinkProps = {
   readonly children: ReactNode;
   readonly className?: string;
-  readonly download?: string;
   readonly href: string;
-};
+} & Pick<AnchorHTMLAttributes<HTMLAnchorElement>, 'aria-current' | 'download' | 'title'>;
 
 type AdminFormControlButtonProps = {
   readonly children: ReactNode;
@@ -209,13 +209,21 @@ export function AdminFormTextarea({
 }
 
 export function AdminFormControlLink({
+  'aria-current': ariaCurrent,
   children,
   className,
   download,
   href,
+  title,
 }: AdminFormControlLinkProps) {
   return (
-    <a className={joinClassNames('admin-form-control-link', className)} download={download} href={href}>
+    <a
+      aria-current={ariaCurrent}
+      className={joinClassNames('admin-form-control-link', className)}
+      download={download}
+      href={href}
+      title={title}
+    >
       {children}
     </a>
   );

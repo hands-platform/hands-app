@@ -23,7 +23,13 @@ describe('NotificationDeliveryOpsQueueSection', () => {
     expect(rendered).toContain('Latest push attempt returned an error');
     expect(rendered).toContain('Open queue');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/notifications?review=failed']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['ops-task-card', 'pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'ops-task-card',
+        'pill pill-warn',
+        'admin-form-control-link pill pill-neutral',
+      ]),
+    );
   });
 
   it('renders a clean state when no delivery blockers exist', () => {

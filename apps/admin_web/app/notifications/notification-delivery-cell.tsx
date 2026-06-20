@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 
 export type NotificationDeliveryRow = {
   readonly attemptedAtLabel: string;
@@ -86,9 +86,9 @@ function NotificationDeliveryAttempt({
       ) : null}
       <div className="muted admin-mt-4">Token hidden</div>
       {delivery.enableDeviceHref ? (
-        <Link className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
+        <AdminFormControlLink className="pill pill-warn admin-mt-6" href={delivery.enableDeviceHref}>
           Re-enable device
-        </Link>
+        </AdminFormControlLink>
       ) : null}
     </div>
   );

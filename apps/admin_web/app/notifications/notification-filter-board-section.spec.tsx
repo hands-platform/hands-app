@@ -42,7 +42,12 @@ describe('NotificationFilterBoardSection', () => {
       expect.arrayContaining(['/notifications', '/notifications?review=failed']),
     );
     expect(ariaCurrentValuesIn(section)).toEqual(['page']);
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-form-control-link pill pill-success',
+        'admin-form-control-link pill pill-warn',
+      ]),
+    );
   });
 
   it('renders an unfiltered state without clear filter affordance', () => {
@@ -62,7 +67,9 @@ describe('NotificationFilterBoardSection', () => {
     expect(rendered).toContain('Showing 10 of 10');
     expect(rendered).not.toContain('Clear filter');
     expect(ariaCurrentValuesIn(section)).toEqual(['page']);
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-form-control-link pill pill-warn']),
+    );
   });
 });
 

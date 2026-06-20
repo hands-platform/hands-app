@@ -50,7 +50,7 @@ describe('NotificationsTableSection', () => {
         'vuexy-booking-person',
         'notification-delivery-attempt admin-mb-10',
         'admin-avatar-status-dot is-app-deleted',
-        'pill pill-warn',
+        'admin-form-control-link pill pill-warn admin-mt-6',
       ]),
     );
     expect(hrefsIn(section)).toEqual(
