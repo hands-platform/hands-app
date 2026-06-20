@@ -5078,6 +5078,10 @@ a.ops-task-card {
   padding: 2px 0 0;
 }
 
+.booking-operating-timeline-list {
+  padding-top: 4px;
+}
+
 .vuexy-basic-timeline-item {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr);
@@ -5138,6 +5142,10 @@ a.ops-task-card {
   padding: 0 0 22px 12px;
 }
 
+.vuexy-basic-timeline-item:last-child .vuexy-basic-timeline-content {
+  padding-bottom: 0;
+}
+
 .vuexy-basic-timeline-title-row {
   align-items: flex-start;
   display: flex;
@@ -5157,6 +5165,7 @@ a.ops-task-card {
   font-size: 15px;
   line-height: 1.35;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .vuexy-basic-timeline-title-row time {
@@ -5169,19 +5178,27 @@ a.ops-task-card {
 
 .vuexy-basic-timeline-content > p {
   margin: 8px 0 0;
+  max-width: 980px;
 }
 
 .vuexy-basic-timeline-meta {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
   margin-top: 12px;
+}
+
+.vuexy-basic-timeline-meta.is-compact {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 176px));
 }
 
 .vuexy-basic-timeline-meta-item {
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
   min-width: 0;
   padding: 10px 12px;
 }
@@ -5191,7 +5208,6 @@ a.ops-task-card {
   display: block;
   font-size: 11px;
   font-weight: 700;
-  margin-bottom: 4px;
 }
 
 .vuexy-basic-timeline-meta-item strong {

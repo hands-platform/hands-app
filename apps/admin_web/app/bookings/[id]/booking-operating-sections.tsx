@@ -348,17 +348,45 @@ export function BookingOperatingTimelineSection({
         </div>
         <span className="pill pill-info">{operatingTimeline.length} step(s)</span>
       </div>
-      <div className="setup-stage-list admin-mt-12">
-        {operatingTimeline.map((item) => (
-          <div className="setup-stage-item" key={item.id}>
-            <span>{item.type}</span>
-            <div>
-              <strong>{item.title}</strong>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <small>{item.at ? formatDate(item.at) : item.status}</small>
-          </div>
-        ))}
+      <div className="vuexy-basic-timeline booking-operating-timeline-list admin-mt-16">
+        {operatingTimeline.map((item, index) => {
+          const tone = operatingTimelineTone(item);
+
+          return (
+            <article className="vuexy-basic-timeline-item" key={item.id}>
+              <div className="vuexy-basic-timeline-separator" aria-hidden="true">
+                <span className={`vuexy-basic-timeline-dot is-${tone}`} />
+                {index < operatingTimeline.length - 1 && (
+                  <span className="vuexy-basic-timeline-connector" />
+                )}
+              </div>
+              <div className="vuexy-basic-timeline-content">
+                <div className="vuexy-basic-timeline-title-row">
+                  <div>
+                    <span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <time>{item.at ? formatDate(item.at) : item.status}</time>
+                </div>
+                <p className="muted">{item.detail}</p>
+                <div className="vuexy-basic-timeline-meta is-compact">
+                  <div
+                    aria-label={`Event type: ${item.type}`}
+                    className="vuexy-basic-timeline-meta-item"
+                  >
+                    <span>Type</span> <strong>{item.type}</strong>
+                  </div>
+                  <div
+                    aria-label={`Event state: ${item.status}`}
+                    className="vuexy-basic-timeline-meta-item"
+                  >
+                    <span>State</span> <strong>{item.status}</strong>
+                  </div>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
@@ -367,6 +395,43 @@ export function BookingOperatingTimelineSection({
 export type BookingOperatingTimelineSectionProps = {
   operatingTimeline: OperatingTimelineItem[];
 };
+
+type OperatingTimelineTone = 'danger' | 'info' | 'primary' | 'success' | 'warning';
+
+function operatingTimelineTone(item: OperatingTimelineItem): OperatingTimelineTone {
+  const searchable = `${item.type} ${item.title} ${item.status} ${item.detail}`.toLowerCase();
+
+  if (/\b(failed|missing|blocked|no gateway ref)\b/.test(searchable)) {
+    return 'danger';
+  }
+
+  if (/\b(pending|repair|needed|review|hold|debt)\b/.test(searchable)) {
+    return 'warning';
+  }
+
+  if (/\b(completed|captured|ready|selected|logged|recorded)\b/.test(searchable)) {
+    return 'success';
+  }
+
+  if (item.type === 'BOOK' || item.type === 'MATCH') {
+    return 'primary';
+  }
+
+  return 'info';
+}
+
+function operatingTimelinePillTone(tone: OperatingTimelineTone) {
+  if (tone === 'success') {
+    return 'pill-success';
+  }
+  if (tone === 'warning') {
+    return 'pill-warn';
+  }
+  if (tone === 'danger') {
+    return 'pill-danger';
+  }
+  return 'pill-info';
+}
 
 export function BookingHandoffChecklistSection({
   handoffChecklist,

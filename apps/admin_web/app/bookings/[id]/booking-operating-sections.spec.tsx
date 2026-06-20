@@ -3,6 +3,7 @@ import {
   BookingCloseoutReadinessSection,
   BookingMarketplaceWalletEvidenceSection,
   BookingOperatingLedgerSection,
+  BookingOperatingTimelineSection,
 } from './booking-operating-sections';
 
 describe('Booking operating sections', () => {
@@ -73,6 +74,46 @@ describe('Booking operating sections', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
     );
+  });
+
+  it('renders the operating timeline with Vuexy timeline styling instead of a repeated list', () => {
+    const section = BookingOperatingTimelineSection({
+      operatingTimeline: [
+        {
+          at: '2026-06-19T08:40:00.000Z',
+          detail: 'Completion location is captured only when the Partner taps complete.',
+          id: 'completed-location',
+          status: 'Recorded',
+          title: 'Service completed',
+          type: 'CLOSE',
+        },
+        {
+          detail: 'Partner location should be captured only at action time.',
+          id: 'missing-location',
+          status: 'Pending',
+          title: 'Partner location missing',
+          type: 'LOC',
+        },
+      ],
+    });
+
+    const rendered = normalizedText(section);
+    const classNames = classNamesIn(section);
+
+    expect(rendered).toContain('Operating timeline');
+    expect(rendered).toContain('Service completed');
+    expect(rendered).toContain('Partner location missing');
+    expect(rendered).toContain('Type CLOSE');
+    expect(rendered).toContain('State Pending');
+    expect(classNames).toEqual(
+      expect.arrayContaining([
+        'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'vuexy-basic-timeline-dot is-success',
+        'vuexy-basic-timeline-dot is-danger',
+        'vuexy-basic-timeline-meta is-compact',
+      ]),
+    );
+    expect(classNames).not.toContain('setup-stage-list admin-mt-12');
   });
 
   it('renders closeout readiness with only unresolved focus items', () => {
