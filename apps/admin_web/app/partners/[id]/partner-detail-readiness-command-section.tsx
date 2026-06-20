@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerOpsTone = 'blocked' | 'done' | 'pending';
 
 export type PartnerReadinessSnapshotBadge = {
@@ -48,6 +50,9 @@ type PartnerAcceptanceRepairCommandSectionProps = {
   readonly command: PartnerAcceptanceRepairCommandView;
 };
 
+const readinessGateHeaders = ['Gate', 'Readiness', 'Operator helper'];
+const repairCommandHeaders = ['Step', 'Owner / blocker', 'Reason', 'Operator action', 'Status', 'Action'];
+
 export function PartnerDetailReadinessSnapshotSection({
   snapshot,
 }: PartnerDetailReadinessSnapshotSectionProps) {
@@ -70,13 +75,27 @@ export function PartnerDetailReadinessSnapshotSection({
           </span>
         ))}
       </div>
-      <div className="setup-stage-item admin-mt-16">
-        <span>{snapshot.gate.label}</span>
-        <div>
-          <strong>{snapshot.gate.title}</strong>
-          <p className="muted">{snapshot.gate.detail}</p>
-        </div>
-        <small>{snapshot.gate.helper}</small>
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerReadinessEmptyState message="No readiness gate loaded." />}
+            headers={readinessGateHeaders}
+            rowCount={1}
+          >
+            <tr>
+              <td>
+                <span className={`pill ${pillClassForTone(snapshot.tone)}`}>{snapshot.gate.label}</span>
+              </td>
+              <td>
+                <strong>{snapshot.gate.title}</strong>
+                <p className="muted">{snapshot.gate.detail}</p>
+              </td>
+              <td>
+                <span className="muted">{snapshot.gate.helper}</span>
+              </td>
+            </tr>
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
     </div>
   );
@@ -119,23 +138,41 @@ export function PartnerAcceptanceRepairCommandSection({
           value={command.marketplaceRouting}
         />
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {command.steps.map((step, index) => (
-          <div className="setup-stage-item" key={`${step.owner}-${step.blocker}`}>
-            <span>{index + 1}</span>
-            <div>
-              <strong>
-                {step.owner}: {step.blocker}
-              </strong>
-              <p className="muted">{step.reason}</p>
-              <p className="muted">{step.operatorAction}</p>
-              <span className={`pill ${pillClassForTone(step.tone)}`}>{stepToneLabel(step.tone)}</span>
-            </div>
-            <Link className="text-link" href={step.href}>
-              {step.actionLabel}
-            </Link>
-          </div>
-        ))}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerReadinessEmptyState message="No repair command steps loaded." />}
+            headers={repairCommandHeaders}
+            rowCount={command.steps.length}
+          >
+            {command.steps.map((step, index) => (
+              <tr key={`${step.owner}-${step.blocker}`}>
+                <td>
+                  <span className="muted">{index + 1}</span>
+                </td>
+                <td>
+                  <strong>
+                    {step.owner}: {step.blocker}
+                  </strong>
+                </td>
+                <td>
+                  <p className="muted">{step.reason}</p>
+                </td>
+                <td>
+                  <p className="muted">{step.operatorAction}</p>
+                </td>
+                <td>
+                  <span className={`pill ${pillClassForTone(step.tone)}`}>{stepToneLabel(step.tone)}</span>
+                </td>
+                <td>
+                  <Link className="text-link" href={step.href}>
+                    {step.actionLabel}
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
     </div>
   );
@@ -155,6 +192,15 @@ function TraceSummaryItem({
       <span>{label}</span>
       <strong>{value}</strong>
       <small>{helper}</small>
+    </div>
+  );
+}
+
+function PartnerReadinessEmptyState({ message }: { readonly message: string }) {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
     </div>
   );
 }
