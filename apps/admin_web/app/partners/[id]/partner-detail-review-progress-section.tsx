@@ -1,3 +1,7 @@
+import Link from 'next/link';
+
+type PartnerReviewPanelTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
+
 export type PartnerLevelPlanItem = {
   readonly blocked: boolean;
   readonly detail: string;
@@ -34,8 +38,35 @@ export type PartnerReviewHistoryRow = {
   readonly title: string;
 };
 
+export type PartnerReviewControlPanelMetric = {
+  readonly helper: string;
+  readonly label: string;
+  readonly value: string;
+};
+
+export type PartnerReviewControlPanelItem = {
+  readonly detail: string;
+  readonly href?: string;
+  readonly id: string;
+  readonly label: string;
+  readonly status: string;
+  readonly title: string;
+  readonly tone: PartnerReviewPanelTone;
+};
+
+export type PartnerReviewControlPanelView = {
+  readonly items: readonly PartnerReviewControlPanelItem[];
+  readonly metrics: readonly PartnerReviewControlPanelMetric[];
+  readonly status: string;
+  readonly tone: PartnerReviewPanelTone;
+};
+
 type PartnerDetailLevelPathSectionProps = {
   readonly plan: PartnerLevelPlanView;
+};
+
+type PartnerDetailReviewControlPanelSectionProps = {
+  readonly panel: PartnerReviewControlPanelView;
 };
 
 type PartnerDetailResubmissionGuidanceSectionProps = {
@@ -46,6 +77,53 @@ type PartnerDetailReviewHistorySectionProps = {
   readonly rows: readonly PartnerReviewHistoryRow[];
   readonly totalCount: number;
 };
+
+export function PartnerDetailReviewControlPanelSection({
+  panel,
+}: PartnerDetailReviewControlPanelSectionProps) {
+  return (
+    <div className="card admin-mb-16" id="partner-review-control-panel">
+      <div className="ops-section-header">
+        <div>
+          <h2>Partner review control panel</h2>
+          <p className="muted">
+            One-screen review map for submitted Partner information, active hold reason, resubmission
+            needs, and the latest admin decision trail.
+          </p>
+        </div>
+        <span className={`pill ${panel.tone}`}>{panel.status}</span>
+      </div>
+      <div className="service-trace-summary admin-mt-12">
+        {panel.metrics.map((metric) => (
+          <div key={metric.label}>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+            <small>{metric.helper}</small>
+          </div>
+        ))}
+      </div>
+      <div className="setup-stage-list admin-mt-16">
+        {panel.items.map((item) => (
+          <div className="setup-stage-item" key={item.id}>
+            <span>{item.label}</span>
+            <div>
+              <strong>{item.title}</strong>
+              <p className="muted">{item.detail}</p>
+              <span className={`pill ${item.tone}`}>{item.status}</span>
+            </div>
+            {item.href ? (
+              <Link className="text-link" href={item.href}>
+                Open
+              </Link>
+            ) : (
+              <small>Review</small>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSectionProps) {
   return (
@@ -129,7 +207,7 @@ export function PartnerDetailReviewHistorySection({
   totalCount,
 }: PartnerDetailReviewHistorySectionProps) {
   return (
-    <div className="card admin-mb-16">
+    <div className="card admin-mb-16" id="partner-review-history">
       <div className="ops-section-header">
         <div>
           <h2>Review history</h2>

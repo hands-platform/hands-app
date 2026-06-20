@@ -177,8 +177,10 @@ import {
 } from './partner-detail-device-session-activity-section';
 import {
   PartnerDetailLevelPathSection,
+  PartnerDetailReviewControlPanelSection,
   PartnerDetailResubmissionGuidanceSection,
   PartnerDetailReviewHistorySection,
+  type PartnerReviewControlPanelView,
   type PartnerReviewHistoryRow,
 } from './partner-detail-review-progress-section';
 import {
@@ -479,6 +481,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const reviewHistoryRows = buildPartnerReviewHistoryRows(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
+  const reviewControlPanel = buildPartnerReviewControlPanel(
+    provider,
+    registrationDossier,
+    resubmissionPlan,
+    reviewHistoryRows,
+  );
   const providerServicePricing = buildProviderServicePricing(provider);
   const partnerServicePricingDisplayRows = buildPartnerServicePricingDisplayRows(providerServicePricing.rows);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
@@ -859,6 +867,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         providerId={provider.id}
         queue={partnerOperatorCommandQueue}
       />
+
+      <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
 
       <PartnerDetailOperatorNotesSection
         notes={partnerOperatorNoteRows}
@@ -3890,6 +3900,106 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
   }
 
   return { items };
+}
+
+function buildPartnerReviewControlPanel(
+  provider: ProviderDetail,
+  dossier: ReturnType<typeof buildProviderRegistrationDossier>,
+  resubmissionPlan: ReturnType<typeof buildProviderResubmissionPlan>,
+  reviewHistoryRows: PartnerReviewHistoryRow[],
+): PartnerReviewControlPanelView {
+  const firstDossierGap = dossier.items.find((item) => !item.ok);
+  const latestReview = reviewHistoryRows[0];
+  const hasHold = Boolean(provider.blockedAt);
+  const resubmissionCount = resubmissionPlan.items.length;
+  const submittedLabel = formatDate(provider.kyc?.submittedAt ?? provider.user?.createdAt);
+  const panelTone = hasHold
+    ? 'pill-danger'
+    : resubmissionCount || dossier.blockers
+      ? 'pill-warn'
+      : 'pill-success';
+  const panelStatus = hasHold
+    ? 'Partner on hold'
+    : resubmissionCount
+      ? `${resubmissionCount} resubmission item(s)`
+      : dossier.blockers
+        ? `${dossier.blockers} dossier gap(s)`
+        : 'Review clear';
+
+  return {
+    status: panelStatus,
+    tone: panelTone,
+    metrics: [
+      {
+        label: 'Submitted',
+        value: submittedLabel,
+        helper: provider.kyc?.submittedAt ? 'Latest KYC submission timestamp.' : 'Using account creation timestamp.',
+      },
+      {
+        label: 'Hold state',
+        value: hasHold ? 'On hold' : 'Clear',
+        helper: hasHold ? provider.blockedReason ?? 'Hold reason is missing.' : 'No active account hold.',
+      },
+      {
+        label: 'Resubmission',
+        value: `${resubmissionCount}`,
+        helper: resubmissionCount
+          ? 'Rejected items need Partner correction.'
+          : 'No rejected item currently requires resubmission.',
+      },
+      {
+        label: 'Latest review',
+        value: latestReview?.atLabel ?? 'No log',
+        helper: latestReview ? `${latestReview.statusLabel} / ${latestReview.actorLabel}` : 'No review log loaded.',
+      },
+    ],
+    items: [
+      {
+        id: 'submitted-dossier',
+        label: 'SUBMIT',
+        title: dossier.ready ? 'Submitted dossier is complete' : 'Submitted dossier has gaps',
+        detail: firstDossierGap
+          ? `${firstDossierGap.label}: ${firstDossierGap.detail}`
+          : 'Basic identity, public profile, service area, KYC, payout, and security checks are complete.',
+        status: dossier.ready ? 'READY' : `${dossier.blockers} GAP(S)`,
+        tone: dossier.ready ? 'pill-success' : 'pill-warn',
+        href: '#partner-connected-operations-records',
+      },
+      {
+        id: 'account-hold-state',
+        label: 'HOLD',
+        title: hasHold ? 'Active Partner hold' : 'No active Partner hold',
+        detail: hasHold
+          ? provider.blockedReason ?? 'Hold reason is missing. Add a clear operator note before release.'
+          : 'Partner is not on account hold. Use Hold Partner only when correction is required.',
+        status: hasHold ? 'ON HOLD' : 'CLEAR',
+        tone: hasHold ? 'pill-danger' : 'pill-success',
+        href: '#partner-operator-command-queue',
+      },
+      {
+        id: 'resubmission-needs',
+        label: 'FIX',
+        title: resubmissionCount ? 'Partner resubmission needed' : 'No resubmission needed',
+        detail: resubmissionCount
+          ? `${resubmissionPlan.items[0]?.target}: ${resubmissionPlan.items[0]?.reason}`
+          : 'No rejected KYC, document, bank, or tax item is waiting for correction.',
+        status: resubmissionCount ? `${resubmissionCount} ITEM(S)` : 'CLEAR',
+        tone: resubmissionCount ? 'pill-warn' : 'pill-success',
+        href: '#partner-review-history',
+      },
+      {
+        id: 'latest-review-event',
+        label: 'LOG',
+        title: latestReview ? latestReview.title : 'No review event yet',
+        detail: latestReview
+          ? `${latestReview.statusLabel} by ${latestReview.actorLabel} at ${latestReview.atLabel}.`
+          : 'Approval, rejection, hold, release, and resubmission decisions will appear in review history.',
+        status: latestReview ? latestReview.action : 'NO LOG',
+        tone: latestReview ? 'pill-info' : 'pill-neutral',
+        href: '#partner-review-history',
+      },
+    ],
+  };
 }
 
 function buildProviderRegistrationDossier(provider: ProviderDetail) {
