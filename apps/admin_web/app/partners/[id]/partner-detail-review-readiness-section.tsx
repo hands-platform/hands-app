@@ -1,3 +1,5 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 type PartnerReadinessItem = {
   detail: string;
   label: string;
@@ -45,18 +47,32 @@ export function PartnerDetailApprovalChecklistSection({
           {checklist.ready ? 'Ready for approval' : `${checklist.blockers} blocker(s)`}
         </span>
       </div>
-      <div className="setup-stage-list">
-        {checklist.items.map((item) => (
-          <div className="setup-stage-item" key={item.label}>
-            <span>{item.status}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <p className="muted">{item.detail}</p>
-            </div>
-            <small>{item.ok ? 'OK' : 'Check'}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerReviewReadinessEmptyState message="No approval checklist rows." />}
+          headers={approvalChecklistHeaders}
+          rowCount={checklist.items.length}
+        >
+          {checklist.items.map((item) => (
+            <tr key={item.label}>
+              <td>
+                <strong>{item.label}</strong>
+              </td>
+              <td>
+                <span className={`pill ${item.ok ? 'pill-success' : 'pill-warn'}`}>
+                  {item.status}
+                </span>
+              </td>
+              <td>
+                <p className="muted">{item.detail}</p>
+              </td>
+              <td>
+                <span className="muted">{item.ok ? 'OK' : 'Check'}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -79,19 +95,47 @@ export function PartnerDetailRegistrationDossierSection({
           {dossier.ready ? 'Dossier complete' : `${dossier.blockers} gap(s)`}
         </span>
       </div>
-      <div className="setup-stage-list">
-        {dossier.items.map((item) => (
-          <div className="setup-stage-item" key={item.label}>
-            <span>{item.status}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <p className="muted">{item.detail}</p>
-              <p className="muted">{item.operatorAction}</p>
-            </div>
-            <small>{item.ok ? 'OK' : 'Fix'}</small>
-          </div>
-        ))}
-      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<PartnerReviewReadinessEmptyState message="No registration dossier rows." />}
+          headers={registrationDossierHeaders}
+          rowCount={dossier.items.length}
+        >
+          {dossier.items.map((item) => (
+            <tr key={item.label}>
+              <td>
+                <strong>{item.label}</strong>
+              </td>
+              <td>
+                <span className={`pill ${item.ok ? 'pill-success' : 'pill-warn'}`}>
+                  {item.status}
+                </span>
+              </td>
+              <td>
+                <p className="muted">{item.detail}</p>
+              </td>
+              <td>
+                <p className="muted">{item.operatorAction}</p>
+              </td>
+              <td>
+                <span className="muted">{item.ok ? 'OK' : 'Fix'}</span>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const approvalChecklistHeaders = ['Gate', 'Status', 'Detail', 'Outcome'] as const;
+const registrationDossierHeaders = ['Dossier item', 'Status', 'Detail', 'Operator action', 'Outcome'] as const;
+
+function PartnerReviewReadinessEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
