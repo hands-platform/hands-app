@@ -225,30 +225,30 @@ export function PartnerDetailReportsControlsSection({
                     <form className="actions admin-mt-8" action={updateProviderReport}>
                       <input type="hidden" name="reportId" value={report.id} />
                       <input type="hidden" name="providerProfileId" value={providerId} />
-                      <select name="status" defaultValue={report.status}>
-                        <option value="OPEN">Open</option>
-                        <option value="INVESTIGATING">Investigating</option>
-                        <option value="RESOLVED">Resolved</option>
-                        <option value="DISMISSED">Dismissed</option>
-                      </select>
-                      <select name="severity" defaultValue={report.severity}>
-                        <option value="LOW">Low</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="HIGH">Major</option>
-                        <option value="CRITICAL">Urgent</option>
-                      </select>
+                      <AdminFormSelect
+                        label="Report status"
+                        name="status"
+                        defaultValue={report.status}
+                        options={reportStatusOptions}
+                      />
+                      <AdminFormSelect
+                        label="Report severity"
+                        name="severity"
+                        defaultValue={report.severity}
+                        options={reportSeverityOptions}
+                      />
                       <input name="resolutionNote" placeholder="Resolution note" />
-                      <button type="submit">Update</button>
+                      <AdminFormControlButton type="submit">Update</AdminFormControlButton>
                     </form>
                     <form className="actions admin-mt-8" action={createProviderSanction}>
                       <input type="hidden" name="providerProfileId" value={providerId} />
                       <input type="hidden" name="reportId" value={report.id} />
-                      <select name="type" defaultValue={report.defaultControlType}>
-                        <option value="WARNING">Warning</option>
-                        <option value="PAYOUT_HOLD">Payout hold</option>
-                        <option value="ACCOUNT_BLOCK">Account block</option>
-                        <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
-                      </select>
+                      <AdminFormSelect
+                        label="Control type"
+                        name="type"
+                        defaultValue={report.defaultControlType}
+                        options={accountControlTypeOptions}
+                      />
                       <input
                         name="reason"
                         placeholder="Control reason"
@@ -256,7 +256,7 @@ export function PartnerDetailReportsControlsSection({
                         minLength={12}
                         maxLength={500}
                       />
-                      <button type="submit">Apply control</button>
+                      <AdminFormControlButton type="submit">Apply control</AdminFormControlButton>
                     </form>
                   </td>
                 </tr>
@@ -340,6 +340,13 @@ const accountControlTypeOptions = [
   { label: 'Payout hold', value: 'PAYOUT_HOLD' },
   { label: 'Account block', value: 'ACCOUNT_BLOCK' },
   { label: 'Profile review hold', value: 'TRUST_BADGE_REMOVAL' },
+] as const;
+
+const reportStatusOptions = [
+  { label: 'Open', value: 'OPEN' },
+  { label: 'Investigating', value: 'INVESTIGATING' },
+  { label: 'Resolved', value: 'RESOLVED' },
+  { label: 'Dismissed', value: 'DISMISSED' },
 ] as const;
 
 function reportSeverityPill(severity: string) {

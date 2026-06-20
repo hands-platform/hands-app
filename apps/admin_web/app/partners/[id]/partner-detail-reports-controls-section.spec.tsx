@@ -63,7 +63,9 @@ describe('PartnerDetailReportsControlsSection', () => {
         '/payouts',
       ]),
     );
-    expect(classNamesIn(section)).toEqual(
+    const classNames = classNamesIn(section);
+
+    expect(classNames).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table',
@@ -75,6 +77,8 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-action-dropdown action-menu-dropdown',
       ]),
     );
+    expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(6);
+    expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
   });
 
   it('renders an empty payout hold table when no hold is active', () => {
