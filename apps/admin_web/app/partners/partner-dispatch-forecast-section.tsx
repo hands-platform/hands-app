@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import { AdminSectionHeader } from '../../components/admin-page-template';
 
 type PartnerDispatchForecastTone = 'danger' | 'info' | 'ok' | 'warn';
@@ -49,10 +50,10 @@ export function PartnerDispatchForecastSection({
     <section className="card admin-mb-16">
       <AdminSectionHeader
         actions={
-          <Link className="button button-secondary" href="/operations-policy">
+          <AdminFormControlLink className="button button-secondary" href="/operations-policy">
             <SlidersHorizontal aria-hidden="true" size={16} />
             Policy: fresh location {'<='} {staleLocationMinutes}m
-          </Link>
+          </AdminFormControlLink>
         }
         description="Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply records for direct requests and marketplace matching."
         title="Dispatch capacity forecast"
@@ -82,10 +83,10 @@ export function PartnerDispatchForecastSection({
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
                 </div>
-                <Link className="button button-secondary partner-summary-action" href={item.href}>
+                <AdminFormControlLink className="button button-secondary partner-summary-action" href={item.href}>
                   <ArrowRight aria-hidden="true" size={14} />
                   {item.count}
-                </Link>
+                </AdminFormControlLink>
               </div>
             ))}
           </div>
@@ -107,13 +108,13 @@ export function PartnerDispatchForecastSection({
                     location refresh, {lane.blocked} blocked.
                   </p>
                 </div>
-                <Link
+                <AdminFormControlLink
                   className="button button-secondary partner-summary-action"
                   href={`/partners?q=${encodeURIComponent(lane.city)}`}
                 >
                   <ArrowRight aria-hidden="true" size={14} />
                   Open
-                </Link>
+                </AdminFormControlLink>
               </div>
             ))}
             {forecast.supplyLanes.length === 0 ? (

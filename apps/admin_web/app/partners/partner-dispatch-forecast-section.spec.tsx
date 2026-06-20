@@ -25,7 +25,7 @@ describe('PartnerDispatchForecastSection', () => {
     expect(rendered).toContain('2 / 4 ready, 3 online, 1 need location refresh, 1 blocked.');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/operations-policy', '/partners?readiness=ready']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['signal signal-ok', 'button button-secondary']),
+      expect.arrayContaining(['signal signal-ok', 'admin-form-control-link button button-secondary']),
     );
   });
 
