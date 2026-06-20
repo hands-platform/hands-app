@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Download } from 'lucide-react';
 import {
   AdminFormControlButton,
@@ -43,9 +42,9 @@ export function CustomerFilterBoard({
               ))}
             </>
           ) : (
-            <Link className="vuexy-customer-button is-ghost" href="/customers">
+            <AdminFormControlLink className="vuexy-customer-button is-ghost" href="/customers">
               Clear filters
-            </Link>
+            </AdminFormControlLink>
           )}
         </div>
       }
