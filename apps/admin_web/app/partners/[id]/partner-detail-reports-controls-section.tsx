@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { ActionMenu } from '../../../components/action-menu';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import {
   createProviderReport,
   createProviderSanction,
@@ -165,31 +166,43 @@ export function PartnerDetailReportsControlsSection({
       <div className="detail-grid">
         <div>
           <h3>Recent reports</h3>
-          {reports.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={<ReportsControlsEmptyState message="No Partner reports recorded yet." />}
+              headers={reportTableHeaders}
+              rowCount={reports.length}
+            >
               {reports.map((report) => (
-                <div className="setup-stage-item" key={report.id}>
-                  <span>{report.status}</span>
-                  <div>
+                <tr key={report.id}>
+                  <td>
                     <strong>{report.summary}</strong>
                     <p className="muted">
                       {report.category} / {report.source} / {report.createdLabel}
                     </p>
-                    <div className="participant-list admin-mt-6">
-                      <span className={`pill ${reportSeverityPill(report.severity)}`}>
-                        {report.severity}
-                      </span>
-                      <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
-                      {report.bookingHref && report.bookingLabel ? (
-                        <Link className="text-link" href={report.bookingHref}>
-                          Booking {report.bookingLabel}
-                        </Link>
-                      ) : null}
-                    </div>
                     {report.details ? <p className="muted">{report.details}</p> : null}
                     {report.resolutionNote ? (
                       <p className="muted">Resolution: {report.resolutionNote}</p>
                     ) : null}
+                  </td>
+                  <td>
+                    <span className={`pill ${reportSeverityPill(report.severity)}`}>
+                      {report.severity}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
+                  </td>
+                  <td>
+                    {report.bookingHref && report.bookingLabel ? (
+                      <Link className="text-link" href={report.bookingHref}>
+                        Booking {report.bookingLabel}
+                      </Link>
+                    ) : (
+                      <span className="muted">No booking linked</span>
+                    )}
+                    <p className="muted">{report.smallLabel}</p>
+                  </td>
+                  <td>
                     <form className="actions admin-mt-8" action={updateProviderReport}>
                       <input type="hidden" name="reportId" value={report.id} />
                       <input type="hidden" name="providerProfileId" value={providerId} />
@@ -226,27 +239,37 @@ export function PartnerDetailReportsControlsSection({
                       />
                       <button type="submit">Apply control</button>
                     </form>
-                  </div>
-                  <small>{report.smallLabel}</small>
-                </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">No Partner reports recorded yet.</p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
         <div>
           <h3>Recent account controls</h3>
-          {accountControls.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={
+                <ReportsControlsEmptyState message="No active or historical account control recorded yet." />
+              }
+              headers={accountControlTableHeaders}
+              rowCount={accountControls.length}
+            >
               {accountControls.map((control) => (
-                <div className="setup-stage-item" key={control.id}>
-                  <span>{control.status}</span>
-                  <div>
+                <tr key={control.id}>
+                  <td>
                     <strong>{control.type}</strong>
                     <p className="muted">{control.reason}</p>
-                    <p className="muted">{control.timeline}</p>
                     {control.reportLine ? <p className="muted">{control.reportLine}</p> : null}
+                  </td>
+                  <td>
+                    <span className={`pill ${controlStatusPill(control.status)}`}>{control.status}</span>
+                  </td>
+                  <td>
+                    <span className="muted">{control.timeline}</span>
+                    <p className="muted">{control.smallLabel}</p>
+                  </td>
+                  <td>
                     {control.liftControlHref ? (
                       <ActionMenu
                         actions={[
@@ -259,21 +282,24 @@ export function PartnerDetailReportsControlsSection({
                           },
                         ]}
                         label={`Control actions for ${control.smallLabel}`}
+                        variant="dropdown"
                       />
-                    ) : null}
-                  </div>
-                  <small>{control.smallLabel}</small>
-                </div>
+                    ) : (
+                      <span className="muted">No action</span>
+                    )}
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">No active or historical account control recorded yet.</p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
       </div>
     </div>
   );
 }
+
+const reportTableHeaders = ['Report', 'Severity', 'Status', 'Linked record', 'Actions'] as const;
+const accountControlTableHeaders = ['Control', 'Status', 'Timeline', 'Actions'] as const;
 
 function reportSeverityPill(severity: string) {
   if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
@@ -285,4 +311,19 @@ function reportStatusPill(status: string) {
   if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
   if (status === 'INVESTIGATING') return 'pill-warn';
   return 'pill-info';
+}
+
+function controlStatusPill(status: string) {
+  if (status === 'ACTIVE') return 'pill-danger';
+  if (status === 'LIFTED' || status === 'EXPIRED') return 'pill-success';
+  return 'pill-neutral';
+}
+
+function ReportsControlsEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
+    </>
+  );
 }
