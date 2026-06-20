@@ -4627,6 +4627,10 @@ a.action-button-card:hover {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
+.booking-settlement-ledger-row.is-evidence-record {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .booking-settlement-ledger-row > .pill {
   justify-self: flex-start;
 }
@@ -4692,6 +4696,64 @@ a.action-button-card:hover {
 .booking-location-evidence-empty {
   margin: 0;
   padding: 12px 14px;
+}
+
+.booking-decision-preset-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.booking-decision-preset-card {
+  align-items: start;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.booking-decision-preset-card > * {
+  min-width: 0;
+}
+
+.booking-decision-preset-card p {
+  line-height: 19px;
+  margin: 0;
+}
+
+.booking-activity-record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-activity-record-row {
+  align-items: start;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(96px, auto) minmax(260px, 1fr) minmax(132px, auto);
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.booking-activity-record-row > * {
+  min-width: 0;
+}
+
+.booking-activity-record-row p {
+  line-height: 19px;
+  margin: 0;
+}
+
+.booking-activity-record-row small {
+  color: var(--admin-muted);
+  justify-self: flex-start;
+  line-height: 19px;
 }
 
 .booking-unified-open-link {

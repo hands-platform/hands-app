@@ -2,7 +2,7 @@ import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-u
 import { BookingEvidenceSections } from './booking-evidence-sections';
 
 describe('Booking evidence sections', () => {
-  it('renders evidence decision tables with shared table styling and links', () => {
+  it('renders evidence decision ledgers with compact styling and links', () => {
     const section = BookingEvidenceSections({
       bookingId: 'booking-1',
       bookingEvidenceBundleRows: [
@@ -117,7 +117,17 @@ describe('Booking evidence sections', () => {
       ]),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link', 'pill pill-success']),
+      expect.arrayContaining([
+        'booking-settlement-ledger booking-evidence-ledger admin-mt-12',
+        'booking-settlement-ledger-row is-evidence-record',
+        'booking-decision-preset-list admin-mt-12',
+        'booking-decision-preset-card',
+        'text-link',
+        'pill pill-success',
+      ]),
     );
+    expect(classNamesIn(section)).not.toContain('admin-table-scroll');
+    expect(classNamesIn(section)).not.toContain('table vuexy-data-table');
+    expect(classNamesIn(section)).not.toContain('setup-stage-list admin-mt-12');
   });
 });

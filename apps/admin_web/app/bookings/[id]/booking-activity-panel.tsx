@@ -82,11 +82,14 @@ export function BookingActivityPanel({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list admin-mt-12">
+      <div className="booking-activity-record-list admin-mt-12">
         {records.length ? (
           records.map((record) => (
-            <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
-              <span>{record.type}</span>
+            <div
+              className="booking-activity-record-row"
+              key={`${record.type}-${record.id}-${record.at}`}
+            >
+              <span className="pill pill-neutral">{record.type}</span>
               <div>
                 {record.href ? (
                   <Link className="text-link" href={record.href}>
@@ -101,8 +104,8 @@ export function BookingActivityPanel({
             </div>
           ))
         ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
+          <div className="booking-activity-record-row is-empty">
+            <span className="pill pill-neutral">NONE</span>
             <div>
               <strong>No booking activity has been recorded yet</strong>
               <p className="muted">Matching, payment, chat, location, and audit events will appear here.</p>
