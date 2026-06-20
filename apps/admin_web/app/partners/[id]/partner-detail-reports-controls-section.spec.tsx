@@ -45,6 +45,11 @@ describe('PartnerDetailReportsControlsSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Reports and account controls');
+    expect(rendered).toContain('State');
+    expect(rendered).toContain('Control');
+    expect(rendered).toContain('Timeline');
+    expect(rendered).toContain('ID');
+    expect(rendered).toContain('ACTIVE');
     expect(rendered).toContain('Partner payout complaint');
     expect(rendered).toContain('HIGH');
     expect(rendered).toContain('INVESTIGATING');
@@ -65,6 +70,24 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-action-dropdown action-menu-dropdown',
       ]),
     );
+  });
+
+  it('renders an empty payout hold table when no hold is active', () => {
+    const section = PartnerDetailReportsControlsSection({
+      accountControls: [],
+      payoutHold: null,
+      providerId: 'partner-1',
+      reports: [],
+      reportsDeskHref: '/partner-controls?q=partner-1',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('No payout hold');
+    expect(rendered).toContain('No active payout hold is currently applied.');
+    expect(rendered).toContain('No Partner reports recorded yet.');
+    expect(rendered).toContain('No active or historical account control recorded yet.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 });
 

@@ -115,21 +115,37 @@ export function PartnerDetailReportsControlsSection({
               Use this for immediate operating controls when a report is not yet required.
             </p>
           </div>
-          <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
-            {payoutHold ? 'Payout locked' : 'No payout hold'}
-          </span>
+        <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
+          {payoutHold ? 'Payout locked' : 'No payout hold'}
+        </span>
+      </div>
+        <div className="admin-mb-12">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={<ReportsControlsEmptyState message="No active payout hold is currently applied." />}
+              headers={payoutHoldTableHeaders}
+              rowCount={payoutHold ? 1 : 0}
+            >
+              {payoutHold ? (
+                <tr>
+                  <td>
+                    <span className="pill pill-danger">ACTIVE</span>
+                  </td>
+                  <td>
+                    <strong>{payoutHold.type}</strong>
+                    <p className="muted">{payoutHold.reason}</p>
+                  </td>
+                  <td>
+                    <span className="muted">{payoutHold.timeline}</span>
+                  </td>
+                  <td>
+                    <small>{payoutHold.idLabel}</small>
+                  </td>
+                </tr>
+              ) : null}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
-        {payoutHold ? (
-          <div className="setup-stage-item admin-mb-12">
-            <span>ACTIVE</span>
-            <div>
-              <strong>{payoutHold.type}</strong>
-              <p className="muted">{payoutHold.reason}</p>
-              <p className="muted">{payoutHold.timeline}</p>
-            </div>
-            <small>{payoutHold.idLabel}</small>
-          </div>
-        ) : null}
         <form className="form-grid" action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
           <label>
@@ -300,6 +316,7 @@ export function PartnerDetailReportsControlsSection({
 
 const reportTableHeaders = ['Report', 'Severity', 'Status', 'Linked record', 'Actions'] as const;
 const accountControlTableHeaders = ['Control', 'Status', 'Timeline', 'Actions'] as const;
+const payoutHoldTableHeaders = ['State', 'Control', 'Timeline', 'ID'] as const;
 
 function reportSeverityPill(severity: string) {
   if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
