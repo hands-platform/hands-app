@@ -98,6 +98,7 @@ function BookingUnifiedRows({
           <h3>{title}</h3>
           <p className="muted">{helper}</p>
         </div>
+        <span className="pill pill-neutral">{countLabel(rows.length, 'field')}</span>
       </div>
       <div className="booking-unified-detail-grid admin-mt-12">
         {rows.map((row) => (
@@ -208,4 +209,12 @@ function BookingUnifiedPersonAvatar({ person }: { readonly person: BookingUnifie
       {content}
     </span>
   );
+}
+
+function countLabel(count: number, singular: string) {
+  if (count === 0) {
+    return `No ${singular}s`;
+  }
+
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }

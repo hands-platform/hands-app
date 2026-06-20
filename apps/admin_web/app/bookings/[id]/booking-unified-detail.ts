@@ -119,7 +119,7 @@ export function bookingUnifiedDetail({
       },
       {
         label: 'Updates',
-        value: `${messageCount} chat message(s)`,
+        value: countLabel(messageCount, 'chat message'),
         helper: `${bookingUnifiedStatusLabel(booking)} / ${booking.status}`,
       },
     ],
@@ -381,6 +381,14 @@ function bookingUnifiedStatusTone(status: string) {
     default:
       return 'pill-warn';
   }
+}
+
+function countLabel(count: number, singular: string) {
+  if (count === 0) {
+    return `No ${singular}s`;
+  }
+
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
 function customerDeviceLanguage(booking: AdminBookingDetail) {
