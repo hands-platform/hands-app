@@ -61,8 +61,22 @@ export type PartnerReviewControlPanelView = {
   readonly tone: PartnerReviewPanelTone;
 };
 
+export type PartnerApprovalEvidenceSummaryRow = {
+  readonly detail: string;
+  readonly href: string;
+  readonly id: string;
+  readonly label: string;
+  readonly status: string;
+  readonly title: string;
+  readonly tone: PartnerReviewPanelTone;
+};
+
 type PartnerDetailLevelPathSectionProps = {
   readonly plan: PartnerLevelPlanView;
+};
+
+type PartnerDetailApprovalEvidenceSummarySectionProps = {
+  readonly rows: readonly PartnerApprovalEvidenceSummaryRow[];
 };
 
 type PartnerDetailReviewControlPanelSectionProps = {
@@ -77,6 +91,46 @@ type PartnerDetailReviewHistorySectionProps = {
   readonly rows: readonly PartnerReviewHistoryRow[];
   readonly totalCount: number;
 };
+
+export function PartnerDetailApprovalEvidenceSummarySection({
+  rows,
+}: PartnerDetailApprovalEvidenceSummarySectionProps) {
+  const openRows = rows.filter((row) => row.tone !== 'pill-success' && row.tone !== 'pill-neutral').length;
+
+  return (
+    <div className="card admin-mb-16" id="partner-approval-evidence-summary">
+      <div className="ops-section-header">
+        <div>
+          <h2>Partner approval evidence summary</h2>
+          <p className="muted">
+            Compact approval read for KYC, required documents, payout bank, and tax evidence. Open the
+            detail card only when this row needs a decision.
+          </p>
+        </div>
+        <span className={`pill ${openRows ? 'pill-warn' : 'pill-success'}`}>
+          {openRows ? `${openRows} check(s)` : 'Evidence clear'}
+        </span>
+      </div>
+      <div className="setup-stage-list admin-mt-16">
+        {rows.map((row) => (
+          <div className="setup-stage-item" key={row.id}>
+            <span>{row.label}</span>
+            <div>
+              <Link className="text-link" href={row.href}>
+                <strong>{row.title}</strong>
+              </Link>
+              <p className="muted">{row.detail}</p>
+              <span className={`pill ${row.tone}`}>{row.status}</span>
+            </div>
+            <Link className="text-link" href={row.href}>
+              Open
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function PartnerDetailReviewControlPanelSection({
   panel,

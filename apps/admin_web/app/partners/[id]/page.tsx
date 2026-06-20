@@ -176,10 +176,12 @@ import {
   type PartnerSharedDeviceRow,
 } from './partner-detail-device-session-activity-section';
 import {
+  PartnerDetailApprovalEvidenceSummarySection,
   PartnerDetailLevelPathSection,
   PartnerDetailReviewControlPanelSection,
   PartnerDetailResubmissionGuidanceSection,
   PartnerDetailReviewHistorySection,
+  type PartnerApprovalEvidenceSummaryRow,
   type PartnerReviewControlPanelView,
   type PartnerReviewHistoryRow,
 } from './partner-detail-review-progress-section';
@@ -513,6 +515,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerKycReviewActions = buildPartnerKycReviewActions(provider, canApproveKyc);
   const partnerTypedDocumentRows = buildPartnerTypedDocumentRows(provider);
   const partnerPublicMediaRows = buildPartnerPublicMediaRows(provider);
+  const approvalEvidenceSummaryRows = buildPartnerApprovalEvidenceSummaryRows({
+    provider,
+    kycEvidence,
+    primaryBank,
+    hasFirstRevenue: providerHasFirstRevenueSignal(provider),
+  });
   const payoutHold = activePayoutHold(provider);
   const partnerStatusCards = buildPartnerStatusCards(provider, Boolean(payoutHold));
   const reportControlPayoutHold = buildPartnerReportControlPayoutHold(payoutHold);
@@ -869,6 +877,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
 
       <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
+
+      <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
 
       <PartnerDetailOperatorNotesSection
         notes={partnerOperatorNoteRows}
@@ -4000,6 +4010,104 @@ function buildPartnerReviewControlPanel(
       },
     ],
   };
+}
+
+function buildPartnerApprovalEvidenceSummaryRows({
+  provider,
+  kycEvidence,
+  primaryBank,
+  hasFirstRevenue,
+}: {
+  provider: ProviderDetail;
+  kycEvidence: PartnerKycDecisionEvidence;
+  primaryBank: ProviderBankAccount | null;
+  hasFirstRevenue: boolean;
+}): PartnerApprovalEvidenceSummaryRow[] {
+  const requiredDocumentRows = kycEvidence.rows;
+  const approvedRequiredDocumentCount = requiredDocumentRows.filter((row) => row.status === 'APPROVED').length;
+  const rejectedRequiredDocumentCount = requiredDocumentRows.filter((row) => row.status === 'REJECTED').length;
+  const kycStatus = provider.kyc?.status ?? 'MISSING';
+  const bankStatus = primaryBank?.status ?? 'MISSING';
+  const taxStatus = provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED');
+
+  return [
+    {
+      id: 'kyc-evidence-summary',
+      label: 'KYC',
+      title: kycStatus === 'APPROVED' ? 'KYC approved' : 'KYC decision needed',
+      detail: provider.kyc
+        ? `Status ${kycStatus}; CCCD/CMND ${provider.kyc.cccdNumberLast4 ? `****${provider.kyc.cccdNumberLast4}` : 'missing'}; submitted ${formatDate(provider.kyc.submittedAt)}.`
+        : 'Partner has not submitted the KYC identity record yet.',
+      status: kycStatus,
+      tone: approvalEvidenceStatusTone(kycStatus),
+      href: '#kyc',
+    },
+    {
+      id: 'document-evidence-summary',
+      label: 'DOCS',
+      title:
+        approvedRequiredDocumentCount === requiredDocumentRows.length
+          ? 'Required documents approved'
+          : 'Required documents need review',
+      detail: `${approvedRequiredDocumentCount}/${requiredDocumentRows.length} required document(s) approved${
+        rejectedRequiredDocumentCount ? `; ${rejectedRequiredDocumentCount} rejected` : ''
+      }.`,
+      status:
+        approvedRequiredDocumentCount === requiredDocumentRows.length
+          ? 'APPROVED'
+          : rejectedRequiredDocumentCount
+            ? 'REJECTED'
+            : 'PENDING',
+      tone:
+        approvedRequiredDocumentCount === requiredDocumentRows.length
+          ? 'pill-success'
+          : rejectedRequiredDocumentCount
+            ? 'pill-danger'
+            : 'pill-warn',
+      href: '#documents',
+    },
+    {
+      id: 'bank-evidence-summary',
+      label: 'BANK',
+      title: bankStatus === 'APPROVED' ? 'Payout bank approved' : 'Payout bank needs review',
+      detail: primaryBank
+        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(
+            primaryBank.accountHolderName,
+          )} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'account missing'}.`
+        : 'No payout bank account has been submitted.',
+      status: bankStatus,
+      tone: approvalEvidenceStatusTone(bankStatus),
+      href: '#bank',
+    },
+    {
+      id: 'tax-evidence-summary',
+      label: 'TAX',
+      title:
+        taxStatus === 'DEFERRED'
+          ? 'Tax can stay deferred'
+          : taxStatus === 'APPROVED'
+            ? 'Tax profile approved'
+            : 'Tax profile needs review',
+      detail:
+        taxStatus === 'DEFERRED'
+          ? 'Partner has no first earning yet, so tax evidence does not block onboarding.'
+          : provider.taxProfile
+            ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${
+                provider.taxProfile.taxCodeLast4 ?? '----'
+              } / ${marketplaceDisplayText(provider.taxProfile.registeredAddress)}.`
+            : 'First earning exists, so tax profile evidence is required before payout.',
+      status: taxStatus,
+      tone: taxStatus === 'DEFERRED' ? 'pill-neutral' : approvalEvidenceStatusTone(taxStatus),
+      href: '#tax',
+    },
+  ];
+}
+
+function approvalEvidenceStatusTone(status: string): PartnerApprovalEvidenceSummaryRow['tone'] {
+  if (status === 'APPROVED') return 'pill-success';
+  if (status === 'REJECTED' || status === 'MISSING') return 'pill-danger';
+  if (status === 'DEFERRED') return 'pill-neutral';
+  return 'pill-warn';
 }
 
 function buildProviderRegistrationDossier(provider: ProviderDetail) {

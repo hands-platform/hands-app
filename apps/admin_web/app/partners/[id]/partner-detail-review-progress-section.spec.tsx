@@ -1,5 +1,7 @@
 import {
+  PartnerDetailApprovalEvidenceSummarySection,
   PartnerDetailReviewControlPanelSection,
+  type PartnerApprovalEvidenceSummaryRow,
   type PartnerReviewControlPanelView,
 } from './partner-detail-review-progress-section';
 
@@ -26,6 +28,25 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'pill pill-info']),
+    );
+  });
+
+  it('renders compact approval evidence links for KYC, documents, bank, and tax', () => {
+    const section = PartnerDetailApprovalEvidenceSummarySection({
+      rows: buildApprovalEvidenceRows(),
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner approval evidence summary');
+    expect(rendered).toContain('2 check(s)');
+    expect(rendered).toContain('KYC decision needed');
+    expect(rendered).toContain('Required documents approved');
+    expect(rendered).toContain('Payout bank needs review');
+    expect(rendered).toContain('Tax can stay deferred');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#kyc', '#documents', '#bank', '#tax']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['pill pill-warn', 'pill pill-success', 'pill pill-neutral']),
     );
   });
 });
@@ -85,6 +106,47 @@ function buildPanel(): PartnerReviewControlPanelView {
       },
     ],
   };
+}
+
+function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
+  return [
+    {
+      detail: 'Status PENDING; CCCD/CMND ****1234; submitted 20 Jun 2026, 09:00.',
+      href: '#kyc',
+      id: 'kyc-evidence-summary',
+      label: 'KYC',
+      status: 'PENDING',
+      title: 'KYC decision needed',
+      tone: 'pill-warn',
+    },
+    {
+      detail: '3/3 required document(s) approved.',
+      href: '#documents',
+      id: 'document-evidence-summary',
+      label: 'DOCS',
+      status: 'APPROVED',
+      title: 'Required documents approved',
+      tone: 'pill-success',
+    },
+    {
+      detail: 'VCB / Linh Wellness / ****6789.',
+      href: '#bank',
+      id: 'bank-evidence-summary',
+      label: 'BANK',
+      status: 'PENDING',
+      title: 'Payout bank needs review',
+      tone: 'pill-warn',
+    },
+    {
+      detail: 'Partner has no first earning yet, so tax evidence does not block onboarding.',
+      href: '#tax',
+      id: 'tax-evidence-summary',
+      label: 'TAX',
+      status: 'DEFERRED',
+      title: 'Tax can stay deferred',
+      tone: 'pill-neutral',
+    },
+  ];
 }
 
 function textContent(value: unknown): string {
