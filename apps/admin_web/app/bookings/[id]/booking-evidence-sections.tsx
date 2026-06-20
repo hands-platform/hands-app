@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminFormControlButton } from '../../../components/admin-form-controls';
 import { addBookingOpsNote } from './actions';
 
 type EvidenceMetric = {
@@ -267,7 +268,7 @@ export function BookingEvidenceSections({
                 <form action={addBookingOpsNote}>
                   <input type="hidden" name="bookingId" value={bookingId} />
                   <input type="hidden" name="preset" value={preset.preset} />
-                  <button type="submit">Add note</button>
+                  <AdminFormControlButton type="submit">Add note</AdminFormControlButton>
                 </form>
               </div>
             ))}
