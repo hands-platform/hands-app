@@ -2,7 +2,7 @@ import { CustomersTableSection } from './customers-table-section';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 describe('CustomersTableSection', () => {
-  it('renders the Vuexy-style customer management columns and icon actions', () => {
+  it('renders the Vuexy-style customer management columns without actions', () => {
     const section = CustomersTableSection({
       rows: [buildRow()],
       sortLabel: 'last booking',
@@ -18,25 +18,22 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('Not captured');
     expect(rendered).toContain('12');
     expect(rendered).toContain('1,200,000');
-    expect(rendered).toContain('View profile');
-    expect(rendered).toContain('Payment records');
-    expect(rendered).toContain('Chat archive');
-    expect(hrefsIn(section)).toEqual(
-      expect.arrayContaining(['/customers/customer-1', '/payments?customer=customer-1', '/chat-archive?q=customer-1']),
-    );
+    expect(rendered).not.toContain('Actions');
+    expect(rendered).not.toContain('View profile');
+    expect(rendered).not.toContain('Payment records');
+    expect(rendered).not.toContain('Chat archive');
+    expect(hrefsIn(section)).toEqual(['/customers/customer-1']);
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'vuexy-customer-table-card',
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-customer-table',
-        'vuexy-customer-actions vuexy-customer-actions-row',
-        'admin-action-dropdown vuexy-customer-action-dropdown',
-        'admin-action-trigger vuexy-customer-action-trigger',
-        'admin-action-menu vuexy-customer-action-menu',
+        'vuexy-customer-person-link',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-online',
       ]),
     );
+    expect(classNamesIn(section)).not.toContain('vuexy-customer-actions vuexy-customer-actions-row');
   });
 
   it('renders the empty state when no customers match filters', () => {
@@ -48,7 +45,7 @@ describe('CustomersTableSection', () => {
     const rendered = textContent(section);
 
     expect(rendered).toContain('0');
-    expect(rendered).toContain('rows');
+    expect(rendered).toContain('0 customer(s)');
     expect(rendered).toContain('No customers found');
     expect(rendered).toContain('Change the filters or clear the search to view customer records.');
   });

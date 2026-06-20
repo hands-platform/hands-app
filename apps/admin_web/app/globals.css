@@ -6855,21 +6855,23 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table-card .admin-table-scroll {
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   margin-top: 0;
-  max-height: min(680px, calc(100vh - 260px));
-  overflow: auto;
-  scrollbar-gutter: stable;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .vuexy-customer-table {
   background: var(--admin-surface-raised);
   border: 0;
+  border-radius: 0;
+  box-shadow: none;
   color: var(--admin-text);
   margin: 0;
-  min-width: 1420px;
-  overflow-wrap: anywhere;
+  min-width: 1320px;
   width: 100%;
 }
 
@@ -6877,18 +6879,22 @@ textarea:focus-visible {
 .vuexy-customer-table td {
   background: var(--admin-surface-raised);
   border-bottom: 1px solid var(--admin-border);
-  padding: 14px 12px;
+  min-width: 0;
+  padding: 8px 16px;
   vertical-align: top;
 }
 
 .vuexy-customer-table th {
   background: var(--admin-table-header-bg);
-  color: var(--admin-muted);
+  color: var(--admin-text);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.015em;
+  font-weight: 500;
+  height: 56px;
+  letter-spacing: 0.2px;
+  line-height: 24px;
   overflow-wrap: normal;
-  position: sticky;
+  position: relative;
+  text-transform: uppercase;
   top: 0;
   word-break: normal;
   z-index: 2;
@@ -6900,34 +6906,36 @@ textarea:focus-visible {
 
 .vuexy-customer-table th:first-child,
 .vuexy-customer-table td:first-child {
-  min-width: 260px;
-}
-
-.vuexy-customer-table th:last-child,
-.vuexy-customer-table td:last-child {
-  box-shadow: -10px 0 18px rgb(var(--admin-shadow-channel) / 0.12);
-  min-width: 168px;
-  position: sticky;
-  right: 0;
-  width: 168px;
-}
-
-.vuexy-customer-table th:last-child {
-  background: var(--admin-table-header-bg);
-  z-index: 3;
-}
-
-.vuexy-customer-table td:last-child {
-  background: var(--admin-surface-raised);
-  z-index: 1;
+  min-width: 240px;
+  width: 18%;
 }
 
 .vuexy-customer-table tbody tr:hover td {
   background: var(--admin-action-hover);
 }
 
-.vuexy-customer-table tbody tr:hover td:last-child {
-  background: var(--admin-surface-soft);
+.vuexy-customer-table th:nth-child(2),
+.vuexy-customer-table td:nth-child(2),
+.vuexy-customer-table th:nth-child(3),
+.vuexy-customer-table td:nth-child(3),
+.vuexy-customer-table th:nth-child(4),
+.vuexy-customer-table td:nth-child(4) {
+  min-width: 150px;
+  width: 12%;
+}
+
+.vuexy-customer-table th:nth-child(5),
+.vuexy-customer-table td:nth-child(5) {
+  min-width: 210px;
+  width: 18%;
+}
+
+.vuexy-customer-table th:nth-child(6),
+.vuexy-customer-table td:nth-child(6),
+.vuexy-customer-table th:nth-child(7),
+.vuexy-customer-table td:nth-child(7) {
+  min-width: 160px;
+  width: 14%;
 }
 
 .vuexy-customer-person {
@@ -6969,6 +6977,16 @@ textarea:focus-visible {
   display: block;
   font-size: 15px;
   line-height: 1.45;
+}
+
+.vuexy-customer-person-link {
+  color: inherit;
+  display: inline-flex;
+  text-decoration: none;
+}
+
+.vuexy-customer-person-link:hover {
+  color: var(--admin-accent);
 }
 
 .vuexy-customer-person span,
