@@ -218,6 +218,10 @@ export function emptyProviderMessage(activeFilters: Array<{ description: string 
   return 'No partners match the active filters. Clear filters or switch to another review lane.';
 }
 
+export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
+  return Boolean(filters.location || filters.security || filters.bookingFlow || filters.review);
+}
+
 export function partnerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
   if (sort === 'booking-count') return 'booking count';
