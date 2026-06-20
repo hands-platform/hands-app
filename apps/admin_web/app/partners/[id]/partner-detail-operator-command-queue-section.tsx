@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 import {
   partnerOperatorCommandActionHref,
   type PartnerOperatorCommandAction as PartnerOperatorCommandActionConfig,
@@ -36,6 +38,8 @@ type PartnerDetailOperatorCommandQueueSectionProps = {
   readonly queue: PartnerOperatorCommandQueue;
 };
 
+const commandQueueHeaders = ['Queue', 'Command', 'Owner', 'Action'];
+
 export function PartnerDetailOperatorCommandQueueSection({
   pillClassForTone,
   providerId,
@@ -62,21 +66,44 @@ export function PartnerDetailOperatorCommandQueueSection({
           </div>
         ))}
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {queue.commands.map((command) => (
-          <div className="setup-stage-item" key={command.id}>
-            <span>{command.label}</span>
-            <div>
-              <strong>{command.title}</strong>
-              <p className="muted">{command.detail}</p>
-              <span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>
-            </div>
-            <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>
-              {command.action.label}
-            </Link>
-          </div>
-        ))}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerCommandQueueEmptyState />}
+            headers={commandQueueHeaders}
+            rowCount={queue.commands.length}
+          >
+            {queue.commands.map((command) => (
+              <tr key={command.id}>
+                <td>
+                  <span className="muted">{command.label}</span>
+                </td>
+                <td>
+                  <strong>{command.title}</strong>
+                  <p className="muted">{command.detail}</p>
+                </td>
+                <td>
+                  <span className={`pill ${pillClassForTone(command.tone)}`}>{command.owner}</span>
+                </td>
+                <td>
+                  <Link className="text-link" href={partnerOperatorCommandActionHref(providerId, command.action)}>
+                    {command.action.label}
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerCommandQueueEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No same-shift partner command is currently queued.</p>
     </div>
   );
 }
