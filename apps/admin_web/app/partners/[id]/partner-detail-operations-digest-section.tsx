@@ -1,4 +1,6 @@
 import Link from 'next/link';
+
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
 
 export type { PartnerOperationsDigestRow };
@@ -10,6 +12,8 @@ type PartnerDetailOperationsDigestSectionProps = {
   readonly rows: readonly PartnerOperationsDigestRow[];
   readonly title: string;
 };
+
+const operationsDigestHeaders = ['Lane', 'Status', 'Detail', 'Evidence', 'Latest'];
 
 export function PartnerDetailOperationsDigestSection({
   description,
@@ -27,27 +31,52 @@ export function PartnerDetailOperationsDigestSection({
         </div>
         <span className="pill pill-info">{rows.length} lanes</span>
       </div>
-      <div className="setup-stage-list admin-mt-12">
-        {rows.map((row) => (
-          <div className="setup-stage-item" key={row.lane}>
-            <span>{row.lane}</span>
-            <div>
-              <Link className="text-link" href={row.href}>
-                <strong>{row.status}</strong>
-              </Link>
-              <p className="muted">{row.detail}</p>
-              <div className="participant-list admin-mt-8">
-                {row.evidence.map((item) => (
-                  <span className={`pill ${row.tone}`} key={item}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <small>{row.latestAt ? formatLatestAt(row.latestAt) : 'No date'}</small>
-          </div>
-        ))}
+      <div className="admin-mt-12">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerOperationsDigestEmptyState />}
+            headers={operationsDigestHeaders}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                </td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    {row.status}
+                  </Link>
+                </td>
+                <td>
+                  <p className="muted">{row.detail}</p>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {row.evidence.map((item) => (
+                      <span className={`pill ${row.tone}`} key={item}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  <small>{row.latestAt ? formatLatestAt(row.latestAt) : 'No date'}</small>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerOperationsDigestEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No partner operations digest lanes are currently loaded.</p>
     </div>
   );
 }

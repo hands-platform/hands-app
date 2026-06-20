@@ -18,6 +18,11 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(rendered).toContain('Partner operations digest');
     expect(rendered).toContain('One-screen factual digest for partner operations.');
     expect(rendered).toContain('2 lanes');
+    expect(rendered).toContain('Lane');
+    expect(rendered).toContain('Status');
+    expect(rendered).toContain('Detail');
+    expect(rendered).toContain('Evidence');
+    expect(rendered).toContain('Latest');
     expect(rendered).toContain('Identity');
     expect(rendered).toContain('Verified');
     expect(rendered).toContain('KYC approved');
@@ -25,7 +30,27 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(rendered).toContain('No date');
     expect(rendered).toContain('formatted 2026-06-09T04:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#identity', '#chat']));
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-success', 'pill pill-neutral']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success', 'pill pill-neutral', 'text-link']),
+    );
+  });
+
+  it('renders an empty operations digest table state', () => {
+    const section = PartnerDetailOperationsDigestSection({
+      description: 'One-screen factual digest for partner operations.',
+      formatLatestAt: (value) => `formatted ${value}`,
+      id: 'partner-operations-digest',
+      rows: [],
+      title: 'Partner operations digest',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Partner operations digest');
+    expect(rendered).toContain('0 lanes');
+    expect(rendered).toContain('No records found');
+    expect(rendered).toContain('No partner operations digest lanes are currently loaded.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 });
 
