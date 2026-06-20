@@ -167,10 +167,10 @@ describe('BookingUnifiedDetailSection', () => {
 
     expect(requested).toMatchObject({ value: 'Partner Matched' });
     expect(matching).toMatchObject({ value: 'Cau Giay, Ha Noi' });
-    expect(matching?.detail).toContain('Recorded');
+    expect(matching?.detail).toContain('Captured');
     expect(cancellation).toMatchObject({ value: 'Cau Giay, Ha Noi' });
-    expect(cancellation?.detail).toContain('Booking action snapshot recorded');
-    expect(cancellation?.detail).toContain('State time');
+    expect(cancellation?.detail).toContain('Action');
+    expect(cancellation?.detail).toContain('State');
   });
 
   it('prefers booking action location snapshots over generic Partner locations around closeout', () => {
@@ -219,7 +219,7 @@ describe('BookingUnifiedDetailSection', () => {
     const completion = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Completion location');
 
     expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
-    expect(completion?.detail).toContain('Booking action snapshot recorded');
+    expect(completion?.detail).toContain('Action');
   });
 
   it('does not reuse a later closeout action snapshot as the matching location', () => {
@@ -252,7 +252,7 @@ describe('BookingUnifiedDetailSection', () => {
     const completion = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Completion location');
 
     expect(matching).toMatchObject({ value: 'Location address not recorded' });
-    expect(matching?.detail).toContain('No Partner location snapshot is linked to this checkpoint.');
+    expect(matching?.detail).toContain('No linked Partner location');
     expect(completion).toMatchObject({ value: 'Lang, Ha Noi' });
   });
 
@@ -286,7 +286,7 @@ describe('BookingUnifiedDetailSection', () => {
     const latest = unifiedDetail.matchedPartnerRows.find((row) => row.label === 'Latest location');
 
     expect(completion).toMatchObject({ value: 'Location address not recorded' });
-    expect(completion?.detail).toContain('Booking action snapshot recorded');
+    expect(completion?.detail).toContain('Action');
     expect(completion?.detail).not.toContain('Partner base');
     expect(latest).toMatchObject({ value: 'Location address not recorded' });
     expect(latest?.detail).not.toContain('Partner base');

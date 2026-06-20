@@ -617,6 +617,7 @@ function bookingUnifiedPartnerLocationCheckpointRow({
     preferBookingActionSnapshot ? booking.id : undefined,
   );
   const location = providerLocationCheckpointDetail({
+    actionSnapshotLabel: preferBookingActionSnapshot,
     addressLine,
     booking,
     eventAt,
@@ -725,27 +726,29 @@ function bookingUnifiedTimeValue(value?: string | null) {
 }
 
 function providerLocationCheckpointDetail({
+  actionSnapshotLabel,
   addressLine,
   booking,
   eventAt,
   selectedProvider,
   snapshot,
 }: {
+  readonly actionSnapshotLabel: boolean;
   readonly addressLine: string;
   readonly booking: AdminBookingDetail;
   readonly eventAt?: string | null;
   readonly selectedProvider: NonNullable<AdminBookingDetail['selectedProvider']> | null;
   readonly snapshot?: AdminLocationSnapshot | null;
 }) {
-  const eventLabel = eventAt ? `State time ${formatDate(eventAt)}.` : 'State time not recorded.';
-  const recordedLabel = snapshot
-    ? snapshot.bookingId === booking.id
-      ? `Booking action snapshot recorded ${formatDate(snapshot.recordedAt)}.`
-      : `Recorded ${formatDate(snapshot.recordedAt)}.`
-    : 'No Partner location snapshot is linked to this checkpoint.';
+  const checkpointMeta = providerLocationCheckpointMeta({
+    actionSnapshotLabel,
+    bookingId: booking.id,
+    eventAt,
+    snapshot,
+  });
   if (!snapshot) {
     return {
-      detail: `${eventLabel} ${recordedLabel}`,
+      detail: checkpointMeta,
       value: selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
     };
   }
@@ -755,7 +758,7 @@ function providerLocationCheckpointDetail({
 
   if (snapshotAddress) {
     return {
-      detail: `${eventLabel} ${recordedLabel} Pin ${pin}`,
+      detail: `${checkpointMeta} / Pin ${pin}`,
       value: serviceAddressAreaLabel(snapshotAddress),
     };
   }
@@ -768,15 +771,35 @@ function providerLocationCheckpointDetail({
   });
   if (atReservationAddress) {
     return {
-      detail: `${eventLabel} ${recordedLabel} ${atReservationAddress.detail}`,
+      detail: `${checkpointMeta} / ${atReservationAddress.detail}`,
       value: atReservationAddress.value,
     };
   }
 
   return {
-    detail: `${eventLabel} ${recordedLabel} Pin ${pin}`,
+    detail: `${checkpointMeta} / Pin ${pin}`,
     value: snapshot || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };
+}
+
+function providerLocationCheckpointMeta({
+  actionSnapshotLabel,
+  bookingId,
+  eventAt,
+  snapshot,
+}: {
+  readonly actionSnapshotLabel: boolean;
+  readonly bookingId: string;
+  readonly eventAt?: string | null;
+  readonly snapshot?: AdminLocationSnapshot | null;
+}) {
+  const stateLabel = eventAt ? `State ${formatDate(eventAt)}` : 'State not recorded';
+  if (!snapshot) {
+    return `${stateLabel} / No linked Partner location`;
+  }
+
+  const snapshotLabel = actionSnapshotLabel && snapshot.bookingId === bookingId ? 'Action' : 'Captured';
+  return `${stateLabel} / ${snapshotLabel} ${formatDate(snapshot.recordedAt)}`;
 }
 
 function providerLocationAddressDetail({
