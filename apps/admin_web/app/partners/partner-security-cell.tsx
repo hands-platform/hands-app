@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { ShieldCheck } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { AdminProvider } from '../../lib/admin-api';
 import { formatDate } from './partner-list-ops';
 import { maskToken } from './partner-list-profile';
@@ -50,10 +50,13 @@ export function PartnerSecurityCell({ provider }: PartnerSecurityCellProps) {
         <p className="muted">{sessionCheckSessions.length} session check(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
-      <Link className="button button-secondary admin-inline-action admin-mt-8" href={`/partners/${provider.id}`}>
+      <AdminFormControlLink
+        className="button button-secondary admin-inline-action admin-mt-8"
+        href={`/partners/${provider.id}`}
+      >
         <ShieldCheck aria-hidden="true" size={14} />
         Review device/session
-      </Link>
+      </AdminFormControlLink>
     </div>
   );
 }

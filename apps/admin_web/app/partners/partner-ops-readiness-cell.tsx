@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { AdminProvider } from '../../lib/admin-api';
 import type { ProviderListAction } from './partner-list-actions';
 import { partnerListActionPillClass } from './partner-list-actions';
@@ -46,13 +46,13 @@ export function PartnerOpsReadinessCell({
       <p className="muted">{actionHint}</p>
       <PartnerBackupEligibilityCard eligibility={eligibility} opsPolicy={opsPolicy} />
       {hasOpenControl ? (
-        <Link
+        <AdminFormControlLink
           className="button button-secondary admin-inline-action admin-mt-8"
           href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
         >
           <ExternalLink aria-hidden="true" size={14} />
           Open reports
-        </Link>
+        </AdminFormControlLink>
       ) : null}
     </>
   );

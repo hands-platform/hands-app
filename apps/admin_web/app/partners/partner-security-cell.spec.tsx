@@ -45,7 +45,10 @@ describe('PartnerSecurityCell', () => {
     expect(rendered).toContain('Review device/session');
     expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partners/partner-security']));
     expect(classNamesIn(cell)).toEqual(
-      expect.arrayContaining(['pill pill-danger', 'button button-secondary admin-inline-action admin-mt-8']),
+      expect.arrayContaining([
+        'pill pill-danger',
+        'admin-form-control-link button button-secondary admin-inline-action admin-mt-8',
+      ]),
     );
   });
 

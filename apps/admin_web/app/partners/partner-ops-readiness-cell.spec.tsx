@@ -70,7 +70,12 @@ describe('PartnerOpsReadinessCell', () => {
     expect(rendered).toContain('Open reports');
     expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partner-controls?q=partner-ready']));
     expect(classNamesIn(cell)).toEqual(
-      expect.arrayContaining(['pill pill-danger', 'pill pill-warn', 'pill pill-success']),
+      expect.arrayContaining([
+        'pill pill-danger',
+        'pill pill-warn',
+        'pill pill-success',
+        'admin-form-control-link button button-secondary admin-inline-action admin-mt-8',
+      ]),
     );
   });
 
