@@ -49,7 +49,7 @@ describe('partner detail readiness command sections', () => {
   it('renders marketplace repair steps as a Vuexy command table', () => {
     const section = PartnerAcceptanceRepairCommandSection({
       command: {
-        customerImpact: 'Customer choices stay visible, but final choice waits for settlement.',
+        customerImpact: 'Customer choices stay visible, but final acceptance waits for settlement.',
         marketplaceRouting: 'Marketplace visibility stays open as a warning state.',
         operatorDecision: 'Clear settlement before final acceptance.',
         partnerAppMessage: 'Settle wallet balance before final acceptance or service start.',
@@ -82,7 +82,7 @@ describe('partner detail readiness command sections', () => {
 
     expect(rendered).toContain('Marketplace repair command');
     expect(rendered).toContain('Settlement warning');
-    expect(rendered).toContain('Partner app block message');
+    expect(rendered).toContain('Partner app message');
     expect(rendered).toContain('Customer impact');
     expect(rendered).toContain('Operator decision');
     expect(rendered).toContain('Marketplace routing');

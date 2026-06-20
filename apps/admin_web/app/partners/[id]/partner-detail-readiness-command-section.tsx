@@ -119,7 +119,7 @@ export function PartnerAcceptanceRepairCommandSection({
       <div className="service-trace-summary admin-mt-12">
         <TraceSummaryItem
           helper="What support should expect the partner to see."
-          label="Partner app block message"
+          label="Partner app message"
           value={command.partnerAppMessage}
         />
         <TraceSummaryItem

@@ -13,7 +13,7 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
               label: 'Open wallet',
               type: 'link',
             },
-            detail: 'Partner wallet must be settled before marketplace routing.',
+            detail: 'Partner wallet must be settled before final acceptance, service start, or payout release.',
             id: 'wallet',
             label: '1',
             owner: 'Finance',
@@ -55,7 +55,7 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
     expect(rendered).toContain('Owner');
     expect(rendered).toContain('Action');
     expect(rendered).toContain('Cash fee debt');
-    expect(rendered).toContain('Partner wallet must be settled before marketplace routing.');
+    expect(rendered).toContain('Partner wallet must be settled before final acceptance, service start, or payout release.');
     expect(rendered).toContain('KYC approval');
     expect(rendered).toContain('KYC evidence is complete and ready for approval.');
     expect(hrefsIn(section)).toEqual(

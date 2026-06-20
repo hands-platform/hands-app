@@ -83,7 +83,7 @@ describe('PartnerDetailBookingGateDecisionSection', () => {
         gates: [],
         locationAge: 'fresh',
         locationFreshnessLabel: '10m',
-        primaryReason: 'No marketplace blocker.',
+        primaryReason: 'No booking blocker.',
         responseWindowLabel: '90 seconds',
         status: 'Join clear',
         tone: 'done',

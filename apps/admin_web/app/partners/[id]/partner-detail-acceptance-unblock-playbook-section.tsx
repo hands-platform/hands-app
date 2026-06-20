@@ -30,21 +30,21 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
   pillClassForTone,
   steps,
 }: PartnerDetailAcceptanceUnblockPlaybookSectionProps) {
-  const marketplaceBlockerCount = steps.filter((step) => step.bookingBlocked).length;
+  const bookingBlockerCount = steps.filter((step) => step.bookingBlocked).length;
 
   return (
     <div className="card admin-mb-16" id="payout">
       <div className="ops-section-header">
         <div>
-          <h2>Partner marketplace/payout unblock playbook</h2>
+          <h2>Partner approval, settlement, and payout playbook</h2>
           <p className="muted">
-            Operator order for restoring this partner&apos;s marketplace and payout gates. Finance and
-            account-control blockers stay first; tax stays deferred until first earning and then blocks
-            payout, not initial dispatch.
+            Operator order for approval holds, settlement warnings, booking gates, and payout release.
+            Finance warnings stay visible without hiding marketplace participation; tax stays deferred until
+            first earning and then blocks payout, not initial dispatch.
           </p>
         </div>
-        <span className={`pill ${marketplaceBlockerCount ? 'pill-danger' : 'pill-success'}`}>
-          {marketplaceBlockerCount} marketplace blocker(s)
+        <span className={`pill ${bookingBlockerCount ? 'pill-danger' : 'pill-success'}`}>
+          {bookingBlockerCount} booking blocker(s)
         </span>
       </div>
       <div className="admin-mt-16">

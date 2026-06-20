@@ -3067,7 +3067,7 @@ function buildPartnerAcceptanceRepairCommand(
     bookingAcceptance.canJoinMarketplace && !hasWalletBlock
       ? 'Can appear in customer booking flow and final partner choice.'
       : hasWalletBlock && !hardBlockedGates.length
-        ? 'Customer balances are unaffected; this wallet warning keeps visibility open, but final choice and service start wait for settlement.'
+        ? 'Customer balances are unaffected; this wallet warning keeps visibility open, but final acceptance and service start wait for settlement.'
         : hasHardVisibilityBlock
           ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
           : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
@@ -3206,11 +3206,11 @@ function partnerAppBlockMessage(
   payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   dispatchPolicy: PartnerDispatchPolicy,
 ) {
+  if (bookingAcceptance.cashDebt > 0) {
+    return 'Unpaid HANDS fees must be settled before final acceptance, service start, or payout release.';
+  }
   if (bookingAcceptance.canJoinMarketplace) {
     return 'Partner is clear for direct first-pick and marketplace participation.';
-  }
-  if (bookingAcceptance.cashDebt > 0) {
-    return 'Unpaid HANDS fees must be settled before final acceptance or service start.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';
@@ -3256,16 +3256,16 @@ function buildPartnerAcceptanceUnblockPlaybook(
       step: '1',
       owner: 'Finance',
       title: 'Clear wallet and cash fee debt',
-      status: walletGate?.ok ? 'CLEAR' : 'BLOCKING',
+      status: walletGate?.ok ? 'CLEAR' : 'SETTLEMENT WARNING',
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
-        ? 'Partner can pass the cash-debt marketplace alert and participation gate.'
-        : 'Marketplace alerts, participation, and final marketplace selection are blocked; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt.',
+        ? 'Partner has no settlement warning on final acceptance, service start, or payout release.'
+        : 'Marketplace visibility and participation stay open; final acceptance, service start, and payout release wait for settlement.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
-      action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
+      action: walletGate?.ok ? 'Open cash settlement history' : 'Record settlement',
       href: '/cash-settlements',
-      tone: walletGate?.ok ? 'done' : 'blocked',
-      bookingBlocked: !walletGate?.ok,
+      tone: walletGate?.ok ? 'done' : 'pending',
+      bookingBlocked: false,
     },
     {
       id: 'account-controls',

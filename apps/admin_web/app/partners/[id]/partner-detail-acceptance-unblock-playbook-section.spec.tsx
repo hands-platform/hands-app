@@ -7,17 +7,18 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
       steps: [
         {
           action: 'Settle wallet',
-          bookingBlocked: true,
-          bookingImpact: 'Marketplace routing is blocked until the wallet is settled.',
+          bookingBlocked: false,
+          bookingImpact:
+            'Marketplace visibility and participation stay open; final acceptance and service start wait for settlement.',
           detail: 'Cash fee debt is below zero and must be collected.',
           href: '#wallet',
           id: 'cash-debt',
           owner: 'Finance',
           payoutImpact: 'Payout release stays locked while balance is negative.',
-          status: 'Blocked',
+          status: 'Settlement warning',
           step: '1',
           title: 'Clear cash fee debt',
-          tone: 'blocked',
+          tone: 'pending',
         },
         {
           action: 'Review KYC',
@@ -38,8 +39,8 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Partner marketplace/payout unblock playbook');
-    expect(rendered).toContain('1 marketplace blocker(s)');
+    expect(rendered).toContain('Partner approval, settlement, and payout playbook');
+    expect(rendered).toContain('0 booking blocker(s)');
     expect(rendered).toContain('Step');
     expect(rendered).toContain('Unblock item');
     expect(rendered).toContain('Booking impact');
@@ -48,7 +49,10 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
     expect(rendered).toContain('Action');
     expect(rendered).toContain('Clear cash fee debt');
     expect(rendered).toContain('Cash fee debt is below zero and must be collected.');
-    expect(rendered).toContain('Marketplace routing is blocked until the wallet is settled.');
+    expect(rendered).toContain(
+      'Marketplace visibility and participation stay open; final acceptance and service start wait for settlement.',
+    );
+    expect(rendered).toContain('Settlement warning');
     expect(rendered).toContain('Payout release stays locked while balance is negative.');
     expect(rendered).toContain('Approve identity');
     expect(rendered).toContain('Operator check');
@@ -57,9 +61,8 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
       expect.arrayContaining([
         'admin-table-scroll',
         'table vuexy-data-table',
-        'pill pill-danger',
+        'pill pill-success',
         'pill pill-info',
-        'pill pill-blocked',
         'pill pill-pending',
         'text-link',
       ]),
@@ -74,7 +77,7 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('0 marketplace blocker(s)');
+    expect(rendered).toContain('0 booking blocker(s)');
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No marketplace or payout unblock steps are currently required.');
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
