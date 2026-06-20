@@ -167,6 +167,7 @@ function masterRow(input: Partial<PartnerMasterRow> = {}): PartnerMasterRow {
     provider: provider(),
     reviewCount: 5,
     status: 'ONLINE_AVAILABLE',
+    walletBalance: -50000,
     ...input,
   };
 }

@@ -16,6 +16,15 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Linh Legal | 0865907184 | partner-1');
     expect(rendered).not.toContain('Partner ID');
     expect(rendered).not.toContain('Phone');
+    expect(rendered).toContain('State');
+    expect(rendered).toContain('Access');
+    expect(rendered).toContain('Work');
+    expect(rendered).toContain('Wallet');
+    expect(rendered).not.toContain('Current state');
+    expect(rendered).not.toContain('Joined / recent access');
+    expect(rendered).not.toContain('Device / IP');
+    expect(rendered).not.toContain('Feedback records');
+    expect(rendered).not.toContain('Ops trail');
     expect(rendered).toContain('ONLINE_AVAILABLE');
     expect(rendered).toContain('KYC APPROVED');
     expect(rendered).toContain('2 approval need(s)');
@@ -61,6 +70,10 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Unapproved Partners');
     expect(rendered).toContain('Approval-first list for Partners who cannot operate yet');
     expect(rendered).toContain('1 approval row(s)');
+    expect(rendered).toContain('Approval needs');
+    expect(rendered).toContain('KYC / Level');
+    expect(rendered).not.toContain('Work');
+    expect(rendered).not.toContain('Wallet');
   });
 
   it('renders settlement-focused copy for unsettled partners', () => {
@@ -74,6 +87,11 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Unsettled Partners');
     expect(rendered).toContain('Settlement-first list for Partners with negative wallet balance');
     expect(rendered).toContain('1 settlement row(s)');
+    expect(rendered).toContain('Wallet');
+    expect(rendered).toContain('Revenue');
+    expect(rendered).toContain('Payout');
+    expect(rendered).toContain('Settlement required before final acceptance, service start, and payout release.');
+    expect(rendered).not.toContain('Gender');
   });
 });
 
@@ -124,6 +142,7 @@ function buildRows(): PartnerMasterListSectionRow[] {
       },
       reviewCount: 12,
       status: 'ONLINE_AVAILABLE',
+      walletBalance: -120000,
     },
   ];
 }

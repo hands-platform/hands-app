@@ -20,24 +20,41 @@ type PartnerMasterListSectionCopy = {
   title: string;
 };
 
-const PARTNER_MASTER_TABLE_HEADERS = [
+const DEFAULT_PARTNER_MASTER_TABLE_HEADERS = [
   'Partner',
   'Gender',
-  'Current state',
+  'State',
   'Level',
-  'Joined / recent access',
-  'Device / IP',
+  'Access',
   'Location',
-  'Bookings',
-  'Feedback records',
+  'Work',
+  'Wallet',
+  'Account',
+] as const;
+
+const UNAPPROVED_PARTNER_MASTER_TABLE_HEADERS = [
+  'Partner',
+  'Gender',
+  'Approval needs',
+  'KYC / Level',
+  'Access',
+  'Location',
+  'Account',
+] as const;
+
+const UNSETTLED_PARTNER_MASTER_TABLE_HEADERS = [
+  'Partner',
+  'State',
+  'Work',
+  'Wallet',
   'Revenue',
   'Payout',
-  'Ops trail',
   'Account',
 ] as const;
 
 export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMasterListSectionProps) {
   const copy = buildPartnerMasterListSectionCopy(mode, rows.length);
+  const headers = partnerMasterTableHeaders(mode);
 
   return (
     <section className="card admin-mb-16">
@@ -50,104 +67,207 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
         <AdminDataTable
           className="service-trace"
           emptyMessage={<PartnerMasterEmptyState />}
-          headers={PARTNER_MASTER_TABLE_HEADERS}
+          headers={headers}
           rowCount={rows.length}
         >
-          {rows.map((row) => (
-            <tr key={row.provider.id}>
-              <td>
-                <AdminPersonCell
-                  avatarClassName="vuexy-booking-avatar is-partner"
-                  avatarStatus={row.avatarStatus}
-                  className="vuexy-booking-person"
-                  helper={`${row.legalName} | ${row.phone} | ${row.provider.id}`}
-                  href={`/partners/${row.provider.id}`}
-                  initials={row.initials}
-                  label={row.displayName}
-                  linkClassName="table-link"
-                />
-              </td>
-              <td>{row.gender}</td>
-              <td>
-                <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>
-              </td>
-              <td>
-                <strong>{row.level}</strong>
-                <p className="muted">KYC {row.kycStatus}</p>
-              </td>
-              <td>
-                <strong>{row.joinedAt ? formatDate(row.joinedAt) : 'Not recorded'}</strong>
-                <p className="muted">
-                  Recent access: {row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}
-                </p>
-              </td>
-              <td>
-                <strong>{row.latestSessionDevice}</strong>
-                <p className="muted">{row.latestSessionIp}</p>
-              </td>
-              <td>
-                <strong>{providerLocationLabel(row.locationState)}</strong>
-                <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
-              </td>
-              <td>
-                <strong>{row.bookingCount} total</strong>
-                <p className="muted">
-                  {row.completedCount} completed / {row.closedCount} closed
-                </p>
-                <p className="muted">
-                  Customer {row.customerClosedCount} / admin {row.adminClosedCount} / partner{' '}
-                  {row.partnerClosedCount}
-                </p>
-                <p className="muted">{row.noShowCount} no-show</p>
-              </td>
-              <td>
-                <strong>{row.reviewCount} feedback record(s)</strong>
-                <p className="muted">Open detail to read factual feedback records</p>
-              </td>
-              <td>
-                <strong>{formatProviderMoney(row.grossRevenue)}</strong>
-                <p className="muted">Platform fee {formatProviderMoney(row.platformFee)}</p>
-              </td>
-              <td>
-                <strong>{formatProviderMoney(row.pendingPayout)}</strong>
-                <p className="muted">Available {formatProviderMoney(row.availablePayout)}</p>
-              </td>
-              <td>
-                <strong>{row.auditLogCount} memo/event(s)</strong>
-                <p className="muted">{row.latestAuditTitle}</p>
-                <p className="muted">{row.latestAuditDetail}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
-                  {row.accountBlocked ? 'Blocked' : 'Open'}
-                </span>
-                <p className="muted">{row.accountNote}</p>
-                {row.approvalIssues.length ? (
-                  <>
-                    <div className="participant-list admin-mt-8" aria-label="Approval needs">
-                      <span className="pill pill-warn">{row.approvalIssues.length} approval need(s)</span>
-                      {row.approvalIssues.slice(0, 3).map((issue) => (
-                        <span
-                          className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
-                          key={issue.label}
-                        >
-                          {issue.label}
-                        </span>
-                      ))}
-                    </div>
-                    {row.approvalIssues.length > 3 ? (
-                      <p className="muted">+{row.approvalIssues.length - 3} more approval item(s)</p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="muted">Approval clear</p>
-                )}
-              </td>
-            </tr>
-          ))}
+          {rows.map((row) => renderPartnerMasterRow(row, mode))}
         </AdminDataTable>
       </AdminTableScroll>
     </section>
+  );
+}
+
+function partnerMasterTableHeaders(mode: PartnerMasterListSectionMode) {
+  if (mode === 'unapproved') return UNAPPROVED_PARTNER_MASTER_TABLE_HEADERS;
+  if (mode === 'unsettled') return UNSETTLED_PARTNER_MASTER_TABLE_HEADERS;
+  return DEFAULT_PARTNER_MASTER_TABLE_HEADERS;
+}
+
+function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerMasterListSectionMode) {
+  if (mode === 'unapproved') {
+    return (
+      <tr key={row.provider.id}>
+        <td>{renderPartnerCell(row)}</td>
+        <td>{row.gender}</td>
+        <td>{renderApprovalNeedsCell(row)}</td>
+        <td>{renderLevelCell(row)}</td>
+        <td>{renderAccessCell(row)}</td>
+        <td>{renderLocationCell(row)}</td>
+        <td>{renderAccountCell(row, { showApprovalNeeds: false })}</td>
+      </tr>
+    );
+  }
+
+  if (mode === 'unsettled') {
+    return (
+      <tr key={row.provider.id}>
+        <td>{renderPartnerCell(row)}</td>
+        <td>{renderStateCell(row)}</td>
+        <td>{renderWorkCell(row)}</td>
+        <td>{renderWalletCell(row)}</td>
+        <td>{renderRevenueCell(row)}</td>
+        <td>{renderPayoutCell(row)}</td>
+        <td>{renderAccountCell(row)}</td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr key={row.provider.id}>
+      <td>{renderPartnerCell(row)}</td>
+      <td>{row.gender}</td>
+      <td>{renderStateCell(row)}</td>
+      <td>{renderLevelCell(row)}</td>
+      <td>{renderAccessCell(row)}</td>
+      <td>{renderLocationCell(row)}</td>
+      <td>{renderWorkCell(row)}</td>
+      <td>{renderWalletCell(row)}</td>
+      <td>{renderAccountCell(row)}</td>
+    </tr>
+  );
+}
+
+function renderPartnerCell(row: PartnerMasterListSectionRow) {
+  return (
+    <AdminPersonCell
+      avatarClassName="vuexy-booking-avatar is-partner"
+      avatarStatus={row.avatarStatus}
+      className="vuexy-booking-person"
+      helper={`${row.legalName} | ${row.phone} | ${row.provider.id}`}
+      href={`/partners/${row.provider.id}`}
+      initials={row.initials}
+      label={row.displayName}
+      linkClassName="table-link"
+    />
+  );
+}
+
+function renderStateCell(row: PartnerMasterListSectionRow) {
+  return <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>;
+}
+
+function renderLevelCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{row.level}</strong>
+      <p className="muted">KYC {row.kycStatus}</p>
+    </>
+  );
+}
+
+function renderAccessCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{row.joinedAt ? formatDate(row.joinedAt) : 'Not recorded'}</strong>
+      <p className="muted">Recent access: {row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</p>
+      <p className="muted">{row.latestSessionDevice}</p>
+      <p className="muted">{row.latestSessionIp}</p>
+    </>
+  );
+}
+
+function renderLocationCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{providerLocationLabel(row.locationState)}</strong>
+      <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
+    </>
+  );
+}
+
+function renderWorkCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{row.bookingCount} total</strong>
+      <p className="muted">
+        {row.completedCount} completed / {row.closedCount} closed
+      </p>
+      <p className="muted">
+        Customer {row.customerClosedCount} / admin {row.adminClosedCount} / partner {row.partnerClosedCount}
+      </p>
+      <p className="muted">
+        {row.noShowCount} no-show / {row.reviewCount} feedback record(s)
+      </p>
+    </>
+  );
+}
+
+function renderWalletCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{formatProviderMoney(row.walletBalance)}</strong>
+      <p className="muted">
+        {row.walletBalance < 0
+          ? 'Settlement required before final acceptance, service start, and payout release.'
+          : 'No negative wallet balance recorded.'}
+      </p>
+      <p className="muted">
+        Pending {formatProviderMoney(row.pendingPayout)} / available {formatProviderMoney(row.availablePayout)}
+      </p>
+    </>
+  );
+}
+
+function renderRevenueCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{formatProviderMoney(row.grossRevenue)}</strong>
+      <p className="muted">Platform fee {formatProviderMoney(row.platformFee)}</p>
+    </>
+  );
+}
+
+function renderPayoutCell(row: PartnerMasterListSectionRow) {
+  return (
+    <>
+      <strong>{formatProviderMoney(row.pendingPayout)}</strong>
+      <p className="muted">Available {formatProviderMoney(row.availablePayout)}</p>
+    </>
+  );
+}
+
+function renderApprovalNeedsCell(row: PartnerMasterListSectionRow) {
+  if (!row.approvalIssues.length) {
+    return <p className="muted">Approval clear</p>;
+  }
+
+  return (
+    <>
+      <div className="participant-list" aria-label="Approval needs">
+        <span className="pill pill-warn">{row.approvalIssues.length} approval need(s)</span>
+        {row.approvalIssues.slice(0, 4).map((issue) => (
+          <span
+            className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
+            key={issue.label}
+          >
+            {issue.label}
+          </span>
+        ))}
+      </div>
+      {row.approvalIssues.length > 4 ? (
+        <p className="muted">+{row.approvalIssues.length - 4} more approval item(s)</p>
+      ) : null}
+    </>
+  );
+}
+
+function renderAccountCell(
+  row: PartnerMasterListSectionRow,
+  options: { readonly showApprovalNeeds?: boolean } = {},
+) {
+  const showApprovalNeeds = options.showApprovalNeeds ?? true;
+
+  return (
+    <>
+      <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
+        {row.accountBlocked ? 'Blocked' : 'Open'}
+      </span>
+      <p className="muted">{row.accountNote}</p>
+      {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}
+      <p className="muted admin-mt-8">{row.auditLogCount} memo/event(s)</p>
+      <p className="muted">{row.latestAuditTitle}</p>
+      <p className="muted">{row.latestAuditDetail}</p>
+    </>
   );
 }
 

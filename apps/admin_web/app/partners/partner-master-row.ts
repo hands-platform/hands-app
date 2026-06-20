@@ -9,6 +9,7 @@ import {
   partnerGrossRevenue,
   partnerLastSessionAt,
   partnerPendingPayout,
+  partnerUnsettledWalletBalance,
 } from './partner-activity-facts';
 import { providerReviewIssues, type PartnerReviewIssue } from './partner-list-readiness';
 import {
@@ -52,6 +53,7 @@ export type PartnerMasterRow = {
   reviewCount: number;
   grossRevenue: number;
   platformFee: number;
+  walletBalance: number;
   pendingPayout: number;
   availablePayout: number;
   auditLogCount: number;
@@ -112,6 +114,7 @@ export function buildPartnerMasterRow(
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: partnerGrossRevenue(provider),
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
+    walletBalance: partnerUnsettledWalletBalance(provider),
     pendingPayout: partnerPendingPayout(provider),
     availablePayout: partnerAvailablePayout(provider),
     auditLogCount: provider.auditLogCount ?? provider.auditLogs?.length ?? 0,
