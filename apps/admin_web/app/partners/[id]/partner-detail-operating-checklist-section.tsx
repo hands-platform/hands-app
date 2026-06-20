@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 type PartnerChecklistTone = 'blocked' | 'done' | 'pending';
 
 export type PartnerOperatingChecklistRow = {
@@ -15,6 +17,8 @@ type PartnerDetailOperatingChecklistSectionProps = {
   readonly pillClassForTone: (tone: PartnerChecklistTone) => string;
   readonly rows: readonly PartnerOperatingChecklistRow[];
 };
+
+const operatingChecklistHeaders = ['Area', 'Status', 'Detail', 'Next Action', 'Action'];
 
 export function PartnerDetailOperatingChecklistSection({
   pillClassForTone,
@@ -32,21 +36,46 @@ export function PartnerDetailOperatingChecklistSection({
         </div>
         <span className="pill pill-info">{rows.length} check(s)</span>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {rows.map((item) => (
-          <div className="setup-stage-item" key={item.area}>
-            <span>{item.area}</span>
-            <div>
-              <strong>{item.status}</strong>
-              <p className="muted">{item.detail}</p>
-              <span className={`pill ${pillClassForTone(item.tone)}`}>{item.nextAction}</span>
-            </div>
-            <Link className="text-link" href={item.href}>
-              Open
-            </Link>
-          </div>
-        ))}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerOperatingChecklistEmptyState />}
+            headers={operatingChecklistHeaders}
+            rowCount={rows.length}
+          >
+            {rows.map((item) => (
+              <tr key={item.area}>
+                <td>
+                  <strong>{item.area}</strong>
+                </td>
+                <td>
+                  <span className={`pill ${pillClassForTone(item.tone)}`}>{item.status}</span>
+                </td>
+                <td>
+                  <p className="muted">{item.detail}</p>
+                </td>
+                <td>
+                  <span className={`pill ${pillClassForTone(item.tone)}`}>{item.nextAction}</span>
+                </td>
+                <td>
+                  <Link className="text-link" href={item.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerOperatingChecklistEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No partner operating checks are currently loaded.</p>
     </div>
   );
 }
