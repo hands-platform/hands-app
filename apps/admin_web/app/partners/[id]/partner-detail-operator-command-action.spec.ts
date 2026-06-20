@@ -22,6 +22,18 @@ describe('partner detail operator command action', () => {
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {
+        label: 'Reject profile',
+        type: 'reject-profile',
+      }),
+    ).toContain('confirm=reject');
+    expect(
+      partnerOperatorCommandActionHref('partner-detail-123456', {
+        label: 'Hold Partner',
+        type: 'hold-account',
+      }),
+    ).toContain('confirm=block');
+    expect(
+      partnerOperatorCommandActionHref('partner-detail-123456', {
         label: 'Sync role',
         type: 'sync-role',
       }),
@@ -45,6 +57,12 @@ describe('partner detail operator command action', () => {
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {
+        label: 'Reject KYC',
+        type: 'reject-kyc',
+      }),
+    ).toContain('reviewAction=reject-kyc');
+    expect(
+      partnerOperatorCommandActionHref('partner-detail-123456', {
         bankAccountId: 'bank-account-123456',
         label: 'Approve bank',
         type: 'approve-bank',
@@ -54,9 +72,22 @@ describe('partner detail operator command action', () => {
     );
     expect(
       partnerOperatorCommandActionHref('partner-detail-123456', {
+        bankAccountId: 'bank-account-123456',
+        label: 'Reject bank',
+        type: 'reject-bank',
+      }),
+    ).toContain('reviewAction=reject-bank&bankAccountId=bank-account-123456');
+    expect(
+      partnerOperatorCommandActionHref('partner-detail-123456', {
         label: 'Approve tax',
         type: 'approve-tax',
       }),
     ).toContain('reviewAction=approve-tax');
+    expect(
+      partnerOperatorCommandActionHref('partner-detail-123456', {
+        label: 'Reject tax',
+        type: 'reject-tax',
+      }),
+    ).toContain('reviewAction=reject-tax');
   });
 });

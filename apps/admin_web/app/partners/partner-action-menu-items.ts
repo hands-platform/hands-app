@@ -172,7 +172,7 @@ function accountBlockMenuItem(provider: AdminProvider): ActionMenuItem {
       description: unblockPartnerAccountDescription,
       href: partnerAccountActionConfirmHref(provider.id, 'unblock'),
       kind: 'link',
-      label: 'Unblock',
+      label: 'Release hold',
       tone: 'warning',
     };
   }
@@ -181,8 +181,8 @@ function accountBlockMenuItem(provider: AdminProvider): ActionMenuItem {
     description: blockPartnerAccountDescription,
     href: partnerAccountActionConfirmHref(provider.id, 'block'),
     kind: 'link',
-    label: 'Block',
-    tone: 'danger',
+    label: 'Hold',
+    tone: 'warning',
   };
 }
 

@@ -30,7 +30,7 @@ describe('partner account action confirmation', () => {
     });
   });
 
-  it('requires a review reason for reject and block actions', () => {
+  it('requires a review reason for reject and hold actions', () => {
     const reject = buildPartnerAccountActionConfirmation([partner], 'reject', partner.id);
     const block = buildPartnerAccountActionConfirmation([partner], 'block', partner.id);
 
@@ -44,7 +44,7 @@ describe('partner account action confirmation', () => {
         required: true,
       },
     ]);
-    expect(block?.textInputs[0]?.placeholder).toBe('Account block reason');
+    expect(block?.textInputs[0]?.placeholder).toBe('Partner hold reason');
   });
 
   it('disables Supabase role sync until verification is approved', () => {

@@ -49,12 +49,12 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     tone: 'success',
   },
   block: {
-    confirmLabel: 'Block account',
+    confirmLabel: 'Hold Partner',
     description: (provider) =>
-      `Block Partner ${partnerLabel(provider)} from going online, updating location, or appearing to customers.`,
-    reasonPlaceholder: 'Account block reason',
-    title: (provider) => `Block Partner ${shortId(provider.id)}?`,
-    tone: 'danger',
+      `Place Partner ${partnerLabel(provider)} on hold from going online, updating location, or appearing to customers.`,
+    reasonPlaceholder: 'Partner hold reason',
+    title: (provider) => `Hold Partner ${shortId(provider.id)}?`,
+    tone: 'warning',
   },
   reject: {
     confirmLabel: 'Reject Partner',
@@ -76,10 +76,10 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     tone: 'info',
   },
   unblock: {
-    confirmLabel: 'Unblock account',
+    confirmLabel: 'Release hold',
     description: (provider) =>
-      `Unblock Partner ${partnerLabel(provider)} only after the recorded identity, safety, payout, or policy issue is resolved.`,
-    title: (provider) => `Unblock Partner ${shortId(provider.id)}?`,
+      `Release Partner ${partnerLabel(provider)} only after the recorded identity, safety, payout, or policy issue is resolved.`,
+    title: (provider) => `Release hold for Partner ${shortId(provider.id)}?`,
     tone: 'warning',
   },
 };

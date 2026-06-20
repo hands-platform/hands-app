@@ -17,7 +17,7 @@ describe('partner action menu items', () => {
       'Approve',
       'Reject',
       'Sync role',
-      'Block',
+      'Hold',
       'Open detail',
     ]);
     expect(actions[2]).toEqual(
@@ -30,16 +30,16 @@ describe('partner action menu items', () => {
     expect(actions[3]).toEqual(
       expect.objectContaining({
         href: '/partners?confirm=block&providerId=partner-1',
-        tone: 'danger',
+        tone: 'warning',
       }),
     );
   });
 
-  it('uses unblock instead of block for a blocked Partner', () => {
+  it('uses release hold instead of hold for a held Partner', () => {
     const actions = partnerAccountActionMenuItems(provider({ blockedAt: '2026-06-09T10:00:00.000Z' }));
 
-    expect(actions.map((action) => action.label)).toContain('Unblock');
-    expect(actions.map((action) => action.label)).not.toContain('Block');
+    expect(actions.map((action) => action.label)).toContain('Release hold');
+    expect(actions.map((action) => action.label)).not.toContain('Hold');
   });
 
   it('builds review actions with disabled states matching current review status', () => {

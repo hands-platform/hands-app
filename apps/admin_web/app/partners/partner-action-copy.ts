@@ -16,6 +16,6 @@ export const approveTaxProfileDescription = 'Review before approving this tax pr
 export const rejectTaxProfileDescription = 'Review and enter a tax rejection reason.';
 export const approvePublicMediaDescription = 'Review before approving this public profile media.';
 export const rejectPublicMediaDescription = 'Review and enter a media rejection reason.';
-export const unblockPartnerAccountDescription = 'Review the recorded issue before unblocking this account.';
+export const unblockPartnerAccountDescription = 'Review the recorded hold reason before releasing this Partner.';
 export const blockPartnerAccountDescription =
-  'Review and enter an account block reason before blocking this Partner.';
+  'Review and enter a hold reason before pausing this Partner from customer-facing operations.';

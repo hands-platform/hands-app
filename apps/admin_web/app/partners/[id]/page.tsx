@@ -1514,7 +1514,9 @@ function buildPartnerOperatorCommandQueue({
   const locationAge = locationAgeMinutes(provider.currentLocationUpdatedAt);
   const locationFresh = locationAge <= dispatchPolicy.locationFreshnessMinutes;
   const profileApproved = provider.verification?.status === 'APPROVED';
+  const profileRejected = provider.verification?.status === 'REJECTED';
   const kycApproved = provider.kyc?.status === 'APPROVED';
+  const kycRejected = provider.kyc?.status === 'REJECTED';
 
   const add = (command: PartnerOperatorCommand) => commands.push(command);
 
@@ -1522,11 +1524,22 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'account-block',
       label: 'ACCOUNT',
-      title: 'Account is blocked',
+      title: 'Partner is on hold',
       detail: provider.blockedReason ?? 'Partner account is on hold. Review before restoring app access.',
       owner: 'Account control',
       tone: 'blocked',
-      action: { type: 'unblock-account', label: 'Unblock' },
+      action: { type: 'unblock-account', label: 'Release hold' },
+    });
+  } else if (!profileApproved || !kycApproved) {
+    add({
+      id: 'account-hold',
+      label: 'HOLD',
+      title: 'Approval hold can be recorded',
+      detail:
+        'If this Partner needs corrections before approval, place the account on hold with a clear reason for Partner app follow-up.',
+      owner: 'Account control',
+      tone: 'pending',
+      action: { type: 'hold-account', label: 'Hold Partner' },
     });
   }
 
@@ -1564,6 +1577,18 @@ function buildPartnerOperatorCommandQueue({
     });
   }
 
+  if (provider.kyc && !kycApproved && !kycRejected) {
+    add({
+      id: 'kyc-reject',
+      label: 'KYC',
+      title: 'KYC can be sent back',
+      detail: 'Use rejection only when the issue is clear enough for the Partner to correct and resubmit.',
+      owner: 'Verification',
+      tone: 'pending',
+      action: { type: 'reject-kyc', label: 'Reject KYC' },
+    });
+  }
+
   if (kycApproved && !profileApproved) {
     add({
       id: 'profile-approve',
@@ -1574,6 +1599,19 @@ function buildPartnerOperatorCommandQueue({
       owner: 'Verification',
       tone: 'pending',
       action: { type: 'approve-profile', label: 'Approve profile' },
+    });
+  }
+
+  if (!profileApproved && !profileRejected) {
+    add({
+      id: 'profile-reject',
+      label: 'PROFILE',
+      title: 'Profile can be sent back',
+      detail:
+        'Reject the Partner profile only when the reason is specific enough for the Partner to correct.',
+      owner: 'Verification',
+      tone: 'pending',
+      action: { type: 'reject-profile', label: 'Reject profile' },
     });
   }
 
