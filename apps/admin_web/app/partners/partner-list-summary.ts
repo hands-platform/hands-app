@@ -5,10 +5,7 @@ import {
   hasHealthyPush,
   providerPublicMediaNeedsReview,
 } from './partner-list-profile';
-import {
-  missingApprovedRequiredKycDocuments,
-  partnerNeedsKycReview,
-} from './partner-kyc-facts';
+import { partnerNeedsKycReview } from './partner-kyc-facts';
 import {
   partnerPayoutSetupNeedsReview,
   partnerTaxNeedsReview,
@@ -22,6 +19,7 @@ import {
 } from './partner-list-ops';
 import {
   partnerHasOpenControl,
+  partnerNeedsApprovalReview,
   type PartnerListQueryDeps,
 } from './partner-list-query';
 import { partnerSecurityStatus } from './partner-security-facts';
@@ -103,15 +101,10 @@ export function buildPartnerFilterSummary(
   const backupReady = providers.filter(
     (provider) => deps.marketplaceEligibility(provider, opsPolicy).eligible,
   ).length;
+  const approvalReview = providers.filter(partnerNeedsApprovalReview).length;
   const walletDebt = providers.filter((provider) => partnerUnsettledWalletBalance(provider) < 0).length;
   const locationNeedsRefresh = providers.filter(
     (provider) => providerLocationStatus(provider, opsPolicy) !== 'recent',
-  ).length;
-  const kycOrDocumentWork = providers.filter(
-    (provider) =>
-      partnerNeedsKycReview(provider) ||
-      missingApprovedRequiredKycDocuments(provider).length > 0 ||
-      (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
 
@@ -137,22 +130,22 @@ export function buildPartnerFilterSummary(
       href: '/partners?review=marketplace-ready',
     },
     {
+      label: 'Approval review',
+      value: approvalReview.toString(),
+      detail: 'Partners waiting on registration, KYC, document, bank, tax, media, or hold review',
+      href: '/partners?review=unapproved',
+    },
+    {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
       detail: 'Negative wallet balance blocks marketplace alerts and participation',
-      href: '/partners?review=cash-debt',
+      href: '/partners?review=unsettled',
     },
     {
       label: 'Location refresh',
       value: locationNeedsRefresh.toString(),
       detail: `Location older than ${opsPolicy.staleLocationMinutes}m, expired, or missing`,
       href: '/partners?review=location',
-    },
-    {
-      label: 'KYC/doc work',
-      value: kycOrDocumentWork.toString(),
-      detail: 'Identity, selfie, or required document items needing completion or review',
-      href: '/partners?review=kyc',
     },
     {
       label: 'Push reachable',
@@ -246,7 +239,7 @@ export function buildPartnerReviewQueue(
     {
       label: 'Cash fee debt',
       count: cashDebtNeedsReview,
-      href: '/partners?review=cash-debt',
+      href: '/partners?review=unsettled',
       detail: partnerCashDebtMarketplaceAccessCopy,
     },
     {

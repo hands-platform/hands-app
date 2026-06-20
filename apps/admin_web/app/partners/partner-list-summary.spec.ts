@@ -119,6 +119,10 @@ describe('partner list summary', () => {
     });
     expect(summary.find((item) => item.label === 'Direct ready')?.value).toBe('1');
     expect(summary.find((item) => item.label === 'Marketplace ready')?.value).toBe('1');
+    expect(summary.find((item) => item.label === 'Approval review')).toMatchObject({
+      href: '/partners?review=unapproved',
+      value: '0',
+    });
     expect(summary.find((item) => item.label === 'Location refresh')?.value).toBe('1');
   });
 
@@ -138,6 +142,9 @@ describe('partner list summary', () => {
 
     expect(review.items.find((item) => item.label === 'Account blocks')?.count).toBe(1);
     expect(review.items.find((item) => item.label === 'Document review')?.count).toBe(1);
+    expect(review.items.find((item) => item.label === 'Cash fee debt')?.href).toBe(
+      '/partners?review=unsettled',
+    );
     expect(review.items.find((item) => item.label === 'Direct request ready')?.count).toBe(1);
     expect(review.items.find((item) => item.label === 'Marketplace ready')?.count).toBe(1);
     expect(review.totalOpen).toBeGreaterThanOrEqual(2);

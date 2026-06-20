@@ -72,6 +72,7 @@ import { PartnerPushDevicesCell } from './partner-push-devices-cell';
 import { PartnerOnboardingCell } from './partner-onboarding-cell';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
+import { partnerReviewModeContent } from './partner-review-mode';
 import {
   buildPartnerChecklistLaneItems,
   buildPartnerPriorityLane as buildProviderPriorityLane,
@@ -151,6 +152,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     dispatchReady: providerDispatchReady,
   });
   const activeFilters = buildProviderActiveFilters(filters);
+  const reviewModeContent = partnerReviewModeContent(filters.review);
   const filterSummary = buildPartnerFilterSummary(
     providers,
     allProviders,
@@ -455,6 +457,29 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           )}
         </form>
       </div>
+      {reviewModeContent ? (
+        <section className="card admin-mb-16">
+          <div className="ops-section-header">
+            <div>
+              <h2>{reviewModeContent.title}</h2>
+              <p className="muted">{reviewModeContent.description}</p>
+            </div>
+            <span className="pill pill-warn">{reviewModeContent.badge}</span>
+          </div>
+          <p className="admin-mt-14">{reviewModeContent.detailFocus}</p>
+          <div className="setup-stage-list admin-mt-14">
+            {reviewModeContent.steps.map((step, index) => (
+              <div className="setup-stage-item" key={step}>
+                <span>{index + 1}</span>
+                <div>
+                  <strong>Operator check</strong>
+                  <p className="muted">{step}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
