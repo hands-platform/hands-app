@@ -1,3 +1,4 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerServicePricingDisplayRow = {
@@ -21,41 +22,58 @@ export function PartnerDetailServicePricingSection({
 }: PartnerDetailServicePricingSectionProps) {
   return (
     <div className="card" id="service-pricing">
-      <h2>Service price readiness</h2>
-      <p className="muted">
-        Customer apps only show options with an active partner service and an exact active payout rule.
-      </p>
-      <InfoLine label="Bookable options" value={`${readyCount}/${rows.length}`} />
-      {rows.length ? (
-        <div className="provider-file-list">
+      <div className="ops-section-header">
+        <div>
+          <h2>Service price readiness</h2>
+          <p className="muted">
+            Customer apps only show options with an active partner service and an exact active payout rule.
+          </p>
+        </div>
+        <span className={`pill ${readyCount ? 'pill-success' : 'pill-warn'}`}>
+          {`${readyCount}/${rows.length} bookable`}
+        </span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<ServicePricingEmptyState />}
+          headers={servicePricingHeaders}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
-            <div className="provider-file-row" key={row.id}>
-              <div className="participant-list admin-mb-6">
+            <tr key={row.id}>
+              <td>
+                <strong>{row.name}</strong>
+                <div className="participant-list admin-mt-6">
+                  <span className="pill pill-info">{row.durationLabel}</span>
+                  <span className="pill pill-info">{row.payoutRuleLabel}</span>
+                </div>
+              </td>
+              <td>
+                <strong>{row.priceLine}</strong>
+              </td>
+              <td>
                 <span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>
                   {row.bookable ? 'CUSTOMER VISIBLE' : 'HIDDEN'}
                 </span>
-                <span className="pill pill-info">{row.durationLabel}</span>
-                <span className="pill pill-info">{row.payoutRuleLabel}</span>
-              </div>
-              <p>
-                <strong>{row.name}</strong>
-              </p>
-              <p className="muted">{row.priceLine}</p>
-              <p className="muted">{row.issue}</p>
-            </div>
+              </td>
+              <td>
+                <span className="muted">{marketplaceDisplayText(row.issue)}</span>
+              </td>
+            </tr>
           ))}
-        </div>
-      ) : (
-        <p className="muted">No partner service prices are connected yet.</p>
-      )}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
 
-function InfoLine({ label, value }: { readonly label: string; readonly value?: string | null }) {
+const servicePricingHeaders = ['Service', 'Pricing', 'Visibility', 'Issue'] as const;
+
+function ServicePricingEmptyState() {
   return (
-    <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
-    </p>
+    <>
+      <strong>No service pricing found</strong>
+      <p className="muted">No partner service prices are connected yet.</p>
+    </>
   );
 }

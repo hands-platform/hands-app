@@ -1,3 +1,4 @@
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerDetailInfoLine = {
@@ -44,11 +45,35 @@ type PartnerDetailLocationActivityCardProps = {
 export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasicProfileCardProps) {
   return (
     <div className="card">
-      <h2>Basic profile</h2>
-      {rows.map((row) => (
-        <InfoLine key={row.label} label={row.label} value={row.value} />
-      ))}
-      <p className="muted">{note}</p>
+      <div className="ops-section-header">
+        <div>
+          <h2>Basic profile</h2>
+          <p className="muted">Partner identity, service area, profile review, and user account fields.</p>
+        </div>
+        <span className="pill pill-info">{rows.length} field(s)</span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<ProfileEmptyState message="No basic profile fields loaded." />}
+          headers={profileTableHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td>
+                <strong>{row.label}</strong>
+              </td>
+              <td>
+                <ProfileValue value={row.value} />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
+      <div className="partner-detail-note admin-mt-12">
+        <strong>Operator note</strong>
+        <p className="muted">{marketplaceDisplayText(note)}</p>
+      </div>
     </div>
   );
 }
@@ -98,17 +123,72 @@ export function PartnerDetailLocationActivityCard({
 }: PartnerDetailLocationActivityCardProps) {
   return (
     <div className="card" id="location">
-      <h2>Location and activity</h2>
-      <InfoLine label="Last location" value={lastLocationLabel} />
-      <InfoLine label="Coordinates" value={coordinatesLabel} />
-      <div className="participant-list">
-        {snapshots.map((snapshot) => (
-          <span className="pill pill-neutral" key={snapshot.id}>
-            {snapshot.label}
-          </span>
-        ))}
+      <div className="ops-section-header">
+        <div>
+          <h2>Location and activity</h2>
+          <p className="muted">Latest Partner app location evidence and recent recorded snapshots.</p>
+        </div>
+        <span className="pill pill-info">{snapshots.length} snapshot(s)</span>
       </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<ProfileEmptyState message="No location evidence loaded." />}
+          headers={locationTableHeaders}
+          rowCount={3}
+        >
+          <tr>
+            <td>
+              <strong>Last location</strong>
+            </td>
+            <td>
+              <ProfileValue value={lastLocationLabel} />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Coordinates</strong>
+            </td>
+            <td>
+              <ProfileValue value={coordinatesLabel} />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Recent snapshots</strong>
+            </td>
+            <td>
+              {snapshots.length ? (
+                <div className="participant-list">
+                  {snapshots.map((snapshot) => (
+                    <span className="pill pill-neutral" key={snapshot.id}>
+                      {snapshot.label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="muted">Missing</span>
+              )}
+            </td>
+          </tr>
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const profileTableHeaders = ['Field', 'Value'] as const;
+const locationTableHeaders = ['Signal', 'Evidence'] as const;
+
+function ProfileValue({ value }: { readonly value?: string | null }) {
+  return <span>{value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}</span>;
+}
+
+function ProfileEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No profile evidence found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
 
