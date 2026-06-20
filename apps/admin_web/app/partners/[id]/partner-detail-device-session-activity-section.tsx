@@ -1,4 +1,5 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -47,6 +48,10 @@ type PartnerDetailDeviceSessionActivitySectionProps = {
   readonly sharedDeviceRows: readonly PartnerSharedDeviceRow[];
 };
 
+const deviceActivityHeaders = ['Status', 'Device', 'Activity', 'Action'];
+const sessionActivityHeaders = ['Status', 'Session', 'Activity'];
+const sharedDeviceHeaders = ['State', 'Match', 'Activity'];
+
 export function PartnerDetailDeviceSessionActivitySection({
   cardClassForTone,
   deviceRows,
@@ -84,66 +89,97 @@ export function PartnerDetailDeviceSessionActivitySection({
       <div className="detail-grid admin-mt-16">
         <div>
           <h3>Partner app devices</h3>
-          {deviceRows.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={
+                <PartnerDeviceSessionEmptyState message="No partner app device record yet. It should appear after partner app sign-in." />
+              }
+              headers={deviceActivityHeaders}
+              rowCount={deviceRows.length}
+            >
               {deviceRows.map((device) => (
-                <div className="setup-stage-item" key={device.id}>
-                  <span>{device.statusLabel}</span>
-                  <div>
+                <tr key={device.id}>
+                  <td>
+                    <span className="pill pill-info">{device.statusLabel}</span>
+                  </td>
+                  <td>
                     <strong>{device.title}</strong>
-                    <p className="muted">{device.detail}</p>
                     {device.blockReason ? (
                       <p className="muted">Block reason: {device.blockReason}</p>
                     ) : null}
-                  </div>
-                  <small>{device.smallLabel}</small>
-                  <ActionMenu actions={device.actions} label={device.actionLabel} />
-                </div>
+                  </td>
+                  <td>
+                    <p className="muted">{device.detail}</p>
+                    <small>{device.smallLabel}</small>
+                  </td>
+                  <td>
+                    <ActionMenu actions={device.actions} label={device.actionLabel} />
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">
-              No partner app device record yet. It should appear after partner app sign-in.
-            </p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
         <div>
           <h3>Recent sessions</h3>
-          {sessionRows.length ? (
-            <div className="setup-stage-list">
+          <AdminTableScroll>
+            <AdminDataTable
+              emptyMessage={<PartnerDeviceSessionEmptyState message="No partner session log yet." />}
+              headers={sessionActivityHeaders}
+              rowCount={sessionRows.length}
+            >
               {sessionRows.map((session) => (
-                <div className="setup-stage-item" key={session.id}>
-                  <span>{session.statusLabel}</span>
-                  <div>
+                <tr key={session.id}>
+                  <td>
+                    <span className="pill pill-info">{session.statusLabel}</span>
+                  </td>
+                  <td>
                     <strong>{session.title}</strong>
-                    <p className="muted">{session.detail}</p>
                     {session.sessionNote ? (
                       <p className="muted">Session note: {session.sessionNote}</p>
                     ) : null}
-                  </div>
-                  <small>{session.smallLabel}</small>
-                </div>
+                  </td>
+                  <td>
+                    <p className="muted">{session.detail}</p>
+                    <small>{session.smallLabel}</small>
+                  </td>
+                </tr>
               ))}
-            </div>
-          ) : (
-            <p className="muted">No partner session log yet.</p>
-          )}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
       </div>
       {sharedDeviceRows.length ? (
-        <div className="setup-stage-list admin-mt-16">
-          {sharedDeviceRows.map((match) => (
-            <div className="setup-stage-item" key={match.id}>
-              <span>SHARED</span>
-              <div>
-                <strong>{match.title}</strong>
-                <p className="muted">{match.detail}</p>
-              </div>
-              <small>{match.smallLabel}</small>
-            </div>
-          ))}
+        <div className="admin-mt-16">
+          <AdminTableScroll>
+            <AdminDataTable emptyMessage={null} headers={sharedDeviceHeaders} rowCount={sharedDeviceRows.length}>
+              {sharedDeviceRows.map((match) => (
+                <tr key={match.id}>
+                  <td>
+                    <span className="pill pill-warn">SHARED</span>
+                  </td>
+                  <td>
+                    <strong>{match.title}</strong>
+                  </td>
+                  <td>
+                    <p className="muted">{match.detail}</p>
+                    <small>{match.smallLabel}</small>
+                  </td>
+                </tr>
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function PartnerDeviceSessionEmptyState({ message }: { readonly message: string }) {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">{message}</p>
     </div>
   );
 }
