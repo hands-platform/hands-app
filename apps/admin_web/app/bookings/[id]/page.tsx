@@ -703,6 +703,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
     sectionVisibility.showEvidenceDisclosure ||
     sectionVisibility.showHistoryDisclosure ||
     sectionVisibility.showSettlementDisclosure;
+  const advancedRecordSummaryItems = [
+    sectionVisibility.showEvidenceDisclosure ? { label: 'Evidence', tone: 'pill-info' } : null,
+    sectionVisibility.showDispatchDisclosure ? { label: 'Dispatch', tone: 'pill-success' } : null,
+    sectionVisibility.showHistoryDisclosure ? { label: 'History', tone: 'pill-warn' } : null,
+    sectionVisibility.showSettlementDisclosure ? { label: 'Settlement', tone: 'pill-neutral' } : null,
+  ].filter((item): item is { label: string; tone: string } => Boolean(item));
 
   return (
     <div className="booking-detail-page">
@@ -733,13 +739,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <BookingDetailDisclosureGroup
           helper="Open only when an operator needs deep evidence, dispatch, history, or settlement records."
           label="Advanced"
+          summaryItems={advancedRecordSummaryItems}
           title="Booking records"
         >
           {sectionVisibility.showEvidenceDisclosure && (
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
                 <span className="pill pill-info">Evidence</span>
-                <strong>Decision and closeout evidence</strong>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Decision and closeout evidence</strong>
+                  <small>Chat, evidence packet, closeout links, and operator queue.</small>
+                </span>
               </div>
               <BookingEvidenceSections {...evidenceSectionsProps} />
               <BookingCloseoutSections {...closeoutSectionsProps} />
@@ -753,7 +763,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
                 <span className="pill pill-success">Dispatch</span>
-                <strong>Matching policy and supply checks</strong>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Matching policy and supply checks</strong>
+                  <small>Stage, radius, wait, supply, and Partner candidate rules.</small>
+                </span>
               </div>
               <BookingStageSnapshotSection {...stageSnapshotProps} />
               <BookingMatchingRuleSnapshotSection {...matchingRuleSnapshotProps} />
@@ -769,7 +782,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
                 <span className="pill pill-warn">History</span>
-                <strong>Operating movement and audit trail</strong>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Operating movement and audit trail</strong>
+                  <small>Movement ledger, notifications, audit rows, and activity export.</small>
+                </span>
               </div>
               <BookingOperatingLedgerSection {...operatingLedgerProps} />
               <BookingOperatingSnapshotSection {...operatingSnapshotProps} />
@@ -788,7 +804,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <div className="booking-detail-advanced-section">
               <div className="booking-detail-advanced-heading">
                 <span className="pill pill-neutral">Settlement</span>
-                <strong>Wallet, payout, pricing, and full records</strong>
+                <span className="booking-detail-advanced-heading-copy">
+                  <strong>Wallet, payout, pricing, and full records</strong>
+                  <small>Wallet evidence, payout eligibility, pricing, and raw record detail.</small>
+                </span>
               </div>
               <BookingMarketplaceWalletEvidenceSection {...marketplaceWalletEvidenceProps} />
               <BookingFinanceCommandCenterSection {...financeCommandCenterProps} />

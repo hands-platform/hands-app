@@ -4302,6 +4302,7 @@ a.action-button-card:hover {
   align-items: center;
   cursor: pointer;
   display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   justify-content: space-between;
   list-style: none;
@@ -4328,6 +4329,17 @@ a.action-button-card:hover {
 .booking-detail-section-summary small {
   color: var(--admin-muted);
   line-height: 1.45;
+}
+
+.booking-detail-section-summary-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-left: auto;
+  max-width: 48%;
+  min-width: 0;
 }
 
 .booking-detail-section-summary::after {
@@ -4370,15 +4382,26 @@ a.action-button-card:hover {
 }
 
 .booking-detail-advanced-heading {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 10px;
+  min-width: 0;
+}
+
+.booking-detail-advanced-heading-copy {
+  display: grid;
+  gap: 3px;
   min-width: 0;
 }
 
 .booking-detail-advanced-heading strong {
   color: var(--admin-text);
   font-size: 0.95rem;
+}
+
+.booking-detail-advanced-heading small {
+  color: var(--admin-muted);
+  line-height: 1.35;
 }
 
 .booking-detail-section-disclosure-body > .card,
