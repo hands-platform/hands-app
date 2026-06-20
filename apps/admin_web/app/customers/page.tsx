@@ -26,9 +26,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const customers = await adminGet<AdminCustomer[]>('/admin/customers', []);
   const allRows = customers.map(buildCustomerRow);
   const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
+  const allSummary = buildCustomerSummary(allRows);
   const summary = buildCustomerSummary(rows);
   const activeFilters = buildCustomerActiveFilters(filters);
-  const metrics = buildCustomerManagementMetrics(summary, allRows.length);
+  const metrics = buildCustomerManagementMetrics(allSummary);
   const pagination = paginateCustomerRows(rows, filters);
   const tableRows = buildCustomerManagementTableRows(pagination.rows);
   const tablePagination = { ...pagination, rows: tableRows };

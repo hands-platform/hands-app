@@ -7,6 +7,13 @@ type CustomerSummary = {
   total: number;
   live: number;
   recentJoins: number;
+  genderBreakdown: CustomerGenderBreakdown;
+  todayJoined: number;
+  todayJoinedGenderBreakdown: CustomerGenderBreakdown;
+  todaySeen: number;
+  todaySeenGenderBreakdown: CustomerGenderBreakdown;
+  monthSeen: number;
+  monthSeenGenderBreakdown: CustomerGenderBreakdown;
   activeBookings: number;
   completedBookings: number;
   cancelledBookings: number;
@@ -19,6 +26,13 @@ type CustomerSummary = {
   paymentIssues: number;
   latestBookingAt?: string | null;
   latestCompletedAt?: string | null;
+};
+
+type CustomerGenderBreakdown = {
+  female: number;
+  male: number;
+  other: number;
+  unknown: number;
 };
 
 export type CustomerManagementSpotlight = {
@@ -49,30 +63,27 @@ export type CustomerManagementTableRow = {
   readonly totalWalletAmountLabel: string;
 };
 
-export function buildCustomerManagementMetrics(
-  summary: CustomerSummary,
-  totalCustomerCount: number,
-): AdminPageMetric[] {
+export function buildCustomerManagementMetrics(summary: CustomerSummary): AdminPageMetric[] {
   return [
     {
       label: 'Total customers',
-      value: totalCustomerCount,
-      helper: 'Loaded customer profiles.',
+      value: summary.total,
+      helper: genderBreakdownLabel(summary.genderBreakdown),
     },
     {
-      label: 'Active customers',
-      value: summary.live,
-      helper: 'Recent live sessions.',
+      label: 'Joined today',
+      value: summary.todayJoined,
+      helper: genderBreakdownLabel(summary.todayJoinedGenderBreakdown),
     },
     {
-      label: 'Completed reservations',
-      value: summary.completedBookings,
-      helper: 'Finished reservations.',
+      label: 'Active today',
+      value: summary.todaySeen,
+      helper: genderBreakdownLabel(summary.todaySeenGenderBreakdown),
     },
     {
-      label: 'Total wallet amount',
-      value: formatMoney(summary.capturedSpend),
-      helper: 'Captured customer wallet total.',
+      label: 'Active in 30 days',
+      value: summary.monthSeen,
+      helper: genderBreakdownLabel(summary.monthSeenGenderBreakdown),
     },
   ];
 }
@@ -120,9 +131,7 @@ export function buildCustomerManagementSpotlights(
   ];
 }
 
-export function buildCustomerManagementTableRows(
-  rows: readonly CustomerRow[],
-): CustomerManagementTableRow[] {
+export function buildCustomerManagementTableRows(rows: readonly CustomerRow[]): CustomerManagementTableRow[] {
   return rows.map((row) => {
     const customerIdLabel = compactText(row.id, 12);
     const countryCode = row.deviceLanguageCountryCode;
@@ -155,6 +164,15 @@ export function buildCustomerManagementTableRows(
 function customerLastCompletedLabel(lastCompletedAt: string | null | undefined, completedBookings: number) {
   const countLabel = `(${completedBookings})`;
   return lastCompletedAt ? `${formatDate(lastCompletedAt)} ${countLabel}` : `No completed work ${countLabel}`;
+}
+
+function genderBreakdownLabel(breakdown: CustomerGenderBreakdown) {
+  return [
+    `Female ${breakdown.female}`,
+    `Male ${breakdown.male}`,
+    `Other ${breakdown.other}`,
+    `Not captured ${breakdown.unknown}`,
+  ].join(' / ');
 }
 
 function customerAvatarStatus(row: CustomerRow): AdminAvatarStatus {
@@ -200,9 +218,7 @@ function countryFlagFromRegion(region: string) {
     return null;
   }
 
-  return String.fromCodePoint(
-    ...region.split('').map((letter) => 127397 + letter.charCodeAt(0)),
-  );
+  return String.fromCodePoint(...region.split('').map((letter) => 127397 + letter.charCodeAt(0)));
 }
 
 function dateMs(value?: string | null) {

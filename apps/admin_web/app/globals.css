@@ -6692,6 +6692,7 @@ textarea:focus-visible {
 .admin-form-search,
 .admin-form-date,
 .admin-form-select,
+.vuexy-customer-number-field,
 .vuexy-customer-search,
 .vuexy-customer-select {
   align-items: center;
@@ -6713,6 +6714,7 @@ textarea:focus-visible {
 .admin-form-search input,
 .admin-form-date input,
 .admin-form-select select,
+.vuexy-customer-number-field input,
 .vuexy-customer-search input,
 .vuexy-customer-select select,
 .vuexy-customer-advanced-grid input,
@@ -6727,18 +6729,21 @@ textarea:focus-visible {
 
 .admin-form-search input,
 .admin-form-date input,
+.vuexy-customer-number-field input,
 .vuexy-customer-search input {
   flex: 1;
   min-width: 0;
 }
 
 .admin-form-search input::placeholder,
+.vuexy-customer-number-field input::placeholder,
 .vuexy-customer-search input::placeholder {
   color: var(--admin-disabled);
 }
 
 .admin-form-select,
 .admin-form-date,
+.vuexy-customer-number-field,
 .vuexy-customer-select {
   justify-content: space-between;
   min-width: 180px;

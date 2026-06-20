@@ -20,6 +20,10 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Search Customer');
     expect(rendered).toContain('All countries');
     expect(rendered).toContain('All genders');
+    expect(rendered).toContain('Most reservations');
+    expect(rendered).toContain('Sign-up: Today');
+    expect(rendered).toContain('Last reservation: Specific period');
+    expect(rendered).toContain('Min reservations');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Search: linh');
@@ -51,8 +55,12 @@ function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
     chat: '',
     country: '',
     gender: '',
+    joinedRange: '',
     joinedFrom: '',
     joinedTo: '',
+    lastBookingRange: '',
+    lastBookingFrom: '',
+    lastBookingTo: '',
     memo: '',
     minBookings: null,
     minCompleted: null,

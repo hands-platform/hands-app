@@ -71,6 +71,8 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
     if (filters.memo === 'no-memo' && row.memoCount > 0) return false;
     if (filters.joinedFrom && !isOnOrAfterDate(row.joinedAt, filters.joinedFrom)) return false;
     if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
+    if (filters.lastBookingFrom && !isOnOrAfterDate(row.lastBookingAt, filters.lastBookingFrom)) return false;
+    if (filters.lastBookingTo && !isOnOrBeforeDate(row.lastBookingAt, filters.lastBookingTo)) return false;
     if (filters.minBookings !== null && row.bookingCount < filters.minBookings) return false;
     if (filters.minCompleted !== null && row.completedBookings < filters.minCompleted) return false;
     if (filters.minSpend !== null && row.capturedSpend < filters.minSpend) return false;
@@ -85,7 +87,9 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
       return dateMs(right.lastCompletedAt) - dateMs(left.lastCompletedAt);
     }
     if (sort === 'booking-count') {
-      return right.bookingCount - left.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
+      return (
+        right.bookingCount - left.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
+      );
     }
     if (sort === 'completed-count') {
       return (
@@ -94,7 +98,9 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
       );
     }
     if (sort === 'captured-spend') {
-      return right.capturedSpend - left.capturedSpend || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
+      return (
+        right.capturedSpend - left.capturedSpend || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
+      );
     }
     if (sort === 'last-seen') {
       return dateMs(right.lastSeenAt) - dateMs(left.lastSeenAt);
@@ -127,9 +133,13 @@ export function buildCustomerRow(customer: AdminCustomer) {
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
   const closedBookings = bookings.filter((booking) => CLOSED_STATUSES.includes(booking.status));
   const cancelledBookings = closedBookings.length;
-  const customerClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'CUSTOMER').length;
+  const customerClosedBookings = closedBookings.filter(
+    (booking) => booking.closedByRole === 'CUSTOMER',
+  ).length;
   const adminClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length;
-  const partnerClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length;
+  const partnerClosedBookings = closedBookings.filter(
+    (booking) => booking.closedByRole === 'PROVIDER',
+  ).length;
   const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
   const openMatchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
@@ -157,11 +167,7 @@ export function buildCustomerRow(customer: AdminCustomer) {
     .sort((left, right) => dateMs(right) - dateMs(left))[0];
   const completedRows = bookings
     .filter((booking) => booking.status === 'COMPLETED')
-    .sort(
-      (left, right) =>
-        dateMs(bookingLatestActivityAt(right)) -
-        dateMs(bookingLatestActivityAt(left)),
-    );
+    .sort((left, right) => dateMs(bookingLatestActivityAt(right)) - dateMs(bookingLatestActivityAt(left)));
   const lastCompletedBooking = completedRows[0];
   const lastCompletedAt = lastCompletedBooking ? bookingLatestActivityAt(lastCompletedBooking) : undefined;
   const commonService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
@@ -215,8 +221,12 @@ export function buildCustomerRow(customer: AdminCustomer) {
     addressCount,
     lastBookingAt,
     lastCompletedAt,
-    lastCompletedLabel: lastCompletedBooking ? bookingServiceLabel(lastCompletedBooking) : 'No finished service record',
-    lastCompletedPartner: lastCompletedBooking ? bookingPartnerLabel(lastCompletedBooking) : 'No completed Partner',
+    lastCompletedLabel: lastCompletedBooking
+      ? bookingServiceLabel(lastCompletedBooking)
+      : 'No finished service record',
+    lastCompletedPartner: lastCompletedBooking
+      ? bookingPartnerLabel(lastCompletedBooking)
+      : 'No completed Partner',
     commonService: commonService ?? 'Not enough bookings',
     commonArea: commonArea ?? 'No repeated area',
     commonPartner: commonPartner ?? 'Not enough bookings',
@@ -238,7 +248,9 @@ export function buildCustomerRow(customer: AdminCustomer) {
     memoCount,
     activityLabel,
     latestMemoTitle: latestMemo?.action ?? 'No memo',
-    latestMemoDetail: latestMemo ? compactText(compactJson(latestMemo.metadata), 72) : 'No internal memo saved yet',
+    latestMemoDetail: latestMemo
+      ? compactText(compactJson(latestMemo.metadata), 72)
+      : 'No internal memo saved yet',
   };
 }
 
@@ -273,12 +285,23 @@ export function paginateCustomerRows<T>(rows: readonly T[], filters: CustomerFil
 }
 
 export function buildCustomerSummary(rows: CustomerRow[]) {
+  const todayJoinedRows = rows.filter((row) => isToday(row.joinedAt));
+  const todaySeenRows = rows.filter((row) => isToday(row.lastSeenAt));
+  const monthSeenRows = rows.filter((row) => isWithinRecentDays(row.lastSeenAt, 30));
+
   return {
     total: rows.length,
     live: rows.filter((row) => row.isLive).length,
     recentJoins: rows.filter(
       (row) => row.joinedAt && Date.now() - dateMs(row.joinedAt) <= 30 * 24 * 60 * 60_000,
     ).length,
+    genderBreakdown: genderBreakdown(rows),
+    todayJoined: todayJoinedRows.length,
+    todayJoinedGenderBreakdown: genderBreakdown(todayJoinedRows),
+    todaySeen: todaySeenRows.length,
+    todaySeenGenderBreakdown: genderBreakdown(todaySeenRows),
+    monthSeen: monthSeenRows.length,
+    monthSeenGenderBreakdown: genderBreakdown(monthSeenRows),
     activeBookings: rows.reduce((sum, row) => sum + row.activeBookings, 0),
     completedBookings: rows.reduce((sum, row) => sum + row.completedBookings, 0),
     cancelledBookings: rows.reduce((sum, row) => sum + row.cancelledBookings, 0),
@@ -308,7 +331,8 @@ export function buildCustomerFilterSummary(
 ) {
   const totalBookings = rows.reduce((sum, row) => sum + row.bookingCount, 0);
   const noAppSession = rows.filter((row) => !row.lastSeenAt).length;
-  const completedShare = totalBookings > 0 ? Math.round((summary.completedBookings / totalBookings) * 100) : 0;
+  const completedShare =
+    totalBookings > 0 ? Math.round((summary.completedBookings / totalBookings) * 100) : 0;
 
   return [
     {
@@ -378,7 +402,9 @@ function bookingAddressLabel(booking: NonNullable<AdminCustomer['bookings']>[num
   );
 }
 
-function sessionDeviceLabel(session?: NonNullable<NonNullable<AdminCustomer['user']>['appSessions']>[number]) {
+function sessionDeviceLabel(
+  session?: NonNullable<NonNullable<AdminCustomer['user']>['appSessions']>[number],
+) {
   if (!session) return 'No session';
   const platform = session.platform ?? 'Unknown platform';
   const appVersion = session.appVersion ? `v${session.appVersion}` : 'No app version';
@@ -505,6 +531,37 @@ function readAddressCount(value: unknown) {
 function isWithinRecentDays(value: string | null | undefined, days: number) {
   if (!value) return false;
   return Date.now() - dateMs(value) <= days * 24 * 60 * 60_000;
+}
+
+function isToday(value: string | null | undefined) {
+  const timestamp = dateMs(value);
+  if (!timestamp) return false;
+
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+
+  return timestamp >= start.getTime() && timestamp < end.getTime();
+}
+
+function genderBreakdown(rows: CustomerRow[]) {
+  return rows.reduce(
+    (counts, row) => {
+      if (row.gender === 'female' || row.gender === 'male' || row.gender === 'other') {
+        counts[row.gender] += 1;
+      } else {
+        counts.unknown += 1;
+      }
+      return counts;
+    },
+    {
+      female: 0,
+      male: 0,
+      other: 0,
+      unknown: 0,
+    },
+  );
 }
 
 function isOnOrAfterDate(value: string | null | undefined, date: string) {

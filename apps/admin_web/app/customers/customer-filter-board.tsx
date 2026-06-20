@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -30,7 +31,7 @@ export function CustomerFilterBoard({
       id="customer-directory-controls"
       resultLabel={`${filteredCount} of ${totalCount}`}
       title="Filters"
-      footer={(
+      footer={
         <div className="vuexy-customer-filter-footer">
           {activeFilters.length > 0 ? (
             <>
@@ -46,10 +47,10 @@ export function CustomerFilterBoard({
             </Link>
           )}
         </div>
-      )}
+      }
     >
       <form action="/customers" className="vuexy-customer-form">
-        <input name="sort" type="hidden" value={filters.sort} />
+        <input name="pageSize" type="hidden" value={filters.pageSize} />
         <div className="vuexy-customer-form-primary">
           <AdminFormSelect
             className="vuexy-customer-select"
@@ -86,6 +87,13 @@ export function CustomerFilterBoard({
             name="seen"
             options={seenFilterOptions}
           />
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.sort}
+            label="Sort customers"
+            name="sort"
+            options={sortFilterOptions}
+          />
           <AdminFormSearch
             className="vuexy-customer-search"
             defaultValue={filters.q}
@@ -93,13 +101,65 @@ export function CustomerFilterBoard({
             name="q"
             placeholder="Search Customer"
           />
-          <AdminFormControlLink className="vuexy-customer-export" download="hands-customers.csv" href={csvHref}>
+          <AdminFormControlLink
+            className="vuexy-customer-export"
+            download="hands-customers.csv"
+            href={csvHref}
+          >
             <Download aria-hidden="true" size={16} />
             Export
           </AdminFormControlLink>
-          <AdminFormControlButton className="vuexy-customer-button">
-            Apply
-          </AdminFormControlButton>
+          <AdminFormControlButton className="vuexy-customer-button">Apply</AdminFormControlButton>
+        </div>
+        <div className="vuexy-customer-advanced-grid">
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.joinedRange}
+            label="Sign-up date"
+            name="joinedRange"
+            options={dateRangeFilterOptions('Sign-up')}
+          />
+          <AdminFormDate
+            className="vuexy-customer-date"
+            defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedFrom)}
+            label="Sign-up from"
+            name="joinedFrom"
+          />
+          <AdminFormDate
+            className="vuexy-customer-date"
+            defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedTo)}
+            label="Sign-up to"
+            name="joinedTo"
+          />
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.lastBookingRange}
+            label="Last reservation"
+            name="lastBookingRange"
+            options={dateRangeFilterOptions('Last reservation')}
+          />
+          <AdminFormDate
+            className="vuexy-customer-date"
+            defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingFrom)}
+            label="Last reservation from"
+            name="lastBookingFrom"
+          />
+          <AdminFormDate
+            className="vuexy-customer-date"
+            defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingTo)}
+            label="Last reservation to"
+            name="lastBookingTo"
+          />
+          <label className="vuexy-customer-number-field">
+            <span className="sr-only">Minimum reservations</span>
+            <input
+              defaultValue={filters.minBookings ?? ''}
+              min="0"
+              name="minBookings"
+              placeholder="Min reservations"
+              type="number"
+            />
+          </label>
         </div>
       </form>
     </AdminFilterPanel>
@@ -150,3 +210,27 @@ const seenFilterOptions = [
   { label: 'No app session', value: 'no-session' },
   { label: 'No access 30 days', value: 'inactive-30d' },
 ] as const;
+
+const sortFilterOptions = [
+  { label: 'Latest reservation', value: 'last-booking' },
+  { label: 'Most reservations', value: 'booking-count' },
+  { label: 'Last completed work', value: 'last-work' },
+  { label: 'Completed count', value: 'completed-count' },
+  { label: 'Last login', value: 'last-seen' },
+  { label: 'Sign-up date', value: 'joined' },
+  { label: 'Customer name', value: 'name' },
+] as const;
+
+function dateRangeFilterOptions(prefix: string) {
+  return [
+    { label: `${prefix}: All`, value: '' },
+    { label: `${prefix}: Today`, value: 'today' },
+    { label: `${prefix}: Yesterday`, value: 'yesterday' },
+    { label: `${prefix}: Last 7 days`, value: '7d' },
+    { label: `${prefix}: Specific period`, value: 'custom' },
+  ] as const;
+}
+
+function customerCustomDateValue(range: string, value: string) {
+  return !range || range === 'custom' ? value : '';
+}
