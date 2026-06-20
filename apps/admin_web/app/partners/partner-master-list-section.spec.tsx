@@ -1,7 +1,4 @@
-import {
-  PartnerMasterListSection,
-  type PartnerMasterListSectionRow,
-} from './partner-master-list-section';
+import { PartnerMasterListSection, type PartnerMasterListSectionRow } from './partner-master-list-section';
 
 describe('PartnerMasterListSection', () => {
   it('renders partner master rows with operations facts and detail links', () => {
@@ -11,7 +8,7 @@ describe('PartnerMasterListSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Partner master list');
+    expect(rendered).toContain('Partners');
     expect(rendered).toContain('Compact admin list for ID, profile, contact');
     expect(rendered).toContain('1 visible row(s)');
     expect(rendered).toContain('partner-1');

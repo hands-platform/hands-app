@@ -1,4 +1,8 @@
-import { partnerReviewModeContent } from './partner-review-mode';
+import {
+  partnerPrimaryListMode,
+  partnerReviewModeContent,
+  shouldRenderPartnerDeepOpsSections,
+} from './partner-review-mode';
 
 describe('partner review mode content', () => {
   it('explains the unapproved partner approval and hold workflow', () => {
@@ -21,5 +25,19 @@ describe('partner review mode content', () => {
   it('stays hidden for ordinary partner views', () => {
     expect(partnerReviewModeContent('')).toBeNull();
     expect(partnerReviewModeContent('kyc')).toBeNull();
+  });
+
+  it('maps the primary partner pages to the same list-first shell', () => {
+    expect(partnerPrimaryListMode('')).toBe('partners');
+    expect(partnerPrimaryListMode('unapproved')).toBe('unapproved');
+    expect(partnerPrimaryListMode('unsettled')).toBe('unsettled');
+    expect(partnerPrimaryListMode('kyc')).toBe('partners');
+  });
+
+  it('keeps deep operations boards out of the three primary partner pages', () => {
+    expect(shouldRenderPartnerDeepOpsSections('')).toBe(false);
+    expect(shouldRenderPartnerDeepOpsSections('unapproved')).toBe(false);
+    expect(shouldRenderPartnerDeepOpsSections('unsettled')).toBe(false);
+    expect(shouldRenderPartnerDeepOpsSections('kyc')).toBe(true);
   });
 });

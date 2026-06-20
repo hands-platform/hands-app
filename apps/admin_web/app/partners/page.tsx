@@ -72,7 +72,8 @@ import { PartnerPushDevicesCell } from './partner-push-devices-cell';
 import { PartnerOnboardingCell } from './partner-onboarding-cell';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
-import { partnerReviewModeContent } from './partner-review-mode';
+import { partnerPrimaryListMode, shouldRenderPartnerDeepOpsSections } from './partner-review-mode';
+import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import {
   buildPartnerChecklistLaneItems,
   buildPartnerPriorityLane as buildProviderPriorityLane,
@@ -152,7 +153,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     dispatchReady: providerDispatchReady,
   });
   const activeFilters = buildProviderActiveFilters(filters);
-  const reviewModeContent = partnerReviewModeContent(filters.review);
+  const primaryPartnerListMode = partnerPrimaryListMode(filters.review);
+  const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const filterSummary = buildPartnerFilterSummary(
     providers,
     allProviders,
@@ -180,7 +182,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
   const partnerMasterListMode =
     filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
-  const focusedPartnerReviewMode = partnerMasterListMode !== 'default';
   const partnerExportRows = buildPartnerExportRows({
     filterLabel: partnerExportFilterLabel,
     filters,
@@ -258,6 +259,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         />
       ) : null}
       <h1>Partners</h1>
+      <PartnerPrimaryListTabs activeMode={primaryPartnerListMode} />
       <div className="card admin-mb-16">
         <form className="form-grid" action="/partners">
           <AdminFormSearch
@@ -460,29 +462,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           )}
         </form>
       </div>
-      {reviewModeContent ? (
-        <section className="card admin-mb-16">
-          <div className="ops-section-header">
-            <div>
-              <h2>{reviewModeContent.title}</h2>
-              <p className="muted">{reviewModeContent.description}</p>
-            </div>
-            <span className="pill pill-warn">{reviewModeContent.badge}</span>
-          </div>
-          <p className="admin-mt-14">{reviewModeContent.detailFocus}</p>
-          <div className="setup-stage-list admin-mt-14">
-            {reviewModeContent.steps.map((step, index) => (
-              <div className="setup-stage-item" key={step}>
-                <span>{index + 1}</span>
-                <div>
-                  <strong>Operator check</strong>
-                  <p className="muted">{step}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
       <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
@@ -526,7 +505,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         totalPartnerCount={providers.length}
         walletHoldCount={walletMarketplaceHoldCount}
       />
-      {focusedPartnerReviewMode ? null : (
+      {showDeepPartnerOpsSections ? (
         <>
           <PartnerChecklistWorkQueueSection partnerName={providerDisplayName} queue={dailyActionQueue} />
           <PartnerDispatchHandoffSection handoff={dispatchHandoff} />
@@ -539,10 +518,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             staleLocationMinutes={opsPolicy.staleLocationMinutes}
           />
           <PartnerReviewQueueSection queue={reviewQueue} />
-          <PartnerChecklistLaneSection
-            blockedCount={priorityLane.blockedCount}
-            items={priorityLaneItems}
-          />
+          <PartnerChecklistLaneSection blockedCount={priorityLane.blockedCount} items={priorityLaneItems} />
           <PartnerLegacyOperationsTableSection
             emptyMessage={emptyProviderMessage(activeFilters)}
             hiddenPartnerCount={hiddenProviderCount}
@@ -591,7 +567,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             renderServices={(provider) => <PartnerServicesCell provider={provider} />}
           />
         </>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -6,6 +6,22 @@ export type PartnerReviewModeContent = {
   steps: string[];
 };
 
+export type PartnerPrimaryListMode = 'partners' | 'unapproved' | 'unsettled';
+
+const PRIMARY_PARTNER_LIST_REVIEWS = new Set(['', 'unapproved', 'unsettled']);
+
+export function partnerPrimaryListMode(review: string): PartnerPrimaryListMode {
+  if (review === 'unapproved' || review === 'unsettled') {
+    return review;
+  }
+
+  return 'partners';
+}
+
+export function shouldRenderPartnerDeepOpsSections(review: string) {
+  return !PRIMARY_PARTNER_LIST_REVIEWS.has(review);
+}
+
 export function partnerReviewModeContent(review: string): PartnerReviewModeContent | null {
   if (review === 'unapproved') {
     return {
@@ -27,8 +43,7 @@ export function partnerReviewModeContent(review: string): PartnerReviewModeConte
     return {
       title: 'Unsettled Partners',
       badge: 'Negative wallet',
-      description:
-        'Partners in this view have a negative wallet balance from unpaid HANDS commission.',
+      description: 'Partners in this view have a negative wallet balance from unpaid HANDS commission.',
       detailFocus:
         'Open the Partner detail page, check cash booking origins, fee debt, wallet ledger, payout impact, and settlement notes before releasing marketplace participation.',
       steps: [

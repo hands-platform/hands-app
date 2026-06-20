@@ -38,10 +38,7 @@ const PARTNER_MASTER_TABLE_HEADERS = [
   'Account',
 ] as const;
 
-export function PartnerMasterListSection({
-  mode = 'default',
-  rows,
-}: PartnerMasterListSectionProps) {
+export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMasterListSectionProps) {
   const copy = buildPartnerMasterListSectionCopy(mode, rows.length);
 
   return (
@@ -78,9 +75,7 @@ export function PartnerMasterListSection({
               <td>{row.phone}</td>
               <td>{row.gender}</td>
               <td>
-                <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>
-                  {row.status}
-                </span>
+                <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>
               </td>
               <td>
                 <strong>{row.level}</strong>
@@ -168,7 +163,7 @@ function buildPartnerMasterListSectionCopy(
     description:
       'Compact admin list for ID, profile, contact, onboarding level, app status, location freshness, booking volume, feedback records, revenue, payout readiness, and account state.',
     statusLabel: `${rowCount} visible row(s)`,
-    title: 'Partner master list',
+    title: 'Partners',
   };
 }
 
