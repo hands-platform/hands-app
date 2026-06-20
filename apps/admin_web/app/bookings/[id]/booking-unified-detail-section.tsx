@@ -116,6 +116,7 @@ function BookingUnifiedInfoCard({ row }: { readonly row: BookingUnifiedDetailRow
     row.people?.length ? 'is-wide' : null,
     row.variant === 'inactive' ? 'is-inactive' : null,
     row.variant === 'finance-highlight' ? 'is-finance-highlight' : null,
+    row.variant === 'secondary' ? 'is-secondary' : null,
   ]
     .filter(Boolean)
     .join(' ');

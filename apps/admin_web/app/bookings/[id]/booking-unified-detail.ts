@@ -44,7 +44,7 @@ export type BookingUnifiedDetailRow = {
   readonly href?: string;
   readonly people?: readonly BookingUnifiedDetailPerson[];
   readonly person?: BookingUnifiedDetailPerson;
-  readonly variant?: 'finance-highlight' | 'inactive';
+  readonly variant?: 'finance-highlight' | 'inactive' | 'secondary';
 };
 
 export type BookingUnifiedDetail = {
@@ -322,26 +322,31 @@ function bookingUnifiedFinanceRows({
       label: 'Service state',
       value: booking.status,
       detail: `Changed ${formatDate(booking.statusChangedAt ?? booking.updatedAt ?? null)}`,
+      variant: 'secondary',
     },
     {
       label: 'Closeout decision',
       value: booking.closedReason ?? (booking.closedAt ? 'Closed' : 'Open'),
       detail: booking.closedNote ?? `Closeout time ${formatDate(booking.closedAt ?? null)}`,
+      variant: 'secondary',
     },
     {
       label: 'Pricing basis',
       value: financeTrace.pricingSource,
       detail: `${financeTrace.serviceOption} / min ${financeTrace.adminMinimum}`,
+      variant: 'secondary',
     },
     {
       label: 'Tax withholding',
       value: financeTrace.withholding,
       detail: `${financeTrace.companyFeeAfterTax} company fee after tax`,
+      variant: 'secondary',
     },
     {
       label: 'Wallet ledger',
       value: financeTrace.walletLedger,
       detail: `${walletEntryCount} ledger row(s) / Partner wallet impact`,
+      variant: 'secondary',
     },
     {
       label: 'Refunds',
@@ -350,6 +355,7 @@ function bookingUnifiedFinanceRows({
         booking.payment?.amount,
         paymentCurrency,
       )}`,
+      variant: 'secondary',
     },
   ];
 }

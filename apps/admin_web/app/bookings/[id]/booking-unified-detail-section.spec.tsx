@@ -75,6 +75,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('href="/partners/partner-1"');
     expect(markup).toContain('booking-unified-info-card is-inactive');
     expect(markup.match(/is-finance-highlight/g)).toHaveLength(3);
+    expect(markup.match(/is-secondary/g)).toHaveLength(6);
   });
 
   it('summarizes live customer location against the reservation address snapshot', () => {

@@ -4455,6 +4455,24 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
+.booking-unified-info-card.is-secondary {
+  align-self: start;
+  background: var(--admin-surface);
+  min-height: 104px;
+}
+
+.booking-unified-info-card.is-secondary .booking-unified-value,
+.booking-unified-info-card.is-secondary .booking-unified-value-link {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 20px;
+}
+
+.booking-unified-info-card.is-secondary > .muted {
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .booking-unified-info-card.is-inactive {
   align-self: start;
   background: var(--admin-surface);
