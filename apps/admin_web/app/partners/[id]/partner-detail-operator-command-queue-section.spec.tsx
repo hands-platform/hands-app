@@ -32,6 +32,18 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
             title: 'KYC approval',
             tone: 'pending',
           },
+          {
+            action: {
+              label: 'Hold Partner',
+              type: 'hold-account',
+            },
+            detail: 'Partner must fix profile, KYC, or payout issues before marketplace access is restored.',
+            id: 'hold-account',
+            label: '3',
+            owner: 'Ops',
+            title: 'Partner hold',
+            tone: 'blocked',
+          },
         ],
         metrics: [
           {
@@ -54,14 +66,21 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
     expect(rendered).toContain('Command');
     expect(rendered).toContain('Owner');
     expect(rendered).toContain('Action');
+    expect(rendered).toContain('Primary review actions');
+    expect(rendered).toContain(
+      'Hold and reject actions open a confirmation step with a required reason for the Partner app and audit trail.',
+    );
     expect(rendered).toContain('Cash fee debt');
     expect(rendered).toContain('Partner wallet must be settled before final acceptance, service start, or payout release.');
     expect(rendered).toContain('KYC approval');
     expect(rendered).toContain('KYC evidence is complete and ready for approval.');
+    expect(rendered).toContain('Partner hold');
+    expect(rendered).toContain('Partner must fix profile, KYC, or payout issues before marketplace access is restored.');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#wallet',
         '/partners/partner-1?section=full&providerId=partner-1&reviewAction=approve-kyc',
+        '/partners/partner-1?section=full&confirm=block&providerId=partner-1',
       ]),
     );
     expect(classNamesIn(section)).toEqual(

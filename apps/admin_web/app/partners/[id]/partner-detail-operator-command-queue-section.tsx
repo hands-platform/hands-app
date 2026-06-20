@@ -45,6 +45,8 @@ export function PartnerDetailOperatorCommandQueueSection({
   providerId,
   queue,
 }: PartnerDetailOperatorCommandQueueSectionProps) {
+  const primaryCommands = queue.commands.filter((command) => command.action.type !== 'link').slice(0, 4);
+
   return (
     <div className="card admin-mb-16" id="partner-operator-command-queue">
       <div className="ops-section-header">
@@ -66,6 +68,26 @@ export function PartnerDetailOperatorCommandQueueSection({
           </div>
         ))}
       </div>
+      {primaryCommands.length > 0 ? (
+        <div className="admin-mt-12">
+          <div className="participant-list">
+            <span className="muted">Primary review actions</span>
+            {primaryCommands.map((command) => (
+              <Link
+                className={`pill ${pillClassForTone(command.tone)}`}
+                href={partnerOperatorCommandActionHref(providerId, command.action)}
+                key={command.id}
+              >
+                {command.action.label}
+              </Link>
+            ))}
+          </div>
+          <p className="muted admin-mt-8">
+            Hold and reject actions open a confirmation step with a required reason for the Partner app and audit
+            trail.
+          </p>
+        </div>
+      ) : null}
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
