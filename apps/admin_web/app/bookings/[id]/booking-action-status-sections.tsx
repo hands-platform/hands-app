@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AdminFormControlButton, AdminFormTextarea } from '../../../components/admin-form-controls';
 import { ActionLink, OpsTaskAction } from './booking-operator-actions';
 import { BookingOperatorNotesEditor } from './booking-operator-notes-editor';
 import type { BookingOutcomeReviewPanel } from './booking-outcome-review-panel';
@@ -200,16 +201,16 @@ function BookingOutcomePostMatchDecision({
           <form action={approvePostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.approveNote} />
-            <button className="button button-primary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
               Approve cancellation
-            </button>
+            </AdminFormControlButton>
           </form>
           <form action={holdPostMatchCancellationFromDetail}>
             <input type="hidden" name="bookingId" value={bookingId} />
             <input type="hidden" name="note" value={decision.holdNote} />
-            <button className="button button-secondary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button button-secondary admin-inline-action" type="submit">
               Hold fee deduction
-            </button>
+            </AdminFormControlButton>
           </form>
         </div>
       ) : (
@@ -237,7 +238,7 @@ function BookingChatRepairSection({
       {chatRepair.canSubmit ? (
         <form action={repairBookingChatRoom} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <button type="submit">Repair chat room</button>
+          <AdminFormControlButton type="submit">Repair chat room</AdminFormControlButton>
           <small>{chatRepair.helper}</small>
         </form>
       ) : (
@@ -395,9 +396,9 @@ function BookingOperatorNotesSection({
             <small className="booking-action-note-help">Use one short note per action or decision.</small>
           </div>
           <div className="booking-action-note-actions">
-            <button className="button button-primary admin-inline-action" type="submit">
+            <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
               Add note
-            </button>
+            </AdminFormControlButton>
           </div>
         </div>
       </form>
@@ -429,8 +430,8 @@ function BookingCompletedCloseoutSection({
           <div className="booking-action-note-panel">
             <div className="booking-action-note-field">
               <span className="booking-action-note-label">Closeout note</span>
-              <textarea
-                aria-label="Closeout note"
+              <AdminFormTextarea
+                label="Closeout note"
                 name="note"
                 placeholder="Add a short reconciliation note."
                 rows={3}
@@ -438,9 +439,9 @@ function BookingCompletedCloseoutSection({
               <small className="booking-action-note-help">Use retained chat, payment, and Partner evidence.</small>
             </div>
             <div className="booking-action-note-actions">
-              <button className="button button-primary admin-inline-action" type="submit">
+              <AdminFormControlButton className="button button-primary admin-inline-action" type="submit">
                 Reconcile booking
-              </button>
+              </AdminFormControlButton>
             </div>
           </div>
         </form>
@@ -469,12 +470,12 @@ function BookingMatchingExpirySection({
       {matchingExpiry.canSubmit ? (
         <form action={expireBooking} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <textarea
-            aria-label="Expiry reason"
+          <AdminFormTextarea
+            label="Expiry reason"
             name="reason"
             placeholder="Example: Matching window passed and no suitable Partner was available."
           />
-          <button type="submit">Expire matching</button>
+          <AdminFormControlButton type="submit">Expire matching</AdminFormControlButton>
         </form>
       ) : (
         <span className={`pill ${matchingExpiry.status === 'EXPIRED' ? 'pill-warn' : 'pill-neutral'}`}>
@@ -503,12 +504,12 @@ function BookingNoShowHandlingSection({
       {noShow.canSubmit ? (
         <form action={markBookingNoShow} className="ops-note-form">
           <input type="hidden" name="bookingId" value={bookingId} />
-          <textarea
-            aria-label="No-show reason"
+          <AdminFormTextarea
+            label="No-show reason"
             name="reason"
             placeholder="Example: Customer did not answer calls after Partner arrival."
           />
-          <button type="submit">Mark no-show</button>
+          <AdminFormControlButton type="submit">Mark no-show</AdminFormControlButton>
         </form>
       ) : (
         <span className={`pill ${noShow.status === 'NO_SHOW' ? 'pill-danger' : 'pill-neutral'}`}>
