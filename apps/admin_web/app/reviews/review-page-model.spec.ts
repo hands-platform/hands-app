@@ -27,32 +27,98 @@ describe('review page model', () => {
   });
 
   it('builds filters with review aliases, search, page, and page size', () => {
-    expect(buildReviewFilters({ page: '2', pageSize: '25', q: ' linh ', review: 'low-rating' })).toEqual({
+    expect(
+      buildReviewFilters({
+        dateFrom: '2026-06-10',
+        dateRange: 'custom',
+        dateTo: '2026-06-17',
+        page: '2',
+        pageSize: '25',
+        q: ' linh ',
+        review: 'low-rating',
+        sort: 'rating-asc',
+      }),
+    ).toEqual({
+      dateFrom: '2026-06-10',
+      dateRange: 'custom',
+      dateTo: '2026-06-17',
       page: 2,
       pageSize: 25,
       q: 'linh',
       review: 'follow-up',
+      sort: 'rating-asc',
     });
     expect(buildReviewFilters({ review: 'hidden' })).toMatchObject({ review: 'held' });
-    expect(buildReviewFilters({ page: '-1', pageSize: '999', review: 'unknown' })).toEqual({
+    expect(
+      buildReviewFilters({
+        dateFrom: 'bad',
+        dateRange: 'bad',
+        page: '-1',
+        pageSize: '999',
+        review: 'unknown',
+        sort: 'bad',
+      }),
+    ).toEqual({
+      dateFrom: '',
+      dateRange: 'all',
+      dateTo: '',
       page: 1,
       pageSize: 10,
       q: '',
       review: '',
+      sort: 'newest',
     });
   });
 
-  it('filters reviews by moderation queue and search query', () => {
+  it('filters reviews by moderation queue, request date range, and search query', () => {
     const reviews = [
-      review({ id: 'reported', reportReason: 'Customer asked for follow-up', status: 'REPORTED' }),
-      review({ id: 'hidden', providerProfile: { displayName: 'Partner Linh' }, status: 'HIDDEN' }),
-      review({ id: 'published', comment: 'Great service', status: 'PUBLISHED' }),
+      review({
+        booking: { openedAt: '2026-06-17T10:00:00.000Z' },
+        id: 'reported',
+        reportReason: 'Customer asked for follow-up',
+        status: 'REPORTED',
+      }),
+      review({
+        booking: { openedAt: '2026-06-18T10:00:00.000Z' },
+        id: 'hidden',
+        providerProfile: { displayName: 'Partner Linh' },
+        status: 'HIDDEN',
+      }),
+      review({
+        booking: { openedAt: '2026-06-19T10:00:00.000Z' },
+        comment: 'Great service',
+        id: 'published',
+        status: 'PUBLISHED',
+      }),
     ];
 
-    expect(filterReviews(reviews, filters({ review: 'follow-up' })).map((item) => item.id)).toEqual(['reported']);
+    expect(filterReviews(reviews, filters({ review: 'follow-up' })).map((item) => item.id)).toEqual([
+      'reported',
+    ]);
     expect(filterReviews(reviews, filters({ review: 'held' })).map((item) => item.id)).toEqual(['hidden']);
     expect(filterReviews(reviews, filters({ q: 'linh' })).map((item) => item.id)).toEqual(['hidden']);
+    expect(
+      filterReviews(
+        reviews,
+        filters({
+          dateFrom: '2026-06-18',
+          dateRange: 'custom',
+          dateTo: '2026-06-18',
+        }),
+      ).map((item) => item.id),
+    ).toEqual(['hidden']);
     expect(filterReviews(reviews, filters({ review: '' }))).toHaveLength(3);
+  });
+
+  it('sorts reviews by the selected review sort mode', () => {
+    const reviews = [
+      review({ createdAt: '2026-06-20T10:00:00.000Z', id: 'newer', rating: 2 }),
+      review({ createdAt: '2026-06-19T10:00:00.000Z', id: 'older', rating: 5 }),
+    ];
+
+    expect(sortReviews(reviews, 'oldest').map((item) => item.id)).toEqual(['older', 'newer']);
+    expect(sortReviews(reviews, 'rating-desc').map((item) => item.id)).toEqual(['older', 'newer']);
+    expect(sortReviews(reviews, 'rating-asc').map((item) => item.id)).toEqual(['newer', 'older']);
   });
 
   it('builds summary and command board counts', () => {
@@ -70,7 +136,9 @@ describe('review page model', () => {
       reported: 1,
       total: 3,
     });
-    expect(buildReviewCommandBoard(reviews).map((item) => [item.title, item.reviews.length, item.tone])).toEqual([
+    expect(
+      buildReviewCommandBoard(reviews).map((item) => [item.title, item.reviews.length, item.tone]),
+    ).toEqual([
       ['Reported reviews', 1, 'warn'],
       ['Service follow-up', 1, 'warn'],
       ['Held from app', 1, 'info'],
@@ -135,9 +203,12 @@ describe('review page model', () => {
       totalPages: 2,
       totalRows: 4,
     });
-    expect(buildReviewListHref(filters({ pageSize: 25, q: 'mai', review: 'held' }), { page: 2 })).toBe(
-      '/reviews?q=mai&pageSize=25&review=held&page=2',
-    );
+    expect(
+      buildReviewListHref(
+        filters({ dateRange: '7d', pageSize: 25, q: 'mai', review: 'held', sort: 'rating-desc' }),
+        { page: 2 },
+      ),
+    ).toBe('/reviews?q=mai&pageSize=25&review=held&dateRange=7d&sort=rating-desc&page=2');
   });
 
   it('keeps filter, export, and tone copy stable', () => {
@@ -151,14 +222,20 @@ describe('review page model', () => {
   });
 });
 
-function filters(input: Partial<ReturnType<typeof buildReviewFilters>> = {}) {
-  return {
+function filters(
+  input: Partial<ReturnType<typeof buildReviewFilters>> = {},
+): ReturnType<typeof buildReviewFilters> {
+  const base: ReturnType<typeof buildReviewFilters> = {
     page: 1,
     pageSize: 10,
     q: '',
     review: '',
-    ...input,
+    dateFrom: '',
+    dateRange: 'all',
+    dateTo: '',
+    sort: 'newest',
   };
+  return { ...base, ...input };
 }
 
 function review(input: Partial<AdminReview>): AdminReview {

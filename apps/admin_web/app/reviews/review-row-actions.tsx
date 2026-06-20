@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { CheckCircle2, EyeOff, Flag, MoreVertical, Pencil, Save, Star, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -42,7 +43,11 @@ const reviewRatingOptions = [5, 4, 3, 2, 1].map((rating) => ({
 export function ReviewRowActions({ actions, editReview, label }: ReviewRowActionsProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const rootRef = useRef<HTMLDivElement>(null);
+  const search = searchParams.toString();
+  const returnTo = `${pathname}${search ? `?${search}` : ''}`;
 
   useEffect(() => {
     if (!open) {
@@ -103,7 +108,9 @@ export function ReviewRowActions({ actions, editReview, label }: ReviewRowAction
         ) : null}
       </div>
 
-      {editing ? <ReviewEditDrawer editReview={editReview} onClose={() => setEditing(false)} /> : null}
+      {editing ? (
+        <ReviewEditDrawer editReview={editReview} onClose={() => setEditing(false)} returnTo={returnTo} />
+      ) : null}
     </>
   );
 }
@@ -135,7 +142,13 @@ function ReviewActionLink({
   }
 
   return (
-    <Link className={className} href={action.href} onClick={onSelect} role="menuitem" title={action.description}>
+    <Link
+      className={className}
+      href={action.href}
+      onClick={onSelect}
+      role="menuitem"
+      title={action.description}
+    >
       {content}
     </Link>
   );
@@ -144,9 +157,11 @@ function ReviewActionLink({
 function ReviewEditDrawer({
   editReview,
   onClose,
+  returnTo,
 }: {
   readonly editReview: ReviewEditModel;
   readonly onClose: () => void;
+  readonly returnTo: string;
 }) {
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -169,13 +184,23 @@ function ReviewEditDrawer({
         onClick={onClose}
         type="button"
       />
-      <aside aria-labelledby={titleId} aria-modal="true" className="calendar-drawer review-edit-drawer" role="dialog">
+      <aside
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="calendar-drawer review-edit-drawer"
+        role="dialog"
+      >
         <div className="calendar-drawer-header">
           <div>
             <span className="calendar-drawer-eyebrow">Review moderation</span>
             <h2 id={titleId}>Edit Review</h2>
           </div>
-          <button aria-label="Close review editor" className="button button-secondary" onClick={onClose} type="button">
+          <button
+            aria-label="Close review editor"
+            className="button button-secondary"
+            onClick={onClose}
+            type="button"
+          >
             <X aria-hidden="true" size={16} />
           </button>
         </div>
@@ -205,6 +230,7 @@ function ReviewEditDrawer({
             <input name="reviewId" type="hidden" value={editReview.reviewId} />
             <input name="status" type="hidden" value={editReview.status} />
             <input name="reportReason" type="hidden" value={editReview.reportReasonValue} />
+            <input name="returnTo" type="hidden" value={returnTo} />
             <section className="review-edit-form-card" aria-label="Revised review">
               <div className="review-edit-section-heading">
                 <span className="calendar-drawer-eyebrow">Replacement</span>

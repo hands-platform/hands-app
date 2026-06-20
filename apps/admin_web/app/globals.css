@@ -7769,6 +7769,7 @@ textarea:focus-visible {
 }
 
 .vuexy-review-filter-bar {
+  align-items: flex-start;
   justify-content: space-between;
   margin-top: 0;
 }
@@ -7776,6 +7777,18 @@ textarea:focus-visible {
 .vuexy-review-filter-bar .vuexy-review-controls {
   flex: 1 1 460px;
   justify-content: flex-end;
+}
+
+.vuexy-review-date-buttons {
+  flex: 1 1 520px;
+}
+
+.vuexy-review-custom-date-grid {
+  flex: 1 1 520px;
+}
+
+.vuexy-review-sort-select {
+  min-width: 168px;
 }
 
 .reviews-page .vuexy-review-card .admin-filter-panel-body {

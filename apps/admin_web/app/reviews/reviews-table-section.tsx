@@ -7,13 +7,22 @@ import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
+  AdminFormDate,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
-import { REVIEW_PAGE_SIZE_OPTIONS, buildReviewListHref, reviewFilterDescription } from './review-page-model';
+import {
+  REVIEW_DATE_RANGE_OPTIONS,
+  REVIEW_PAGE_SIZE_OPTIONS,
+  REVIEW_SORT_OPTIONS,
+  buildReviewListHref,
+  reviewDateRangeLabel,
+  reviewFilterDescription,
+  reviewSortLabel,
+} from './review-page-model';
 import { ReviewRowActions } from './review-row-actions';
 
 export type ReviewTableRow = {
@@ -77,7 +86,7 @@ export function ReviewsTableSection({
         resultTone={activeFilterLabels.length > 0 ? 'warning' : 'info'}
         title="Review operation filters"
         description="Customer-written reviews are published by default. Operators can hold visibility, mark follow-up, or correct rating and review copy."
-        footer={(
+        footer={
           <div className="vuexy-review-filter-summary">
             {activeFilterLabels.map((label) => (
               <span className="pill pill-warn" key={label}>
@@ -87,14 +96,21 @@ export function ReviewsTableSection({
             {activeFilterLabels.length > 0 ? (
               <AdminFormControlLink
                 className="button button-secondary vuexy-review-clear-filter"
-                href={buildReviewListHref(filters, { q: '', review: '' })}
+                href={buildReviewListHref(filters, {
+                  dateFrom: '',
+                  dateRange: 'all',
+                  dateTo: '',
+                  q: '',
+                  review: '',
+                  sort: 'newest',
+                })}
               >
                 <X aria-hidden="true" size={14} />
                 Clear filters
               </AdminFormControlLink>
             ) : null}
           </div>
-        )}
+        }
       >
         <div className="booking-date-filter-bar vuexy-review-filter-bar" aria-label="Review list filters">
           <div className="booking-date-filter-buttons" role="group" aria-label="Review status">
@@ -109,8 +125,45 @@ export function ReviewsTableSection({
               </a>
             ))}
           </div>
+          <div
+            className="booking-date-filter-buttons vuexy-review-date-buttons"
+            role="group"
+            aria-label="Review request date"
+          >
+            {REVIEW_DATE_RANGE_OPTIONS.map((option) => (
+              <a
+                key={option.value}
+                aria-current={filters.dateRange === option.value ? 'page' : undefined}
+                className={filters.dateRange === option.value ? 'is-active' : undefined}
+                href={buildReviewListHref(filters, {
+                  dateFrom: '',
+                  dateRange: option.value,
+                  dateTo: '',
+                })}
+              >
+                {option.label}
+              </a>
+            ))}
+          </div>
+          {filters.dateRange === 'custom' ? (
+            <form action="/reviews" className="booking-custom-date-grid vuexy-review-custom-date-grid">
+              <input name="review" type="hidden" value={filters.review} />
+              <input name="q" type="hidden" value={filters.q} />
+              <input name="pageSize" type="hidden" value={filters.pageSize} />
+              <input name="sort" type="hidden" value={filters.sort} />
+              <input name="dateRange" type="hidden" value="custom" />
+              <AdminFormDate defaultValue={filters.dateFrom} label="Date from" name="dateFrom" />
+              <AdminFormDate defaultValue={filters.dateTo} label="Date to" name="dateTo" />
+              <button className="booking-date-apply-button" type="submit">
+                Apply dates
+              </button>
+            </form>
+          ) : null}
           <form action="/reviews" className="vuexy-review-controls">
             <input name="review" type="hidden" value={filters.review} />
+            <input name="dateRange" type="hidden" value={filters.dateRange} />
+            <input name="dateFrom" type="hidden" value={filters.dateFrom} />
+            <input name="dateTo" type="hidden" value={filters.dateTo} />
             <AdminFormSearch
               className="vuexy-review-search"
               defaultValue={filters.q}
@@ -119,15 +172,20 @@ export function ReviewsTableSection({
               placeholder="Search Review"
             />
             <AdminFormSelect
+              className="vuexy-review-sort-select"
+              defaultValue={filters.sort}
+              label="Sort reviews"
+              name="sort"
+              options={reviewSortOptions}
+            />
+            <AdminFormSelect
               className="vuexy-review-select"
               defaultValue={String(filters.pageSize)}
               label="Rows per page"
               name="pageSize"
               options={reviewPageSizeOptions}
             />
-            <AdminFormControlButton className="vuexy-review-button">
-              Apply
-            </AdminFormControlButton>
+            <AdminFormControlButton className="vuexy-review-button">Apply</AdminFormControlButton>
             <AdminFormControlLink
               className="vuexy-review-export"
               download="hands-customer-reviews.csv"
@@ -269,6 +327,13 @@ function reviewActiveFilterLabels(filters: ReviewFilters) {
   if (filters.review) {
     labels.push(reviewFilterDescription(filters.review));
   }
+  const dateRange = reviewDateRangeLabel(filters);
+  if (dateRange) {
+    labels.push(dateRange);
+  }
+  if (filters.sort !== 'newest') {
+    labels.push(`Sort: ${reviewSortLabel(filters.sort)}`);
+  }
   return labels;
 }
 
@@ -284,3 +349,8 @@ const reviewStatusButtonOptions = [
   { label: 'Follow-up', value: 'follow-up' },
   { label: 'Reported', value: 'reported' },
 ] as const;
+
+const reviewSortOptions = REVIEW_SORT_OPTIONS.map((option) => ({
+  label: option.label,
+  value: option.value,
+}));

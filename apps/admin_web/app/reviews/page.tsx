@@ -5,10 +5,7 @@ import { ConfirmDialog } from '../../components/confirm-dialog';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
-import {
-  buildReviewModerationConfirmation,
-  readReviewModerationStatus,
-} from './review-action-confirmation';
+import { buildReviewModerationConfirmation, readReviewModerationStatus } from './review-action-confirmation';
 import {
   REVIEW_EXPORT_COLUMNS,
   buildReviewExportRows,
@@ -27,8 +24,8 @@ type ReviewsPageSearchParams = Promise<Record<string, string | string[] | undefi
 export default async function ReviewsPage({ searchParams }: { searchParams?: ReviewsPageSearchParams }) {
   const params = searchParams ? await searchParams : {};
   const filters = buildReviewFilters(params);
-  const allReviews = sortReviews(await adminGet<AdminReview[]>('/admin/reviews', []));
-  const reviews = filterReviews(allReviews, filters);
+  const allReviews = await adminGet<AdminReview[]>('/admin/reviews', []);
+  const reviews = filterReviews(sortReviews(allReviews, filters.sort), filters);
   const pagination = paginateReviewRows(reviews, filters);
   const summary = buildSummary(allReviews);
   const reviewRows = buildReviewTableRows(pagination.rows);

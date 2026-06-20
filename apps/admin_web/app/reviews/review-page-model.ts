@@ -12,6 +12,30 @@ import type { ReviewTableRow } from './reviews-table-section';
 
 export const DEFAULT_REVIEW_PAGE_SIZE = 10;
 export const REVIEW_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+export type ReviewDateRangeFilter = 'all' | 'today' | 'yesterday' | '7d' | '30d' | 'custom';
+export type ReviewSortFilter = 'newest' | 'oldest' | 'rating-desc' | 'rating-asc';
+
+export const REVIEW_DATE_RANGE_OPTIONS: readonly {
+  readonly label: string;
+  readonly value: ReviewDateRangeFilter;
+}[] = [
+  { value: 'all', label: 'All dates' },
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Previous day' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last month' },
+  { value: 'custom', label: 'Custom dates' },
+];
+
+export const REVIEW_SORT_OPTIONS: readonly {
+  readonly label: string;
+  readonly value: ReviewSortFilter;
+}[] = [
+  { value: 'newest', label: 'Newest request' },
+  { value: 'oldest', label: 'Oldest request' },
+  { value: 'rating-desc', label: 'Highest rating' },
+  { value: 'rating-asc', label: 'Lowest rating' },
+];
 export const REVIEW_EXPORT_COLUMNS = [
   'Review ID',
   'Partner',
@@ -53,10 +77,14 @@ type ReviewAvatarProviderSignal = {
 };
 
 export type ReviewFilters = {
+  readonly dateFrom: string;
+  readonly dateRange: ReviewDateRangeFilter;
+  readonly dateTo: string;
   readonly page: number;
   readonly pageSize: number;
   readonly q: string;
   readonly review: string;
+  readonly sort: ReviewSortFilter;
 };
 
 export type ReviewPagination<T> = {
@@ -86,7 +114,8 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
         ? `/customers/${review.customerProfileId}`
         : null,
     customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
-    customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
+    customerLabel:
+      review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
     customerAvatarStatus: reviewCustomerAvatarStatus(review),
     customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
     id: review.id,
@@ -131,13 +160,23 @@ function reviewPartnerAvatarStatus(review: AdminReview): AdminAvatarStatus {
   });
 }
 
-export function sortReviews(reviews: readonly AdminReview[]): AdminReview[] {
+export function sortReviews(
+  reviews: readonly AdminReview[],
+  sort: ReviewSortFilter = 'newest',
+): AdminReview[] {
   return [...reviews].sort((left, right) => {
-    const signalDiff = reviewPriority(left) - reviewPriority(right);
-    if (signalDiff !== 0) {
-      return signalDiff;
+    if (sort === 'oldest') {
+      return reviewRequestMs(left) - reviewRequestMs(right);
     }
-    return dateMs(right.createdAt) - dateMs(left.createdAt);
+    if (sort === 'rating-desc') {
+      return ratingSortValue(right) - ratingSortValue(left) || reviewRequestMs(right) - reviewRequestMs(left);
+    }
+    if (sort === 'rating-asc') {
+      return ratingSortValue(left) - ratingSortValue(right) || reviewRequestMs(right) - reviewRequestMs(left);
+    }
+
+    const signalDiff = reviewPriority(left) - reviewPriority(right);
+    return signalDiff || reviewRequestMs(right) - reviewRequestMs(left);
   });
 }
 
@@ -181,10 +220,14 @@ export function buildReviewCommandBoard(reviews: readonly AdminReview[]): Review
 
 export function buildReviewFilters(params: Record<string, string | string[] | undefined>): ReviewFilters {
   return {
+    dateFrom: normalizeDateParam(readParam(params.dateFrom)),
+    dateRange: normalizeReviewDateRange(readParam(params.dateRange)),
+    dateTo: normalizeDateParam(readParam(params.dateTo)),
     page: normalizePage(readParam(params.page)),
     pageSize: normalizePageSize(readParam(params.pageSize)),
     q: readParam(params.q).trim(),
     review: normalizeReviewFilter(readParam(params.review)),
+    sort: normalizeReviewSort(readParam(params.sort)),
   };
 }
 
@@ -193,6 +236,9 @@ export function filterReviews(reviews: readonly AdminReview[], filters: ReviewFi
 
   return reviews.filter((review) => {
     if (filters.review && !reviewMatchesFilter(review, filters.review)) {
+      return false;
+    }
+    if (!reviewMatchesDateRange(review, filters)) {
       return false;
     }
     if (query && !searchableReviewText(review).includes(query)) {
@@ -237,6 +283,18 @@ export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<R
   if (next.review) {
     params.set('review', next.review);
   }
+  if (next.dateRange !== 'all') {
+    params.set('dateRange', next.dateRange);
+  }
+  if (next.dateRange === 'custom' && next.dateFrom) {
+    params.set('dateFrom', next.dateFrom);
+  }
+  if (next.dateRange === 'custom' && next.dateTo) {
+    params.set('dateTo', next.dateTo);
+  }
+  if (next.sort !== 'newest') {
+    params.set('sort', next.sort);
+  }
   if (next.page > 1) {
     params.set('page', String(next.page));
   }
@@ -268,6 +326,31 @@ export function reviewFilterDescription(review: string) {
     return 'reviews currently visible in the app.';
   }
   return 'all customer reviews.';
+}
+
+export function reviewDateRangeLabel(filters: ReviewFilters) {
+  if (filters.dateRange === 'today') {
+    return 'Today';
+  }
+  if (filters.dateRange === 'yesterday') {
+    return 'Previous day';
+  }
+  if (filters.dateRange === '7d') {
+    return 'Last 7 days';
+  }
+  if (filters.dateRange === '30d') {
+    return 'Last month';
+  }
+  if (filters.dateRange === 'custom') {
+    const from = filters.dateFrom || 'Any start';
+    const to = filters.dateTo || 'Any end';
+    return `Custom: ${from} - ${to}`;
+  }
+  return '';
+}
+
+export function reviewSortLabel(sort: ReviewSortFilter) {
+  return REVIEW_SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Newest request';
 }
 
 export function emptyReviewMessage(review: string) {
@@ -432,7 +515,60 @@ function reviewServiceLabel(review: AdminReview) {
 }
 
 function reviewBookingRequestTimeLabel(review: AdminReview) {
-  return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');
+  return formatDateTime(
+    review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt,
+    'No request time',
+  );
+}
+
+function reviewMatchesDateRange(review: AdminReview, filters: ReviewFilters) {
+  if (filters.dateRange === 'all') {
+    return true;
+  }
+
+  const timestamp = reviewRequestTimestamp(review);
+  if (timestamp === null) {
+    return false;
+  }
+
+  const bounds = reviewDateRangeBounds(filters);
+  return timestamp >= bounds.startMs && timestamp <= bounds.endMs;
+}
+
+function reviewDateRangeBounds(filters: ReviewFilters) {
+  const todayStartMs = startOfLocalDay(Date.now());
+  const todayEndMs = endOfLocalDay(todayStartMs);
+
+  switch (filters.dateRange) {
+    case 'today':
+      return { startMs: todayStartMs, endMs: todayEndMs };
+    case 'yesterday': {
+      const startMs = addDays(todayStartMs, -1);
+      return { startMs, endMs: endOfLocalDay(startMs) };
+    }
+    case '7d':
+      return { startMs: addDays(todayStartMs, -6), endMs: todayEndMs };
+    case '30d':
+      return { startMs: addDays(todayStartMs, -29), endMs: todayEndMs };
+    case 'custom':
+      return customDateRangeBounds(filters.dateFrom, filters.dateTo);
+    default:
+      return { startMs: Number.NEGATIVE_INFINITY, endMs: Number.POSITIVE_INFINITY };
+  }
+}
+
+function customDateRangeBounds(dateFrom: string, dateTo: string) {
+  const from = parseDateInput(dateFrom);
+  const to = parseDateInput(dateTo);
+
+  if (from === null && to === null) {
+    return { startMs: Number.NEGATIVE_INFINITY, endMs: Number.POSITIVE_INFINITY };
+  }
+
+  const startMs = from ?? Number.NEGATIVE_INFINITY;
+  const endMs = to === null ? Number.POSITIVE_INFINITY : endOfLocalDay(to);
+
+  return startMs <= endMs ? { startMs, endMs } : { startMs: endMs, endMs: startMs };
 }
 
 function searchableReviewText(review: AdminReview) {
@@ -501,9 +637,71 @@ function normalizeReviewFilter(value: string) {
   return '';
 }
 
+function normalizeReviewDateRange(value: string): ReviewDateRangeFilter {
+  return REVIEW_DATE_RANGE_OPTIONS.some((option) => option.value === value)
+    ? (value as ReviewDateRangeFilter)
+    : 'all';
+}
+
+function normalizeReviewSort(value: string): ReviewSortFilter {
+  return REVIEW_SORT_OPTIONS.some((option) => option.value === value)
+    ? (value as ReviewSortFilter)
+    : 'newest';
+}
+
+function normalizeDateParam(value: string) {
+  return parseDateInput(value) === null ? '' : value;
+}
+
 function dateMs(value?: string | null) {
   const timestamp = value ? new Date(value).getTime() : 0;
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function reviewRequestMs(review: AdminReview) {
+  return reviewRequestTimestamp(review) ?? 0;
+}
+
+function reviewRequestTimestamp(review: AdminReview) {
+  return safeDateMs(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt);
+}
+
+function safeDateMs(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function ratingSortValue(review: AdminReview) {
+  return Number.isFinite(review.rating) ? review.rating : -1;
+}
+
+function parseDateInput(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  const timestamp = new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function startOfLocalDay(timestamp: number) {
+  const date = new Date(timestamp);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function endOfLocalDay(startMs: number) {
+  return addDays(startMs, 1) - 1;
+}
+
+function addDays(timestamp: number, days: number) {
+  const date = new Date(timestamp);
+  date.setDate(date.getDate() + days);
+  return date.getTime();
 }
 
 function pad(value: number) {

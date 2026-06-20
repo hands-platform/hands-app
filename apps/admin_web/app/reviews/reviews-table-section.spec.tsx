@@ -1,8 +1,4 @@
-import {
-  DEFAULT_REVIEW_PAGE_SIZE,
-  type ReviewFilters,
-  type ReviewPagination,
-} from './review-page-model';
+import { DEFAULT_REVIEW_PAGE_SIZE, type ReviewFilters, type ReviewPagination } from './review-page-model';
 import { ReviewsTableSection, type ReviewTableRow } from './reviews-table-section';
 
 describe('ReviewsTableSection', () => {
@@ -24,6 +20,12 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Held');
     expect(rendered).toContain('Follow-up');
     expect(rendered).toContain('Reported');
+    expect(rendered).toContain('Today');
+    expect(rendered).toContain('Previous day');
+    expect(rendered).toContain('Last 7 days');
+    expect(rendered).toContain('Last month');
+    expect(rendered).toContain('Custom dates');
+    expect(rendered).toContain('Newest request');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Customer review list');
     expect(rendered).toContain('Request Time');
@@ -49,11 +51,17 @@ describe('ReviewsTableSection', () => {
         '/reviews?review=held',
         '/reviews?review=follow-up',
         '/reviews?review=reported',
+        '/reviews?dateRange=today',
+        '/reviews?dateRange=yesterday',
+        '/reviews?dateRange=7d',
+        '/reviews?dateRange=30d',
+        '/reviews?dateRange=custom',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-form-search vuexy-review-search',
+        'admin-form-select vuexy-review-sort-select',
         'admin-form-select vuexy-review-select',
         'admin-form-control-button vuexy-review-button',
         'admin-form-control-link vuexy-review-export',
@@ -93,6 +101,37 @@ describe('ReviewsTableSection', () => {
     ]);
   });
 
+  it('renders booking-style custom date controls and active filter summary', () => {
+    const section = ReviewsTableSection({
+      csvHref: 'data:text/csv;charset=utf-8,Review',
+      emptyMessage: 'No customer reviews loaded.',
+      filters: filters({
+        dateFrom: '2026-06-10',
+        dateRange: 'custom',
+        dateTo: '2026-06-17',
+        q: 'mai',
+        sort: 'rating-desc',
+      }),
+      pagination: pagination([buildRow()]),
+      rows: [buildRow()],
+      totalReviewCount: 4,
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Custom: 2026-06-10 - 2026-06-17');
+    expect(rendered).toContain('Sort: Highest rating');
+    expect(rendered).toContain('Search: mai');
+    expect(rendered).toContain('Apply dates');
+    expect(hrefsIn(section)).toContain('/reviews?q=mai&sort=rating-desc');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'booking-custom-date-grid vuexy-review-custom-date-grid',
+        'booking-date-apply-button',
+      ]),
+    );
+  });
+
   it('renders the empty state when there are no review rows', () => {
     const section = ReviewsTableSection({
       csvHref: 'data:text/csv;charset=utf-8,Review',
@@ -109,7 +148,9 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Showing 0 of 3');
     expect(rendered).toContain('reviews held from app visibility but retained for evidence.');
     expect(rendered).toContain('Clear filters');
-    expect(classNamesIn(section)).toContain('admin-form-control-link button button-secondary vuexy-review-clear-filter');
+    expect(classNamesIn(section)).toContain(
+      'admin-form-control-link button button-secondary vuexy-review-clear-filter',
+    );
     expect(rendered).toContain('Showing 0 to 0 of 0 entries');
   });
 });
@@ -167,13 +208,17 @@ function buildRow(): ReviewTableRow {
 }
 
 function filters(input: Partial<ReviewFilters> = {}): ReviewFilters {
-  return {
+  const base: ReviewFilters = {
     page: 1,
     pageSize: DEFAULT_REVIEW_PAGE_SIZE,
     q: '',
     review: '',
-    ...input,
+    dateFrom: '',
+    dateRange: 'all',
+    dateTo: '',
+    sort: 'newest',
   };
+  return { ...base, ...input };
 }
 
 function pagination(rows: ReviewTableRow[]): ReviewPagination<ReviewTableRow> {
