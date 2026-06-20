@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerBookingChatMessageRow = {
   readonly body: string;
   readonly createdLabel: string;
@@ -45,16 +47,30 @@ export function PartnerDetailBookingChatRecordsSection({
           Open bookings
         </Link>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {rows.length ? (
-          rows.map((row) => (
-            <div className="setup-stage-item" key={row.key}>
-              <span>{row.relation}</span>
-              <div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={
+            <PartnerBookingChatEmptyState message="Clear the date filter or choose a wider range to review the archive." />
+          }
+          headers={bookingChatHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((row) => (
+            <tr key={row.key}>
+              <td>
+                <span className={`pill ${row.hasChatRoom ? 'pill-success' : 'pill-danger'}`}>
+                  {row.relation}
+                </span>
+              </td>
+              <td>
                 <strong>{row.heading}</strong>
                 <p className="muted">{row.customerLine}</p>
-                <p className="muted">{row.paymentLine}</p>
+              </td>
+              <td>
+                <span className="muted">{row.paymentLine}</span>
                 {row.closureLine ? <p className="muted">{row.closureLine}</p> : null}
+              </td>
+              <td>
                 <p className="muted">{row.chatLine}</p>
                 {row.hasChatRoom ? (
                   <div className="ops-task-note admin-mt-10">
@@ -84,35 +100,39 @@ export function PartnerDetailBookingChatRecordsSection({
                     </p>
                   </div>
                 )}
-              </div>
-              <div className="participant-list">
-                <Link className="text-link" href={row.bookingHref}>
-                  Open booking
-                </Link>
-                {row.customerHref ? (
-                  <Link className="text-link" href={row.customerHref}>
-                    Open customer
+              </td>
+              <td>
+                <div className="participant-list">
+                  <Link className="text-link" href={row.bookingHref}>
+                    Open booking
                   </Link>
-                ) : null}
-                {row.chatHref ? (
-                  <Link className="text-link" href={row.chatHref}>
-                    Open chat archive
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
-            <div>
-              <strong>No booking records matched this date filter</strong>
-              <p className="muted">Clear the date filter or choose a wider range to review the archive.</p>
-            </div>
-            <small>0</small>
-          </div>
-        )}
-      </div>
+                  {row.customerHref ? (
+                    <Link className="text-link" href={row.customerHref}>
+                      Open customer
+                    </Link>
+                  ) : null}
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref}>
+                      Open chat archive
+                    </Link>
+                  ) : null}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const bookingChatHeaders = ['Relation', 'Booking', 'Payment', 'Chat archive', 'Action'] as const;
+
+function PartnerBookingChatEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No booking records matched this date filter</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
