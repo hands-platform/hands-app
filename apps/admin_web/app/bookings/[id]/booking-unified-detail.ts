@@ -236,11 +236,13 @@ function bookingUnifiedMatchedPartnerRows({
       detail: selectedProvider?.id
         ? `Partner ${shortId(selectedProvider.id)}`
         : 'No selected Partner profile.',
+      variant: 'secondary',
     },
     {
       label: 'Match source',
       value: booking.matchSource ?? booking.matchingEvidence?.finalSelection ?? 'Not recorded',
       detail: formatDate(booking.matchedAt),
+      variant: 'secondary',
     },
     ...partnerLocationRows,
     {
@@ -256,6 +258,7 @@ function bookingUnifiedMatchedPartnerRows({
       label: 'Latest location',
       value: latestPartnerLocation.value,
       detail: latestPartnerLocation.detail,
+      variant: 'secondary',
     },
   ];
 }
@@ -643,6 +646,7 @@ function bookingUnifiedPartnerLocationCheckpointRow({
     detail: location.detail,
     label,
     value: location.value,
+    variant: 'secondary',
   };
 }
 
