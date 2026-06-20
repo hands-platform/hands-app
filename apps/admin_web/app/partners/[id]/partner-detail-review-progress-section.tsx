@@ -98,6 +98,8 @@ export function PartnerDetailApprovalEvidenceSummarySection({
   rows,
 }: PartnerDetailApprovalEvidenceSummarySectionProps) {
   const openRows = rows.filter((row) => row.tone !== 'pill-success' && row.tone !== 'pill-neutral').length;
+  const clearRows = rows.length - openRows;
+  const firstOpenRow = rows.find((row) => row.tone !== 'pill-success' && row.tone !== 'pill-neutral');
 
   return (
     <div className="card admin-mb-16" id="partner-approval-evidence-summary">
@@ -105,13 +107,30 @@ export function PartnerDetailApprovalEvidenceSummarySection({
         <div>
           <h2>Partner approval evidence summary</h2>
           <p className="muted">
-            Compact approval read for KYC, required documents, payout bank, and tax evidence. Open the detail
-            card only when this row needs a decision.
+            Compact pre-approval checklist for KYC, required documents, payout bank, and tax evidence. Open
+            the detail card only when this row needs a decision.
           </p>
         </div>
         <span className={`pill ${openRows ? 'pill-warn' : 'pill-success'}`}>
-          {openRows ? `${openRows} check(s)` : 'Evidence clear'}
+          {openRows ? `${openRows} approval task(s)` : 'Ready to approve'}
         </span>
+      </div>
+      <div className="service-trace-summary admin-mt-12">
+        <div>
+          <span>Remaining</span>
+          <strong>{openRows} item(s)</strong>
+          <small>Evidence still needing review.</small>
+        </div>
+        <div>
+          <span>Clear</span>
+          <strong>{clearRows} item(s)</strong>
+          <small>Rows already clear or not required.</small>
+        </div>
+        <div>
+          <span>Next step</span>
+          <strong>{firstOpenRow?.title ?? 'Approve Partner'}</strong>
+          <small>Use the linked row before account approval.</small>
+        </div>
       </div>
       <AdminTableScroll>
         <AdminDataTable

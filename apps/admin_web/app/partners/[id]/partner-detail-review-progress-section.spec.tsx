@@ -57,8 +57,14 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Partner approval evidence summary');
-    expect(rendered).toContain('2 check(s)');
+    expect(rendered).toContain('2 approval task(s)');
+    expect(rendered).toContain('Remaining');
+    expect(rendered).toContain('2 item(s)');
+    expect(rendered).toContain('Clear');
+    expect(rendered).toContain('2 item(s)');
+    expect(rendered).toContain('Next step');
     expect(rendered).toContain('KYC decision needed');
+    expect(rendered).toContain('Use the linked row before account approval.');
     expect(rendered).toContain('Required documents approved');
     expect(rendered).toContain('Payout bank needs review');
     expect(rendered).toContain('Tax can stay deferred');
