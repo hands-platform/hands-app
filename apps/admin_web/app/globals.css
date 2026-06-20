@@ -2147,9 +2147,9 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: 8px;
   display: grid;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 14px;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
 }
 
 .booking-chat-message {
@@ -2157,14 +2157,14 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: 8px;
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 10px 12px;
 }
 
 .booking-chat-message p {
   color: var(--admin-text);
   font-size: 13px;
-  line-height: 20px;
+  line-height: 18px;
   margin: 0;
   white-space: pre-wrap;
 }
@@ -2173,18 +2173,18 @@ a.action-button-card:hover {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .booking-chat-message-meta strong {
   font-size: 13px;
-  line-height: 20px;
+  line-height: 18px;
 }
 
 .booking-chat-message-meta time {
   color: var(--admin-disabled);
   font-size: 12px;
-  line-height: 18px;
+  line-height: 16px;
 }
 
 .booking-chat-empty {
@@ -2193,7 +2193,7 @@ a.action-button-card:hover {
   color: var(--admin-muted);
   font-size: 13px;
   line-height: 20px;
-  padding: 24px;
+  padding: 18px;
   text-align: center;
 }
 
@@ -2271,15 +2271,15 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: 8px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: space-between;
-  margin-top: 14px;
-  padding: 14px;
+  margin-top: 10px;
+  padding: 10px 12px;
 }
 
 .booking-outcome-decision-main {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -2288,7 +2288,7 @@ a.action-button-card:hover {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .booking-outcome-decision-actions form {
@@ -2304,7 +2304,7 @@ a.action-button-card:hover {
 }
 
 .booking-action-note-form {
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .booking-action-note-panel {
@@ -2312,14 +2312,14 @@ a.action-button-card:hover {
   border: 1px solid var(--admin-border);
   border-radius: 8px;
   display: grid;
-  gap: 14px;
+  gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding: 14px;
+  padding: 10px 12px;
 }
 
 .booking-action-note-field {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -4641,6 +4641,27 @@ a.action-button-card:hover {
   border-color: var(--admin-accent);
   box-shadow: var(--admin-focus-ring);
   outline: none;
+}
+
+#operator-notes .ops-note-history {
+  gap: 6px;
+  max-height: 180px;
+  padding: 10px;
+}
+
+#operator-notes .ops-note-history p {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+#operator-notes .ops-note-form {
+  gap: 8px;
+}
+
+#operator-notes .ops-note-textarea {
+  line-height: 1.5;
+  min-block-size: 96px;
+  padding: 10px 12px;
 }
 
 .ops-signal-card {
