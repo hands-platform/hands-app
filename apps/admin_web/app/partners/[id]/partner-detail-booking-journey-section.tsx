@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerBookingJourneyRow = {
   readonly detail: string;
   readonly heading: string;
@@ -27,6 +29,8 @@ type PartnerDetailBookingJourneySectionProps = {
   readonly title: string;
 };
 
+const bookingJourneyHeaders = ['Relation', 'Booking', 'Detail', 'Steps', 'Latest', 'Action'];
+
 export function PartnerDetailBookingJourneySection({
   description,
   emptyDetail,
@@ -45,45 +49,61 @@ export function PartnerDetailBookingJourneySection({
         </div>
         <span className="pill pill-info">{rows.length} journey row(s)</span>
       </div>
-      <div className="setup-stage-list admin-mt-12">
-        {rows.length ? (
-          rows.map((row) => (
-            <div className="setup-stage-item" key={`partner-journey-${row.id}-${row.relation}`}>
-              <span>{row.relation}</span>
-              <div>
-                <Link className="text-link" href={`/bookings/${row.id}`}>
-                  <strong>{row.heading}</strong>
-                </Link>
-                <p className="muted">{row.detail}</p>
-                <div className="participant-list admin-mt-8">
-                  {row.steps.map((step) => (
-                    <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
-                      {step.label}: {step.value}
-                    </span>
-                  ))}
-                </div>
-                <div className="participant-list admin-mt-8">
-                  {row.links.map((link) => (
-                    <Link className="text-link" href={link.href} key={link.label}>
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-              <small>{row.latestAt ? formatLatestAt(row.latestAt) : 'No date'}</small>
-            </div>
-          ))
-        ) : (
-          <div className="setup-stage-item">
-            <span>NONE</span>
-            <div>
-              <strong>{emptyTitle}</strong>
-              <p className="muted">{emptyDetail}</p>
-            </div>
-            <small>0</small>
-          </div>
-        )}
+      <div className="admin-mt-12">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerBookingJourneyEmptyState detail={emptyDetail} title={emptyTitle} />}
+            headers={bookingJourneyHeaders}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={`partner-journey-${row.id}-${row.relation}`}>
+                <td>
+                  <strong>{row.relation}</strong>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    {row.heading}
+                  </Link>
+                </td>
+                <td>
+                  <p className="muted">{row.detail}</p>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {row.steps.map((step) => (
+                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
+                        {step.label}: {step.value}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td>
+                  <small>{row.latestAt ? formatLatestAt(row.latestAt) : 'No date'}</small>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {row.links.map((link) => (
+                      <Link className="text-link" href={link.href} key={link.label}>
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerBookingJourneyEmptyState({ detail, title }: { readonly detail: string; readonly title: string }) {
+  return (
+    <div className="empty-state">
+      <strong>{title}</strong>
+      <p className="muted">{detail}</p>
     </div>
   );
 }

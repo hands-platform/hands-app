@@ -20,12 +20,27 @@ describe('PartnerDetailBookingJourneySection', () => {
     expect(rendered).toContain('Partner booking journey');
     expect(rendered).toContain('Booking-by-booking factual journey.');
     expect(rendered).toContain('1 journey row(s)');
+    expect(rendered).toContain('Relation');
+    expect(rendered).toContain('Booking');
+    expect(rendered).toContain('Detail');
+    expect(rendered).toContain('Steps');
+    expect(rendered).toContain('Latest');
+    expect(rendered).toContain('Action');
     expect(rendered).toContain('Selected');
     expect(rendered).toContain('BK-1001 / Deep tissue');
     expect(rendered).toContain('First-pick : Customer selected');
     expect(rendered).toContain('Money : earning READY');
     expect(rendered).toContain('formatted 2026-06-09T02:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-success',
+        'pill pill-info',
+        'text-link',
+      ]),
+    );
   });
 
   it('renders an empty state when no journey rows match', () => {
@@ -42,9 +57,9 @@ describe('PartnerDetailBookingJourneySection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('0 journey row(s)');
-    expect(rendered).toContain('NONE');
     expect(rendered).toContain('No partner booking journey matched this filter');
     expect(rendered).toContain('Use a wider date range.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
   });
 });
 
@@ -108,6 +123,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function normalizeSpaces(value: string): string {
