@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import {
+  BookingChatLifecycleSection,
   BookingCloseoutReadinessSection,
   BookingCommunicationMovementHandoffSection,
   BookingMarketplaceWalletEvidenceSection,
@@ -182,6 +183,41 @@ describe('Booking operating sections', () => {
       ]),
     );
     expect(classNames).not.toContain('setup-stage-list admin-mt-12');
+  });
+
+  it('renders chat lifecycle as a compact Vuexy timeline', () => {
+    const section = BookingChatLifecycleSection({
+      chatLifecycle: {
+        adminDetail: 'Full chat archive is retained for support.',
+        adminState: 'Retained',
+        customerDetail: 'Customer can see the room until service closeout.',
+        customerState: 'Visible',
+        partnerDetail: 'Partner can coordinate arrival and service handoff.',
+        partnerState: 'Active',
+        roomLabel: 'room-abcd',
+        status: 'Chat ready',
+        tone: 'pill-success',
+      },
+      messageCount: 5,
+    });
+
+    const rendered = normalizedMarkupText(section);
+    const classNames = classNamesIn(section);
+
+    expect(rendered).toContain('Chat lifecycle and retention');
+    expect(rendered).toContain('Mobile customer app');
+    expect(rendered).toContain('Mobile Partner app');
+    expect(rendered).toContain('Admin archive');
+    expect(rendered).toContain('Surface Customer app');
+    expect(rendered).toContain('Room room-abcd');
+    expect(rendered).toContain('Messages 5 retained');
+    expect(classNames).toEqual(
+      expect.arrayContaining([
+        'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'vuexy-basic-timeline-dot is-success',
+      ]),
+    );
+    expect(classNames).not.toContain('service-trace-summary admin-mt-12');
   });
 
   it('renders closeout readiness with only unresolved focus items', () => {

@@ -594,6 +594,8 @@ export function BookingChatLifecycleSection({
   chatLifecycle,
   messageCount,
 }: BookingChatLifecycleSectionProps) {
+  const lifecycleItems = chatLifecycleTimelineItems(chatLifecycle, messageCount);
+
   return (
     <section className="card admin-mb-16" id="structured-ops-status">
       <div className="ops-section-header">
@@ -606,28 +608,7 @@ export function BookingChatLifecycleSection({
         </div>
         <span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        <div>
-          <span>Mobile customer app</span>
-          <strong>{chatLifecycle.customerState}</strong>
-          <small>{chatLifecycle.customerDetail}</small>
-        </div>
-        <div>
-          <span>Mobile Partner app</span>
-          <strong>{chatLifecycle.partnerState}</strong>
-          <small>{chatLifecycle.partnerDetail}</small>
-        </div>
-        <div>
-          <span>Admin archive</span>
-          <strong>{chatLifecycle.adminState}</strong>
-          <small>{chatLifecycle.adminDetail}</small>
-        </div>
-        <div>
-          <span>Room</span>
-          <strong>{chatLifecycle.roomLabel}</strong>
-          <small>{messageCount} message(s) retained.</small>
-        </div>
-      </div>
+      <BookingVuexyTimelineList items={lifecycleItems} />
     </section>
   );
 }
@@ -636,3 +617,57 @@ export type BookingChatLifecycleSectionProps = {
   chatLifecycle: ChatLifecycle;
   messageCount: number;
 };
+
+function chatLifecycleTimelineItems(
+  chatLifecycle: ChatLifecycle,
+  messageCount: number,
+): BookingVuexyTimelineItem[] {
+  const roomMeta = [
+    { label: 'Room', value: chatLifecycle.roomLabel },
+    { label: 'Messages', value: `${messageCount} retained` },
+  ] as const;
+
+  return [
+    {
+      detail: chatLifecycle.customerDetail,
+      id: 'chat-customer-app',
+      meta: [{ label: 'Surface', value: 'Customer app' }, ...roomMeta],
+      status: chatLifecycle.customerState,
+      title: 'Mobile customer app',
+      tone: chatLifecycleTone(chatLifecycle.customerState),
+      type: 'CHAT',
+    },
+    {
+      detail: chatLifecycle.partnerDetail,
+      id: 'chat-partner-app',
+      meta: [{ label: 'Surface', value: 'Partner app' }, ...roomMeta],
+      status: chatLifecycle.partnerState,
+      title: 'Mobile Partner app',
+      tone: chatLifecycleTone(chatLifecycle.partnerState),
+      type: 'CHAT',
+    },
+    {
+      detail: chatLifecycle.adminDetail,
+      id: 'chat-admin-archive',
+      meta: [{ label: 'Surface', value: 'Admin archive' }, ...roomMeta],
+      status: chatLifecycle.adminState,
+      title: 'Admin archive',
+      tone: chatLifecycleTone(chatLifecycle.adminState),
+      type: 'CHAT',
+    },
+  ];
+}
+
+function chatLifecycleTone(state: string): OperatingTimelineTone {
+  const searchable = state.toLowerCase();
+
+  if (/\b(missing|not|hidden|failed|blocked|closed)\b/.test(searchable)) {
+    return 'warning';
+  }
+
+  if (/\b(retained|ready|visible|active|created|open)\b/.test(searchable)) {
+    return 'success';
+  }
+
+  return 'info';
+}
