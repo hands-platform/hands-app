@@ -1,3 +1,4 @@
+import { AdminFormControlButton, AdminFormInput } from '../../../components/admin-form-controls';
 import { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatMoney, shortId } from '../../../lib/admin-format';
 import { settleBookingCashDebt } from './actions';
@@ -42,9 +43,9 @@ export function BookingPaymentAction({
           {evidenceHint ?? readout?.evidence ?? 'Payment action state is derived from the booking.'}
         </p>
       </div>
-      <button type="submit" disabled={disabled}>
+      <AdminFormControlButton disabled={disabled} type="submit">
         {label}
-      </button>
+      </AdminFormControlButton>
       <small>{ruleHint ?? readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
     </form>
   );
@@ -71,19 +72,19 @@ export function BookingCashDebtSettlementForm({ booking }: { booking: AdminBooki
           Partner cash collection created a negative wallet fee. Confirm deposit or admin offset evidence.
         </p>
       </div>
-      <input
+      <AdminFormInput
+        label="Cash debt settlement reference"
         name="settlementRef"
         defaultValue={settlementRef}
         placeholder={settlementRef}
-        aria-label="Cash debt settlement reference"
       />
-      <input
+      <AdminFormInput
+        label="Cash debt settlement notes"
         name="settlementNotes"
         defaultValue={`Partner deposited ${debtAmount} with ${settlementRef}`}
         placeholder={`Partner deposited ${debtAmount}`}
-        aria-label="Cash debt settlement notes"
       />
-      <button type="submit">Settle cash debt</button>
+      <AdminFormControlButton type="submit">Settle cash debt</AdminFormControlButton>
     </form>
   );
 }
