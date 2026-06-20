@@ -60,6 +60,20 @@ export function CustomerFilterBoard({
           />
           <AdminFormSelect
             className="vuexy-customer-select"
+            defaultValue={filters.country}
+            label="Country"
+            name="country"
+            options={countryFilterOptions}
+          />
+          <AdminFormSelect
+            className="vuexy-customer-select"
+            defaultValue={filters.gender}
+            label="Gender"
+            name="gender"
+            options={genderFilterOptions}
+          />
+          <AdminFormSelect
+            className="vuexy-customer-select"
             defaultValue={filters.payment}
             label="Wallet state"
             name="payment"
@@ -98,6 +112,26 @@ const bookingFilterOptions = [
   { label: 'Active booking', value: 'active' },
   { label: 'Closed booking', value: 'closed' },
   { label: 'No booking yet', value: 'no-booking' },
+] as const;
+
+const countryFilterOptions = [
+  { label: 'All countries', value: '' },
+  { label: 'Vietnam', value: 'VN' },
+  { label: 'South Korea', value: 'KR' },
+  { label: 'Japan', value: 'JP' },
+  { label: 'China', value: 'CN' },
+  { label: 'Singapore', value: 'SG' },
+  { label: 'Thailand', value: 'TH' },
+  { label: 'United States', value: 'US' },
+  { label: 'Unknown country', value: 'UNKNOWN' },
+] as const;
+
+const genderFilterOptions = [
+  { label: 'All genders', value: '' },
+  { label: 'Female', value: 'female' },
+  { label: 'Male', value: 'male' },
+  { label: 'Other', value: 'other' },
+  { label: 'Not captured', value: 'unknown' },
 ] as const;
 
 const paymentFilterOptions = [

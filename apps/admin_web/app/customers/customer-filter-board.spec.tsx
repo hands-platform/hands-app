@@ -18,6 +18,8 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Filters');
     expect(rendered).toContain('4 of 9');
     expect(rendered).toContain('Search Customer');
+    expect(rendered).toContain('All countries');
+    expect(rendered).toContain('All genders');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Search: linh');
@@ -47,6 +49,8 @@ function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
     booking: '',
     bookingFlow: '',
     chat: '',
+    country: '',
+    gender: '',
     joinedFrom: '',
     joinedTo: '',
     memo: '',

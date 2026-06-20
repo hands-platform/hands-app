@@ -26,6 +26,9 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
         row.commonService,
         row.commonArea,
         row.commonPartner,
+        row.deviceLanguage,
+        row.deviceLanguageCountryLabel,
+        row.genderLabel,
         row.latestMemoTitle,
         row.latestMemoDetail,
       ].some((value) => value.toLowerCase().includes(query))
@@ -45,6 +48,8 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
     if (filters.bookingFlow === 'completed-work' && row.completedBookings === 0) return false;
     if (filters.bookingFlow === 'closed-record' && row.cancelledBookings === 0) return false;
     if (filters.bookingFlow === 'address-snapshot' && row.addressSnapshotBookings === 0) return false;
+    if (filters.country && row.deviceLanguageCountryCode !== filters.country) return false;
+    if (filters.gender && row.gender !== filters.gender) return false;
     if (filters.reachability === 'in-app' && !row.isLive) return false;
     if (filters.reachability === 'push-ready' && !row.pushReachable) return false;
     if (filters.reachability === 'no-push' && row.pushReachable) return false;
@@ -181,6 +186,9 @@ export function buildCustomerRow(customer: AdminCustomer) {
           ? `${bookings.length} booking record(s)`
           : 'No booking history yet';
 
+  const deviceLanguage = readCustomerDeviceLanguage(customer);
+  const gender = readCustomerGender(customer);
+
   return {
     id: customer.id,
     name: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
@@ -217,7 +225,11 @@ export function buildCustomerRow(customer: AdminCustomer) {
     latestSessionPlatform: latestSession?.platform ?? 'Unknown platform',
     latestSessionIp: latestSession?.ipAddress ?? 'No IP recorded',
     latestSessionAppVersion: latestSession?.appVersion ?? 'No app version',
-    deviceLanguage: readCustomerDeviceLanguage(customer),
+    deviceLanguage,
+    deviceLanguageCountryCode: customerDeviceLanguageCountryCode(deviceLanguage),
+    deviceLanguageCountryLabel: customerDeviceLanguageCountryLabel(deviceLanguage),
+    gender,
+    genderLabel: customerGenderLabel(gender),
     lastLoginAddress: readCustomerLastLoginAddress(customer),
     isLive,
     pushReachable,
@@ -356,6 +368,72 @@ function readCustomerDeviceLanguage(customer: AdminCustomer) {
   ].filter(Boolean);
 
   return metadataCandidates[0] ?? 'Not captured';
+}
+
+function customerDeviceLanguageCountryCode(label: string) {
+  if (!label || label === 'Not captured') {
+    return 'UNKNOWN';
+  }
+
+  const normalized = label.replace(/_/g, '-').trim();
+  const parts = normalized.split('-').filter(Boolean);
+  const lastPart = parts.at(-1);
+
+  if (lastPart && /^[a-z]{2}$/i.test(lastPart) && parts.length > 1) {
+    return lastPart.toUpperCase();
+  }
+
+  if (/^[a-z]{2}$/i.test(normalized) && normalized.toLowerCase() === 'vi') {
+    return 'VN';
+  }
+
+  return 'UNKNOWN';
+}
+
+function customerDeviceLanguageCountryLabel(label: string) {
+  const names: Record<string, string> = {
+    CN: 'China',
+    JP: 'Japan',
+    KR: 'South Korea',
+    SG: 'Singapore',
+    TH: 'Thailand',
+    US: 'United States',
+    VN: 'Vietnam',
+  };
+  const code = customerDeviceLanguageCountryCode(label);
+  return names[code] ?? 'Unknown country';
+}
+
+function readCustomerGender(customer: AdminCustomer) {
+  const user = customer.user ?? {};
+  const value = [
+    readObjectText(customer as Record<string, unknown>, 'gender'),
+    readObjectText(user as Record<string, unknown>, 'gender'),
+    readObjectText(customer as Record<string, unknown>, 'sex'),
+    readObjectText(user as Record<string, unknown>, 'sex'),
+  ].find(Boolean);
+  const normalized = value?.toLowerCase().trim() ?? '';
+
+  if (['female', 'f', 'woman', 'women'].includes(normalized)) {
+    return 'female';
+  }
+  if (['male', 'm', 'man', 'men'].includes(normalized)) {
+    return 'male';
+  }
+  if (normalized && !['unknown', 'not captured', 'none', 'null'].includes(normalized)) {
+    return 'other';
+  }
+  return 'unknown';
+}
+
+function customerGenderLabel(gender: string) {
+  const labels: Record<string, string> = {
+    female: 'Female',
+    male: 'Male',
+    other: 'Other',
+    unknown: 'Not captured',
+  };
+  return labels[gender] ?? 'Not captured';
 }
 
 function readCustomerLastLoginAddress(customer: AdminCustomer) {

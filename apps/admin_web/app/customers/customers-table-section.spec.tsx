@@ -13,11 +13,15 @@ describe('CustomersTableSection', () => {
     expect(rendered).toContain('Customer directory');
     expect(rendered).toContain('Customer One');
     expect(rendered).toContain('+84900000000');
-    expect(rendered).toContain('vi-VN');
+    expect(rendered).toContain('Vietnam');
+    expect(rendered).toContain('Female');
     expect(rendered).toContain('13 Jun 2026');
     expect(rendered).toContain('Not captured');
     expect(rendered).toContain('12');
     expect(rendered).toContain('1,200,000');
+    expect(rendered).toContain('Country');
+    expect(rendered).toContain('Gender');
+    expect(rendered).not.toContain('Device Language');
     expect(rendered).not.toContain('Actions');
     expect(rendered).not.toContain('View profile');
     expect(rendered).not.toContain('Payment records');
@@ -28,7 +32,10 @@ describe('CustomersTableSection', () => {
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-customer-table-card',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-customer-table',
-        'vuexy-customer-person-link',
+        'vuexy-booking-person vuexy-customer-person',
+        'vuexy-booking-person-link',
+        'vuexy-booking-country-cell',
+        'vuexy-booking-country-flag',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-online',
       ]),
@@ -55,10 +62,14 @@ function buildRow(): CustomerManagementTableRow {
   return {
     avatarStatus: 'online',
     chatHref: '/chat-archive?q=customer-1',
+    countryFlag: 'VN',
+    countryFlagLabel: 'Vietnam flag',
+    countryLabel: 'Vietnam',
     customerIdLabel: 'customer-1',
     detailHref: '/customers/customer-1',
     deviceLanguageLabel: 'vi-VN',
     email: 'customer@example.com',
+    genderLabel: 'Female',
     initials: 'CO',
     lastLoginAddressLabel: 'Not captured',
     lastLoginDateLabel: '13 Jun 2026, 03:15',

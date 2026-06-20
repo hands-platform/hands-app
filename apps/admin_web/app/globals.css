@@ -6871,7 +6871,7 @@ textarea:focus-visible {
   box-shadow: none;
   color: var(--admin-text);
   margin: 0;
-  min-width: 1320px;
+  min-width: 1440px;
   width: 100%;
 }
 
@@ -6907,7 +6907,7 @@ textarea:focus-visible {
 .vuexy-customer-table th:first-child,
 .vuexy-customer-table td:first-child {
   min-width: 240px;
-  width: 18%;
+  width: 20%;
 }
 
 .vuexy-customer-table tbody tr:hover td {
@@ -6915,27 +6915,37 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table th:nth-child(2),
-.vuexy-customer-table td:nth-child(2),
-.vuexy-customer-table th:nth-child(3),
-.vuexy-customer-table td:nth-child(3),
-.vuexy-customer-table th:nth-child(4),
-.vuexy-customer-table td:nth-child(4) {
-  min-width: 150px;
-  width: 12%;
+.vuexy-customer-table td:nth-child(2) {
+  min-width: 140px;
+  width: 10%;
 }
 
+.vuexy-customer-table th:nth-child(3),
+.vuexy-customer-table td:nth-child(3) {
+  min-width: 120px;
+  width: 8%;
+}
+
+.vuexy-customer-table th:nth-child(4),
+.vuexy-customer-table td:nth-child(4),
 .vuexy-customer-table th:nth-child(5),
 .vuexy-customer-table td:nth-child(5) {
-  min-width: 210px;
-  width: 18%;
+  min-width: 150px;
+  width: 11%;
 }
 
 .vuexy-customer-table th:nth-child(6),
-.vuexy-customer-table td:nth-child(6),
+.vuexy-customer-table td:nth-child(6) {
+  min-width: 210px;
+  width: 16%;
+}
+
 .vuexy-customer-table th:nth-child(7),
-.vuexy-customer-table td:nth-child(7) {
+.vuexy-customer-table td:nth-child(7),
+.vuexy-customer-table th:nth-child(8),
+.vuexy-customer-table td:nth-child(8) {
   min-width: 160px;
-  width: 14%;
+  width: 12%;
 }
 
 .vuexy-customer-person {

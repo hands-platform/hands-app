@@ -30,10 +30,14 @@ export type CustomerManagementSpotlight = {
 export type CustomerManagementTableRow = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly chatHref: string;
+  readonly countryFlag: string | null;
+  readonly countryFlagLabel: string;
+  readonly countryLabel: string;
   readonly customerIdLabel: string;
   readonly detailHref: string;
   readonly deviceLanguageLabel: string;
   readonly email: string;
+  readonly genderLabel: string;
   readonly initials: string;
   readonly lastLoginAddressLabel: string;
   readonly lastLoginDateLabel: string;
@@ -121,14 +125,20 @@ export function buildCustomerManagementTableRows(
 ): CustomerManagementTableRow[] {
   return rows.map((row) => {
     const customerIdLabel = compactText(row.id, 12);
+    const countryCode = row.deviceLanguageCountryCode;
+    const countryLabel = row.deviceLanguageCountryLabel;
 
     return {
       avatarStatus: customerAvatarStatus(row),
       chatHref: `/chat-archive?q=${encodeURIComponent(row.id)}`,
+      countryFlag: countryCode === 'UNKNOWN' ? null : countryFlagFromRegion(countryCode),
+      countryFlagLabel: countryCode === 'UNKNOWN' ? 'Unknown country' : `${countryLabel} flag`,
+      countryLabel,
       customerIdLabel,
       detailHref: `/customers/${row.id}`,
       deviceLanguageLabel: row.deviceLanguage,
       email: row.email,
+      genderLabel: row.genderLabel,
       initials: readInitials(row.name),
       lastLoginAddressLabel: row.lastLoginAddress,
       lastLoginDateLabel: row.lastSeenAt ? formatDate(row.lastSeenAt) : 'Not captured',
@@ -178,6 +188,16 @@ function compactText(value: string, maxLength: number) {
   }
 
   return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function countryFlagFromRegion(region: string) {
+  if (!/^[A-Z]{2}$/.test(region)) {
+    return null;
+  }
+
+  return String.fromCodePoint(
+    ...region.split('').map((letter) => 127397 + letter.charCodeAt(0)),
+  );
 }
 
 function dateMs(value?: string | null) {

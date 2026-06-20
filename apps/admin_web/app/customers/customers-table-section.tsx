@@ -1,7 +1,6 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminAvatar } from '../../components/admin-person-cell';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { CustomerManagementTableRow } from './customer-management-view-model';
 
 type CustomersTableSectionProps = {
@@ -29,23 +28,23 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
           {rows.map((row) => (
             <tr key={row.customerIdLabel}>
               <td>
-                <div className="vuexy-customer-person">
-                  <AdminAvatar
-                    className="vuexy-customer-avatar"
-                    initials={row.initials}
-                    status={row.avatarStatus}
-                  />
-                  <div>
-                    <Link className="vuexy-customer-person-link" href={row.detailHref}>
-                      <strong>{row.name}</strong>
-                    </Link>
-                    <span>{row.phone}</span>
-                    <small>{row.customerIdLabel}</small>
-                  </div>
-                </div>
+                <AdminPersonCell
+                  avatarClassName="vuexy-customer-avatar"
+                  avatarStatus={row.avatarStatus}
+                  className="vuexy-booking-person vuexy-customer-person"
+                  copyClassName="vuexy-booking-person-copy"
+                  helper={row.phone}
+                  href={row.detailHref}
+                  initials={row.initials}
+                  label={row.name}
+                  linkClassName="vuexy-booking-person-link"
+                />
               </td>
               <td>
-                <strong>{row.deviceLanguageLabel}</strong>
+                <CustomerCountryCell row={row} />
+              </td>
+              <td>
+                <strong>{row.genderLabel}</strong>
               </td>
               <td>
                 <strong>{row.joinedLabel}</strong>
@@ -72,13 +71,25 @@ export function CustomersTableSection({ rows, sortLabel }: CustomersTableSection
 
 const customerTableHeaders = [
   'Customer',
-  'Device Language',
+  'Country',
+  'Gender',
   'Sign-up Date',
   'Last Login Date',
   'Last Login Address',
   'Total Reservations Completed',
   'Total Wallet Amount',
 ] as const;
+
+function CustomerCountryCell({ row }: { readonly row: CustomerManagementTableRow }) {
+  return (
+    <div className="vuexy-booking-country-cell">
+      <span aria-label={row.countryFlagLabel} className="vuexy-booking-country-flag" role="img">
+        {row.countryFlag ?? '--'}
+      </span>
+      <strong title={row.deviceLanguageLabel}>{row.countryLabel}</strong>
+    </div>
+  );
+}
 
 function CustomerTableEmptyState() {
   return (

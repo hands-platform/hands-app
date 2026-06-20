@@ -5,6 +5,8 @@ export type CustomerFilters = {
   q: string;
   booking: string;
   bookingFlow: string;
+  country: string;
+  gender: string;
   reachability: string;
   address: string;
   payment: string;
@@ -26,6 +28,8 @@ export function buildCustomerFilters(
     q: readSearchParam(params.q),
     booking: readSearchParam(params.booking),
     bookingFlow: normalizeCustomerBookingFlowFilter(readSearchParam(params.bookingFlow)),
+    country: normalizeCustomerCountryFilter(readSearchParam(params.country)),
+    gender: normalizeCustomerGenderFilter(readSearchParam(params.gender)),
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
     payment: readSearchParam(params.payment),
@@ -57,6 +61,8 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
   if (filters.q) labels.push(`Search: ${filters.q}`);
   if (filters.booking) labels.push(`Booking: ${filters.booking}`);
   if (filters.bookingFlow) labels.push(`Booking flow: ${customerBookingFlowFilterLabel(filters.bookingFlow)}`);
+  if (filters.country) labels.push(`Country: ${customerCountryFilterLabel(filters.country)}`);
+  if (filters.gender) labels.push(`Gender: ${customerGenderFilterLabel(filters.gender)}`);
   if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
   if (filters.address) labels.push(`Address: ${filters.address}`);
   if (filters.payment) labels.push(`Payment: ${filters.payment}`);
@@ -116,6 +122,18 @@ function normalizeCustomerBookingFlowFilter(value: string) {
   return allowed.includes(value) ? value : '';
 }
 
+function normalizeCustomerCountryFilter(value: string) {
+  const normalized = value.toUpperCase();
+  const allowed = ['VN', 'KR', 'JP', 'CN', 'SG', 'TH', 'US', 'UNKNOWN'];
+  return allowed.includes(normalized) ? normalized : '';
+}
+
+function normalizeCustomerGenderFilter(value: string) {
+  const normalized = value.toLowerCase();
+  const allowed = ['female', 'male', 'other', 'unknown'];
+  return allowed.includes(normalized) ? normalized : '';
+}
+
 function customerBookingFlowFilterLabel(flow: string) {
   const labels: Record<string, string> = {
     'open-matching': 'Open matching wait',
@@ -129,4 +147,28 @@ function customerBookingFlowFilterLabel(flow: string) {
     'address-snapshot': 'Address snapshot saved',
   };
   return labels[flow] ?? flow;
+}
+
+function customerCountryFilterLabel(country: string) {
+  const labels: Record<string, string> = {
+    CN: 'China',
+    JP: 'Japan',
+    KR: 'South Korea',
+    SG: 'Singapore',
+    TH: 'Thailand',
+    UNKNOWN: 'Unknown country',
+    US: 'United States',
+    VN: 'Vietnam',
+  };
+  return labels[country] ?? country;
+}
+
+function customerGenderFilterLabel(gender: string) {
+  const labels: Record<string, string> = {
+    female: 'Female',
+    male: 'Male',
+    other: 'Other',
+    unknown: 'Not captured',
+  };
+  return labels[gender] ?? gender;
 }
