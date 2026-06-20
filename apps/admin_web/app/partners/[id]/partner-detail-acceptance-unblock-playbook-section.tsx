@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
 export type PartnerAcceptanceUnblockStep = {
@@ -22,6 +24,8 @@ type PartnerDetailAcceptanceUnblockPlaybookSectionProps = {
   steps: PartnerAcceptanceUnblockStep[];
 };
 
+const unblockPlaybookHeaders = ['Step', 'Unblock item', 'Booking impact', 'Payout impact', 'Status', 'Action'];
+
 export function PartnerDetailAcceptanceUnblockPlaybookSection({
   pillClassForTone,
   steps,
@@ -43,30 +47,53 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
           {marketplaceBlockerCount} marketplace blocker(s)
         </span>
       </div>
-      <div className="setup-stage-list admin-mt-16">
-        {steps.map((step) => (
-          <div className="setup-stage-item" key={step.id}>
-            <span>{step.step}</span>
-            <div>
-              <strong>{step.title}</strong>
-              <p className="muted">{step.detail}</p>
-              <p className="muted">
-                <strong>Booking:</strong> {step.bookingImpact}
-              </p>
-              <p className="muted">
-                <strong>Payout:</strong> {step.payoutImpact}
-              </p>
-              <div className="participant-list">
-                <span className={`pill ${pillClassForTone(step.tone)}`}>{step.status}</span>
-                <span className="pill pill-info">{step.owner}</span>
-              </div>
-            </div>
-            <Link className="text-link" href={step.href}>
-              {step.action}
-            </Link>
-          </div>
-        ))}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerUnblockPlaybookEmptyState />}
+            headers={unblockPlaybookHeaders}
+            rowCount={steps.length}
+          >
+            {steps.map((step) => (
+              <tr key={step.id}>
+                <td>
+                  <span className="muted">{step.step}</span>
+                </td>
+                <td>
+                  <strong>{step.title}</strong>
+                  <p className="muted">{step.detail}</p>
+                </td>
+                <td>
+                  <span className="muted">{step.bookingImpact}</span>
+                </td>
+                <td>
+                  <span className="muted">{step.payoutImpact}</span>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    <span className={`pill ${pillClassForTone(step.tone)}`}>{step.status}</span>
+                    <span className="pill pill-info">{step.owner}</span>
+                  </div>
+                </td>
+                <td>
+                  <Link className="text-link" href={step.href}>
+                    {step.action}
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
       </div>
+    </div>
+  );
+}
+
+function PartnerUnblockPlaybookEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No marketplace or payout unblock steps are currently required.</p>
     </div>
   );
 }
