@@ -4566,6 +4566,104 @@ a.action-button-card:hover {
   color: var(--admin-accent-strong);
 }
 
+.booking-detail-page
+  :is(
+    #finance,
+    #service-pricing-snapshot,
+    #payout-batch-eligibility,
+    #booking-closeout-checklist,
+    #connected-operations-records
+  )
+  :is(.grid, .ops-task-grid, .service-trace-summary) {
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.booking-detail-page
+  :is(
+    #finance,
+    #service-pricing-snapshot,
+    #payout-batch-eligibility,
+    #booking-closeout-checklist,
+    #connected-operations-records
+  )
+  .service-trace-summary {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+}
+
+.booking-detail-page
+  :is(
+    #finance,
+    #service-pricing-snapshot,
+    #payout-batch-eligibility,
+    #booking-closeout-checklist,
+    #connected-operations-records
+  )
+  .service-trace-summary
+  > :is(div, a) {
+  gap: 4px;
+  min-height: 88px;
+  padding: 10px;
+}
+
+.booking-detail-page
+  :is(#service-pricing-snapshot, #connected-operations-records)
+  .service-trace-summary
+  strong {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.booking-detail-page
+  :is(#service-pricing-snapshot, #connected-operations-records)
+  .service-trace-summary
+  small {
+  line-height: 17px;
+}
+
+.booking-detail-page :is(#finance, #payout-batch-eligibility, #booking-closeout-checklist) .ops-task-card {
+  gap: 8px;
+  min-height: 150px;
+  padding: 12px;
+}
+
+.booking-detail-page
+  :is(#finance, #payout-batch-eligibility, #booking-closeout-checklist)
+  .ops-task-card
+  :is(h3, p) {
+  margin-top: 6px;
+}
+
+.booking-detail-page
+  :is(#finance, #payout-batch-eligibility, #booking-closeout-checklist)
+  .ops-task-card
+  small {
+  margin-top: 6px;
+}
+
+.booking-detail-page #finance .grid > .card {
+  padding: 12px;
+}
+
+.booking-detail-page #finance .metric-card {
+  gap: 10px;
+  grid-template-columns: 36px minmax(0, 1fr);
+}
+
+.booking-detail-page #finance .metric-card-icon {
+  height: 36px;
+  width: 36px;
+}
+
+.booking-detail-page #finance .metric-card h2 {
+  font-size: 1.25rem;
+  margin: 3px 0;
+}
+
+.booking-detail-page #finance .metric-card small {
+  line-height: 1.3;
+}
+
 .ops-command-center {
   display: flex;
   align-items: flex-start;
