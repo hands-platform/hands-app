@@ -318,27 +318,36 @@ export function PartnerDetailReviewHistorySection({
         </div>
         <span className="pill pill-info">{totalCount} recent event(s)</span>
       </div>
-      {rows.length ? (
-        <div className="setup-stage-list">
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={
+            <PartnerReviewTableEmptyState message="No partner review logs yet. New approval, rejection, and resubmission actions will appear here." />
+          }
+          headers={reviewHistoryHeaders}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span>{row.title}</span>
-              <div>
-                <strong>{row.statusLabel}</strong>
-                <p className="muted">
-                  {row.atLabel} / {row.actorLabel}
-                </p>
-                {row.preview ? <p className="muted">{row.preview}</p> : null}
-              </div>
-              <small>{row.action}</small>
-            </div>
+            <tr key={row.id}>
+              <td>
+                <strong>{row.title}</strong>
+              </td>
+              <td>
+                <span className={`pill ${reviewHistoryPill(row.statusLabel)}`}>{row.statusLabel}</span>
+              </td>
+              <td>
+                <span className="muted">{row.atLabel}</span>
+                <p className="muted">{row.actorLabel}</p>
+              </td>
+              <td>
+                <span className="muted">{row.preview ?? 'No preview'}</span>
+              </td>
+              <td>
+                <span className="muted">{row.action}</span>
+              </td>
+            </tr>
           ))}
-        </div>
-      ) : (
-        <p className="muted">
-          No partner review logs yet. New approval, rejection, and resubmission actions will appear here.
-        </p>
-      )}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -347,6 +356,7 @@ const approvalEvidenceHeaders = ['Evidence', 'Status', 'Detail', 'Action'] as co
 const reviewControlPanelHeaders = ['Review gate', 'Status', 'Detail', 'Action'] as const;
 const levelPathHeaders = ['Level', 'Status', 'Detail', 'Operator action', 'Outcome'] as const;
 const resubmissionGuidanceHeaders = ['Target', 'Status', 'Reason', 'Partner instruction', 'Operator action'] as const;
+const reviewHistoryHeaders = ['Review event', 'Status', 'Timeline', 'Preview', 'Action'] as const;
 
 function levelPathPill(item: PartnerLevelPlanItem) {
   if (item.ready) return 'pill-success';
@@ -358,6 +368,21 @@ function resubmissionPill(status: string) {
   if (status === 'CLEAR' || status === 'APPROVED') return 'pill-success';
   if (status === 'REJECTED' || status === 'BLOCKED') return 'pill-danger';
   return 'pill-warn';
+}
+
+function reviewHistoryPill(status: string) {
+  const normalizedStatus = status.toUpperCase();
+
+  if (normalizedStatus.includes('APPROVED') || normalizedStatus.includes('APPROVE')) {
+    return 'pill-success';
+  }
+  if (normalizedStatus.includes('REJECT')) {
+    return 'pill-danger';
+  }
+  if (normalizedStatus.includes('PENDING') || normalizedStatus.includes('HOLD')) {
+    return 'pill-warn';
+  }
+  return 'pill-info';
 }
 
 function PartnerReviewTableEmptyState({ message }: { readonly message: string }) {

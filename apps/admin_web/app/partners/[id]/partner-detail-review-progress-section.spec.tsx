@@ -3,6 +3,7 @@ import {
   PartnerDetailLevelPathSection,
   PartnerDetailResubmissionGuidanceSection,
   PartnerDetailReviewControlPanelSection,
+  PartnerDetailReviewHistorySection,
   type PartnerApprovalEvidenceSummaryRow,
   type PartnerReviewControlPanelView,
 } from './partner-detail-review-progress-section';
@@ -142,6 +143,45 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Upload a bright selfie with your full face visible.');
     expect(emptyRendered).toContain('No records found');
     expect(emptyRendered).toContain('No resubmission request needed.');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-danger',
+      ]),
+    );
+  });
+
+  it('renders review history and empty state as Vuexy tables', () => {
+    const section = PartnerDetailReviewHistorySection({
+      totalCount: 1,
+      rows: [
+        {
+          action: 'REJECT_KYC',
+          actorLabel: 'Admin',
+          atLabel: '20 Jun 2026, 09:10',
+          id: 'kyc-review-log',
+          preview: 'Partner must upload a clearer selfie.',
+          statusLabel: 'REJECT_KYC',
+          title: 'KYC identity review',
+        },
+      ],
+    });
+    const emptySection = PartnerDetailReviewHistorySection({ rows: [], totalCount: 0 });
+
+    const rendered = normalizeSpaces(textContent(section));
+    const emptyRendered = normalizeSpaces(textContent(emptySection));
+
+    expect(rendered).toContain('Review history');
+    expect(rendered).toContain('1 recent event(s)');
+    expect(rendered).toContain('Review event');
+    expect(rendered).toContain('Timeline');
+    expect(rendered).toContain('Preview');
+    expect(rendered).toContain('KYC identity review');
+    expect(rendered).toContain('20 Jun 2026, 09:10');
+    expect(rendered).toContain('Partner must upload a clearer selfie.');
+    expect(emptyRendered).toContain('No records found');
+    expect(emptyRendered).toContain('No partner review logs yet.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
