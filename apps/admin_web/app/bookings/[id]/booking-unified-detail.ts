@@ -44,7 +44,7 @@ export type BookingUnifiedDetailRow = {
   readonly href?: string;
   readonly people?: readonly BookingUnifiedDetailPerson[];
   readonly person?: BookingUnifiedDetailPerson;
-  readonly variant?: 'inactive';
+  readonly variant?: 'finance-highlight' | 'inactive';
 };
 
 export type BookingUnifiedDetail = {
@@ -297,6 +297,28 @@ function bookingUnifiedFinanceRows({
 
   return [
     {
+      label: 'Payment record',
+      value: financeTrace.customerPrice,
+      detail: `${financeTrace.paymentMethod} / ${booking.payment?.status ?? 'No payment'} / ref ${
+        booking.payment?.providerRef ?? 'no provider ref'
+      }`,
+      href: booking.payment?.id ? `/payments/${booking.payment.id}` : undefined,
+      variant: 'finance-highlight',
+    },
+    {
+      label: 'Partner earning',
+      value: financeTrace.providerPayout,
+      detail: `${financeTrace.providerNet} / ${financeTrace.payoutRuleLine}`,
+      href: booking.earning?.id ? `/earnings?bookingId=${booking.id}` : undefined,
+      variant: 'finance-highlight',
+    },
+    {
+      label: 'HANDS fee and costs',
+      value: financeTrace.platformFee,
+      detail: `${financeTrace.feeCosts} / ${financeTrace.netHandsFee} before withholding`,
+      variant: 'finance-highlight',
+    },
+    {
       label: 'Service state',
       value: booking.status,
       detail: `Changed ${formatDate(booking.statusChangedAt ?? booking.updatedAt ?? null)}`,
@@ -307,28 +329,9 @@ function bookingUnifiedFinanceRows({
       detail: booking.closedNote ?? `Closeout time ${formatDate(booking.closedAt ?? null)}`,
     },
     {
-      label: 'Payment record',
-      value: financeTrace.customerPrice,
-      detail: `${financeTrace.paymentMethod} / ${booking.payment?.status ?? 'No payment'} / ref ${
-        booking.payment?.providerRef ?? 'no provider ref'
-      }`,
-      href: booking.payment?.id ? `/payments/${booking.payment.id}` : undefined,
-    },
-    {
       label: 'Pricing basis',
       value: financeTrace.pricingSource,
       detail: `${financeTrace.serviceOption} / min ${financeTrace.adminMinimum}`,
-    },
-    {
-      label: 'Partner earning',
-      value: financeTrace.providerPayout,
-      detail: `${financeTrace.providerNet} / ${financeTrace.payoutRuleLine}`,
-      href: booking.earning?.id ? `/earnings?bookingId=${booking.id}` : undefined,
-    },
-    {
-      label: 'HANDS fee and costs',
-      value: financeTrace.platformFee,
-      detail: `${financeTrace.feeCosts} / ${financeTrace.netHandsFee} before withholding`,
     },
     {
       label: 'Tax withholding',

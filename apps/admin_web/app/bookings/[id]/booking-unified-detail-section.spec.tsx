@@ -63,6 +63,9 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Service payout matrix');
     expect(rendered).toContain('3 chat messages');
     expect(rendered).toContain('500.000 VND customer -&gt; 400.000 VND Partner');
+    expect(rendered.indexOf('Payment record')).toBeLessThan(rendered.indexOf('Service state'));
+    expect(rendered.indexOf('Partner earning')).toBeLessThan(rendered.indexOf('Service state'));
+    expect(rendered.indexOf('HANDS fee and costs')).toBeLessThan(rendered.indexOf('Service state'));
     expect(markup).toContain('id="booking-customer-detail"');
     expect(markup).toContain('id="booking-matched-partner-detail"');
     expect(markup).toContain('id="booking-finance-system-detail"');
@@ -71,6 +74,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('href="/customers/customer-profile-1"');
     expect(markup).toContain('href="/partners/partner-1"');
     expect(markup).toContain('booking-unified-info-card is-inactive');
+    expect(markup.match(/is-finance-highlight/g)).toHaveLength(3);
   });
 
   it('summarizes live customer location against the reservation address snapshot', () => {

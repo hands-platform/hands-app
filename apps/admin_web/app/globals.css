@@ -4444,6 +4444,17 @@ a.action-button-card:hover {
   grid-column: span 2;
 }
 
+.booking-unified-info-card.is-finance-highlight {
+  background: linear-gradient(180deg, var(--admin-surface), var(--admin-primary-soft));
+  border-color: rgb(var(--admin-primary-channel) / 0.3);
+  box-shadow: inset 3px 0 0 var(--admin-accent);
+}
+
+.booking-unified-info-card.is-finance-highlight .booking-unified-value,
+.booking-unified-info-card.is-finance-highlight .booking-unified-value-link {
+  color: var(--admin-accent-strong);
+}
+
 .booking-unified-info-card.is-inactive {
   align-self: start;
   background: var(--admin-surface);
