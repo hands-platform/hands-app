@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+
 export type PartnerCashDebtOriginRow = {
   readonly amountLabel: string;
   readonly bookingHref?: string;
@@ -20,6 +22,8 @@ type PartnerDetailCashDebtOriginSectionProps = {
   readonly openRowCount: number;
   readonly rows: readonly PartnerCashDebtOriginRow[];
 };
+
+const cashDebtOriginHeaders = ['Debt', 'Origin', 'Booking', 'Fees', 'Evidence', 'Action'];
 
 export function PartnerDetailCashDebtOriginSection({
   hasCashFeeDebt,
@@ -77,46 +81,69 @@ export function PartnerDetailCashDebtOriginSection({
           </small>
         </div>
       </div>
-      {rows.length ? (
-        <div className="setup-stage-list admin-mt-16">
-          {rows.map((row) => (
-            <div className="setup-stage-item" key={row.id}>
-              <span>CASH DEBT</span>
-              <div>
-                <strong>{row.amountLabel}</strong>
-                <p className="muted">{row.originLabel}</p>
-                <p className="muted">
-                  Booking {row.bookingLabel} / payment {row.paymentMethod} / created {row.createdLabel}
-                </p>
-                <p className="muted">
-                  Marketplace reopen rule: once deposit reference or admin offset clears this debt, the
-                  partner can participate in marketplace bookings again.
-                </p>
-                <div className="participant-list">
-                  <span className="pill pill-danger">HANDS fee {row.handsFeeLabel}</span>
-                  <span className="pill pill-warn">Tax {row.taxLabel}</span>
-                  <span className="pill pill-info">{row.evidenceLabel}</span>
-                  <span className="pill pill-info">Direct first-pick not wallet-blocked</span>
-                </div>
-              </div>
-              <div className="button-row">
-                {row.bookingHref ? (
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking evidence
-                  </Link>
-                ) : null}
-                <Link className="text-link" href="/cash-settlements">
-                  Settle
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="muted admin-mt-12">
-          No open cash-service fee debt is visible for this partner.
-        </p>
-      )}
+      <div className="admin-mt-16">
+        <AdminTableScroll>
+          <AdminDataTable
+            emptyMessage={<PartnerCashDebtOriginEmptyState />}
+            headers={cashDebtOriginHeaders}
+            rowCount={rows.length}
+          >
+            {rows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.amountLabel}</strong>
+                  <p className="muted">Cash debt</p>
+                </td>
+                <td>
+                  <p className="muted">{row.originLabel}</p>
+                </td>
+                <td>
+                  <p className="muted">
+                    Booking {row.bookingLabel} / payment {row.paymentMethod} / created {row.createdLabel}
+                  </p>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    <span className="pill pill-danger">HANDS fee {row.handsFeeLabel}</span>
+                    <span className="pill pill-warn">Tax {row.taxLabel}</span>
+                  </div>
+                </td>
+                <td>
+                  <p className="muted">
+                    Marketplace reopen rule: once deposit reference or admin offset clears this debt, the
+                    partner can participate in marketplace bookings again.
+                  </p>
+                  <div className="participant-list">
+                    <span className="pill pill-info">{row.evidenceLabel}</span>
+                    <span className="pill pill-info">Direct first-pick not wallet-blocked</span>
+                  </div>
+                </td>
+                <td>
+                  <div className="button-row">
+                    {row.bookingHref ? (
+                      <Link className="text-link" href={row.bookingHref}>
+                        Booking evidence
+                      </Link>
+                    ) : null}
+                    <Link className="text-link" href="/cash-settlements">
+                      Settle
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminDataTable>
+        </AdminTableScroll>
+      </div>
+    </div>
+  );
+}
+
+function PartnerCashDebtOriginEmptyState() {
+  return (
+    <div className="empty-state">
+      <strong>No records found</strong>
+      <p className="muted">No open cash-service fee debt is visible for this partner.</p>
     </div>
   );
 }

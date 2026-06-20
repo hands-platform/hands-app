@@ -1,0 +1,140 @@
+import { PartnerDetailCashDebtOriginSection } from './partner-detail-cash-debt-origin-section';
+
+describe('PartnerDetailCashDebtOriginSection', () => {
+  it('renders cash debt origins as a Vuexy table', () => {
+    const section = PartnerDetailCashDebtOriginSection({
+      hasCashFeeDebt: true,
+      hasSettlementRef: false,
+      openDebtLabel: '-120,000 VND',
+      openRowCount: 1,
+      rows: [
+        {
+          amountLabel: '-120,000 VND',
+          bookingHref: '/bookings/booking-1',
+          bookingLabel: 'BK-1001',
+          createdLabel: '20 Jun 2026, 10:00',
+          evidenceLabel: 'Needs ref',
+          handsFeeLabel: '100,000 VND',
+          id: 'debt-1',
+          originLabel: 'Cash service fee was not deposited.',
+          paymentMethod: 'CASH',
+          taxLabel: '20,000 VND',
+        },
+      ],
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Cash debt origin and settlement');
+    expect(rendered).toContain('1 open row(s)');
+    expect(rendered).toContain('Debt');
+    expect(rendered).toContain('Origin');
+    expect(rendered).toContain('Booking');
+    expect(rendered).toContain('Fees');
+    expect(rendered).toContain('Evidence');
+    expect(rendered).toContain('Action');
+    expect(rendered).toContain('-120,000 VND');
+    expect(rendered).toContain('Cash service fee was not deposited.');
+    expect(rendered).toContain('Booking BK-1001 / payment CASH / created 20 Jun 2026, 10:00');
+    expect(rendered).toContain('HANDS fee 100,000 VND');
+    expect(rendered).toContain('Tax 20,000 VND');
+    expect(rendered).toContain('Marketplace reopen rule');
+    expect(rendered).toContain('Needs ref');
+    expect(rendered).toContain('Direct first-pick not wallet-blocked');
+    expect(rendered).toContain('Booking evidence');
+    expect(rendered).toContain('Settle');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/cash-settlements']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'pill pill-danger',
+        'pill pill-warn',
+        'pill pill-info',
+        'text-link',
+      ]),
+    );
+  });
+
+  it('renders an empty cash debt table state', () => {
+    const section = PartnerDetailCashDebtOriginSection({
+      hasCashFeeDebt: false,
+      hasSettlementRef: true,
+      openDebtLabel: '0 VND',
+      openRowCount: 0,
+      rows: [],
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Cash debt origin and settlement');
+    expect(rendered).toContain('No open cash debt');
+    expect(rendered).toContain('No records found');
+    expect(rendered).toContain('No open cash-service fee debt is visible for this partner.');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
