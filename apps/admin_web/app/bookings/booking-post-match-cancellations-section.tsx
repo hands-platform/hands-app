@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { BookingPostMatchCancellationBoard } from './booking-post-match-cancellations-model';
 
 type BookingPostMatchCancellationsSectionProps = {
@@ -75,9 +75,9 @@ export function BookingPostMatchCancellationsSection({ board }: BookingPostMatch
             <span className="pill pill-info">{board.totalCount} total</span>
             <span className="pill pill-neutral">{board.monthCount} this month</span>
           </div>
-          <Link className="booking-action-button is-secondary" href="/bookings/post-match-cancellations">
+          <AdminFormControlLink className="booking-action-button is-secondary" href="/bookings/post-match-cancellations">
             Open queue
-          </Link>
+          </AdminFormControlLink>
         </div>
       </div>
 
