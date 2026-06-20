@@ -4653,6 +4653,38 @@ a.action-button-card:hover {
   overflow-wrap: anywhere;
 }
 
+.booking-participant-row-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.booking-participant-row-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px 14px;
+}
+
+.booking-participant-row-card > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.booking-participant-row-card p {
+  line-height: 19px;
+  margin-bottom: 0;
+}
+
+.booking-participant-row-card .vuexy-booking-person {
+  align-self: start;
+}
+
 .booking-unified-open-link {
   align-self: end;
   justify-self: flex-start;

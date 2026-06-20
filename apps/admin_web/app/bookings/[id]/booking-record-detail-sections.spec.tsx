@@ -138,13 +138,18 @@ describe('BookingRecordDetailSections', () => {
     const markup = renderSections();
 
     expect(markup).toContain('Actual marketplace participant ledger');
-    expect(markup).toContain('Customer eligibility matrix');
+    expect(markup).toContain('Partner participation rows');
     expect(markup).toContain('Partner One');
     expect(markup).toContain('Wallet: Clear');
+    expect(markup).toContain('booking-participant-row-list');
+    expect(markup).toContain('booking-participant-row-card');
+    expect(markup).toContain('aria-label="Participant selection trace rows"');
+    expect(markup).toContain('aria-label="Participant lifecycle rows"');
     expect(markup).toContain('Cash fee settlement path');
     expect(markup).toContain('booking-settlement-ledger');
     expect(markup).toContain('aria-label="Cash fee settlement rows"');
-    expect(markup).toContain('table vuexy-data-table');
+    expect(markup).not.toContain('table vuexy-data-table');
+    expect(markup).not.toContain('setup-stage-list');
     expect(markup).toContain('admin-avatar-status-dot is-working');
     expect(markup).toContain('vuexy-booking-person');
     expect(markup.match(/vuexy-booking-person/g)).toHaveLength(1);

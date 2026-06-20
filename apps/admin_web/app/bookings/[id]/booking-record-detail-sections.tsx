@@ -1,4 +1,3 @@
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { type AdminChatMessage } from '../../../lib/admin-api';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
@@ -102,11 +101,11 @@ type ParticipantSelectionTraceProps = {
   rows: SelectionTraceRow[];
 };
 
-type ParticipantLifecycleTableProps = {
+type ParticipantLifecycleLedgerProps = {
   rows: ParticipantLifecycleRow[];
 };
 
-type ParticipantLedgerTableProps = {
+type ParticipantRowsProps = {
   rows: ParticipantRow[];
 };
 
@@ -143,20 +142,6 @@ type LocationTrailRow = {
   detail: string;
   recordedAt: string;
 };
-
-const PARTICIPANT_LIFECYCLE_HEADERS = [
-  'Lifecycle stage',
-  'Current evidence',
-  'Operator check',
-] as const;
-
-const PARTICIPANT_ELIGIBILITY_HEADERS = [
-  'Partner',
-  'Participation evidence',
-  'Customer eligibility',
-  'Timing and distance',
-  'Operations record',
-] as const;
 
 export type BookingRecordDetailSectionsProps = {
   cashFeeSettlementPath: CashSettlementPath;
@@ -322,12 +307,12 @@ function ParticipantLedgerSection({ participantLedger }: ParticipantLedgerSectio
       <ParticipantBoundary boundary={boundary} />
       <SummaryCards cards={cards} />
       <ParticipantSelectionTrace rows={selectionTrace} />
-      <ParticipantLifecycleTable rows={lifecycleRows} />
-      <h3 className="admin-mt-18">Customer eligibility matrix</h3>
+      <ParticipantLifecycleLedger rows={lifecycleRows} />
+      <h3 className="admin-mt-18">Partner participation rows</h3>
       <p className="muted">
         One row per Partner with booking evidence, customer selection state, distance policy, and operator notes.
       </p>
-      <ParticipantLedgerTable rows={rows} />
+      <ParticipantRows rows={rows} />
     </div>
   );
 }
@@ -361,14 +346,12 @@ function getParticipantBoundaryPillClass(index: number) {
 
 function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
   return (
-    <div className="setup-stage-list admin-mt-14">
+    <div className="booking-settlement-ledger admin-mt-14" aria-label="Participant selection trace rows">
       {rows.map((item) => (
-        <div className="setup-stage-item" key={item.label}>
-          <span>{item.label}</span>
-          <div>
-            <strong>{item.value}</strong>
-            <p className="muted">{item.helper}</p>
-          </div>
+        <div className="booking-settlement-ledger-row is-command" key={item.label}>
+          <span className="booking-settlement-ledger-label">{item.label}</span>
+          <strong className="booking-settlement-ledger-value">{item.value}</strong>
+          <p className="muted">{item.helper}</p>
           <span className={`pill ${item.tone}`}>{item.status}</span>
         </div>
       ))}
@@ -376,90 +359,81 @@ function ParticipantSelectionTrace({ rows }: ParticipantSelectionTraceProps) {
   );
 }
 
-function ParticipantLifecycleTable({ rows }: ParticipantLifecycleTableProps) {
+function ParticipantLifecycleLedger({ rows }: ParticipantLifecycleLedgerProps) {
   return (
-    <AdminTableScroll>
-      <AdminDataTable emptyMessage={null} headers={PARTICIPANT_LIFECYCLE_HEADERS} rowCount={rows.length}>
-        {rows.map((row) => (
-          <tr key={row.stage}>
-            <td>
-              <strong>{row.stage}</strong>
-              <p className="muted">{row.scope}</p>
-            </td>
-            <td>
-              <span className={`pill ${row.tone}`}>{row.status}</span>
-              <p className="muted">{row.evidence}</p>
-            </td>
-            <td>{row.operatorUse}</td>
-          </tr>
-        ))}
-      </AdminDataTable>
-    </AdminTableScroll>
+    <div className="booking-settlement-ledger admin-mt-12" aria-label="Participant lifecycle rows">
+      {rows.map((row) => (
+        <div className="booking-settlement-ledger-row" key={row.stage}>
+          <div>
+            <span className="booking-settlement-ledger-label">{row.stage}</span>
+            <p className="muted">{row.scope}</p>
+          </div>
+          <span className={`pill ${row.tone}`}>{row.status}</span>
+          <p>{row.evidence}</p>
+          <p>{row.operatorUse}</p>
+        </div>
+      ))}
+    </div>
   );
 }
 
-function ParticipantLedgerTable({ rows }: ParticipantLedgerTableProps) {
+function ParticipantRows({ rows }: ParticipantRowsProps) {
+  if (rows.length === 0) {
+    return <p className="muted admin-mt-10">No Partner participation has been recorded for this booking yet.</p>;
+  }
+
   return (
-    <AdminTableScroll>
-      <AdminDataTable
-        className="admin-mt-10"
-        emptyMessage="No Partner participation has been recorded for this booking yet."
-        headers={PARTICIPANT_ELIGIBILITY_HEADERS}
-        rowCount={rows.length}
-      >
-        {rows.map((row) => (
-          <tr key={row.id}>
-            <td>
-              <AdminPersonCell
-                avatarClassName="vuexy-booking-avatar is-partner"
-                avatarStatus={row.avatarStatus}
-                className="vuexy-booking-person"
-                helper={row.identity}
-                href={row.href}
-                label={row.partner}
-                linkClassName="table-link"
-              />
-            </td>
-            <td>
-              <div className="filter-row">
-                <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                <span className={`pill ${row.statusTone}`}>{row.status}</span>
-              </div>
-              <p className="muted admin-mt-6">{row.evidenceDetail}</p>
-              <p className="muted">{row.decision}</p>
-            </td>
-            <td>
-              <div className="filter-row">
-                <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
-                <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
-              </div>
-              <p className="muted admin-mt-6">{row.eligibilityReason}</p>
-              <p className="muted">{row.operatorStatus}</p>
-              <p className="muted">{row.eligibilityNextStep}</p>
-            </td>
-            <td>
-              <strong>{row.distance}</strong>
-              <div className="filter-row admin-mt-6">
-                <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
-              </div>
-              <p className="muted">{row.distancePolicyHelper}</p>
-              <p className="muted">{row.timing}</p>
-            </td>
-            <td>
-              <div className="filter-row">
-                {row.facts.map((fact) => (
-                  <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
-                    {fact.label}: {fact.value}
-                  </span>
-                ))}
-              </div>
-              <p className="muted admin-mt-8">{row.operatorUse}</p>
-            </td>
-          </tr>
-        ))}
-      </AdminDataTable>
-    </AdminTableScroll>
+    <div className="booking-participant-row-list admin-mt-10">
+      {rows.map((row) => (
+        <div className="booking-participant-row-card" key={row.id}>
+          <AdminPersonCell
+            avatarClassName="vuexy-booking-avatar is-partner"
+            avatarStatus={row.avatarStatus}
+            className="vuexy-booking-person"
+            helper={row.identity}
+            href={row.href}
+            label={row.partner}
+            linkClassName="table-link"
+          />
+          <div>
+            <div className="filter-row">
+              <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+              <span className={`pill ${row.roleTone}`}>{row.role}</span>
+              <span className={`pill ${row.statusTone}`}>{row.status}</span>
+            </div>
+            <p className="muted admin-mt-6">{row.evidenceDetail}</p>
+            <p className="muted">{row.decision}</p>
+          </div>
+          <div>
+            <div className="filter-row">
+              <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
+              <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
+            </div>
+            <p className="muted admin-mt-6">{row.eligibilityReason}</p>
+            <p className="muted">{row.operatorStatus}</p>
+            <p className="muted">{row.eligibilityNextStep}</p>
+          </div>
+          <div>
+            <strong className="booking-settlement-ledger-value">{row.distance}</strong>
+            <div className="filter-row admin-mt-6">
+              <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+            </div>
+            <p className="muted">{row.distancePolicyHelper}</p>
+            <p className="muted">{row.timing}</p>
+          </div>
+          <div>
+            <div className="filter-row">
+              {row.facts.map((fact) => (
+                <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                  {fact.label}: {fact.value}
+                </span>
+              ))}
+            </div>
+            <p className="muted admin-mt-8">{row.operatorUse}</p>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
