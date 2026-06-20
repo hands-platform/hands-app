@@ -73,6 +73,8 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
     if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
     if (filters.lastBookingFrom && !isOnOrAfterDate(row.lastBookingAt, filters.lastBookingFrom)) return false;
     if (filters.lastBookingTo && !isOnOrBeforeDate(row.lastBookingAt, filters.lastBookingTo)) return false;
+    if (filters.lastLoginFrom && !isOnOrAfterDate(row.lastSeenAt, filters.lastLoginFrom)) return false;
+    if (filters.lastLoginTo && !isOnOrBeforeDate(row.lastSeenAt, filters.lastLoginTo)) return false;
     if (filters.minBookings !== null && row.bookingCount < filters.minBookings) return false;
     if (filters.minCompleted !== null && row.completedBookings < filters.minCompleted) return false;
     if (filters.minSpend !== null && row.capturedSpend < filters.minSpend) return false;
@@ -90,6 +92,9 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
       return (
         right.bookingCount - left.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
       );
+    }
+    if (sort === 'booking-count-asc') {
+      return left.bookingCount - right.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
     }
     if (sort === 'completed-count') {
       return (

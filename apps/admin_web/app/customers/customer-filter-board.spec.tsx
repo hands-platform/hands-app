@@ -6,10 +6,10 @@ import type { CustomerFilters } from './customer-filters';
 describe('CustomerFilterBoard', () => {
   it('renders the shared filter panel with customer filters and active chips', () => {
     const section = CustomerFilterBoard({
-      activeFilters: ['Search: linh', 'Payment: captured'],
+      activeFilters: ['Search: linh', 'Last login date: Last month'],
       csvHref: 'data:text/csv,customer',
       filteredCount: 4,
-      filters: filters({ q: 'linh', payment: 'captured' }),
+      filters: filters({ lastLoginRange: '30d', q: 'linh', sort: 'booking-count-asc' }),
       totalCount: 9,
     });
     const rendered = renderToStaticMarkup(section);
@@ -24,18 +24,23 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Search Customer');
     expect(rendered).toContain('All countries');
     expect(rendered).toContain('All genders');
-    expect(rendered).toContain('Most reservations');
     expect(rendered).toContain('Sign-up Date');
-    expect(rendered).toContain('Sign-up: Today');
+    expect(rendered).toContain('Today');
+    expect(rendered).toContain('Previous day');
+    expect(rendered).toContain('Last month');
+    expect(rendered).toContain('Custom dates');
     expect(rendered).toContain('Last Reservation');
-    expect(rendered).toContain('Last reservation: Specific period');
+    expect(rendered).toContain('Last Login Date');
     expect(rendered).toContain('Reservation Count');
-    expect(rendered).toContain('Min reservations');
-    expect(rendered).toContain('admin-form-input vuexy-customer-number-field');
+    expect(rendered).toContain('Many first');
+    expect(rendered).toContain('Few first');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Search: linh');
-    expect(rendered).toContain('Payment: captured');
+    expect(rendered).toContain('Last login date: Last month');
+    expect(rendered).not.toContain('All bookings');
+    expect(rendered).not.toContain('All wallet');
+    expect(rendered).not.toContain('Min reservations');
     expect(rendered).not.toContain('Clear filters');
   });
 
@@ -70,6 +75,9 @@ function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
     lastBookingRange: '',
     lastBookingFrom: '',
     lastBookingTo: '',
+    lastLoginRange: '',
+    lastLoginFrom: '',
+    lastLoginTo: '',
     memo: '',
     minBookings: null,
     minCompleted: null,

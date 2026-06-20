@@ -3,12 +3,11 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
-  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import type { CustomerFilters } from './customer-filters';
+import { buildCustomerListHref, type CustomerFilters } from './customer-filters';
 
 type CustomerFilterBoardProps = {
   readonly activeFilters: readonly string[];
@@ -55,13 +54,6 @@ export function CustomerFilterBoard({
           <div className="vuexy-customer-filter-group is-primary" aria-label="Customer list filters">
             <AdminFormSelect
               className="vuexy-customer-select"
-              defaultValue={filters.booking}
-              label="Completed reservations"
-              name="booking"
-              options={bookingFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-customer-select"
               defaultValue={filters.country}
               label="Country"
               name="country"
@@ -73,27 +65,6 @@ export function CustomerFilterBoard({
               label="Gender"
               name="gender"
               options={genderFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-customer-select"
-              defaultValue={filters.payment}
-              label="Wallet state"
-              name="payment"
-              options={paymentFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-customer-select"
-              defaultValue={filters.seen}
-              label="Last login state"
-              name="seen"
-              options={seenFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-customer-select"
-              defaultValue={filters.sort}
-              label="Sort customers"
-              name="sort"
-              options={sortFilterOptions}
             />
             <AdminFormSearch
               className="vuexy-customer-search"
@@ -116,75 +87,130 @@ export function CustomerFilterBoard({
           </div>
         </div>
         <div className="vuexy-customer-date-filter-grid" aria-label="Customer date filters">
-          <div className="vuexy-customer-date-filter-group">
-            <span className="vuexy-customer-filter-group-label">Sign-up Date</span>
-            <AdminFormSelect
-              className="vuexy-customer-select"
-              defaultValue={filters.joinedRange}
-              label="Sign-up date"
-              name="joinedRange"
-              options={dateRangeFilterOptions('Sign-up')}
-            />
-            <AdminFormDate
-              className="vuexy-customer-date"
-              defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedFrom)}
-              label="Sign-up from"
-              name="joinedFrom"
-            />
-            <AdminFormDate
-              className="vuexy-customer-date"
-              defaultValue={customerCustomDateValue(filters.joinedRange, filters.joinedTo)}
-              label="Sign-up to"
-              name="joinedTo"
-            />
-          </div>
-          <div className="vuexy-customer-date-filter-group">
-            <span className="vuexy-customer-filter-group-label">Last Reservation</span>
-            <AdminFormSelect
-              className="vuexy-customer-select"
-              defaultValue={filters.lastBookingRange}
-              label="Last reservation"
-              name="lastBookingRange"
-              options={dateRangeFilterOptions('Last reservation')}
-            />
-            <AdminFormDate
-              className="vuexy-customer-date"
-              defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingFrom)}
-              label="Last reservation from"
-              name="lastBookingFrom"
-            />
-            <AdminFormDate
-              className="vuexy-customer-date"
-              defaultValue={customerCustomDateValue(filters.lastBookingRange, filters.lastBookingTo)}
-              label="Last reservation to"
-              name="lastBookingTo"
-            />
-          </div>
-          <div className="vuexy-customer-date-filter-group is-compact">
-            <span className="vuexy-customer-filter-group-label">Reservation Count</span>
-            <AdminFormInput
-              className="vuexy-customer-number-field"
-              defaultValue={filters.minBookings ?? ''}
-              label="Minimum reservations"
-              min="0"
-              name="minBookings"
-              placeholder="Min reservations"
-              type="number"
-            />
-          </div>
+          <CustomerDateButtonGroup
+            filters={filters}
+            fromKey="joinedFrom"
+            fromLabel="Sign-up from"
+            label="Sign-up Date"
+            rangeKey="joinedRange"
+            toKey="joinedTo"
+            toLabel="Sign-up to"
+          />
+          <CustomerDateButtonGroup
+            filters={filters}
+            fromKey="lastBookingFrom"
+            fromLabel="Last reservation from"
+            label="Last Reservation"
+            rangeKey="lastBookingRange"
+            toKey="lastBookingTo"
+            toLabel="Last reservation to"
+          />
+          <CustomerDateButtonGroup
+            filters={filters}
+            fromKey="lastLoginFrom"
+            fromLabel="Last login from"
+            label="Last Login Date"
+            rangeKey="lastLoginRange"
+            toKey="lastLoginTo"
+            toLabel="Last login to"
+          />
+          <CustomerReservationSortGroup filters={filters} />
         </div>
       </form>
     </AdminFilterPanel>
   );
 }
 
-const bookingFilterOptions = [
-  { label: 'All bookings', value: '' },
-  { label: 'Completed work', value: 'completed' },
-  { label: 'Active booking', value: 'active' },
-  { label: 'Closed booking', value: 'closed' },
-  { label: 'No booking yet', value: 'no-booking' },
-] as const;
+type CustomerDateRangeKey = 'joinedRange' | 'lastBookingRange' | 'lastLoginRange';
+type CustomerDateValueKey =
+  | 'joinedFrom'
+  | 'joinedTo'
+  | 'lastBookingFrom'
+  | 'lastBookingTo'
+  | 'lastLoginFrom'
+  | 'lastLoginTo';
+
+type CustomerDateButtonGroupProps = {
+  readonly filters: CustomerFilters;
+  readonly fromKey: CustomerDateValueKey;
+  readonly fromLabel: string;
+  readonly label: string;
+  readonly rangeKey: CustomerDateRangeKey;
+  readonly toKey: CustomerDateValueKey;
+  readonly toLabel: string;
+};
+
+function CustomerDateButtonGroup({
+  filters,
+  fromKey,
+  fromLabel,
+  label,
+  rangeKey,
+  toKey,
+  toLabel,
+}: CustomerDateButtonGroupProps) {
+  const activeRange = filters[rangeKey];
+  const showCustomDateRange = activeRange === 'custom';
+
+  return (
+    <div className="vuexy-customer-date-filter-group">
+      <span className="vuexy-customer-filter-group-label">{label}</span>
+      <input name={rangeKey} type="hidden" value={activeRange} />
+      <div className="booking-date-filter-buttons vuexy-customer-date-buttons" role="group" aria-label={label}>
+        {customerDateRangeButtonOptions.map((option) => (
+          <a
+            key={option.value}
+            aria-current={activeRange === option.value ? 'page' : undefined}
+            className={activeRange === option.value ? 'is-active' : undefined}
+            href={buildCustomerListHref(filters, { [rangeKey]: option.value } as Partial<CustomerFilters>)}
+          >
+            {option.label}
+          </a>
+        ))}
+      </div>
+      {showCustomDateRange && (
+        <div className="booking-custom-date-grid vuexy-customer-custom-date-grid">
+          <AdminFormDate
+            className="booking-monitor-date"
+            defaultValue={customerCustomDateValue(activeRange, filters[fromKey])}
+            label={fromLabel}
+            name={fromKey}
+          />
+          <AdminFormDate
+            className="booking-monitor-date"
+            defaultValue={customerCustomDateValue(activeRange, filters[toKey])}
+            label={toLabel}
+            name={toKey}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomerReservationSortGroup({ filters }: { readonly filters: CustomerFilters }) {
+  return (
+    <div className="vuexy-customer-date-filter-group is-compact">
+      <span className="vuexy-customer-filter-group-label">Reservation Count</span>
+      <div
+        className="booking-date-filter-buttons vuexy-customer-date-buttons"
+        role="group"
+        aria-label="Reservation count sort"
+      >
+        {reservationCountSortOptions.map((option) => (
+          <a
+            key={option.value}
+            aria-current={filters.sort === option.value ? 'page' : undefined}
+            className={filters.sort === option.value ? 'is-active' : undefined}
+            href={buildCustomerListHref(filters, { sort: option.value })}
+          >
+            {option.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const countryFilterOptions = [
   { label: 'All countries', value: '' },
@@ -206,42 +232,18 @@ const genderFilterOptions = [
   { label: 'Not captured', value: 'unknown' },
 ] as const;
 
-const paymentFilterOptions = [
-  { label: 'All wallet', value: '' },
-  { label: 'Captured payment', value: 'captured' },
-  { label: 'Refund history', value: 'refund' },
-  { label: 'Payment follow-up', value: 'issue' },
-  { label: 'No payment record', value: 'no-payment' },
+const customerDateRangeButtonOptions = [
+  { label: 'Today', value: 'today' },
+  { label: 'Previous day', value: 'yesterday' },
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last month', value: '30d' },
+  { label: 'Custom dates', value: 'custom' },
 ] as const;
 
-const seenFilterOptions = [
-  { label: 'All logins', value: '' },
-  { label: 'In app now', value: 'live' },
-  { label: 'Seen in 7 days', value: '7d' },
-  { label: 'Seen in 30 days', value: '30d' },
-  { label: 'No app session', value: 'no-session' },
-  { label: 'No access 30 days', value: 'inactive-30d' },
+const reservationCountSortOptions = [
+  { label: 'Many first', value: 'booking-count' },
+  { label: 'Few first', value: 'booking-count-asc' },
 ] as const;
-
-const sortFilterOptions = [
-  { label: 'Latest reservation', value: 'last-booking' },
-  { label: 'Most reservations', value: 'booking-count' },
-  { label: 'Last completed work', value: 'last-work' },
-  { label: 'Completed count', value: 'completed-count' },
-  { label: 'Last login', value: 'last-seen' },
-  { label: 'Sign-up date', value: 'joined' },
-  { label: 'Customer name', value: 'name' },
-] as const;
-
-function dateRangeFilterOptions(prefix: string) {
-  return [
-    { label: `${prefix}: All`, value: '' },
-    { label: `${prefix}: Today`, value: 'today' },
-    { label: `${prefix}: Yesterday`, value: 'yesterday' },
-    { label: `${prefix}: Last 7 days`, value: '7d' },
-    { label: `${prefix}: Specific period`, value: 'custom' },
-  ] as const;
-}
 
 function customerCustomDateValue(range: string, value: string) {
   return !range || range === 'custom' ? value : '';

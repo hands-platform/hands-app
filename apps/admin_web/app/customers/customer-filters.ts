@@ -24,6 +24,9 @@ export type CustomerFilters = {
   lastBookingRange: string;
   lastBookingFrom: string;
   lastBookingTo: string;
+  lastLoginRange: string;
+  lastLoginFrom: string;
+  lastLoginTo: string;
   seen: string;
   minBookings: number | null;
   minCompleted: number | null;
@@ -43,18 +46,24 @@ export function buildCustomerFilters(params: Record<string, string | string[] | 
     readDateParam(params.lastBookingFrom),
     readDateParam(params.lastBookingTo),
   );
+  const lastLoginRange = normalizeCustomerDateRangeFilter(readSearchParam(params.lastLoginRange));
+  const lastLoginDateRange = resolveCustomerDateRange(
+    lastLoginRange,
+    readDateParam(params.lastLoginFrom),
+    readDateParam(params.lastLoginTo),
+  );
 
   return {
     page: readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readSearchParam(params.q),
-    booking: readSearchParam(params.booking),
+    booking: '',
     bookingFlow: normalizeCustomerBookingFlowFilter(readSearchParam(params.bookingFlow)),
     country: normalizeCustomerCountryFilter(readSearchParam(params.country)),
     gender: normalizeCustomerGenderFilter(readSearchParam(params.gender)),
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
-    payment: readSearchParam(params.payment),
+    payment: '',
     chat: readSearchParam(params.chat),
     memo: readSearchParam(params.memo),
     sort: readCustomerSort(params.sort),
@@ -64,8 +73,11 @@ export function buildCustomerFilters(params: Record<string, string | string[] | 
     lastBookingRange,
     lastBookingFrom: lastBookingDateRange.from,
     lastBookingTo: lastBookingDateRange.to,
-    seen: readSearchParam(params.seen),
-    minBookings: readPositiveNumber(params.minBookings),
+    lastLoginRange,
+    lastLoginFrom: lastLoginDateRange.from,
+    lastLoginTo: lastLoginDateRange.to,
+    seen: '',
+    minBookings: null,
     minCompleted: readPositiveNumber(params.minCompleted),
     minSpend: readPositiveNumber(params.minSpend),
   };
@@ -80,13 +92,11 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', next.q);
-  appendTextParam(params, 'booking', next.booking);
   appendTextParam(params, 'bookingFlow', next.bookingFlow);
   appendTextParam(params, 'country', next.country);
   appendTextParam(params, 'gender', next.gender);
   appendTextParam(params, 'reachability', next.reachability);
   appendTextParam(params, 'address', next.address);
-  appendTextParam(params, 'payment', next.payment);
   appendTextParam(params, 'chat', next.chat);
   appendTextParam(params, 'memo', next.memo);
   appendTextParam(params, 'joinedRange', next.joinedRange);
@@ -99,13 +109,14 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
     appendTextParam(params, 'lastBookingFrom', next.lastBookingFrom);
     appendTextParam(params, 'lastBookingTo', next.lastBookingTo);
   }
-  appendNumberParam(params, 'minBookings', next.minBookings);
+  appendTextParam(params, 'lastLoginRange', next.lastLoginRange);
+  if (!next.lastLoginRange || next.lastLoginRange === 'custom') {
+    appendTextParam(params, 'lastLoginFrom', next.lastLoginFrom);
+    appendTextParam(params, 'lastLoginTo', next.lastLoginTo);
+  }
   appendNumberParam(params, 'minCompleted', next.minCompleted);
   appendNumberParam(params, 'minSpend', next.minSpend);
 
-  if (next.seen) {
-    params.set('seen', next.seen);
-  }
   if (next.sort !== 'last-booking') {
     params.set('sort', next.sort);
   }
@@ -121,7 +132,8 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
 
 export function customerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
-  if (sort === 'booking-count') return 'reservation count';
+  if (sort === 'booking-count') return 'reservations high to low';
+  if (sort === 'booking-count-asc') return 'reservations low to high';
   if (sort === 'completed-count') return 'completed work count';
   if (sort === 'captured-spend') return 'captured spend';
   if (sort === 'last-seen') return 'last app session';
@@ -163,8 +175,19 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
     if (filters.lastBookingFrom) labels.push(`Last reservation from: ${filters.lastBookingFrom}`);
     if (filters.lastBookingTo) labels.push(`Last reservation to: ${filters.lastBookingTo}`);
   }
+  if (filters.lastLoginRange) {
+    labels.push(
+      `Last login date: ${customerDateRangeFilterLabel(
+        filters.lastLoginRange,
+        filters.lastLoginFrom,
+        filters.lastLoginTo,
+      )}`,
+    );
+  } else {
+    if (filters.lastLoginFrom) labels.push(`Last login from: ${filters.lastLoginFrom}`);
+    if (filters.lastLoginTo) labels.push(`Last login to: ${filters.lastLoginTo}`);
+  }
   if (filters.seen) labels.push(`Recent access: ${filters.seen}`);
-  if (filters.minBookings !== null) labels.push(`Min bookings: ${filters.minBookings}`);
   if (filters.minCompleted !== null) labels.push(`Min completed: ${filters.minCompleted}`);
   if (filters.minSpend !== null) labels.push(`Min paid amount: ${formatMoney(filters.minSpend)}`);
   if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
@@ -172,7 +195,7 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
 }
 
 function normalizeCustomerDateRangeFilter(value: string) {
-  const allowed = ['today', 'yesterday', '7d', 'custom'];
+  const allowed = ['today', 'yesterday', '7d', '30d', 'custom'];
   return allowed.includes(value) ? value : '';
 }
 
@@ -187,6 +210,9 @@ function resolveCustomerDateRange(range: string, from: string, to: string) {
   }
   if (range === '7d') {
     return { from: localDateParam(-6), to: localDateParam(0) };
+  }
+  if (range === '30d') {
+    return { from: localDateParam(-29), to: localDateParam(0) };
   }
 
   return { from, to };
@@ -205,6 +231,7 @@ function localDateParam(dayOffset: number) {
 function customerDateRangeFilterLabel(range: string, from: string, to: string) {
   const labels: Record<string, string> = {
     '7d': 'Last 7 days',
+    '30d': 'Last month',
     custom: [from, to].filter(Boolean).join(' - ') || 'Custom period',
     today: 'Today',
     yesterday: 'Yesterday',
@@ -218,6 +245,7 @@ function readCustomerSort(value: string | string[] | undefined) {
     'last-booking',
     'last-work',
     'booking-count',
+    'booking-count-asc',
     'completed-count',
     'captured-spend',
     'last-seen',

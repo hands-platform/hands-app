@@ -6868,14 +6868,13 @@ textarea:focus-visible {
   border-radius: var(--admin-radius);
   display: grid;
   gap: 10px;
-  grid-template-columns: 150px minmax(200px, 1fr) minmax(160px, 0.7fr) minmax(160px, 0.7fr);
+  grid-template-columns: 150px minmax(0, 1fr);
   min-width: 0;
   padding: 12px;
 }
 
 .vuexy-customer-date-filter-group.is-compact {
-  grid-template-columns: 150px minmax(220px, 320px);
-  justify-content: start;
+  grid-template-columns: 150px minmax(0, 1fr);
 }
 
 .vuexy-customer-filter-group-label {
@@ -6908,6 +6907,17 @@ textarea:focus-visible {
   border-radius: 0;
   min-height: 0;
   padding: 0;
+}
+
+.vuexy-customer-date-buttons {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.vuexy-customer-custom-date-grid {
+  grid-column: 2;
+  justify-content: start;
+  max-width: 520px;
 }
 
 .vuexy-customer-filter-footer {
