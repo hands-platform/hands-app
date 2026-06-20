@@ -23,12 +23,23 @@ describe('BookingDetailChatTranscriptSection', () => {
     const rendered = normalizedText(markup);
 
     expect(rendered).toContain('Customer and Partner chat history');
-    expect(rendered).toContain('2 message(s)');
+    expect(rendered).toContain('Retained booking chat transcript.');
+    expect(rendered).toContain('2 messages');
     expect(rendered).toContain('Customer requested the room change.');
     expect(rendered).toContain('Partner confirmed arrival.');
     expect(rendered).toContain('Customer Nguyen');
     expect(rendered).toContain('Partner Linh');
     expect(markup).toContain('id="booking-chat-history"');
+    expect(markup).toContain('booking-chat-transcript-panel');
+  });
+
+  it('renders a compact empty state', () => {
+    const markup = renderToStaticMarkup(<BookingDetailChatTranscriptSection messages={[]} />);
+    const rendered = normalizedText(markup);
+
+    expect(rendered).toContain('No messages');
+    expect(rendered).toContain('No retained chat yet.');
+    expect(markup).toContain('booking-chat-empty');
   });
 });
 

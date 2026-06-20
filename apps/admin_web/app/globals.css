@@ -2143,6 +2143,15 @@ a.action-button-card:hover {
   padding: 20px 22px 22px;
 }
 
+.booking-chat-transcript-panel {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+}
+
 .booking-chat-message {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);

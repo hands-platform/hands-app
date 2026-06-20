@@ -11,16 +11,24 @@ export function BookingDetailChatTranscriptSection({ messages }: BookingDetailCh
       <div className="ops-section-header">
         <div>
           <h3>Customer and Partner chat history</h3>
-          <p className="muted">Full booking chat transcript, sorted from first message to latest.</p>
+          <p className="muted">Retained booking chat transcript.</p>
         </div>
-        <span className="pill pill-info">{messages.length} message(s)</span>
+        <span className="pill pill-info">{countLabel(messages.length, 'message')}</span>
       </div>
-      <div className="stack admin-mt-12">
+      <div className="booking-chat-transcript-panel">
         {messages.map((message) => (
           <BookingChatBubble key={message.id} message={message} />
         ))}
-        {messages.length === 0 && <p className="muted">No chat messages yet.</p>}
+        {messages.length === 0 && <p className="booking-chat-empty">No retained chat yet.</p>}
       </div>
     </section>
   );
+}
+
+function countLabel(count: number, singular: string) {
+  if (count === 0) {
+    return `No ${singular}s`;
+  }
+
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
