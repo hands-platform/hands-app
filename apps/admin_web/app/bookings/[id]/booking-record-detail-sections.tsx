@@ -158,13 +158,6 @@ const PARTICIPANT_ELIGIBILITY_HEADERS = [
   'Operations record',
 ] as const;
 
-const CASH_FEE_SETTLEMENT_HEADERS = [
-  'Settlement lane',
-  'Status',
-  'Evidence',
-  'Operator next step',
-] as const;
-
 export type BookingRecordDetailSectionsProps = {
   cashFeeSettlementPath: CashSettlementPath;
   chatEvidenceRows: readonly BookingPostMatchChatEvidenceRow[];
@@ -487,27 +480,19 @@ function CashFeeSettlementPathSection({
         <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
       </div>
       <SummaryCards cards={cashFeeSettlementPath.cards} />
-      <AdminTableScroll>
-        <AdminDataTable
-          emptyMessage={null}
-          headers={CASH_FEE_SETTLEMENT_HEADERS}
-          rowCount={cashFeeSettlementPath.rows.length}
-        >
-          {cashFeeSettlementPath.rows.map((row) => (
-            <tr key={row.lane}>
-              <td>
-                <strong>{row.lane}</strong>
-                <p className="muted">{row.scope}</p>
-              </td>
-              <td>
-                <span className={`pill ${row.tone}`}>{row.status}</span>
-              </td>
-              <td>{row.evidence}</td>
-              <td>{row.nextStep}</td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+      <div className="booking-settlement-ledger admin-mt-12" aria-label="Cash fee settlement rows">
+        {cashFeeSettlementPath.rows.map((row) => (
+          <div className="booking-settlement-ledger-row" key={row.lane}>
+            <div>
+              <span className="booking-settlement-ledger-label">{row.lane}</span>
+              <p className="muted">{row.scope}</p>
+            </div>
+            <span className={`pill ${row.tone}`}>{row.status}</span>
+            <p>{row.evidence}</p>
+            <p>{row.nextStep}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

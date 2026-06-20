@@ -4592,6 +4592,54 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.booking-settlement-ledger {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.booking-settlement-ledger-row {
+  align-items: start;
+  border-top: 1px solid var(--admin-border-subtle);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(170px, 0.8fr) minmax(112px, auto) minmax(260px, 1.15fr) minmax(150px, 0.65fr);
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.booking-settlement-ledger-row:first-child {
+  border-top: 0;
+}
+
+.booking-settlement-ledger-row > * {
+  min-width: 0;
+}
+
+.booking-settlement-ledger-row > .pill {
+  justify-self: flex-start;
+}
+
+.booking-settlement-ledger-row > :is(p, div > p) {
+  line-height: 19px;
+  margin: 0;
+}
+
+.booking-settlement-ledger-row > .text-link {
+  justify-self: flex-start;
+}
+
+.booking-settlement-ledger-label {
+  color: var(--admin-text);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
 .booking-unified-open-link {
   align-self: end;
   justify-self: flex-start;

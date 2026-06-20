@@ -142,6 +142,8 @@ describe('BookingRecordDetailSections', () => {
     expect(markup).toContain('Partner One');
     expect(markup).toContain('Wallet: Clear');
     expect(markup).toContain('Cash fee settlement path');
+    expect(markup).toContain('booking-settlement-ledger');
+    expect(markup).toContain('aria-label="Cash fee settlement rows"');
     expect(markup).toContain('table vuexy-data-table');
     expect(markup).toContain('admin-avatar-status-dot is-working');
     expect(markup).toContain('vuexy-booking-person');

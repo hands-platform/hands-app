@@ -328,15 +328,15 @@ export function BookingPayoutBatchEligibilitySection({
       <p className="muted admin-mt-8">
         {payoutBatchEligibility.summary}
       </p>
-      <div className="ops-task-grid admin-mt-12">
+      <div className="booking-settlement-ledger admin-mt-12" aria-label="Payout batch eligibility rows">
         {payoutBatchEligibility.rows.map((row) => (
-          <div className={`ops-task-card ${row.className}`} key={row.label}>
+          <div className={`booking-settlement-ledger-row ${row.className}`} key={row.label}>
             <div>
-              <span className={`pill ${row.pillClass}`}>{row.status}</span>
-              <h3>{row.label}</h3>
-              <p>{row.detail}</p>
-              <small>{row.operatorRule}</small>
+              <span className="booking-settlement-ledger-label">{row.label}</span>
+              <p className="muted">{row.operatorRule}</p>
             </div>
+            <span className={`pill ${row.pillClass}`}>{row.status}</span>
+            <p>{row.detail}</p>
             <ActionLink href={row.href} label="Open" />
           </div>
         ))}
