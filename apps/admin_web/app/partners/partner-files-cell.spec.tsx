@@ -66,7 +66,12 @@ describe('PartnerFilesCell', () => {
       expect.arrayContaining(['Public media review actions for Linh Wellness']),
     );
     expect(classNamesIn(cell)).toEqual(
-      expect.arrayContaining(['provider-file-row', 'pill pill-success', 'pill pill-warn']),
+      expect.arrayContaining([
+        'provider-file-row',
+        'pill pill-success',
+        'pill pill-warn',
+        'admin-form-control-link text-link',
+      ]),
     );
   });
 

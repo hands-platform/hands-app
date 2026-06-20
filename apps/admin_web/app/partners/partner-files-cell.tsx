@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { AdminProvider } from '../../lib/admin-api';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime } from '../../lib/admin-format';
@@ -47,9 +46,9 @@ export function PartnerFilesCell({
             <p className="muted">
               {marketplaceDisplayText(file.key)}
               {' / '}
-              <Link className="text-link" href={`/partners/${provider.id}#documents`}>
+              <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#documents`}>
                 open detail to view
-              </Link>
+              </AdminFormControlLink>
             </p>
           </div>
         ))
@@ -118,9 +117,9 @@ function PartnerPublicMediaQueue({
         </div>
       ))}
       {media.length > 4 ? (
-        <Link className="text-link" href={`/partners/${provider.id}#media`}>
+        <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#media`}>
           Review {media.length - 4} more media item(s)
-        </Link>
+        </AdminFormControlLink>
       ) : null}
     </div>
   );

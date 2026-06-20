@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { ActionMenu, type ActionMenuItem } from '../../components/action-menu';
+import { AdminFormControlLink } from '../../components/admin-form-controls';
 import type { AdminProvider } from '../../lib/admin-api';
 import {
   providerDocumentLabel,
@@ -130,9 +129,9 @@ export function PartnerOnboardingCell({
                 {document.fileAsset?.id ? (
                   <>
                     {' / '}
-                    <Link className="text-link" href={`/partners/${provider.id}#documents`}>
+                    <AdminFormControlLink className="text-link" href={`/partners/${provider.id}#documents`}>
                       open detail to view
-                    </Link>
+                    </AdminFormControlLink>
                   </>
                 ) : null}
               </p>
