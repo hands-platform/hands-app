@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
+import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 
 export type PartnerTypedDocumentRow = {
@@ -42,43 +43,54 @@ type PartnerDetailPublicProfileMediaCardProps = {
 export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocumentsCardProps) {
   return (
     <div className="card" id="documents">
-      <h2>Typed documents</h2>
-      {rows.length ? (
-        rows.map((document) => (
-          <div className="provider-file-row" key={document.id}>
-            <div className="participant-list admin-mb-6">
-              <span className="pill pill-info">{document.typeLabel}</span>
-              <span className={`pill ${document.statusTone}`}>{document.status}</span>
-            </div>
-            <p className="muted">{document.reviewHint}</p>
-            <p className="muted">{document.assetLabel}</p>
-            {document.rejectionReason ? (
-              <p className="muted">Rejection reason: {document.rejectionReason}</p>
-            ) : null}
-            <p className="muted">
-              {document.fileHref ? (
-                <a
-                  aria-label={`Open ${document.typeLabel}`}
-                  className="files-open-action"
-                  href={document.fileHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Open private file"
-                >
-                  <ExternalLink size={16} aria-hidden="true" />
-                </a>
-              ) : (
-                marketplaceDisplayText(document.fileLabel)
-              )}
-            </p>
-            <div className="actions">
-              <ActionMenu actions={document.reviewActions} label={document.reviewLabel} />
-            </div>
-          </div>
-        ))
-      ) : (
-        <p className="muted">No typed onboarding documents yet.</p>
-      )}
+      <div className="ops-section-header">
+        <div>
+          <h2>Typed documents</h2>
+          <p className="muted">
+            Required Partner onboarding files with review status, asset evidence, and approval actions.
+          </p>
+        </div>
+        <span className="pill pill-info">{rows.length} document(s)</span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<EvidenceEmptyState message="No typed onboarding documents yet." />}
+          headers={typedDocumentHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((document) => (
+            <tr key={document.id}>
+              <td>
+                <strong>{document.typeLabel}</strong>
+                <p className="muted">{document.reviewHint}</p>
+              </td>
+              <td>
+                <strong>{marketplaceDisplayText(document.assetLabel)}</strong>
+                {document.rejectionReason ? (
+                  <p className="muted">Rejection reason: {document.rejectionReason}</p>
+                ) : null}
+              </td>
+              <td>
+                <FileOpenAction
+                  fileHref={document.fileHref}
+                  fileLabel={document.fileLabel}
+                  label={`Open ${document.typeLabel}`}
+                />
+              </td>
+              <td>
+                <span className={`pill ${document.statusTone}`}>{document.status}</span>
+              </td>
+              <td>
+                <ActionMenu
+                  actions={document.reviewActions}
+                  label={document.reviewLabel}
+                  variant="dropdown"
+                />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
   );
 }
@@ -86,42 +98,88 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
 export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPublicProfileMediaCardProps) {
   return (
     <div className="card" id="media">
-      <h2>Public profile media</h2>
-      {rows.length ? (
-        rows.map((file) => (
-          <div className="provider-file-row" key={file.id}>
-            <div className="participant-list admin-mb-6">
-              <span className="pill pill-info">{file.typeLabel}</span>
-              <span className="pill pill-success">{file.uploadStatus}</span>
-              <span className={`pill ${file.reviewStatusTone}`}>{file.reviewStatus}</span>
-            </div>
-            <p className="muted">{file.detailLabel}</p>
-            {file.reviewedLabel ? <p className="muted">Reviewed {file.reviewedLabel}</p> : null}
-            {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
-            <p className="muted">
-              {file.fileHref ? (
-                <a
-                  aria-label={`Open ${marketplaceDisplayText(file.fileLabel)}`}
-                  className="files-open-action"
-                  href={file.fileHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={marketplaceDisplayText(file.fileLabel)}
-                >
-                  <ExternalLink size={16} aria-hidden="true" />
-                </a>
-              ) : (
-                marketplaceDisplayText(file.fileLabel)
-              )}
-            </p>
-            <div className="actions">
-              <ActionMenu actions={file.reviewActions} label={file.reviewLabel} />
-            </div>
-          </div>
-        ))
-      ) : (
-        <p className="muted">No public profile image or work photos uploaded yet.</p>
-      )}
+      <div className="ops-section-header">
+        <div>
+          <h2>Public profile media</h2>
+          <p className="muted">
+            Marketplace-visible Partner media with upload state, review outcome, and moderation actions.
+          </p>
+        </div>
+        <span className="pill pill-info">{rows.length} asset(s)</span>
+      </div>
+      <AdminTableScroll>
+        <AdminDataTable
+          emptyMessage={<EvidenceEmptyState message="No public profile image or work photos uploaded yet." />}
+          headers={publicMediaHeaders}
+          rowCount={rows.length}
+        >
+          {rows.map((file) => (
+            <tr key={file.id}>
+              <td>
+                <strong>{file.typeLabel}</strong>
+                <p className="muted">{file.detailLabel}</p>
+              </td>
+              <td>
+                <FileOpenAction
+                  fileHref={file.fileHref ?? undefined}
+                  fileLabel={file.fileLabel}
+                  label={`Open ${marketplaceDisplayText(file.fileLabel)}`}
+                />
+              </td>
+              <td>
+                <span className="pill pill-success">{file.uploadStatus}</span>
+              </td>
+              <td>
+                <span className={`pill ${file.reviewStatusTone}`}>{file.reviewStatus}</span>
+                {file.reviewedLabel ? <p className="muted">Reviewed {file.reviewedLabel}</p> : null}
+                {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
+              </td>
+              <td>
+                <ActionMenu actions={file.reviewActions} label={file.reviewLabel} variant="dropdown" />
+              </td>
+            </tr>
+          ))}
+        </AdminDataTable>
+      </AdminTableScroll>
     </div>
+  );
+}
+
+const typedDocumentHeaders = ['Document', 'Evidence', 'File', 'Status', 'Actions'] as const;
+const publicMediaHeaders = ['Media', 'File', 'Upload', 'Review', 'Actions'] as const;
+
+function FileOpenAction({
+  fileHref,
+  fileLabel,
+  label,
+}: {
+  readonly fileHref?: string;
+  readonly fileLabel: string;
+  readonly label: string;
+}) {
+  if (!fileHref) {
+    return <span className="muted">{marketplaceDisplayText(fileLabel)}</span>;
+  }
+
+  return (
+    <a
+      aria-label={label}
+      className="files-open-action"
+      href={fileHref}
+      target="_blank"
+      rel="noreferrer"
+      title={marketplaceDisplayText(fileLabel)}
+    >
+      <ExternalLink size={16} aria-hidden="true" />
+    </a>
+  );
+}
+
+function EvidenceEmptyState({ message }: { readonly message: string }) {
+  return (
+    <>
+      <strong>No evidence found</strong>
+      <p className="muted">{message}</p>
+    </>
   );
 }
