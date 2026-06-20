@@ -55,6 +55,7 @@ export function BookingUnifiedDetailSection({ unifiedDetail }: BookingUnifiedDet
         id="booking-finance-system-detail"
         rows={unifiedDetail.financeRows}
         title="Finance and system detail"
+        variant="finance"
       />
     </>
   );
@@ -85,12 +86,16 @@ function BookingUnifiedRows({
   id,
   rows,
   title,
+  variant = 'grid',
 }: {
   readonly helper: string;
   readonly id: string;
   readonly rows: readonly BookingUnifiedDetailRow[];
   readonly title: string;
+  readonly variant?: 'finance' | 'grid';
 }) {
+  const isFinance = variant === 'finance';
+
   return (
     <section className="card admin-mb-16 booking-unified-detail-card" id={id}>
       <div className="ops-section-header">
@@ -100,12 +105,50 @@ function BookingUnifiedRows({
         </div>
         <span className="pill pill-neutral">{countLabel(rows.length, 'field')}</span>
       </div>
-      <div className="booking-unified-detail-grid admin-mt-12">
-        {rows.map((row) => (
+      {isFinance ? <BookingUnifiedFinanceRows rows={rows} /> : <BookingUnifiedCardGrid rows={rows} />}
+    </section>
+  );
+}
+
+function BookingUnifiedCardGrid({ rows }: { readonly rows: readonly BookingUnifiedDetailRow[] }) {
+  return (
+    <div className="booking-unified-detail-grid admin-mt-12">
+      {rows.map((row) => (
+        <BookingUnifiedInfoCard key={row.label} row={row} />
+      ))}
+    </div>
+  );
+}
+
+function BookingUnifiedFinanceRows({ rows }: { readonly rows: readonly BookingUnifiedDetailRow[] }) {
+  const highlights = rows.filter((row) => row.variant === 'finance-highlight');
+  const ledgerRows = rows.filter((row) => row.variant !== 'finance-highlight');
+
+  return (
+    <>
+      <div className="booking-unified-finance-summary admin-mt-12">
+        {highlights.map((row) => (
           <BookingUnifiedInfoCard key={row.label} row={row} />
         ))}
       </div>
-    </section>
+      <div className="booking-unified-finance-ledger admin-mt-12">
+        {ledgerRows.map((row) => (
+          <BookingUnifiedFinanceLedgerRow key={row.label} row={row} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function BookingUnifiedFinanceLedgerRow({ row }: { readonly row: BookingUnifiedDetailRow }) {
+  return (
+    <div className="booking-unified-finance-ledger-row">
+      <span className="booking-unified-info-label">{row.label}</span>
+      <div className="booking-unified-finance-ledger-value">
+        <BookingUnifiedValue row={row} />
+      </div>
+      {row.detail ? <p className="muted">{row.detail}</p> : null}
+    </div>
   );
 }
 

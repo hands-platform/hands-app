@@ -74,8 +74,12 @@ describe('BookingUnifiedDetailSection', () => {
     expect(markup).toContain('href="/customers/customer-profile-1"');
     expect(markup).toContain('href="/partners/partner-1"');
     expect(markup).toContain('booking-unified-info-card is-inactive');
+    expect(markup).toContain('booking-unified-finance-summary');
+    expect(markup).toContain('booking-unified-finance-ledger');
+    expect(markup).toContain('booking-unified-finance-ledger-row');
     expect(markup.match(/is-finance-highlight/g)).toHaveLength(3);
-    expect(markup.match(/is-secondary/g)).toHaveLength(13);
+    expect(markup.match(/booking-unified-finance-ledger-row/g)).toHaveLength(6);
+    expect(markup.match(/is-secondary/g)).toHaveLength(7);
   });
 
   it('summarizes live customer location against the reservation address snapshot', () => {

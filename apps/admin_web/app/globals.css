@@ -4537,6 +4537,61 @@ a.action-button-card:hover {
   margin: 0;
 }
 
+.booking-unified-finance-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.booking-unified-finance-summary .booking-unified-info-card {
+  min-height: 104px;
+}
+
+.booking-unified-finance-ledger {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.booking-unified-finance-ledger-row {
+  align-items: start;
+  border-top: 1px solid var(--admin-border-subtle);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(150px, 0.55fr) minmax(180px, 0.8fr) minmax(260px, 1.25fr);
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.booking-unified-finance-ledger-row:first-child {
+  border-top: 0;
+}
+
+.booking-unified-finance-ledger-row .booking-unified-info-label {
+  padding-top: 1px;
+}
+
+.booking-unified-finance-ledger-value {
+  min-width: 0;
+}
+
+.booking-unified-finance-ledger-value .booking-unified-value,
+.booking-unified-finance-ledger-value .booking-unified-value-link {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.booking-unified-finance-ledger-row > .muted {
+  line-height: 19px;
+  margin: 0;
+  min-width: 0;
+}
+
 .booking-unified-open-link {
   align-self: end;
   justify-self: flex-start;
