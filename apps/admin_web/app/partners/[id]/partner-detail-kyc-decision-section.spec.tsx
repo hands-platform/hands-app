@@ -1,0 +1,143 @@
+import { PartnerDetailKycDecisionSection } from './partner-detail-kyc-decision-section';
+
+describe('PartnerDetailKycDecisionSection', () => {
+  it('renders KYC checklist and evidence as Vuexy tables', () => {
+    const section = PartnerDetailKycDecisionSection({
+      canApprove: false,
+      cccdNumberLast4: '1234',
+      evidence: {
+        allRequiredApproved: false,
+        decisionChecklist: [
+          {
+            detail: 'CCCD front is approved.',
+            label: 'CCCD front',
+            ok: true,
+          },
+          {
+            detail: 'Selfie is pending review.',
+            label: 'Selfie',
+            ok: false,
+          },
+        ],
+        nextAction: 'Approve required evidence before final KYC decision.',
+        rows: [
+          {
+            fileLabel: 'cccd-front.jpg',
+            label: 'CCCD front',
+            status: 'APPROVED',
+            type: 'CCCD_FRONT',
+            uploadedAt: '2026-06-20T09:00:00.000Z',
+          },
+          {
+            fileLabel: 'selfie.jpg',
+            label: 'Selfie',
+            rejectionReason: 'Face is unclear.',
+            status: 'REJECTED',
+            type: 'SELFIE',
+            uploadedAt: '2026-06-20T09:10:00.000Z',
+          },
+        ],
+      },
+      rejectionReason: 'Selfie image is too dark.',
+      reviewActions: [
+        {
+          href: '/partners/partner-1?reviewAction=approve-kyc',
+          kind: 'link',
+          label: 'Approve KYC',
+        },
+      ],
+      reviewedLabel: 'Missing',
+      status: 'PENDING_REVIEW',
+      submittedLabel: '20 Jun 2026, 09:00',
+    });
+
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('KYC decision');
+    expect(rendered).toContain('KYC PENDING_REVIEW');
+    expect(rendered).toContain('Evidence incomplete');
+    expect(rendered).toContain('CCCD last 4: ****1234');
+    expect(rendered).toContain('Gate');
+    expect(rendered).toContain('Outcome');
+    expect(rendered).toContain('Evidence');
+    expect(rendered).toContain('Uploaded');
+    expect(rendered).toContain('Review note');
+    expect(rendered).toContain('Selfie is pending review.');
+    expect(rendered).toContain('Rejection: Face is unclear.');
+    expect(rendered).toContain('Approve required evidence before final KYC decision.');
+    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-kyc']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table',
+        'admin-action-dropdown action-menu-dropdown',
+        'pill pill-success',
+        'pill pill-danger',
+      ]),
+    );
+  });
+});
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function hrefsIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(hrefsIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const href = typeof props?.href === 'string' ? [props.href] : [];
+  return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function normalizeSpaces(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
