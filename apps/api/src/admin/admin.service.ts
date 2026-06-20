@@ -2002,6 +2002,8 @@ export class AdminService {
         booking: {
           select: {
             id: true,
+            openedAt: true,
+            createdAt: true,
             services: {
               select: {
                 id: true,

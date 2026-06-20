@@ -7663,8 +7663,11 @@ textarea:focus-visible {
 
 .vuexy-review-action-item {
   align-items: center;
+  background: transparent;
+  border: 0;
   border-radius: 6px;
   color: var(--admin-text);
+  cursor: pointer;
   display: flex;
   font-size: 14px;
   font-weight: 700;
@@ -7675,6 +7678,7 @@ textarea:focus-visible {
   transition:
     background 0.18s ease,
     color 0.18s ease;
+  width: 100%;
 }
 
 .vuexy-review-action-item:hover {
@@ -7795,7 +7799,7 @@ textarea:focus-visible {
   box-shadow: none;
   color: var(--admin-text);
   margin: 0;
-  min-width: 1540px;
+  min-width: 1320px;
   width: 100%;
 }
 
@@ -7823,41 +7827,35 @@ textarea:focus-visible {
 }
 
 .reviews-page .vuexy-review-card .table th:nth-child(1),
-.reviews-page .vuexy-review-card .table td:nth-child(1),
-.reviews-page .vuexy-review-card .table th:nth-child(2),
-.reviews-page .vuexy-review-card .table td:nth-child(2) {
-  min-width: 210px;
-  width: 15%;
+.reviews-page .vuexy-review-card .table td:nth-child(1) {
+  min-width: 190px;
+  width: 14%;
 }
 
+.reviews-page .vuexy-review-card .table th:nth-child(2),
+.reviews-page .vuexy-review-card .table td:nth-child(2),
 .reviews-page .vuexy-review-card .table th:nth-child(3),
 .reviews-page .vuexy-review-card .table td:nth-child(3) {
-  min-width: 340px;
-  width: 24%;
+  min-width: 220px;
+  width: 16%;
 }
 
 .reviews-page .vuexy-review-card .table th:nth-child(4),
 .reviews-page .vuexy-review-card .table td:nth-child(4) {
-  min-width: 140px;
-  width: 10%;
+  min-width: 360px;
+  width: 31%;
 }
 
 .reviews-page .vuexy-review-card .table th:nth-child(5),
 .reviews-page .vuexy-review-card .table td:nth-child(5) {
-  min-width: 170px;
-  width: 12%;
+  min-width: 180px;
+  width: 15%;
 }
 
 .reviews-page .vuexy-review-card .table th:nth-child(6),
 .reviews-page .vuexy-review-card .table td:nth-child(6) {
-  min-width: 300px;
-  width: 22%;
-}
-
-.reviews-page .vuexy-review-card .table th:nth-child(7),
-.reviews-page .vuexy-review-card .table td:nth-child(7) {
   min-width: 96px;
-  width: 7%;
+  width: 8%;
 }
 
 .reviews-page .vuexy-review-card .table tbody tr:hover td {
@@ -7939,6 +7937,92 @@ textarea:focus-visible {
 
 .vuexy-review-save-button:hover {
   filter: brightness(1.04);
+}
+
+.review-edit-drawer {
+  min-width: 520px;
+  width: 520px;
+}
+
+.review-edit-drawer-body {
+  display: grid;
+  gap: 18px;
+}
+
+.review-edit-original-card {
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.review-edit-original-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.review-edit-original-card p {
+  color: var(--admin-text);
+  font-size: 15px;
+  line-height: 24px;
+  margin: 0;
+}
+
+.review-edit-original-meta {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.review-edit-original-meta div {
+  min-width: 0;
+}
+
+.review-edit-original-meta dt {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.review-edit-original-meta dd {
+  color: var(--admin-text);
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-edit-original-meta a {
+  color: var(--admin-accent-strong);
+  text-decoration: none;
+}
+
+.review-edit-original-meta a:hover {
+  text-decoration: underline;
+}
+
+.review-edit-drawer-form {
+  gap: 16px;
+}
+
+.review-edit-drawer-form .calendar-drawer-footer {
+  margin: 2px -24px -20px;
+}
+
+.review-edit-drawer-footer .button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
 }
 
 .notification-table-shell {

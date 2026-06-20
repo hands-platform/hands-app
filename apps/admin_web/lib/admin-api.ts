@@ -846,10 +846,29 @@ export type AdminReview = {
   status: string;
   reportReason?: string | null;
   createdAt?: string;
-  customerProfile?: { user?: { fullName?: string | null; phone?: string } };
-  providerProfile?: { displayName?: string | null };
+  customerProfileId?: string;
+  providerProfileId?: string;
+  customerProfile?: {
+    id?: string;
+    user?: {
+      fullName?: string | null;
+      phone?: string;
+      appSessions?: AdminAppSession[];
+      pushDevices?: AdminUser['pushDevices'];
+    };
+  };
+  providerProfile?: {
+    id?: string;
+    displayName?: string | null;
+    status?: string | null;
+    user?: AdminProvider['user'];
+    sessions?: AdminProvider['sessions'];
+    devices?: AdminProvider['devices'];
+  };
   booking?: {
     id?: string;
+    openedAt?: string | null;
+    createdAt?: string;
     services?: AdminBooking['services'];
   };
 };

@@ -1,36 +1,39 @@
-import { Download, Save, Star, X } from 'lucide-react';
+import Link from 'next/link';
+import { Download, Eye, Star, X } from 'lucide-react';
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
-import { AdminAvatar } from '../../components/admin-person-cell';
+import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../lib/admin-avatar-status';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormSearch,
   AdminFormSelect,
-  AdminFormTextarea,
 } from '../../components/admin-form-controls';
 import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
-import { moderateReview } from './actions';
-import { ReviewActionDropdown } from './review-action-dropdown';
 import type { ReviewActionItem } from './review-page-actions';
 import type { ReviewFilters, ReviewPagination } from './review-page-model';
 import { REVIEW_PAGE_SIZE_OPTIONS, buildReviewListHref, reviewFilterDescription } from './review-page-model';
+import { ReviewRowActions } from './review-row-actions';
 
 export type ReviewTableRow = {
   readonly actionLabel: string;
   readonly actions: readonly ReviewActionItem[];
   readonly appVisibilityLabel: string;
+  readonly bookingHref: string | null;
   readonly bookingLabel: string;
+  readonly bookingRequestTimeLabel: string;
   readonly commentLabel: string;
   readonly commentValue: string;
   readonly createdAtLabel: string;
+  readonly customerHref: string | null;
   readonly customerInitials: string;
   readonly customerLabel: string;
   readonly customerAvatarStatus: AdminAvatarStatus;
   readonly customerPhone: string;
   readonly id: string;
   readonly partnerAvatarStatus: AdminAvatarStatus;
+  readonly partnerHref: string | null;
   readonly partnerHint: string;
   readonly partnerInitials: string;
   readonly partnerLabel: string;
@@ -149,36 +152,49 @@ export function ReviewsTableSection({
           <AdminDataTable
             className="vuexy-booking-table vuexy-review-table"
             emptyMessage={emptyMessage}
-            headers={['Partner', 'Customer', 'Review', 'Date', 'Visibility', 'Edit Review', 'Actions']}
+            headers={['Request Time', 'Partner', 'Customer', 'Review', 'Visibility', 'Actions']}
             rowCount={rows.length}
           >
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>
-                  <div className="vuexy-review-person">
-                    <AdminAvatar
-                      className="vuexy-review-avatar vuexy-review-avatar-square"
-                      initials={row.partnerInitials}
-                      status={row.partnerAvatarStatus}
-                    />
-                    <div>
-                      <strong>{row.partnerLabel}</strong>
-                      <span>{row.partnerHint}</span>
-                    </div>
+                  <div className="vuexy-booking-id-line">
+                    {row.bookingHref ? (
+                      <Link className="text-link" href={row.bookingHref} title="Open booking detail">
+                        <Eye aria-hidden="true" size={14} />
+                        {row.bookingLabel}
+                      </Link>
+                    ) : (
+                      <span className="muted">{row.bookingLabel}</span>
+                    )}
                   </div>
+                  <div className="muted">{row.bookingRequestTimeLabel}</div>
                 </td>
                 <td>
-                  <div className="vuexy-review-person">
-                    <AdminAvatar
-                      className="vuexy-review-avatar"
-                      initials={row.customerInitials}
-                      status={row.customerAvatarStatus}
-                    />
-                    <div>
-                      <strong className="vuexy-review-customer">{row.customerLabel}</strong>
-                      <span>{row.customerPhone}</span>
-                    </div>
-                  </div>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar is-partner"
+                    avatarStatus={row.partnerAvatarStatus}
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={row.partnerHint}
+                    href={row.partnerHref}
+                    initials={row.partnerInitials}
+                    label={row.partnerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
+                </td>
+                <td>
+                  <AdminPersonCell
+                    avatarClassName="vuexy-booking-avatar"
+                    avatarStatus={row.customerAvatarStatus}
+                    className="vuexy-booking-person"
+                    copyClassName="vuexy-booking-person-copy"
+                    helper={row.customerPhone}
+                    href={row.customerHref}
+                    initials={row.customerInitials}
+                    label={row.customerLabel}
+                    linkClassName="vuexy-booking-person-link"
+                  />
                 </td>
                 <td className="vuexy-review-copy-cell">
                   <div aria-label={`Rating ${row.ratingLabel}`} className="vuexy-review-stars">
@@ -195,45 +211,31 @@ export function ReviewsTableSection({
                   <span>{row.serviceLabel}</span>
                   {row.reportReasonLabel ? <span>{row.reportReasonLabel}</span> : null}
                 </td>
-                <td className="vuexy-review-date-cell">{row.createdAtLabel}</td>
                 <td>
                   <span className={row.statusClassName}>{row.statusLabel}</span>
                   <small>{row.statusMeaning}</small>
                   <small>{row.appVisibilityLabel}</small>
                 </td>
                 <td>
-                  <form action={moderateReview} className="vuexy-review-edit-form">
-                    <input name="reviewId" type="hidden" value={row.id} />
-                    <input name="status" type="hidden" value={row.status} />
-                    <input name="reportReason" type="hidden" value={row.reportReasonValue} />
-                    <label className="vuexy-review-rating-field">
-                      <span>Rating</span>
-                      <select defaultValue={String(row.rating)} name="rating">
-                        {reviewRatingOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <AdminFormTextarea
-                      className="vuexy-review-comment-field"
-                      defaultValue={row.commentValue}
-                      label="Review content"
-                      name="comment"
-                      placeholder="Review content"
-                      rows={3}
-                      textareaClassName="vuexy-review-comment-textarea"
-                    />
-                    <button className="vuexy-review-save-button" type="submit">
-                      <Save aria-hidden="true" size={14} />
-                      Save
-                    </button>
-                  </form>
-                </td>
-                <td>
                   <div className="vuexy-review-actions">
-                    <ReviewActionDropdown actions={row.actions} label={row.actionLabel} />
+                    <ReviewRowActions
+                      actions={row.actions}
+                      editReview={{
+                        bookingHref: row.bookingHref,
+                        bookingLabel: row.bookingLabel,
+                        commentLabel: row.commentLabel,
+                        commentValue: row.commentValue,
+                        customerLabel: row.customerLabel,
+                        partnerLabel: row.partnerLabel,
+                        rating: row.rating,
+                        ratingLabel: row.ratingLabel,
+                        reportReasonValue: row.reportReasonValue,
+                        requestTimeLabel: row.bookingRequestTimeLabel,
+                        reviewId: row.id,
+                        status: row.status,
+                      }}
+                      label={row.actionLabel}
+                    />
                   </div>
                 </td>
               </tr>
@@ -282,8 +284,3 @@ const reviewStatusButtonOptions = [
   { label: 'Follow-up', value: 'follow-up' },
   { label: 'Reported', value: 'reported' },
 ] as const;
-
-const reviewRatingOptions = [5, 4, 3, 2, 1].map((rating) => ({
-  label: `${rating} star${rating === 1 ? '' : 's'}`,
-  value: String(rating),
-}));

@@ -81,10 +81,14 @@ describe('review page model', () => {
     const rows = buildReviewTableRows([
       review({
         comment: 'Great service',
+        booking: {
+          id: 'booking-row-123456',
+          openedAt: '2026-06-16T08:40:00.000Z',
+        },
         createdAt: '2026-06-16T09:08:00.000Z',
-        customerProfile: { user: { fullName: 'Customer Mai', phone: '+8491' } },
+        customerProfile: { id: 'customer-1', user: { fullName: 'Customer Mai', phone: '+8491' } },
         id: 'review-row-123456',
-        providerProfile: { displayName: 'Partner Linh' },
+        providerProfile: { id: 'partner-1', displayName: 'Partner Linh' },
         reportReason: 'Needs follow-up',
         status: 'REPORTED',
       }),
@@ -93,10 +97,14 @@ describe('review page model', () => {
     expect(rows[0]).toMatchObject({
       actionLabel: 'Review actions for review-r',
       appVisibilityLabel: 'Not visible in app',
+      bookingHref: '/bookings/booking-row-123456',
+      bookingLabel: 'booking-',
+      customerHref: '/customers/customer-1',
       commentLabel: 'Great service',
       commentValue: 'Great service',
       customerInitials: 'CM',
       customerLabel: 'Customer Mai',
+      partnerHref: '/partners/partner-1',
       partnerInitials: 'PL',
       partnerLabel: 'Partner Linh',
       ratingLabel: '5/5',
@@ -106,6 +114,7 @@ describe('review page model', () => {
       statusLabel: 'Follow-up',
       statusMeaning: 'Moderation follow-up',
     });
+    expect(rows[0]?.bookingRequestTimeLabel).toContain('16 Jun 2026');
     expect(rows[0]?.actions.map((action) => (action.kind === 'link' ? action.href : ''))).toEqual([
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=PUBLISHED',
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=HIDDEN&reportReason=Held+by+admin',

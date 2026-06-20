@@ -5,7 +5,7 @@ import {
   type AdminAvatarSessionSignal,
   type AdminAvatarStatus,
 } from '../../lib/admin-avatar-status';
-import { shortId } from '../../lib/admin-format';
+import { formatDateTime, shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { reviewModerationActionMenuItems } from './review-page-actions';
 import type { ReviewTableRow } from './reviews-table-section';
@@ -22,6 +22,7 @@ export const REVIEW_EXPORT_COLUMNS = [
   'App Visibility',
   'Review',
   'Report Reason',
+  'Request Time',
   'Created At',
   'Booking',
   'Service',
@@ -73,16 +74,28 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     actionLabel: `Review actions for ${shortId(review.id)}`,
     actions: reviewModerationActionMenuItems(review),
     appVisibilityLabel: review.status === 'PUBLISHED' ? 'App visible' : 'Not visible in app',
+    bookingHref: review.booking?.id ? `/bookings/${review.booking.id}` : null,
     bookingLabel: review.booking?.id ? shortId(review.booking.id) : 'No booking link',
+    bookingRequestTimeLabel: reviewBookingRequestTimeLabel(review),
     commentLabel: review.comment?.trim() || 'No written review',
     commentValue: review.comment?.trim() ?? '',
     createdAtLabel: formatReviewDate(review.createdAt),
+    customerHref: review.customerProfile?.id
+      ? `/customers/${review.customerProfile.id}`
+      : review.customerProfileId
+        ? `/customers/${review.customerProfileId}`
+        : null,
     customerInitials: initials(review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone),
     customerLabel: review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown customer',
     customerAvatarStatus: reviewCustomerAvatarStatus(review),
     customerPhone: review.customerProfile?.user?.phone ?? 'No phone on file',
     id: review.id,
     partnerAvatarStatus: reviewPartnerAvatarStatus(review),
+    partnerHref: review.providerProfile?.id
+      ? `/partners/${review.providerProfile.id}`
+      : review.providerProfileId
+        ? `/partners/${review.providerProfileId}`
+        : null,
     partnerHint: partnerReviewHint(review),
     partnerInitials: initials(review.providerProfile?.displayName),
     partnerLabel: reviewProviderLabel(review),
@@ -292,6 +305,7 @@ export function buildReviewExportRows(reviews: readonly AdminReview[]) {
     'App Visibility': review.status === 'PUBLISHED' ? 'Visible' : 'Not visible',
     Review: review.comment?.trim() || '',
     'Report Reason': review.reportReason?.trim() || '',
+    'Request Time': reviewBookingRequestTimeLabel(review),
     'Created At': formatReviewDate(review.createdAt),
     Booking: review.booking?.id ?? '',
     Service: reviewServiceLabel(review),
@@ -415,6 +429,10 @@ function reviewServiceLabel(review: AdminReview) {
     .filter((name): name is string => Boolean(name));
 
   return services?.length ? services.join(', ') : 'Service not attached';
+}
+
+function reviewBookingRequestTimeLabel(review: AdminReview) {
+  return formatDateTime(review.booking?.openedAt ?? review.booking?.createdAt ?? review.createdAt, 'No request time');
 }
 
 function searchableReviewText(review: AdminReview) {
