@@ -4,6 +4,7 @@ import {
   AdminFormControlButton,
   AdminFormControlLink,
   AdminFormDate,
+  AdminFormInput,
   AdminFormSearch,
   AdminFormSelect,
 } from '../../components/admin-form-controls';
@@ -150,16 +151,15 @@ export function CustomerFilterBoard({
             label="Last reservation to"
             name="lastBookingTo"
           />
-          <label className="vuexy-customer-number-field">
-            <span className="sr-only">Minimum reservations</span>
-            <input
-              defaultValue={filters.minBookings ?? ''}
-              min="0"
-              name="minBookings"
-              placeholder="Min reservations"
-              type="number"
-            />
-          </label>
+          <AdminFormInput
+            className="vuexy-customer-number-field"
+            defaultValue={filters.minBookings ?? ''}
+            label="Minimum reservations"
+            min="0"
+            name="minBookings"
+            placeholder="Min reservations"
+            type="number"
+          />
         </div>
       </form>
     </AdminFilterPanel>

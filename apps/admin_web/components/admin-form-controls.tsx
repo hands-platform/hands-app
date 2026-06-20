@@ -40,7 +40,9 @@ type AdminFormInputProps = {
   InputHTMLAttributes<HTMLInputElement>,
   | 'defaultValue'
   | 'disabled'
+  | 'max'
   | 'maxLength'
+  | 'min'
   | 'minLength'
   | 'onChange'
   | 'placeholder'
@@ -146,7 +148,9 @@ export function AdminFormInput({
   defaultValue,
   disabled,
   label,
+  max,
   maxLength,
+  min,
   minLength,
   name,
   onChange,
@@ -161,7 +165,9 @@ export function AdminFormInput({
       <input
         defaultValue={defaultValue}
         disabled={disabled}
+        max={max}
         maxLength={maxLength}
+        min={min}
         minLength={minLength}
         name={name}
         onChange={onChange}

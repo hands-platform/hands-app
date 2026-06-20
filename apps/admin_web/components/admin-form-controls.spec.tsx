@@ -52,6 +52,7 @@ describe('Admin form controls', () => {
       className: 'partner-reason',
       label: 'Control reason',
       maxLength: 500,
+      min: 0,
       minLength: 12,
       name: 'reason',
       placeholder: 'Clear operator reason',
@@ -62,6 +63,7 @@ describe('Admin form controls', () => {
     expect(textContent(input)).toContain('Control reason');
     expect(input.props.children[1].props).toMatchObject({
       maxLength: 500,
+      min: 0,
       minLength: 12,
       name: 'reason',
       placeholder: 'Clear operator reason',

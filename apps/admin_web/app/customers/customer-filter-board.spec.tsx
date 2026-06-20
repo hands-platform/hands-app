@@ -24,6 +24,7 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('Sign-up: Today');
     expect(rendered).toContain('Last reservation: Specific period');
     expect(rendered).toContain('Min reservations');
+    expect(rendered).toContain('admin-form-input vuexy-customer-number-field');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Search: linh');
