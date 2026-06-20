@@ -1,6 +1,9 @@
+import type { ReactNode } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { classNamesIn, hrefsIn, normalizedText } from '../booking-section-test-utils';
 import {
   BookingCloseoutReadinessSection,
+  BookingCommunicationMovementHandoffSection,
   BookingMarketplaceWalletEvidenceSection,
   BookingOperatingLedgerSection,
   BookingOperatingTimelineSection,
@@ -41,7 +44,7 @@ describe('Booking operating sections', () => {
       },
     });
 
-    const rendered = normalizedText(section);
+    const rendered = normalizedMarkupText(section);
 
     expect(rendered).toContain('Marketplace participation and wallet evidence');
     expect(rendered).toContain('Wallet gate');
@@ -64,7 +67,7 @@ describe('Booking operating sections', () => {
       ],
     });
 
-    const rendered = normalizedText(section);
+    const rendered = normalizedMarkupText(section);
 
     expect(rendered).toContain('Booking operating ledger');
     expect(rendered).toContain('1 record areas');
@@ -97,7 +100,7 @@ describe('Booking operating sections', () => {
       ],
     });
 
-    const rendered = normalizedText(section);
+    const rendered = normalizedMarkupText(section);
     const classNames = classNamesIn(section);
 
     expect(rendered).toContain('Operating timeline');
@@ -111,6 +114,71 @@ describe('Booking operating sections', () => {
         'vuexy-basic-timeline-dot is-success',
         'vuexy-basic-timeline-dot is-danger',
         'vuexy-basic-timeline-meta is-compact',
+      ]),
+    );
+    expect(classNames).not.toContain('setup-stage-list admin-mt-12');
+  });
+
+  it('renders communication and movement events with the same Vuexy timeline styling', () => {
+    const section = BookingCommunicationMovementHandoffSection({
+      communicationMovementHandoff: {
+        events: [
+          {
+            at: '2026-06-19T08:20:00.000Z',
+            detail: 'Partner shared current location near the service address.',
+            id: 'location-1',
+            title: 'Partner location snapshot',
+            type: 'LOC',
+          },
+          {
+            at: '2026-06-19T08:10:00.000Z',
+            detail: 'Booking alert failed on one disabled device.',
+            id: 'alert-1',
+            title: 'Arrival reminder',
+            type: 'ALERT',
+          },
+          {
+            at: '2026-06-19T08:00:00.000Z',
+            detail: 'I am on the way.',
+            id: 'chat-1',
+            title: 'Partner: Nguyen',
+            type: 'CHAT',
+          },
+        ],
+        href: '#booking-activity',
+        hrefLabel: 'Open full activity',
+        metrics: [
+          {
+            helper: '3 message(s) kept in admin archive.',
+            label: 'Chat room',
+            value: 'Retained',
+          },
+        ],
+        nextAction: 'Continue normal monitoring',
+        nextDetail: 'Chat, alert, and movement evidence can be reviewed from this record.',
+        noteClassName: 'ops-task-success',
+        status: 'Handoff visible',
+        tone: 'pill-success',
+      },
+    });
+
+    const rendered = normalizedMarkupText(section);
+    const classNames = classNamesIn(section);
+
+    expect(rendered).toContain('Communication and movement handoff');
+    expect(rendered).toContain('Partner location snapshot');
+    expect(rendered).toContain('Arrival reminder');
+    expect(rendered).toContain('Partner: Nguyen');
+    expect(rendered).toContain('Channel LOC');
+    expect(rendered).toContain('Evidence Partner movement');
+    expect(rendered).toContain('Evidence Notification delivery');
+    expect(rendered).toContain('Evidence Admin chat archive');
+    expect(classNames).toEqual(
+      expect.arrayContaining([
+        'vuexy-basic-timeline booking-operating-timeline-list admin-mt-16',
+        'vuexy-basic-timeline-dot is-success',
+        'vuexy-basic-timeline-dot is-warning',
+        'vuexy-basic-timeline-dot is-info',
       ]),
     );
     expect(classNames).not.toContain('setup-stage-list admin-mt-12');
@@ -182,3 +250,10 @@ describe('Booking operating sections', () => {
     expect(rendered).toContain('No exceptions');
   });
 });
+
+function normalizedMarkupText(value: ReactNode) {
+  return renderToStaticMarkup(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

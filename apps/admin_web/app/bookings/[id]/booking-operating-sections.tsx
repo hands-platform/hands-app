@@ -68,6 +68,16 @@ type OperatingTimelineItem = {
   status: string;
 };
 
+type TimelineMeta = {
+  label: string;
+  value: string;
+};
+
+type BookingVuexyTimelineItem = OperatingTimelineItem & {
+  meta?: readonly TimelineMeta[];
+  tone?: OperatingTimelineTone;
+};
+
 type BookingHandoffChecklistItem = {
   id: string;
   label: string;
@@ -348,46 +358,7 @@ export function BookingOperatingTimelineSection({
         </div>
         <span className="pill pill-info">{operatingTimeline.length} step(s)</span>
       </div>
-      <div className="vuexy-basic-timeline booking-operating-timeline-list admin-mt-16">
-        {operatingTimeline.map((item, index) => {
-          const tone = operatingTimelineTone(item);
-
-          return (
-            <article className="vuexy-basic-timeline-item" key={item.id}>
-              <div className="vuexy-basic-timeline-separator" aria-hidden="true">
-                <span className={`vuexy-basic-timeline-dot is-${tone}`} />
-                {index < operatingTimeline.length - 1 && (
-                  <span className="vuexy-basic-timeline-connector" />
-                )}
-              </div>
-              <div className="vuexy-basic-timeline-content">
-                <div className="vuexy-basic-timeline-title-row">
-                  <div>
-                    <span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>
-                    <h3>{item.title}</h3>
-                  </div>
-                  <time>{item.at ? formatDate(item.at) : item.status}</time>
-                </div>
-                <p className="muted">{item.detail}</p>
-                <div className="vuexy-basic-timeline-meta is-compact">
-                  <div
-                    aria-label={`Event type: ${item.type}`}
-                    className="vuexy-basic-timeline-meta-item"
-                  >
-                    <span>Type</span> <strong>{item.type}</strong>
-                  </div>
-                  <div
-                    aria-label={`Event state: ${item.status}`}
-                    className="vuexy-basic-timeline-meta-item"
-                  >
-                    <span>State</span> <strong>{item.status}</strong>
-                  </div>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      <BookingVuexyTimelineList items={operatingTimeline} />
     </section>
   );
 }
@@ -431,6 +402,50 @@ function operatingTimelinePillTone(tone: OperatingTimelineTone) {
     return 'pill-danger';
   }
   return 'pill-info';
+}
+
+function BookingVuexyTimelineList({ items }: { readonly items: readonly BookingVuexyTimelineItem[] }) {
+  return (
+    <div className="vuexy-basic-timeline booking-operating-timeline-list admin-mt-16">
+      {items.map((item, index) => {
+        const tone = item.tone ?? operatingTimelineTone(item);
+        const meta = item.meta ?? [
+          { label: 'Type', value: item.type },
+          { label: 'State', value: item.status },
+        ];
+
+        return (
+          <article className="vuexy-basic-timeline-item" key={item.id}>
+            <div className="vuexy-basic-timeline-separator" aria-hidden="true">
+              <span className={`vuexy-basic-timeline-dot is-${tone}`} />
+              {index < items.length - 1 && <span className="vuexy-basic-timeline-connector" />}
+            </div>
+            <div className="vuexy-basic-timeline-content">
+              <div className="vuexy-basic-timeline-title-row">
+                <div>
+                  <span className={`pill ${operatingTimelinePillTone(tone)}`}>{item.status}</span>
+                  <h3>{item.title}</h3>
+                </div>
+                <time>{item.at ? formatDate(item.at) : item.status}</time>
+              </div>
+              <p className="muted">{item.detail}</p>
+              <div className="vuexy-basic-timeline-meta is-compact">
+                {meta.map((metaItem) => (
+                  <div
+                    aria-label={`${metaItem.label}: ${metaItem.value}`}
+                    className="vuexy-basic-timeline-meta-item"
+                    key={metaItem.label}
+                  >
+                    <span>{metaItem.label}</span> <strong>{metaItem.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
 }
 
 export function BookingHandoffChecklistSection({
@@ -511,22 +526,23 @@ export function BookingCommunicationMovementHandoffSection({
           </Link>
         </div>
       </div>
-      <div className="setup-stage-list admin-mt-12">
-        {communicationMovementHandoff.events.length ? (
-          communicationMovementHandoff.events.map((event) => (
-            <div className="setup-stage-item" key={event.id}>
-              <span>{event.type}</span>
-              <div>
-                <strong>{event.title}</strong>
-                <p className="muted">{event.detail}</p>
-              </div>
-              <small>{formatDate(event.at)}</small>
-            </div>
-          ))
-        ) : (
-          <p className="muted">No chat, alert, or Partner location event has been recorded yet.</p>
-        )}
-      </div>
+      {communicationMovementHandoff.events.length ? (
+        <BookingVuexyTimelineList
+          items={communicationMovementHandoff.events.map((event) => ({
+            ...event,
+            meta: [
+              { label: 'Channel', value: event.type },
+              { label: 'Evidence', value: communicationEventEvidenceLabel(event.type) },
+            ],
+            status: communicationEventStatusLabel(event.type),
+            tone: communicationEventTone(event.type),
+          }))}
+        />
+      ) : (
+        <p className="muted admin-mt-12">
+          No chat, alert, or Partner location event has been recorded yet.
+        </p>
+      )}
     </section>
   );
 }
@@ -534,6 +550,45 @@ export function BookingCommunicationMovementHandoffSection({
 export type BookingCommunicationMovementHandoffSectionProps = {
   communicationMovementHandoff: CommunicationMovementHandoff;
 };
+
+function communicationEventStatusLabel(type: string) {
+  if (type === 'CHAT') {
+    return 'Chat';
+  }
+  if (type === 'ALERT') {
+    return 'Alert';
+  }
+  if (type === 'LOC') {
+    return 'Location';
+  }
+  return type;
+}
+
+function communicationEventTone(type: string): OperatingTimelineTone {
+  if (type === 'ALERT') {
+    return 'warning';
+  }
+  if (type === 'LOC') {
+    return 'success';
+  }
+  if (type === 'CHAT') {
+    return 'info';
+  }
+  return 'primary';
+}
+
+function communicationEventEvidenceLabel(type: string) {
+  if (type === 'CHAT') {
+    return 'Admin chat archive';
+  }
+  if (type === 'ALERT') {
+    return 'Notification delivery';
+  }
+  if (type === 'LOC') {
+    return 'Partner movement';
+  }
+  return 'Booking event';
+}
 
 export function BookingChatLifecycleSection({
   chatLifecycle,
