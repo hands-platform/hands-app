@@ -114,7 +114,7 @@ export function buildPartnerOperationRow(
       {
         label: 'Wallet',
         status: walletBalance < 0 ? 'settlement needed' : 'clear',
-        tone: walletBalance < 0 ? 'danger' : 'ok',
+        tone: walletBalance < 0 ? 'warn' : 'ok',
       },
       {
         label: 'Location',
@@ -147,7 +147,7 @@ export function buildPartnerOperationRow(
     marketplaceAccessLabel: marketplaceEligibility.eligible
       ? 'Marketplace ready'
       : walletBalance < 0
-        ? 'Fee settlement required'
+        ? 'Settlement warning'
         : 'Marketplace repair needed',
     marketplaceAccessDetail: marketplaceEligibility.eligible
       ? `Can participate in marketplace bookings within ${formatDistanceMeters(
@@ -156,7 +156,7 @@ export function buildPartnerOperationRow(
       : walletBalance < 0
         ? partnerCashDebtMarketplaceAccessCopy
         : marketplaceEligibility.detail,
-    marketplaceAccessTone: marketplaceEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
+    marketplaceAccessTone: marketplaceEligibility.eligible ? 'ok' : 'warn',
     marketplaceCanView: marketplaceEligibility.canViewMarketplace,
     marketplaceCanReceiveAlerts: marketplaceEligibility.canReceiveMarketplaceAlerts,
     marketplaceCanParticipate: marketplaceEligibility.canParticipateInMarketplace,

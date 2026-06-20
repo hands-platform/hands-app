@@ -174,7 +174,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const directReadyPartnerCount = providers.filter((provider) =>
     partnerCanAcceptBookingNow(provider, opsPolicy),
   ).length;
-  const walletMarketplaceHoldCount = providers.filter(
+  const settlementWarningPartnerCount = providers.filter(
     (provider) => providerUnsettledWalletBalance(provider) < 0,
   ).length;
   const partnerMasterRows = visibleProviders.map((provider) =>
@@ -502,8 +502,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         directReadyCount={directReadyPartnerCount}
         hiddenPartnerCount={hiddenProviderCount}
         rows={partnerOperationRows}
+        settlementWarningCount={settlementWarningPartnerCount}
         totalPartnerCount={providers.length}
-        walletHoldCount={walletMarketplaceHoldCount}
       />
       {showDeepPartnerOpsSections ? (
         <>

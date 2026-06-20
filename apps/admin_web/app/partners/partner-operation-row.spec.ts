@@ -88,14 +88,15 @@ describe('partner operation row', () => {
     expect(row.name).toBe('Linh Wellness');
     expect(row.avatarStatus).toBe('online');
     expect(row.acceptanceLabel).toBe('Direct request clear');
-    expect(row.marketplaceAccessLabel).toBe('Fee settlement required');
+    expect(row.marketplaceAccessLabel).toBe('Settlement warning');
+    expect(row.marketplaceAccessDetail).toContain('final acceptance, service start, and payout release');
     expect(row.marketplaceCanView).toBe(true);
     expect(row.marketplaceCanReceiveAlerts).toBe(false);
     expect(row.marketplaceCanParticipate).toBe(true);
     expect(row.marketplacePartnerAppMessage).toContain('Unpaid HANDS fees');
     expect(row.checklist.find((item) => item.label === 'Wallet')).toMatchObject({
       status: 'settlement needed',
-      tone: 'danger',
+      tone: 'warn',
     });
     expect(row.matchingFlow.map((item) => [item.label, item.status])).toEqual([
       ['First-pick', '1 record(s)'],

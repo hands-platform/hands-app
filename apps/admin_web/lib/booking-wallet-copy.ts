@@ -14,4 +14,4 @@ export const cashFeeDebtBlocksMarketplaceAlertsParticipationCopy =
   'Cash fee debt blocks marketplace alerts and participation until HANDS fee settlement is posted.';
 
 export const partnerCashDebtMarketplaceAccessCopy =
-  'Partner may see marketplace requests, but marketplace alerts and booking participation are blocked until HANDS fee settlement is posted.';
+  'Marketplace visibility and participation stay open as a warning state; final acceptance, service start, and payout release wait for HANDS fee settlement.';

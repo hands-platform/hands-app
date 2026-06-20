@@ -138,7 +138,8 @@ export function buildPartnerFilterSummary(
     {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
-      detail: 'Negative wallet balance blocks marketplace alerts and participation',
+      detail:
+        'Negative wallet balance is a settlement warning before final acceptance, service start, and payout release',
       href: '/partners?review=unsettled',
     },
     {

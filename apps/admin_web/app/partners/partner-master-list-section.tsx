@@ -153,7 +153,7 @@ function buildPartnerMasterListSectionCopy(
   if (mode === 'unsettled') {
     return {
       description:
-        'Settlement-first list for Partners with negative wallet balance from unpaid HANDS commission. Check debt, payout, and account state before releasing marketplace participation.',
+        'Settlement-first list for Partners with negative wallet balance from unpaid HANDS commission. Check debt, payout, and account state before final acceptance, service start, or payout release.',
       statusLabel: `${rowCount} settlement row(s)`,
       title: 'Unsettled Partners',
     };

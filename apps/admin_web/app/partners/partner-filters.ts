@@ -185,13 +185,13 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
   if (kind === 'review' && value === 'cash-debt') {
-    return 'Cash fee debt highlights partners whose marketplace alerts and participation wait until HANDS commission is settled.';
+    return 'Cash fee debt highlights Partners whose final acceptance, service start, and payout release wait for HANDS commission settlement.';
   }
   if (kind === 'review' && value === 'unapproved') {
     return 'Unapproved Partners combines registration, KYC, document, bank, tax, public media, and hold items that need admin approval from the Partner detail page.';
   }
   if (kind === 'review' && value === 'unsettled') {
-    return 'Unsettled Partners shows only Partners whose wallet balance is negative from unpaid HANDS commission.';
+    return 'Unsettled Partners shows Partners whose wallet balance is negative and need settlement before final acceptance, service start, or payout release.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
     return 'Direct request held highlights partners still waiting on account, identity, bank, device, location, or alert gates before preferred direct requests.';
@@ -203,7 +203,7 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Marketplace ready highlights partners who can receive availability alerts and join customer choice lists.';
   }
   if (kind === 'review' && value === 'marketplace-blocked') {
-    return 'Marketplace repair highlights partners who need wallet, location, status, identity, or alert fixes before receiving alerts or participating.';
+    return 'Marketplace repair highlights partners who need location, status, identity, or alert fixes before receiving alerts or participating.';
   }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';

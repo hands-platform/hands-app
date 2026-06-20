@@ -19,7 +19,8 @@ describe('partner review mode content', () => {
 
     expect(content?.title).toBe('Unsettled Partners');
     expect(content?.detailFocus).toContain('wallet ledger');
-    expect(content?.steps.join(' ')).toContain('marketplace alerts');
+    expect(content?.detailFocus).toContain('final acceptance');
+    expect(content?.steps.join(' ')).toContain('warning state');
   });
 
   it('stays hidden for ordinary partner views', () => {

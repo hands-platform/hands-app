@@ -9,8 +9,8 @@ describe('PartnerOperationsListSection', () => {
       directReadyCount: 1,
       hiddenPartnerCount: 2,
       rows: buildRows(),
+      settlementWarningCount: 1,
       totalPartnerCount: 3,
-      walletHoldCount: 1,
     });
 
     const rendered = normalizedText(section);
@@ -28,7 +28,8 @@ describe('PartnerOperationsListSection', () => {
     expect(rendered).not.toContain('Next operator check');
     expect(rendered).toContain('3 partner(s)');
     expect(rendered).toContain('1 can receive direct requests');
-    expect(rendered).toContain('1 wallet marketplace hold');
+    expect(rendered).toContain('1 settlement warning');
+    expect(rendered).not.toContain('wallet marketplace hold');
     expect(rendered).toContain('Linh Wellness');
     expect(rendered).toContain('Direct request clear');
     expect(rendered).toContain('Marketplace ready');
@@ -50,13 +51,39 @@ describe('PartnerOperationsListSection', () => {
     );
   });
 
+  it('renders negative wallet rows as settlement warnings', () => {
+    const section = PartnerOperationsListSection({
+      directReadyCount: 0,
+      hiddenPartnerCount: 0,
+      rows: [
+        {
+          ...buildRows()[0],
+          marketplaceAccessDetail:
+            'Marketplace visibility stays open; final acceptance, service start, and payout release wait for settlement.',
+          marketplaceAccessLabel: 'Settlement warning',
+          marketplaceAccessTone: 'warn',
+          walletBalance: -120000,
+        },
+      ],
+      settlementWarningCount: 1,
+      totalPartnerCount: 1,
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Settlement warning');
+    expect(rendered).toContain('final acceptance, service start, and payout release');
+    expect(rendered).not.toContain('marketplace alerts and participation');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-warn', 'signal signal-warn']));
+  });
+
   it('renders an empty state when no partner operation rows are visible', () => {
     const section = PartnerOperationsListSection({
       directReadyCount: 0,
       hiddenPartnerCount: 0,
       rows: [],
+      settlementWarningCount: 0,
       totalPartnerCount: 0,
-      walletHoldCount: 0,
     });
 
     const rendered = normalizedText(section);

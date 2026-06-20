@@ -42,7 +42,7 @@ export function providerActionHint(
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. They can see marketplace requests, but cannot receive marketplace alerts or participate until finance settles the cash fee debt.`;
+    )}. Marketplace visibility and participation stay open as a warning state, but final acceptance, service start, and payout release wait for settlement.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';

@@ -12,8 +12,8 @@ type PartnerOperationsListSectionProps = {
   readonly directReadyCount: number;
   readonly hiddenPartnerCount: number;
   readonly rows: readonly PartnerOperationsListSectionRow[];
+  readonly settlementWarningCount: number;
   readonly totalPartnerCount: number;
-  readonly walletHoldCount: number;
 };
 
 const PARTNER_OPERATIONS_TABLE_HEADERS = [
@@ -29,8 +29,8 @@ export function PartnerOperationsListSection({
   directReadyCount,
   hiddenPartnerCount,
   rows,
+  settlementWarningCount,
   totalPartnerCount,
-  walletHoldCount,
 }: PartnerOperationsListSectionProps) {
   return (
     <section className="card admin-mb-16">
@@ -40,7 +40,7 @@ export function PartnerOperationsListSection({
           <div className="participant-list">
             <span className="pill pill-info">{totalPartnerCount} partner(s)</span>
             <span className="pill pill-success">{directReadyCount} can receive direct requests</span>
-            <span className="pill pill-warn">{walletHoldCount} wallet marketplace hold</span>
+            <span className="pill pill-warn">{settlementWarningCount} settlement warning</span>
           </div>
         }
         title="Partner operations list"
@@ -112,7 +112,7 @@ export function PartnerOperationsListSection({
                 <strong>{formatProviderMoney(row.walletBalance)}</strong>
                 <p className="muted">
                   {row.walletBalance < 0
-                    ? 'Company fee settlement is required before marketplace alerts and participation.'
+                    ? 'Settlement required before final acceptance, service start, and payout release.'
                     : 'No negative wallet balance.'}
                 </p>
                 <p className="muted">
