@@ -274,7 +274,8 @@ describe('BookingActionStatusSections', () => {
   it('renders operator notes with a simple text area', () => {
     const markup = render();
 
-    expect(markup).toContain('aria-label="Operator note"');
+    expect(markup).toContain('class="sr-only">Operator note</span>');
+    expect(markup).toContain('class="admin-form-textarea"');
     expect(markup).toContain('class="ops-note-textarea"');
     expect(markup).toContain('placeholder="Add a short operator note."');
     expect(markup).toContain('Keep short internal notes for the booking audit trail.');

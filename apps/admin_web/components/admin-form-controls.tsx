@@ -55,6 +55,7 @@ type AdminFormTextareaProps = {
   readonly className?: string;
   readonly label: string;
   readonly name: string;
+  readonly textareaClassName?: string;
 } & Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'defaultValue' | 'onChange' | 'placeholder' | 'rows' | 'value'>;
 
 type AdminFormControlLinkProps = {
@@ -188,12 +189,14 @@ export function AdminFormTextarea({
   onChange,
   placeholder,
   rows = 4,
+  textareaClassName,
   value,
 }: AdminFormTextareaProps) {
   return (
     <label className={joinClassNames('admin-form-textarea', className)}>
       <span className="sr-only">{label}</span>
       <textarea
+        className={textareaClassName}
         defaultValue={defaultValue}
         name={name}
         onChange={onChange}

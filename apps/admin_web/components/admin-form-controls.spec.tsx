@@ -79,9 +79,11 @@ describe('Admin form controls', () => {
       name: 'note',
       placeholder: 'Add factual note',
       rows: 3,
+      textareaClassName: 'ops-note-textarea',
     });
 
     expect(textarea.props.className).toBe('admin-form-textarea partner-note');
+    expect(textarea.props.children[1].props.className).toBe('ops-note-textarea');
     expect(textContent(textarea)).toContain('Partner operation note');
   });
 
