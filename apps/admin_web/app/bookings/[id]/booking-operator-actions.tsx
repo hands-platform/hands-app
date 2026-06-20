@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { AdminFormControlButton } from '../../../components/admin-form-controls';
 import { addBookingOpsNote, updateBookingOpsTask } from './actions';
 
 export type OperatorCommand = {
@@ -43,7 +44,7 @@ export function OpsTaskAction({
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="type" value={type} />
       <input type="hidden" name="status" value={status} />
-      <button type="submit">{label}</button>
+      <AdminFormControlButton type="submit">{label}</AdminFormControlButton>
     </form>
   );
 }
@@ -58,7 +59,7 @@ export function OperatorCommandAction({ bookingId, command }: OperatorCommandAct
       <form action={addBookingOpsNote}>
         <input type="hidden" name="bookingId" value={bookingId} />
         <input type="hidden" name="preset" value={command.action.preset} />
-        <button type="submit">{command.action.label}</button>
+        <AdminFormControlButton type="submit">{command.action.label}</AdminFormControlButton>
       </form>
     );
   }
