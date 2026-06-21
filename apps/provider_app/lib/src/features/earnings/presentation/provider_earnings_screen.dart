@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_state.dart';
+import '../../../core/provider_value_helpers.dart';
+import '../../provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_wallet_gate_helpers.dart';
 import 'provider_wallet_settlement_widgets.dart';
@@ -24,6 +26,7 @@ class EarningsScreen extends ConsumerStatefulWidget {
 
 class _EarningsScreenState extends ConsumerState<EarningsScreen> {
   bool restoringSession = false;
+  bool handlingWalletRequest = false;
   String? restoreMessage;
   String? restoreError;
 
@@ -63,6 +66,65 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
     } finally {
       if (mounted) {
         setState(() => restoringSession = false);
+      }
+    }
+  }
+
+  Future<void> _handleWalletRequest(String requestLabel) async {
+    setState(() => handlingWalletRequest = true);
+    try {
+      final repository = ref.read(providerRepositoryProvider);
+      final snapshot = await repository.onboardingSnapshot();
+      final bankAccount = providerWalletPrimaryBankAccount(snapshot);
+      final bankStatus = bankAccount?['status']?.toString();
+
+      if (providerWalletBankInputRequired(snapshot)) {
+        if (!mounted) {
+          return;
+        }
+        final input = await showProviderBankAccountSheet(
+          context,
+          initial: bankAccount ?? const <String, dynamic>{},
+          status: bankStatus,
+          rejectionReason: providerWalletBankRejectionReason(bankAccount),
+        );
+        if (input == null) {
+          return;
+        }
+        await repository.createOnboardingBankAccount(
+          bankName: input.bankName,
+          accountNumber: input.accountNumber,
+          accountHolderName: input.accountHolderName,
+          qrBankingInfo: input.qrBankingInfo,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Bank information submitted for admin review. Try $requestLabel again after approval.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final message =
+          providerWalletBankRequestMessage(requestLabel, bankStatus);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Wallet request check failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => handlingWalletRequest = false);
       }
     }
   }
@@ -197,6 +259,35 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                                         items: settlementView.steps,
                                       ),
                                     ],
+                                    const SizedBox(height: 14),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        FilledButton.icon(
+                                          onPressed: handlingWalletRequest
+                                              ? null
+                                              : () => _handleWalletRequest(
+                                                    'withdrawal request',
+                                                  ),
+                                          icon: const Icon(
+                                              Icons.account_balance_outlined),
+                                          label: Text(handlingWalletRequest
+                                              ? 'Checking bank...'
+                                              : 'Request withdrawal'),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: handlingWalletRequest
+                                              ? null
+                                              : () => _handleWalletRequest(
+                                                    'deposit report',
+                                                  ),
+                                          icon: const Icon(
+                                              Icons.receipt_long_outlined),
+                                          label: const Text('Report deposit'),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
@@ -344,4 +435,37 @@ ShapeBorder providerTargetEarningsCardShape(BuildContext context) {
       width: 2,
     ),
   );
+}
+
+Map<String, dynamic>? providerWalletPrimaryBankAccount(
+    Map<String, dynamic> snapshot) {
+  final bankAccounts = asList(snapshot['bankAccounts'])
+      .map(asMap)
+      .whereType<Map<String, dynamic>>()
+      .toList();
+  if (bankAccounts.isEmpty) {
+    return null;
+  }
+  return bankAccounts.first;
+}
+
+bool providerWalletBankInputRequired(Map<String, dynamic> snapshot) {
+  final bankAccount = providerWalletPrimaryBankAccount(snapshot);
+  final status = bankAccount?['status']?.toString();
+  return bankAccount == null || status == null || status == 'REJECTED';
+}
+
+String? providerWalletBankRejectionReason(Map<String, dynamic>? bankAccount) {
+  final reason = bankAccount?['rejectionReason']?.toString().trim();
+  return reason == null || reason.isEmpty ? null : reason;
+}
+
+String providerWalletBankRequestMessage(String requestLabel, String? status) {
+  if (status == 'APPROVED') {
+    return 'Bank information is approved. $requestLabel can continue through HANDS operations.';
+  }
+  if (status == 'PENDING_REVIEW') {
+    return 'Bank information is waiting for admin approval before $requestLabel can continue.';
+  }
+  return 'Add bank information before $requestLabel can continue.';
 }

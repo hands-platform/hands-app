@@ -78,6 +78,57 @@ void main() {
     expect(earnings.first['id'], 'earning-payout-target');
   });
 
+  test('partner wallet requests require bank input when missing or rejected',
+      () {
+    expect(providerWalletBankInputRequired(const {}), isTrue);
+    expect(
+      providerWalletBankInputRequired({
+        'bankAccounts': [
+          {
+            'status': 'REJECTED',
+            'rejectionReason': 'Account holder mismatch',
+          },
+        ],
+      }),
+      isTrue,
+    );
+    expect(
+      providerWalletBankRejectionReason({
+        'status': 'REJECTED',
+        'rejectionReason': 'Account holder mismatch',
+      }),
+      'Account holder mismatch',
+    );
+  });
+
+  test('partner wallet requests wait for bank review before continuing', () {
+    final snapshot = {
+      'bankAccounts': [
+        {'status': 'PENDING_REVIEW'},
+      ],
+    };
+
+    expect(providerWalletBankInputRequired(snapshot), isFalse);
+    expect(
+      providerWalletBankRequestMessage('withdrawal request', 'PENDING_REVIEW'),
+      'Bank information is waiting for admin approval before withdrawal request can continue.',
+    );
+  });
+
+  test('partner wallet requests can continue after bank approval', () {
+    final snapshot = {
+      'bankAccounts': [
+        {'status': 'APPROVED'},
+      ],
+    };
+
+    expect(providerWalletBankInputRequired(snapshot), isFalse);
+    expect(
+      providerWalletBankRequestMessage('deposit report', 'APPROVED'),
+      'Bank information is approved. deposit report can continue through HANDS operations.',
+    );
+  });
+
   testWidgets('shows marketplace-only wallet hold banner in request list',
       (tester) async {
     await tester.pumpWidget(
