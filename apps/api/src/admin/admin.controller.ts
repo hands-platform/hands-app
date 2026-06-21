@@ -207,6 +207,16 @@ export class AdminController {
     return this.admin.listChatArchive();
   }
 
+  @Get('bookings/:id/notifications')
+  bookingNotifications(@Param('id') id: string) {
+    return this.admin.listBookingNotifications(id);
+  }
+
+  @Get('bookings/:id/marketplace-providers')
+  bookingMarketplaceProviders(@Param('id') id: string) {
+    return this.admin.listBookingMarketplaceProviders(id);
+  }
+
   @Get('bookings/:id')
   bookingDetail(@Param('id') id: string) {
     return this.admin.getBookingDetail(id);

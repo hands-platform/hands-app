@@ -8,6 +8,7 @@ import {
   ProviderWalletLedgerType,
   Role,
 } from '@prisma/client';
+import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-selects';
 import { AdminService } from './admin.service';
 
 function deferred<T>() {
@@ -214,6 +215,94 @@ describe('AdminService query orchestration', () => {
         select: expect.objectContaining({
           matchedAt: true,
           matchSource: true,
+          chatRoom: expect.objectContaining({
+            select: expect.objectContaining({
+              messages: expect.objectContaining({
+                take: ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('lists booking notification evidence by booking id without loading the global notification board', async () => {
+    const prisma = {
+      notification: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listBookingNotifications('booking-1');
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        where: { data: { path: ['bookingId'], equals: 'booking-1' } },
+        select: expect.objectContaining({
+          deliveries: expect.any(Object),
+          user: expect.any(Object),
+        }),
+      }),
+    );
+  });
+
+  it('lists booking marketplace provider candidates without loading the full Partner directory', async () => {
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          preferredProviderId: 'preferred-partner',
+          selectedProviderId: 'selected-partner',
+          lat: 10.77,
+          lng: 106.7,
+          addressSnapshot: null,
+          participants: [
+            { providerProfileId: 'selected-partner' },
+            { providerProfileId: 'marketplace-partner' },
+          ],
+        }),
+      },
+      providerProfile: {
+        findMany: jest
+          .fn()
+          .mockResolvedValueOnce([{ id: 'preferred-partner' }, { id: 'selected-partner' }])
+          .mockResolvedValueOnce([{ id: 'selected-partner' }, { id: 'nearby-partner' }]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listBookingMarketplaceProviders('booking-1')).resolves.toEqual([
+      { id: 'preferred-partner' },
+      { id: 'selected-partner' },
+      { id: 'nearby-partner' },
+    ]);
+
+    expect(prisma.booking.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'booking-1' },
+        select: expect.objectContaining({
+          addressSnapshot: { select: { latitude: true, longitude: true } },
+          participants: { select: { providerProfileId: true } },
+        }),
+      }),
+    );
+    expect(prisma.providerProfile.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: { id: { in: ['preferred-partner', 'selected-partner', 'marketplace-partner'] } },
+      }),
+    );
+    expect(prisma.providerProfile.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        take: 120,
+        where: expect.objectContaining({
+          currentLat: expect.objectContaining({ gte: expect.any(Number), lte: expect.any(Number) }),
+          currentLng: expect.objectContaining({ gte: expect.any(Number), lte: expect.any(Number) }),
         }),
       }),
     );

@@ -826,8 +826,8 @@ async function loadBookingDetailPageData(id: string): Promise<BookingDetailPageD
   const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
-    adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
+    adminGet<AdminNotification[]>(`/admin/bookings/${id}/notifications`, []),
+    adminGet<AdminProvider[]>(`/admin/bookings/${id}/marketplace-providers`, []),
   ]);
 
   return {

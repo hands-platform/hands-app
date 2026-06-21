@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
+  EarningStatus,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   FilePurpose,
@@ -127,6 +128,9 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
+const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
+const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
 const adminAuditLogSelect = {
   id: true,
   action: true,
@@ -135,6 +139,24 @@ const adminAuditLogSelect = {
   createdAt: true,
   actor: { select: { id: true, phone: true, fullName: true } },
 } satisfies Prisma.AdminAuditLogSelect;
+
+const adminBookingMarketplaceProviderSelect = {
+  id: true,
+  displayName: true,
+  status: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  blockedAt: true,
+  user: { select: { id: true, phone: true, fullName: true } },
+  verification: { select: { id: true, status: true } },
+  earnings: {
+    where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { id: true, netAmount: true },
+  },
+} satisfies Prisma.ProviderProfileSelect;
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
 
@@ -150,6 +172,10 @@ type AdminAuditLogSummaryRow = {
 };
 
 type PostMatchCancellationDecision = 'APPROVED' | 'HELD';
+
+type AdminBookingMarketplaceProvider = Prisma.ProviderProfileGetPayload<{
+  select: typeof adminBookingMarketplaceProviderSelect;
+}>;
 
 @Injectable()
 export class AdminService {
@@ -989,6 +1015,77 @@ export class AdminService {
     });
 
     return withAdminBookingListMetadata(withAdminBookingMatchingEvidence({ ...booking, auditLogs }));
+  }
+
+  listBookingNotifications(bookingId: string) {
+    return this.prisma.notification.findMany({
+      where: { data: { path: ['bookingId'], equals: bookingId } },
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT,
+      select: adminNotificationListSelect,
+    });
+  }
+
+  async listBookingMarketplaceProviders(bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        preferredProviderId: true,
+        selectedProviderId: true,
+        lat: true,
+        lng: true,
+        addressSnapshot: { select: { latitude: true, longitude: true } },
+        participants: { select: { providerProfileId: true } },
+      },
+    });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    const relatedProviderIds = Array.from(
+      new Set(
+        [
+          booking.preferredProviderId,
+          booking.selectedProviderId,
+          ...booking.participants.map((participant) => participant.providerProfileId),
+        ].filter((providerId): providerId is string => Boolean(providerId)),
+      ),
+    );
+    const pin = adminBookingMarketplacePin(booking);
+    const bounds = pin
+      ? adminBookingMarketplaceBounds(
+          pin.lat,
+          pin.lng,
+          ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS,
+        )
+      : null;
+
+    const relatedProvidersPromise =
+      relatedProviderIds.length > 0
+        ? this.prisma.providerProfile.findMany({
+            where: { id: { in: relatedProviderIds } },
+            select: adminBookingMarketplaceProviderSelect,
+          })
+        : Promise.resolve([]);
+    const nearbyProvidersPromise = bounds
+      ? this.prisma.providerProfile.findMany({
+          where: {
+            currentLat: { gte: bounds.minLat, lte: bounds.maxLat },
+            currentLng: { gte: bounds.minLng, lte: bounds.maxLng },
+          },
+          orderBy: [{ currentLocationUpdatedAt: 'desc' }, { id: 'desc' }],
+          take: ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT,
+          select: adminBookingMarketplaceProviderSelect,
+        })
+      : Promise.resolve([]);
+
+    const [relatedProviders, nearbyProviders] = await Promise.all([
+      relatedProvidersPromise,
+      nearbyProvidersPromise,
+    ]);
+
+    return uniqueAdminBookingMarketplaceProviders([...relatedProviders, ...nearbyProviders]);
   }
 
   async addBookingOpsNote(actorId: string, bookingId: string, input: { note?: string; preset?: string }) {
@@ -2406,6 +2503,42 @@ export class AdminService {
       },
     })) satisfies AdminAuditLogSummary[];
   }
+}
+
+function adminBookingMarketplacePin(booking: {
+  addressSnapshot?: { latitude: Prisma.Decimal | number | string; longitude: Prisma.Decimal | number | string } | null;
+  lat: Prisma.Decimal | number | string;
+  lng: Prisma.Decimal | number | string;
+}) {
+  const lat = Number(booking.addressSnapshot?.latitude ?? booking.lat);
+  const lng = Number(booking.addressSnapshot?.longitude ?? booking.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+  return { lat, lng };
+}
+
+function adminBookingMarketplaceBounds(lat: number, lng: number, radiusMeters: number) {
+  const latDelta = radiusMeters / 111_320;
+  const lngDenominator = 111_320 * Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
+  const lngDelta = radiusMeters / lngDenominator;
+  return {
+    minLat: lat - latDelta,
+    maxLat: lat + latDelta,
+    minLng: lng - lngDelta,
+    maxLng: lng + lngDelta,
+  };
+}
+
+function uniqueAdminBookingMarketplaceProviders(providers: AdminBookingMarketplaceProvider[]) {
+  const seen = new Set<string>();
+  return providers.filter((provider) => {
+    if (seen.has(provider.id)) {
+      return false;
+    }
+    seen.add(provider.id);
+    return true;
+  });
 }
 
 async function ensureServiceDurationIsUnique(

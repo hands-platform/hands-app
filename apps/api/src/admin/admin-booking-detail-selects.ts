@@ -19,6 +19,8 @@ import {
 import { adminBookingServiceSummarySelect } from './admin-service-selects';
 import { adminUserSummarySelect } from './admin-user-selects';
 
+export const ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT = 200;
+
 export const adminBookingDetailSelect = {
   id: true,
   customerProfileId: true,
@@ -95,6 +97,7 @@ export const adminBookingDetailSelect = {
       createdAt: true,
       messages: {
         orderBy: { createdAt: 'desc' },
+        take: ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,
         select: adminChatMessageSummarySelect,
       },
     },
