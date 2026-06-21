@@ -253,7 +253,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Operator view of Level 1 signup and Level 2 activity approval. Payout bank review happens later when withdrawal is requested."
+      description="Operator view of Level 1 signup and Level 2 activity approval. Withdrawal detail review happens when wallet withdrawal is requested."
       id="partner-level-path"
       resultLabel={plan.currentLevel}
       title="Partner level path"

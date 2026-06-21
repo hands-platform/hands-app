@@ -72,7 +72,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('KYC decision needed');
     expect(rendered).toContain('Use the linked row before account approval.');
     expect(rendered).toContain('Required documents approved');
-    expect(rendered).toContain('Payout bank needs review');
+    expect(rendered).toContain('Withdrawal details need review');
     expect(rendered).toContain('Tax can stay deferred');
     expect(rendered).toContain('Evidence');
     expect(rendered).toContain('Status');
@@ -120,6 +120,7 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Partner level path');
+    expect(rendered).toContain('Withdrawal detail review happens when wallet withdrawal is requested.');
     expect(rendered).toContain('Level 2');
     expect(rendered).toContain('Level');
     expect(rendered).toContain('Operator action');
@@ -331,7 +332,7 @@ function buildApprovalEvidenceRows(): PartnerApprovalEvidenceSummaryRow[] {
       id: 'bank-evidence-summary',
       label: 'BANK',
       status: 'PENDING',
-      title: 'Payout bank needs review',
+      title: 'Withdrawal details need review',
       tone: 'pill-warn',
     },
     {

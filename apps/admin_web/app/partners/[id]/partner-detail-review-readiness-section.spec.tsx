@@ -17,8 +17,8 @@ describe('Partner detail review readiness sections', () => {
             status: 'CLEAR',
           },
           {
-            detail: 'Bank account still needs admin approval.',
-            label: 'Payout bank',
+            detail: 'Withdrawal details still need admin review.',
+            label: 'Withdrawal details',
             ok: false,
             status: 'CHECK',
           },
@@ -32,8 +32,8 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('1 blocker(s)');
     expect(rendered).toContain('Gate');
     expect(rendered).toContain('Outcome');
-    expect(rendered).toContain('Payout bank');
-    expect(rendered).toContain('Bank account still needs admin approval.');
+    expect(rendered).toContain('Withdrawal details');
+    expect(rendered).toContain('Withdrawal details still need admin review.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
