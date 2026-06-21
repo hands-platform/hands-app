@@ -37,12 +37,15 @@ describe('PartnerDetailServicePricingSection', () => {
     expect(rendered).toContain('Missing payout rule.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-success',
         'pill pill-warn',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 2 of 2 entries');
   });
 });
 

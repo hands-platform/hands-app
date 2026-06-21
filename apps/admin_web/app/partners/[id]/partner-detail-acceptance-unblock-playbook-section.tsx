@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -33,23 +39,18 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
   const bookingBlockerCount = steps.filter((step) => step.bookingBlocked).length;
 
   return (
-    <div className="card admin-mb-16" id="payout">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner approval, settlement, and payout playbook</h2>
-          <p className="muted">
-            Operator order for approval holds, settlement warnings, booking gates, and payout release.
-            Finance warnings stay visible without hiding marketplace participation; tax stays deferred until
-            first earning and then blocks payout, not initial dispatch.
-          </p>
-        </div>
-        <span className={`pill ${bookingBlockerCount ? 'pill-danger' : 'pill-success'}`}>
-          {bookingBlockerCount} booking blocker(s)
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Operator order for approval holds, settlement warnings, booking gates, and payout release. Finance warnings stay visible without hiding marketplace participation; tax stays deferred until first earning and then blocks payout, not initial dispatch."
+      id="payout"
+      resultLabel={`${bookingBlockerCount} booking blocker(s)`}
+      resultTone={bookingBlockerCount ? 'danger' : 'success'}
+      title="Partner approval, settlement, and payout playbook"
+    >
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerUnblockPlaybookEmptyState />}
             headers={unblockPlaybookHeaders}
             rowCount={steps.length}
@@ -84,8 +85,9 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={steps.length} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 

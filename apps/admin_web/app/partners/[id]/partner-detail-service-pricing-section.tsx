@@ -1,5 +1,11 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerServicePricingDisplayRow = {
   readonly bookable: boolean;
@@ -21,20 +27,17 @@ export function PartnerDetailServicePricingSection({
   rows,
 }: PartnerDetailServicePricingSectionProps) {
   return (
-    <div className="card" id="service-pricing">
-      <div className="ops-section-header">
-        <div>
-          <h2>Service price readiness</h2>
-          <p className="muted">
-            Customer apps only show options with an active partner service and an exact active payout rule.
-          </p>
-        </div>
-        <span className={`pill ${readyCount ? 'pill-success' : 'pill-warn'}`}>
-          {`${readyCount}/${rows.length} bookable`}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Customer apps only show options with an active partner service and an exact active payout rule."
+      id="service-pricing"
+      resultLabel={`${readyCount}/${rows.length} bookable`}
+      resultTone={readyCount ? 'success' : 'warning'}
+      title="Service price readiness"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<ServicePricingEmptyState />}
           headers={servicePricingHeaders}
           rowCount={rows.length}
@@ -63,7 +66,8 @@ export function PartnerDetailServicePricingSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
