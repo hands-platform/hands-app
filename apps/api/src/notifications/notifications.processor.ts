@@ -26,9 +26,10 @@ import { PushDeliveryService, type PushSendResult } from './push-delivery.servic
 import type { PushProvider } from './push-provider';
 
 export const notificationSendPushDeviceOrder = [
-  { updatedAt: 'asc' },
-  { createdAt: 'asc' },
+  { updatedAt: 'desc' },
+  { createdAt: 'desc' },
 ] satisfies Prisma.PushDeviceOrderByWithRelationInput[];
+export const NOTIFICATION_SEND_PUSH_DEVICE_LIMIT = 10;
 
 const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
   user: {
@@ -36,6 +37,7 @@ const notificationSendInclude = Prisma.validator<Prisma.NotificationInclude>()({
       pushDevices: {
         where: { enabled: true },
         orderBy: notificationSendPushDeviceOrder,
+        take: NOTIFICATION_SEND_PUSH_DEVICE_LIMIT,
       },
     },
   },
@@ -61,9 +63,9 @@ export class NotificationRetryProcessor extends WorkerHost {
     }
 
     const targetRole = notificationTargetRole(notification);
-    const devices = notification.user.pushDevices.filter((device) =>
-      pushDeviceMatchesTargetRole(device, targetRole),
-    );
+    const devices = notification.user.pushDevices
+      .filter((device) => pushDeviceMatchesTargetRole(device, targetRole))
+      .slice(0, NOTIFICATION_SEND_PUSH_DEVICE_LIMIT);
     if (devices.length === 0) {
       return {
         skipped: true,

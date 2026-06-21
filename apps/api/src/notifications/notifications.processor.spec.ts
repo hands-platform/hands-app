@@ -61,6 +61,7 @@ describe('NotificationRetryProcessor', () => {
             include: {
               pushDevices: expect.objectContaining({
                 orderBy: notificationSendPushDeviceOrder,
+                take: 10,
                 where: { enabled: true },
               }),
             },
@@ -257,6 +258,65 @@ describe('NotificationRetryProcessor', () => {
     );
     expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-customer');
     expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends only the recent push-device budget for one notification job', async () => {
+    const tx = {
+      notificationDelivery: {
+        create: jest.fn(),
+      },
+      pushDevice: {
+        update: jest.fn(),
+      },
+    };
+    const devices = Array.from({ length: 12 }, (_, index) => ({
+      id: `device-${index + 1}`,
+      role: Role.CUSTOMER,
+      token: `fcm-token-${index + 1}`,
+    }));
+    const prisma = {
+      notification: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'notification-1',
+          userId: 'user-1',
+          title: 'Booking update',
+          body: 'A booking update is available.',
+          type: 'payment.updated',
+          data: { bookingId: 'booking-1' },
+          user: {
+            pushDevices: devices,
+          },
+        }),
+      },
+      $transaction: jest.fn(async (callback: (transactionClient: typeof tx) => Promise<void>) =>
+        callback(tx),
+      ),
+    };
+    const pushDelivery = {
+      send: jest.fn().mockResolvedValue({
+        provider: 'FCM',
+        status: 'SENT',
+        disableDevice: false,
+        response: { messageId: 'fcm-message-1' },
+      }),
+    };
+    const processor = new NotificationRetryProcessor(prisma as never, pushDelivery as never);
+
+    await expect(
+      processor.process({ data: { notificationId: 'notification-1' } } as never),
+    ).resolves.toMatchObject({
+      notificationId: 'notification-1',
+      userId: 'user-1',
+      results: devices.slice(0, 10).map((device) => ({
+        deviceId: device.id,
+        status: 'SENT',
+      })),
+    });
+
+    expect(pushDelivery.send).toHaveBeenCalledTimes(10);
+    expect(tx.notificationDelivery.create).toHaveBeenCalledTimes(10);
+    expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-11');
+    expect(JSON.stringify(pushDelivery.send.mock.calls)).not.toContain('fcm-token-12');
   });
 
   it('records one delivery result per enabled push device without disabling transient failures', async () => {
