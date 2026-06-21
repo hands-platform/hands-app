@@ -30,7 +30,7 @@ describe('bookingFinalGateReason', () => {
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     });
-    expect(result.detail).toContain('marketplace alerts, participation, and payout release wait');
+    expect(result.detail).toContain('final acceptance, service start, and payout release wait');
   });
 
   it('requires booking address snapshot before radius-based dispatch evidence', () => {

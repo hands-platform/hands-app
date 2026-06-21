@@ -80,7 +80,7 @@ describe('bookingOperatorActionMatrix', () => {
       available: true,
       status: 'Available',
       tone: 'pill-danger',
-      evidence: '120.000 VND keeps marketplace alerts, participation, and payout release blocked.',
+      evidence: '120.000 VND keeps final acceptance, service start, and payout release blocked.',
     });
   });
 

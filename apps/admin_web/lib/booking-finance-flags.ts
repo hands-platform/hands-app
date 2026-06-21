@@ -95,7 +95,7 @@ export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionF
       detail: `${input.partnerLabel} owes ${formatMoney(
         Math.abs(input.earningNetAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
-      )} before marketplace alerts, participation, or payout release can continue.`,
+      )} before final acceptance, service start, or payout release can continue.`,
       action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
     });
   }

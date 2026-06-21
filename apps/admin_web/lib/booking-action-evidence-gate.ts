@@ -125,7 +125,7 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
           ? 'Cash booking has no active negative wallet block.'
           : `${input.paymentMethod ?? 'NONE'} booking path.`,
       operatorRule:
-        'Negative wallet Partners can view marketplace requests, but marketplace alerts, participation, and payout actions wait for settlement evidence.',
+        'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout actions wait for settlement evidence.',
       href: input.cashDebt ? '/cash-settlements' : '#finance',
       className: input.cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: input.cashDebt ? 'pill-danger' : input.paymentMethod === 'CASH' ? 'pill-success' : 'pill-neutral',
