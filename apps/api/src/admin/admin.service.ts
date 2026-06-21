@@ -105,11 +105,13 @@ import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
   ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+  ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT,
   ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderDetailSelect,
   adminProviderFileReviewSelect,
   adminProviderFileReviewWhere,
   adminProviderListSelect,
+  adminProviderOperationsHandoffSelect,
   adminProviderOperationsPolicySelect,
   adminProviderOverviewSelect,
 } from './admin-provider-profile-selects';
@@ -416,6 +418,27 @@ export class AdminService {
       take: ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
       select: adminProviderFileReviewSelect,
     });
+  }
+
+  async listOperationsHandoffProviders() {
+    const providers = await this.prisma.providerProfile.findMany({
+      orderBy: { id: 'desc' },
+      take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT,
+      select: adminProviderOperationsHandoffSelect,
+    });
+
+    if (providers.length === 0) {
+      return providers;
+    }
+
+    const activitySummaries = await this.getProviderListActivitySummaries(
+      providers.map((provider) => provider.id),
+    );
+
+    return providers.map((provider) => ({
+      ...provider,
+      activitySummary: activitySummaries.get(provider.id) ?? emptyProviderActivitySummary(),
+    }));
   }
 
   async listOperationsPolicyProviders() {

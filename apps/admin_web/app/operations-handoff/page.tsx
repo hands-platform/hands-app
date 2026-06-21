@@ -78,7 +78,7 @@ export default async function OperationsHandoffPage({
   ] = await Promise.all([
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminCustomer[]>('/admin/customers', []),
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
+    adminGet<AdminProvider[]>('/admin/operations-handoff/providers', []),
     adminGet<AdminEarning[]>('/admin/earnings', []),
     adminGet<AdminPayment[]>('/admin/payments', []),
     adminGet<AdminRefund[]>('/admin/refunds', []),

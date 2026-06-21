@@ -79,6 +79,11 @@ export class AdminController {
     return this.admin.listOperationsPolicyProviders();
   }
 
+  @Get('operations-handoff/providers')
+  operationsHandoffProviders() {
+    return this.admin.listOperationsHandoffProviders();
+  }
+
   @Get(['providers/:id/overview', 'partners/:id/overview'])
   providerOverview(@Param('id') providerProfileId: string) {
     return this.admin.getProviderOverview(providerProfileId);

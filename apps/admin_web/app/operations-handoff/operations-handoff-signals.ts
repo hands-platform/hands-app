@@ -103,9 +103,9 @@ export function buildPartnerSignals(
     .map((partner) => {
       const facts = partnerSignalFacts(partner, cashDebtPartnerIds, nowMs);
       const posture = partnerSignalPosture(facts);
-      const completed = (partner.selectedBookings ?? []).filter(
-        (booking) => booking.status === 'COMPLETED',
-      ).length;
+      const completed =
+        partner.activitySummary?.completedWorkCount ??
+        (partner.selectedBookings ?? []).filter((booking) => booking.status === 'COMPLETED').length;
       return {
         id: partner.id,
         name: operatorDisplayText(

@@ -9,6 +9,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
     listFileReviewProviders: jest.fn(),
+    listOperationsHandoffProviders: jest.fn(),
     listOperationsPolicyProviders: jest.fn(),
     retryNotification: jest.fn(),
   };
@@ -71,6 +72,18 @@ describe('AdminController notification and push actions', () => {
       path: 'operations-policy/providers',
     });
     expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith();
+  });
+
+  it('exposes operations handoff providers as a lightweight GET list', async () => {
+    admin.listOperationsHandoffProviders.mockResolvedValue([{ id: 'partner-1' }]);
+
+    await expect(controller.operationsHandoffProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+
+    expect(routeMetadata('operationsHandoffProviders')).toEqual({
+      method: RequestMethod.GET,
+      path: 'operations-handoff/providers',
+    });
+    expect(admin.listOperationsHandoffProviders).toHaveBeenCalledWith();
   });
 });
 

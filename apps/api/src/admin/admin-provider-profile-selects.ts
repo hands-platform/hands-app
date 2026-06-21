@@ -43,6 +43,7 @@ import { adminPushDeviceSummarySelect, adminUserSummarySelect } from './admin-us
 export const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
+export const ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT = 500;
 
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;
@@ -50,6 +51,8 @@ const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
 const ADMIN_PROVIDER_FILE_REVIEW_FILE_LIMIT = 20;
+const ADMIN_PROVIDER_OPERATIONS_HANDOFF_RELATION_LIMIT = 15;
+const ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT = 3;
 const ADMIN_PROVIDER_OPERATIONS_POLICY_DOCUMENT_LIMIT = 12;
 const ADMIN_PROVIDER_OPERATIONS_POLICY_DEVICE_LIMIT = 3;
 const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
@@ -228,6 +231,75 @@ export const adminProviderOperationsPolicySelect = {
       id: true,
       deviceId: true,
       enabled: true,
+      blockedAt: true,
+    },
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderOperationsHandoffSelect = {
+  id: true,
+  displayName: true,
+  legalName: true,
+  status: true,
+  currentLocationUpdatedAt: true,
+  blockedAt: true,
+  user: {
+    select: {
+      id: true,
+      fullName: true,
+      pushDevices: {
+        orderBy: adminProviderPushDeviceReachabilityOrder,
+        take: 2,
+        select: adminProviderOperationsPolicyPushDeviceSelect,
+      },
+    },
+  },
+  verification: {
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  kyc: {
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  bankAccounts: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT,
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  participants: {
+    orderBy: { joinedAt: 'desc' },
+    take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_RELATION_LIMIT,
+    select: {
+      id: true,
+      providerProfileId: true,
+      status: true,
+    },
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT,
+    select: {
+      id: true,
+      lastSeenAt: true,
+      suspicious: true,
+    },
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT,
+    select: {
+      id: true,
+      deviceId: true,
+      enabled: true,
+      lastSeenAt: true,
       blockedAt: true,
     },
   },

@@ -184,6 +184,32 @@ describe('operations handoff signal models', () => {
       id: 'partner-matching',
     });
   });
+
+  it('uses server activity summaries for Partner completed work counts', () => {
+    const signals = buildPartnerSignals(
+      [
+        partner({
+          activitySummary: {
+            availablePayout: 0,
+            completedWorkCount: 7,
+            grossRevenue: 0,
+            pendingPayout: 0,
+            platformFee: 0,
+            walletBalance: 0,
+          },
+          id: 'partner-summary',
+          selectedBookings: undefined,
+        }),
+      ],
+      cashSummary({}),
+      { nowMs: Date.parse('2026-06-14T10:00:00.000Z') },
+    );
+
+    expect(signals.rows[0]).toMatchObject({
+      detail: expect.stringContaining('7 completed booking(s)'),
+      id: 'partner-summary',
+    });
+  });
 });
 
 function booking(input: Partial<AdminBooking>): AdminBooking {
