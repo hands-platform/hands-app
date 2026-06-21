@@ -1,11 +1,18 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
 
 import {
   partnerOperatorCommandActionHref,
   type PartnerOperatorCommandAction as PartnerOperatorCommandActionConfig,
 } from './partner-detail-operator-command-action';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -48,17 +55,14 @@ export function PartnerDetailOperatorCommandQueueSection({
   const primaryCommands = queue.commands.filter((command) => command.action.type !== 'link').slice(0, 4);
 
   return (
-    <div className="card admin-mb-16" id="partner-operator-command-queue">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner operator command queue</h2>
-          <p className="muted">
-            Same-shift partner operations queue for onboarding, direct and marketplace readiness gates,
-            payout, location, app reachability, and service setup. This is factual handling for operators.
-          </p>
-        </div>
-        <span className={`pill ${pillClassForTone(queue.tone)}`}>{queue.status}</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Same-shift partner operations queue for onboarding, direct and marketplace readiness gates, payout, location, app reachability, and service setup. This is factual handling for operators."
+      id="partner-operator-command-queue"
+      resultLabel={queue.status}
+      resultTone={statusBadgeToneForPartnerOps(queue.tone)}
+      title="Partner operator command queue"
+    >
       <div className="service-trace-summary admin-mt-12">
         {queue.metrics.map((metric) => (
           <div key={metric.label}>
@@ -91,6 +95,7 @@ export function PartnerDetailOperatorCommandQueueSection({
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerCommandQueueEmptyState />}
             headers={commandQueueHeaders}
             rowCount={queue.commands.length}
@@ -116,9 +121,16 @@ export function PartnerDetailOperatorCommandQueueSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={queue.commands.length} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
+}
+
+function statusBadgeToneForPartnerOps(tone: PartnerOpsTone): StatusBadgeTone {
+  if (tone === 'done') return 'success';
+  if (tone === 'pending') return 'warning';
+  return 'danger';
 }
 
 function PartnerCommandQueueEmptyState() {

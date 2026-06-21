@@ -42,8 +42,15 @@ describe('partner detail readiness command sections', () => {
     expect(rendered).toContain('Wallet is negative, but marketplace visibility stays open.');
     expect(rendered).toContain('Settle before final acceptance.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-warn']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-warn',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders marketplace repair steps as a Vuexy command table', () => {
@@ -101,13 +108,16 @@ describe('partner detail readiness command sections', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card ops-task-pending admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
         'text-link',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 2 of 2 entries');
   });
 
   it('keeps an empty table state when repair steps are missing', () => {
@@ -128,8 +138,12 @@ describe('partner detail readiness command sections', () => {
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No repair command steps loaded.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
     );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 

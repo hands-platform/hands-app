@@ -1,6 +1,14 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
+
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerOpsTone = 'blocked' | 'done' | 'pending';
 
@@ -57,17 +65,13 @@ export function PartnerDetailReadinessSnapshotSection({
   snapshot,
 }: PartnerDetailReadinessSnapshotSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner readiness snapshot</h2>
-          <p className="muted">
-            Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and
-            service readiness.
-          </p>
-        </div>
-        <span className={`pill ${pillClassForTone(snapshot.tone)}`}>{snapshot.status}</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and service readiness."
+      resultLabel={snapshot.status}
+      resultTone={statusBadgeToneForPartnerOps(snapshot.tone)}
+      title="Partner readiness snapshot"
+    >
       <div className="participant-list admin-mt-12">
         {snapshot.badges.map((badge) => (
           <span className={`pill ${pillClassForTone(badge.tone)}`} key={badge.label} title={badge.detail}>
@@ -78,6 +82,7 @@ export function PartnerDetailReadinessSnapshotSection({
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerReadinessEmptyState message="No readiness gate loaded." />}
             headers={readinessGateHeaders}
             rowCount={1}
@@ -96,8 +101,9 @@ export function PartnerDetailReadinessSnapshotSection({
             </tr>
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={1} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -105,17 +111,13 @@ export function PartnerAcceptanceRepairCommandSection({
   command,
 }: PartnerAcceptanceRepairCommandSectionProps) {
   return (
-    <div className={`card ${cardClassForTone(command.tone)} admin-mb-16`}>
-      <div className="ops-section-header">
-        <div>
-          <h2>Marketplace repair command</h2>
-          <p className="muted">
-            Exact operator diagnosis for marketplace participation, customer handoff, app message, and finance
-            repair.
-          </p>
-        </div>
-        <span className={`pill ${pillClassForTone(command.tone)}`}>{command.status}</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} ${cardClassForTone(command.tone)} admin-mb-16`}
+      description="Exact operator diagnosis for marketplace participation, customer handoff, app message, and finance repair."
+      resultLabel={command.status}
+      resultTone={statusBadgeToneForPartnerOps(command.tone)}
+      title="Marketplace repair command"
+    >
       <div className="service-trace-summary admin-mt-12">
         <TraceSummaryItem
           helper="What support should expect the partner to see."
@@ -141,6 +143,7 @@ export function PartnerAcceptanceRepairCommandSection({
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerReadinessEmptyState message="No repair command steps loaded." />}
             headers={repairCommandHeaders}
             rowCount={command.steps.length}
@@ -173,8 +176,9 @@ export function PartnerAcceptanceRepairCommandSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={command.steps.length} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -203,6 +207,12 @@ function PartnerReadinessEmptyState({ message }: { readonly message: string }) {
       <p className="muted">{message}</p>
     </div>
   );
+}
+
+function statusBadgeToneForPartnerOps(tone: PartnerOpsTone): StatusBadgeTone {
+  if (tone === 'done') return 'success';
+  if (tone === 'blocked') return 'danger';
+  return 'warning';
 }
 
 function stepToneLabel(tone: PartnerOpsTone) {
