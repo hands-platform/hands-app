@@ -182,6 +182,7 @@ function CustomerDateButtonGroup({
             label={toLabel}
             name={toKey}
           />
+          <button className="booking-date-apply-button" type="submit">Apply dates</button>
         </div>
       )}
     </div>

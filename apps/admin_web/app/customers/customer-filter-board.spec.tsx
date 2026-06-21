@@ -59,6 +59,28 @@ describe('CustomerFilterBoard', () => {
     expect(rendered).toContain('href="/customers"');
     expect(rendered).toContain('admin-form-control-link vuexy-customer-button is-ghost');
   });
+
+  it('places custom date apply controls next to visible custom date fields', () => {
+    const rendered = renderToStaticMarkup(
+      CustomerFilterBoard({
+        activeFilters: ['Sign-up date: 2026-06-01 - 2026-06-07'],
+        csvHref: 'data:text/csv,customer',
+        filteredCount: 2,
+        filters: filters({
+          joinedFrom: '2026-06-01',
+          joinedRange: 'custom',
+          joinedTo: '2026-06-07',
+        }),
+        totalCount: 9,
+      }),
+    );
+
+    expect(rendered).toContain('booking-custom-date-grid vuexy-customer-custom-date-grid');
+    expect(rendered).toContain('name="joinedFrom"');
+    expect(rendered).toContain('name="joinedTo"');
+    expect(rendered).toContain('booking-date-apply-button');
+    expect(rendered).toContain('Apply dates');
+  });
 });
 
 function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {

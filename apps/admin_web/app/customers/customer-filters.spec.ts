@@ -10,6 +10,8 @@ describe('customer filters', () => {
       lastBookingRange: '7d',
       lastLoginRange: '30d',
       minBookings: '5',
+      minCompleted: '3',
+      minSpend: '400000',
       payment: 'captured',
       q: 'linh',
       seen: 'live',
@@ -24,6 +26,8 @@ describe('customer filters', () => {
     expect(filters.seen).toBe('');
     expect(filters.sort).toBe('booking-count-asc');
     expect(filters.minBookings).toBeNull();
+    expect(filters.minCompleted).toBeNull();
+    expect(filters.minSpend).toBeNull();
     expect(filters.joinedRange).toBe('today');
     expect(filters.joinedFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(filters.joinedTo).toBe(filters.joinedFrom);
@@ -67,7 +71,7 @@ describe('customer filters', () => {
         'Sign-up date: 2026-06-01 - 2026-06-07',
         'Last reservation: 2026-06-10 - 2026-06-20',
         'Last login date: 2026-06-11 - 2026-06-21',
-        'Sort: reservations high to low',
+        'Sort: reservations many first',
       ]),
     );
   });

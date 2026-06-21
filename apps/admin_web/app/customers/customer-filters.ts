@@ -1,4 +1,3 @@
-import { formatMoney } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 
 export const DEFAULT_CUSTOMER_PAGE_SIZE = 10;
@@ -78,8 +77,8 @@ export function buildCustomerFilters(params: Record<string, string | string[] | 
     lastLoginTo: lastLoginDateRange.to,
     seen: '',
     minBookings: null,
-    minCompleted: readPositiveNumber(params.minCompleted),
-    minSpend: readPositiveNumber(params.minSpend),
+    minCompleted: null,
+    minSpend: null,
   };
 }
 
@@ -114,9 +113,6 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
     appendTextParam(params, 'lastLoginFrom', next.lastLoginFrom);
     appendTextParam(params, 'lastLoginTo', next.lastLoginTo);
   }
-  appendNumberParam(params, 'minCompleted', next.minCompleted);
-  appendNumberParam(params, 'minSpend', next.minSpend);
-
   if (next.sort !== 'last-booking') {
     params.set('sort', next.sort);
   }
@@ -132,8 +128,8 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
 
 export function customerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
-  if (sort === 'booking-count') return 'reservations high to low';
-  if (sort === 'booking-count-asc') return 'reservations low to high';
+  if (sort === 'booking-count') return 'reservations many first';
+  if (sort === 'booking-count-asc') return 'reservations few first';
   if (sort === 'completed-count') return 'completed work count';
   if (sort === 'captured-spend') return 'captured spend';
   if (sort === 'last-seen') return 'last app session';
@@ -188,8 +184,6 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
     if (filters.lastLoginTo) labels.push(`Last login to: ${filters.lastLoginTo}`);
   }
   if (filters.seen) labels.push(`Recent access: ${filters.seen}`);
-  if (filters.minCompleted !== null) labels.push(`Min completed: ${filters.minCompleted}`);
-  if (filters.minSpend !== null) labels.push(`Min paid amount: ${formatMoney(filters.minSpend)}`);
   if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
 }
@@ -284,12 +278,6 @@ function readPageSize(value: string | string[] | undefined) {
 function appendTextParam(params: URLSearchParams, key: string, value: string) {
   if (value) {
     params.set(key, value);
-  }
-}
-
-function appendNumberParam(params: URLSearchParams, key: string, value: number | null) {
-  if (value !== null) {
-    params.set(key, String(value));
   }
 }
 
