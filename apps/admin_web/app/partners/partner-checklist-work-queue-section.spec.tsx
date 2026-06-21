@@ -26,13 +26,16 @@ describe('PartnerChecklistWorkQueueSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1#kyc']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table service-trace',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-table service-trace',
+        'vuexy-booking-table-footer vuexy-partner-table-footer',
         'admin-avatar-status-dot is-online',
         'pill pill-danger',
         'text-link',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders an empty queue state when no partner work items are visible', () => {
@@ -49,6 +52,7 @@ describe('PartnerChecklistWorkQueueSection', () => {
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('0 urgent');
+    expect(rendered).toContain('Showing 0 entries');
     expect(rendered).toContain('No partner work queue items');
     expect(rendered).toContain('Keep monitoring dispatch demand and live booking pressure.');
   });

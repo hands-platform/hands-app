@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import type { AdminProvider } from '../../lib/admin-api';
 import { adminAvatarStatusFromSignals } from '../../lib/admin-avatar-status';
@@ -31,25 +31,23 @@ export function PartnerChecklistWorkQueueSection({
   queue,
 }: PartnerChecklistWorkQueueSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="Compact follow-up list for the current partner filter. It groups acceptance holds, payout/tax gates, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
-        status={
-          <div className="participant-list">
-            <span className={`pill ${queue.urgentCount ? 'pill-danger' : 'pill-success'}`}>
-              {queue.urgentCount} urgent
-            </span>
-            <span className={`pill ${queue.blockedCount ? 'pill-warn' : 'pill-success'}`}>
-              {queue.blockedCount} blocked
-            </span>
-            <span className="pill pill-info">{queue.dispatchReadyCount} dispatch-ready</span>
-          </div>
-        }
-        title="Partner checklist work queue"
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16"
+      description="Compact follow-up list for the current partner filter. It groups acceptance holds, payout/tax gates, location freshness, push readiness, and KYC updates so operators can process records without opening every detail page."
+      id="partner-checklist-work-queue"
+      resultLabel={`${queue.urgentCount} urgent`}
+      resultTone={queue.urgentCount ? 'danger' : 'success'}
+      title="Partner checklist work queue"
+    >
+      <div className="participant-list admin-mb-12">
+        <span className={`pill ${queue.blockedCount ? 'pill-warn' : 'pill-success'}`}>
+          {queue.blockedCount} blocked
+        </span>
+        <span className="pill pill-info">{queue.dispatchReadyCount} dispatch-ready</span>
+      </div>
       <AdminTableScroll>
         <AdminDataTable
-          className="service-trace"
+          className="vuexy-booking-table vuexy-partner-table service-trace"
           emptyMessage={<PartnerChecklistQueueEmptyState />}
           headers={PARTNER_CHECKLIST_QUEUE_HEADERS}
           rowCount={queue.rows.length}
@@ -87,8 +85,16 @@ export function PartnerChecklistWorkQueueSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <span>{partnerChecklistQueueFooterLabel(queue.rows.length)}</span>
+      </div>
+    </AdminFilterPanel>
   );
+}
+
+function partnerChecklistQueueFooterLabel(rowCount: number) {
+  if (rowCount <= 0) return 'Showing 0 entries';
+  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function partnerChecklistAvatarStatus(provider: AdminProvider) {
