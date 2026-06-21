@@ -1287,13 +1287,13 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         providerId: item.provider.id,
         partner,
         impact: 'FIRST EARNING',
-        severity: 'Legacy tax record',
+        severity: 'Optional tax record',
         tone: 'pill-info',
-        title: `${partner} has a legacy tax profile review`,
+        title: `${partner} has an optional tax profile review`,
         reason:
           'Tax profile registration is not required for Vietnam MVP partner approval, matching, work, payout, or wallet withdrawal.',
         operatorAction:
-          'Review only if finance keeps legacy tax records; do not hold Level 2 activity because of this profile.',
+          'Review only if finance keeps optional tax records; do not hold Level 2 activity because of this profile.',
         href: '/tax-policy',
         priority: 36,
       });
@@ -1438,12 +1438,12 @@ function buildBookingAcceptanceUnblockBoard(
     },
     {
       id: 'tax-after-first-earning',
-      title: 'Legacy tax record is not an operating gate',
-      status: taxItems.length ? 'LEGACY REVIEW' : 'READY',
+      title: 'Optional tax record is not an operating gate',
+      status: taxItems.length ? 'OPTIONAL REVIEW' : 'READY',
       detail:
         'Tax profile registration is not required for Vietnam MVP and must not block Level 2 approval, matching, work, payout, or wallet withdrawal.',
       operatorScript:
-        'Keep legacy tax records read-only unless finance explicitly reviews submitted data for audit history.',
+        'Keep optional tax records read-only unless finance explicitly reviews submitted data for audit history.',
       customerImpact:
         'Customers can book approved Level 2 Partners without extra signup friction.',
       action: taxItems.length ? 'Open tax policy' : 'Review tax rules',

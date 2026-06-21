@@ -17,17 +17,20 @@ describe('admin policy copy regression', () => {
   });
 
   it('keeps partner finance copy aligned with Level 2 and withdrawal policy', () => {
-    const source = readAdminWebSource(['app/partners/[id]/page.tsx']);
+    const source = readAdminWebSource(['app/partners/[id]/page.tsx', 'app/partner-controls/page.tsx']);
 
     expect(source).not.toContain('Withdrawal bank');
     expect(source).not.toContain('Withdrawal bank account');
     expect(source).not.toContain('Legacy tax profile');
     expect(source).not.toContain('Legacy tax ');
+    expect(source).not.toContain('Legacy tax record');
+    expect(source).not.toContain('legacy tax records');
     expect(source).not.toContain('Bank payout review');
     expect(source).not.toContain('WITHDRAWAL BANK');
 
     expect(source).toContain('Withdrawal details');
     expect(source).toContain('Tax profile optional');
+    expect(source).toContain('Optional tax record');
     expect(source).toContain(
       'Partner can receive booking requests and participate in matching. Withdrawal detail review is handled when wallet withdrawal is requested.',
     );
