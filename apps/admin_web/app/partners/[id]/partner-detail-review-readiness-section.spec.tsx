@@ -36,8 +36,10 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('Bank account still needs admin approval.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
       ]),
@@ -78,8 +80,10 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('Keep deferred until first earning.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
       ]),

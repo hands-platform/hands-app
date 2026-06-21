@@ -1,4 +1,10 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerReadinessItem = {
   detail: string;
@@ -35,20 +41,17 @@ export function PartnerDetailApprovalChecklistSection({
   checklist,
 }: PartnerDetailApprovalChecklistSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Approval checklist</h2>
-          <p className="muted">
-            Review these gates before approving the partner or relying on this partner for dispatch.
-          </p>
-        </div>
-        <span className={`pill ${checklist.ready ? 'pill-success' : 'pill-warn'}`}>
-          {checklist.ready ? 'Ready for approval' : `${checklist.blockers} blocker(s)`}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Review these gates before approving the partner or relying on this partner for dispatch."
+      id="partner-approval-checklist"
+      resultLabel={checklist.ready ? 'Ready for approval' : `${checklist.blockers} blocker(s)`}
+      resultTone={checklist.ready ? 'success' : 'warning'}
+      title="Approval checklist"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<PartnerReviewReadinessEmptyState message="No approval checklist rows." />}
           headers={approvalChecklistHeaders}
           rowCount={checklist.items.length}
@@ -73,7 +76,8 @@ export function PartnerDetailApprovalChecklistSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={checklist.items.length} />
+    </AdminFilterPanel>
   );
 }
 
@@ -81,22 +85,17 @@ export function PartnerDetailRegistrationDossierSection({
   dossier,
 }: PartnerDetailRegistrationDossierSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner registration dossier</h2>
-          <p className="muted">
-            Structured view of the signup profile, public working profile, identity evidence, payout gate,
-            legal consent, and account activity. Use this as the first review map before approving or
-            rejecting a partner.
-          </p>
-        </div>
-        <span className={`pill ${dossier.ready ? 'pill-success' : 'pill-warn'}`}>
-          {dossier.ready ? 'Dossier complete' : `${dossier.blockers} gap(s)`}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Structured view of the signup profile, public working profile, identity evidence, payout gate, legal consent, and account activity. Use this as the first review map before approving or rejecting a partner."
+      id="partner-registration-dossier"
+      resultLabel={dossier.ready ? 'Dossier complete' : `${dossier.blockers} gap(s)`}
+      resultTone={dossier.ready ? 'success' : 'warning'}
+      title="Partner registration dossier"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<PartnerReviewReadinessEmptyState message="No registration dossier rows." />}
           headers={registrationDossierHeaders}
           rowCount={dossier.items.length}
@@ -124,7 +123,8 @@ export function PartnerDetailRegistrationDossierSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={dossier.items.length} />
+    </AdminFilterPanel>
   );
 }
 

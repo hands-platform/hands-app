@@ -3,6 +3,11 @@ import Link from 'next/link';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { PartnerReviewIssue } from '../partner-list-readiness';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerReviewPanelTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 
@@ -106,7 +111,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card"
+      className={partnerDetailReviewCardClassName}
       description="Compact pre-approval checklist for KYC, required documents, payout bank, and tax evidence. Open the detail card only when this row needs a decision."
       id="partner-approval-evidence-summary"
       resultLabel={openRows ? `${openRows} approval task(s)` : 'Ready to approve'}
@@ -132,7 +137,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
       </div>
       <AdminTableScroll>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-detail-review-table"
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<PartnerReviewTableEmptyState message="No Partner approval evidence rows." />}
           headers={approvalEvidenceHeaders}
           rowCount={rows.length}
@@ -162,7 +167,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <PartnerDetailReviewTableFooter rowCount={rows.length} />
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
     </AdminFilterPanel>
   );
 }
@@ -172,7 +177,7 @@ export function PartnerDetailReviewControlPanelSection({
 }: PartnerDetailReviewControlPanelSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card"
+      className={partnerDetailReviewCardClassName}
       description="One-screen review map for submitted Partner information, active hold reason, resubmission needs, and the latest admin decision trail."
       id="partner-review-control-panel"
       resultLabel={panel.status}
@@ -207,7 +212,7 @@ export function PartnerDetailReviewControlPanelSection({
       </div>
       <AdminTableScroll>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-detail-review-table"
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<PartnerReviewTableEmptyState message="No Partner review control rows." />}
           headers={reviewControlPanelHeaders}
           rowCount={panel.items.length}
@@ -239,7 +244,7 @@ export function PartnerDetailReviewControlPanelSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <PartnerDetailReviewTableFooter rowCount={panel.items.length} />
+      <PartnerDetailVuexyTableFooter rowCount={panel.items.length} />
     </AdminFilterPanel>
   );
 }
@@ -247,7 +252,7 @@ export function PartnerDetailReviewControlPanelSection({
 export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card"
+      className={partnerDetailReviewCardClassName}
       description="Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and optional profile review gates."
       id="partner-level-path"
       resultLabel={plan.currentLevel}
@@ -255,7 +260,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
     >
       <AdminTableScroll>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-detail-review-table"
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<PartnerReviewTableEmptyState message="No Partner level path rows." />}
           headers={levelPathHeaders}
           rowCount={plan.items.length}
@@ -281,7 +286,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <PartnerDetailReviewTableFooter rowCount={plan.items.length} />
+      <PartnerDetailVuexyTableFooter rowCount={plan.items.length} />
     </AdminFilterPanel>
   );
 }
@@ -291,7 +296,7 @@ export function PartnerDetailResubmissionGuidanceSection({
 }: PartnerDetailResubmissionGuidanceSectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card"
+      className={partnerDetailReviewCardClassName}
       description="Use this when a partner asks what to fix after rejection. Keep the message specific and auditable."
       id="partner-resubmission-guidance"
       resultLabel={`${plan.items.length} item(s)`}
@@ -300,7 +305,7 @@ export function PartnerDetailResubmissionGuidanceSection({
     >
       <AdminTableScroll>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-detail-review-table"
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected Partner documents, bank accounts, KYC, or tax profiles." />
           }
@@ -328,7 +333,7 @@ export function PartnerDetailResubmissionGuidanceSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <PartnerDetailReviewTableFooter rowCount={plan.items.length} />
+      <PartnerDetailVuexyTableFooter rowCount={plan.items.length} />
     </AdminFilterPanel>
   );
 }
@@ -339,7 +344,7 @@ export function PartnerDetailReviewHistorySection({
 }: PartnerDetailReviewHistorySectionProps) {
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card"
+      className={partnerDetailReviewCardClassName}
       description="Partner, KYC, document, bank, and tax review decisions are shown here for handoff and audit."
       id="partner-review-history"
       resultLabel={`${totalCount} recent event(s)`}
@@ -347,7 +352,7 @@ export function PartnerDetailReviewHistorySection({
     >
       <AdminTableScroll>
         <AdminDataTable
-          className="vuexy-booking-table vuexy-partner-detail-review-table"
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <PartnerReviewTableEmptyState message="No partner review logs yet. New approval, rejection, and resubmission actions will appear here." />
           }
@@ -376,7 +381,7 @@ export function PartnerDetailReviewHistorySection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-      <PartnerDetailReviewTableFooter rowCount={rows.length} />
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
     </AdminFilterPanel>
   );
 }
@@ -428,19 +433,6 @@ function reviewPanelResultTone(
   if (tone === 'pill-warn') return 'warning';
   if (tone === 'pill-neutral') return 'neutral';
   return 'info';
-}
-
-function PartnerDetailReviewTableFooter({ rowCount }: { readonly rowCount: number }) {
-  return (
-    <div className="vuexy-booking-table-footer vuexy-partner-detail-review-footer">
-      <span>{reviewTableFooterLabel(rowCount)}</span>
-    </div>
-  );
-}
-
-function reviewTableFooterLabel(rowCount: number) {
-  if (rowCount <= 0) return 'Showing 0 entries';
-  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function PartnerReviewTableEmptyState({ message }: { readonly message: string }) {
