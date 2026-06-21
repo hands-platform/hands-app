@@ -36,8 +36,8 @@ export function partnerReviewModeContent(review: string): PartnerReviewModeConte
       detailFocus:
         'Open the Partner detail page, review registration, KYC, required documents, public media, device, and hold facts, then approve or hold with a clear correction reason.',
       steps: [
-        'Confirm the Partner profile, legal name, phone, gender, address, and app device facts.',
-        'Review KYC, required documents, public media, withdrawal details, optional tax records, and agreement status as finance follow-up; bank and tax are not Level 2 gates.',
+        'Confirm the Partner service profile, profile photos, legal name, phone, gender, address, and app device facts.',
+        'Review KYC, required documents, public media, selected services, and profile introduction for Level 2 activity approval.',
         'Approve only when all required facts pass; otherwise place the Partner on hold with a reason the Partner app can show for correction.',
       ],
     };

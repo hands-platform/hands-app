@@ -55,14 +55,14 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     );
   });
 
-  it('renders compact approval evidence links for KYC, documents, bank, and tax', () => {
+  it('renders compact approval evidence links while keeping finance rows separate from Level 2 approval', () => {
     const section = PartnerDetailApprovalEvidenceSummarySection({
       rows: buildApprovalEvidenceRows(),
     });
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Partner approval evidence summary');
+    expect(rendered).toContain('Partner review evidence summary');
     expect(rendered).toContain('2 approval task(s)');
     expect(rendered).toContain('Remaining');
     expect(rendered).toContain('2 item(s)');
@@ -70,10 +70,11 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('2 item(s)');
     expect(rendered).toContain('Next step');
     expect(rendered).toContain('KYC decision needed');
-    expect(rendered).toContain('Use the linked row before account approval.');
+    expect(rendered).toContain('Use the linked row before account or finance follow-up.');
     expect(rendered).toContain('Required documents approved');
     expect(rendered).toContain('Withdrawal details need review');
     expect(rendered).toContain('Tax can stay deferred');
+    expect(rendered).not.toContain('payout bank, and tax evidence');
     expect(rendered).toContain('Evidence');
     expect(rendered).toContain('Status');
     expect(rendered).toContain('Detail');

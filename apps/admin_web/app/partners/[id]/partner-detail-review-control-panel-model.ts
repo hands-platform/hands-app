@@ -102,7 +102,7 @@ export function buildPartnerReviewControlPanel({
         title: dossier.ready ? 'Submitted dossier is complete' : 'Submitted dossier has gaps',
         detail: firstDossierGap
           ? `${firstDossierGap.label}: ${firstDossierGap.detail}`
-          : 'Basic identity, public profile, service area, KYC, payout, and security checks are complete.',
+          : 'Basic identity, service profile, public media, KYC, required documents, and account checks are complete.',
         status: dossier.ready ? 'READY' : `${dossier.blockers} GAP(S)`,
         tone: dossier.ready ? 'pill-success' : 'pill-warn',
         href: '#partner-connected-operations-records',
@@ -117,7 +117,7 @@ export function buildPartnerReviewControlPanel({
             ? `${resubmissionPlan.items[0]?.target}: ${resubmissionPlan.items[0]?.reason}`
             : firstDossierGap
               ? `${firstDossierGap.label}: ${firstDossierGap.detail}`
-              : 'Profile, KYC, required documents, payout bank, and account checks are clear for approval.',
+              : 'Profile, service profile, KYC, required documents, public media, and account checks are clear for approval.',
         status: hasHold ? 'HOLD' : approvalReady ? 'READY' : 'REVIEW',
         tone: hasHold ? 'pill-danger' : approvalReady ? 'pill-success' : 'pill-warn',
         href: '#partner-operator-command-queue',
@@ -132,7 +132,7 @@ export function buildPartnerReviewControlPanel({
             ? hasCashDebt
               ? 'Negative wallet is a settlement warning. Marketplace visibility and participation stay visible, but final acceptance, service start, and payout release wait for settlement.'
               : 'Booking access can stay open after approval, subject to location freshness, service pricing, and app reachability.'
-            : 'Dossier gaps keep booking access under review until identity, bank, and account readiness are clear.',
+            : 'Dossier gaps keep booking access under review until identity, service profile, public media, and account readiness are clear.',
         status: hasHold ? 'BLOCKED' : hasCashDebt ? 'WARNING' : dossier.ready ? 'CLEAR' : 'REVIEW',
         tone: hasHold ? 'pill-danger' : hasCashDebt || !dossier.ready ? 'pill-warn' : 'pill-success',
         href: '#partner-booking-gate-decision',
@@ -165,7 +165,7 @@ export function buildPartnerReviewControlPanel({
         title: resubmissionCount ? 'Partner resubmission needed' : 'No resubmission needed',
         detail: resubmissionCount
           ? `${resubmissionPlan.items[0]?.target}: ${resubmissionPlan.items[0]?.reason}`
-          : 'No rejected KYC, document, bank, or tax item is waiting for correction.',
+          : 'No rejected KYC, document, service profile, or public media item is waiting for correction.',
         status: resubmissionCount ? `${resubmissionCount} ITEM(S)` : 'CLEAR',
         tone: resubmissionCount ? 'pill-warn' : 'pill-success',
         href: '#partner-review-history',

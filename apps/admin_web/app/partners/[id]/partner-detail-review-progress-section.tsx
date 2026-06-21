@@ -112,11 +112,11 @@ export function PartnerDetailApprovalEvidenceSummarySection({
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Compact pre-approval checklist for KYC, required documents, payout bank, and tax evidence. Open the detail card only when this row needs a decision."
+      description="Compact review checklist for Level 2 approval evidence plus finance-only follow-up rows. Open the detail card only when this row needs a decision."
       id="partner-approval-evidence-summary"
       resultLabel={openRows ? `${openRows} approval task(s)` : 'Ready to approve'}
       resultTone={openRows ? 'warning' : 'success'}
-      title="Partner approval evidence summary"
+      title="Partner review evidence summary"
     >
       <div className="service-trace-summary admin-mt-12">
         <div>
@@ -132,7 +132,7 @@ export function PartnerDetailApprovalEvidenceSummarySection({
         <div>
           <span>Next step</span>
           <strong>{firstOpenRow?.title ?? 'Approve Partner'}</strong>
-          <small>Use the linked row before account approval.</small>
+          <small>Use the linked row before account or finance follow-up.</small>
         </div>
       </div>
       <AdminTableScroll>
@@ -307,7 +307,7 @@ export function PartnerDetailResubmissionGuidanceSection({
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
           emptyMessage={
-            <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected Partner documents, withdrawal bank accounts, KYC, or legacy tax profiles." />
+            <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected KYC, document, service profile, public media, or finance follow-up items." />
           }
           headers={resubmissionGuidanceHeaders}
           rowCount={plan.items.length}
@@ -345,7 +345,7 @@ export function PartnerDetailReviewHistorySection({
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Partner, KYC, document, bank, and tax review decisions are shown here for handoff and audit."
+      description="Partner approval, KYC, document, service profile, public media, finance follow-up, and hold decisions are shown here for handoff and audit."
       id="partner-review-history"
       resultLabel={`${totalCount} recent event(s)`}
       title="Review history"

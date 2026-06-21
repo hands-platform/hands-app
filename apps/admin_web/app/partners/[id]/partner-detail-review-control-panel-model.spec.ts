@@ -49,6 +49,13 @@ describe('partner detail review control panel model', () => {
       status: 'READY',
       tone: 'pill-success',
     });
+    expect(panel.items.find((item) => item.id === 'approval-decision')?.detail).toContain(
+      'service profile',
+    );
+    expect(panel.items.find((item) => item.id === 'approval-decision')?.detail).not.toContain('bank');
+    expect(panel.items.find((item) => item.id === 'approval-decision')?.detail).not.toContain('tax');
+    expect(panel.items.find((item) => item.id === 'resubmission-needs')?.detail).not.toContain('bank');
+    expect(panel.items.find((item) => item.id === 'resubmission-needs')?.detail).not.toContain('tax');
   });
 
   it('prioritizes account hold and resubmission context for operator decisions', () => {
@@ -91,5 +98,6 @@ describe('partner detail review control panel model', () => {
       status: 'WARNING',
       tone: 'pill-warn',
     });
+    expect(panel.items.find((item) => item.id === 'booking-access-state')?.detail).not.toContain('bank');
   });
 });

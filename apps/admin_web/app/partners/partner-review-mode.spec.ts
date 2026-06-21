@@ -15,9 +15,9 @@ describe('partner review mode content', () => {
     expect(content?.detailFocus).not.toContain('bank');
     expect(content?.detailFocus).not.toContain('tax');
     expect(content?.steps.join(' ')).toContain('Partner app');
-    expect(content?.steps.join(' ')).toContain('withdrawal details');
-    expect(content?.steps.join(' ')).toContain('optional tax records');
-    expect(content?.steps.join(' ')).toContain('not Level 2 gates');
+    expect(content?.steps.join(' ')).toContain('service profile');
+    expect(content?.steps.join(' ')).not.toContain('withdrawal details');
+    expect(content?.steps.join(' ')).not.toContain('tax');
   });
 
   it('explains unsettled partner wallet settlement risk', () => {
