@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBookingChatMessageRow = {
   readonly body: string;
@@ -34,21 +40,21 @@ export function PartnerDetailBookingChatRecordsSection({
   rows,
 }: PartnerDetailBookingChatRecordsSectionProps) {
   return (
-    <div className="card admin-mb-16" id="booking-chat-records">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking and chat records</h2>
-          <p className="muted">
-            Every matched booking should have a chat room. Completed service chats disappear from mobile
-            apps, but the admin archive remains visible here.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Every matched booking should have a chat room. Completed service chats disappear from mobile apps, but the admin archive remains visible here."
+      footer={
         <Link className="text-link" href={openBookingsHref}>
           Open bookings
         </Link>
-      </div>
+      }
+      id="booking-chat-records"
+      resultLabel={`${rows.length} record(s)`}
+      title="Booking and chat records"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <PartnerBookingChatEmptyState message="Clear the date filter or choose a wider range to review the archive." />
           }
@@ -122,7 +128,8 @@ export function PartnerDetailBookingChatRecordsSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
