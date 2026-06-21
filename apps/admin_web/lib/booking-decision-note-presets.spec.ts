@@ -45,7 +45,12 @@ describe('bookingDecisionNotePresets', () => {
 
     expect(presets).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: 'cash-debt-note', label: 'Cash' }),
+        expect.objectContaining({
+          id: 'cash-debt-note',
+          label: 'Cash',
+          preset:
+            'Cash settlement note: Partner cash-fee debt remains open; final acceptance, service start, and payout release should stay blocked until company deposit or admin offset is verified.',
+        }),
         expect.objectContaining({
           id: 'closeout-open-items-note',
           detail: 'Payment, Tax',

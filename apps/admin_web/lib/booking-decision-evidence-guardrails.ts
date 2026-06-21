@@ -150,7 +150,7 @@ export function bookingDecisionEvidenceGuardrails(
       id: 'finance-cash-debt',
       title: 'Finance: cash fee debt gate',
       scope:
-        'Cash bookings can create Partner fee debt; negative wallet blocks marketplace alerts, participation, and payout release.',
+        'Cash bookings can create Partner fee debt; negative wallet gates final acceptance, service start, and payout release.',
       status: input.cashFeeDebtNeedsSettlement
         ? 'Settlement required'
         : input.paymentMethod === 'CASH'

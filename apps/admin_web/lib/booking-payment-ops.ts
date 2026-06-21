@@ -95,7 +95,7 @@ export function bookingPaymentOutcomeCheckFlagsFromFacts(
     bookingCheckFlag(
       Boolean(input.cashDebtNeedsOps),
       'high',
-      'Cash fee debt blocks marketplace alerts',
+      'Cash fee debt gates final acceptance',
     ),
   ]);
 }

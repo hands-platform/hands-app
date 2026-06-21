@@ -28,7 +28,7 @@ describe('bookingMonitorCheckFlagsFromFacts', () => {
       }),
     ).toEqual([
       { severity: 'high', title: 'Completed closeout incomplete' },
-      { severity: 'high', title: 'Cash fee debt blocks marketplace alerts' },
+      { severity: 'high', title: 'Cash fee debt gates final acceptance' },
       { severity: 'high', title: 'Price missing' },
       { severity: 'high', title: 'Matching window expired' },
       { severity: 'medium', title: 'First-pick Partner pending' },

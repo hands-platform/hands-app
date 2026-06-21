@@ -23,7 +23,7 @@ describe('bookingNextActionOwnerFromFacts', () => {
   it.each([
     ['payment flag', { flagTitle: 'Payment reference missing' }],
     ['closeout flag', { flagTitle: 'Completed closeout incomplete' }],
-    ['cash flag', { flagTitle: 'Cash fee debt blocks marketplace alerts' }],
+    ['cash flag', { flagTitle: 'Cash fee debt gates final acceptance' }],
     ['payout flag', { flagTitle: 'Partner payout exceeds price' }],
     ['payment ops', { paymentNeedsOps: true }],
     ['closeout ops', { completedCloseoutNeedsOps: true }],

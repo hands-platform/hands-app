@@ -92,9 +92,12 @@ describe('bookingDecisionEvidenceGuardrails', () => {
 
     expect(rows[5]).toMatchObject({
       id: 'finance-cash-debt',
+      scope:
+        'Cash bookings can create Partner fee debt; negative wallet gates final acceptance, service start, and payout release.',
       status: 'Settlement required',
       tone: 'pill-danger',
       evidence: '80.000 VND HANDS fee / 20.000 VND withholding / -80.000 VND Partner wallet',
+      nextStep: 'Record verified company deposit or approved admin offset before clearing the block.',
       href: '/cash-settlements',
     });
   });

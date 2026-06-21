@@ -80,7 +80,7 @@ describe('booking payment operations helpers', () => {
     ).toEqual([
       { severity: 'high', title: 'Completed service still on hold' },
       { severity: 'high', title: 'Completed closeout incomplete' },
-      { severity: 'high', title: 'Cash fee debt blocks marketplace alerts' },
+      { severity: 'high', title: 'Cash fee debt gates final acceptance' },
     ]);
   });
 
