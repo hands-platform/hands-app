@@ -66,6 +66,11 @@ describe('policy impact dashboard builder', () => {
           policy: 'First-pick response timer',
           savedValue: '5 min (1)',
         }),
+        expect.objectContaining({
+          operatorMeaning:
+            'Controls whether stale partner locations are excluded from distance-sensitive marketplace matching and dispatch checks.',
+          policy: 'Marketplace location freshness',
+        }),
       ]),
     );
     expect(dashboard.cards).toEqual(

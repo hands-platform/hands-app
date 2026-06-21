@@ -33,7 +33,11 @@ describe('policy enforcement trace', () => {
       title: '15 km marketplace alert policy',
       server: 'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
     });
-    expect(trace[2].title).toBe('45 minute location freshness');
+    expect(trace[2]).toMatchObject({
+      title: '45 minute location freshness',
+      detail:
+        'Partners with stale or missing last location are flagged before distance-sensitive marketplace matching and shown as dispatch checks.',
+    });
     expect(trace[3].title).toBe('Customer final selection policy conflict');
     expect(trace[4].title).toBe('Legacy delayed value normalized to immediate marketplace');
     expect(trace[5]).toMatchObject({

@@ -269,7 +269,7 @@ function buildSnapshotRows(
         (value) => `${value} min`,
       ),
       operatorMeaning:
-        'Controls whether stale partner locations are excluded from marketplace alerts and participation attempts.',
+        'Controls whether stale partner locations are excluded from distance-sensitive marketplace matching and dispatch checks.',
     },
     {
       policy: 'Partner accept mode',

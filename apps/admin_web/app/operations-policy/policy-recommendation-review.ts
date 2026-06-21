@@ -294,7 +294,7 @@ function marketplaceLocationFreshnessPosture(
     status: looser ? 'Allows older locations' : 'Stricter freshness',
     detail: looser
       ? 'Marketplace alerts may reach partners whose last known location is no longer reliable.'
-      : 'Only recently refreshed partner locations are eligible for marketplace alerts and participation.',
+      : 'Only recently refreshed partner locations are eligible for distance-sensitive marketplace matching.',
     operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
     alignedAction:
       'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',

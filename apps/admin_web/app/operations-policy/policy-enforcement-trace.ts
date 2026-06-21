@@ -131,7 +131,7 @@ function buildLocationGateTraceItem(
     scope: 'Location gate',
     title: `${backupLocationFreshnessMinutes} minute location freshness`,
     detail:
-      'Partners with stale or missing last location are flagged before marketplace alerts, participation, and shown as dispatch checks.',
+      'Partners with stale or missing last location are flagged before distance-sensitive marketplace matching and shown as dispatch checks.',
     api: 'Partner location heartbeat and open-request list endpoints',
     server: 'Marketplace eligibility pipeline -> location freshness guard',
     verify:

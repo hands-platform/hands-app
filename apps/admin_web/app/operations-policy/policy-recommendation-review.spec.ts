@@ -93,6 +93,25 @@ describe('policy recommendation review builder', () => {
       ]),
     );
   });
+
+  it('describes location freshness as distance-sensitive marketplace matching readiness', () => {
+    const review = buildPolicyRecommendationReview(
+      [
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 10, {
+          recommendedValue: 30,
+          unit: 'minutes',
+        }),
+      ],
+      [booking('OPEN_MATCHING')],
+    );
+
+    expect(review.cards[0]).toMatchObject({
+      detail: expect.stringContaining(
+        'Only recently refreshed partner locations are eligible for distance-sensitive marketplace matching.',
+      ),
+    });
+    expect(review.cards[0]?.detail).not.toContain('marketplace alerts and participation');
+  });
 });
 
 function setting(
