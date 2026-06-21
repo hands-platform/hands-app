@@ -15,6 +15,36 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
 
+type ParsedProviderLocationPayload =
+  | { ok: true; bookingId?: string; lat: number; lng: number }
+  | { ok: false; error: 'INVALID_LOCATION_PAYLOAD' };
+
+function parseProviderLocationPayload(payload: {
+  bookingId?: unknown;
+  lat?: unknown;
+  lng?: unknown;
+}): ParsedProviderLocationPayload {
+  const lat = Number(payload?.lat);
+  const lng = Number(payload?.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
+  }
+  if (payload.bookingId !== undefined && typeof payload.bookingId !== 'string') {
+    return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
+  }
+
+  const bookingId = payload.bookingId?.trim();
+  if (payload.bookingId !== undefined && !bookingId) {
+    return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
+  }
+
+  return { ok: true, bookingId, lat, lng };
+}
+
 @WebSocketGateway({ cors: { origin: corsOriginFromEnv(), credentials: true } })
 export class LocationsGateway implements OnGatewayConnection {
   constructor(
@@ -45,26 +75,37 @@ export class LocationsGateway implements OnGatewayConnection {
       return { ok: false, error: 'PROVIDER_ROLE_REQUIRED' };
     }
 
+    const parsedPayload = parseProviderLocationPayload(payload);
+    if (!parsedPayload.ok) {
+      return parsedPayload;
+    }
+
     const provider = await this.prisma.providerProfile.findUnique({ where: { userId: user.id } });
     if (!provider) {
       return { ok: false, error: 'PROVIDER_PROFILE_NOT_FOUND' };
     }
 
-    await this.redisState.setProviderLocation(provider.id, { lat: payload.lat, lng: payload.lng });
-
-    if (payload.bookingId) {
+    if (parsedPayload.bookingId) {
       const booking = await this.prisma.booking.findFirst({
-        where: { id: payload.bookingId, selectedProviderId: provider.id },
+        where: { id: parsedPayload.bookingId, selectedProviderId: provider.id },
         select: { id: true },
       });
       if (!booking) {
         return { ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' };
       }
-      this.server.to(SOCKET_ROOMS.booking(payload.bookingId)).emit('provider.location.updated', {
-        bookingId: payload.bookingId,
+    }
+
+    await this.redisState.setProviderLocation(provider.id, {
+      lat: parsedPayload.lat,
+      lng: parsedPayload.lng,
+    });
+
+    if (parsedPayload.bookingId) {
+      this.server.to(SOCKET_ROOMS.booking(parsedPayload.bookingId)).emit('provider.location.updated', {
+        bookingId: parsedPayload.bookingId,
         providerProfileId: provider.id,
-        lat: payload.lat,
-        lng: payload.lng,
+        lat: parsedPayload.lat,
+        lng: parsedPayload.lng,
         recordedAt: new Date().toISOString(),
       });
     }

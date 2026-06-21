@@ -1,0 +1,88 @@
+import { Role } from '@prisma/client';
+
+import { SOCKET_ROOMS } from '../common/domain';
+import { LocationsGateway } from './locations.gateway';
+
+describe('LocationsGateway provider location updates', () => {
+  function createGateway() {
+    const redisState = {
+      setProviderLocation: jest.fn().mockResolvedValue(undefined),
+    };
+    const socketAuth = {
+      requireUser: jest.fn().mockReturnValue({ id: 'provider-user-1', roles: [Role.PROVIDER] }),
+      authenticate: jest.fn(),
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+      },
+    };
+    const emit = jest.fn();
+    const to = jest.fn().mockReturnValue({ emit });
+    const gateway = new LocationsGateway(redisState as never, socketAuth as never, prisma as never);
+    gateway.server = { to } as never;
+
+    return { gateway, redisState, socketAuth, prisma, emit, to };
+  }
+
+  it('rejects invalid coordinates before writing provider location state', async () => {
+    const { gateway, redisState, prisma } = createGateway();
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      lat: Number.NaN,
+      lng: 106.7009,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'INVALID_LOCATION_PAYLOAD' });
+    expect(prisma.providerProfile.findUnique).not.toHaveBeenCalled();
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+  });
+
+  it('does not write provider location state for forbidden booking-specific updates', async () => {
+    const { gateway, redisState, prisma, emit } = createGateway();
+    prisma.booking.findFirst.mockResolvedValue(null);
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'booking-for-another-provider',
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' });
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
+      where: { id: 'booking-for-another-provider', selectedProviderId: 'provider-profile-1' },
+      select: { id: true },
+    });
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('writes and broadcasts normalized coordinates for authorized booking updates', async () => {
+    const { gateway, redisState, emit, to } = createGateway();
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'booking-1',
+      lat: '10.7769' as never,
+      lng: '106.7009' as never,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(redisState.setProviderLocation).toHaveBeenCalledWith('provider-profile-1', {
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+    expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
+    expect(emit).toHaveBeenCalledWith(
+      'provider.location.updated',
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        providerProfileId: 'provider-profile-1',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    );
+  });
+});
