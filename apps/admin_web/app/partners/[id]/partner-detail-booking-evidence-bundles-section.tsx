@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBookingEvidenceRow = {
   readonly bookingLabel: string;
@@ -42,20 +48,20 @@ export function PartnerDetailBookingEvidenceBundlesSection({
   statusPillClass,
 }: PartnerDetailBookingEvidenceBundlesSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-booking-evidence-bundles">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner booking evidence bundles</h2>
-          <p className="muted">
-            Booking-by-booking partner work bundle for operators. Each row connects the partner role,
-            customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and
-            staff task records as factual history only.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} booking bundle(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Booking-by-booking partner work bundle for operators. Each row connects the partner role, customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and staff task records as factual history only."
+      id="partner-booking-evidence-bundles"
+      resultLabel={`${rows.length} booking bundle(s)`}
+      title="Partner booking evidence bundles"
+    >
       <AdminTableScroll>
-        <AdminDataTable emptyMessage={null} headers={PARTNER_BOOKING_EVIDENCE_HEADERS} rowCount={rows.length}>
+        <AdminDataTable
+          className={partnerDetailReviewTableClassName}
+          emptyMessage={null}
+          headers={PARTNER_BOOKING_EVIDENCE_HEADERS}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
             <tr key={`${row.id}-${row.relation}`}>
               <td>
@@ -102,11 +108,12 @@ export function PartnerDetailBookingEvidenceBundlesSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       {rows.length === 0 ? (
         <p className="muted admin-mt-12">
           No partner booking bundle matched this date filter.
         </p>
       ) : null}
-    </div>
+    </AdminFilterPanel>
   );
 }

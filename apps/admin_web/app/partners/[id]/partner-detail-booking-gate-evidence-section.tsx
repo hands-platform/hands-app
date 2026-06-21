@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBookingGateAttemptRow = {
   readonly addressLabel: string;
@@ -31,19 +37,18 @@ export function PartnerDetailBookingGateEvidenceSection({
   const visibleAttempts = filteredAttempts.slice(0, 12);
 
   return (
-    <div className="card admin-mb-16" id="partner-booking-create-gates">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner booking create gate evidence</h2>
-          <p className="muted">
-            Booking creation attempts where this Partner was the first-pick Partner. These rows show factual
-            address, distance, and GPS evidence before payment and matching.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Booking creation attempts where this Partner was the first-pick Partner. These rows show factual address, distance, and GPS evidence before payment and matching."
+      footer={
         <Link className="text-link" href="/bookings?view=blocked-create&gate=first-pick-distance">
           Open gate queue
         </Link>
-      </div>
+      }
+      id="partner-booking-create-gates"
+      resultLabel={`${visibleAttempts.length} attempt(s)`}
+      title="Partner booking create gate evidence"
+    >
       <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Loaded attempts</span>
@@ -63,6 +68,7 @@ export function PartnerDetailBookingGateEvidenceSection({
       </div>
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <PartnerBookingGateEvidenceEmptyState message="No first-pick booking create gate attempt matched this date filter." />
           }
@@ -103,7 +109,8 @@ export function PartnerDetailBookingGateEvidenceSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={visibleAttempts.length} />
+    </AdminFilterPanel>
   );
 }
 
