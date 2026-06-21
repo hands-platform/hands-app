@@ -98,7 +98,7 @@ export function bookingOperationalPolicySnapshot(
         label: 'Cash fee clearance',
         helper:
           String(cashSettlementClearancePolicy?.value) === 'DEPOSIT_REFERENCE_REQUIRED'
-            ? 'Cash fee debt clearance should include a company deposit reference before marketplace alerts and participation reopen.'
+            ? 'Cash fee debt clearance should include a company deposit reference before final acceptance, service start, or payout release.'
             : 'Cash fee debt can clear through verified company deposit or approved admin offset with evidence.',
         enforced: false,
       }),
