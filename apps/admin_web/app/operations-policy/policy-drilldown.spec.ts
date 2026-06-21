@@ -44,5 +44,11 @@ describe('buildPolicyDrilldown', () => {
       className: 'pill-danger',
       label: '-5.000 VND',
     });
+    expect(drilldown.lists[2].helper).toBe(
+      'Partners with negative recent wallet ledger entries that may hold final acceptance, service start, or payout release.',
+    );
+    expect(drilldown.lists[2].rows[0].operatorAction).toBe(
+      'Recent wallet entries are negative. Confirm settlement before final acceptance, service start, or payout release.',
+    );
   });
 });

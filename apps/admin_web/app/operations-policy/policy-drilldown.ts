@@ -42,7 +42,7 @@ export function buildPolicyDrilldown(
       key: 'wallet-gate',
       title: 'Wallet gate queue',
       helper:
-        'Partners with negative recent wallet ledger entries that may hold marketplace alerts, participation, or payout release.',
+        'Partners with negative recent wallet ledger entries that may hold final acceptance, service start, or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -129,6 +129,6 @@ function buildWalletGateRows(bookings: readonly AdminBooking[]): PolicyDrilldown
         { label: booking.status, className: 'pill-neutral' },
       ],
       operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before marketplace alerts, participation, or payout release.',
+        'Recent wallet entries are negative. Confirm settlement before final acceptance, service start, or payout release.',
     }));
 }
