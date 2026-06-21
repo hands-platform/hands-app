@@ -35,8 +35,10 @@ describe('PartnerMasterListSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
         'admin-table-scroll',
-        'table vuexy-data-table service-trace',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-table',
+        'vuexy-booking-table-footer vuexy-partner-table-footer',
         'pill pill-success',
         'table-link',
         'vuexy-booking-person',

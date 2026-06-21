@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
@@ -57,15 +57,16 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
   const headers = partnerMasterTableHeaders(mode);
 
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description={copy.description}
-        status={<span className="pill pill-info">{copy.statusLabel}</span>}
-        title={copy.title}
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card"
+      description={copy.description}
+      id={`partner-master-list-${mode}`}
+      resultLabel={copy.statusLabel}
+      title={copy.title}
+    >
       <AdminTableScroll>
         <AdminDataTable
-          className="service-trace"
+          className="vuexy-booking-table vuexy-partner-table"
           emptyMessage={<PartnerMasterEmptyState />}
           headers={headers}
           rowCount={rows.length}
@@ -73,7 +74,10 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
           {rows.map((row) => renderPartnerMasterRow(row, mode))}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <span>{partnerMasterListFooterLabel(rows.length)}</span>
+      </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -125,6 +129,11 @@ function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerM
       <td>{renderAccountCell(row)}</td>
     </tr>
   );
+}
+
+function partnerMasterListFooterLabel(rowCount: number) {
+  if (rowCount <= 0) return 'Showing 0 entries';
+  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function renderPartnerCell(row: PartnerMasterListSectionRow) {
