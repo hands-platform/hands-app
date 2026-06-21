@@ -31,6 +31,9 @@ export function nextPartnerListAction(
 ): ProviderListAction {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
+  const hasRejectedBankCorrection = (provider.bankAccounts ?? []).some(
+    (account) => account.status === 'REJECTED',
+  );
   const firstRevenueSignal = partnerHasFirstRevenueSignal(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationState = providerLocationStatus(provider, opsPolicy);
@@ -102,12 +105,17 @@ export function nextPartnerListAction(
     };
   }
   if (primaryBank && !hasApprovedBankAccount(provider)) {
+    const bankCorrectionResubmitted = primaryBank.status === 'PENDING_REVIEW' && hasRejectedBankCorrection;
     return {
       status: 'WITHDRAWAL BANK',
-      detail: `Submitted bank account is ${primaryBank.status}.`,
-      operatorAction: 'Approve or reject bank details when the Partner requests wallet withdrawal.',
+      detail: bankCorrectionResubmitted
+        ? 'Corrected bank details are pending admin review.'
+        : `Submitted bank account is ${primaryBank.status}.`,
+      operatorAction: bankCorrectionResubmitted
+        ? 'Compare the resubmitted wallet bank details with the requested correction before manual withdrawal/deposit processing.'
+        : 'Approve or reject bank details when the Partner requests wallet withdrawal.',
       tone: 'pending',
-      priority: primaryBank?.status === 'REJECTED' ? 82 : 80,
+      priority: bankCorrectionResubmitted ? 83 : primaryBank?.status === 'REJECTED' ? 82 : 80,
     };
   }
   if (firstRevenueSignal && provider.taxProfile && provider.taxProfile.status !== 'APPROVED') {

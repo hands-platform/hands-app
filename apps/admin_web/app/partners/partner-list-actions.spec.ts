@@ -78,7 +78,39 @@ describe('partner list actions', () => {
     expect(action.operatorAction).toContain('final acceptance');
   });
 
-  it('asks for tax review after first earning before payout readiness', () => {
+  it('prioritizes resubmitted wallet bank details for admin review', () => {
+    const action = nextPartnerListAction(
+      partner({
+        bankAccounts: [
+          {
+            id: 'bank-resubmitted',
+            bankName: 'VCB',
+            accountHolderName: 'Nguyen Thi Linh',
+            status: 'PENDING_REVIEW',
+            isPrimary: true,
+          },
+          {
+            id: 'bank-rejected',
+            bankName: 'VCB',
+            accountHolderName: 'Nguyen Thi Linh',
+            isPrimary: false,
+            rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
+            status: 'REJECTED',
+          },
+        ],
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+    );
+
+    expect(action.status).toBe('WITHDRAWAL BANK');
+    expect(action.detail).toBe('Corrected bank details are pending admin review.');
+    expect(action.operatorAction).toBe(
+      'Compare the resubmitted wallet bank details with the requested correction before manual withdrawal/deposit processing.',
+    );
+    expect(action.priority).toBe(83);
+  });
+
+  it('keeps legacy tax review as a non-blocking finance follow-up', () => {
     const action = nextPartnerListAction(
       partner({
         taxProfile: {
@@ -105,9 +137,9 @@ describe('partner list actions', () => {
       DEFAULT_PROVIDER_OPS_POLICY,
     );
 
-    expect(action.status).toBe('TAX');
-    expect(action.detail).toContain('first earning');
-    expect(action.tone).toBe('blocked');
+    expect(action.status).toBe('LEGACY TAX');
+    expect(action.operatorAction).toContain('do not block withdrawal');
+    expect(action.tone).toBe('pending');
   });
 
   it('returns a location action when location is not recent and core onboarding is clear', () => {

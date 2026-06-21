@@ -128,6 +128,48 @@ describe('PartnerOnboardingCell', () => {
     expect(rendered).toContain('KYC approval unlocks after CCCD front, CCCD back, and selfie documents are approved.');
     expect(rendered).toContain('Review KYC');
   });
+
+  it('highlights a resubmitted wallet bank correction for admin review', () => {
+    const cell = PartnerOnboardingCell({
+      bankActions: bankActions,
+      documentActions: documentActions,
+      kycActions: kycActions,
+      partnerName: 'Linh Wellness',
+      provider: {
+        bankAccounts: [
+          {
+            accountHolderName: 'Linh Nguyen',
+            accountNumberMasked: '****5678',
+            bankName: 'Vietcombank',
+            id: 'bank-resubmitted',
+            isPrimary: true,
+            status: 'PENDING_REVIEW',
+          },
+          {
+            accountHolderName: 'Linh Nguyen',
+            accountNumberMasked: '****1234',
+            bankName: 'Vietcombank',
+            id: 'bank-rejected',
+            rejectionReason: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
+            status: 'REJECTED',
+          },
+        ],
+        displayName: 'Linh Wellness',
+        id: 'partner-bank-resubmitted',
+        kyc: { status: 'APPROVED' },
+        legalName: 'Nguyen Thi Linh',
+        status: 'ONLINE_AVAILABLE',
+      } as AdminProvider,
+      taxActions: taxActions,
+    });
+
+    const rendered = normalizedText(cell);
+
+    expect(rendered).toContain('Bank correction resubmitted');
+    expect(rendered).toContain('Previous issue: 입금 정보가 정확하지 않아 입금이 되지 않습니다');
+    expect(rendered).toContain('Vietcombank / ****5678 / Linh Nguyen');
+    expect(rendered).toContain('Review bank');
+  });
 });
 
 function documentActions(

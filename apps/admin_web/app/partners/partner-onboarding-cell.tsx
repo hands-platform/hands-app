@@ -50,6 +50,8 @@ export function PartnerOnboardingCell({
   taxActions,
 }: PartnerOnboardingCellProps) {
   const primaryBank = provider.bankAccounts?.[0];
+  const rejectedBankReason = latestRejectedBankReason(provider);
+  const bankCorrectionResubmitted = primaryBank?.status === 'PENDING_REVIEW' && Boolean(rejectedBankReason);
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
   const documents = provider.documents ?? [];
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
@@ -95,6 +97,16 @@ export function PartnerOnboardingCell({
           {marketplaceDisplayText(primaryBank.bankName)} / {primaryBank.accountNumberMasked ?? 'no account'} /{' '}
           {marketplaceDisplayText(primaryBank.accountHolderName)}
         </p>
+      ) : null}
+      {bankCorrectionResubmitted ? (
+        <div className="admin-mb-8">
+          <p className="muted admin-mb-4">
+            Bank correction resubmitted
+          </p>
+          <p className="muted admin-mb-0">
+            Previous issue: {marketplaceDisplayText(rejectedBankReason)}
+          </p>
+        </div>
       ) : null}
       {provider.taxProfile ? (
         <p className="muted admin-mb-8">
@@ -167,4 +179,11 @@ export function PartnerOnboardingCell({
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
+}
+
+function latestRejectedBankReason(provider: AdminProvider) {
+  const rejectedBank = (provider.bankAccounts ?? []).find(
+    (account) => account.status === 'REJECTED' && account.rejectionReason?.trim(),
+  );
+  return rejectedBank?.rejectionReason?.trim() ?? null;
 }
