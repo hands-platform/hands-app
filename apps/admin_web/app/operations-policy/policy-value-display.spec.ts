@@ -30,6 +30,24 @@ describe('policy value display helpers', () => {
     expect(policyDisplayValue(setting, true)).toBe('First accepted auto match');
   });
 
+  it('shows saved wallet gate values as final gate controls', () => {
+    const setting = {
+      key: 'wallet.negative_balance_gate',
+      value: 'BLOCK_MARKETPLACE_PARTICIPATION',
+      recommendedValue: 'BLOCK_MARKETPLACE_PARTICIPATION',
+      options: [
+        {
+          label: 'Block Marketplace Participation',
+          tradeoff: 'Historical copy from the old marketplace blocking policy.',
+          value: 'BLOCK_MARKETPLACE_PARTICIPATION',
+        },
+      ],
+    } as AdminOperationalPolicySetting;
+
+    expect(policyDisplayValue(setting)).toBe('Final Gate Hold');
+    expect(policyDisplayValue(setting, true)).toBe('Final Gate Hold');
+  });
+
   it('reads display values by canonical or legacy policy key', () => {
     const settings = [
       {

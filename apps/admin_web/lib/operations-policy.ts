@@ -419,6 +419,11 @@ export function operationalPolicyHref(key: string) {
 }
 
 export function humanizePolicyValue(value: string) {
+  const labelOverride = ADMIN_POLICY_VALUE_LABEL_OVERRIDES[value];
+  if (labelOverride) {
+    return labelOverride;
+  }
+
   return value
     .toLowerCase()
     .split('_')
@@ -426,6 +431,10 @@ export function humanizePolicyValue(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+const ADMIN_POLICY_VALUE_LABEL_OVERRIDES: Record<string, string> = {
+  [ADMIN_WALLET_BLOCK_FINAL_GATE]: 'Final Gate Hold',
+};
 
 function readOptionalNumber(value: unknown) {
   if (value === null || value === undefined || value === '') {

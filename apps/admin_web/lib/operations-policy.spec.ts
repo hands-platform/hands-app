@@ -97,7 +97,7 @@ describe('admin live operations policy helpers', () => {
     expect(formatPolicyDistance(10000)).toBe('10km');
     expect(formatPolicyDistance(1500)).toBe('1.5km');
     expect(formatPolicyDistance(900)).toBe('900m');
-    expect(humanizePolicyValue('BLOCK_MARKETPLACE_PARTICIPATION')).toBe('Block Marketplace Participation');
+    expect(humanizePolicyValue('BLOCK_MARKETPLACE_PARTICIPATION')).toBe('Final Gate Hold');
   });
 
   it('does not return blank policy strings', () => {

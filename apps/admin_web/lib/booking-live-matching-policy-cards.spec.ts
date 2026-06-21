@@ -36,7 +36,7 @@ describe('buildBookingLiveMatchingPolicyCards', () => {
       ['Marketplace radius', '8.5km'],
       ['Location freshness', '12m'],
       ['Invitation cap', '25'],
-      ['Wallet gate', 'Block Marketplace Participation'],
+      ['Wallet gate', 'Final Gate Hold'],
     ]);
     expect(cards[5].helper).toContain('Negative Partner wallet blocks final acceptance');
   });
