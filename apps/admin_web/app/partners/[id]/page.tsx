@@ -196,11 +196,13 @@ import {
   PartnerDetailBasicProfileCard,
   PartnerDetailLocationActivityCard,
   PartnerDetailRecentPayoutRecordsCard,
-  type PartnerAgreementBadge,
-  type PartnerDetailInfoLine,
-  type PartnerLocationSnapshotBadge,
-  type PartnerRecentPayoutRecordLine,
 } from './partner-detail-profile-finance-summary-section';
+import {
+  buildPartnerAgreementBadges,
+  buildPartnerBasicProfileRows,
+  buildPartnerLocationSnapshotBadges,
+  buildPartnerRecentPayoutRecordLines,
+} from './partner-detail-profile-finance-summary-model';
 import {
   PartnerDetailKycDecisionSection,
   type PartnerKycDecisionEvidence,
@@ -263,10 +265,7 @@ import {
   formatBytes,
   formatCurrency,
   formatDate,
-  formatDateOnly,
   formatDistance,
-  formatJsonList,
-  formatJsonSummary,
   jsonStringList,
   locationAgeLabel,
   locationAgeMinutes,
@@ -4992,61 +4991,6 @@ function buildPartnerAccountControlRows(provider: ProviderDetail): PartnerAccoun
     status: sanction.status,
     timeline: `Started ${formatDate(sanction.startsAt)} / expires ${formatDate(sanction.expiresAt)}`,
     type: sanction.type,
-  }));
-}
-
-function buildPartnerBasicProfileRows(provider: ProviderDetail): PartnerDetailInfoLine[] {
-  return [
-    { label: 'Display name', value: provider.displayName },
-    { label: 'Legal name', value: provider.legalName },
-    { label: 'Activity nickname', value: provider.activityNickname },
-    {
-      label: 'Experience',
-      value:
-        provider.experienceYears === null || provider.experienceYears === undefined
-          ? null
-          : `${provider.experienceYears} year(s)`,
-    },
-    { label: 'Specialties', value: formatJsonList(provider.specialties) },
-    { label: 'Languages', value: formatJsonList(provider.languages) },
-    { label: 'Service style', value: provider.serviceStyle },
-    { label: 'Date of birth', value: formatDateOnly(provider.dateOfBirth) },
-    { label: 'Gender', value: provider.gender },
-    { label: 'Phone', value: provider.user?.phone },
-    { label: 'Facebook', value: provider.facebookId },
-    { label: 'Address', value: provider.residentialAddress },
-    { label: 'Service city', value: provider.city },
-    { label: 'Service area', value: formatJsonSummary(provider.serviceArea) },
-    { label: 'Feedback records', value: `${provider.reviewCount ?? 0} record(s) saved` },
-    { label: 'Next available', value: formatDate(provider.nextAvailableAt) },
-    { label: 'Profile review completed at', value: formatDate(provider.trustedAt) },
-    { label: 'User name', value: provider.user?.fullName },
-    { label: 'Supabase user', value: provider.user?.supabaseUserId },
-  ];
-}
-
-function buildPartnerAgreementBadges(provider: ProviderDetail): PartnerAgreementBadge[] {
-  return (provider.agreements ?? []).map((agreement) => ({
-    id: agreement.id,
-    label: `${agreement.type} v${agreement.version}`,
-  }));
-}
-
-function buildPartnerRecentPayoutRecordLines(provider: ProviderDetail): PartnerRecentPayoutRecordLine[] {
-  return (provider.earnings ?? []).slice(0, 3).map((earning) => ({
-    id: earning.id,
-    label: `${earning.status}: gross ${formatCurrency(earning.grossAmount)} / withholding ${formatCurrency(
-      earning.withholdingAmount,
-    )} / net ${formatCurrency(earning.netAmount)}${
-      earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''
-    }`,
-  }));
-}
-
-function buildPartnerLocationSnapshotBadges(provider: ProviderDetail): PartnerLocationSnapshotBadge[] {
-  return (provider.locationSnapshots ?? []).slice(0, 5).map((snapshot) => ({
-    id: snapshot.id,
-    label: formatDate(snapshot.recordedAt),
   }));
 }
 
