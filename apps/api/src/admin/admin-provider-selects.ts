@@ -346,6 +346,15 @@ export const adminProviderSessionSummarySelect = {
   suspiciousReason: true,
 } satisfies Prisma.ProviderSessionSelect;
 
+export const adminProviderListSessionSelect = {
+  id: true,
+  deviceId: true,
+  ipAddress: true,
+  loggedInAt: true,
+  lastSeenAt: true,
+  suspicious: true,
+} satisfies Prisma.ProviderSessionSelect;
+
 export const adminProviderDeviceSummarySelect = {
   id: true,
   deviceId: true,
@@ -355,6 +364,17 @@ export const adminProviderDeviceSummarySelect = {
   lastSeenAt: true,
   blockedAt: true,
   blockReason: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderDeviceSelect;
+
+export const adminProviderListDeviceSelect = {
+  id: true,
+  deviceId: true,
+  platform: true,
+  enabled: true,
+  lastSeenAt: true,
+  blockedAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ProviderDeviceSelect;

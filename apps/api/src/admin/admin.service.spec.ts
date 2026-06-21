@@ -564,6 +564,24 @@ describe('AdminService query orchestration', () => {
       uploadedAt: true,
       sizeBytes: true,
     });
+    expect(select.sessions.select).toEqual({
+      id: true,
+      deviceId: true,
+      ipAddress: true,
+      loggedInAt: true,
+      lastSeenAt: true,
+      suspicious: true,
+    });
+    expect(select.devices.select).toEqual({
+      id: true,
+      deviceId: true,
+      platform: true,
+      enabled: true,
+      lastSeenAt: true,
+      blockedAt: true,
+      createdAt: true,
+      updatedAt: true,
+    });
   });
 
   it('adds server-computed activity summaries to customer list rows', async () => {

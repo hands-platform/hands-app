@@ -15,8 +15,10 @@ import {
   adminProviderListPublicMediaSelect,
   adminProviderListBankAccountSelect,
   adminProviderListDocumentSelect,
+  adminProviderListDeviceSelect,
   adminProviderListReportSelect,
   adminProviderListSanctionSelect,
+  adminProviderListSessionSelect,
   adminProviderListVerificationSelect,
   adminProviderOverviewUserSelect,
   adminProviderPushDeviceReachabilityOrder,
@@ -199,12 +201,12 @@ export const adminProviderListSelect = {
   sessions: {
     orderBy: { lastSeenAt: 'desc' },
     take: 3,
-    select: adminProviderSessionSummarySelect,
+    select: adminProviderListSessionSelect,
   },
   devices: {
     orderBy: { lastSeenAt: 'desc' },
     take: 3,
-    select: adminProviderDeviceSummarySelect,
+    select: adminProviderListDeviceSelect,
   },
 } satisfies Prisma.ProviderProfileSelect;
 
