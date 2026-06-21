@@ -1,5 +1,7 @@
 import {
+  buildPartnerListHref,
   buildProviderFilters,
+  paginatePartnerRows,
   partnerHasAdvancedOperationalFilters,
   partnerReviewFilterLabel,
   providerFilterDescription,
@@ -11,6 +13,43 @@ describe('partner filters', () => {
     const filters = buildProviderFilters({});
 
     expect(partnerHasAdvancedOperationalFilters(filters)).toBe(false);
+    expect(filters.page).toBe(1);
+    expect(filters.pageSize).toBe(10);
+  });
+
+  it('normalizes partner pagination params and builds page hrefs', () => {
+    const filters = buildProviderFilters({
+      page: '2',
+      pageSize: '25',
+      providerStatus: 'ONLINE_AVAILABLE',
+      review: 'unapproved',
+      sort: 'wallet-debt',
+    });
+
+    expect(filters.page).toBe(2);
+    expect(filters.pageSize).toBe(25);
+    expect(buildPartnerListHref(filters, { page: 3 })).toBe(
+      '/partners?providerStatus=ONLINE_AVAILABLE&review=unapproved&sort=wallet-debt&pageSize=25&page=3',
+    );
+    expect(buildPartnerListHref(filters, { review: 'unsettled' })).toBe(
+      '/partners?providerStatus=ONLINE_AVAILABLE&review=unsettled&sort=wallet-debt&pageSize=25',
+    );
+  });
+
+  it('paginates partner rows with safe bounds', () => {
+    const rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'];
+    const filters = { ...buildProviderFilters({ page: '2' }), pageSize: 10 };
+
+    expect(paginatePartnerRows(rows, filters)).toMatchObject({
+      from: 11,
+      page: 2,
+      pageSize: 10,
+      rows: ['k', 'l'],
+      to: 12,
+      totalPages: 2,
+      totalRows: 12,
+    });
+    expect(paginatePartnerRows(rows, { ...filters, page: 99 }).page).toBe(2);
   });
 
   it.each<keyof ProviderFilters>(['location', 'security', 'bookingFlow', 'review'])(

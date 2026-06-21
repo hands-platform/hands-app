@@ -14,6 +14,8 @@ import {
 const now = new Date();
 
 const emptyFilters: ProviderFilters = {
+  page: 1,
+  pageSize: 10,
   q: '',
   verification: '',
   providerStatus: '',

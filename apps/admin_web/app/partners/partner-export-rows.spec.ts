@@ -108,6 +108,8 @@ function filters(input: Partial<ProviderFilters> = {}): ProviderFilters {
     bookingFlow: '',
     kyc: '',
     location: '',
+    page: 1,
+    pageSize: 10,
     providerStatus: '',
     q: '',
     readiness: '',

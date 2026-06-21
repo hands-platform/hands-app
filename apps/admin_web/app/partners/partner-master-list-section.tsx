@@ -1,15 +1,22 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
+import { AdminRoundedPagination } from '../../components/admin-rounded-pagination';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { formatDate, providerLocationAgeLabel, providerLocationLabel } from './partner-list-ops';
+import {
+  buildPartnerListHref,
+  type PartnerPagination,
+  type ProviderFilters,
+} from './partner-filters';
 import type { PartnerMasterRow } from './partner-master-row';
 
 export type PartnerMasterListSectionRow = PartnerMasterRow;
 
 type PartnerMasterListSectionProps = {
+  readonly filters: ProviderFilters;
   readonly mode?: PartnerMasterListSectionMode;
-  readonly rows: readonly PartnerMasterListSectionRow[];
+  readonly pagination: PartnerPagination<PartnerMasterListSectionRow>;
 };
 
 type PartnerMasterListSectionMode = 'default' | 'unapproved' | 'unsettled';
@@ -52,8 +59,9 @@ const UNSETTLED_PARTNER_MASTER_TABLE_HEADERS = [
   'Account',
 ] as const;
 
-export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMasterListSectionProps) {
-  const copy = buildPartnerMasterListSectionCopy(mode, rows.length);
+export function PartnerMasterListSection({ filters, mode = 'default', pagination }: PartnerMasterListSectionProps) {
+  const rows = pagination.rows;
+  const copy = buildPartnerMasterListSectionCopy(mode, pagination.totalRows);
   const headers = partnerMasterTableHeaders(mode);
 
   return (
@@ -75,7 +83,15 @@ export function PartnerMasterListSection({ mode = 'default', rows }: PartnerMast
         </AdminDataTable>
       </AdminTableScroll>
       <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
-        <span>{partnerMasterListFooterLabel(rows.length)}</span>
+        <span>{partnerMasterListFooterLabel(pagination)}</span>
+        <AdminRoundedPagination
+          activePage={pagination.page}
+          ariaLabel={`${copy.title} pages`}
+          className="vuexy-booking-pagination"
+          hrefForPage={(page) => buildPartnerListHref(filters, { page })}
+          pageLinkClassName="vuexy-booking-page-link"
+          totalPages={pagination.totalPages}
+        />
       </div>
     </AdminFilterPanel>
   );
@@ -131,9 +147,9 @@ function renderPartnerMasterRow(row: PartnerMasterListSectionRow, mode: PartnerM
   );
 }
 
-function partnerMasterListFooterLabel(rowCount: number) {
-  if (rowCount <= 0) return 'Showing 0 entries';
-  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
+function partnerMasterListFooterLabel(pagination: PartnerPagination<unknown>) {
+  if (pagination.totalRows <= 0) return 'Showing 0 entries';
+  return `Showing ${pagination.from} to ${pagination.to} of ${pagination.totalRows} entries`;
 }
 
 function renderPartnerCell(row: PartnerMasterListSectionRow) {

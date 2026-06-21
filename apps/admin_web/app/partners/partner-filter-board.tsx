@@ -8,7 +8,7 @@ import {
 } from '../../components/admin-form-controls';
 import { AdminFilterPanel } from '../../components/admin-filter-panel';
 
-import { partnerSortLabel, type ProviderFilters } from './partner-filters';
+import { buildPartnerListHref, partnerSortLabel, type ProviderFilters } from './partner-filters';
 
 type PartnerFilterBoardActiveFilter = {
   readonly description: string;
@@ -110,7 +110,7 @@ export function PartnerFilterBoard({
               <a
                 aria-current={filters.sort === option.value ? 'page' : undefined}
                 className={filters.sort === option.value ? 'is-active' : undefined}
-                href={buildPartnerFilterHref(filters, { sort: option.value })}
+                href={buildPartnerListHref(filters, { sort: option.value })}
                 key={option.value}
               >
                 {option.label}
@@ -256,31 +256,3 @@ const partnerReviewLaneFilterOptions = [
   { label: 'Marketplace ready', value: 'marketplace-ready' },
   { label: 'Dispatch repair', value: 'marketplace-blocked' },
 ] as const;
-
-function buildPartnerFilterHref(filters: ProviderFilters, updates: Partial<ProviderFilters>) {
-  const nextFilters = { ...filters, ...updates };
-  const params = new URLSearchParams();
-
-  partnerFilterHrefParamKeys.forEach((key) => {
-    const value = nextFilters[key];
-    if (value && !(key === 'sort' && value === 'ops-priority')) {
-      params.set(key, value);
-    }
-  });
-
-  const query = params.toString();
-  return query ? `/partners?${query}` : '/partners';
-}
-
-const partnerFilterHrefParamKeys = [
-  'q',
-  'verification',
-  'providerStatus',
-  'kyc',
-  'location',
-  'security',
-  'readiness',
-  'bookingFlow',
-  'review',
-  'sort',
-] as const satisfies readonly (keyof ProviderFilters)[];

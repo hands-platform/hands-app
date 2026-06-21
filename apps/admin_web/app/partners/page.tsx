@@ -10,6 +10,7 @@ import {
   buildProviderActiveFilters,
   buildProviderFilters,
   emptyProviderMessage,
+  paginatePartnerRows,
   partnerHasAdvancedOperationalFilters,
   partnerSortLabel,
 } from './partner-filters';
@@ -105,7 +106,6 @@ import {
   partnerReviewServerAction,
 } from './partner-server-actions';
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
-const PROVIDER_LIST_RENDER_LIMIT = 40;
 
 const PARTNER_LIST_QUERY_DEPS: PartnerListQueryDeps = {
   canAcceptBookingNow: partnerCanAcceptBookingNow,
@@ -125,7 +125,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const allProviders = sortProviders(rawProviders, opsPolicy, filters.sort, PARTNER_LIST_QUERY_DEPS);
   const providers = filterProviders(allProviders, filters, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
+  const providerPagination = paginatePartnerRows(providers, filters);
+  const visibleProviders = providerPagination.rows;
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const summary = buildProviderSummary(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const commandCenter = buildProviderCommandCenter(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
@@ -181,6 +182,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerMasterRows = visibleProviders.map((provider) =>
     buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
   );
+  const partnerMasterPagination = { ...providerPagination, rows: partnerMasterRows };
   const partnerListMode = partnerPrimaryListMode(filters.review);
   const partnerReviewContent = partnerReviewModeContent(filters.review);
   const partnerPageTitle = partnerReviewContent?.title ?? 'Partners';
@@ -310,7 +312,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
-      <PartnerMasterListSection mode={partnerMasterListMode} rows={partnerMasterRows} />
+      <PartnerMasterListSection
+        filters={filters}
+        mode={partnerMasterListMode}
+        pagination={partnerMasterPagination}
+      />
       {showPartnerOperationsList ? (
         <PartnerOperationsListSection
           directReadyCount={directReadyPartnerCount}

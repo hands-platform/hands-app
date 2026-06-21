@@ -1,5 +1,8 @@
 import { readSearchParam } from '../../lib/date-range';
 
+export const DEFAULT_PARTNER_PAGE_SIZE = 10;
+export const PARTNER_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
 export type ProviderSecurityState =
   | 'clear'
   | 'account-blocked'
@@ -9,6 +12,8 @@ export type ProviderSecurityState =
   | 'missing';
 
 export type ProviderFilters = {
+  page: number;
+  pageSize: number;
   q: string;
   verification: string;
   providerStatus: string;
@@ -25,6 +30,8 @@ export function buildProviderFilters(
   params: Record<string, string | string[] | undefined>,
 ): ProviderFilters {
   return {
+    page: readPageNumber(params.page),
+    pageSize: readPageSize(params.pageSize),
     q: readParam(params.q),
     verification: readParam(params.verification),
     providerStatus: readParam(params.providerStatus),
@@ -36,6 +43,62 @@ export function buildProviderFilters(
     review: normalizePartnerReviewFilter(readParam(params.review)),
     sort: readPartnerSort(readParam(params.sort)),
   };
+}
+
+export type PartnerPagination<T> = {
+  readonly from: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly rows: readonly T[];
+  readonly to: number;
+  readonly totalPages: number;
+  readonly totalRows: number;
+};
+
+export function paginatePartnerRows<T>(
+  rows: readonly T[],
+  filters: Pick<ProviderFilters, 'page' | 'pageSize'>,
+): PartnerPagination<T> {
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / filters.pageSize));
+  const page = Math.min(filters.page, totalPages);
+  const start = (page - 1) * filters.pageSize;
+  const paginatedRows = rows.slice(start, start + filters.pageSize);
+
+  return {
+    from: totalRows === 0 ? 0 : start + 1,
+    page,
+    pageSize: filters.pageSize,
+    rows: paginatedRows,
+    to: Math.min(start + filters.pageSize, totalRows),
+    totalPages,
+    totalRows,
+  };
+}
+
+export function buildPartnerListHref(filters: ProviderFilters, overrides: Partial<ProviderFilters> = {}) {
+  const next: ProviderFilters = {
+    ...filters,
+    ...overrides,
+    page: overrides.page ?? 1,
+  };
+  const params = new URLSearchParams();
+
+  partnerFilterHrefParamKeys.forEach((key) => {
+    const value = next[key];
+    if (value && !(key === 'sort' && value === 'ops-priority')) {
+      params.set(key, value);
+    }
+  });
+  if (next.pageSize !== DEFAULT_PARTNER_PAGE_SIZE) {
+    params.set('pageSize', String(next.pageSize));
+  }
+  if (next.page > 1) {
+    params.set('page', String(next.page));
+  }
+
+  const query = params.toString();
+  return query ? `/partners?${query}` : '/partners';
 }
 
 export function buildProviderActiveFilters(filters: ProviderFilters) {
@@ -314,6 +377,26 @@ function readParam(value: string | string[] | undefined) {
   return readSearchParam(value);
 }
 
+function readPageNumber(value: string | string[] | undefined) {
+  const parsed = readPositiveNumber(value);
+  return parsed && parsed > 0 ? parsed : 1;
+}
+
+function readPageSize(value: string | string[] | undefined) {
+  const parsed = readPositiveNumber(value);
+  return parsed && PARTNER_PAGE_SIZE_OPTIONS.includes(parsed as (typeof PARTNER_PAGE_SIZE_OPTIONS)[number])
+    ? parsed
+    : DEFAULT_PARTNER_PAGE_SIZE;
+}
+
+function readPositiveNumber(value: string | string[] | undefined) {
+  const raw = readSearchParam(value).replaceAll(',', '');
+  if (!raw) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return Math.floor(parsed);
+}
+
 function normalizePartnerReviewFilter(value: string) {
   if (value === 'backup-ready') return 'marketplace-ready';
   if (value === 'backup-blocked') return 'marketplace-blocked';
@@ -356,3 +439,16 @@ function readPartnerSort(value: string) {
     ? value
     : 'ops-priority';
 }
+
+const partnerFilterHrefParamKeys = [
+  'q',
+  'verification',
+  'providerStatus',
+  'kyc',
+  'location',
+  'security',
+  'readiness',
+  'bookingFlow',
+  'review',
+  'sort',
+] as const satisfies readonly (keyof ProviderFilters)[];

@@ -1,16 +1,18 @@
 import { PartnerMasterListSection, type PartnerMasterListSectionRow } from './partner-master-list-section';
+import { buildProviderFilters, type PartnerPagination, type ProviderFilters } from './partner-filters';
 
 describe('PartnerMasterListSection', () => {
   it('renders partner master rows with operations facts and detail links', () => {
     const section = PartnerMasterListSection({
-      rows: buildRows(),
+      filters: buildFilters({ review: 'unapproved' }),
+      pagination: pagination(buildRows(), { page: 1, totalRows: 12 }),
     });
 
     const rendered = normalizedText(section);
 
     expect(rendered).toContain('Partners');
     expect(rendered).toContain('Compact admin list for ID, profile, contact');
-    expect(rendered).toContain('1 visible row(s)');
+    expect(rendered).toContain('12 visible row(s)');
     expect(rendered).toContain('partner-1');
     expect(rendered).toContain('Linh Wellness');
     expect(rendered).toContain('Linh Legal | 0865907184 | partner-1');
@@ -32,13 +34,21 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('bank MISSING');
     expect(rendered).toContain('12 feedback record(s)');
     expect(rendered).toContain('Open');
-    expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
+    expect(rendered).toContain('Showing 1 to 10 of 12 entries');
+    expect(hrefsIn(section)).toEqual(
+      expect.arrayContaining([
+        '/partners/partner-1',
+        '/partners?review=unapproved',
+        '/partners?review=unapproved&page=2',
+      ]),
+    );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-table',
         'vuexy-booking-table-footer vuexy-partner-table-footer',
+        'vuexy-booking-pagination',
         'pill pill-success',
         'table-link',
         'vuexy-booking-person',
@@ -51,7 +61,8 @@ describe('PartnerMasterListSection', () => {
 
   it('renders an empty state when no partner rows are visible', () => {
     const section = PartnerMasterListSection({
-      rows: [],
+      filters: buildFilters(),
+      pagination: pagination([]),
     });
 
     const rendered = normalizedText(section);
@@ -63,8 +74,9 @@ describe('PartnerMasterListSection', () => {
 
   it('renders approval-focused copy for unapproved partners', () => {
     const section = PartnerMasterListSection({
+      filters: buildFilters({ review: 'unapproved' }),
       mode: 'unapproved',
-      rows: buildRows(),
+      pagination: pagination(buildRows()),
     });
 
     const rendered = normalizedText(section);
@@ -82,8 +94,9 @@ describe('PartnerMasterListSection', () => {
 
   it('renders settlement-focused copy for unsettled partners', () => {
     const section = PartnerMasterListSection({
+      filters: buildFilters({ review: 'unsettled' }),
       mode: 'unsettled',
-      rows: buildRows(),
+      pagination: pagination(buildRows()),
     });
 
     const rendered = normalizedText(section);
@@ -98,6 +111,30 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).not.toContain('Gender');
   });
 });
+
+function buildFilters(input: Partial<ProviderFilters> = {}): ProviderFilters {
+  return {
+    ...buildProviderFilters({}),
+    ...input,
+  };
+}
+
+function pagination(
+  rows: readonly PartnerMasterListSectionRow[],
+  input: { readonly page?: number; readonly totalRows?: number } = {},
+): PartnerPagination<PartnerMasterListSectionRow> {
+  const totalRows = input.totalRows ?? rows.length;
+
+  return {
+    from: totalRows === 0 ? 0 : 1,
+    page: input.page ?? 1,
+    pageSize: 10,
+    rows,
+    to: Math.min(10, totalRows),
+    totalPages: Math.max(1, Math.ceil(totalRows / 10)),
+    totalRows,
+  };
+}
 
 function buildRows(): PartnerMasterListSectionRow[] {
   return [
