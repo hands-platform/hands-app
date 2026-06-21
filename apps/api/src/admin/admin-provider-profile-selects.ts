@@ -12,17 +12,17 @@ import {
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
   adminProviderKycSummarySelect,
-  adminProviderListPublicMediaSelect,
   adminProviderListBankAccountSelect,
   adminProviderListDocumentSelect,
   adminProviderListDeviceSelect,
+  adminProviderListPublicMediaSelect,
   adminProviderListReportSelect,
   adminProviderListSanctionSelect,
   adminProviderListSessionSelect,
+  adminProviderListVerificationFileSelect,
   adminProviderListVerificationSelect,
   adminProviderOverviewUserSelect,
   adminProviderPushDeviceReachabilityOrder,
-  adminProviderPublicMediaSelect,
   adminProviderReportDetailSelect,
   adminProviderReportSummarySelect,
   adminProviderSanctionDetailSelect,
@@ -41,15 +41,111 @@ import {
 import { adminPushDeviceSummarySelect, adminUserSummarySelect } from './admin-user-selects';
 
 export const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
+export const ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
 
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
+const ADMIN_PROVIDER_FILE_REVIEW_FILE_LIMIT = 20;
 const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
 const ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT = 5;
 const ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT = 8;
+
+export const adminProviderFileReviewWhere = {
+  OR: [
+    { verification: { files: { some: {} } } },
+    {
+      user: {
+        fileAssets: {
+          some: {
+            purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+            visibility: FileVisibility.PUBLIC,
+            uploadStatus: FileUploadStatus.UPLOADED,
+          },
+        },
+      },
+    },
+  ],
+} satisfies Prisma.ProviderProfileWhereInput;
+
+export const adminProviderFileReviewPushDeviceSelect = {
+  id: true,
+  role: true,
+  platform: true,
+  enabled: true,
+  lastSeenAt: true,
+  createdAt: true,
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      attemptedAt: true,
+      provider: true,
+    },
+  },
+} satisfies Prisma.PushDeviceSelect;
+
+export const adminProviderFileReviewSelect = {
+  id: true,
+  displayName: true,
+  status: true,
+  user: {
+    select: {
+      id: true,
+      phone: true,
+      fullName: true,
+      pushDevices: {
+        orderBy: adminProviderPushDeviceReachabilityOrder,
+        take: 2,
+        select: adminProviderFileReviewPushDeviceSelect,
+      },
+      fileAssets: {
+        where: {
+          purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+          visibility: FileVisibility.PUBLIC,
+          uploadStatus: FileUploadStatus.UPLOADED,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_PROVIDER_FILE_REVIEW_FILE_LIMIT,
+        select: adminProviderListPublicMediaSelect,
+      },
+    },
+  },
+  verification: {
+    select: {
+      id: true,
+      status: true,
+      files: {
+        orderBy: { uploadedAt: 'desc' },
+        take: ADMIN_PROVIDER_FILE_REVIEW_FILE_LIMIT,
+        select: adminProviderListVerificationFileSelect,
+      },
+    },
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 2,
+    select: {
+      id: true,
+      lastSeenAt: true,
+      suspicious: true,
+    },
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 2,
+    select: {
+      id: true,
+      deviceId: true,
+      enabled: true,
+      lastSeenAt: true,
+    },
+  },
+} satisfies Prisma.ProviderProfileSelect;
 
 export const adminProviderListUserSelect = {
   ...adminUserSummarySelect,

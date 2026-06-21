@@ -174,6 +174,11 @@ export class AdminController {
     return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
   }
 
+  @Get('files/review-providers')
+  fileReviewProviders() {
+    return this.admin.listFileReviewProviders();
+  }
+
   @Post('files/:id/approve-public-media')
   approvePublicProviderMedia(@CurrentUser() user: AuthenticatedUser, @Param('id') fileId: string) {
     return this.admin.reviewPublicProviderMedia(user.id, fileId, FileReviewStatus.APPROVED);

@@ -37,7 +37,7 @@ const FILE_REVIEW_HEADERS = ['File', 'Partner', 'Status', 'Upload', 'Evidence', 
 export default async function FilesPage({ searchParams }: { searchParams?: FilesPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const filters = buildFileFilters(params);
-  const providers = await adminGet<AdminProvider[]>('/admin/partners?view=list', []);
+  const providers = await adminGet<AdminProvider[]>('/admin/files/review-providers', []);
   const allRows = buildFileReviewRows(providers);
   const rows = filterFileReviewRows(allRows, filters);
   const summary = buildFileReviewSummary(allRows);

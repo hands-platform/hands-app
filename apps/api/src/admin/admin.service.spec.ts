@@ -584,6 +584,44 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('lists file review providers without loading full partner operations payload', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listFileReviewProviders()).resolves.toEqual([]);
+
+    const query = prisma.providerProfile.findMany.mock.calls[0][0];
+    const select = query.select;
+    expect(query).toEqual(
+      expect.objectContaining({
+        take: 500,
+        where: expect.objectContaining({
+          OR: expect.any(Array),
+        }),
+      }),
+    );
+    expect(select).toEqual(
+      expect.objectContaining({
+        id: true,
+        displayName: true,
+        status: true,
+      }),
+    );
+    expect(select.preferredBookings).toBeUndefined();
+    expect(select.selectedBookings).toBeUndefined();
+    expect(select.participants).toBeUndefined();
+    expect(select.earnings).toBeUndefined();
+    expect(select.reports).toBeUndefined();
+    expect(select.sanctions).toBeUndefined();
+    expect(select.auditLogs).toBeUndefined();
+    expect(select.user.select.fileAssets.take).toBe(20);
+    expect(select.verification.select.files.take).toBe(20);
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');

@@ -8,6 +8,7 @@ import type { AdminService } from './admin.service';
 describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
+    listFileReviewProviders: jest.fn(),
     retryNotification: jest.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
@@ -45,6 +46,18 @@ describe('AdminController notification and push actions', () => {
       path: 'notifications/:id/retry',
     });
     expect(admin.retryNotification).toHaveBeenCalledWith('admin-1', 'notification-1');
+  });
+
+  it('exposes file review providers as a lightweight GET list', async () => {
+    admin.listFileReviewProviders.mockResolvedValue([{ id: 'partner-1' }]);
+
+    await expect(controller.fileReviewProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+
+    expect(routeMetadata('fileReviewProviders')).toEqual({
+      method: RequestMethod.GET,
+      path: 'files/review-providers',
+    });
+    expect(admin.listFileReviewProviders).toHaveBeenCalledWith();
   });
 });
 

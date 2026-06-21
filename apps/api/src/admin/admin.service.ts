@@ -103,8 +103,11 @@ import {
 } from './admin-provider-selects';
 import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
+  ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
   adminProviderDetailSelect,
+  adminProviderFileReviewSelect,
+  adminProviderFileReviewWhere,
   adminProviderListSelect,
   adminProviderOverviewSelect,
 } from './admin-provider-profile-selects';
@@ -402,6 +405,15 @@ export class AdminService {
       auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
       auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
     }));
+  }
+
+  listFileReviewProviders() {
+    return this.prisma.providerProfile.findMany({
+      where: adminProviderFileReviewWhere,
+      orderBy: { id: 'desc' },
+      take: ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
+      select: adminProviderFileReviewSelect,
+    });
   }
 
   async getProviderDetail(providerProfileId: string) {
