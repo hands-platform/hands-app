@@ -77,6 +77,8 @@ describe('partner dispatch handoff', () => {
       value: '1',
     });
     expect(handoff.links.find((item) => item.title === 'Cash fee debt')).toMatchObject({
+      detail:
+        'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout release wait until company fee settlement.',
       value: '1',
       tone: 'danger',
       href: '/cash-settlements',

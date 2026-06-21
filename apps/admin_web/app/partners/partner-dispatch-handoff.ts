@@ -80,7 +80,7 @@ export function buildPartnerDispatchHandoff(
         title: 'Cash fee debt',
         value: cashDebt.length.toString(),
         detail:
-          'Negative wallet Partners can view marketplace requests, but marketplace alerts and participation wait until company fee settlement.',
+          'Negative wallet Partners can view marketplace requests, but final acceptance, service start, and payout release wait until company fee settlement.',
         href: '/cash-settlements',
         tone: cashDebt.length ? 'danger' : 'ok',
       },

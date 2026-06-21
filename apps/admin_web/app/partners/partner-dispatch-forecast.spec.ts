@@ -57,6 +57,9 @@ describe('partner dispatch forecast', () => {
     expect(forecast.blockers.find((item) => item.label === 'Wallet setup')?.detail).toContain(
       'withdrawal/deposit follow-up',
     );
+    expect(forecast.blockers.find((item) => item.label === 'Wallet debt')?.detail).toBe(
+      'Cash fee debt may keep demand visible, but final acceptance, service start, and payout release wait for settlement.',
+    );
     expect(forecast.blockers.find((item) => item.label === 'Location refresh')).toMatchObject({
       count: 3,
       tone: 'warn',
