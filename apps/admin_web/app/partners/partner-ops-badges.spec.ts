@@ -78,7 +78,7 @@ describe('partner ops badges', () => {
       'Dispatch repair',
       'Cash debt',
       'KYC ok',
-      'Withdrawal bank ok',
+      'Withdrawal details ready',
       'Location recent',
       'Push ready',
       'Supabase linked',
@@ -92,6 +92,10 @@ describe('partner ops badges', () => {
       badges.find((badge: { label: string; detail: string }) => badge.label === 'Dispatch repair')
         ?.detail,
     ).toContain('cash fee debt');
+    expect(
+      badges.find((badge: { label: string; detail: string }) => badge.label === 'Withdrawal details ready')
+        ?.detail,
+    ).toContain('reviewed when the Partner requests wallet withdrawal');
   });
 
   it('maps badge tone to existing admin pill classes', () => {

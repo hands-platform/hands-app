@@ -181,11 +181,17 @@ export function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'public-media') {
     return 'Public media review highlights uploaded partner photos that are pending or rejected.';
   }
+  if (kind === 'review' && value === 'bank') {
+    return 'Withdrawal detail review highlights bank details submitted for wallet withdrawal or manual settlement, not Level 2 matching approval.';
+  }
   if (kind === 'review' && value === 'payout-setup') {
     return 'First earning payout setup highlights partners who have earned revenue but still need withdrawal address or payout agreement follow-up.';
   }
   if (kind === 'review' && value === 'cash-debt') {
     return 'Cash fee debt highlights Partners whose final acceptance, service start, and payout release wait for HANDS commission settlement.';
+  }
+  if (kind === 'review' && value === 'tax') {
+    return 'Tax profile optional highlights submitted legacy records only; tax profile registration is not required for Vietnam MVP.';
   }
   if (kind === 'review' && value === 'unapproved') {
     return 'Unapproved Partners combines registration, KYC, required documents, public media, and hold items that need admin approval from the Partner detail page.';
@@ -243,10 +249,10 @@ export function partnerReviewFilterLabel(review: string) {
     kyc: 'KYC updates',
     documents: 'Document review',
     'public-media': 'Public media review',
-    bank: 'Bank payout review',
+    bank: 'Withdrawal detail review',
     'payout-setup': 'First earning payout setup',
     'cash-debt': 'Cash fee debt',
-    tax: 'Legacy tax profile review',
+    tax: 'Tax profile optional',
     security: 'Device/session check',
     reports: 'Reports/controls',
     blocked: 'Account blocks',

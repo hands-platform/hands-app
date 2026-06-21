@@ -1,6 +1,7 @@
 import {
   buildProviderFilters,
   partnerHasAdvancedOperationalFilters,
+  partnerReviewFilterLabel,
   providerFilterDescription,
   type ProviderFilters,
 } from './partner-filters';
@@ -43,5 +44,10 @@ describe('partner filters', () => {
   it('labels legacy marketplace-blocked review values as dispatch repair', () => {
     expect(providerFilterDescription('review', 'marketplace-blocked')).toContain('Dispatch repair');
     expect(providerFilterDescription('review', 'marketplace-blocked')).not.toContain('Marketplace repair');
+  });
+
+  it('labels bank and tax review lanes as non-Level-2 gates', () => {
+    expect(partnerReviewFilterLabel('bank')).toBe('Withdrawal detail review');
+    expect(partnerReviewFilterLabel('tax')).toBe('Tax profile optional');
   });
 });

@@ -98,6 +98,10 @@ describe('partner operation row', () => {
       status: 'settlement needed',
       tone: 'warn',
     });
+    expect(row.checklist.map((item) => item.label)).toContain('Withdrawal details');
+    expect(row.checklist.map((item) => item.label)).toContain('Tax optional');
+    expect(row.checklist.map((item) => item.label)).not.toContain('Withdrawal bank');
+    expect(row.checklist.map((item) => item.label)).not.toContain('Legacy tax');
     expect(row.matchingFlow.map((item) => [item.label, item.status])).toEqual([
       ['First-pick', '1 record(s)'],
       ['Marketplace', '1 participation record(s)'],

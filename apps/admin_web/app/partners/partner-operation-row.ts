@@ -100,12 +100,12 @@ export function buildPartnerOperationRow(
               : 'warn',
       },
       {
-        label: 'Withdrawal bank',
-        status: hasApprovedBankAccount(provider) ? 'ok' : 'on request',
+        label: 'Withdrawal details',
+        status: hasApprovedBankAccount(provider) ? 'ready' : 'on request',
         tone: hasApprovedBankAccount(provider) ? 'ok' : 'neutral',
       },
       {
-        label: 'Legacy tax',
+        label: 'Tax optional',
         status: taxStatus,
         tone: provider.taxProfile ? 'info' : 'neutral',
       },

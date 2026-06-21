@@ -147,6 +147,12 @@ describe('partner list summary', () => {
       'Partners who cannot receive direct requests now because identity, device, location, push, or control gates are not satisfied.',
     );
     expect(review.items.find((item) => item.label === 'Document review')?.count).toBe(1);
+    expect(review.items.find((item) => item.label === 'Withdrawal detail review')?.detail).toContain(
+      'not Level 2 matching approval',
+    );
+    expect(review.items.find((item) => item.label === 'Tax profile optional')?.detail).toContain(
+      'not required for Vietnam MVP',
+    );
     expect(review.items.find((item) => item.label === 'Cash fee debt')?.href).toBe(
       '/partners?review=unsettled',
     );

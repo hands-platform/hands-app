@@ -227,10 +227,10 @@ export function buildPartnerReviewQueue(
       detail: 'Uploaded public profile and gallery images must be approved before customers can see them.',
     },
     {
-      label: 'Bank payout review',
+      label: 'Withdrawal detail review',
       count: bankNeedsReview,
       href: '/partners?review=bank',
-      detail: 'Bank details are reviewed for wallet withdrawal requests, not Level 2 matching approval.',
+      detail: 'Bank details are reviewed for wallet withdrawal or manual settlement requests, not Level 2 matching approval.',
     },
     {
       label: 'First earning payout setup',
@@ -246,7 +246,7 @@ export function buildPartnerReviewQueue(
       detail: partnerCashDebtMarketplaceAccessCopy,
     },
     {
-      label: 'Legacy tax profile review',
+      label: 'Tax profile optional',
       count: taxNeedsReview,
       href: '/partners?review=tax',
       detail: 'Tax profile registration is not required for Vietnam MVP; review only submitted legacy records.',
