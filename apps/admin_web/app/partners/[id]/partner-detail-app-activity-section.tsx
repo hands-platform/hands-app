@@ -1,4 +1,10 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerAppActivitySummaryItem = {
   readonly helper: string;
@@ -24,17 +30,13 @@ export function PartnerDetailAppActivitySection({
   summary,
 }: PartnerDetailAppActivitySectionProps) {
   return (
-    <div className="card admin-mb-16" id="app-activity">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recent app and operations activity</h2>
-          <p className="muted">
-            Date-ordered factual activity only: location updates, app sessions, devices, earnings, payouts,
-            booking participation, and verification changes.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} event(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Date-ordered factual activity only: location updates, app sessions, devices, earnings, payouts, booking participation, and verification changes."
+      id="app-activity"
+      resultLabel={`${rows.length} event(s)`}
+      title="Recent app and operations activity"
+    >
       <div className="service-trace-summary admin-mt-14">
         {summary.map((item) => (
           <div key={item.label}>
@@ -46,6 +48,7 @@ export function PartnerDetailAppActivitySection({
       </div>
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <PartnerAppActivityEmptyState message="Clear the date filter or choose a wider range to review app, location, payout, and verification records." />
           }
@@ -68,7 +71,8 @@ export function PartnerDetailAppActivitySection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 

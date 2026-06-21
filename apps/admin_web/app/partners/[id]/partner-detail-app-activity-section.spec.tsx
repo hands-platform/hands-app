@@ -34,8 +34,15 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(rendered).toContain('Location updated');
     expect(rendered).toContain('Partner refreshed working location before receiving new requests.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-info']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-info',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders the empty activity state inside the table', () => {
@@ -49,7 +56,14 @@ describe('PartnerDetailAppActivitySection', () => {
     expect(rendered).toContain('0 event(s)');
     expect(rendered).toContain('No activity matched this date filter');
     expect(rendered).toContain('Clear the date filter or choose a wider range');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 

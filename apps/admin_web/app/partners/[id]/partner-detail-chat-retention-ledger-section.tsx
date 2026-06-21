@@ -4,6 +4,12 @@ import type {
   PartnerChatRetentionSummaryItem,
 } from './partner-detail-chat-retention-model';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type { PartnerChatRetentionRow, PartnerChatRetentionSummaryItem };
 
@@ -39,14 +45,13 @@ export function PartnerDetailChatRetentionLedgerSection({
   title,
 }: PartnerDetailChatRetentionLedgerSectionProps) {
   return (
-    <div className="card admin-mb-16" id={id}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <span className="pill pill-info">{rows.length} booking row(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description={description}
+      id={id}
+      resultLabel={`${rows.length} booking row(s)`}
+      title={title}
+    >
       <div className="service-trace-summary admin-mt-12">
         {summary.map((item) => (
           <div key={item.label}>
@@ -57,7 +62,12 @@ export function PartnerDetailChatRetentionLedgerSection({
         ))}
       </div>
       <AdminTableScroll>
-        <AdminDataTable emptyMessage={null} headers={PARTNER_CHAT_RETENTION_HEADERS} rowCount={rows.length}>
+        <AdminDataTable
+          className={partnerDetailReviewTableClassName}
+          emptyMessage={null}
+          headers={PARTNER_CHAT_RETENTION_HEADERS}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
             <tr key={`${row.id}-${row.relation}`}>
               <td>
@@ -102,11 +112,12 @@ export function PartnerDetailChatRetentionLedgerSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       {rows.length === 0 ? (
         <p className="muted admin-mt-12">
           {emptyMessage}
         </p>
       ) : null}
-    </div>
+    </AdminFilterPanel>
   );
 }
