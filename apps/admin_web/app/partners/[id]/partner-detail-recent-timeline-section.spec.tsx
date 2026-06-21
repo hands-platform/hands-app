@@ -31,8 +31,16 @@ describe('PartnerDetailRecentTimelineSection', () => {
     expect(rendered).toContain('formatted 2026-06-01T10:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#app-activity', '#booking-chat-records']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-info', 'text-link']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-info',
+        'text-link',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders an empty state when no records match the filters', () => {
@@ -45,7 +53,14 @@ describe('PartnerDetailRecentTimelineSection', () => {
 
     expect(rendered).toContain('No partner event matched this filter');
     expect(rendered).toContain('Clear the date filter or choose a wider period.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 
   it('normalizes internal provider wording in timeline titles and details', () => {

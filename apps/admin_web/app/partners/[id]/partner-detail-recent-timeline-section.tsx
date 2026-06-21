@@ -1,7 +1,13 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerDetailRecentTimelineRecord = {
   readonly at: string;
@@ -23,28 +29,30 @@ export function PartnerDetailRecentTimelineSection({
   formatDate,
   records,
 }: PartnerDetailRecentTimelineSectionProps) {
+  const visibleRecords = records.slice(0, 8);
+
   return (
-    <div className="card admin-mb-16" id="partner-recent-operations-timeline">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner recent operations timeline</h2>
-          <p className="muted">
-            Latest factual partner events in the order operators need them: onboarding, app, location,
-            booking, chat, finance, payout, document, tax, and staff records.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Latest factual partner events in the order operators need them: onboarding, app, location, booking, chat, finance, payout, document, tax, and staff records."
+      footer={
         <Link className="text-link" href="#app-activity">
           Open full timeline
         </Link>
-      </div>
+      }
+      id="partner-recent-operations-timeline"
+      resultLabel={`${records.length} event(s)`}
+      title="Partner recent operations timeline"
+    >
       <div className="admin-mt-12">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerRecentTimelineEmptyState />}
             headers={recentTimelineHeaders}
-            rowCount={records.length}
+            rowCount={visibleRecords.length}
           >
-            {records.slice(0, 8).map((record, index) => (
+            {visibleRecords.map((record, index) => (
               <tr key={`recent-${record.type}-${record.id}-${record.at}-${index}`}>
                 <td>
                   <span className="pill pill-info">{record.type}</span>
@@ -65,7 +73,8 @@ export function PartnerDetailRecentTimelineSection({
           </AdminDataTable>
         </AdminTableScroll>
       </div>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={visibleRecords.length} />
+    </AdminFilterPanel>
   );
 }
 

@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBookingJourneyRow = {
   readonly detail: string;
@@ -41,17 +47,17 @@ export function PartnerDetailBookingJourneySection({
   title,
 }: PartnerDetailBookingJourneySectionProps) {
   return (
-    <div className="card admin-mb-16" id={id}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <span className="pill pill-info">{rows.length} journey row(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description={description}
+      id={id}
+      resultLabel={`${rows.length} journey row(s)`}
+      title={title}
+    >
       <div className="admin-mt-12">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerBookingJourneyEmptyState detail={emptyDetail} title={emptyTitle} />}
             headers={bookingJourneyHeaders}
             rowCount={rows.length}
@@ -95,7 +101,8 @@ export function PartnerDetailBookingJourneySection({
           </AdminDataTable>
         </AdminTableScroll>
       </div>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
