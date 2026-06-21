@@ -39,10 +39,10 @@ describe('partner detail summary rail model', () => {
         value: '3 records',
       }),
       expect.objectContaining({
-        detail: '50.000 VND company fee must be settled before joining.',
+        detail: '50.000 VND company fee must be settled before final acceptance, service start, and payout release.',
         href: '#cash-debt-origin',
-        label: 'Marketplace access',
-        value: 'Blocked by unpaid fee',
+        label: 'Cash fee gate',
+        value: 'Acceptance blocked',
       }),
       expect.objectContaining({
         href: '#partner-ops-command-center',
@@ -77,9 +77,9 @@ describe('partner detail summary rail model', () => {
       userPhone: null,
     });
 
-    expect(rows.find((row) => row.label === 'Marketplace access')).toMatchObject({
-      detail: 'No unpaid cash fee debt loaded.',
-      value: 'Open',
+    expect(rows.find((row) => row.label === 'Cash fee gate')).toMatchObject({
+      detail: 'No unpaid cash fee debt is gating final acceptance, service start, or payout release.',
+      value: 'Clear',
     });
     expect(rows.find((row) => row.label === 'Latest staff note')).toMatchObject({
       detail: 'No manual partner note saved.',
@@ -129,6 +129,7 @@ describe('partner detail summary rail model', () => {
         value: '4',
       }),
       expect.objectContaining({
+        detail: '1 unpaid cash fee earning row(s). Final acceptance, service start, and payout release are blocked until settled.',
         href: '#cash-debt-origin',
         label: 'Cash debt',
         value: '50.000 VND',

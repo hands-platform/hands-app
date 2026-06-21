@@ -57,11 +57,11 @@ export function buildPartnerOperatorFirstRead({
     },
     {
       href: '#cash-debt-origin',
-      label: 'Marketplace access',
-      value: hasCashFeeDebt ? 'Blocked by unpaid fee' : 'Open',
+      label: 'Cash fee gate',
+      value: hasCashFeeDebt ? 'Acceptance blocked' : 'Clear',
       detail: hasCashFeeDebt
-        ? `${cashDebtLabel} company fee must be settled before joining.`
-        : 'No unpaid cash fee debt loaded.',
+        ? `${cashDebtLabel} company fee must be settled before final acceptance, service start, and payout release.`
+        : 'No unpaid cash fee debt is gating final acceptance, service start, or payout release.',
     },
     {
       href: '#partner-chat-retention-ledger',
@@ -156,7 +156,7 @@ export function buildPartnerOperationsQuickRail({
       href: '#cash-debt-origin',
       label: 'Cash debt',
       value: cashDebtLabel,
-      detail: `${openCashDebtEarningCount} unpaid cash fee earning row(s). Marketplace alerts and participation are blocked until settled.`,
+      detail: `${openCashDebtEarningCount} unpaid cash fee earning row(s). Final acceptance, service start, and payout release are blocked until settled.`,
     },
     {
       href: '#payout',
