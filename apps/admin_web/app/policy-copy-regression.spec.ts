@@ -15,6 +15,22 @@ describe('admin policy copy regression', () => {
       'Negative wallet keeps marketplace list visibility, but final acceptance, service start, and payout release wait for cash fee settlement.',
     );
   });
+
+  it('keeps partner finance copy aligned with Level 2 and withdrawal policy', () => {
+    const source = readAdminWebSource(['app/partners/[id]/page.tsx']);
+
+    expect(source).not.toContain('Withdrawal bank');
+    expect(source).not.toContain('Withdrawal bank account');
+    expect(source).not.toContain('Legacy tax profile');
+    expect(source).not.toContain('Legacy tax ');
+    expect(source).not.toContain('Bank payout review');
+
+    expect(source).toContain('Withdrawal details');
+    expect(source).toContain('Tax profile optional');
+    expect(source).toContain(
+      'Partner can receive booking requests and participate in matching. Withdrawal detail review is handled when wallet withdrawal is requested.',
+    );
+  });
 });
 
 function readAdminWebSource(relativePaths: string[]) {

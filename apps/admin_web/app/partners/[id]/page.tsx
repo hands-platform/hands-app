@@ -1314,8 +1314,8 @@ function PartnerDetailFastOverview({
     { label: 'Retained chats', value: `${chatRoomCount} room(s), ${chatMessageCount} message(s)` },
   ];
   const payoutReadinessRows: PartnerDetailFastOverviewInfoLine[] = [
-    { label: 'Withdrawal bank', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
-    { label: 'Legacy tax profile', value: provider.taxProfile?.status ?? 'Not required' },
+    { label: 'Withdrawal details', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
+    { label: 'Tax profile optional', value: provider.taxProfile?.status ?? 'Not required' },
     { label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' },
     { label: 'Payout status', value: payoutOps.status },
   ];
@@ -1601,9 +1601,9 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'tax-approve',
       label: 'TAX',
-      title: 'Legacy tax profile submitted',
+      title: 'Optional tax profile submitted',
       detail:
-        'Tax profile is not required for current Vietnam operations. Review only if finance keeps legacy tax records.',
+        'Tax profile is optional for current Vietnam operations. Review only if finance keeps this record.',
       owner: 'Finance',
       tone: 'pending',
       action: { type: 'approve-tax', label: 'Approve tax' },
@@ -2097,7 +2097,7 @@ function buildPartnerActivityRecords(
       id: provider.taxProfile.id,
       type: 'TAX',
       at: provider.taxProfile.approvedAt,
-      title: `Legacy tax profile ${provider.taxProfile.status.toLowerCase()}`,
+      title: `Optional tax profile ${provider.taxProfile.status.toLowerCase()}`,
       detail: `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax code ${
         provider.taxProfile.taxCodeLast4 ? `****${provider.taxProfile.taxCodeLast4}` : 'not stored'
       }`,
@@ -2480,12 +2480,12 @@ function buildPartnerMasterFacts(
       )}`,
     },
     {
-      label: 'Legacy tax profile',
+      label: 'Tax profile optional',
       value: provider.taxProfile?.status ?? 'DEFERRED',
       helper: 'Not required for Level 2 approval, matching, or current Vietnam payout review.',
     },
     {
-      label: 'Withdrawal bank account',
+      label: 'Withdrawal details',
       value: primaryBank?.status ?? 'MISSING',
       helper: primaryBank
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)}`
@@ -2591,16 +2591,16 @@ function buildPartnerOperatingChecklist(
       tone: primaryBank?.status === 'APPROVED' ? 'done' : 'pending',
     },
     {
-      area: 'Legacy tax',
+      area: 'Tax profile optional',
       status: hasFirstRevenue
         ? provider.taxProfile?.status ?? 'Not required'
         : 'Not required',
       detail: hasFirstRevenue
-        ? `Legacy tax ${provider.taxProfile?.status ?? 'NOT_REQUIRED'} / address ${
+        ? `Optional tax ${provider.taxProfile?.status ?? 'NOT_REQUIRED'} / address ${
             addressReady ? 'saved' : 'missing'
           } / agreements ${agreementsAccepted}.`
         : 'Do not force tax information before approval, matching, or payout review.',
-      nextAction: 'Review only if legacy tax data was submitted',
+      nextAction: 'Review only if optional tax data was submitted',
       href: `/partners/${provider.id}?section=full#tax`,
       tone: 'done',
     },
@@ -2762,7 +2762,7 @@ function buildProviderBookingAcceptance(
           : 'Finish review',
     },
     {
-      label: 'Withdrawal bank account',
+      label: 'Withdrawal details',
       ok: true,
       detail:
         primaryBank?.status === 'APPROVED'
@@ -3032,7 +3032,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
   const walletGate = gate('Wallet and cash debt');
   const accountGate = gate('Account controls');
   const identityGate = gate('Identity and approval');
-  const bankGate = gate('Withdrawal bank account');
+  const bankGate = gate('Withdrawal details');
   const locationGate = gate('Location freshness');
   const reachableGate = gate('Online and reachable');
   const serviceGate = gate('Bookable services');
@@ -3174,7 +3174,7 @@ function buildPartnerDetailOpsBadges(
     locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
   const identityGate = gate('Identity and approval');
-  const bankGate = gate('Withdrawal bank account');
+  const bankGate = gate('Withdrawal details');
   const onlineGate = gate('Online and reachable');
   const serviceGate = gate('Bookable services');
 
@@ -3575,7 +3575,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
             verificationReady,
           }).join(' '),
       operatorAction: level2Ready
-        ? 'Partner can receive booking requests and participate in matching. Bank payout review is handled later when withdrawal is requested.'
+        ? 'Partner can receive booking requests and participate in matching. Withdrawal detail review is handled when wallet withdrawal is requested.'
         : 'Clear these items before relying on the partner for customer requests.',
       ready: level2Ready,
       blocked: !level2Ready,
@@ -3788,7 +3788,7 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
           : `Missing or unapproved: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
     },
     {
-      label: 'Withdrawal bank account',
+      label: 'Withdrawal details',
       ok: true,
       status: primaryBank ? bankAccountStatusLabel(provider) : 'Deferred',
       detail: primaryBank
