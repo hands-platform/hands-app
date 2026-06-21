@@ -749,6 +749,72 @@ describe('AdminService query orchestration', () => {
     expect(select.bankAccounts.take).toBe(3);
   });
 
+  it('lists partner control providers without loading full partner operations payload', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Control Partner' }]),
+      },
+      providerEarning: {
+        groupBy: jest
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { netAmount: -70000 },
+            },
+          ])
+          .mockResolvedValueOnce([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerControlProviders()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-1',
+        activitySummary: expect.objectContaining({ walletBalance: -70000 }),
+        earnings: [{ netAmount: -70000, status: EarningStatus.PENDING }],
+      }),
+    ]);
+
+    const query = prisma.providerProfile.findMany.mock.calls[0][0];
+    const select = query.select;
+    expect(query).toEqual(expect.objectContaining({ take: 500 }));
+    expect(select).toEqual(
+      expect.objectContaining({
+        id: true,
+        displayName: true,
+        legalName: true,
+        status: true,
+        currentLat: true,
+        currentLng: true,
+        currentLocationUpdatedAt: true,
+        blockedAt: true,
+        blockedReason: true,
+      }),
+    );
+    expect(select.preferredBookings).toBeUndefined();
+    expect(select.selectedBookings).toBeUndefined();
+    expect(select.services).toBeUndefined();
+    expect(select.earnings).toBeUndefined();
+    expect(select.documents).toBeUndefined();
+    expect(select.user.select.fileAssets).toBeUndefined();
+    expect(select.verification.select.files).toBeUndefined();
+    expect(select.user.select.pushDevices.take).toBe(2);
+    expect(select.participants.select).toEqual({
+      id: true,
+      providerProfileId: true,
+      status: true,
+    });
+    expect(select.participants.take).toBe(15);
+    expect(select.reports.take).toBe(5);
+    expect(select.sanctions.take).toBe(5);
+    expect(select.devices.take).toBe(5);
+    expect(select.sessions.take).toBe(3);
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');

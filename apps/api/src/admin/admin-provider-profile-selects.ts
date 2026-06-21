@@ -45,6 +45,7 @@ export const ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
 export const ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT = 500;
+export const ADMIN_PROVIDER_CONTROL_LIST_LIMIT = 500;
 
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;
@@ -55,6 +56,11 @@ const ADMIN_PROVIDER_OPERATIONS_HANDOFF_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT = 3;
 const ADMIN_PROVIDER_OPERATIONS_POLICY_DOCUMENT_LIMIT = 12;
 const ADMIN_PROVIDER_OPERATIONS_POLICY_DEVICE_LIMIT = 3;
+const ADMIN_PROVIDER_CONTROL_RELATION_LIMIT = 15;
+const ADMIN_PROVIDER_CONTROL_REPORT_LIMIT = 5;
+const ADMIN_PROVIDER_CONTROL_SANCTION_LIMIT = 5;
+const ADMIN_PROVIDER_CONTROL_DEVICE_LIMIT = 5;
+const ADMIN_PROVIDER_CONTROL_SESSION_LIMIT = 3;
 const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
 const ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT = 5;
 const ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT = 8;
@@ -295,6 +301,96 @@ export const adminProviderOperationsHandoffSelect = {
   devices: {
     orderBy: { lastSeenAt: 'desc' },
     take: ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT,
+    select: {
+      id: true,
+      deviceId: true,
+      enabled: true,
+      lastSeenAt: true,
+      blockedAt: true,
+    },
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderControlSelect = {
+  id: true,
+  displayName: true,
+  legalName: true,
+  status: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  blockedAt: true,
+  blockedReason: true,
+  user: {
+    select: {
+      id: true,
+      phone: true,
+      fullName: true,
+      pushDevices: {
+        orderBy: adminProviderPushDeviceReachabilityOrder,
+        take: 2,
+        select: adminProviderOperationsPolicyPushDeviceSelect,
+      },
+    },
+  },
+  verification: {
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  kyc: {
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  taxProfile: {
+    select: {
+      id: true,
+      status: true,
+    },
+  },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: 3,
+    select: {
+      id: true,
+      status: true,
+      isPrimary: true,
+    },
+  },
+  reports: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_CONTROL_REPORT_LIMIT,
+    select: adminProviderListReportSelect,
+  },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_CONTROL_SANCTION_LIMIT,
+    select: adminProviderListSanctionSelect,
+  },
+  participants: {
+    orderBy: { joinedAt: 'desc' },
+    take: ADMIN_PROVIDER_CONTROL_RELATION_LIMIT,
+    select: {
+      id: true,
+      providerProfileId: true,
+      status: true,
+    },
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: ADMIN_PROVIDER_CONTROL_SESSION_LIMIT,
+    select: {
+      id: true,
+      lastSeenAt: true,
+      suspicious: true,
+    },
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: ADMIN_PROVIDER_CONTROL_DEVICE_LIMIT,
     select: {
       id: true,
       deviceId: true,

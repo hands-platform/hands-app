@@ -76,7 +76,7 @@ export default async function PartnerControlsPage({
   const params = searchParams ? await searchParams : {};
   const filters = buildFilters(params);
   const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
+    adminGet<AdminProvider[]>('/admin/partner-controls/providers', []),
     adminGet<AdminProviderReport[]>('/admin/provider-reports', []),
     adminGet<AdminProviderSanction[]>('/admin/provider-sanctions', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
