@@ -50,10 +50,10 @@ export function PartnerLegacyOperationsTableSection({
   renderServices,
 }: PartnerLegacyOperationsTableSectionProps) {
   return (
-    <div className="card">
+    <div className="card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card">
       <AdminTableScroll>
         <AdminDataTable
-          className="partner-legacy-table"
+          className="vuexy-booking-table vuexy-partner-table partner-legacy-table"
           emptyMessage={emptyMessage}
           headers={PARTNER_LEGACY_OPERATIONS_HEADERS}
           rowCount={providers.length}
@@ -105,8 +105,16 @@ export function PartnerLegacyOperationsTableSection({
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
+      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <span>{partnerLegacyOperationsFooterLabel(providers.length)}</span>
+      </div>
     </div>
   );
+}
+
+function partnerLegacyOperationsFooterLabel(rowCount: number) {
+  if (rowCount <= 0) return 'Showing 0 entries';
+  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function partnerLegacyAvatarStatus(provider: AdminProvider) {

@@ -33,13 +33,16 @@ describe('PartnerLegacyOperationsTableSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card',
         'admin-avatar-status-dot is-online',
         'admin-table-scroll',
         'table-link',
-        'table vuexy-data-table partner-legacy-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-table partner-legacy-table',
+        'vuexy-booking-table-footer vuexy-partner-table-footer',
         'vuexy-booking-person',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders the empty message when no partner rows are visible', () => {
@@ -58,7 +61,10 @@ describe('PartnerLegacyOperationsTableSection', () => {
       renderServices: renderCell('Services'),
     });
 
-    expect(normalizedText(section)).toContain('No visible partners');
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('No visible partners');
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 
