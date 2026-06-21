@@ -172,14 +172,14 @@ function buildWalletGateTraceItem(walletGate: string): PolicyEnforcementTraceIte
   return {
     scope: 'Wallet gate',
     title: adminWalletGateBlocksMarketplaceParticipation(walletGate)
-      ? 'Negative wallet gates marketplace alerts and participation'
+      ? 'Negative wallet gates final acceptance and service start'
       : 'Historical exception mode is not active for MVP',
     detail:
-      'Cash-service company fee debt is enforced before marketplace alerts, participation, and payout release.',
-    api: 'Partner marketplace join endpoint and admin payout batch endpoint',
-    server: 'Booking join wallet guard -> earnings payout release guards',
+      'Cash-service company fee debt is enforced before final acceptance, service start, and payout release.',
+    api: 'Partner final acceptance, service start, and admin payout batch endpoints',
+    server: 'Booking wallet guards -> earnings payout release guards',
     verify:
-      'Verify from Cash Settlements, Partner Controls, and a blocked marketplace participation attempt in the partner app.',
+      'Verify from Cash Settlements, Partner Controls, and blocked final acceptance or service start attempts in the partner app.',
   };
 }
 

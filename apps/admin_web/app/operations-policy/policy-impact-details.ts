@@ -240,7 +240,7 @@ const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
       {
         label: 'Cash debt queue',
         detail:
-          'Review partners held from marketplace alerts, participation, or payout release by unpaid HANDS cash fees before changing settlement gates.',
+          'Review partners held from final acceptance, service start, or payout release by unpaid HANDS cash fees before changing settlement gates.',
         href: '/partners?review=cash-debt',
       },
       {
@@ -265,7 +265,7 @@ const SETTLEMENT_POLICY_IMPACT_DETAILS: Record<string, PolicyImpactDetails> = {
       {
         label: 'Partner cash holds',
         detail:
-          'Check partners blocked from marketplace alerts, participation, or payout release by unpaid platform fees.',
+          'Check partners blocked from final acceptance, service start, or payout release by unpaid platform fees.',
         href: '/partners?review=cash-debt',
       },
     ],

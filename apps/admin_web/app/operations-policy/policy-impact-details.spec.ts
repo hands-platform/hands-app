@@ -13,12 +13,18 @@ describe('operations policy impact details', () => {
     ]);
   });
 
-  it('keeps negative wallet impact copy focused on marketplace participation and cash settlement', () => {
+  it('keeps negative wallet impact copy focused on final acceptance, service start, and cash settlement', () => {
     const details = policyImpactDetails(OPERATIONAL_POLICY_KEYS.walletNegativeGate);
 
     expect(details.area).toBe('Wallet controls');
     expect(details.detail).toContain('Marketplace requests remain visible');
     expect(details.detail).toContain('final acceptance, service start, and payout release');
+    expect(details.saveChecks.map((check) => check.detail).join(' ')).toContain(
+      'final acceptance, service start, or payout release',
+    );
+    expect(details.saveChecks.map((check) => check.detail).join(' ')).not.toContain(
+      'marketplace alerts, participation',
+    );
     expect(details.saveChecks.map((check) => check.href)).toEqual([
       '/partners?review=cash-debt',
       '/cash-settlements',

@@ -36,7 +36,12 @@ describe('policy enforcement trace', () => {
     expect(trace[2].title).toBe('45 minute location freshness');
     expect(trace[3].title).toBe('Customer final selection policy conflict');
     expect(trace[4].title).toBe('Legacy delayed value normalized to immediate marketplace');
-    expect(trace[5].title).toBe('Negative wallet gates marketplace alerts and participation');
+    expect(trace[5]).toMatchObject({
+      title: 'Negative wallet gates final acceptance and service start',
+      detail:
+        'Cash-service company fee debt is enforced before final acceptance, service start, and payout release.',
+      api: 'Partner final acceptance, service start, and admin payout batch endpoints',
+    });
     expect(trace.map((row) => `${row.api} ${row.server}`).join(' ')).not.toContain('/provider');
     expect(trace.map((row) => `${row.api} ${row.server}`).join(' ')).not.toContain('select-provider');
   });
