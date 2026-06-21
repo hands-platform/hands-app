@@ -78,7 +78,7 @@ describe('partner ops badges', () => {
       'Marketplace repair',
       'Cash debt',
       'KYC ok',
-      'Bank ok',
+      'Withdrawal bank ok',
       'Location recent',
       'Push ready',
       'Supabase linked',
@@ -86,6 +86,7 @@ describe('partner ops badges', () => {
     ]);
     expect(badges.find((badge: { label: string }) => badge.label === 'Cash debt')).toMatchObject({
       tone: 'danger',
+      detail: 'Partner owes 12.000 VND before final acceptance, service start, and payout release.',
     });
     expect(
       badges.find((badge: { label: string; detail: string }) => badge.label === 'Marketplace repair')
@@ -99,5 +100,22 @@ describe('partner ops badges', () => {
     expect(partnerOpsBadgePillClass('warn')).toBe('pill-warn');
     expect(partnerOpsBadgePillClass('info')).toBe('pill-info');
     expect(partnerOpsBadgePillClass('neutral')).toBe('pill-neutral');
+  });
+
+  it('describes wallet clear state against final acceptance and payout release gates', () => {
+    const badges = buildPartnerOpsBadges(
+      partner({
+        earnings: [],
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      {
+        canAcceptBookingNow: () => true,
+      },
+    );
+
+    expect(badges.find((badge: { label: string }) => badge.label === 'Wallet clear')).toMatchObject({
+      tone: 'success',
+      detail: 'No negative wallet balance is gating final acceptance, service start, or payout release.',
+    });
   });
 });

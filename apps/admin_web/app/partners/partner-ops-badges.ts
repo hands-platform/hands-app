@@ -70,8 +70,8 @@ export function buildPartnerOpsBadges(
         walletBalance < 0
           ? `Partner owes ${formatProviderMoney(
               Math.abs(walletBalance),
-            )} before marketplace alerts and participation.`
-          : 'No negative wallet balance is gating marketplace alerts or participation.',
+            )} before final acceptance, service start, and payout release.`
+          : 'No negative wallet balance is gating final acceptance, service start, or payout release.',
     },
     {
       label: kycApproved ? 'KYC ok' : 'KYC needed',
