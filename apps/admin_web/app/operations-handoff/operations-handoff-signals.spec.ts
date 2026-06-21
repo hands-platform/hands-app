@@ -116,6 +116,7 @@ describe('operations handoff signal models', () => {
 
     expect(signals.attentionCount).toBe(2);
     expect(signals.rows[0]).toMatchObject({
+      action: 'Open cash settlement before final acceptance, service start, or payout release.',
       id: 'partner-cash',
       name: 'Partner Linh',
       status: 'Cash settlement',

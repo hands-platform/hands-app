@@ -162,7 +162,7 @@ function partnerSignalPosture(facts: PartnerSignalFacts) {
 
   if (facts.hasCashDebt) {
     return {
-      action: 'Open cash settlement before marketplace alerts, participation, or payout release.',
+      action: 'Open cash settlement before final acceptance, service start, or payout release.',
       attention: true,
       className: 'pill pill-danger',
       sortPriority,

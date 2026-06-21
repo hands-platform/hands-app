@@ -31,6 +31,10 @@ describe('operations handoff immediate action model', () => {
     expect(rowById(rows, 'cash-fee-debt')).toMatchObject({
       count: 2,
       countLabel: '2 Partner(s)',
+      detail:
+        'Partners with negative wallet from cash bookings can stay visible, but final acceptance, service start, and payout release wait for settlement.',
+      nextAction:
+        'Open cash settlements and record deposit or offset before final acceptance, service start, or payout release.',
       statusClass: 'pill pill-danger',
     });
     expect(rowById(rows, 'partner-admin-facts')).toMatchObject({

@@ -66,7 +66,7 @@ export function buildFinanceHandoffActionMap(input: FinanceHandoffActionInput) {
       countLabel: `${input.cashSummary.providerCount} Partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
       nextAction:
-        'Record deposit reference or approved offset before marketplace alerts, participation, or payout release reopens.',
+        'Record deposit reference or approved offset before final acceptance, service start, or payout release resumes.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },

@@ -39,6 +39,8 @@ describe('operations handoff finance action model', () => {
     expect(rowById(rows, 'finance-cash-debt')).toMatchObject({
       count: 2,
       countLabel: '2 Partner(s)',
+      nextAction:
+        'Record deposit reference or approved offset before final acceptance, service start, or payout release resumes.',
       statusClass: 'pill pill-danger',
     });
     expect(rowById(rows, 'finance-reference-trace')).toMatchObject({

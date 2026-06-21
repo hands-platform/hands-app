@@ -17,7 +17,7 @@ describe('OperationsHandoffCustomerPartnerSection', () => {
       ],
       partners: [
         {
-          action: 'Open cash settlement before marketplace alerts, participation, or payout release.',
+          action: 'Open cash settlement before final acceptance, service start, or payout release.',
           attention: true,
           avatarStatus: 'working',
           className: 'pill pill-danger',
