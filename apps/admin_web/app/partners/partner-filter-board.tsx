@@ -69,6 +69,7 @@ export function PartnerFilterBoard({
       }
     >
       <form action="/partners" className="vuexy-partner-form">
+        <input name="sort" type="hidden" value={filters.sort} />
         <div className="vuexy-partner-filter-grid">
           <div className="vuexy-partner-filter-group is-primary" aria-label="Partner list filters">
             <AdminFormSearch
@@ -99,13 +100,6 @@ export function PartnerFilterBoard({
               name="kyc"
               options={partnerKycFilterOptions}
             />
-            <AdminFormSelect
-              className="vuexy-partner-select"
-              defaultValue={filters.sort}
-              label="Sort"
-              name="sort"
-              options={partnerSortFilterOptions}
-            />
           </div>
           <div className="vuexy-partner-filter-actions" aria-label="Partner filter actions">
             <AdminFormControlLink className="vuexy-partner-export" download={csvDownloadName} href={csvHref}>
@@ -124,6 +118,21 @@ export function PartnerFilterBoard({
                 className={filters.review === option.review ? 'is-active' : undefined}
                 href={option.href}
                 key={option.review || 'partners'}
+              >
+                {option.label}
+              </a>
+            ))}
+          </div>
+        </div>
+        <div className="vuexy-partner-filter-strip" aria-label="Partner sort filters">
+          <span className="vuexy-partner-filter-group-label">Partner sort</span>
+          <div className="booking-date-filter-buttons vuexy-partner-filter-buttons" role="group">
+            {partnerSortButtonOptions.map((option) => (
+              <a
+                aria-current={filters.sort === option.value ? 'page' : undefined}
+                className={filters.sort === option.value ? 'is-active' : undefined}
+                href={buildPartnerFilterHref(filters, { sort: option.value })}
+                key={option.value}
               >
                 {option.label}
               </a>
@@ -207,17 +216,13 @@ const partnerKycFilterOptions = [
   { label: 'Missing', value: 'MISSING' },
 ] as const;
 
-const partnerSortFilterOptions = [
-  { label: 'Checklist order', value: 'ops-priority' },
-  { label: 'Last completed work', value: 'last-work' },
-  { label: 'Booking count', value: 'booking-count' },
-  { label: 'Completed work count', value: 'completed-count' },
-  { label: 'Gross revenue', value: 'gross-revenue' },
-  { label: 'Pending payout', value: 'pending-payout' },
-  { label: 'Available payout', value: 'available-payout' },
-  { label: 'Last app activity', value: 'last-activity' },
-  { label: 'Location freshness', value: 'location-freshness' },
-  { label: 'Wallet debt first', value: 'wallet-debt' },
+const partnerSortButtonOptions = [
+  { label: 'Checklist', value: 'ops-priority' },
+  { label: 'Last work', value: 'last-work' },
+  { label: 'Bookings', value: 'booking-count' },
+  { label: 'Completed', value: 'completed-count' },
+  { label: 'Revenue', value: 'gross-revenue' },
+  { label: 'Wallet debt', value: 'wallet-debt' },
   { label: 'Name', value: 'name' },
 ] as const;
 
@@ -272,3 +277,31 @@ const partnerReviewLaneFilterOptions = [
   { label: 'Marketplace ready', value: 'marketplace-ready' },
   { label: 'Marketplace repair', value: 'marketplace-blocked' },
 ] as const;
+
+function buildPartnerFilterHref(filters: ProviderFilters, updates: Partial<ProviderFilters>) {
+  const nextFilters = { ...filters, ...updates };
+  const params = new URLSearchParams();
+
+  partnerFilterHrefParamKeys.forEach((key) => {
+    const value = nextFilters[key];
+    if (value && !(key === 'sort' && value === 'ops-priority')) {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+  return query ? `/partners?${query}` : '/partners';
+}
+
+const partnerFilterHrefParamKeys = [
+  'q',
+  'verification',
+  'providerStatus',
+  'kyc',
+  'location',
+  'security',
+  'readiness',
+  'bookingFlow',
+  'review',
+  'sort',
+] as const satisfies readonly (keyof ProviderFilters)[];

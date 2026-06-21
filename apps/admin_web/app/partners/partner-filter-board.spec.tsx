@@ -33,7 +33,13 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('State');
     expect(rendered).toContain('Verification');
     expect(rendered).toContain('KYC');
-    expect(rendered).toContain('Sort');
+    expect(rendered).toContain('Partner sort');
+    expect(rendered).toContain('Checklist');
+    expect(rendered).toContain('Last work');
+    expect(rendered).toContain('Bookings');
+    expect(rendered).toContain('Completed');
+    expect(rendered).toContain('Revenue');
+    expect(rendered).toContain('Wallet debt');
     expect(rendered).toContain('Partner pages');
     expect(rendered).toContain('Unapproved Partners');
     expect(rendered).toContain('Unsettled Partners');
@@ -49,6 +55,13 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Status: ONLINE_AVAILABLE');
     expect(rendered).toContain('Review: Unapproved Partners');
     expect(rendered).toContain('Sort: booking count');
+    expect(rendered).toContain('type="hidden" name="sort" value="booking-count"');
+    expect(rendered).toContain(
+      'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;review=unapproved&amp;sort=last-work"',
+    );
+    expect(rendered).toContain(
+      'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;review=unapproved&amp;sort=wallet-debt"',
+    );
     expect(rendered).not.toContain('Partner filters');
     expect(rendered).not.toContain('Start with approval');
   });
