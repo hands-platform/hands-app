@@ -156,8 +156,10 @@ export function buildProviderRegistrationDossier(
         ? 'Tax profile registration is not required for Vietnam MVP operations.'
         : 'Optional tax profile is present but does not block partner approval or withdrawal.',
       operatorAction: taxDeferredOrComplete
-        ? 'Do not force tax fields during onboarding or withdrawal.'
-        : 'Review only if finance keeps legacy tax records.',
+        ? provider.taxProfile
+          ? 'Review only if finance keeps optional tax records.'
+          : 'Do not force tax fields during onboarding or withdrawal.'
+        : 'Review only if finance keeps optional tax records.',
     },
     {
       label: 'Legal agreements',

@@ -25,7 +25,8 @@ describe('partner detail activity model', () => {
       ['Verification and operations', '1'],
     ]);
     const verificationSummary = summary.find((item) => item.label === 'Verification and operations');
-    expect(verificationSummary?.helper).toContain('wallet bank details');
+    expect(verificationSummary?.helper).toContain('withdrawal details');
+    expect(verificationSummary?.helper).toContain('optional finance records');
     expect(verificationSummary?.helper).not.toContain('bank, tax');
   });
 

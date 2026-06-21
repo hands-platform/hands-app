@@ -78,7 +78,7 @@ describe('partner list actions', () => {
     expect(action.operatorAction).toContain('final acceptance');
   });
 
-  it('prioritizes resubmitted wallet bank details for admin review', () => {
+  it('prioritizes resubmitted withdrawal details for admin review', () => {
     const action = nextPartnerListAction(
       partner({
         bankAccounts: [
@@ -102,15 +102,15 @@ describe('partner list actions', () => {
       DEFAULT_PROVIDER_OPS_POLICY,
     );
 
-    expect(action.status).toBe('WITHDRAWAL BANK');
-    expect(action.detail).toBe('Corrected bank details are pending admin review.');
+    expect(action.status).toBe('WITHDRAWAL DETAILS');
+    expect(action.detail).toBe('Corrected withdrawal details are pending admin review.');
     expect(action.operatorAction).toBe(
-      'Compare the resubmitted wallet bank details with the requested correction before manual withdrawal/deposit processing.',
+      'Compare the resubmitted withdrawal details with the requested correction before manual withdrawal/deposit processing.',
     );
     expect(action.priority).toBe(83);
   });
 
-  it('keeps legacy tax review as a non-blocking finance follow-up', () => {
+  it('keeps optional tax review as a non-blocking finance follow-up', () => {
     const action = nextPartnerListAction(
       partner({
         taxProfile: {
@@ -137,7 +137,8 @@ describe('partner list actions', () => {
       DEFAULT_PROVIDER_OPS_POLICY,
     );
 
-    expect(action.status).toBe('LEGACY TAX');
+    expect(action.status).toBe('OPTIONAL TAX');
+    expect(action.detail).toContain('optional tax profile');
     expect(action.operatorAction).toContain('do not block withdrawal');
     expect(action.tone).toBe('pending');
   });

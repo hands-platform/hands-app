@@ -107,12 +107,12 @@ export function nextPartnerListAction(
   if (primaryBank && !hasApprovedBankAccount(provider)) {
     const bankCorrectionResubmitted = primaryBank.status === 'PENDING_REVIEW' && hasRejectedBankCorrection;
     return {
-      status: 'WITHDRAWAL BANK',
+      status: 'WITHDRAWAL DETAILS',
       detail: bankCorrectionResubmitted
-        ? 'Corrected bank details are pending admin review.'
+        ? 'Corrected withdrawal details are pending admin review.'
         : `Submitted bank account is ${primaryBank.status}.`,
       operatorAction: bankCorrectionResubmitted
-        ? 'Compare the resubmitted wallet bank details with the requested correction before manual withdrawal/deposit processing.'
+        ? 'Compare the resubmitted withdrawal details with the requested correction before manual withdrawal/deposit processing.'
         : 'Approve or reject bank details when the Partner requests wallet withdrawal.',
       tone: 'pending',
       priority: bankCorrectionResubmitted ? 83 : primaryBank?.status === 'REJECTED' ? 82 : 80,
@@ -120,9 +120,9 @@ export function nextPartnerListAction(
   }
   if (firstRevenueSignal && provider.taxProfile && provider.taxProfile.status !== 'APPROVED') {
     return {
-      status: 'LEGACY TAX',
-      detail: `Partner has a legacy tax profile in ${provider.taxProfile.status} status.`,
-      operatorAction: 'Review only if finance keeps legacy tax records; do not block withdrawal.',
+      status: 'OPTIONAL TAX',
+      detail: `Partner has an optional tax profile in ${provider.taxProfile.status} status.`,
+      operatorAction: 'Review only if finance keeps optional tax records; do not block withdrawal.',
       tone: 'pending',
       priority: provider.taxProfile?.status === 'REJECTED' ? 76 : 74,
     };

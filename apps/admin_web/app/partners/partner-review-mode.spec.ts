@@ -15,7 +15,8 @@ describe('partner review mode content', () => {
     expect(content?.detailFocus).not.toContain('bank');
     expect(content?.detailFocus).not.toContain('tax');
     expect(content?.steps.join(' ')).toContain('Partner app');
-    expect(content?.steps.join(' ')).toContain('wallet bank details');
+    expect(content?.steps.join(' ')).toContain('withdrawal details');
+    expect(content?.steps.join(' ')).toContain('optional tax records');
     expect(content?.steps.join(' ')).toContain('not Level 2 gates');
   });
 

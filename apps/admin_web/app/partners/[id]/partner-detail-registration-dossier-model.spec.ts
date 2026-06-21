@@ -36,6 +36,7 @@ describe('partner detail registration dossier model', () => {
     });
     expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
       ok: true,
+      operatorAction: 'Do not force tax fields during onboarding or withdrawal.',
       status: 'NOT_REQUIRED',
     });
     expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
@@ -74,6 +75,18 @@ describe('partner detail registration dossier model', () => {
     expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
       ok: false,
       status: '0/5',
+    });
+  });
+
+  it('labels submitted optional tax profile as a finance-only review', () => {
+    const dossier = buildProviderRegistrationDossier({
+      taxProfile: { status: 'PENDING' },
+    });
+
+    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
+      ok: true,
+      operatorAction: 'Review only if finance keeps optional tax records.',
+      status: 'PENDING',
     });
   });
 

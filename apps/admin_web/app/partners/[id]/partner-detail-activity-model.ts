@@ -84,7 +84,7 @@ export function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       label: 'Verification and operations',
       value: count((record) => VERIFICATION_ACTIVITY_TYPES.has(record.type)).toString(),
       helper:
-        'KYC, required documents, wallet bank details, legacy finance records, agreements, reports, account controls, media, and notes.',
+        'KYC, required documents, withdrawal details, optional finance records, agreements, reports, account controls, media, and notes.',
     },
   ];
 }
