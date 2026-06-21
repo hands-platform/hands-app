@@ -46,7 +46,7 @@ describe('admin provider profile selects', () => {
       preferredBookings: { take: 50 },
       selectedBookings: { take: 50 },
       participants: { take: 50 },
-      earnings: { take: 30 },
+      earnings: { take: 10 },
     });
   });
 
