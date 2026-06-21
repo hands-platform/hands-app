@@ -488,6 +488,17 @@ describe('AdminService query orchestration', () => {
       respondedAt: true,
       booking: { select: compactBookingSelect },
     });
+    expect(select.services.select).toEqual({
+      id: true,
+      active: true,
+      service: {
+        select: {
+          id: true,
+          name: true,
+          active: true,
+        },
+      },
+    });
   });
 
   it('adds server-computed activity summaries to customer list rows', async () => {

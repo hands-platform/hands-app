@@ -32,6 +32,18 @@ export const adminProviderServiceSummarySelect = {
   },
 } satisfies Prisma.ProviderServiceSelect;
 
+export const adminProviderListServiceSelect = {
+  id: true,
+  active: true,
+  service: {
+    select: {
+      id: true,
+      name: true,
+      active: true,
+    },
+  },
+} satisfies Prisma.ProviderServiceSelect;
+
 export const adminBookingServiceSummarySelect = {
   id: true,
   bookingId: true,

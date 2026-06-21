@@ -25,7 +25,11 @@ import {
   adminProviderVerificationDetailSelect,
   adminProviderVerificationSummarySelect,
 } from './admin-provider-selects';
-import { adminBookingServiceSummarySelect, adminProviderServiceSummarySelect } from './admin-service-selects';
+import {
+  adminBookingServiceSummarySelect,
+  adminProviderListServiceSelect,
+  adminProviderServiceSummarySelect,
+} from './admin-service-selects';
 import { adminPushDeviceSummarySelect, adminUserSummarySelect } from './admin-user-selects';
 
 export const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
@@ -178,7 +182,7 @@ export const adminProviderListSelect = {
     select: adminProviderAgreementSummarySelect,
   },
   services: {
-    select: adminProviderServiceSummarySelect,
+    select: adminProviderListServiceSelect,
   },
   earnings: {
     where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
