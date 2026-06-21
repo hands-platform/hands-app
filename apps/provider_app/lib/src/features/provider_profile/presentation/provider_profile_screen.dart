@@ -172,25 +172,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  Future<void> _addTaxProfileFromForm(Map<String, dynamic> snapshot) async {
-    final taxProfile = asMap(snapshot['taxProfile']) ?? <String, dynamic>{};
-    final input = await showProviderTaxProfileSheet(
-      context,
-      initial: taxProfile,
-      basicProfile: asMap(snapshot['basicProfile']) ?? <String, dynamic>{},
-      status: taxProfile['status']?.toString(),
-      rejectionReason: reviewReason(taxProfile),
-    );
-    if (input == null) return;
-    return _runOnboardingAction('Tax profile submitted for review', () async {
-      await ref.read(providerRepositoryProvider).upsertOnboardingTaxProfile(
-            taxCode: input.taxCode,
-            legalName: input.legalName,
-            registeredAddress: input.registeredAddress,
-          );
-    });
-  }
-
   Future<void> _acceptAgreementsFromForm(Map<String, dynamic> snapshot) async {
     final input = await showProviderAgreementsSheet(
       context,
@@ -423,8 +404,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onSubmitKyc: () =>
                       _submitKycFromForm(snapshot.data ?? <String, dynamic>{}),
                   onAddBankAccount: () => _addBankAccountFromForm(
-                      snapshot.data ?? <String, dynamic>{}),
-                  onAddTaxProfile: () => _addTaxProfileFromForm(
                       snapshot.data ?? <String, dynamic>{}),
                   onAcceptAgreements: () => _acceptAgreementsFromForm(
                       snapshot.data ?? <String, dynamic>{}),

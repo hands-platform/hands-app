@@ -16,7 +16,6 @@ class ProviderOnboardingCard extends StatelessWidget {
     required this.onFillBasicProfile,
     required this.onSubmitKyc,
     required this.onAddBankAccount,
-    required this.onAddTaxProfile,
     required this.onAcceptAgreements,
   });
 
@@ -27,7 +26,6 @@ class ProviderOnboardingCard extends StatelessWidget {
   final Future<void> Function() onFillBasicProfile;
   final Future<void> Function() onSubmitKyc;
   final Future<void> Function() onAddBankAccount;
-  final Future<void> Function() onAddTaxProfile;
   final Future<void> Function() onAcceptAgreements;
 
   @override
@@ -52,7 +50,6 @@ class ProviderOnboardingCard extends StatelessWidget {
         asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
     final kyc = asMap(snapshot['kyc']);
     final verification = asMap(snapshot['verification']);
-    final taxProfile = asMap(snapshot['taxProfile']);
     final basicProfile = asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
     final hasBasicProfile = !nextActions.contains('BASIC_PROFILE');
     final kycStatus =
@@ -60,12 +57,10 @@ class ProviderOnboardingCard extends StatelessWidget {
     final bankStatus = bankAccounts.isEmpty
         ? null
         : asMap(bankAccounts.first)?['status']?.toString();
-    final taxStatus = taxProfile?['status']?.toString();
     final addressText = basicProfile['residentialAddress']?.toString();
     final primaryBank = bankAccounts.isEmpty ? null : asMap(bankAccounts.first);
     final kycRejectionReason = reviewReason(kyc) ?? reviewReason(verification);
     final bankRejectionReason = reviewReason(primaryBank);
-    final taxRejectionReason = reviewReason(taxProfile);
     final rejectedDocuments = documents
         .map(asMap)
         .whereType<Map<String, dynamic>>()
@@ -88,7 +83,6 @@ class ProviderOnboardingCard extends StatelessWidget {
         submittedKycRequiredCount >= requiredKycTypes.length;
     final missingAgreementCount = (asList(payoutMissing['agreements'])).length;
     final payoutPrerequisiteReady = completedBookingCount > 0 &&
-        taxStatus == 'APPROVED' &&
         (addressText?.trim().isNotEmpty ?? false) &&
         missingAgreementCount == 0;
     final payoutGateItems = providerPayoutGateItemsFromSnapshot(snapshot);
@@ -102,10 +96,16 @@ class ProviderOnboardingCard extends StatelessWidget {
       'RESIDENTIAL_ADDRESS' => onFillBasicProfile,
       'KYC_REVIEW' => onSubmitKyc,
       'BANK_ACCOUNT_REVIEW' => onAddBankAccount,
-      'TAX_PROFILE_REVIEW' => onAddTaxProfile,
       'AGREEMENTS' => onAcceptAgreements,
       _ => null,
     };
+    final walletOperationsDetail = completedBookingCount == 0
+        ? 'Wallet withdrawal/deposit review starts after the first earning. Bank details are requested from Earnings only when needed.'
+        : missingAgreementCount > 0
+            ? '$missingAgreementCount wallet agreement(s) need acceptance before withdrawal review.'
+            : canWithdraw
+                ? 'Wallet requirements are clear for withdrawal review.'
+                : 'Use Earnings to request withdrawal or report deposit support when money movement is needed.';
 
     return Card(
       child: Padding(
@@ -165,14 +165,8 @@ class ProviderOnboardingCard extends StatelessWidget {
             if (firstRevenuePayoutSetupActive) ...[
               ProviderFirstRevenuePayoutSetupPanel(
                 completedBookingCount: completedBookingCount,
-                taxStatus: taxStatus,
                 addressReady: addressText?.trim().isNotEmpty ?? false,
                 missingAgreementCount: missingAgreementCount,
-                onAddTaxProfile: isSaving
-                    ? null
-                    : () {
-                        onAddTaxProfile();
-                      },
                 onUpdateAddress: isSaving
                     ? null
                     : () {
@@ -234,17 +228,9 @@ class ProviderOnboardingCard extends StatelessWidget {
             ],
             if (bankRejectionReason != null) ...[
               ProviderReviewAlert(
-                title: 'Bank account needs updates',
+                title: 'Wallet bank details need updates',
                 detail:
-                    '$bankRejectionReason\n\nOpen Bank account and submit corrected details.',
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (taxRejectionReason != null) ...[
-              ProviderReviewAlert(
-                title: 'Tax profile needs updates',
-                detail:
-                    '$taxRejectionReason\n\nOpen Tax profile and submit corrected MST, legal name, and registered address.',
+                    '$bankRejectionReason\n\nOpen Earnings and submit corrected bank details when withdrawal or deposit support is requested.',
               ),
               const SizedBox(height: 8),
             ],
@@ -286,64 +272,57 @@ class ProviderOnboardingCard extends StatelessWidget {
             ),
             ProviderOnboardingStepCard(
               step: '3',
-              title: 'Bank account',
+              title: 'Wallet bank details',
               detail: providerBankAccountStepDetail(
                 status: bankStatus,
                 rejectionReason: bankRejectionReason,
               ),
-              status: bankStatus == 'APPROVED' ? 'Approved' : 'Required',
+              status: bankStatus == 'APPROVED'
+                  ? 'Approved'
+                  : bankStatus == 'REJECTED'
+                      ? 'Needs correction'
+                      : bankStatus == 'PENDING_REVIEW'
+                          ? 'Under review'
+                          : 'On request',
               complete: bankStatus == 'APPROVED',
               icon: Icons.account_balance_outlined,
               actionLabel: bankStatus == 'REJECTED'
-                  ? 'Resubmit bank'
+                  ? 'Resubmit bank details'
                   : bankStatus == null
-                      ? 'Add bank account'
-                      : 'Update bank account',
-              onPressed: isSaving ? null : onAddBankAccount,
+                      ? null
+                      : 'Update bank details',
+              onPressed:
+                  isSaving || bankStatus == null ? null : onAddBankAccount,
             ),
             ProviderOnboardingStepCard(
               step: '4',
-              title: 'Payout eligibility',
-              detail: providerTaxProfileStepDetail(
-                completedBookingCount: completedBookingCount,
-                status: taxStatus,
-                rejectionReason: taxRejectionReason,
-                missingAgreementCount: missingAgreementCount,
-              ),
+              title: 'Wallet operations',
+              detail: walletOperationsDetail,
               status: canWithdraw
-                  ? 'Withdrawals enabled'
+                  ? 'Ready'
                   : payoutPrerequisiteReady
-                      ? 'Ready for admin refresh'
-                      : 'Locked',
-              complete: canWithdraw,
+                      ? 'Manual review'
+                      : completedBookingCount == 0
+                          ? 'After first earning'
+                          : 'Agreements needed',
+              complete: canWithdraw || payoutPrerequisiteReady,
               icon: Icons.payments_outlined,
               actionLabel: completedBookingCount == 0
-                  ? 'After first earning'
-                  : taxStatus == 'REJECTED'
-                      ? 'Resubmit tax'
-                      : taxStatus == 'APPROVED'
-                          ? 'Review terms'
-                          : 'Add tax profile',
+                  ? null
+                  : missingAgreementCount > 0
+                      ? 'Review agreements'
+                      : null,
               onPressed: isSaving
                   ? null
                   : completedBookingCount == 0
                       ? null
-                      : taxStatus == 'APPROVED'
+                      : missingAgreementCount > 0
                           ? onAcceptAgreements
-                          : onAddTaxProfile,
+                          : null,
             ),
             ProviderPayoutGateChecklist(
               items: payoutGateItems,
               agreementVersion: providerAgreementVersionFromSnapshot(snapshot),
-            ),
-            ProviderOnboardingStepCard(
-              step: '5',
-              title: 'Profile review',
-              detail:
-                  'Admin can complete an optional profile review after identity, experience, and profile evidence are reviewed.',
-              status: recommended == 'LEVEL_4_TRUSTED' ? 'Complete' : 'Later',
-              complete: recommended == 'LEVEL_4_TRUSTED',
-              icon: Icons.workspace_premium_outlined,
             ),
             if (recentLogs.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -361,6 +340,9 @@ class ProviderOnboardingCard extends StatelessWidget {
 }
 
 String _compactLevel(String value) {
+  if (value == 'LEVEL_3_PAYOUT_ENABLED' || value == 'LEVEL_4_TRUSTED') {
+    return 'L2 active';
+  }
   return value
       .replaceAll('LEVEL_', 'L')
       .replaceAll('_SIGNUP', ' signup')

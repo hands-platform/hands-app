@@ -8,26 +8,21 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
   const ProviderFirstRevenuePayoutSetupPanel({
     super.key,
     required this.completedBookingCount,
-    required this.taxStatus,
     required this.addressReady,
     required this.missingAgreementCount,
-    required this.onAddTaxProfile,
     required this.onUpdateAddress,
     required this.onAcceptAgreements,
   });
 
   final int completedBookingCount;
-  final String? taxStatus;
   final bool addressReady;
   final int missingAgreementCount;
-  final VoidCallback? onAddTaxProfile;
   final VoidCallback? onUpdateAddress;
   final VoidCallback? onAcceptAgreements;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final taxReady = taxStatus == 'APPROVED';
     final agreementsReady = missingAgreementCount == 0;
 
     return Container(
@@ -56,7 +51,7 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$completedBookingCount completed service(s). Finish tax, address, and payout agreements before withdrawal. A negative HANDS wallet blocks marketplace participation and payout release until settlement.',
+                      '$completedBookingCount completed service(s). Finish wallet contact details and payout agreements before withdrawal review. Bank details are requested from Earnings when withdrawal or deposit support is needed.',
                     ),
                   ],
                 ),
@@ -65,9 +60,9 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ProviderPayoutSetupStatusRow(
-            label: 'Tax profile',
-            value: taxReady ? 'Approved' : taxStatus ?? 'Missing',
-            complete: taxReady,
+            label: 'Wallet bank details',
+            value: 'From Earnings',
+            complete: true,
           ),
           ProviderPayoutSetupStatusRow(
             label: 'Residential address',
@@ -84,14 +79,6 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (!taxReady)
-                FilledButton.tonalIcon(
-                  onPressed: onAddTaxProfile,
-                  icon: const Icon(Icons.receipt_long_outlined),
-                  label: Text(
-                    taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
-                  ),
-                ),
               if (!addressReady)
                 FilledButton.tonalIcon(
                   onPressed: onUpdateAddress,
@@ -102,7 +89,7 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: onAcceptAgreements,
                   icon: const Icon(Icons.assignment_turned_in_outlined),
-                  label: const Text('Accept agreements'),
+                  label: const Text('Accept wallet agreements'),
                 ),
             ],
           ),
@@ -288,7 +275,7 @@ class ProviderPayoutGateChecklist extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Payout gate checklist',
+                  'Wallet operations checklist',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),

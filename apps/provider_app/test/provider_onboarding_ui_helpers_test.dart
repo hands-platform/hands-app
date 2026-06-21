@@ -19,7 +19,6 @@ void main() {
     ]);
     expect(requiredPayoutAgreementTypesFromSnapshot(snapshot), [
       'TERMS',
-      'TAX',
     ]);
     expect(providerAgreementVersionFromSnapshot(snapshot),
         'hands-provider-2026-06');
@@ -36,7 +35,6 @@ void main() {
       'PRIVACY',
       'LOCATION',
       'PAYOUT',
-      'TAX',
     ]);
     expect(providerAgreementVersionFromSnapshot({}), 'current');
   });
@@ -48,7 +46,9 @@ void main() {
     expect(reviewReason(null), isNull);
   });
 
-  test('describes bank and tax review states for onboarding steps', () {
+  test(
+      'describes wallet bank and legacy tax review states for onboarding steps',
+      () {
     expect(
       providerBankAccountStepDetail(
         status: 'REJECTED',
@@ -62,7 +62,7 @@ void main() {
     );
     expect(
       providerBankAccountStepDetail(status: 'PENDING_REVIEW'),
-      'Submitted. Waiting for admin approval before payout.',
+      'Submitted. Waiting for admin approval before wallet withdrawal/deposit processing.',
     );
     expect(
       providerTaxProfileStepDetail(
@@ -71,7 +71,7 @@ void main() {
         rejectionReason: 'MST is invalid',
         missingAgreementCount: 1,
       ),
-      'Rejected: MST is invalid. Update MST, legal name, and registered address before withdrawal.',
+      'Legacy tax profile was rejected: MST is invalid. Tax profile is not required for Vietnam MVP.',
     );
     expect(
       providerTaxProfileStepDetail(
@@ -79,7 +79,7 @@ void main() {
         status: null,
         missingAgreementCount: 5,
       ),
-      'Tax and payout agreements are requested after the first earned revenue.',
+      'Tax profile is not required for Vietnam MVP.',
     );
   });
 
@@ -100,16 +100,18 @@ void main() {
       },
     });
 
-    expect(lockedItems, hasLength(4));
+    expect(lockedItems, hasLength(3));
     expect(lockedItems.where((item) => item.complete), isEmpty);
-    expect(lockedItems[1].detail, contains('deferred until revenue exists'));
-    expect(lockedItems[2].detail, contains('after revenue exists'));
+    expect(lockedItems[1].label, 'Wallet bank details');
+    expect(lockedItems[1].detail, contains('requested from Earnings'));
     expect(lockedItems.last.detail,
         contains('deferred until first earned revenue'));
 
     final readyItems = providerPayoutGateItemsFromSnapshot({
       'completedBookingCount': 2,
-      'taxProfile': {'status': 'APPROVED'},
+      'bankAccounts': [
+        {'status': 'APPROVED'},
+      ],
       'basicProfile': {
         'residentialAddress': 'District 1, Ho Chi Minh City',
       },
@@ -119,7 +121,8 @@ void main() {
     });
 
     expect(readyItems.every((item) => item.complete), isTrue);
-    expect(readyItems[1].detail, contains('approved by admin'));
+    expect(readyItems[1].detail,
+        contains('approved for manual wallet operations'));
   });
 
   test('builds KYC decision checklist from onboarding snapshot', () {
@@ -387,7 +390,7 @@ void main() {
     expect(priority.buttonLabel, 'Open KYC checklist');
   });
 
-  test('prioritizes rejected bank and tax records with the admin reason', () {
+  test('prioritizes rejected wallet bank records with the admin reason', () {
     final bankPriority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': ['BANK_ACCOUNT_REVIEW'],
       'bankAccounts': [
@@ -398,10 +401,12 @@ void main() {
       ],
     });
 
-    expect(bankPriority.title, 'Fix rejected bank account');
+    expect(bankPriority.title, 'Fix wallet bank details');
     expect(bankPriority.detail, contains('Account holder does not match CCCD'));
-    expect(bankPriority.buttonLabel, 'Resubmit bank');
+    expect(bankPriority.buttonLabel, 'Resubmit bank details');
+  });
 
+  test('does not treat legacy tax review as a partner level gate', () {
     final taxPriority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': ['TAX_PROFILE_REVIEW'],
       'completedBookingCount': 1,
@@ -411,12 +416,12 @@ void main() {
       },
     });
 
-    expect(taxPriority.title, 'Fix rejected tax profile');
-    expect(taxPriority.detail, contains('MST is invalid'));
-    expect(taxPriority.buttonLabel, 'Resubmit tax');
+    expect(taxPriority.title, 'Wallet review continues from Earnings');
+    expect(taxPriority.detail, contains('Tax profile is not required'));
+    expect(taxPriority.buttonLabel, isNull);
   });
 
-  test('prioritizes residential tax address after first earning', () {
+  test('prioritizes wallet contact address after first earning', () {
     final priority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': ['RESIDENTIAL_ADDRESS', 'AGREEMENTS'],
       'completedBookingCount': 1,
@@ -430,7 +435,8 @@ void main() {
     });
 
     expect(priority.actionKey, 'RESIDENTIAL_ADDRESS');
-    expect(priority.title, 'Add tax address');
+    expect(priority.title, 'Confirm wallet contact address');
+    expect(priority.detail, contains('operations contact'));
     expect(priority.buttonLabel, 'Update address');
   });
 

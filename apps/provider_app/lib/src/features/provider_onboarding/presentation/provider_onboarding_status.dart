@@ -85,9 +85,6 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   final verification = _asMap(snapshot['verification']);
   final kycStatus =
       kyc?['status']?.toString() ?? verification?['status']?.toString();
-  final taxProfile = _asMap(snapshot['taxProfile']);
-  final taxStatus = taxProfile?['status']?.toString();
-  final taxRejectionReason = reviewReason(taxProfile);
   final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
   final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
   final canWithdraw = payoutGate['canWithdraw'] == true;
@@ -140,8 +137,8 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   if (nextActions.contains('BANK_ACCOUNT_REVIEW')) {
     return ProviderOnboardingPriority(
       title: bankStatus == 'REJECTED'
-          ? 'Fix rejected bank account'
-          : 'Add payout bank account',
+          ? 'Fix wallet bank details'
+          : 'Add wallet bank details',
       detail: bankStatus == 'REJECTED'
           ? providerBankAccountStepDetail(
               status: bankStatus,
@@ -150,34 +147,17 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
           : 'Bank details are used for manual wallet withdrawal/deposit checks when money movement is requested.',
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_REVIEW',
-      buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
-    );
-  }
-
-  if (nextActions.contains('TAX_PROFILE_REVIEW')) {
-    return ProviderOnboardingPriority(
-      title: taxStatus == 'REJECTED'
-          ? 'Fix rejected tax profile'
-          : 'Add tax profile for payout',
-      detail: taxStatus == 'REJECTED'
-          ? providerTaxProfileStepDetail(
-              completedBookingCount: completedBookingCount,
-              status: taxStatus,
-              rejectionReason: taxRejectionReason,
-              missingAgreementCount: missingAgreementCount,
-            )
-          : 'Tax information is only required after earnings exist, but it must be approved before withdrawal.',
-      tone: 'warning',
-      actionKey: 'TAX_PROFILE_REVIEW',
-      buttonLabel: taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
+      buttonLabel: bankStatus == 'REJECTED'
+          ? 'Resubmit bank details'
+          : 'Add bank details',
     );
   }
 
   if (nextActions.contains('RESIDENTIAL_ADDRESS')) {
     return const ProviderOnboardingPriority(
-      title: 'Add tax address',
+      title: 'Confirm wallet contact address',
       detail:
-          'First earning is recorded. Save a residential/tax address before withdrawal is available.',
+          'First earning is recorded. Save an operations contact address before wallet review continues.',
       tone: 'warning',
       actionKey: 'RESIDENTIAL_ADDRESS',
       buttonLabel: 'Update address',
@@ -186,9 +166,9 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
 
   if (nextActions.contains('AGREEMENTS')) {
     return ProviderOnboardingPriority(
-      title: 'Accept payout agreements',
+      title: 'Accept wallet agreements',
       detail:
-          '$missingAgreementCount payout agreement(s) still need acceptance before withdrawal is available.',
+          '$missingAgreementCount wallet agreement(s) still need acceptance before withdrawal review.',
       tone: 'warning',
       actionKey: 'AGREEMENTS',
       buttonLabel: 'Review agreements',
@@ -197,9 +177,9 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
 
   if (canWithdraw) {
     return const ProviderOnboardingPriority(
-      title: 'Partner setup is complete',
+      title: 'Wallet operations are ready',
       detail:
-          'This partner can receive bookings and request payouts when earnings are available.',
+          'This partner can receive bookings and request wallet support when earnings are available.',
       tone: 'success',
     );
   }
@@ -214,9 +194,9 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   }
 
   return const ProviderOnboardingPriority(
-    title: 'Waiting for admin review',
+    title: 'Wallet review continues from Earnings',
     detail:
-        'Submitted information is saved. Refresh this page after admin finishes the remaining review.',
+        'Bank details and payout agreements are checked when withdrawal or deposit support is requested. Tax profile is not required for Vietnam MVP.',
     tone: 'info',
   );
 }
@@ -309,8 +289,7 @@ List<ProviderKycDecisionItem> providerKycDecisionChecklistFromSnapshot(
     ),
     ProviderKycDecisionItem(
       label: 'Legal name captured',
-      detail:
-          legalName ?? 'Add the legal name exactly as shown on CCCD/CMND.',
+      detail: legalName ?? 'Add the legal name exactly as shown on CCCD/CMND.',
       complete: legalName != null,
     ),
     ProviderKycDecisionItem(
@@ -342,54 +321,46 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
   final completedBookingCount =
       _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
   final payoutSetupStarted = completedBookingCount > 0;
-  final taxProfile = _asMap(snapshot['taxProfile']);
-  final taxStatus = taxProfile?['status']?.toString();
-  final basicProfile = _asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
-  final address = basicProfile['residentialAddress']?.toString().trim() ?? '';
+  final bankAccounts = _asList(snapshot['bankAccounts']);
+  final bankStatus = bankAccounts.isEmpty
+      ? null
+      : _asMap(bankAccounts.first)?['status']?.toString();
   final missingAgreements = _asList(payoutMissing['agreements'])
       .map((value) => value.toString())
-      .where((value) => value.isNotEmpty)
+      .where((value) => value.isNotEmpty && value != 'TAX')
       .toList();
   final requiredAgreements = requiredPayoutAgreementTypesFromSnapshot(snapshot);
   final acceptedAgreementCount =
       (requiredAgreements.length - missingAgreements.length)
           .clamp(0, requiredAgreements.length);
+  final bankDetail = !payoutSetupStarted
+      ? 'Wallet bank details are requested from Earnings when withdrawal/deposit support is needed.'
+      : bankStatus == 'APPROVED'
+          ? 'Bank details are approved for manual wallet operations.'
+          : bankStatus == 'PENDING_REVIEW'
+              ? 'Bank details are waiting for admin wallet review.'
+              : bankStatus == 'REJECTED'
+                  ? 'Bank details need correction before withdrawal/deposit support can continue.'
+                  : 'Use Earnings withdrawal or deposit actions to add bank details when needed.';
 
   return [
     ProviderOnboardingGateItem(
       label: 'First completed service',
       detail: completedBookingCount > 0
           ? '$completedBookingCount completed service(s) recorded.'
-          : 'Complete the first customer booking before tax and settlement setup starts.',
+          : 'Complete the first customer booking before wallet withdrawal/deposit review starts.',
       complete: payoutMissing['firstCompletedService'] != true &&
           completedBookingCount > 0,
     ),
     ProviderOnboardingGateItem(
-      label: 'Tax profile',
-      detail: taxStatus == 'APPROVED'
-          ? 'MST/tax profile is approved by admin.'
-          : !payoutSetupStarted
-              ? 'Tax information is deferred until revenue exists.'
-              : 'Submit MST, legal name, and registered address for admin review.',
-      complete: payoutSetupStarted &&
-          payoutMissing['taxProfileApproved'] != true &&
-          taxStatus == 'APPROVED',
+      label: 'Wallet bank details',
+      detail: bankDetail,
+      complete: payoutSetupStarted && bankStatus == 'APPROVED',
     ),
     ProviderOnboardingGateItem(
-      label: 'Residential address',
-      detail: address.isNotEmpty
-          ? address
-          : !payoutSetupStarted
-              ? 'Residential address is requested before withdrawal after revenue exists.'
-              : 'Save a residential address before payout approval.',
-      complete: payoutSetupStarted &&
-          payoutMissing['residentialAddress'] != true &&
-          address.isNotEmpty,
-    ),
-    ProviderOnboardingGateItem(
-      label: 'Payout agreements',
+      label: 'Wallet agreements',
       detail: !payoutSetupStarted
-          ? 'Payout and tax agreements are deferred until first earned revenue.'
+          ? 'Wallet payout agreements are deferred until first earned revenue.'
           : missingAgreements.isEmpty
               ? 'All required agreements are accepted.'
               : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
@@ -466,7 +437,7 @@ String providerBankAccountStepDetail({
   String? rejectionReason,
 }) {
   if (status == null) {
-    return 'Add bank name, account number, account holder, and optional QR banking info.';
+    return 'Bank details are requested from Earnings when withdrawal or deposit support is needed.';
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
@@ -476,10 +447,10 @@ String providerBankAccountStepDetail({
     return '$prefix Update the bank details and submit again.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'Submitted. Waiting for admin approval before payout.';
+    return 'Submitted. Waiting for admin approval before wallet withdrawal/deposit processing.';
   }
   if (status == 'APPROVED') {
-    return 'Approved for payout.';
+    return 'Approved for manual wallet operations.';
   }
   return 'Review status: $status.';
 }
@@ -491,21 +462,22 @@ String providerTaxProfileStepDetail({
   required int missingAgreementCount,
 }) {
   if (completedBookingCount == 0) {
-    return 'Tax and payout agreements are requested after the first earned revenue.';
+    return 'Tax profile is not required for Vietnam MVP.';
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
-    final prefix =
-        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
-    return '$prefix Update MST, legal name, and registered address before withdrawal.';
+    final prefix = reason == null || reason.isEmpty
+        ? 'Legacy tax profile was rejected.'
+        : 'Legacy tax profile was rejected: $reason.';
+    return '$prefix Tax profile is not required for Vietnam MVP.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'Submitted. Waiting for admin tax review. Agreements missing: $missingAgreementCount.';
+    return 'Legacy tax profile is waiting for admin review. It does not block Level 2 matching.';
   }
   if (status == 'APPROVED') {
-    return 'Tax approved. Agreements missing: $missingAgreementCount.';
+    return 'Legacy tax profile is saved. It does not change partner level.';
   }
-  return 'Tax: ${status ?? 'missing'}, agreements missing: $missingAgreementCount.';
+  return 'Tax profile is not required for Vietnam MVP.';
 }
 
 List<String> requiredKycDocumentTypesFromSnapshot(
@@ -526,8 +498,8 @@ List<String> requiredPayoutAgreementTypesFromSnapshot(
       .where((value) => value.isNotEmpty)
       .toList();
   return values.isEmpty
-      ? const ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']
-      : values;
+      ? const ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT']
+      : values.where((value) => value != 'TAX').toList();
 }
 
 String providerAgreementVersionFromSnapshot(Map<String, dynamic> snapshot) {
