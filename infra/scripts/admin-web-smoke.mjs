@@ -10,11 +10,22 @@ const criticalSmokePaths = [
   '/operations-policy',
   '/setup',
 ];
+const budgetSmokePaths = [
+  '/bookings',
+  '/bookings/completed',
+  '/bookings/post-match-cancellations',
+  '/customers',
+  '/partners',
+  '/reviews',
+  '/notifications',
+];
 const runCriticalSmoke =
   rawSmokeArgs.includes('--critical') || process.env.ADMIN_WEB_SMOKE_MODE === 'critical';
+const runBudgetSmoke =
+  rawSmokeArgs.includes('--budget') || process.env.ADMIN_WEB_SMOKE_MODE === 'budget';
 const requestedSmokeArgs = process.argv
   .slice(2)
-  .filter((value) => value !== '--critical')
+  .filter((value) => value !== '--critical' && value !== '--budget')
   .flatMap((value) => value.split(','))
   .map((path) => path.trim())
   .filter(Boolean);
@@ -830,16 +841,32 @@ const explicitSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || request
   .map((path) => path.trim())
   .filter(Boolean);
 const requestedSmokePaths =
-  explicitSmokePaths.length > 0 ? explicitSmokePaths : runCriticalSmoke ? criticalSmokePaths : [];
+  explicitSmokePaths.length > 0
+    ? explicitSmokePaths
+    : runCriticalSmoke
+      ? criticalSmokePaths
+      : runBudgetSmoke
+        ? budgetSmokePaths
+        : [];
 const smokePages =
-  requestedSmokePaths.length > 0 ? pages.filter((page) => requestedSmokePaths.includes(page.path)) : pages;
+  runBudgetSmoke && requestedSmokePaths.length > 0
+    ? requestedSmokePaths.map((path) => pages.find((page) => page.path === path) ?? { path, markers: [] })
+    : requestedSmokePaths.length > 0
+      ? pages.filter((page) => requestedSmokePaths.includes(page.path))
+      : pages;
 const FETCH_TIMEOUT_MS = Number(process.env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
+const ROUTE_BUDGET_WARN_MS = Number(process.env.ADMIN_WEB_SMOKE_WARN_MS ?? 5_000);
+const ROUTE_BUDGET_WARN_BYTES = Number(process.env.ADMIN_WEB_SMOKE_WARN_BYTES ?? 2_000_000);
+const ENFORCE_ROUTE_BUDGET = process.env.ADMIN_WEB_SMOKE_ENFORCE_BUDGET === '1';
+const pageBodies = new Map();
+const routeMetrics = [];
 
-if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
+if (!runBudgetSmoke && requestedSmokePaths.length > 0 && smokePages.length === 0) {
   throw new Error(`No admin smoke pages matched ADMIN_WEB_SMOKE_PATHS=${requestedSmokePaths.join(',')}`);
 }
 
 async function fetchPage(path, redirectDepth = 0, attempt = 0) {
+  const startedAt = Date.now();
   let response;
   let body;
   try {
@@ -854,6 +881,12 @@ async function fetchPage(path, redirectDepth = 0, attempt = 0) {
       }
     }
     body = await response.text();
+    routeMetrics.push({
+      bytes: Buffer.byteLength(body, 'utf8'),
+      durationMs: Date.now() - startedAt,
+      path,
+      status: response.status,
+    });
   } catch (error) {
     if (attempt < 6) {
       await delay(1_000 * (attempt + 1));
@@ -946,13 +979,16 @@ function assertNoLegacyVisibleLanguage(path, body) {
 
 for (const page of smokePages) {
   const body = await fetchPage(page.path);
-  const missing = page.markers.filter((marker) => !body.includes(marker));
-  if (missing.length > 0) {
-    throw new Error(`${page.path} is missing expected markers: ${missing.join(', ')}`);
+  pageBodies.set(page.path, body);
+  if (!runBudgetSmoke) {
+    const missing = page.markers.filter((marker) => !body.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${page.path} is missing expected markers: ${missing.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(page.path, body);
+    await runPageFollowUps(page, body);
   }
-  assertNoLegacyVisibleLanguage(page.path, body);
   console.log(`PASS ${page.path}`);
-  await runPageFollowUps(page, body);
 }
 
 async function runPageFollowUps(page, body) {
@@ -1018,6 +1054,7 @@ async function runSupportFollowUps(followUp, parentPath, body) {
   }
 }
 
+if (!runBudgetSmoke) {
 const providersBody =
   shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
     ? await fetchPage('/providers')
@@ -1293,7 +1330,68 @@ if (paymentLinkMatch) {
   console.log(`PASS ${paymentPath}`);
 }
 
+}
+if (runBudgetSmoke) {
+  await runBudgetDetailRoutes();
+}
+printRouteBudgetSummary();
 console.log(`Admin web smoke passed for ${smokePages.length} page(s) at ${baseUrl}.`);
+
+async function runBudgetDetailRoutes() {
+  for (const path of [
+    firstDetailPath(pageBodies.get('/bookings'), 'bookings'),
+    firstDetailPath(pageBodies.get('/bookings/completed'), 'bookings'),
+    firstDetailPath(pageBodies.get('/bookings/post-match-cancellations'), 'bookings'),
+    firstDetailPath(pageBodies.get('/customers'), 'customers'),
+    firstDetailPath(pageBodies.get('/partners'), 'partners'),
+  ].filter(Boolean)) {
+    await fetchPage(path);
+    console.log(`PASS ${path}`);
+  }
+}
+
+function firstDetailPath(body, routePrefix) {
+  if (!body) return null;
+  const ignoredSegments = new Set(['completed', 'post-match-cancellations']);
+  const detailLinkPattern = new RegExp(`href="/${routePrefix}/([^"#?]+)[^"]*"`, 'g');
+  for (const match of body.matchAll(detailLinkPattern)) {
+    const id = decodeHtmlAttribute(match[1] ?? '').trim();
+    if (!id || ignoredSegments.has(id)) continue;
+    return `/${routePrefix}/${id}`;
+  }
+  return null;
+}
+
+function printRouteBudgetSummary() {
+  if (routeMetrics.length === 0) {
+    return;
+  }
+
+  console.log('Admin route budget summary:');
+  for (const metric of routeMetrics) {
+    const sizeKb = Math.round(metric.bytes / 1024);
+    const flags = [
+      metric.durationMs > ROUTE_BUDGET_WARN_MS ? `>${ROUTE_BUDGET_WARN_MS}ms` : null,
+      metric.bytes > ROUTE_BUDGET_WARN_BYTES
+        ? `>${Math.round(ROUTE_BUDGET_WARN_BYTES / 1024)}KB`
+        : null,
+    ].filter(Boolean);
+    console.log(
+      `BUDGET ${metric.path} ${metric.status} ${metric.durationMs}ms ${sizeKb}KB${flags.length ? ` WARN ${flags.join(',')}` : ''}`,
+    );
+  }
+
+  const budgetFailures = routeMetrics.filter(
+    (metric) => metric.durationMs > ROUTE_BUDGET_WARN_MS || metric.bytes > ROUTE_BUDGET_WARN_BYTES,
+  );
+  if (ENFORCE_ROUTE_BUDGET && budgetFailures.length > 0) {
+    throw new Error(
+      `Admin route budget exceeded: ${budgetFailures
+        .map((metric) => `${metric.path} ${metric.durationMs}ms/${Math.round(metric.bytes / 1024)}KB`)
+        .join('; ')}`,
+    );
+  }
+}
 
 function assertSelectedParticipantCountedInCustomerShortlist(path, body) {
   const visibleText = visibleTextFromHtml(body);
