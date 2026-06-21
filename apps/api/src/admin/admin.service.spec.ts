@@ -457,6 +457,39 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('keeps provider list booking relation payload compact after summary aggregation', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listProviders();
+
+    const select = prisma.providerProfile.findMany.mock.calls[0][0].select;
+    const compactBookingSelect = {
+      id: true,
+      status: true,
+      scheduledStartAt: true,
+      closedByRole: true,
+      createdAt: true,
+      updatedAt: true,
+      chatRoom: { select: { id: true, createdAt: true } },
+    };
+
+    expect(select.preferredBookings.select).toEqual(compactBookingSelect);
+    expect(select.selectedBookings.select).toEqual(compactBookingSelect);
+    expect(select.participants.select).toEqual({
+      id: true,
+      providerProfileId: true,
+      status: true,
+      joinedAt: true,
+      respondedAt: true,
+      booking: { select: compactBookingSelect },
+    });
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');
