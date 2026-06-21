@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
 
+export const PARTNER_CONNECTED_RECORDS_DESCRIPTION =
+  'Jump from this partner to linked booking, chat, KYC, required documents, location, wallet, payout, and operator records.';
+
 type PartnerDetailConnectedRecordsSectionProps = {
   readonly description: string;
   readonly id: string;

@@ -69,6 +69,13 @@ describe('partner dispatch handoff', () => {
       tone: 'ok',
       href: '/partners?review=marketplace-ready',
     });
+    expect(handoff.links.find((item) => item.title === 'Acceptance blocked')).toMatchObject({
+      detail:
+        'Partners blocked from direct requests by KYC, location, push, control, or wallet settlement gates.',
+      href: '/partners?review=acceptance-blocked',
+      tone: 'danger',
+      value: '1',
+    });
     expect(handoff.links.find((item) => item.title === 'Cash fee debt')).toMatchObject({
       value: '1',
       tone: 'danger',

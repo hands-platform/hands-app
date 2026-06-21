@@ -84,6 +84,9 @@ describe('partner shift handoff', () => {
     expect(handoff.tone).toBe('ok');
     expect(handoff.label).toBe('Dispatch ready');
     expect(handoff.stats.find((item) => item.label === 'Direct request ready')?.value).toBe('1');
+    expect(handoff.stats.find((item) => item.label === 'Hard blocked')?.detail).toBe(
+      'Account, KYC, device/session, identity, or wallet settlement blockers for direct partner work.',
+    );
     expect(handoff.actions[0]).toMatchObject({
       title: 'Keep ready partners warm for live requests',
       tone: 'ok',

@@ -210,7 +210,8 @@ export function buildPartnerShiftHandoff(
       {
         label: 'Hard blocked',
         value: hardBlocked.length.toString(),
-        detail: 'Account, KYC, bank, device/session, or identity blockers for direct partner work.',
+        detail:
+          'Account, KYC, device/session, identity, or wallet settlement blockers for direct partner work.',
         href: '/partners?review=acceptance-blocked',
         tone: hardBlocked.length ? 'danger' : 'ok',
       },

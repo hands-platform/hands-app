@@ -24,6 +24,9 @@ describe('partner detail activity model', () => {
       ['Finance', '1'],
       ['Verification and operations', '1'],
     ]);
+    const verificationSummary = summary.find((item) => item.label === 'Verification and operations');
+    expect(verificationSummary?.helper).toContain('wallet bank details');
+    expect(verificationSummary?.helper).not.toContain('bank, tax');
   });
 
   it('builds date-grouped daily digests and stable record hrefs', () => {

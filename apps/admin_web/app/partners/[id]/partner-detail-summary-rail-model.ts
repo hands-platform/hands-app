@@ -132,13 +132,13 @@ export function buildPartnerOperationsQuickRail({
       href: '#partner-operations-digest',
       label: 'Digest',
       value: `${operationsDigestCount} lanes`,
-      detail: 'Identity, wallet, booking, location, payout, tax, and app reachability.',
+      detail: 'Identity, wallet, booking, location, payout, legacy finance, and app reachability.',
     },
     {
       href: '#partner-connected-operations-records',
       label: 'Linked records',
       value: `${connectedRecordLinkCount} links`,
-      detail: 'Booking, chat, KYC, bank, tax, location, wallet, payout, and notes.',
+      detail: 'Booking, chat, KYC, required documents, location, wallet, payout, and notes.',
     },
     {
       href: '#partner-booking-journey',

@@ -28,4 +28,12 @@ describe('partner control page metrics', () => {
       value: '3',
     });
   });
+
+  it('keeps onboarding gaps focused on Level 2 readiness instead of wallet-only finance setup', () => {
+    expect(buildPartnerControlPageMetrics([['Onboarding gaps', '4']])[0]).toEqual({
+      helper: 'Partners missing KYC, required documents, service setup, or approval readiness.',
+      label: 'Onboarding gaps',
+      value: '4',
+    });
+  });
 });

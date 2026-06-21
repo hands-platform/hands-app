@@ -71,7 +71,8 @@ export function buildPartnerDispatchHandoff(
       {
         title: 'Acceptance blocked',
         value: acceptanceBlocked.length.toString(),
-        detail: 'Partners blocked from direct requests by KYC, bank, location, push, or control gates.',
+        detail:
+          'Partners blocked from direct requests by KYC, location, push, control, or wallet settlement gates.',
         href: '/partners?review=acceptance-blocked',
         tone: acceptanceBlocked.length ? 'danger' : 'ok',
       },

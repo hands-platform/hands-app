@@ -19,7 +19,7 @@ function partnerControlMetricHelper(label: string) {
     case 'Location gaps':
       return 'Online Partners with missing or stale dispatch location.';
     case 'Onboarding gaps':
-      return 'Partners missing KYC, bank, or tax readiness.';
+      return 'Partners missing KYC, required documents, service setup, or approval readiness.';
     case 'Open reports':
       return 'Reports still open or under investigation.';
     case 'Shared devices':

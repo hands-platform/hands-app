@@ -1,4 +1,5 @@
 import {
+  PARTNER_CONNECTED_RECORDS_DESCRIPTION,
   PartnerDetailConnectedRecordsSection,
 } from './partner-detail-connected-records-section';
 import type { PartnerDetailConnectedRecordLink } from './partner-detail-connected-records-model';
@@ -23,6 +24,13 @@ describe('PartnerDetailConnectedRecordsSection', () => {
     expect(rendered).toContain('2 attempt(s)');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/bookings?view=blocked-create']));
     expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-info', 'pill pill-warn']));
+  });
+
+  it('describes linked records without treating bank or tax as approval gates', () => {
+    expect(PARTNER_CONNECTED_RECORDS_DESCRIPTION).toBe(
+      'Jump from this partner to linked booking, chat, KYC, required documents, location, wallet, payout, and operator records.',
+    );
+    expect(PARTNER_CONNECTED_RECORDS_DESCRIPTION).not.toContain('bank, tax');
   });
 });
 

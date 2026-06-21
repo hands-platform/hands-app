@@ -68,7 +68,7 @@ export function PartnerDetailCashDebtOriginSection({
         <div>
           <span>Direct first-pick</span>
           <strong>Not wallet-blocked</strong>
-          <small>Use account, KYC, bank, location, push, and pricing gates for direct flow.</small>
+          <small>Use account, KYC, location, push, pricing, and wallet settlement gates for direct flow.</small>
         </div>
         <div>
           <span>Payout release</span>

@@ -42,6 +42,8 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(rendered).toContain('Settlement rule');
     expect(rendered).toContain('Needs ref');
     expect(rendered).toContain('Direct first-pick not wallet-blocked');
+    expect(rendered).toContain('Use account, KYC, location, push, pricing, and wallet settlement gates for direct flow.');
+    expect(rendered).not.toContain('KYC, bank');
     expect(rendered).toContain('Booking evidence');
     expect(rendered).toContain('Settle');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/cash-settlements']));

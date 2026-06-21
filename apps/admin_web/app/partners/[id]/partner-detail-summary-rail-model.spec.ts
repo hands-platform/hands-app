@@ -110,8 +110,14 @@ describe('partner detail summary rail model', () => {
     });
 
     expect(rows).toEqual(expect.arrayContaining([
-      expect.objectContaining({ href: '#partner-operations-digest', label: 'Digest', value: '10 lanes' }),
       expect.objectContaining({
+        detail: 'Identity, wallet, booking, location, payout, legacy finance, and app reachability.',
+        href: '#partner-operations-digest',
+        label: 'Digest',
+        value: '10 lanes',
+      }),
+      expect.objectContaining({
+        detail: 'Booking, chat, KYC, required documents, location, wallet, payout, and notes.',
         href: '#partner-connected-operations-records',
         label: 'Linked records',
         value: '9 links',
@@ -140,6 +146,7 @@ describe('partner detail summary rail model', () => {
         value: '12',
       }),
     ]));
+    expect(rows.find((row) => row.label === 'Linked records')?.detail).not.toContain('bank, tax');
     expect(rows).toHaveLength(8);
   });
 

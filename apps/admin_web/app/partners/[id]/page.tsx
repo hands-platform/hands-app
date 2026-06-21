@@ -237,7 +237,10 @@ import {
 import { PartnerDetailFullRecordIndexSection } from './partner-detail-full-record-index-section';
 import { PartnerDetailMasterFactsSection } from './partner-detail-master-facts-section';
 import { PartnerDetailChatRetentionLedgerSection } from './partner-detail-chat-retention-ledger-section';
-import { PartnerDetailConnectedRecordsSection } from './partner-detail-connected-records-section';
+import {
+  PARTNER_CONNECTED_RECORDS_DESCRIPTION,
+  PartnerDetailConnectedRecordsSection,
+} from './partner-detail-connected-records-section';
 import { buildPartnerConnectedRecordLinks } from './partner-detail-connected-records-model';
 import { PartnerDetailOperationsDigestSection } from './partner-detail-operations-digest-section';
 import { buildPartnerOperationsDigest } from './partner-detail-operations-digest-model';
@@ -815,7 +818,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
 
       <PartnerDetailConnectedRecordsSection
-        description="Jump from this partner to linked booking, chat, KYC, bank, tax, location, wallet, payout, and operator records."
+        description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
         id="partner-connected-operations-records"
         links={connectedPartnerRecordLinks}
         title="Partner connected operations records"
