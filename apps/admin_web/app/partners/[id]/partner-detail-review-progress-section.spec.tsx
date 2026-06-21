@@ -44,8 +44,10 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
         'pill pill-warn',
         'pill pill-info',
@@ -79,8 +81,10 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#kyc', '#documents', '#bank', '#tax']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'pill pill-success',
         'pill pill-neutral',
@@ -124,7 +128,8 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-success',
         'pill pill-danger',
       ]),
@@ -159,7 +164,12 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(emptyRendered).toContain('No records found');
     expect(emptyRendered).toContain('No resubmission request needed.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-danger']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-danger',
+      ]),
     );
   });
 
@@ -194,7 +204,12 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(emptyRendered).toContain('No records found');
     expect(emptyRendered).toContain('No partner review logs yet.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-danger']),
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-danger',
+      ]),
     );
   });
 });
