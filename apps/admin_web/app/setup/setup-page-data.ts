@@ -204,7 +204,7 @@ export const setupOrder = [
       'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
       'MVP rule: selected first Partner gets the configured response window, and marketplace participants can still enter the customer shortlist.',
       'Customer final selection is required unless the first-pick Partner validly accepts first under API rules.',
-      'Partners with negative wallet balance can view marketplace requests, but marketplace alerts, participation, and payout release wait for settlement.',
+      'Partners with negative wallet balance can view marketplace requests, but final acceptance, service start, and payout release wait for settlement.',
     ],
     commands: [
       'Open http://localhost:3101/operations-policy',

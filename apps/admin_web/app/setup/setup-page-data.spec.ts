@@ -115,6 +115,15 @@ describe('setup page data', () => {
         '$env:SUPABASE_PHONE_SMOKE_OTP="<6-digit-code>"; npm.cmd run auth:supabase-phone-smoke -- --verify',
       ]),
     );
+    const operationsPolicySetup = setupOrder.find((item) => item.id === 'operations-policy');
+    expect(operationsPolicySetup?.notes).toEqual(
+      expect.arrayContaining([
+        'Partners with negative wallet balance can view marketplace requests, but final acceptance, service start, and payout release wait for settlement.',
+      ]),
+    );
+    expect(operationsPolicySetup?.notes.join(' ')).not.toContain(
+      'marketplace alerts, participation',
+    );
   });
 
   it('keeps external registration and baseline handoff data populated', () => {
