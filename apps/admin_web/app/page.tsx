@@ -815,7 +815,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{cashSettlementSummary.rowCount}</strong>
             <small>
               <Link className="text-link" href="/cash-settlements">
-                Cash fee debt rows before marketplace alerts and participation
+                Cash fee debt rows before final acceptance, service start, and payout release
               </Link>
             </small>
           </div>
@@ -1667,7 +1667,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Cash debt gate</span>
               <strong>{partnerSupply.cashDebtPartners}</strong>
-              <small>Must settle before marketplace alerts and participation</small>
+              <small>Must settle before final acceptance, service start, and payout release</small>
             </div>
             <div>
               <span>Verification queue</span>
@@ -2939,7 +2939,7 @@ function buildOperationsCommandBoard(input: {
       value: `${financeRows} item(s)`,
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet keeps marketplace list visibility, but marketplace alerts and participation wait for cash fee settlement.'
+          ? 'Negative wallet keeps marketplace list visibility, but final acceptance, service start, and payout release wait for cash fee settlement.'
           : 'Completed work, cash settlement, and payout batch rows are visible for batch closeout.',
       href: financeRows ? '/finance-closeout' : '/earnings',
       tone: financeRows ? 'warn' : 'ok',

@@ -1,0 +1,29 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+describe('admin policy copy regression', () => {
+  it('keeps cash debt copy aligned with final gate policy on large admin pages', () => {
+    const source = readAdminWebSource(['app/page.tsx', 'app/partner-controls/page.tsx']);
+
+    expect(source).not.toContain('before marketplace alerts and participation');
+    expect(source).not.toContain('before marketplace alerts, participation, or payout release');
+    expect(source).not.toContain('gates marketplace alerts and participation');
+    expect(source).not.toContain('marketplace alerts and participation wait');
+
+    expect(source).toContain('before final acceptance, service start, and payout release');
+    expect(source).toContain(
+      'Negative wallet keeps marketplace list visibility, but final acceptance, service start, and payout release wait for cash fee settlement.',
+    );
+  });
+});
+
+function readAdminWebSource(relativePaths: string[]) {
+  const root = adminWebRoot();
+  return relativePaths.map((relativePath) => readFileSync(join(root, relativePath), 'utf8')).join('\n');
+}
+
+function adminWebRoot() {
+  return process.cwd().replaceAll('\\', '/').endsWith('/apps/admin_web')
+    ? process.cwd()
+    : join(process.cwd(), 'apps/admin_web');
+}

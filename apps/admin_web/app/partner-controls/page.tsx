@@ -1091,7 +1091,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet Partners must settle cash fee debt before marketplace alerts, participation, or payout release.'
+        ? 'Negative wallet Partners must settle cash fee debt before final acceptance, service start, or payout release.'
         : 'No Partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
@@ -1319,15 +1319,15 @@ function buildBookingAcceptanceUnblockBoard(
   return [
     {
       id: 'wallet-debt',
-      title: 'Cash fee debt gates marketplace alerts and participation',
+      title: 'Cash fee debt gates final acceptance and service start',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests or receive payout release until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible but cannot complete final acceptance, start service, or receive payout release until HANDS fee debt is settled.'
         : 'No Partner is currently blocked by cash-service fee debt.',
       operatorScript:
-        'Tell the Partner their unpaid HANDS fee must be deposited or offset before marketplace alerts, participation, or payout release unlocks.',
+        'Tell the Partner their unpaid HANDS fee must be deposited or offset before final acceptance, service start, or payout release unlocks.',
       customerImpact:
-        'Customers can still see marketplace request flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
+        'Customers can still see marketplace request flow normally; the Partner cannot complete final acceptance or service start until fee settlement is cleared.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
       href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
       className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1477,11 +1477,11 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Negative wallet is the strongest marketplace gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Keeps marketplace visibility available, but marketplace alerts and participation wait until deposit, admin offset, or earning offset is recorded.',
+        'Keeps marketplace visibility available, but final acceptance, service start, and payout release wait until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
-        'Customer final choice stays available only from actual eligible participants; fee-debt Partners cannot enter the marketplace shortlist.',
+        'Customer final choice stays available from eligible participants; fee-debt Partners remain visible but cannot complete final acceptance or service start.',
       action: card('wallet-debt')?.action ?? 'Open settlement queue',
       href: card('wallet-debt')?.href ?? '/cash-settlements',
       blockingCount: card('wallet-debt')?.blockingCount ?? 0,
@@ -1648,7 +1648,7 @@ function buildPartnerControlNextActions(input: {
       priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       status: 'WALLET',
       title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before marketplace alerts, participation, or payout release.`,
+      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance, service start, or payout release.`,
       operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
       href: '/cash-settlements',
       tags: [
