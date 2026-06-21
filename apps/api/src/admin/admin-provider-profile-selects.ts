@@ -17,6 +17,7 @@ import {
   adminProviderListDocumentSelect,
   adminProviderListReportSelect,
   adminProviderListSanctionSelect,
+  adminProviderListVerificationSelect,
   adminProviderOverviewUserSelect,
   adminProviderPushDeviceReachabilityOrder,
   adminProviderPublicMediaSelect,
@@ -143,7 +144,7 @@ export const adminProviderListSelect = {
   deletedAt: true,
   updatedAt: true,
   user: { select: adminProviderListUserSelect },
-  verification: { select: adminProviderVerificationSummarySelect },
+  verification: { select: adminProviderListVerificationSelect },
   kyc: { select: adminProviderKycSummarySelect },
   documents: {
     orderBy: { createdAt: 'desc' },

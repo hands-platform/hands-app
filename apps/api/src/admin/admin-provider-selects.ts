@@ -83,6 +83,31 @@ export const adminProviderVerificationSummarySelect = {
   },
 } satisfies Prisma.ProviderVerificationSelect;
 
+export const adminProviderListVerificationFileSelect = {
+  id: true,
+  key: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+} satisfies Prisma.FileAssetSelect;
+
+export const adminProviderListVerificationSelect = {
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  files: {
+    take: 3,
+    select: adminProviderListVerificationFileSelect,
+  },
+} satisfies Prisma.ProviderVerificationSelect;
+
 export const adminProviderDetailUserSelect = {
   ...adminUserAuthSelect,
   pushDevices: {
