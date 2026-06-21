@@ -37,14 +37,14 @@ describe('primary booking ops instruction', () => {
     );
   });
 
-  it('explains cash fee debt blocks marketplace alerts, participation, and payout release', () => {
+  it('explains cash fee debt blocks final acceptance, service start, and payout release', () => {
     const booking: PrimaryBookingOpsInstructionInput = {
       status: 'MATCHED',
       payment: { status: 'CAPTURED' },
     };
 
     expect(primaryBookingOpsInstruction(booking, { cashDebtNeedsSettlement: true })).toBe(
-      'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
+      'Partner collected cash. Finance must settle the HANDS fee debt before final acceptance, service start, or payout release.',
     );
   });
 

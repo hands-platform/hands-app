@@ -159,6 +159,6 @@ describe('partner operation row', () => {
         }),
         DEFAULT_PROVIDER_OPS_POLICY,
       ),
-    ).toContain('Held by: KYC REJECTED, identity documents, bank account, status OFFLINE');
+    ).toContain('Held by: KYC REJECTED, identity documents, status OFFLINE');
   });
 });

@@ -32,14 +32,14 @@ describe('booking payment hint', () => {
     );
   });
 
-  it('explains cash fee debt blocks marketplace alerts, participation, and payout release', () => {
+  it('explains cash fee debt blocks final acceptance, service start, and payout release', () => {
     const booking: BookingPaymentHintInput = {
       status: 'COMPLETED',
       payment: { status: 'CAPTURED', method: 'CASH' },
     };
 
     expect(bookingPaymentHint(booking, { cashDebtNeedsSettlement: true })).toBe(
-      'Cash fee debt is still unsettled; marketplace alerts, participation, and payout release are blocked.',
+      'Cash fee debt is still unsettled; final acceptance, service start, and payout release are blocked.',
     );
   });
 

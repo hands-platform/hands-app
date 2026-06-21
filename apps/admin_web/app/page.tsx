@@ -3961,7 +3961,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Cash debt block',
       detail:
-        'Partner wallet is negative from cash fee/tax debt. Marketplace alerts, participation, and payout release wait until finance records a deposit or offset.',
+        'Partner wallet is negative from cash fee/tax debt. Final acceptance, service start, and payout release wait until finance records a deposit or offset.',
       action: 'Open Partner finance',
       href,
       className: 'ops-task-blocked',
@@ -4554,8 +4554,8 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
       detail: cashDebtRowCount
-        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} Partner cash fee/tax debt across ${cashDebtProviderCount} Partner(s) must be collected or offset before marketplace alerts, participation, or payout release.`
-        : 'No open cash fee debt is blocking marketplace alerts, participation, or payout release.',
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} Partner cash fee/tax debt across ${cashDebtProviderCount} Partner(s) must be collected or offset before final acceptance, service start, or payout release.`
+        : 'No open cash fee debt is blocking final acceptance, service start, or payout release.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
       priority: cashDebtRowCount ? 94 : 12,
@@ -4846,12 +4846,12 @@ function buildOpsQueue(input: {
       area: 'Finance',
       href: '/cash-settlements',
       label: 'Partner cash fee debt open',
-      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before marketplace alerts, participation, or payout release.`,
+      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before final acceptance, service start, or payout release.`,
       severity: 'high',
       owner: 'Finance',
       priority: 98,
       recommendedAction:
-        'Collect the company fee deposit or offset it before this Partner participates in marketplace bookings again.',
+        'Collect the company fee deposit or offset it before final acceptance or service start proceeds.',
     });
   }
 

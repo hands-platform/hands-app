@@ -94,11 +94,11 @@ When a partner cannot join marketplace bookings or receive payout release, opera
    - Booking impact: partner visibility and acceptance remain blocked while the restriction is active.
    - Payout impact: payout holds should stay until the report, sanction, or account review has a clean audit outcome.
 
-3. Approve identity and bank readiness.
+3. Approve Level 2 identity and service readiness.
    - Owner: KYC.
-   - Why: CCCD/selfie evidence and approved bank data are the Level 2 work gate for paid bookings.
-   - Booking impact: paid work access and marketplace participation stay blocked until the evidence is approved.
-   - Payout impact: bank approval is required before payout; tax profile remains staged until first earning.
+   - Why: CCCD/selfie evidence, partner verification, and service-ready profile data are the Level 2 work gate for paid bookings.
+   - Booking impact: paid work access and marketplace participation stay blocked until identity and required service profile evidence are approved.
+   - Payout impact: bank details are collected and reviewed when the Partner requests wallet withdrawal or deposit support.
 
 4. Refresh stale partner location.
    - Owner: Dispatch.
@@ -112,11 +112,11 @@ When a partner cannot join marketplace bookings or receive payout release, opera
    - Booking impact: weak device state does not always hard-block acceptance, but it reduces response reliability.
    - Payout impact: no direct payout impact.
 
-6. Keep tax as a post-first-earning payout gate.
+6. Keep tax profile collection out of the Vietnam MVP gate.
    - Owner: Finance.
-   - Why: tax policy must exist from day one, but tax profile collection should not increase signup friction before the first earning.
-   - Booking impact: missing tax profile should not block first signup or first paid job.
-   - Payout impact: after first earning, tax profile, tax address, and payout/tax agreements block payout or withdrawal until complete.
+   - Why: tax policy and fee logs can exist internally, but Vietnam MVP does not require Partners to register a tax profile.
+   - Booking impact: missing tax profile must not block signup, Level 2 approval, matching, marketplace participation, or paid jobs.
+   - Payout impact: withdrawal review focuses on bank details, wallet balance, payout holds, and manual finance evidence.
 
 This order is mirrored in `/partner-controls` under `Marketplace and payout unblock playbook`.
 

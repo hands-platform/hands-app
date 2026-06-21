@@ -111,9 +111,9 @@ export const bookingViewOptions: readonly BookingMonitorViewOption[] = [
     view: 'cash-debt',
     label: 'Cash debt',
     description:
-      'cash bookings that created Partner fee/tax debt and can block marketplace alerts, participation, or payout release.',
+      'cash bookings that created Partner fee/tax debt and can block final acceptance, service start, or payout release.',
     operatorHint:
-      'Use this with Cash Settlements to confirm deposit or admin offset before the Partner participates in marketplace bookings again.',
+      'Use this with Cash Settlements to confirm deposit or admin offset before final acceptance or service start proceeds.',
   },
   {
     view: 'closeout',

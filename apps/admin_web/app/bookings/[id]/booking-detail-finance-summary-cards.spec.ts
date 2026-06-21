@@ -39,7 +39,7 @@ describe('bookingDetailFinanceSummaryCards', () => {
     );
     expect(cards[5]).toEqual(
       expect.objectContaining({
-        helper: 'Cash fee debt gates marketplace alerts, participation, and payout release.',
+        helper: 'Cash fee debt gates final acceptance, service start, and payout release.',
         value: '-120.000 VND',
       }),
     );

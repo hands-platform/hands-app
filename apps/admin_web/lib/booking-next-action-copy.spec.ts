@@ -54,7 +54,7 @@ describe('bookingNextActionCopy', () => {
         preferredAwaitingDecision: true,
       }),
     ).toBe(
-      'Partner collected cash. Finance must settle the HANDS fee debt before this Partner participates in marketplace bookings again or receives payout release.',
+      'Partner collected cash. Finance must settle the HANDS fee debt before final acceptance, service start, or payout release.',
     );
   });
 

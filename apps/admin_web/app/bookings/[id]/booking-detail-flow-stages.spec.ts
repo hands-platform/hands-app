@@ -111,7 +111,7 @@ describe('bookingDetailFlowStages', () => {
     );
 
     expect(stages[4]).toMatchObject({
-      hint: 'Cash fee debt is still unsettled; marketplace alerts, participation, and payout release are blocked.',
+      hint: 'Cash fee debt is still unsettled; final acceptance, service start, and payout release are blocked.',
       value: 'CAPTURED',
     });
   });
