@@ -56,22 +56,22 @@ export function buildProviderResubmissionPlan(
   for (const bankAccount of provider.bankAccounts ?? []) {
     if (bankAccount.status !== 'REJECTED') continue;
     items.push({
-      target: `${marketplaceDisplayText(bankAccount.bankName)} bank account`,
+      target: `${marketplaceDisplayText(bankAccount.bankName)} withdrawal details`,
       status: 'REJECTED',
       reason: bankAccount.rejectionReason ?? 'No bank rejection reason was saved.',
       providerInstruction:
-        'Ask the Partner to correct wallet bank details. When resubmitted, the bank row returns to pending review for manual wallet checks.',
+        'Ask the Partner to correct withdrawal details. When resubmitted, the row returns to pending review for manual wallet checks.',
       operatorAction: 'Bank',
     });
   }
 
   if (provider.taxProfile?.status === 'REJECTED') {
     items.push({
-      target: 'Legacy tax profile',
+      target: 'Tax profile optional',
       status: 'REJECTED',
       reason: provider.taxProfile.rejectionReason ?? 'No tax rejection reason was saved.',
       providerInstruction:
-        'Ask for corrected legacy tax details only if finance keeps this record.',
+        'Ask for corrected optional tax details only if finance keeps this record.',
       operatorAction: 'Tax',
     });
   }

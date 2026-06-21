@@ -4,7 +4,7 @@ import {
 } from './partner-detail-resubmission-plan-model';
 
 describe('partner detail resubmission plan model', () => {
-  it('collects rejected KYC, document, bank, and tax correction rows', () => {
+  it('collects rejected KYC, document, withdrawal detail, and optional tax correction rows', () => {
     const plan = buildProviderResubmissionPlan({
       bankAccounts: [
         {
@@ -45,8 +45,13 @@ describe('partner detail resubmission plan model', () => {
     });
     expect(plan.items[2]).toMatchObject({
       providerInstruction:
-        'Ask the Partner to correct wallet bank details. When resubmitted, the bank row returns to pending review for manual wallet checks.',
-      target: 'VCB bank account',
+        'Ask the Partner to correct withdrawal details. When resubmitted, the row returns to pending review for manual wallet checks.',
+      target: 'VCB withdrawal details',
+    });
+    expect(plan.items[3]).toMatchObject({
+      providerInstruction:
+        'Ask for corrected optional tax details only if finance keeps this record.',
+      target: 'Tax profile optional',
     });
   });
 

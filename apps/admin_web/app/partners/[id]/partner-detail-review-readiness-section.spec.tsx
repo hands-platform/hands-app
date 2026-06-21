@@ -61,7 +61,7 @@ describe('Partner detail review readiness sections', () => {
           },
           {
             detail: 'Tax profile is not required for Vietnam MVP operations.',
-            label: 'Legacy tax profile',
+            label: 'Tax profile optional',
             ok: true,
             operatorAction: 'No action needed.',
             status: 'NOT_REQUIRED',
@@ -76,6 +76,7 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('1 gap(s)');
     expect(rendered).toContain('Dossier item');
     expect(rendered).toContain('Operator action');
+    expect(rendered).toContain('Tax profile optional');
     expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
     expect(rendered).toContain('No action needed.');
     expect(classNamesIn(section)).toEqual(
