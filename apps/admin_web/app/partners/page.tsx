@@ -54,6 +54,7 @@ import { buildPartnerExportRows, PARTNER_EXPORT_COLUMNS } from './partner-export
 import { PartnerFilterBoard } from './partner-filter-board';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
+import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import { buildPartnerMasterRow } from './partner-master-row';
 import { buildPartnerOpsBadges } from './partner-ops-badges';
 import { PartnerChecklistLaneSection } from './partner-checklist-lane-section';
@@ -69,6 +70,8 @@ import { PartnerOnboardingCell } from './partner-onboarding-cell';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
 import {
+  partnerPrimaryListMode,
+  partnerReviewModeContent,
   shouldRenderPartnerDeepOpsSections,
   shouldRenderPartnerOperationsList,
 } from './partner-review-mode';
@@ -178,6 +181,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerMasterRows = visibleProviders.map((provider) =>
     buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
   );
+  const partnerListMode = partnerPrimaryListMode(filters.review);
+  const partnerReviewContent = partnerReviewModeContent(filters.review);
+  const partnerPageTitle = partnerReviewContent?.title ?? 'Partners';
   const partnerMasterListMode =
     filters.review === 'unapproved' || filters.review === 'unsettled' ? filters.review : 'default';
   const showAdvancedPartnerFilters = partnerHasAdvancedOperationalFilters(filters);
@@ -257,7 +263,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           tone={pushDeviceConfirmation.tone}
         />
       ) : null}
-      <h1>Partners</h1>
+      <h1>{partnerPageTitle}</h1>
+      <PartnerPrimaryListTabs activeMode={partnerListMode} />
       <PartnerFilterBoard
         activeFilters={activeFilters}
         csvDownloadName={`hands-partners-${partnerExportFileSlug}.csv`}

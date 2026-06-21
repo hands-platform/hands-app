@@ -28,12 +28,6 @@ type PartnerFilterBoardProps = {
   readonly totalCount: number;
 };
 
-const partnerPageOptions = [
-  { label: 'Partners', review: '' },
-  { label: 'Unapproved Partners', review: 'unapproved' },
-  { label: 'Unsettled Partners', review: 'unsettled' },
-] as const;
-
 export function PartnerFilterBoard({
   activeFilters,
   csvDownloadName,
@@ -107,21 +101,6 @@ export function PartnerFilterBoard({
               Export
             </AdminFormControlLink>
             <AdminFormControlButton className="vuexy-partner-button">Apply</AdminFormControlButton>
-          </div>
-        </div>
-        <div className="vuexy-partner-filter-strip" aria-label="Partner page filters">
-          <span className="vuexy-partner-filter-group-label">Partner pages</span>
-          <div className="booking-date-filter-buttons vuexy-partner-filter-buttons" role="group">
-            {partnerPageOptions.map((option) => (
-              <a
-                aria-current={filters.review === option.review ? 'page' : undefined}
-                className={filters.review === option.review ? 'is-active' : undefined}
-                href={buildPartnerFilterHref(filters, { review: option.review })}
-                key={option.review || 'partners'}
-              >
-                {option.label}
-              </a>
-            ))}
           </div>
         </div>
         <div className="vuexy-partner-filter-strip" aria-label="Partner sort filters">
