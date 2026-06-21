@@ -1,5 +1,5 @@
 import { AdminDataTable, AdminTableScroll } from '../../components/admin-data-table';
-import { AdminSectionHeader } from '../../components/admin-page-template';
+import { AdminFilterPanel } from '../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../components/admin-person-cell';
 import { formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
@@ -33,21 +33,20 @@ export function PartnerOperationsListSection({
   totalPartnerCount,
 }: PartnerOperationsListSectionProps) {
   return (
-    <section className="card admin-mb-16">
-      <AdminSectionHeader
-        description="List-first partner control view. Operators can check approval readiness, booking access, work history, wallet state, app activity, and the next operator check before opening the full partner record."
-        status={
-          <div className="participant-list">
-            <span className="pill pill-info">{totalPartnerCount} partner(s)</span>
-            <span className="pill pill-success">{directReadyCount} can receive direct requests</span>
-            <span className="pill pill-warn">{settlementWarningCount} settlement warning</span>
-          </div>
-        }
-        title="Partner operations list"
-      />
+    <AdminFilterPanel
+      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group vuexy-partner-table-card admin-mb-16"
+      description="List-first partner control view. Operators can check approval readiness, booking access, work history, wallet state, app activity, and the next operator check before opening the full partner record."
+      id="partner-operations-list"
+      resultLabel={`${totalPartnerCount} partner(s)`}
+      title="Partner operations list"
+    >
+      <div className="participant-list admin-mb-12">
+        <span className="pill pill-success">{directReadyCount} can receive direct requests</span>
+        <span className="pill pill-warn">{settlementWarningCount} settlement warning</span>
+      </div>
       <AdminTableScroll>
         <AdminDataTable
-          className="service-trace"
+          className="vuexy-booking-table vuexy-partner-table service-trace"
           emptyMessage={<PartnerOperationsEmptyState />}
           headers={PARTNER_OPERATIONS_TABLE_HEADERS}
           rowCount={rows.length}
@@ -145,8 +144,16 @@ export function PartnerOperationsListSection({
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-    </section>
+      <div className="vuexy-booking-table-footer vuexy-partner-table-footer">
+        <span>{partnerOperationsListFooterLabel(rows.length)}</span>
+      </div>
+    </AdminFilterPanel>
   );
+}
+
+function partnerOperationsListFooterLabel(rowCount: number) {
+  if (rowCount <= 0) return 'Showing 0 entries';
+  return `Showing 1 to ${rowCount} of ${rowCount} entries`;
 }
 
 function PartnerOperationsEmptyState() {
