@@ -4,7 +4,7 @@ import {
   OPERATIONAL_POLICY_KEYS,
   adminPartnerFinalGateHeld,
   adminPartnerMarketplaceBlocked,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
 } from '../../lib/operations-policy';
 
 export type PolicySupplySensitivity = {
@@ -88,7 +88,7 @@ function readSupplySensitivityPolicy(
   return {
     backupRadiusMeters,
     freshnessMinutes,
-    hardWalletBlock: adminWalletGateBlocksMarketplaceParticipation(walletGate),
+    hardWalletBlock: adminWalletGateBlocksFinalGate(walletGate),
   };
 }
 

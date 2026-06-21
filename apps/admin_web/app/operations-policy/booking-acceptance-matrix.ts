@@ -13,7 +13,7 @@ import {
   adminPartnerLocationFresh,
   adminPartnerMarketplaceBlocked,
   adminPartnerWalletBalance,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
   normalizeAdminMarketplaceOpenMode,
   readPolicyNumber,
   readPolicyString,
@@ -90,7 +90,7 @@ function readBookingAcceptancePolicy(
     backupLocationFreshnessMinutes,
     backupRadiusMeters,
     customerFinalChoice: preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
-    hardWalletBlock: adminWalletGateBlocksMarketplaceParticipation(walletGate),
+    hardWalletBlock: adminWalletGateBlocksFinalGate(walletGate),
     immediateBackup: marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW',
     pushReady: adminPartnerAlertChannelRoutesToFcm(alertChannel),
     responseWindowMinutes,
@@ -181,13 +181,13 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
     },
     {
       title: 'Negative wallet gate',
-      status: policy.hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
+      status: policy.hardWalletBlock ? 'Final gate hold' : 'Historical setting review',
       detail: policy.hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance, service start, and payout release wait for settlement.'
         : 'Historical exception mode is retained for audit only. Final acceptance, service start, and payout release should remain blocked until settlement.',
       operatorAction: policy.hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
-        : 'Reset to the marketplace hold policy after reviewing the saved setting.',
+        : 'Reset to the final gate hold policy after reviewing the saved setting.',
       className: policy.hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: policy.hardWalletBlock ? 'pill-success' : 'pill-danger',
       blocking: !policy.hardWalletBlock,
@@ -259,7 +259,7 @@ function buildPartnerAcceptancePolicyImpact(
       helper: `${onlinePartners.length} online partner(s), filtered by marketplace, location, push, and control readiness.`,
     },
     {
-      label: 'Marketplace held',
+      label: 'Final gate held',
       value: providers
         .filter((provider) =>
           adminPartnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }),

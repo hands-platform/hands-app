@@ -5,7 +5,7 @@ import {
   adminOperationalPolicyEquivalentKeys,
   adminOperationalPolicySettingByKey,
   adminPartnerAlertChannelRoutesToFcm,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
   buildAdminPartnerMarketplaceReadiness,
   buildAdminLiveOperationsPolicy,
   formatPolicyDistance,
@@ -105,9 +105,10 @@ describe('admin live operations policy helpers', () => {
   });
 
   it('keeps all MVP wallet policy values compatible with cash fee final gate blocking', () => {
-    expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(true);
-    expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_ACCEPTS_WHEN_NEGATIVE')).toBe(true);
-    expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(true);
+    expect(adminWalletGateBlocksFinalGate('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(true);
+    expect(adminWalletGateBlocksFinalGate('BLOCK_ACCEPTS_WHEN_NEGATIVE')).toBe(true);
+    expect(adminWalletGateBlocksFinalGate('ALLOW_ONE_RECOVERY_BOOKING')).toBe(true);
+    expect(adminWalletGateBlocksFinalGate(undefined)).toBe(false);
   });
 
   it('maps current and legacy partner alert push values to FCM readiness', () => {

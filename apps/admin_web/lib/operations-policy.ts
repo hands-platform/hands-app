@@ -68,7 +68,9 @@ export type AdminLiveOperationsPolicy = {
 };
 
 export const ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'] as const;
-export const ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
+export const ADMIN_WALLET_BLOCK_FINAL_GATE = 'BLOCK_MARKETPLACE_PARTICIPATION';
+/** @deprecated Use ADMIN_WALLET_BLOCK_FINAL_GATE in new Admin code. */
+export const ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION = ADMIN_WALLET_BLOCK_FINAL_GATE;
 export const ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 export const ADMIN_MARKETPLACE_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
@@ -215,7 +217,10 @@ export function adminPartnerFinalGateHeld(
   provider: AdminPartnerMarketplaceReadinessProvider,
   policy: { hardWalletBlock: boolean },
 ) {
-  return adminPartnerMarketplaceBlocked(provider, policy) || (policy.hardWalletBlock && adminPartnerWalletBalance(provider) < 0);
+  return (
+    adminPartnerMarketplaceBlocked(provider, policy) ||
+    (policy.hardWalletBlock && adminPartnerWalletBalance(provider) < 0)
+  );
 }
 
 export function adminPartnerAccountNeedsFollowUp(provider: AdminPartnerMarketplaceReadinessProvider) {
@@ -274,12 +279,17 @@ export function adminPartnerHasEnabledPush(provider: AdminPartnerMarketplaceRead
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
-export function adminWalletGateBlocksMarketplaceParticipation(value: string | null | undefined) {
+export function adminWalletGateBlocksFinalGate(value: string | null | undefined) {
   return (
-    value === ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION ||
+    value === ADMIN_WALLET_BLOCK_FINAL_GATE ||
     value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE ||
     value === ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING
   );
+}
+
+/** @deprecated Use adminWalletGateBlocksFinalGate in new Admin code. */
+export function adminWalletGateBlocksMarketplaceParticipation(value: string | null | undefined) {
+  return adminWalletGateBlocksFinalGate(value);
 }
 
 export function adminPartnerAlertChannelRoutesToFcm(value: unknown) {

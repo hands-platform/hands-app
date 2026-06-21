@@ -3,7 +3,7 @@ import { marketplaceDisplayText as displayOperationalWording } from '../../lib/a
 import {
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
 } from '../../lib/operations-policy';
 import { policyDisplayValue } from './policy-value-display';
 
@@ -338,17 +338,17 @@ function marketplaceOpenModePosture(
 }
 
 function walletNegativeGatePosture(value: string): PolicyRecommendationPosture {
-  const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
+  const blocksFinalGate = adminWalletGateBlocksFinalGate(value);
   return {
-    status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
-    detail: blocksMarketplace
+    status: blocksFinalGate ? 'Final gate hold' : 'Historical setting review',
+    detail: blocksFinalGate
       ? 'Cash-debt exposure is contained at final acceptance, service start, and payout release gates.'
       : 'Historical exception mode is retained for audit only. The MVP still blocks final acceptance, service start, and payout release until settlement.',
     operatorAction:
       'Keep marketplace list visibility open; use settlement evidence before final acceptance, service start, or payout release.',
     alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
-    className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
-    pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
+    className: blocksFinalGate ? 'ops-task-done' : 'ops-task-blocked',
+    pillClass: blocksFinalGate ? 'pill-success' : 'pill-danger',
   };
 }
 

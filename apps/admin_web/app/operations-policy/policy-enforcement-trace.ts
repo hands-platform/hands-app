@@ -3,7 +3,7 @@ import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
   normalizeAdminMarketplaceOpenMode,
 } from '../../lib/operations-policy';
 
@@ -171,7 +171,7 @@ function buildMarketplaceTimingTraceItem(
 function buildWalletGateTraceItem(walletGate: string): PolicyEnforcementTraceItem {
   return {
     scope: 'Wallet gate',
-    title: adminWalletGateBlocksMarketplaceParticipation(walletGate)
+    title: adminWalletGateBlocksFinalGate(walletGate)
       ? 'Negative wallet gates final acceptance and service start'
       : 'Historical exception mode is not active for MVP',
     detail:

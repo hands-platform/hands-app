@@ -41,7 +41,7 @@ describe('booking marketplace supply', () => {
     jest.useRealTimers();
   });
 
-  it('keeps negative-wallet partners out of booking-level candidate evidence', () => {
+  it('keeps negative-wallet partners visible while marking the final gate hold', () => {
     const supply = bookingMarketplacePartnerSupply(
       booking(),
       [
@@ -53,11 +53,16 @@ describe('booking marketplace supply', () => {
     );
 
     expect(supply.eligibleCount).toBe(0);
-    expect(supply.rows).toHaveLength(0);
+    expect(supply.rows).toHaveLength(1);
+    expect(supply.rows[0]).toMatchObject({
+      blockers: expect.arrayContaining(['final gate settlement required']),
+      eligible: false,
+      name: 'Linh Wellness',
+    });
     expect(supply.excludedGroups.find((group) => group.label === 'Wallet settlement required')).toBeUndefined();
     expect(supply.metrics.find((metric) => metric.label === 'Wallet gate boundary')).toMatchObject({
-      value: 'Finance lane',
-      helper: expect.stringContaining('not listed as booking candidates'),
+      value: 'Final gate only',
+      helper: expect.stringContaining('stay visible'),
     });
   });
 });

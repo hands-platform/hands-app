@@ -22,7 +22,7 @@ import {
   OPERATIONAL_POLICY_KEYS,
   adminPartnerWalletBalance,
   adminOperationalPolicySettingByKey,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
   buildAdminLiveOperationsPolicy,
   operationalPolicyHref,
 } from '../../../lib/operations-policy';
@@ -34,7 +34,7 @@ export function bookingMarketplacePartnerSupply(
 ) {
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const livePolicy = buildAdminLiveOperationsPolicy(settings);
-  const walletGateBlocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(
+  const walletGateBlocksFinalGate = adminWalletGateBlocksFinalGate(
     livePolicy.walletNegativeGate,
   );
   const radiusMeters =
@@ -86,8 +86,8 @@ export function bookingMarketplacePartnerSupply(
           if (provider.status !== 'ONLINE_AVAILABLE') {
             blockers.push(`status ${provider.status}`);
           }
-          if (walletGateBlocksMarketplace && walletBalance < 0) {
-            blockers.push('wallet settlement required');
+          if (walletGateBlocksFinalGate && walletBalance < 0) {
+            blockers.push('final gate settlement required');
           }
           if (distanceMeters === null) {
             blockers.push('no current coordinates');
@@ -141,9 +141,7 @@ export function bookingMarketplacePartnerSupply(
         })
     : [];
 
-  const candidateRows = evaluatedRows.filter(
-    (row) => !row.blockers.some((blocker) => blocker === 'wallet settlement required'),
-  );
+  const candidateRows = evaluatedRows;
   const rows = candidateRows.slice(0, 8);
   const eligibleRows = candidateRows.filter((row) => row.eligible);
   const eligibleCount = eligibleRows.length;
@@ -201,7 +199,7 @@ export function bookingMarketplacePartnerSupply(
       {
         label: 'Nearby excluded',
         value: nearbyExcluded.toString(),
-        helper: 'Inside radius but blocked by status, verification, or location freshness.',
+        helper: 'Inside radius but blocked by status, verification, location freshness, or final gate settlement.',
       },
       {
         label: 'Out of radius',
@@ -215,9 +213,9 @@ export function bookingMarketplacePartnerSupply(
       },
       {
         label: 'Wallet gate boundary',
-        value: 'Finance lane',
+        value: 'Final gate only',
         helper:
-          'Wallet-debt Partners are not listed as booking candidates; debt repair is handled from Partner and Finance views.',
+          'Cash-debt Partners stay visible for operator review, but final acceptance, service start, and payout release wait for settlement.',
       },
       {
         label: 'Invite cap',

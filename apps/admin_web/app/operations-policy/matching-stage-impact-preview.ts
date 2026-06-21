@@ -2,7 +2,7 @@ import type { AdminBooking, AdminOperationalPolicySetting, AdminProvider } from 
 import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import {
   adminPartnerMarketplaceBlocked,
-  adminWalletGateBlocksMarketplaceParticipation,
+  adminWalletGateBlocksFinalGate,
   buildAdminLiveOperationsPolicy,
 } from '../../lib/operations-policy';
 
@@ -79,7 +79,7 @@ function readMatchingStagePolicy(settings: AdminOperationalPolicySetting[]): Mat
     responseWindowMinutes: livePolicy.providerResponseWindowMinutes,
     backupRadiusMeters: livePolicy.marketplaceRadiusMeters,
     freshnessMinutes: livePolicy.marketplaceLocationFreshnessMinutes,
-    hardWalletBlock: adminWalletGateBlocksMarketplaceParticipation(livePolicy.walletNegativeGate),
+    hardWalletBlock: adminWalletGateBlocksFinalGate(livePolicy.walletNegativeGate),
   };
 }
 

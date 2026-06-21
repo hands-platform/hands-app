@@ -65,7 +65,7 @@ describe('booking acceptance matrix builder', () => {
         }),
         expect.objectContaining({
           pillClass: 'pill-success',
-          status: 'Marketplace hold',
+          status: 'Final gate hold',
           title: 'Negative wallet gate',
         }),
       ]),
@@ -73,7 +73,7 @@ describe('booking acceptance matrix builder', () => {
     expect(matrix.impact).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: 'Marketplace ready', value: '1' }),
-        expect.objectContaining({ label: 'Marketplace held', value: '1' }),
+        expect.objectContaining({ label: 'Final gate held', value: '1' }),
         expect.objectContaining({ label: 'Push gap', value: '1' }),
       ]),
     );
