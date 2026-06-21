@@ -65,7 +65,7 @@ describe('bookingDetailOperatorActionMatrix', () => {
 
     expect(rows['Settle cash fee debt']).toMatchObject({
       available: true,
-      evidence: '120.000 VND keeps marketplace alerts, participation, and payout release blocked.',
+      evidence: '120.000 VND keeps final acceptance, service start, and payout release blocked.',
       tone: 'pill-danger',
     });
   });

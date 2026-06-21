@@ -115,7 +115,7 @@ describe('bookingDetailFinanceFlags', () => {
     expect(flags).toEqual([
       expect.objectContaining({
         detail:
-          'Linh Partner owes 120.000 VND before marketplace alerts, participation, or payout release can continue.',
+          'Linh Partner owes 120.000 VND before final acceptance, service start, or payout release can continue.',
         severity: 'high',
         title: 'Cash wallet debt blocks Partner',
       }),
