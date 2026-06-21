@@ -17,6 +17,7 @@ describe('AdminFilterPanel', () => {
     expect(panel.props).toMatchObject({
       'aria-labelledby': 'booking-filters-title',
       className: 'card admin-filter-panel booking-monitor-filter-panel',
+      id: 'booking-filters',
     });
     expect(panel.props.children).toHaveLength(3);
     expect(panel.props.children[0].props.className).toBe('ops-section-header admin-filter-panel-header');

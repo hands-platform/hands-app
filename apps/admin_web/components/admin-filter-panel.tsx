@@ -27,7 +27,11 @@ export function AdminFilterPanel({
   const hasBody = children !== undefined && children !== null;
 
   return (
-    <section className={joinClassNames('card admin-filter-panel', className)} aria-labelledby={headingId}>
+    <section
+      className={joinClassNames('card admin-filter-panel', className)}
+      id={id}
+      aria-labelledby={headingId}
+    >
       <div className="ops-section-header admin-filter-panel-header">
         <div>
           <h2 id={headingId}>{title}</h2>

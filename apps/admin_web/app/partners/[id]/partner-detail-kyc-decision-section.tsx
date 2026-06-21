@@ -1,7 +1,14 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
 
 import { formatDate } from './partner-detail-format';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerKycDecisionEvidence = {
   readonly allRequiredApproved: boolean;
@@ -47,12 +54,15 @@ export function PartnerDetailKycDecisionSection({
   submittedLabel,
 }: PartnerDetailKycDecisionSectionProps) {
   return (
-    <div className="card" id="kyc">
-      <h2>KYC decision</h2>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Partner identity review, required CCCD evidence, selfie evidence, and app correction guidance."
+      id="kyc"
+      resultLabel={`KYC ${status ?? 'MISSING'}`}
+      resultTone={kycDecisionPanelTone(status)}
+      title="KYC decision"
+    >
       <div className="participant-list admin-mb-10">
-        <span className={`pill ${status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
-          KYC {status ?? 'MISSING'}
-        </span>
         <span className={`pill ${evidence.allRequiredApproved ? 'pill-success' : 'pill-danger'}`}>
           {evidence.allRequiredApproved ? 'Evidence complete' : 'Evidence incomplete'}
         </span>
@@ -81,6 +91,7 @@ export function PartnerDetailKycDecisionSection({
       ) : null}
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<KycDecisionEmptyState message="No KYC checklist rows." />}
           headers={kycChecklistHeaders}
           rowCount={evidence.decisionChecklist.length}
@@ -105,8 +116,10 @@ export function PartnerDetailKycDecisionSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={evidence.decisionChecklist.length} />
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<KycDecisionEmptyState message="No KYC evidence files." />}
           headers={kycEvidenceHeaders}
           rowCount={evidence.rows.length}
@@ -137,8 +150,9 @@ export function PartnerDetailKycDecisionSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={evidence.rows.length} />
       <p className="muted admin-mt-10">{evidence.nextAction}</p>
-    </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -150,6 +164,13 @@ function kycEvidencePill(status: string) {
   if (status === 'REJECTED') return 'pill-danger';
   if (status === 'PENDING' || status === 'PENDING_REVIEW') return 'pill-warn';
   return 'pill-neutral';
+}
+
+function kycDecisionPanelTone(status?: string | null): StatusBadgeTone {
+  if (status === 'APPROVED') return 'success';
+  if (status === 'REJECTED' || status === 'MISSING') return 'danger';
+  if (!status) return 'warning';
+  return 'warning';
 }
 
 function KycDecisionEmptyState({ message }: { readonly message: string }) {
