@@ -29,9 +29,9 @@ type PartnerFilterBoardProps = {
 };
 
 const partnerPageOptions = [
-  { href: '/partners', label: 'Partners', review: '' },
-  { href: '/partners?review=unapproved', label: 'Unapproved Partners', review: 'unapproved' },
-  { href: '/partners?review=unsettled', label: 'Unsettled Partners', review: 'unsettled' },
+  { label: 'Partners', review: '' },
+  { label: 'Unapproved Partners', review: 'unapproved' },
+  { label: 'Unsettled Partners', review: 'unsettled' },
 ] as const;
 
 export function PartnerFilterBoard({
@@ -116,7 +116,7 @@ export function PartnerFilterBoard({
               <a
                 aria-current={filters.review === option.review ? 'page' : undefined}
                 className={filters.review === option.review ? 'is-active' : undefined}
-                href={option.href}
+                href={buildPartnerFilterHref(filters, { review: option.review })}
                 key={option.review || 'partners'}
               >
                 {option.label}

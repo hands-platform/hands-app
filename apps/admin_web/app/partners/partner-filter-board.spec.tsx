@@ -43,6 +43,12 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Partner pages');
     expect(rendered).toContain('Unapproved Partners');
     expect(rendered).toContain('Unsettled Partners');
+    expect(rendered).toContain(
+      'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;sort=booking-count"',
+    );
+    expect(rendered).toContain(
+      'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;review=unsettled&amp;sort=booking-count"',
+    );
     expect(rendered).toContain('More filters');
     expect(rendered).toContain('Location');
     expect(rendered).toContain('Device/session');
