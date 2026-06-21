@@ -175,15 +175,20 @@ export function buildPartnerMatchingFlow(
   opsPolicy: ProviderOpsPolicy,
 ): { items: PartnerOperationChecklistItem[]; detail: string } {
   const bookingRows = partnerBookingRows(provider);
-  const preferredCount = provider.preferredBookings?.length ?? 0;
-  const marketplaceCount = (provider.participants ?? []).filter((participant) =>
-    Boolean(participant.booking),
-  ).length;
-  const selectedCount = provider.selectedBookings?.length ?? 0;
-  const chatCount = bookingRows.filter((booking) => Boolean(booking.chatRoom)).length;
+  const bookingSummary = provider.bookingSummary;
+  const preferredCount = bookingSummary?.preferredBookingCount ?? provider.preferredBookings?.length ?? 0;
+  const marketplaceCount =
+    bookingSummary?.participatingBookingCount ??
+    (provider.participants ?? []).filter((participant) => Boolean(participant.booking)).length;
+  const selectedCount = bookingSummary?.selectedBookingCount ?? provider.selectedBookings?.length ?? 0;
+  const chatCount =
+    bookingSummary?.chatRoomCount ?? bookingRows.filter((booking) => Boolean(booking.chatRoom)).length;
   const activeBookingRows = bookingRows.filter((booking) => isActivePartnerBooking(booking));
   const latestBooking = latestPartnerBookingRecord(bookingRows);
   const marketplaceEligibility = buildPartnerMarketplaceEligibility(provider, opsPolicy);
+  const hasChatMissing = bookingSummary
+    ? bookingSummary.chatMissingCount > 0
+    : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking));
 
   return {
     items: [
@@ -209,11 +214,7 @@ export function buildPartnerMatchingFlow(
       {
         label: 'Chat',
         status: chatCount ? `${chatCount} room(s)` : 'none',
-        tone: chatCount
-          ? 'ok'
-          : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking))
-            ? 'warn'
-            : 'neutral',
+        tone: chatCount ? 'ok' : hasChatMissing ? 'warn' : 'neutral',
       },
     ],
     detail: latestBooking

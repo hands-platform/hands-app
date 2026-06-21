@@ -155,6 +155,45 @@ describe('partner master row', () => {
     expect(row.accountNote).toBe('Normal account');
   });
 
+  it('uses server booking summary counts when booking relation rows are capped', () => {
+    const row = buildPartnerMasterRow(
+      partner({
+        preferredBookings: [],
+        selectedBookings: [],
+        participants: [],
+        bookingSummary: {
+          activeBookingCount: 5,
+          adminClosedBookingCount: 2,
+          bookingCount: 18,
+          chatMissingCount: 1,
+          chatRoomCount: 6,
+          closedBookingCount: 7,
+          completedBookingCount: 9,
+          customerClosedBookingCount: 3,
+          latestBookingAt: '2026-06-20T12:00:00.000Z',
+          matchingBookingCount: 2,
+          noShowBookingCount: 1,
+          participatingBookingCount: 4,
+          partnerClosedBookingCount: 2,
+          preferredBookingCount: 3,
+          selectedBookingCount: 5,
+          workingBookingCount: 3,
+        },
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      { displayName: (item: AdminProvider) => item.displayName ?? item.id },
+    );
+
+    expect(row.bookingCount).toBe(18);
+    expect(row.completedCount).toBe(9);
+    expect(row.closedCount).toBe(7);
+    expect(row.customerClosedCount).toBe(3);
+    expect(row.adminClosedCount).toBe(2);
+    expect(row.partnerClosedCount).toBe(2);
+    expect(row.noShowCount).toBe(1);
+    expect(row.avatarStatus).toBe('working');
+  });
+
   it('shows account block facts without producing numeric person ranking', () => {
     const row = buildPartnerMasterRow(
       partner({

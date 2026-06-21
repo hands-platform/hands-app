@@ -170,6 +170,29 @@ type AdminProviderActivitySummary = {
   walletBalance: number;
 };
 
+type AdminProviderBookingSummary = {
+  activeBookingCount: number;
+  adminClosedBookingCount: number;
+  bookingCount: number;
+  chatMissingCount: number;
+  chatRoomCount: number;
+  closedBookingCount: number;
+  completedBookingCount: number;
+  customerClosedBookingCount: number;
+  latestBookingAt: Date | null;
+  matchingBookingCount: number;
+  noShowBookingCount: number;
+  participatingBookingCount: number;
+  partnerClosedBookingCount: number;
+  preferredBookingCount: number;
+  selectedBookingCount: number;
+  workingBookingCount: number;
+};
+
+type AdminProviderBookingSummaryRow = AdminProviderBookingSummary & {
+  providerId: string;
+};
+
 type AdminCustomerActivitySummary = {
   bookingCount: number;
   completedBookingCount: number;
@@ -363,7 +386,8 @@ export class AdminService {
     }
 
     const providerIds = providers.map((provider) => provider.id);
-    const [activitySummaries, { logsByTarget, countByTarget }] = await Promise.all([
+    const [bookingSummaries, activitySummaries, { logsByTarget, countByTarget }] = await Promise.all([
+      this.getProviderListBookingSummaries(providerIds),
       this.getProviderListActivitySummaries(providerIds),
       this.getAuditLogSummaryByTargets(
         providerIds.map((providerId) => `provider:${providerId}`),
@@ -373,6 +397,7 @@ export class AdminService {
 
     return providers.map((provider) => ({
       ...provider,
+      bookingSummary: bookingSummaries.get(provider.id) ?? emptyProviderBookingSummary(),
       activitySummary: activitySummaries.get(provider.id) ?? emptyProviderActivitySummary(),
       auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
       auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
@@ -2566,6 +2591,139 @@ export class AdminService {
     return summaries;
   }
 
+  private async getProviderListBookingSummaries(providerIds: string[]) {
+    const summaries = new Map<string, AdminProviderBookingSummary>(
+      providerIds.map((providerId) => [providerId, emptyProviderBookingSummary()]),
+    );
+    if (providerIds.length === 0) {
+      return summaries;
+    }
+
+    const rows = await this.prisma.$queryRaw<AdminProviderBookingSummaryRow[]>(Prisma.sql`
+      WITH relation_rows AS (
+        SELECT
+          bookings."preferredProviderId" AS "providerId",
+          bookings."id" AS "bookingId",
+          TRUE AS "preferred",
+          FALSE AS "selected",
+          FALSE AS "participating"
+        FROM "Booking" bookings
+        WHERE bookings."preferredProviderId" IN (${Prisma.join(providerIds)})
+
+        UNION ALL
+
+        SELECT
+          bookings."selectedProviderId" AS "providerId",
+          bookings."id" AS "bookingId",
+          FALSE AS "preferred",
+          TRUE AS "selected",
+          FALSE AS "participating"
+        FROM "Booking" bookings
+        WHERE bookings."selectedProviderId" IN (${Prisma.join(providerIds)})
+
+        UNION ALL
+
+        SELECT
+          participants."providerProfileId" AS "providerId",
+          participants."bookingId",
+          FALSE AS "preferred",
+          FALSE AS "selected",
+          TRUE AS "participating"
+        FROM "BookingParticipant" participants
+        WHERE participants."providerProfileId" IN (${Prisma.join(providerIds)})
+      ),
+      provider_bookings AS (
+        SELECT
+          relation_rows."providerId",
+          relation_rows."bookingId",
+          BOOL_OR(relation_rows."preferred") AS "preferred",
+          BOOL_OR(relation_rows."selected") AS "selected",
+          BOOL_OR(relation_rows."participating") AS "participating"
+        FROM relation_rows
+        WHERE relation_rows."providerId" IS NOT NULL
+        GROUP BY relation_rows."providerId", relation_rows."bookingId"
+      ),
+      chat_bookings AS (
+        SELECT DISTINCT "bookingId"
+        FROM "ChatRoom"
+      )
+      SELECT
+        provider_bookings."providerId",
+        COUNT(*)::int AS "bookingCount",
+        COUNT(*) FILTER (WHERE provider_bookings."preferred")::int AS "preferredBookingCount",
+        COUNT(*) FILTER (WHERE provider_bookings."selected")::int AS "selectedBookingCount",
+        COUNT(*) FILTER (WHERE provider_bookings."participating")::int AS "participatingBookingCount",
+        COUNT(*) FILTER (
+          WHERE bookings."status"::text IN (
+            'CREATED',
+            'OPEN_MATCHING',
+            'MATCHED',
+            'PROVIDER_ON_THE_WAY',
+            'ARRIVED',
+            'IN_SERVICE'
+          )
+        )::int AS "activeBookingCount",
+        COUNT(*) FILTER (
+          WHERE bookings."status"::text IN ('CREATED', 'OPEN_MATCHING')
+        )::int AS "matchingBookingCount",
+        COUNT(*) FILTER (
+          WHERE bookings."status"::text IN (
+            'MATCHED',
+            'PROVIDER_ON_THE_WAY',
+            'ARRIVED',
+            'IN_SERVICE'
+          )
+        )::int AS "workingBookingCount",
+        COUNT(*) FILTER (WHERE bookings."status"::text = 'COMPLETED')::int AS "completedBookingCount",
+        COUNT(*) FILTER (
+          WHERE bookings."status"::text IN ('CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW')
+        )::int AS "closedBookingCount",
+        COUNT(*) FILTER (WHERE bookings."closedByRole"::text = 'CUSTOMER')::int AS "customerClosedBookingCount",
+        COUNT(*) FILTER (WHERE bookings."closedByRole"::text = 'ADMIN')::int AS "adminClosedBookingCount",
+        COUNT(*) FILTER (WHERE bookings."closedByRole"::text = 'PROVIDER')::int AS "partnerClosedBookingCount",
+        COUNT(*) FILTER (WHERE bookings."status"::text = 'NO_SHOW')::int AS "noShowBookingCount",
+        COUNT(*) FILTER (WHERE chat_bookings."bookingId" IS NOT NULL)::int AS "chatRoomCount",
+        COUNT(*) FILTER (
+          WHERE chat_bookings."bookingId" IS NULL
+            AND bookings."status"::text IN (
+              'MATCHED',
+              'PROVIDER_ON_THE_WAY',
+              'ARRIVED',
+              'IN_SERVICE',
+              'COMPLETED'
+            )
+        )::int AS "chatMissingCount",
+        MAX(COALESCE(bookings."updatedAt", bookings."createdAt")) AS "latestBookingAt"
+      FROM provider_bookings
+      INNER JOIN "Booking" bookings ON bookings."id" = provider_bookings."bookingId"
+      LEFT JOIN chat_bookings ON chat_bookings."bookingId" = bookings."id"
+      GROUP BY provider_bookings."providerId"
+    `);
+
+    for (const row of rows) {
+      summaries.set(row.providerId, {
+        activeBookingCount: integerValue(row.activeBookingCount),
+        adminClosedBookingCount: integerValue(row.adminClosedBookingCount),
+        bookingCount: integerValue(row.bookingCount),
+        chatMissingCount: integerValue(row.chatMissingCount),
+        chatRoomCount: integerValue(row.chatRoomCount),
+        closedBookingCount: integerValue(row.closedBookingCount),
+        completedBookingCount: integerValue(row.completedBookingCount),
+        customerClosedBookingCount: integerValue(row.customerClosedBookingCount),
+        latestBookingAt: latestDate(row.latestBookingAt),
+        matchingBookingCount: integerValue(row.matchingBookingCount),
+        noShowBookingCount: integerValue(row.noShowBookingCount),
+        participatingBookingCount: integerValue(row.participatingBookingCount),
+        partnerClosedBookingCount: integerValue(row.partnerClosedBookingCount),
+        preferredBookingCount: integerValue(row.preferredBookingCount),
+        selectedBookingCount: integerValue(row.selectedBookingCount),
+        workingBookingCount: integerValue(row.workingBookingCount),
+      });
+    }
+
+    return summaries;
+  }
+
   private async getProviderListActivitySummaries(providerIds: string[]) {
     const summaries = new Map<string, AdminProviderActivitySummary>(
       providerIds.map((providerId) => [providerId, emptyProviderActivitySummary()]),
@@ -2692,12 +2850,37 @@ function ensureProviderActivitySummary(
   return summary;
 }
 
+function emptyProviderBookingSummary(): AdminProviderBookingSummary {
+  return {
+    activeBookingCount: 0,
+    adminClosedBookingCount: 0,
+    bookingCount: 0,
+    chatMissingCount: 0,
+    chatRoomCount: 0,
+    closedBookingCount: 0,
+    completedBookingCount: 0,
+    customerClosedBookingCount: 0,
+    latestBookingAt: null,
+    matchingBookingCount: 0,
+    noShowBookingCount: 0,
+    participatingBookingCount: 0,
+    partnerClosedBookingCount: 0,
+    preferredBookingCount: 0,
+    selectedBookingCount: 0,
+    workingBookingCount: 0,
+  };
+}
+
 function numberValue(value: unknown) {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number') return value;
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function integerValue(value: unknown) {
+  return Math.trunc(numberValue(value));
 }
 
 function latestDate(...values: Array<Date | string | null | undefined>) {

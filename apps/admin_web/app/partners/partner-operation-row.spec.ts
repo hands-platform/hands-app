@@ -107,6 +107,46 @@ describe('partner operation row', () => {
     expect(row.nextAction.status).toBe('CASH DEBT');
   });
 
+  it('uses server booking summary counts when booking relation rows are capped', () => {
+    const row = buildPartnerOperationRow(
+      partner({
+        preferredBookings: [],
+        selectedBookings: [],
+        participants: [],
+        bookingSummary: {
+          activeBookingCount: 6,
+          adminClosedBookingCount: 0,
+          bookingCount: 14,
+          chatMissingCount: 0,
+          chatRoomCount: 2,
+          closedBookingCount: 1,
+          completedBookingCount: 4,
+          customerClosedBookingCount: 0,
+          latestBookingAt: '2026-06-20T12:00:00.000Z',
+          matchingBookingCount: 4,
+          noShowBookingCount: 0,
+          participatingBookingCount: 5,
+          partnerClosedBookingCount: 1,
+          preferredBookingCount: 4,
+          selectedBookingCount: 3,
+          workingBookingCount: 2,
+        },
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      {
+        displayName: (item) => item.displayName ?? item.id,
+        canAcceptBookingNow: () => true,
+      },
+    );
+
+    expect(row.matchingFlow.map((item) => [item.label, item.status])).toEqual([
+      ['First-pick', '4 record(s)'],
+      ['Marketplace', '5 participation record(s)'],
+      ['Customer choice', '3 selected'],
+      ['Chat', '2 room(s)'],
+    ]);
+  });
+
   it('summarizes direct request blockers in operations language', () => {
     expect(
       partnerAcceptBlockerSummary(

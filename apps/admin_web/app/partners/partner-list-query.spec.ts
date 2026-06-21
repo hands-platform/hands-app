@@ -255,6 +255,41 @@ describe('partner list query', () => {
     ).toBe(true);
   });
 
+  it('matches booking flow queues from server booking summaries when relation rows are capped', () => {
+    const cappedPartner = partner({
+      preferredBookings: [],
+      selectedBookings: [],
+      participants: [],
+      bookingSummary: {
+        activeBookingCount: 5,
+        adminClosedBookingCount: 0,
+        bookingCount: 12,
+        chatMissingCount: 1,
+        chatRoomCount: 3,
+        closedBookingCount: 2,
+        completedBookingCount: 4,
+        customerClosedBookingCount: 1,
+        latestBookingAt: '2026-06-20T12:00:00.000Z',
+        matchingBookingCount: 2,
+        noShowBookingCount: 1,
+        participatingBookingCount: 6,
+        partnerClosedBookingCount: 1,
+        preferredBookingCount: 2,
+        selectedBookingCount: 3,
+        workingBookingCount: 3,
+      },
+    });
+
+    expect(partnerMatchesBookingFlow(cappedPartner, 'active-booking')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'first-pick')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'marketplace-joined')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'final-partner')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'chat-live')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'chat-missing')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'completed-work')).toBe(true);
+    expect(partnerMatchesBookingFlow(cappedPartner, 'no-work')).toBe(false);
+  });
+
   it('filters partners by combined search, status, location, security, readiness, and review facts', () => {
     const rows = [
       partner({ id: 'dispatch-ready', displayName: 'Linh Wellness' }),

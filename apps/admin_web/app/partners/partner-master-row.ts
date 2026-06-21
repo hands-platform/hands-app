@@ -76,11 +76,20 @@ export function buildPartnerMasterRow(
   const bookingRows = partnerBookingRows(provider);
   const earnings = provider.earnings ?? [];
   const activitySummary = provider.activitySummary;
+  const bookingSummary = provider.bookingSummary;
   const displayName = deps.displayName(provider);
   const lastSeenAt = partnerLastSessionAt(provider);
   const latestSessionFacts = partnerLatestSessionFacts(provider);
   const accountBlocked = Boolean(provider.blockedAt);
-  const closureCounts = partnerBookingClosureCounts(bookingRows);
+  const closureCounts = bookingSummary
+    ? {
+        adminClosed: bookingSummary.adminClosedBookingCount,
+        closed: bookingSummary.closedBookingCount,
+        customerClosed: bookingSummary.customerClosedBookingCount,
+        noShow: bookingSummary.noShowBookingCount,
+        partnerClosed: bookingSummary.partnerClosedBookingCount,
+      }
+    : partnerBookingClosureCounts(bookingRows);
   const latestAuditLog = latestProviderAuditLog(provider);
 
   return {
@@ -103,10 +112,11 @@ export function buildPartnerMasterRow(
     latestSessionIp: latestSessionFacts.ip,
     latestSessionAppVersion: latestSessionFacts.appVersion,
     locationState: providerLocationStatus(provider, opsPolicy),
-    bookingCount: bookingRows.length,
+    bookingCount: bookingSummary?.bookingCount ?? bookingRows.length,
     completedCount:
-      bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
-      partnerCompletedWorkCount(provider),
+      bookingSummary?.completedBookingCount ??
+      (bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
+        partnerCompletedWorkCount(provider)),
     closedCount: closureCounts.closed,
     customerClosedCount: closureCounts.customerClosed,
     adminClosedCount: closureCounts.adminClosed,
@@ -139,9 +149,15 @@ function partnerMasterAvatarStatus(
   return adminAvatarStatusFromSignals({
     devices: [...(provider.devices ?? []), ...(provider.user?.pushDevices ?? [])],
     fallbackOnline: provider.status !== 'OFFLINE',
-    matching: bookingRows.some((booking) => MATCHING_BOOKING_STATUSES.has(booking.status)),
+    matching:
+      provider.bookingSummary?.matchingBookingCount !== undefined
+        ? provider.bookingSummary.matchingBookingCount > 0
+        : bookingRows.some((booking) => MATCHING_BOOKING_STATUSES.has(booking.status)),
     sessions: provider.sessions,
-    working: bookingRows.some((booking) => WORKING_BOOKING_STATUSES.has(booking.status)),
+    working:
+      provider.bookingSummary?.workingBookingCount !== undefined
+        ? provider.bookingSummary.workingBookingCount > 0
+        : bookingRows.some((booking) => WORKING_BOOKING_STATUSES.has(booking.status)),
   });
 }
 

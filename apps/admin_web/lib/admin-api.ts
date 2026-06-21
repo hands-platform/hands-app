@@ -148,6 +148,25 @@ export type AdminCustomerDetail = AdminCustomer & {
   bookings?: AdminBookingDetail[];
 };
 
+export type AdminProviderBookingSummary = {
+  activeBookingCount: number;
+  adminClosedBookingCount: number;
+  bookingCount: number;
+  chatMissingCount: number;
+  chatRoomCount: number;
+  closedBookingCount: number;
+  completedBookingCount: number;
+  customerClosedBookingCount: number;
+  latestBookingAt?: string | null;
+  matchingBookingCount: number;
+  noShowBookingCount: number;
+  participatingBookingCount: number;
+  partnerClosedBookingCount: number;
+  preferredBookingCount: number;
+  selectedBookingCount: number;
+  workingBookingCount: number;
+};
+
 export type AdminProvider = {
   id: string;
   userId?: string;
@@ -323,6 +342,7 @@ export type AdminProvider = {
     platformFee: number;
     walletBalance: number;
   };
+  bookingSummary?: AdminProviderBookingSummary;
   earnings?: AdminEarning[];
   auditLogs?: AdminAuditLog[];
   auditLogCount?: number;

@@ -372,6 +372,70 @@ describe('AdminService query orchestration', () => {
     ]);
   });
 
+  it('adds server-computed booking summaries to provider list rows', async () => {
+    const latestBookingAt = new Date('2026-06-20T12:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
+      },
+      providerEarning: {
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      adminAuditLog: {
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            providerId: 'provider-1',
+            activeBookingCount: 5,
+            adminClosedBookingCount: 0,
+            bookingCount: 9,
+            chatMissingCount: 1,
+            chatRoomCount: 4,
+            closedBookingCount: 2,
+            completedBookingCount: 1,
+            customerClosedBookingCount: 1,
+            latestBookingAt,
+            matchingBookingCount: 2,
+            noShowBookingCount: 1,
+            participatingBookingCount: 4,
+            partnerClosedBookingCount: 1,
+            preferredBookingCount: 2,
+            selectedBookingCount: 3,
+            workingBookingCount: 3,
+          },
+        ])
+        .mockResolvedValueOnce([]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listProviders()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-1',
+        bookingSummary: {
+          activeBookingCount: 5,
+          adminClosedBookingCount: 0,
+          bookingCount: 9,
+          chatMissingCount: 1,
+          chatRoomCount: 4,
+          closedBookingCount: 2,
+          completedBookingCount: 1,
+          customerClosedBookingCount: 1,
+          latestBookingAt,
+          matchingBookingCount: 2,
+          noShowBookingCount: 1,
+          participatingBookingCount: 4,
+          partnerClosedBookingCount: 1,
+          preferredBookingCount: 2,
+          selectedBookingCount: 3,
+          workingBookingCount: 3,
+        },
+      }),
+    ]);
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');

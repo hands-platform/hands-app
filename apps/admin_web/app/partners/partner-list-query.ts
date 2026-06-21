@@ -171,6 +171,18 @@ export function filterPartners(
 }
 
 export function partnerMatchesBookingFlow(provider: AdminProvider, flow: string) {
+  const bookingSummary = provider.bookingSummary;
+  if (bookingSummary) {
+    if (flow === 'active-booking') return bookingSummary.activeBookingCount > 0;
+    if (flow === 'first-pick') return bookingSummary.preferredBookingCount > 0;
+    if (flow === 'marketplace-joined') return bookingSummary.participatingBookingCount > 0;
+    if (flow === 'final-partner') return bookingSummary.selectedBookingCount > 0;
+    if (flow === 'chat-live') return bookingSummary.chatRoomCount > 0;
+    if (flow === 'chat-missing') return bookingSummary.chatMissingCount > 0;
+    if (flow === 'completed-work') return bookingSummary.completedBookingCount > 0;
+    if (flow === 'no-work') return bookingSummary.completedBookingCount === 0;
+  }
+
   const bookingRows = partnerBookingRows(provider);
   if (flow === 'active-booking') {
     return bookingRows.some((booking) => isActivePartnerBooking(booking));
@@ -375,7 +387,7 @@ function buildPartnerSortMetrics(
 ): PartnerSortMetrics {
   return {
     availablePayout: partnerAvailablePayout(provider),
-    bookingCount: partnerBookingRows(provider).length,
+    bookingCount: provider.bookingSummary?.bookingCount ?? partnerBookingRows(provider).length,
     completedWorkCount: partnerCompletedWorkCount(provider),
     grossRevenue: partnerGrossRevenue(provider),
     lastActivityMs: dateMs(partnerLastActivityAt(provider)),
