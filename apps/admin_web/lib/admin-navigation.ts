@@ -85,7 +85,7 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/partners?review=unapproved',
         label: 'Unapproved Partners',
         description:
-          'Partner registration, KYC, document, bank, tax, media, or hold items waiting for admin approval.',
+          'Partner registration, KYC, required documents, public media, or hold items waiting for admin approval.',
       },
       {
         href: '/partners?review=unsettled',

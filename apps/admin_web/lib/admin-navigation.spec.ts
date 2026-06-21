@@ -65,6 +65,8 @@ describe('admin navigation', () => {
       'Unapproved Partners',
       'Unsettled Partners',
     ]);
+    expect(partnerSection?.links[1]?.description).toContain('registration, KYC, required documents');
+    expect(partnerSection?.links[1]?.description).not.toContain('bank, tax');
     expect(
       adminNavSections.flatMap((section) => section.links.map((link) => link.href)),
     ).not.toContain('/app-sessions?role=CUSTOMER&state=live');
