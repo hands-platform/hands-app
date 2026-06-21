@@ -24,7 +24,13 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Operator note');
     expect(rendered).toContain('Partner prefers evening bookings.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'partner-detail-note admin-mt-12']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'partner-detail-note admin-mt-12',
+      ]),
     );
   });
 
@@ -47,7 +53,13 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Recent snapshots');
     expect(rendered).toContain('21.02776, 105.83416');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-neutral']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-neutral',
+      ]),
     );
   });
 
@@ -67,7 +79,13 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Privacy Policy v2');
     expect(rendered).toContain('ACCEPTED');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-success',
+      ]),
     );
   });
 
@@ -91,7 +109,12 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Recent payout batches');
     expect(rendered).toContain('COMPLETED: gross 400,000 VND');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
     );
   });
 });

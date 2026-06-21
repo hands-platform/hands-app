@@ -1,5 +1,11 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerDetailInfoLine = {
   readonly label: string;
@@ -44,16 +50,16 @@ type PartnerDetailLocationActivityCardProps = {
 
 export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasicProfileCardProps) {
   return (
-    <div className="card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Basic profile</h2>
-          <p className="muted">Partner identity, service area, profile review, and user account fields.</p>
-        </div>
-        <span className="pill pill-info">{rows.length} field(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Partner identity, service area, profile review, and user account fields."
+      id="basic-profile"
+      resultLabel={`${rows.length} field(s)`}
+      title="Basic profile"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<ProfileEmptyState message="No basic profile fields loaded." />}
           headers={profileTableHeaders}
           rowCount={rows.length}
@@ -74,24 +80,24 @@ export function PartnerDetailBasicProfileCard({ note, rows }: PartnerDetailBasic
         <strong>Operator note</strong>
         <p className="muted">{marketplaceDisplayText(note)}</p>
       </div>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
 export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreementsCardProps) {
   return (
-    <div className="card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Agreements</h2>
-          <p className="muted">Legal agreement acceptance records connected to this Partner account.</p>
-        </div>
-        <span className={`pill ${agreements.length ? 'pill-success' : 'pill-warn'}`}>
-          {agreements.length} accepted
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Legal agreement acceptance records connected to this Partner account."
+      id="agreements"
+      resultLabel={`${agreements.length} accepted`}
+      resultTone={agreements.length ? 'success' : 'warning'}
+      title="Agreements"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<ProfileEmptyState message="No legal agreements accepted yet." />}
           headers={agreementTableHeaders}
           rowCount={agreements.length}
@@ -108,7 +114,8 @@ export function PartnerDetailAgreementsCard({ agreements }: PartnerDetailAgreeme
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={agreements.length} />
+    </AdminFilterPanel>
   );
 }
 
@@ -117,20 +124,22 @@ export function PartnerDetailRecentPayoutRecordsCard({
   earnings,
   payoutBatchCount,
 }: PartnerDetailRecentPayoutRecordsCardProps) {
+  const rowCount = 2 + earnings.length;
+
   return (
-    <div className="card">
-      <div className="ops-section-header">
-        <div>
-          <h2>Recent payout records</h2>
-          <p className="muted">Latest earning and payout batch evidence for finance handoff.</p>
-        </div>
-        <span className="pill pill-info">{earningCount} earning(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Latest earning and payout batch evidence for finance handoff."
+      id="recent-payout-records"
+      resultLabel={`${earningCount} earning(s)`}
+      title="Recent payout records"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<ProfileEmptyState message="No recent payout records loaded." />}
           headers={payoutRecordTableHeaders}
-          rowCount={2 + earnings.length}
+          rowCount={rowCount}
         >
           <tr>
             <td>
@@ -160,7 +169,8 @@ export function PartnerDetailRecentPayoutRecordsCard({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rowCount} />
+    </AdminFilterPanel>
   );
 }
 
@@ -169,20 +179,22 @@ export function PartnerDetailLocationActivityCard({
   lastLocationLabel,
   snapshots,
 }: PartnerDetailLocationActivityCardProps) {
+  const rowCount = 3;
+
   return (
-    <div className="card" id="location">
-      <div className="ops-section-header">
-        <div>
-          <h2>Location and activity</h2>
-          <p className="muted">Latest Partner app location evidence and recent recorded snapshots.</p>
-        </div>
-        <span className="pill pill-info">{snapshots.length} snapshot(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Latest Partner app location evidence and recent recorded snapshots."
+      id="location"
+      resultLabel={`${snapshots.length} snapshot(s)`}
+      title="Location and activity"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<ProfileEmptyState message="No location evidence loaded." />}
           headers={locationTableHeaders}
-          rowCount={3}
+          rowCount={rowCount}
         >
           <tr>
             <td>
@@ -220,7 +232,8 @@ export function PartnerDetailLocationActivityCard({
           </tr>
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rowCount} />
+    </AdminFilterPanel>
   );
 }
 
