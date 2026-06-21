@@ -1,5 +1,11 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerOpsTone = 'done' | 'pending' | 'blocked';
 
@@ -62,18 +68,14 @@ export function PartnerDetailDeviceSessionActivitySection({
   sharedDeviceRows,
 }: PartnerDetailDeviceSessionActivitySectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Device and session activity</h2>
-          <p className="muted">
-            Review shared devices, session checks, blocked devices, and stale partner app activity.
-          </p>
-        </div>
-        <span className={`pill ${followUpNeeded ? 'pill-danger' : 'pill-success'}`}>
-          {followUpNeeded ? 'Follow-up needed' : 'No active follow-up'}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Review shared devices, session checks, blocked devices, and stale partner app activity."
+      id="device-session-activity"
+      resultLabel={followUpNeeded ? 'Follow-up needed' : 'No active follow-up'}
+      resultTone={followUpNeeded ? 'danger' : 'success'}
+      title="Device and session activity"
+    >
       <div className="ops-task-grid">
         {securityCards.map((card) => (
           <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
@@ -91,6 +93,7 @@ export function PartnerDetailDeviceSessionActivitySection({
           <h3>Partner app devices</h3>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={
                 <PartnerDeviceSessionEmptyState message="No partner app device record yet. It should appear after partner app sign-in." />
               }
@@ -119,11 +122,13 @@ export function PartnerDetailDeviceSessionActivitySection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={deviceRows.length} />
         </div>
         <div>
           <h3>Recent sessions</h3>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={<PartnerDeviceSessionEmptyState message="No partner session log yet." />}
               headers={sessionActivityHeaders}
               rowCount={sessionRows.length}
@@ -147,12 +152,18 @@ export function PartnerDetailDeviceSessionActivitySection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={sessionRows.length} />
         </div>
       </div>
       {sharedDeviceRows.length ? (
         <div className="admin-mt-16">
           <AdminTableScroll>
-            <AdminDataTable emptyMessage={null} headers={sharedDeviceHeaders} rowCount={sharedDeviceRows.length}>
+            <AdminDataTable
+              className={partnerDetailReviewTableClassName}
+              emptyMessage={null}
+              headers={sharedDeviceHeaders}
+              rowCount={sharedDeviceRows.length}
+            >
               {sharedDeviceRows.map((match) => (
                 <tr key={match.id}>
                   <td>
@@ -169,9 +180,10 @@ export function PartnerDetailDeviceSessionActivitySection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={sharedDeviceRows.length} />
         </div>
       ) : null}
-    </div>
+    </AdminFilterPanel>
   );
 }
 
