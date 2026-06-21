@@ -24,6 +24,9 @@ describe('action gate policy checklist', () => {
       'Recommended',
       'Recommended',
     ]);
+    expect(checklist.cards.find((card) => card.title === 'Cash fee clearance')?.operatorAction).toBe(
+      'Check cash settlement references before clearing final acceptance, service start, and payout release holds.',
+    );
   });
 
   it('marks saved owner overrides without losing the policy anchor href', () => {

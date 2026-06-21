@@ -30,7 +30,7 @@ describe('buildOwnerDecisionPressure', () => {
       summary: [
         { helper: '', label: 'Current visible supply', value: '0' },
         { helper: '', label: 'Stale excluded', value: '2' },
-        { helper: '', label: 'Marketplace/payout held in radius', value: '3' },
+        { helper: '', label: 'Final gate held in radius', value: '3' },
       ],
     } satisfies PolicySupplySensitivity;
 
@@ -43,11 +43,16 @@ describe('buildOwnerDecisionPressure', () => {
       expect.arrayContaining([
         expect.objectContaining({ label: 'Open matching', value: '1' }),
         expect.objectContaining({ label: 'Active service flow', value: '2' }),
-        expect.objectContaining({ label: 'Marketplace/payout holds', value: '7' }),
+        expect.objectContaining({ label: 'Final gate pressure', value: '7' }),
       ]),
     );
     expect(pressure.cards[0].detail).toContain('first-pick Partner');
     expect(pressure.cards[1].detail).toContain('0 visible Partner(s)');
+    expect(pressure.cards[3]).toMatchObject({
+      title: 'Wallet final gate pressure',
+      operatorAction:
+        'Keep marketplace visibility open while finance and Partner controls clear final acceptance, service start, and payout release holds.',
+    });
     expect(pressure.cards[4].detail).toContain('1/2 online Partner(s)');
   });
 });

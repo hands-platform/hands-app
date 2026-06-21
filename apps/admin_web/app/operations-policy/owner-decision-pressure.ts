@@ -89,7 +89,7 @@ function buildOwnerDecisionPressureStats(
   const staleExcluded = readSupplySummaryNumber(supplySensitivity, 'Stale excluded');
   const finalGateHeldInRadius = readSupplySummaryNumber(
     supplySensitivity,
-    'Marketplace/payout held in radius',
+    'Final gate held in radius',
   );
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE')).length;
   const enabledPushPartners = providers.filter((provider) =>
@@ -152,13 +152,13 @@ function buildOwnerDecisionPressureCards(stats: OwnerDecisionPressureStats): Own
       pillClass: stats.staleExcluded ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Wallet and marketplace holds',
+      title: 'Wallet final gate pressure',
       status: stats.finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${stats.finalGatePressure} Partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
+      detail: `${stats.finalGatePressure} Partner final gate record(s) may require settlement, identity, withdrawal bank, or account review.`,
       operatorAction: stats.finalGatePressure
-        ? 'Keep marketplace visibility open while finance and Partner controls clear marketplace and payout holds.'
+        ? 'Keep marketplace visibility open while finance and Partner controls clear final acceptance, service start, and payout release holds.'
         : 'No current sample pressure to relax marketplace gates.',
-      href: stats.finalGatePressure ? '/partners?review=marketplace-held' : '/partner-controls',
+      href: stats.finalGatePressure ? '/partners?review=cash-debt' : '/partner-controls',
       className: stats.finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: stats.finalGatePressure ? 'pill-danger' : 'pill-success',
     },
@@ -197,10 +197,10 @@ function buildOwnerDecisionPressureSummary(
       helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
     },
     {
-      label: 'Marketplace/payout holds',
+      label: 'Final gate pressure',
       value: String(stats.finalGatePressure),
       helper:
-        'Wallet, identity, bank, or account-control records that change marketplace or payout readiness.',
+        'Wallet, identity, withdrawal bank, or account-control records that change final acceptance, service start, or payout release readiness.',
     },
   ];
 }

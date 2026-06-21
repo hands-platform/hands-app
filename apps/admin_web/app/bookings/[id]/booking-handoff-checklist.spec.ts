@@ -93,6 +93,8 @@ describe('booking handoff checklist', () => {
       title: 'CASH / CAPTURED / 300.000 VND',
     });
     expect(rows[4].detail).toContain('Cash fee debt must be settled');
+    expect(rows[4].detail).toContain('before final acceptance, service start, or payout release');
+    expect(rows[4].detail).not.toContain('marketplace bookings again');
     expect(rows[4].detail).toContain('Earning ledger: -150.000 VND.');
   });
 

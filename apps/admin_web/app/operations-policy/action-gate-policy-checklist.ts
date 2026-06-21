@@ -45,7 +45,7 @@ export function buildActionGatePolicyChecklist(
       detail:
         'Negative wallet from cash jobs can be cleared by verified company deposit or approved settlement offset, with evidence retained.',
       operatorAction:
-        'Check cash settlement references before clearing partner marketplace and payout holds.',
+        'Check cash settlement references before clearing final acceptance, service start, and payout release holds.',
       href: '/cash-settlements',
     },
     {
