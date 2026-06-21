@@ -163,10 +163,13 @@ import {
 } from './partner-detail-booking-chat-records-section';
 import {
   PartnerDetailDeviceSessionActivitySection,
-  type PartnerDeviceRow,
-  type PartnerSessionRow,
-  type PartnerSharedDeviceRow,
 } from './partner-detail-device-session-activity-section';
+import {
+  buildPartnerDeviceRows,
+  buildPartnerSessionRows,
+  buildPartnerSharedDeviceRows,
+  displaySessionCheckText,
+} from './partner-detail-device-session-model';
 import {
   PartnerDetailApprovalEvidenceSummarySection,
   PartnerDetailLevelPathSection,
@@ -420,7 +423,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
   const securitySummary = buildProviderSecuritySummary(provider);
-  const partnerDeviceRows = buildPartnerDeviceRows(provider);
+  const partnerDeviceRows = buildPartnerDeviceRows(provider, (device) =>
+    partnerDetailDeviceActionMenuItems(provider.id, device),
+  );
   const partnerSessionRows = buildPartnerSessionRows(provider);
   const partnerSharedDeviceRows = buildPartnerSharedDeviceRows(provider);
   const levelPlan = buildProviderLevelPlan(provider);
@@ -1335,18 +1340,6 @@ function PartnerDetailFastOverview({
       subtitle={`Fast operations overview / ${provider.user?.phone ?? 'No phone'} / ${provider.city ?? 'No city'}`}
     />
   );
-}
-
-function displaySessionCheckText(value?: string | null) {
-  const text = value?.trim() || 'Session check';
-
-  return marketplaceDisplayText(text)
-    .replace(/\bsuspicious session\b/gi, 'session check')
-    .replace(/\bsuspicious\b/gi, 'session check')
-    .replace(/\bfraud\b/gi, 'account review')
-    .replace(/\bmisuse\b/gi, 'account review')
-    .replace(/\babuse controls\b/gi, 'account controls')
-    .replace(/\btrusted partner\b/gi, 'active partner');
 }
 
 type ProviderServicePricingRow = {
@@ -4882,49 +4875,6 @@ function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerA
     key: `${record.type}-${record.id}-${record.at}-${index}`,
     title: record.title,
     type: record.type,
-  }));
-}
-
-function buildPartnerDeviceRows(provider: ProviderDetail): PartnerDeviceRow[] {
-  return (provider.devices ?? []).map((device) => {
-    const title = maskDeviceId(device.deviceId);
-
-    return {
-      actionLabel: `Device actions for ${title}`,
-      actions: partnerDetailDeviceActionMenuItems(provider.id, device),
-      blockReason: device.blockReason,
-      detail: `${device.platform ?? 'unknown platform'} / ${device.appVersion ?? 'unknown app'} / last seen ${formatDate(
-        device.lastSeenAt,
-      )}`,
-      id: device.id,
-      smallLabel: device.blockedAt ? formatDate(device.blockedAt) : 'Active',
-      statusLabel: device.blockedAt ? 'BLOCKED' : device.enabled ? 'ENABLED' : 'DISABLED',
-      title,
-    };
-  });
-}
-
-function buildPartnerSessionRows(provider: ProviderDetail): PartnerSessionRow[] {
-  return (provider.sessions ?? []).slice(0, 6).map((session) => ({
-    detail: `IP ${session.ipAddress ?? 'missing'} / ${session.appVersion ?? 'unknown app'} / last seen ${formatDate(
-      session.lastSeenAt,
-    )}`,
-    id: session.id,
-    sessionNote: session.suspiciousReason ? displaySessionCheckText(session.suspiciousReason) : null,
-    smallLabel: formatDate(session.loggedInAt),
-    statusLabel: session.suspicious ? 'CHECK' : 'OK',
-    title: maskDeviceId(session.deviceId),
-  }));
-}
-
-function buildPartnerSharedDeviceRows(provider: ProviderDetail): PartnerSharedDeviceRow[] {
-  return (provider.sharedDeviceMatches ?? []).map((match) => ({
-    detail: `Also used by ${match.providerProfile?.displayName ?? 'another partner'} (${
-      match.providerProfile?.user?.phone ?? 'no phone'
-    }) / last seen ${formatDate(match.lastSeenAt)}`,
-    id: match.id,
-    smallLabel: match.enabled ? 'Enabled' : 'Disabled',
-    title: maskDeviceId(match.deviceId),
   }));
 }
 
