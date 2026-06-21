@@ -56,6 +56,8 @@ describe('bookingAttentionFlags', () => {
         severity: 'high',
         title: 'Cash fee debt blocks Partner',
         detail: 'Linh Wellness collected cash and still owes 120000 VND.',
+        action:
+          'Confirm the Partner deposit or admin offset before final acceptance, service start, or payout release resumes.',
       }),
     ]);
   });

@@ -95,7 +95,8 @@ export function bookingAttentionFlags(input: BookingAttentionFlagsInput): Attent
         Math.abs(input.cashDebtAmount),
         input.cashDebtCurrency ?? 'VND',
       )}.`,
-      action: 'Confirm the Partner deposit or admin offset before marketplace alerts, participation, or payout release resumes.',
+      action:
+        'Confirm the Partner deposit or admin offset before final acceptance, service start, or payout release resumes.',
     });
   }
 
