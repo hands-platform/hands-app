@@ -47,14 +47,17 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/booking-1', '/cash-settlements']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card card-danger admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
         'pill pill-warn',
         'pill pill-info',
         'text-link',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders an empty cash debt table state', () => {
@@ -73,8 +76,14 @@ describe('PartnerDetailCashDebtOriginSection', () => {
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No open cash-service fee debt is visible for this partner.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
     );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 

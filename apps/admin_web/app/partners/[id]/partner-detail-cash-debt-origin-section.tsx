@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerCashDebtOriginRow = {
   readonly amountLabel: string;
@@ -33,20 +39,14 @@ export function PartnerDetailCashDebtOriginSection({
   rows,
 }: PartnerDetailCashDebtOriginSectionProps) {
   return (
-    <div className={`card ${hasCashFeeDebt ? 'card-danger' : ''} admin-mb-16`} id="cash-debt-origin">
-      <div className="ops-section-header">
-        <div>
-          <h2>Cash debt origin and settlement</h2>
-          <p className="muted">
-            Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or
-            approved offset has evidence. Marketplace visibility is not logged here; direct first-pick and
-            already-matched service flow are not retroactively blocked by wallet debt.
-          </p>
-        </div>
-        <span className={`pill ${hasCashFeeDebt ? 'pill-danger' : 'pill-success'}`}>
-          {hasCashFeeDebt ? `${openRowCount} open row(s)` : 'No open cash debt'}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName}${hasCashFeeDebt ? ' card-danger' : ''} admin-mb-16`}
+      description="Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or approved offset has evidence. Marketplace visibility is not logged here; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt."
+      id="cash-debt-origin"
+      resultLabel={hasCashFeeDebt ? `${openRowCount} open row(s)` : 'No open cash debt'}
+      resultTone={hasCashFeeDebt ? 'danger' : 'success'}
+      title="Cash debt origin and settlement"
+    >
       <div className="service-trace-summary admin-mt-12">
         <div>
           <span>Total open debt</span>
@@ -86,6 +86,7 @@ export function PartnerDetailCashDebtOriginSection({
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerCashDebtOriginEmptyState />}
             headers={cashDebtOriginHeaders}
             rowCount={rows.length}
@@ -137,7 +138,8 @@ export function PartnerDetailCashDebtOriginSection({
           </AdminDataTable>
         </AdminTableScroll>
       </div>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 

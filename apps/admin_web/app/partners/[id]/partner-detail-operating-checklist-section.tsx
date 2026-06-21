@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerChecklistTone = 'blocked' | 'done' | 'pending';
 
@@ -25,20 +31,17 @@ export function PartnerDetailOperatingChecklistSection({
   rows,
 }: PartnerDetailOperatingChecklistSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-operating-checklist">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner operating checklist</h2>
-          <p className="muted">
-            Factual work-control checklist for support and operations. It shows whether bookings, payout,
-            tax, location, and service setup need action.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} check(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Factual work-control checklist for support and operations. It shows whether bookings, payout, tax, location, and service setup need action."
+      id="partner-operating-checklist"
+      resultLabel={`${rows.length} check(s)`}
+      title="Partner operating checklist"
+    >
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerOperatingChecklistEmptyState />}
             headers={operatingChecklistHeaders}
             rowCount={rows.length}
@@ -67,7 +70,8 @@ export function PartnerDetailOperatingChecklistSection({
           </AdminDataTable>
         </AdminTableScroll>
       </div>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
