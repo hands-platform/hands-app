@@ -46,7 +46,7 @@ function readyPartner(overrides: Partial<AdminProvider> = {}): AdminProvider {
 }
 
 describe('matching stage impact preview', () => {
-  it('classifies open matching stages and excludes negative-wallet partners from marketplace supply', () => {
+  it('classifies open matching stages and keeps negative-wallet partners in visible marketplace supply', () => {
     const settings = [
       { key: OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, value: 10 },
       { key: OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, value: 10000 },
@@ -94,12 +94,12 @@ describe('matching stage impact preview', () => {
       },
       {
         label: 'Current Stage 2 marketplace',
-        value: '1',
+        value: '2',
         helper: 'Open bookings with usable marketplace partner supply under the current policy.',
       },
       {
         label: 'Current no supply',
-        value: '1',
+        value: '0',
         helper: 'Open bookings that would show customer waiting without usable marketplace supply.',
       },
       {
@@ -109,11 +109,11 @@ describe('matching stage impact preview', () => {
       },
     ]);
     expect(preview.rows.find((row) => row.scenario === 'Marketplace policy' && row.value === '10 km')).toMatchObject({
-      stage1: 1,
-      stage2: 1,
+      stage1: 0,
+      stage2: 2,
       stage3: 1,
       repair: 1,
-      noSupply: 1,
+      noSupply: 0,
       overdue: 1,
       pillClass: 'pill-info',
     });

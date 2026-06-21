@@ -45,7 +45,7 @@ function readyPartner(overrides: Partial<AdminProvider> = {}): AdminProvider {
 }
 
 describe('policy supply sensitivity', () => {
-  it('counts only online, fresh, marketplace-eligible partners as current visible supply', () => {
+  it('counts online and fresh partners as visible supply while keeping cash debt in final gate held', () => {
     const settings = [
       { key: OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, value: 10000 },
       { key: OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, value: 30 },
@@ -84,14 +84,14 @@ describe('policy supply sensitivity', () => {
       },
       {
         label: 'Current visible supply',
-        value: '1',
+        value: '2',
         helper: 'Online, marketplace eligible, inside radius, and fresh enough.',
       },
       {
-        label: 'Marketplace/payout held in radius',
+        label: 'Final gate held in radius',
         value: '1',
         helper:
-          'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
+          'Final acceptance, service start, or payout release may wait for settlement, identity, or account controls.',
       },
       {
         label: 'Stale excluded',
@@ -100,12 +100,12 @@ describe('policy supply sensitivity', () => {
       },
     ]);
     expect(sensitivity.radiusRows.find((row) => row.radiusLabel === '10 km')).toMatchObject({
-      eligible: 1,
+      eligible: 2,
       finalGateHeld: 1,
       pillClass: 'pill-info',
     });
     expect(sensitivity.freshnessRows.find((row) => row.freshnessLabel === '30 min')).toMatchObject({
-      eligible: 1,
+      eligible: 2,
       staleExcluded: 1,
       pillClass: 'pill-info',
     });

@@ -141,10 +141,10 @@ function buildSupplySensitivitySummary(
       helper: 'Online, marketplace eligible, inside radius, and fresh enough.',
     },
     {
-      label: 'Marketplace/payout held in radius',
+      label: 'Final gate held in radius',
       value: currentFinalGateHeld.length.toString(),
       helper:
-        'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
+        'Final acceptance, service start, or payout release may wait for settlement, identity, or account controls.',
     },
     {
       label: 'Stale excluded',

@@ -104,7 +104,7 @@ describe('admin live operations policy helpers', () => {
     expect(readPolicyString([setting('empty', '   ')], 'empty')).toBeNull();
   });
 
-  it('keeps all MVP wallet policy values compatible with marketplace participation blocking', () => {
+  it('keeps all MVP wallet policy values compatible with cash fee final gate blocking', () => {
     expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(true);
     expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_ACCEPTS_WHEN_NEGATIVE')).toBe(true);
     expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(true);
@@ -186,7 +186,7 @@ describe('admin live operations policy helpers', () => {
     expect(readiness.walletBalance).toBe(250000);
   });
 
-  it('keeps negative-wallet partners visible but blocks marketplace alerts, participation, and final gate', () => {
+  it('keeps negative-wallet partners visible but blocks final acceptance, service start, and payout release', () => {
     const readiness = buildAdminPartnerMarketplaceReadiness({
       provider: {
         status: 'ONLINE_AVAILABLE',
@@ -216,7 +216,7 @@ describe('admin live operations policy helpers', () => {
       hardWalletBlock: true,
     });
 
-    expect(readiness.marketplaceBlocked).toBe(true);
+    expect(readiness.marketplaceBlocked).toBe(false);
     expect(readiness.finalGateHeld).toBe(true);
     expect(readiness.canCompleteFinalGate).toBe(false);
     expect(readiness.walletBalance).toBe(-120000);

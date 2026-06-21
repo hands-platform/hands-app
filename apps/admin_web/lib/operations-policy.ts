@@ -206,20 +206,16 @@ export function adminPartnerCanCompleteFinalGate(
 
 export function adminPartnerMarketplaceBlocked(
   provider: AdminPartnerMarketplaceReadinessProvider,
-  policy: { hardWalletBlock?: boolean } = {},
+  _policy: { hardWalletBlock?: boolean } = {},
 ) {
-  return (
-    adminPartnerAccountNeedsFollowUp(provider) ||
-    !adminPartnerIdentityReady(provider) ||
-    (policy.hardWalletBlock === true && adminPartnerWalletBalance(provider) < 0)
-  );
+  return adminPartnerAccountNeedsFollowUp(provider) || !adminPartnerIdentityReady(provider);
 }
 
 export function adminPartnerFinalGateHeld(
   provider: AdminPartnerMarketplaceReadinessProvider,
   policy: { hardWalletBlock: boolean },
 ) {
-  return adminPartnerMarketplaceBlocked(provider, policy);
+  return adminPartnerMarketplaceBlocked(provider, policy) || (policy.hardWalletBlock && adminPartnerWalletBalance(provider) < 0);
 }
 
 export function adminPartnerAccountNeedsFollowUp(provider: AdminPartnerMarketplaceReadinessProvider) {
