@@ -33,8 +33,10 @@ describe('partner detail finance gate sections', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/partners/partner-1?reviewAction=approve-bank']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-warn',
         'admin-action-dropdown action-menu-dropdown',
       ]),
@@ -50,7 +52,13 @@ describe('partner detail finance gate sections', () => {
     expect(rendered).toContain('No finance evidence found');
     expect(rendered).toContain('Tax profile is not required until payout eligibility review.');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-neutral']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-neutral',
+      ]),
     );
   });
 });

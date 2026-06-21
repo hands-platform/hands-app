@@ -1,6 +1,13 @@
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBankPayoutGateView = {
   readonly accountLabel?: string | null;
@@ -29,22 +36,23 @@ type PartnerDetailTaxProfileCardProps = {
 };
 
 export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayoutGateCardProps) {
+  const rowCount = bank ? 1 : 0;
+
   return (
-    <div className="card" id="bank">
-      <div className="ops-section-header">
-        <div>
-          <h2>Bank and payout gate</h2>
-          <p className="muted">
-            Payout account evidence used before Partner approval and payout release.
-          </p>
-        </div>
-        <span className={`pill ${financeEvidenceStatusTone(bank?.status)}`}>{bank?.status ?? 'MISSING'}</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Payout account evidence used before Partner approval and payout release."
+      id="bank"
+      resultLabel={bank?.status ?? 'MISSING'}
+      resultTone={financeEvidenceStatusBadgeTone(bank?.status)}
+      title="Bank and payout gate"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<FinanceEvidenceEmptyState message="No bank account submitted." />}
           headers={financeEvidenceHeaders}
-          rowCount={bank ? 1 : 0}
+          rowCount={rowCount}
         >
           {bank ? (
             <tr>
@@ -68,31 +76,31 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rowCount} />
+    </AdminFilterPanel>
   );
 }
 
 export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProfileCardProps) {
+  const rowCount = taxProfile ? 1 : 0;
+
   return (
-    <div className="card" id="tax">
-      <div className="ops-section-header">
-        <div>
-          <h2>Tax profile</h2>
-          <p className="muted">
-            Tax evidence required for payout eligibility after Partner revenue starts.
-          </p>
-        </div>
-        <span className={`pill ${financeEvidenceStatusTone(taxProfile?.status)}`}>
-          {taxProfile?.status ?? 'DEFERRED'}
-        </span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Tax evidence required for payout eligibility after Partner revenue starts."
+      id="tax"
+      resultLabel={taxProfile?.status ?? 'DEFERRED'}
+      resultTone={financeEvidenceStatusBadgeTone(taxProfile?.status)}
+      title="Tax profile"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={
             <FinanceEvidenceEmptyState message="Tax profile is not required until payout eligibility review." />
           }
           headers={financeEvidenceHeaders}
-          rowCount={taxProfile ? 1 : 0}
+          rowCount={rowCount}
         >
           {taxProfile ? (
             <tr>
@@ -118,7 +126,8 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
           ) : null}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rowCount} />
+    </AdminFilterPanel>
   );
 }
 
@@ -146,4 +155,11 @@ function financeEvidenceStatusTone(status?: string | null) {
   if (status === 'REJECTED' || status === 'MISSING') return 'pill-danger';
   if (status === 'DEFERRED' || !status) return 'pill-neutral';
   return 'pill-warn';
+}
+
+function financeEvidenceStatusBadgeTone(status?: string | null): StatusBadgeTone {
+  if (status === 'APPROVED') return 'success';
+  if (status === 'REJECTED' || status === 'MISSING') return 'danger';
+  if (status === 'DEFERRED' || !status) return 'neutral';
+  return 'warning';
 }
