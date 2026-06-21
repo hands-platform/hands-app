@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   BookingStatus,
-  ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
   ProviderKycStatus,
@@ -38,7 +37,7 @@ export function assertProviderCanReceiveBooking(provider: {
     deletedAt?: Date | null;
   }>;
   bankAccounts?: Array<{
-    status: ProviderBankAccountStatus;
+    status: string;
     deletedAt?: Date | null;
   }>;
 }) {
@@ -74,13 +73,6 @@ export function assertProviderCanReceiveBooking(provider: {
     throw new BadRequestException(
       `Partner required KYC documents must be approved before receiving bookings: ${missingDocuments.join(', ')}`,
     );
-  }
-
-  const hasApprovedBank = (provider.bankAccounts ?? []).some(
-    (account) => account.status === ProviderBankAccountStatus.APPROVED && !account.deletedAt,
-  );
-  if (!hasApprovedBank) {
-    throw new BadRequestException('Partner bank account must be approved before receiving bookings');
   }
 }
 

@@ -34,9 +34,9 @@ describe('partner detail registration dossier model', () => {
       blockers: 0,
       ready: true,
     });
-    expect(dossier.items.find((item) => item.label === 'Freelancer tax profile')).toMatchObject({
+    expect(dossier.items.find((item) => item.label === 'Legacy tax profile')).toMatchObject({
       ok: true,
-      status: 'DEFERRED',
+      status: 'NOT_REQUIRED',
     });
     expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
       ok: true,
@@ -44,7 +44,7 @@ describe('partner detail registration dossier model', () => {
     });
   });
 
-  it('requires tax, residential address, and agreements after the first earning', () => {
+  it('requires agreements after the first earning without requiring tax profile', () => {
     const dossier = buildProviderRegistrationDossier({
       activityNickname: 'Moon',
       bankAccounts: [{ status: 'APPROVED' }],
@@ -64,12 +64,12 @@ describe('partner detail registration dossier model', () => {
 
     expect(dossier.ready).toBe(false);
     expect(dossier.items.find((item) => item.label === 'Address and service area')).toMatchObject({
-      ok: false,
-      status: 'MISSING',
+      ok: true,
+      status: 'READY',
     });
-    expect(dossier.items.find((item) => item.label === 'Freelancer tax profile')).toMatchObject({
-      ok: false,
-      status: 'MISSING',
+    expect(dossier.items.find((item) => item.label === 'Legacy tax profile')).toMatchObject({
+      ok: true,
+      status: 'NOT_REQUIRED',
     });
     expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
       ok: false,
@@ -77,7 +77,7 @@ describe('partner detail registration dossier model', () => {
     });
   });
 
-  it('surfaces document, bank, and device/session blockers', () => {
+  it('surfaces document and device/session blockers without blocking on bank review', () => {
     const dossier = buildProviderRegistrationDossier({
       bankAccounts: [{ status: 'PENDING' }],
       devices: [{ blockedAt: '2026-06-13T03:15:00.000Z' }],
@@ -92,8 +92,8 @@ describe('partner detail registration dossier model', () => {
       status: 'PENDING',
     });
     expect(dossier.items.find((item) => item.label === 'Bank and payout account')).toMatchObject({
-      ok: false,
-      status: 'PENDING',
+      ok: true,
+      status: 'DEFERRED',
     });
     expect(dossier.items.find((item) => item.label === 'Device and session')).toMatchObject({
       ok: false,

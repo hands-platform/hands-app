@@ -101,29 +101,29 @@ export function nextPartnerListAction(
       priority: 84,
     };
   }
-  if (!hasApprovedBankAccount(provider)) {
+  if (primaryBank && !hasApprovedBankAccount(provider)) {
     return {
-      status: 'BANK',
-      detail: `Primary bank account is ${primaryBank?.status ?? 'missing'}.`,
-      operatorAction: 'Approve or reject bank details before payout readiness.',
-      tone: 'blocked',
+      status: 'WITHDRAWAL BANK',
+      detail: `Submitted bank account is ${primaryBank.status}.`,
+      operatorAction: 'Approve or reject bank details when the Partner requests wallet withdrawal.',
+      tone: 'pending',
       priority: primaryBank?.status === 'REJECTED' ? 82 : 80,
     };
   }
-  if (firstRevenueSignal && provider.taxProfile?.status !== 'APPROVED') {
+  if (firstRevenueSignal && provider.taxProfile && provider.taxProfile.status !== 'APPROVED') {
     return {
-      status: 'TAX',
-      detail: `Partner has first earning, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
-      operatorAction: 'Approve/reject freelance tax profile before the partner can withdraw earnings.',
-      tone: 'blocked',
+      status: 'LEGACY TAX',
+      detail: `Partner has a legacy tax profile in ${provider.taxProfile.status} status.`,
+      operatorAction: 'Review only if finance keeps legacy tax records; do not block withdrawal.',
+      tone: 'pending',
       priority: provider.taxProfile?.status === 'REJECTED' ? 76 : 74,
     };
   }
   if (firstRevenueSignal && !provider.residentialAddress?.trim()) {
     return {
-      status: 'TAX ADDRESS',
-      detail: 'Partner has first earning, but residential/tax address is missing.',
-      operatorAction: 'Ask partner to add the address needed for tax and payout records.',
+      status: 'WITHDRAWAL ADDRESS',
+      detail: 'Partner has first earning, but withdrawal address is missing.',
+      operatorAction: 'Ask partner to add the address needed for payout records.',
       tone: 'blocked',
       priority: 72,
     };
@@ -132,7 +132,7 @@ export function nextPartnerListAction(
     return {
       status: 'TERMS',
       detail: `Payout agreements are ${agreementsAccepted}/5.`,
-      operatorAction: 'Ask partner to accept missing payout/tax/location agreements.',
+      operatorAction: 'Ask partner to accept missing payout/location agreements.',
       tone: 'blocked',
       priority: 70,
     };

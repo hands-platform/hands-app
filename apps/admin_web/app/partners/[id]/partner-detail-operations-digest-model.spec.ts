@@ -129,9 +129,9 @@ describe('partner detail operations digest model', () => {
       status: '0 total',
       tone: 'pill-neutral',
     });
-    expect(rowByLane(rows, 'Tax and bank')).toMatchObject({
-      detail: 'Do not force tax data before first earning. Bank can still be reviewed early.',
-      status: 'DEFERRED / BANK MISSING',
+    expect(rowByLane(rows, 'Withdrawal setup')).toMatchObject({
+      detail: 'Do not force bank or tax setup before payout is requested.',
+      status: 'BANK MISSING / ADDRESS MISSING',
       tone: 'pill-warn',
     });
   });

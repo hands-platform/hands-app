@@ -158,13 +158,11 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       href: `/partners/${provider.id}?section=full#bank`,
     },
     {
-      area: 'Tax',
-      status: provider.taxProfile?.status ?? (firstRevenue ? 'REQUIRED' : 'DEFERRED'),
+      area: 'Legacy tax',
+      status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
       evidence: provider.taxProfile
         ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
-        : firstRevenue
-          ? 'First earning exists; tax profile is required before payout.'
-          : 'Tax profile intentionally deferred until first earning.',
+        : 'Tax profile is not required for Level 2 approval, matching, or current payout review.',
       href: `/partners/${provider.id}?section=full#tax`,
     },
     {

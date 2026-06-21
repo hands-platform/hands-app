@@ -107,11 +107,11 @@ describe('PartnerDetailReviewControlPanelSection', () => {
           },
           {
             blocked: true,
-            detail: 'Payout bank is not approved.',
-            level: 'Level 3 payout',
-            operatorAction: 'Approve bank account before payout.',
+            detail: 'KYC documents are still pending.',
+            level: 'Level 2 activity',
+            operatorAction: 'Approve required identity documents.',
             ready: false,
-            status: 'BLOCKED',
+            status: 'REVIEW',
           },
         ],
       },
@@ -123,8 +123,8 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('Level 2');
     expect(rendered).toContain('Level');
     expect(rendered).toContain('Operator action');
-    expect(rendered).toContain('Level 3 payout');
-    expect(rendered).toContain('Approve bank account before payout.');
+    expect(rendered).toContain('Level 2 activity');
+    expect(rendered).toContain('Approve required identity documents.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',

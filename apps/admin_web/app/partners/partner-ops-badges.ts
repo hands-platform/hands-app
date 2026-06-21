@@ -81,11 +81,11 @@ export function buildPartnerOpsBadges(
         : kycState.operatorAction,
     },
     {
-      label: hasBank ? 'Bank ok' : 'Bank needed',
-      tone: hasBank ? 'success' : 'warn',
+      label: hasBank ? 'Withdrawal bank ok' : 'Withdrawal bank on request',
+      tone: hasBank ? 'success' : 'neutral',
       detail: hasBank
         ? 'At least one approved bank account is available.'
-        : 'Approve a bank account before payout readiness.',
+        : 'Bank details are collected and reviewed when the Partner requests wallet withdrawal.',
     },
     {
       label: providerLocationLabel(locationState),

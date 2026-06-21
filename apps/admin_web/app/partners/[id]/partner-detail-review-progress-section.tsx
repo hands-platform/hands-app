@@ -253,7 +253,7 @@ export function PartnerDetailLevelPathSection({ plan }: PartnerDetailLevelPathSe
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and optional profile review gates."
+      description="Operator view of Level 1 signup and Level 2 activity approval. Payout bank review happens later when withdrawal is requested."
       id="partner-level-path"
       resultLabel={plan.currentLevel}
       title="Partner level path"
@@ -307,7 +307,7 @@ export function PartnerDetailResubmissionGuidanceSection({
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
           emptyMessage={
-            <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected Partner documents, bank accounts, KYC, or tax profiles." />
+            <PartnerReviewTableEmptyState message="No resubmission request needed. There are no rejected Partner documents, withdrawal bank accounts, KYC, or legacy tax profiles." />
           }
           headers={resubmissionGuidanceHeaders}
           rowCount={plan.items.length}

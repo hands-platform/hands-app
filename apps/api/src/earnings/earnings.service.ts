@@ -889,7 +889,6 @@ export class EarningsService {
     const provider = await tx.providerProfile.findUnique({
       where: { id: providerProfileId },
       include: {
-        taxProfile: true,
         bankAccounts: { where: { status: ProviderBankAccountStatus.APPROVED, deletedAt: null }, take: 1 },
         agreements: true,
       },
@@ -909,9 +908,6 @@ export class EarningsService {
 
     if (completedBookingCount < 1) {
       throw new BadRequestException('Partner must complete at least one booking before payout');
-    }
-    if (!provider.taxProfile || provider.taxProfile.status !== ProviderTaxProfileStatus.APPROVED) {
-      throw new BadRequestException('Partner tax profile must be approved before payout');
     }
     if (!provider.residentialAddress?.trim()) {
       throw new BadRequestException('Partner residential address is required before payout');

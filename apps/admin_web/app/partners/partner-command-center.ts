@@ -41,7 +41,9 @@ export function buildPartnerCommandCenter(
     (provider) => providerLocationStatus(provider, opsPolicy) === 'recent',
   ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
-  const bankReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
+  const bankReview = providers.filter(
+    (provider) => Boolean(provider.bankAccounts?.length) && !hasApprovedBankAccount(provider),
+  ).length;
   const payoutSetupReview = providers.filter(partnerPayoutSetupNeedsReview).length;
   const taxReview = providers.filter(partnerTaxNeedsReview).length;
   const walletDebt = providers.filter((provider) => partnerUnsettledWalletBalance(provider) < 0).length;
@@ -86,17 +88,17 @@ export function buildPartnerCommandCenter(
       ],
     },
     {
-      title: 'Payout and tax',
+      title: 'Withdrawal setup',
       status: walletDebt > 0 || payoutSetupReview > 0 ? 'Finance action' : 'Stable',
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
           ? cashFeeDebtBlocksMarketplaceAlertsParticipationCopy
-          : 'First-earning payout, bank, and freelance tax readiness are under control.',
+          : 'Wallet withdrawal address, submitted bank details, and payout agreements are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
-        partnerCommandMetric('bank', bankReview),
-        partnerCommandMetric('tax', taxReview),
+        partnerCommandMetric('submitted bank', bankReview),
+        partnerCommandMetric('legacy tax', taxReview),
         partnerCommandMetric('first earning', payoutSetupReview),
         partnerCommandMetric('wallet debt', walletDebt),
       ],

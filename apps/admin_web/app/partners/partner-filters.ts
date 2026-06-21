@@ -182,7 +182,7 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Public media review highlights uploaded partner photos that are pending or rejected.';
   }
   if (kind === 'review' && value === 'payout-setup') {
-    return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
+    return 'First earning payout setup highlights partners who have earned revenue but still need withdrawal address or payout agreement follow-up.';
   }
   if (kind === 'review' && value === 'cash-debt') {
     return 'Cash fee debt highlights Partners whose final acceptance, service start, and payout release wait for HANDS commission settlement.';
@@ -246,7 +246,7 @@ export function partnerReviewFilterLabel(review: string) {
     bank: 'Bank payout review',
     'payout-setup': 'First earning payout setup',
     'cash-debt': 'Cash fee debt',
-    tax: 'Tax profile review',
+    tax: 'Legacy tax profile review',
     security: 'Device/session check',
     reports: 'Reports/controls',
     blocked: 'Account blocks',

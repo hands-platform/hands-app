@@ -1311,8 +1311,8 @@ function PartnerDetailFastOverview({
     { label: 'Retained chats', value: `${chatRoomCount} room(s), ${chatMessageCount} message(s)` },
   ];
   const payoutReadinessRows: PartnerDetailFastOverviewInfoLine[] = [
-    { label: 'Bank', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
-    { label: 'Tax profile', value: provider.taxProfile?.status ?? 'Deferred until first earning' },
+    { label: 'Withdrawal bank', value: primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null },
+    { label: 'Legacy tax profile', value: provider.taxProfile?.status ?? 'Not required' },
     { label: 'Cash fee debt', value: cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear' },
     { label: 'Payout status', value: payoutOps.status },
   ];
@@ -1594,26 +1594,16 @@ function buildPartnerOperatorCommandQueue({
     });
   }
 
-  if (hasFirstRevenue && provider.taxProfile?.status === 'PENDING') {
+  if (provider.taxProfile?.status === 'PENDING') {
     add({
       id: 'tax-approve',
       label: 'TAX',
-      title: 'Tax profile ready after first earning',
+      title: 'Legacy tax profile submitted',
       detail:
-        'Partner has revenue and tax profile is pending. Approve only after checking MST/address/identity match.',
+        'Tax profile is not required for current Vietnam operations. Review only if finance keeps legacy tax records.',
       owner: 'Finance',
       tone: 'pending',
       action: { type: 'approve-tax', label: 'Approve tax' },
-    });
-  } else if (hasFirstRevenue && provider.taxProfile?.status !== 'APPROVED') {
-    add({
-      id: 'tax-needed',
-      label: 'TAX',
-      title: 'Tax profile required before payout',
-      detail: `Tax status is ${provider.taxProfile?.status ?? 'MISSING'}. Keep dispatch logic separate from payout gating.`,
-      owner: 'Finance',
-      tone: 'blocked',
-      action: { type: 'link', href: '#tax', label: 'Open tax' },
     });
   }
 
@@ -2104,7 +2094,7 @@ function buildPartnerActivityRecords(
       id: provider.taxProfile.id,
       type: 'TAX',
       at: provider.taxProfile.approvedAt,
-      title: `Tax profile ${provider.taxProfile.status.toLowerCase()}`,
+      title: `Legacy tax profile ${provider.taxProfile.status.toLowerCase()}`,
       detail: `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax code ${
         provider.taxProfile.taxCodeLast4 ? `****${provider.taxProfile.taxCodeLast4}` : 'not stored'
       }`,
@@ -2487,18 +2477,16 @@ function buildPartnerMasterFacts(
       )}`,
     },
     {
-      label: 'Tax profile',
+      label: 'Legacy tax profile',
       value: provider.taxProfile?.status ?? 'DEFERRED',
-      helper: providerHasFirstRevenueSignal(provider)
-        ? 'Tax profile required after first earning'
-        : 'Tax profile can stay deferred until first earning',
+      helper: 'Not required for Level 2 approval, matching, or current Vietnam payout review.',
     },
     {
-      label: 'Bank account',
+      label: 'Withdrawal bank account',
       value: primaryBank?.status ?? 'MISSING',
       helper: primaryBank
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)}`
-        : 'No bank row',
+        : 'Collected when wallet withdrawal is requested',
     },
     {
       label: 'Account state',
@@ -2524,7 +2512,6 @@ function buildPartnerOperatingChecklist(
   const cashDebt = cashFeeDebtAmount(provider);
   const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
-  const taxReady = provider.taxProfile?.status === 'APPROVED';
   const addressReady = Boolean(provider.residentialAddress?.trim());
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
@@ -2601,20 +2588,18 @@ function buildPartnerOperatingChecklist(
       tone: primaryBank?.status === 'APPROVED' ? 'done' : 'pending',
     },
     {
-      area: 'Tax',
+      area: 'Legacy tax',
       status: hasFirstRevenue
-        ? taxReady
-          ? 'Tax profile ready'
-          : 'Tax required after first earning'
-        : 'Tax deferred',
+        ? provider.taxProfile?.status ?? 'Not required'
+        : 'Not required',
       detail: hasFirstRevenue
-        ? `Tax ${provider.taxProfile?.status ?? 'MISSING'} / address ${
+        ? `Legacy tax ${provider.taxProfile?.status ?? 'NOT_REQUIRED'} / address ${
             addressReady ? 'saved' : 'missing'
           } / agreements ${agreementsAccepted}.`
-        : 'Do not force tax information before the first earning. Policy remains configured in admin.',
-      nextAction: hasFirstRevenue && !taxReady ? 'Collect tax profile' : 'Review tax policy',
-      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#tax` : '/tax-policy',
-      tone: hasFirstRevenue && !taxReady ? 'pending' : 'done',
+        : 'Do not force tax information before approval, matching, or payout review.',
+      nextAction: 'Review only if legacy tax data was submitted',
+      href: `/partners/${provider.id}?section=full#tax`,
+      tone: 'done',
     },
     {
       area: 'Payout',
@@ -2774,13 +2759,13 @@ function buildProviderBookingAcceptance(
           : 'Finish review',
     },
     {
-      label: 'Bank account',
-      ok: hasApprovedBankAccount(provider),
+      label: 'Withdrawal bank account',
+      ok: true,
       detail:
         primaryBank?.status === 'APPROVED'
           ? `Approved bank is available: ${marketplaceDisplayText(primaryBank.bankName)}.`
-          : `Bank account is ${primaryBank?.status ?? 'missing'}.`,
-      action: hasApprovedBankAccount(provider) ? 'Clear' : 'Approve bank',
+          : 'Bank details are collected and approved when the Partner requests wallet withdrawal.',
+      action: primaryBank?.status === 'APPROVED' ? 'Clear' : 'Review on withdrawal request',
     },
     {
       label: 'Online and reachable',
@@ -2908,12 +2893,12 @@ function buildPartnerAcceptanceRepairCommand(
   if (providerHasFirstRevenueSignal(provider) && payoutOps.status !== 'UNLOCKED') {
     steps.push({
       owner: 'Finance',
-      blocker: 'Payout-only tax gate',
+      blocker: 'Payout-only withdrawal setup',
       reason:
         payoutOps.blockers[0] ??
-        'First earning exists, so tax profile, address, agreements, and payout holds must be reviewed before withdrawal.',
+        'First earning exists, so address, agreements, bank details, and payout holds must be reviewed before withdrawal.',
       operatorAction:
-        'Do not block the first job retroactively, but keep payout locked until tax and agreement requirements are complete.',
+        'Do not block the first job retroactively, but keep payout locked until withdrawal requirements are complete.',
       href: `/partners/${provider.id}?section=full#payout`,
       actionLabel: 'Open payout gate',
       tone: 'pending',
@@ -3023,9 +3008,6 @@ function partnerAppBlockMessage(
   if (provider.verification?.status !== 'APPROVED' || provider.kyc?.status !== 'APPROVED') {
     return 'Identity verification must be approved before receiving paid work.';
   }
-  if (!hasApprovedBankAccount(provider)) {
-    return 'Bank account must be approved before receiving paid bookings.';
-  }
   if (locationAgeMinutes(provider.currentLocationUpdatedAt) > dispatchPolicy.locationFreshnessMinutes) {
     return 'Open the app to refresh location before receiving requests.';
   }
@@ -3047,7 +3029,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
   const walletGate = gate('Wallet and cash debt');
   const accountGate = gate('Account controls');
   const identityGate = gate('Identity and approval');
-  const bankGate = gate('Bank account');
+  const bankGate = gate('Withdrawal bank account');
   const locationGate = gate('Location freshness');
   const reachableGate = gate('Online and reachable');
   const serviceGate = gate('Bookable services');
@@ -3089,21 +3071,23 @@ function buildPartnerAcceptanceUnblockPlaybook(
       bookingBlocked: !accountGate?.ok,
     },
     {
-      id: 'identity-bank',
+      id: 'identity-activity',
       step: '3',
       owner: 'KYC',
-      title: 'Finish KYC, required documents, and bank',
-      status: identityGate?.ok && bankGate?.ok ? 'READY' : 'REVIEW',
-      detail: `${identityGate?.detail ?? 'Identity gate missing.'} ${bankGate?.detail ?? 'Bank gate missing.'}`,
-      bookingImpact:
-        identityGate?.ok && bankGate?.ok
-          ? 'Partner meets the Level 2 active-work gate.'
-          : 'Holds preferred direct requests and marketplace participation until identity evidence and bank readiness are approved.',
-      payoutImpact: 'Approved bank is also required before partner payout can be prepared.',
-      action: identityGate?.ok && bankGate?.ok ? 'Review KYC evidence' : 'Finish KYC and bank review',
+      title: 'Finish KYC and Level 2 activity readiness',
+      status: identityGate?.ok ? 'READY' : 'REVIEW',
+      detail: identityGate?.detail ?? 'Identity gate missing.',
+      bookingImpact: identityGate?.ok
+        ? 'Partner meets the Level 2 active-work gate.'
+        : 'Holds preferred direct requests and marketplace participation until identity evidence and activity readiness are approved.',
+      payoutImpact:
+        bankGate?.ok
+          ? 'Bank account is approved for future withdrawal requests.'
+          : 'Bank details are reviewed later when the Partner requests wallet withdrawal.',
+      action: identityGate?.ok ? 'Review KYC evidence' : 'Finish KYC review',
       href: `/partners/${provider.id}?section=full#kyc`,
-      tone: identityGate?.ok && bankGate?.ok ? 'done' : 'blocked',
-      bookingBlocked: !(identityGate?.ok && bankGate?.ok),
+      tone: identityGate?.ok ? 'done' : 'blocked',
+      bookingBlocked: !identityGate?.ok,
     },
     {
       id: 'location',
@@ -3157,18 +3141,18 @@ function buildPartnerAcceptanceUnblockPlaybook(
       id: 'tax-after-first-earning',
       step: '7',
       owner: 'Finance',
-      title: 'Collect tax only after first earning',
+      title: 'Review withdrawal setup after first earning',
       status: payoutGateOpen ? (hasFirstRevenue ? 'PAYOUT READY' : 'DEFERRED') : 'PAYOUT GATE',
       detail: hasFirstRevenue
         ? (payoutOps.blockers[0] ??
-          'First earning exists; verify tax, address, agreements, and payout holds.')
-        : 'Do not force tax profile during initial signup. Keep tax policy configured, then collect partner tax data after first earning.',
+          'First earning exists; verify withdrawal address, payout agreements, bank details, and payout holds.')
+        : 'Do not force bank or tax setup during initial signup. Collect withdrawal details when payout is requested.',
       bookingImpact: 'This should not block the partner from receiving the first booking.',
       payoutImpact: payoutGateOpen
-        ? 'No tax-related payout blocker is currently visible.'
-        : 'Blocks withdrawal or payout until tax profile, address, and required agreements are complete.',
-      action: hasFirstRevenue ? 'Open payout and tax gate' : 'Review tax policy',
-      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/tax-policy',
+        ? 'No withdrawal setup blocker is currently visible.'
+        : 'Blocks withdrawal or payout until address, bank, required agreements, and holds are complete.',
+      action: hasFirstRevenue ? 'Open payout gate' : 'Review payout policy',
+      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/cash-settlements',
       tone: payoutGateOpen ? 'done' : 'pending',
       bookingBlocked: false,
     },
@@ -3187,7 +3171,7 @@ function buildPartnerDetailOpsBadges(
     locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
   const identityGate = gate('Identity and approval');
-  const bankGate = gate('Bank account');
+  const bankGate = gate('Withdrawal bank account');
   const onlineGate = gate('Online and reachable');
   const serviceGate = gate('Bookable services');
 
@@ -3209,7 +3193,7 @@ function buildPartnerDetailOpsBadges(
           ? `Can participate in marketplace bookings inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
           : cashDebt > 0 && bookingAcceptance.canJoinMarketplace
             ? 'Marketplace visibility and participation stay open; final acceptance, service start, and payout release wait for settlement.'
-            : 'Marketplace participation uses account, identity, bank, reachability, location, and pricing gates.',
+            : 'Marketplace participation uses account, identity, reachability, location, and pricing gates.',
     },
     {
       label: cashDebt > 0 ? 'Cash debt warning' : 'Wallet clear',
@@ -3273,7 +3257,6 @@ function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFA
   const payoutReady =
     hasFirstRevenue &&
     hasApprovedBankAccount(provider) &&
-    provider.taxProfile?.status === 'APPROVED' &&
     Boolean(provider.residentialAddress?.trim()) &&
     payoutAgreementsReady &&
     !payoutHold;
@@ -3348,10 +3331,10 @@ function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFA
       detail: payoutHold
         ? `Active payout hold: ${payoutHold.reason}`
         : payoutReady
-          ? 'Partner has completed service, approved bank, approved tax profile, address, and agreements.'
+          ? 'Partner has completed service, approved bank, address, and agreements.'
           : hasFirstRevenue
             ? payoutBlockers(provider).join(' ')
-            : 'Tax profile, tax address, and full payout gate stay deferred until first earning.',
+            : 'Withdrawal details and payout gate stay deferred until first earning.',
       action: payoutHold
         ? 'Lift the control only after finance or account-control follow-up is resolved.'
         : payoutReady
@@ -3384,10 +3367,9 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const hasAddress = Boolean(provider.residentialAddress?.trim());
   const bankApproved = hasApprovedBankAccount(provider);
-  const taxApproved = provider.taxProfile?.status === 'APPROVED';
   const agreementsReady = agreementsAccepted >= 5;
   const payoutReady =
-    hasFirstRevenue && bankApproved && taxApproved && hasAddress && agreementsReady && !payoutHold;
+    hasFirstRevenue && bankApproved && hasAddress && agreementsReady && !payoutHold;
   const blockers = hasFirstRevenue ? payoutBlockers(provider) : [];
   const unpaidEarnings = earnings.filter(
     (earning) => !['PAID', 'CANCELLED', 'REFUNDED'].includes(earning.status),
@@ -3420,7 +3402,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       title: 'Withholding',
       status: earnings.length ? 'TRACKED' : 'NONE',
       detail: formatCurrency(withholdingAmount),
-      action: earnings.length ? 'Tax is calculated from active policy rules.' : 'No first earning yet.',
+      action: earnings.length ? 'Fee and withholding records are preserved for accounting.' : 'No first earning yet.',
       tone: earnings.length ? 'done' : 'pending',
     },
     {
@@ -3440,7 +3422,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       detail: payoutHold
         ? `Active hold: ${payoutHold.reason}`
         : payoutReady
-          ? 'Bank, tax, address, agreements, and first service are complete.'
+          ? 'Bank, address, agreements, and first service are complete.'
           : hasFirstRevenue
             ? blockers.join(' ')
             : 'Deferred until first earning.',
@@ -3561,17 +3543,9 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
   );
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
   const kycReady = provider.kyc?.status === 'APPROVED' && requiredDocumentsReady;
-  const bankReady = hasApprovedBankAccount(provider);
-  const hasCompletedService = (provider.earnings ?? []).length > 0;
-  const taxReady = provider.taxProfile?.status === 'APPROVED';
-  const agreementCount = provider.agreements?.length ?? 0;
-  const payoutAgreementsReady = agreementCount >= 5;
-  const hasAddress = Boolean(provider.residentialAddress?.trim());
   const verificationReady = provider.verification?.status === 'APPROVED';
-  const trustedReady = provider.level === 'LEVEL_4_TRUSTED';
 
-  const level2Ready = hasBasicProfile && kycReady && bankReady && verificationReady;
-  const level3Ready = level2Ready && hasCompletedService && taxReady && payoutAgreementsReady && hasAddress;
+  const level2Ready = hasBasicProfile && kycReady && verificationReady;
 
   const items: ProviderLevelPathItem[] = [
     {
@@ -3590,58 +3564,23 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       level: 'LEVEL 2 - Activity possible',
       status: level2Ready ? 'READY' : 'REVIEW',
       detail: level2Ready
-        ? 'KYC, required documents, approved bank account, and partner verification are approved.'
+        ? 'KYC, required identity documents, partner verification, and service-ready profile are approved.'
         : level2Blockers({
             hasBasicProfile,
             kycReady,
             requiredDocumentsReady,
-            bankReady,
             verificationReady,
           }).join(' '),
       operatorAction: level2Ready
-        ? 'Partner can receive direct booking and marketplace matching work.'
+        ? 'Partner can receive booking requests and participate in matching. Bank payout review is handled later when withdrawal is requested.'
         : 'Clear these items before relying on the partner for customer requests.',
       ready: level2Ready,
       blocked: !level2Ready,
     },
-    {
-      level: 'LEVEL 3 - Payout possible',
-      status: level3Ready ? 'READY' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
-      detail: level3Ready
-        ? 'First service, tax profile, address, bank, and required agreements are complete.'
-        : hasCompletedService
-          ? level3Blockers({ taxReady, payoutAgreementsReady, agreementCount, hasAddress, bankReady }).join(
-              ' ',
-            )
-          : 'Do not force tax setup before the first completed service. It should appear before withdrawal.',
-      operatorAction: level3Ready
-        ? 'Payout can be approved when an eligible batch exists.'
-        : hasCompletedService
-          ? 'Resolve payout blockers before approving withdrawal.'
-          : 'Keep this deferred until the partner earns revenue.',
-      ready: level3Ready,
-      blocked: hasCompletedService && !level3Ready,
-    },
-    {
-      level: 'LEVEL 4 - Optional profile review',
-      status: trustedReady ? 'REVIEWED' : level3Ready ? 'OPTIONAL' : 'LOCKED',
-      detail: trustedReady
-        ? 'Partner has an optional profile review record.'
-        : level3Ready
-          ? 'Partner is eligible for manual profile review after records are complete.'
-          : 'Profile review should wait until payout-level compliance and service records are complete.',
-      operatorAction: trustedReady
-        ? 'Keep records current.'
-        : level3Ready
-          ? 'Review service evidence, service photos, reports, and customer feedback records.'
-          : 'No profile review action yet.',
-      ready: trustedReady,
-      blocked: false,
-    },
   ];
 
   return {
-    currentLevel: provider.level ?? 'LEVEL_1_SIGNUP',
+    currentLevel: level2Ready ? 'LEVEL_2_ACTIVE' : 'LEVEL_1_SIGNUP',
     items,
   };
 }
@@ -3650,31 +3589,14 @@ function level2Blockers(input: {
   hasBasicProfile: boolean;
   kycReady: boolean;
   requiredDocumentsReady: boolean;
-  bankReady: boolean;
   verificationReady: boolean;
 }) {
   const blockers: string[] = [];
   if (!input.hasBasicProfile) blockers.push('Basic profile is incomplete.');
   if (!input.requiredDocumentsReady) blockers.push('Required CCCD/selfie documents are not all approved.');
   if (!input.kycReady) blockers.push('KYC is not approved.');
-  if (!input.bankReady) blockers.push('No approved bank account is available.');
   if (!input.verificationReady) blockers.push('Partner verification is not approved.');
   return blockers.length ? blockers : ['Activity gate needs operator refresh.'];
-}
-
-function level3Blockers(input: {
-  taxReady: boolean;
-  payoutAgreementsReady: boolean;
-  agreementCount: number;
-  hasAddress: boolean;
-  bankReady: boolean;
-}) {
-  const blockers: string[] = [];
-  if (!input.bankReady) blockers.push('Approved bank account is required.');
-  if (!input.taxReady) blockers.push('Approved tax profile is required after first completed service.');
-  if (!input.payoutAgreementsReady) blockers.push(`Required agreements are ${input.agreementCount}/5.`);
-  if (!input.hasAddress) blockers.push('Residential address is required for tax/payout records.');
-  return blockers.length ? blockers : ['Payout gate needs operator refresh.'];
 }
 
 function payoutBlockers(provider: ProviderDetail) {
@@ -3687,9 +3609,6 @@ function payoutBlockers(provider: ProviderDetail) {
   }
   if (!hasApprovedBankAccount(provider)) {
     blockers.push(`Bank ${bankAccountStatusLabel(provider)}.`);
-  }
-  if (provider.taxProfile?.status !== 'APPROVED') {
-    blockers.push(`Tax ${provider.taxProfile?.status ?? 'MISSING'}.`);
   }
   if (!provider.residentialAddress?.trim()) {
     blockers.push('Residential address missing.');
@@ -3705,6 +3624,7 @@ function nextProviderAction(
   dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
 ): ProviderOpsCard {
   const payoutHold = activePayoutHold(provider);
+  const primaryBank = primaryBankAccount(provider);
   if (provider.blockedAt) {
     return {
       title: 'Next admin action',
@@ -3750,30 +3670,21 @@ function nextProviderAction(
       tone: 'blocked',
     };
   }
-  if (!hasApprovedBankAccount(provider)) {
+  if (primaryBank && primaryBank.status !== 'APPROVED') {
     return {
       title: 'Next admin action',
-      status: 'BANK',
-      detail: `Bank account is ${bankAccountStatusLabel(provider).toLowerCase()}.`,
-      action: 'Approve or reject the bank account with a clear reason.',
-      tone: 'blocked',
-    };
-  }
-  if (providerHasFirstRevenueSignal(provider) && provider.taxProfile?.status !== 'APPROVED') {
-    return {
-      title: 'Next admin action',
-      status: 'TAX',
-      detail: `Partner has earnings, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
-      action: 'Approve or reject tax profile before withdrawal.',
-      tone: 'blocked',
+      status: 'WITHDRAWAL BANK',
+      detail: `Submitted bank account is ${primaryBank.status.toLowerCase()}.`,
+      action: 'Approve or reject bank details when the Partner requests wallet withdrawal.',
+      tone: 'pending',
     };
   }
   if (providerHasFirstRevenueSignal(provider) && !provider.residentialAddress?.trim()) {
     return {
       title: 'Next admin action',
-      status: 'TAX ADDRESS',
-      detail: 'Partner has first earning, but residential/tax address is missing.',
-      action: 'Ask partner to add tax address before withdrawal.',
+      status: 'WITHDRAWAL ADDRESS',
+      detail: 'Partner has first earning, but withdrawal address is missing.',
+      action: 'Ask partner to add the address needed for withdrawal records.',
       tone: 'blocked',
     };
   }
@@ -3781,7 +3692,7 @@ function nextProviderAction(
     return {
       title: 'Next admin action',
       status: 'TERMS',
-      detail: `Required payout/tax agreements are ${provider.agreements?.length ?? 0}/5.`,
+      detail: `Required payout agreements are ${provider.agreements?.length ?? 0}/5.`,
       action: 'Ask partner to accept missing policy versions before withdrawal.',
       tone: 'blocked',
     };
@@ -3874,30 +3785,28 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
           : `Missing or unapproved: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
     },
     {
-      label: 'Bank account',
-      ok: hasApprovedBankAccount(provider),
-      status: bankAccountStatusLabel(provider),
+      label: 'Withdrawal bank account',
+      ok: true,
+      status: primaryBank ? bankAccountStatusLabel(provider) : 'Deferred',
       detail: primaryBank
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${
             primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
           }`
-        : 'Partner has not submitted a payout account.',
+        : 'Bank account is collected and approved when the Partner requests wallet withdrawal.',
     },
     {
-      label: 'Tax and payout gate',
-      ok:
-        !hasFirstRevenue ||
-        (provider.taxProfile?.status === 'APPROVED' &&
-          Boolean(provider.residentialAddress?.trim()) &&
-          (provider.agreements?.length ?? 0) >= 5),
-      status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
+      label: 'Withdrawal setup',
+      ok: !hasFirstRevenue || (Boolean(provider.residentialAddress?.trim()) && (provider.agreements?.length ?? 0) >= 5),
+      status: !hasFirstRevenue
+        ? 'DEFERRED'
+        : Boolean(provider.residentialAddress?.trim()) && (provider.agreements?.length ?? 0) >= 5
+          ? 'READY'
+          : 'MISSING',
       detail: !hasFirstRevenue
-        ? 'Tax profile, tax address, and payout agreements can stay deferred until first earning.'
-        : provider.taxProfile?.status === 'APPROVED' &&
-            Boolean(provider.residentialAddress?.trim()) &&
-            (provider.agreements?.length ?? 0) >= 5
-          ? 'Tax profile, tax address, and payout agreements are ready.'
-          : 'First earning exists, so tax profile, tax address, and payout agreements now block payout.',
+        ? 'Withdrawal address and payout agreements can stay deferred until first earning or withdrawal request.'
+        : Boolean(provider.residentialAddress?.trim()) && (provider.agreements?.length ?? 0) >= 5
+          ? 'Withdrawal address and payout agreements are ready.'
+          : 'First earning exists, so withdrawal address and payout agreements need follow-up before withdrawal.',
     },
     {
       label: 'Location freshness',

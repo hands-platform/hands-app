@@ -67,11 +67,11 @@ export function buildProviderResubmissionPlan(
 
   if (provider.taxProfile?.status === 'REJECTED') {
     items.push({
-      target: 'Freelancer tax profile',
+      target: 'Legacy tax profile',
       status: 'REJECTED',
       reason: provider.taxProfile.rejectionReason ?? 'No tax rejection reason was saved.',
       providerInstruction:
-        'Ask for the correct MST/tax code, legal name, and registered address before payout review.',
+        'Ask for corrected legacy tax details only if finance keeps this record.',
       operatorAction: 'Tax',
     });
   }

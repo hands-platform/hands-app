@@ -89,7 +89,7 @@ describe('PartnerOnboardingCell', () => {
         'CCCD front side review actions for Linh Wellness',
         'KYC review actions for Linh Wellness',
         'Bank review actions for Linh Wellness',
-        'Tax profile review actions for Linh Wellness',
+        'Legacy tax profile review actions for Linh Wellness',
       ]),
     );
     expect(classNamesIn(cell)).toEqual(

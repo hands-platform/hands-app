@@ -22,7 +22,6 @@ export function partnerPayoutSetupNeedsReview(provider: AdminProvider) {
   }
 
   return (
-    provider.taxProfile?.status !== 'APPROVED' ||
     !provider.residentialAddress?.trim() ||
     (provider.agreements?.length ?? 0) < 5
   );
@@ -34,7 +33,7 @@ export function partnerTaxNeedsReview(provider: AdminProvider) {
     return true;
   }
 
-  return partnerHasFirstRevenueSignal(provider) && taxStatus !== 'APPROVED';
+  return false;
 }
 
 export function partnerTaxPillClass(provider: AdminProvider) {

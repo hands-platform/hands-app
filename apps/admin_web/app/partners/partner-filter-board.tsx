@@ -266,7 +266,7 @@ const partnerReviewLaneFilterOptions = [
   { label: 'Bank payout review', value: 'bank' },
   { label: 'First earning payout setup', value: 'payout-setup' },
   { label: 'Cash fee debt', value: 'cash-debt' },
-  { label: 'Tax profile review', value: 'tax' },
+  { label: 'Legacy tax profile review', value: 'tax' },
   { label: 'Device/session check', value: 'security' },
   { label: 'Reports/controls', value: 'reports' },
   { label: 'Account blocks', value: 'blocked' },

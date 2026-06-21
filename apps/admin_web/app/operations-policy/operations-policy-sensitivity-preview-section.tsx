@@ -49,7 +49,7 @@ export function OperationsPolicySensitivityPreviewSection({
           <h3>Marketplace supply sensitivity</h3>
           <p className="muted">
             Reference point: {sensitivity.referenceLabel}. Marketplace blockers include account, identity,
-            and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout hold.
+            location, and alert readiness. Negative wallet stays visible and is shown as a marketplace/payout hold.
           </p>
           <AdminDataTable
             className="service-trace"

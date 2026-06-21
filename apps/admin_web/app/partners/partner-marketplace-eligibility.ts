@@ -1,6 +1,6 @@
 import type { AdminProvider } from '../../lib/admin-api';
 import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../lib/operations-policy';
-import { hasApprovedBankAccount, hasHealthyPush } from './partner-list-profile';
+import { hasHealthyPush } from './partner-list-profile';
 import {
   DEFAULT_PROVIDER_OPS_POLICY,
   formatDistanceMeters,
@@ -86,9 +86,6 @@ export function partnerMarketplaceBlockers(
   }
   if (!hasApprovedRequiredKycDocuments(provider)) {
     blockers.push({ label: 'identity documents', severity: 'hard' });
-  }
-  if (!hasApprovedBankAccount(provider)) {
-    blockers.push({ label: 'bank account', severity: 'hard' });
   }
   if (partnerUnsettledWalletBalance(provider) < 0) {
     blockers.push({ label: 'cash fee debt', severity: 'hard' });

@@ -53,9 +53,8 @@ export class ProviderOnboardingService {
       recommendedLevel: this.recommendedLevel({
         kycApproved: readiness.kycApproved,
         legacyVerificationApproved: readiness.legacyVerificationApproved,
-        approvedBankAccount: readiness.approvedBankAccount,
-        canWithdraw: readiness.canWithdraw,
-        trustedAt: provider.trustedAt,
+        requiredDocumentsApproved: readiness.requiredDocumentsApproved,
+        serviceReadyProfile: readiness.serviceReadyProfile,
       }),
       basicProfile: {
         displayName: provider.displayName,
@@ -85,7 +84,7 @@ export class ProviderOnboardingService {
         canWithdraw: readiness.canWithdraw,
         missing: {
           firstCompletedService: !readiness.payoutSetupStarted,
-          taxProfileApproved: readiness.payoutSetupStarted && !readiness.taxProfileApproved,
+          taxProfileApproved: false,
           residentialAddress: readiness.payoutSetupStarted && !readiness.hasAddress,
           agreements: readiness.payoutSetupStarted ? readiness.missingAgreements : [],
         },
@@ -102,9 +101,9 @@ export class ProviderOnboardingService {
         provider,
         kycApproved: readiness.kycApproved,
         legacyVerificationApproved: readiness.legacyVerificationApproved,
-        approvedBankAccount: readiness.approvedBankAccount,
+        requiredDocumentsApproved: readiness.requiredDocumentsApproved,
+        serviceReadyProfile: readiness.serviceReadyProfile,
         completedBookingCount,
-        taxProfileApproved: readiness.taxProfileApproved,
         hasAddress: readiness.hasAddress,
         missingAgreements: readiness.missingAgreements,
       }),
@@ -804,6 +803,9 @@ export class ProviderOnboardingService {
         kyc: true,
         bankAccounts: true,
         taxProfile: true,
+        documents: {
+          select: { type: true, status: true, deletedAt: true },
+        },
         agreements: true,
       },
     });
@@ -817,9 +819,8 @@ export class ProviderOnboardingService {
     const level = this.recommendedLevel({
       kycApproved: readiness.kycApproved,
       legacyVerificationApproved: readiness.legacyVerificationApproved,
-      approvedBankAccount: readiness.approvedBankAccount,
-      canWithdraw: readiness.canWithdraw,
-      trustedAt: provider.trustedAt,
+      requiredDocumentsApproved: readiness.requiredDocumentsApproved,
+      serviceReadyProfile: readiness.serviceReadyProfile,
     });
     if (provider.level === level) {
       return provider;
@@ -849,46 +850,60 @@ export class ProviderOnboardingService {
       kyc?: { status: ProviderKycStatus } | null;
       bankAccounts: readonly { status: ProviderBankAccountStatus }[];
       taxProfile?: { status: ProviderTaxProfileStatus } | null;
+      documents?: readonly {
+        type: ProviderDocumentType;
+        status: ProviderDocumentStatus;
+        deletedAt?: Date | null;
+      }[];
       agreements: readonly { type: ProviderAgreementType }[];
+      displayName?: string | null;
+      legalName?: string | null;
       residentialAddress?: string | null;
     },
     completedBookingCount: number,
   ) {
     const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
     const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
-    const taxProfileApproved = provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED;
+    const approvedDocumentTypes = new Set(
+      (provider.documents ?? [])
+        .filter((document) => document.status === ProviderDocumentStatus.APPROVED && !document.deletedAt)
+        .map((document) => document.type),
+    );
     const hasAddress = Boolean(provider.residentialAddress?.trim());
     const payoutSetupStarted = completedBookingCount > 0;
+    const requiredDocumentsApproved = REQUIRED_KYC_DOCUMENT_TYPES.every((type) =>
+      approvedDocumentTypes.has(type),
+    );
+    const serviceReadyProfile = Boolean(provider.displayName?.trim() && provider.legalName?.trim());
 
     return {
       approvedBankAccount: provider.bankAccounts.some(
         (account) => account.status === ProviderBankAccountStatus.APPROVED,
       ),
-      canWithdraw:
-        payoutSetupStarted && taxProfileApproved && hasAddress && missingAgreements.length === 0,
+      canWithdraw: payoutSetupStarted && hasAddress && missingAgreements.length === 0,
       hasAddress,
       kycApproved: provider.kyc?.status === ProviderKycStatus.APPROVED,
       legacyVerificationApproved: provider.verification?.status === VerificationStatus.APPROVED,
       missingAgreements,
       payoutSetupStarted,
-      taxProfileApproved,
+      requiredDocumentsApproved,
+      serviceReadyProfile,
+      taxProfileApproved: true,
     };
   }
 
   private recommendedLevel(input: {
     kycApproved: boolean;
     legacyVerificationApproved: boolean;
-    approvedBankAccount: boolean;
-    canWithdraw: boolean;
-    trustedAt: Date | null;
+    requiredDocumentsApproved: boolean;
+    serviceReadyProfile: boolean;
   }) {
-    if (input.trustedAt) {
-      return ProviderLevel.LEVEL_4_TRUSTED;
-    }
-    if (input.canWithdraw) {
-      return ProviderLevel.LEVEL_3_PAYOUT_ENABLED;
-    }
-    if ((input.kycApproved || input.legacyVerificationApproved) && input.approvedBankAccount) {
+    if (
+      input.kycApproved &&
+      input.legacyVerificationApproved &&
+      input.requiredDocumentsApproved &&
+      input.serviceReadyProfile
+    ) {
       return ProviderLevel.LEVEL_2_ACTIVE;
     }
     return ProviderLevel.LEVEL_1_SIGNUP;
@@ -898,9 +913,9 @@ export class ProviderOnboardingService {
     provider: Awaited<ReturnType<ProviderOnboardingService['requireProvider']>>;
     kycApproved: boolean;
     legacyVerificationApproved: boolean;
-    approvedBankAccount: boolean;
+    requiredDocumentsApproved: boolean;
+    serviceReadyProfile: boolean;
     completedBookingCount: number;
-    taxProfileApproved: boolean;
     hasAddress: boolean;
     missingAgreements: ProviderAgreementType[];
   }) {
@@ -911,11 +926,11 @@ export class ProviderOnboardingService {
     if (!input.kycApproved && !input.legacyVerificationApproved) {
       actions.push('KYC_REVIEW');
     }
-    if (!input.approvedBankAccount) {
-      actions.push('BANK_ACCOUNT_REVIEW');
+    if (!input.requiredDocumentsApproved) {
+      actions.push('KYC_DOCUMENT_REVIEW');
     }
-    if (input.completedBookingCount > 0 && !input.taxProfileApproved) {
-      actions.push('TAX_PROFILE_REVIEW');
+    if (!input.serviceReadyProfile) {
+      actions.push('SERVICE_READY_PROFILE');
     }
     if (input.completedBookingCount > 0 && !input.hasAddress) {
       actions.push('RESIDENTIAL_ADDRESS');

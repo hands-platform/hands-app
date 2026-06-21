@@ -1287,13 +1287,13 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         providerId: item.provider.id,
         partner,
         impact: 'FIRST EARNING',
-        severity: 'Tax pending',
+        severity: 'Legacy tax record',
         tone: 'pill-info',
-        title: `${partner} tax profile is not approved`,
+        title: `${partner} has a legacy tax profile review`,
         reason:
-          'Tax data should be requested after first earning, but tax rules must already exist in the system.',
+          'Tax profile registration is not required for Vietnam MVP partner approval, matching, work, payout, or wallet withdrawal.',
         operatorAction:
-          'Keep earning calculation policy active, then require tax profile before payout or wallet withdrawal.',
+          'Review only if finance keeps legacy tax records; do not hold Level 2 activity because of this profile.',
         href: '/tax-policy',
         priority: 36,
       });
@@ -1312,9 +1312,7 @@ function buildBookingAcceptanceUnblockBoard(
     (item) => item.provider.blockedAt || item.signals.some((signal) => signal.kind === 'BLOCK'),
   );
   const locationItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'LOCATION'));
-  const verificationItems = watchlist.filter((item) =>
-    item.signals.some((signal) => ['KYC', 'BANK'].includes(signal.kind)),
-  );
+  const verificationItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'KYC'));
   const deviceItems = watchlist.filter((item) => partnerHasDeviceContactGap(item.provider));
   const taxItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'TAX'));
 
@@ -1396,15 +1394,15 @@ function buildBookingAcceptanceUnblockBoard(
     },
     {
       id: 'verification-readiness',
-      title: 'KYC and bank readiness',
+      title: 'KYC and activity readiness',
       status: verificationItems.length ? 'BOOKING BLOCK' : 'READY',
       detail: verificationItems.length
-        ? 'Identity or bank gaps hold paid work eligibility and marketplace participation until cleared.'
-        : 'KYC and bank approval gaps are not blocking listed partners.',
+        ? 'Identity or required document gaps hold Level 2 paid work eligibility and marketplace participation until cleared.'
+        : 'KYC, required documents, and partner verification are not blocking listed partners.',
       operatorScript:
-        'Review CCCD/CMND, selfie, and bank evidence; reject with a specific reupload reason if anything is unclear.',
+        'Review CCCD/CMND and selfie evidence; reject with a specific reupload reason if anything is unclear.',
       customerImpact:
-        'Paid work should only be accepted by Partners who passed identity and payout readiness checks.',
+        'Paid work should only be accepted by Partners who passed the Level 2 identity and activity checks.',
       action: verificationItems.length ? 'Open acceptance-blocked Partners' : 'Review Partner levels',
       href: verificationItems.length ? '/partners?review=acceptance-blocked' : '/partners',
       className: verificationItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1413,7 +1411,7 @@ function buildBookingAcceptanceUnblockBoard(
       metrics: [
         metric('Blocked', verificationItems.length, verificationItems.length ? 'danger' : 'ok'),
         metric('Work level', 'Level 2 gate', verificationItems.length ? 'danger' : 'ok'),
-        metric('Payout', 'Requires bank', verificationItems.length ? 'warn' : 'ok'),
+        metric('Payout', 'Withdrawal review', 'info'),
       ],
     },
     {
@@ -1440,23 +1438,23 @@ function buildBookingAcceptanceUnblockBoard(
     },
     {
       id: 'tax-after-first-earning',
-      title: 'Tax is a payout gate after first earning',
-      status: taxItems.length ? 'PAYOUT GATE' : 'READY',
+      title: 'Legacy tax record is not an operating gate',
+      status: taxItems.length ? 'LEGACY REVIEW' : 'READY',
       detail:
-        'Tax data should not block lightweight signup or first booking flow, but payout and withdrawal stay gated after first earning.',
+        'Tax profile registration is not required for Vietnam MVP and must not block Level 2 approval, matching, work, payout, or wallet withdrawal.',
       operatorScript:
-        'Do not force tax data during initial signup; request it after first earning and before payout or withdrawal.',
+        'Keep legacy tax records read-only unless finance explicitly reviews submitted data for audit history.',
       customerImpact:
-        'Customers can book newer partners without extra signup friction, while finance remains protected before payout.',
+        'Customers can book approved Level 2 Partners without extra signup friction.',
       action: taxItems.length ? 'Open tax policy' : 'Review tax rules',
       href: '/tax-policy',
       className: taxItems.length ? 'ops-task-pending' : 'ops-task-done',
       blockingCount: 0,
       partnerSamples: partnerSamples(taxItems),
       metrics: [
-        metric('Tax pending', taxItems.length, taxItems.length ? 'info' : 'ok'),
+        metric('Legacy records', taxItems.length, taxItems.length ? 'info' : 'ok'),
         metric('Acceptance', 'Not blocked', 'ok'),
-        metric('Payout', 'Blocked later', taxItems.length ? 'warn' : 'ok'),
+        metric('Payout', 'Not blocked', 'ok'),
       ],
     },
   ];
@@ -1510,14 +1508,14 @@ function buildAcceptanceUnblockPlaybook(
       id: 'playbook-verification',
       step: '3',
       owner: 'KYC',
-      title: 'Approve identity and bank readiness',
+      title: 'Approve identity and activity readiness',
       status: card('verification-readiness')?.status ?? 'UNKNOWN',
       pillClass: card('verification-readiness')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
-        'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
+        'KYC, required CCCD/selfie documents, partner verification, and service-ready profile are the Level 2 work gate for paid bookings.',
       bookingImpact:
-        'Holds preferred direct requests and marketplace participation until identity evidence and bank readiness are approved.',
-      payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
+        'Holds preferred direct requests and marketplace participation until identity evidence and activity readiness are approved.',
+      payoutImpact: 'Bank approval is handled later when the Partner requests wallet withdrawal.',
       customerImpact: 'Keeps customer-facing booking flow simple while operators verify partner readiness before work access.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
       href: card('verification-readiness')?.href ?? '/partners?review=acceptance-blocked',
@@ -1565,14 +1563,14 @@ function buildAcceptanceUnblockPlaybook(
       id: 'playbook-tax',
       step: '6',
       owner: 'Finance',
-      title: 'Keep tax as post-first-earning payout gate',
+      title: 'Treat tax as legacy-only review',
       status: card('tax-after-first-earning')?.status ?? 'UNKNOWN',
       pillClass: card('tax-after-first-earning')?.blockingCount ? 'pill-warn' : 'pill-success',
       detail:
-        'Tax policy must be configured from day one, but partner tax profile collection waits until first earning.',
-      bookingImpact: 'Should not block first signup or first paid job.',
+        'Vietnam MVP does not require tax profile registration for partner approval, matching, work, payout, or withdrawal.',
+      bookingImpact: 'Should not block signup, Level 2 approval, matching, or paid jobs.',
       payoutImpact:
-        'Blocks payout and withdrawal after first earning until MST, address, and agreements are complete.',
+        'Should not block payout or wallet withdrawal; bank details are reviewed during the withdrawal flow.',
       customerImpact: 'Reduces partner onboarding drop-off while finance remains controlled before payout.',
       action: card('tax-after-first-earning')?.action ?? 'Open tax policy',
       href: card('tax-after-first-earning')?.href ?? '/tax-policy',

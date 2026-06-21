@@ -81,7 +81,6 @@ export function buildPartnerBasicProfileRows(
     { label: 'Service area', value: formatJsonSummary(provider.serviceArea) },
     { label: 'Feedback records', value: `${provider.reviewCount ?? 0} record(s) saved` },
     { label: 'Next available', value: formatDate(provider.nextAvailableAt) },
-    { label: 'Profile review completed at', value: formatDate(provider.trustedAt) },
     { label: 'User name', value: provider.user?.fullName },
     { label: 'Supabase user', value: provider.user?.supabaseUserId },
   ];

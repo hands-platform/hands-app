@@ -103,18 +103,18 @@ export function buildPartnerApprovalEvidenceSummaryRows({
       label: 'TAX',
       title:
         taxStatus === 'DEFERRED'
-          ? 'Tax can stay deferred'
+          ? 'Legacy tax not required'
           : taxStatus === 'APPROVED'
-            ? 'Tax profile approved'
-            : 'Tax profile needs review',
+            ? 'Legacy tax profile approved'
+            : 'Legacy tax profile submitted',
       detail:
         taxStatus === 'DEFERRED'
-          ? 'Partner has no first earning yet, so tax evidence does not block onboarding.'
+          ? 'Tax profile evidence does not block Level 2 approval, matching, or current payout review.'
           : provider.taxProfile
             ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${
                 provider.taxProfile.taxCodeLast4 ?? '----'
               } / ${marketplaceDisplayText(provider.taxProfile.registeredAddress)}.`
-            : 'First earning exists, so tax profile evidence is required before payout.',
+            : 'No tax profile is required for current Vietnam operations.',
       status: taxStatus,
       tone: taxStatus === 'DEFERRED' ? 'pill-neutral' : approvalEvidenceStatusTone(taxStatus),
       href: '#tax',

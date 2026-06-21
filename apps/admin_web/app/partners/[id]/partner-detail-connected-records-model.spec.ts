@@ -20,7 +20,7 @@ describe('partner detail connected records model', () => {
         missingDocuments: [],
       },
       payoutOps: {
-        blockers: ['Tax profile missing'],
+        blockers: ['Withdrawal address missing'],
         status: 'Payout blocked',
         tone: 'blocked',
       },
@@ -51,7 +51,7 @@ describe('partner detail connected records model', () => {
       value: '1 message(s)',
     });
     expect(linkByLabel(links, 'Wallet and payout')).toMatchObject({
-      detail: 'Tax profile missing',
+      detail: 'Withdrawal address missing',
       tone: 'pill-danger',
       value: 'Payout blocked',
     });
@@ -103,10 +103,10 @@ describe('partner detail connected records model', () => {
       tone: 'pill-warn',
       value: 'DRAFT',
     });
-    expect(linkByLabel(links, 'Tax profile')).toMatchObject({
-      detail: 'Tax collection stays deferred until first earning.',
-      tone: 'pill-success',
-      value: 'Deferred',
+    expect(linkByLabel(links, 'Legacy tax profile')).toMatchObject({
+      detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
+      tone: 'pill-neutral',
+      value: 'Not required',
     });
   });
 });

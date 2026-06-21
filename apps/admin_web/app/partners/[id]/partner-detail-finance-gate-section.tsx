@@ -87,17 +87,17 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Tax evidence required for payout eligibility after Partner revenue starts."
+      description="Legacy tax evidence is optional and does not gate Vietnam MVP approval, matching, work, payout, or wallet withdrawal."
       id="tax"
       resultLabel={taxProfile?.status ?? 'DEFERRED'}
       resultTone={financeEvidenceStatusBadgeTone(taxProfile?.status)}
-      title="Tax profile"
+      title="Legacy tax profile"
     >
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
           emptyMessage={
-            <FinanceEvidenceEmptyState message="Tax profile is not required until payout eligibility review." />
+            <FinanceEvidenceEmptyState message="Tax profile is not required for Vietnam MVP operations." />
           }
           headers={financeEvidenceHeaders}
           rowCount={rowCount}
@@ -106,7 +106,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
             <tr>
               <td>
                 <strong>Tax identity</strong>
-                <p className="muted">Used for payout compliance and monthly finance closeout.</p>
+                <p className="muted">Legacy finance record only. This does not block Level 2 activity or withdrawal.</p>
               </td>
               <td>
                 <EvidenceLine label="Legal name" value={taxProfile.legalName} />

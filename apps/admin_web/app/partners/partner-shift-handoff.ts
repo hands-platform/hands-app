@@ -99,11 +99,11 @@ export function buildPartnerShiftHandoff(
       : null,
     payoutSetup.length
       ? {
-          title: 'Finish first-earning payout and tax setup',
+          title: 'Finish first-earning payout setup',
           scope: 'Payout gate',
-          detail: `${payoutSetup.length} partner(s) have revenue records but still need tax, address, or agreement readiness.`,
+          detail: `${payoutSetup.length} partner(s) have revenue records but still need withdrawal address or agreement readiness.`,
           operatorAction:
-            'Ask for tax profile/address/terms only after first revenue, then approve before withdrawal.',
+            'Ask for withdrawal address and terms only after first revenue, then review before withdrawal.',
           href: '/partners?review=payout-setup',
           tone: 'warn' as const,
           samples: partnerSampleNames(payoutSetup, deps),

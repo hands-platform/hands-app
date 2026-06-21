@@ -108,22 +108,20 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       tone: canApproveKyc ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Bank account',
+      label: 'Withdrawal bank account',
       value: primaryBank?.status ?? 'Missing',
       detail: primaryBank
         ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
-        : 'No payout bank account loaded.',
+        : 'Collected when wallet withdrawal is requested.',
       href: '#bank',
       tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Tax profile',
-      value: provider.taxProfile?.status ?? (hasFirstRevenue ? 'Missing' : 'Deferred'),
-      detail: hasFirstRevenue
-        ? 'First earning exists; tax profile gates payout.'
-        : 'Tax collection stays deferred until first earning.',
+      label: 'Legacy tax profile',
+      value: provider.taxProfile?.status ?? 'Not required',
+      detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
       href: '#tax',
-      tone: provider.taxProfile?.status === 'APPROVED' || !hasFirstRevenue ? 'pill-success' : 'pill-warn',
+      tone: provider.taxProfile?.status === 'REJECTED' ? 'pill-warn' : 'pill-neutral',
     },
     {
       label: 'Location',

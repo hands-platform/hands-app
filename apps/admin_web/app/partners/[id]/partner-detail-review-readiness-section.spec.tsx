@@ -53,18 +53,18 @@ describe('Partner detail review readiness sections', () => {
         ready: false,
         items: [
           {
-            detail: 'Public profile images are ready.',
+            detail: 'Public profile images still need review.',
             label: 'Public profile',
-            ok: true,
-            operatorAction: 'No action needed.',
-            status: 'CLEAR',
+            ok: false,
+            operatorAction: 'Review public profile images.',
+            status: 'MISSING',
           },
           {
-            detail: 'Tax profile needs the first earning trigger.',
-            label: 'Tax profile',
-            ok: false,
-            operatorAction: 'Keep deferred until first earning.',
-            status: 'DEFER',
+            detail: 'Tax profile is not required for Vietnam MVP operations.',
+            label: 'Legacy tax profile',
+            ok: true,
+            operatorAction: 'No action needed.',
+            status: 'NOT_REQUIRED',
           },
         ],
       },
@@ -76,8 +76,8 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('1 gap(s)');
     expect(rendered).toContain('Dossier item');
     expect(rendered).toContain('Operator action');
-    expect(rendered).toContain('Tax profile needs the first earning trigger.');
-    expect(rendered).toContain('Keep deferred until first earning.');
+    expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
+    expect(rendered).toContain('No action needed.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',

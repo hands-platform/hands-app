@@ -21,7 +21,7 @@ export function PartnerCommandCenterSection({ lanes }: PartnerCommandCenterSecti
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="Operator overview across onboarding, dispatch readiness, payout/tax readiness, and report follow-up."
+        description="Operator overview across onboarding, dispatch readiness, withdrawal setup, and report follow-up."
         status={<span className="pill pill-info">Daily control view</span>}
         title="Partner command center"
       />

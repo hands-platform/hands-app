@@ -1714,17 +1714,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <InfoRow
               label="First revenue Partners"
               value={partnerSupply.firstRevenue.toString()}
-              detail="Partners who should now complete tax/address/agreement requirements."
+              detail="Partners who can request wallet payout setup after earning revenue."
             />
             <InfoRow
-              label="Tax ready after revenue"
-              value={partnerSupply.taxReadyAfterRevenue.toString()}
-              detail="First-revenue Partners with approved tax profile."
+              label="Withdrawal profile ready"
+              value={partnerSupply.withdrawalProfileReady.toString()}
+              detail="First-revenue Partners with a saved residential address for payout review."
             />
             <InfoRow
-              label="Profile review"
-              value={partnerSupply.trusted.toString()}
-              detail="Partners with optional profile review recorded."
+              label="Level 2 active"
+              value={partnerSupply.level2Active.toString()}
+              detail="Partners whose KYC and verification support matching participation."
             />
           </AdminDataTable>
         </div>
@@ -3757,11 +3757,12 @@ function buildPartnerSupplyInsights(
       (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED'),
     ).length,
     firstRevenue: firstRevenuePartners.length,
-    taxReadyAfterRevenue: firstRevenuePartners.filter(
-      (provider) => provider.taxProfile?.status === 'APPROVED',
+    withdrawalProfileReady: firstRevenuePartners.filter((provider) =>
+      Boolean(provider.residentialAddress?.trim()),
     ).length,
-    trusted: providers.filter((provider) => provider.level === 'LEVEL_4_TRUSTED' || provider.trustedAt)
-      .length,
+    level2Active: providers.filter(
+      (provider) => provider.kyc?.status === 'APPROVED' && provider.verification?.status === 'APPROVED',
+    ).length,
     blocked: providers.filter((provider) => {
       const activeSanction = (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE');
       return Boolean(provider.blockedAt) || activeSanction || cashDebtPartnerIds.has(provider.id);
@@ -3822,10 +3823,9 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
   const verificationBlockers = input.providers.filter((partner) => {
     const verificationReady =
       partner.verification?.status === 'APPROVED' || partner.kyc?.status === 'APPROVED';
-    const bankReady = (partner.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
-    return !verificationReady || !bankReady;
+    return !verificationReady;
   }).length;
-  const taxPayoutGate = input.partnerOpsQueue.payoutSetup;
+  const withdrawalSetupGate = input.partnerOpsQueue.payoutSetup;
 
   return [
     dashboardAcceptanceStep({
@@ -3857,8 +3857,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       id: 'dashboard-acceptance-kyc-bank',
       step: '3',
       owner: 'KYC',
-      title: 'Approve KYC and bank',
-      detail: 'Identity and bank approval are the Level 2 work gate for paid bookings.',
+      title: 'Approve Level 2 activity',
+      detail: 'KYC, required documents, partner verification, and service-ready profile are the Level 2 work gate for paid bookings.',
       metricLabel: 'Needs review',
       metricValue: verificationBlockers.toString(),
       action: 'Open Partner review',
@@ -3895,13 +3895,13 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       id: 'dashboard-acceptance-tax-payout',
       step: '6',
       owner: 'Finance',
-      title: 'Collect tax after first earning',
-      detail: 'Tax profile is not a signup gate; it becomes a payout gate after revenue exists.',
+      title: 'Review withdrawal setup after first earning',
+      detail: 'Bank, address, and payout agreement review happens after revenue exists or when withdrawal is requested.',
       metricLabel: 'Payout gates',
-      metricValue: taxPayoutGate.toString(),
-      action: 'Open tax policy',
-      href: '/tax-policy',
-      blockerCount: taxPayoutGate,
+      metricValue: withdrawalSetupGate.toString(),
+      action: 'Open payout setup',
+      href: '/partners?review=payout-setup',
+      blockerCount: withdrawalSetupGate,
       warnOnly: true,
     }),
   ];
@@ -3992,17 +3992,12 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'First revenue setup',
       detail:
-        'Partner has earned money. Collect tax profile, residential address, and payout/tax agreement before payout release.',
+        'Partner has earned money. Review residential address and payout agreement before payout release.',
       action: 'Open payout setup',
       href,
       className: 'ops-task-pending',
       priority: 85,
       metrics: [
-        partnerOpsMetric(
-          'tax',
-          partner.taxProfile?.status ?? 'missing',
-          partner.taxProfile?.status === 'APPROVED' ? 'ok' : 'warn',
-        ),
         partnerOpsMetric(
           'agreements',
           `${partner.agreements?.length ?? 0}/5`,
@@ -4019,7 +4014,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Verification review',
       detail:
-        'Partner is waiting for admin review. Clear KYC, documents, and bank readiness to expand supply.',
+        'Partner is waiting for admin review. Clear KYC, required documents, and verification to expand supply.',
       action: 'Open review',
       href: '/partners?verification=SUBMITTED',
       className: 'ops-task-pending',
@@ -4072,10 +4067,9 @@ function partnerNeedsFirstRevenueSetup(partner: AdminProvider) {
   if (!providerHasFirstRevenue(partner)) {
     return false;
   }
-  const hasTax = partner.taxProfile?.status === 'APPROVED';
   const hasAddress = Boolean(partner.residentialAddress?.trim());
   const hasAgreements = (partner.agreements?.length ?? 0) >= 5;
-  return !hasTax || !hasAddress || !hasAgreements;
+  return !hasAddress || !hasAgreements;
 }
 
 function partnerLocationState(partner: AdminProvider) {

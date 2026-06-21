@@ -47,10 +47,10 @@ describe('partner detail finance gate sections', () => {
     const section = PartnerDetailTaxProfileCard({ taxProfile: null });
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Tax profile');
+    expect(rendered).toContain('Legacy tax profile');
     expect(rendered).toContain('DEFERRED');
     expect(rendered).toContain('No finance evidence found');
-    expect(rendered).toContain('Tax profile is not required until payout eligibility review.');
+    expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',

@@ -16,7 +16,7 @@ describe('partner detail operating ledger model', () => {
         status: 'APPROVED',
       },
       {
-        blockers: ['Tax profile missing'],
+        blockers: ['Withdrawal address missing'],
         status: 'Payout blocked',
       },
       {
@@ -56,7 +56,7 @@ describe('partner detail operating ledger model', () => {
     expect(rows).toHaveLength(13);
   });
 
-  it('marks missing identity, KYC, bank, and tax evidence without first revenue', () => {
+  it('marks missing identity, KYC, bank, and legacy tax evidence without first revenue', () => {
     const rows = buildPartnerOperatingLedger(
       {
         auditLogs: [],
@@ -102,9 +102,9 @@ describe('partner detail operating ledger model', () => {
       evidence: 'No bank account row',
       status: 'MISSING',
     });
-    expect(rowByArea(rows, 'Tax')).toMatchObject({
-      evidence: 'Tax profile intentionally deferred until first earning.',
-      status: 'DEFERRED',
+    expect(rowByArea(rows, 'Legacy tax')).toMatchObject({
+      evidence: 'Tax profile is not required for Level 2 approval, matching, or current payout review.',
+      status: 'NOT_REQUIRED',
     });
   });
 });

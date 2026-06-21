@@ -6,7 +6,7 @@ import { partnerPayoutSetupNeedsReview } from './partner-finance-readiness-facts
 import { missingApprovedRequiredKycDocuments } from './partner-kyc-facts';
 import { providerLocationStatus, type ProviderOpsPolicy } from './partner-list-ops';
 import type { PartnerListQueryDeps } from './partner-list-query';
-import { hasApprovedBankAccount, hasHealthyPush } from './partner-list-profile';
+import { hasHealthyPush } from './partner-list-profile';
 import { partnerSecurityStatus } from './partner-security-facts';
 
 export type PartnerAcceptanceBlockerBoard = {
@@ -46,7 +46,6 @@ export function buildPartnerAcceptanceBlockerBoard(
       provider.kyc?.status !== 'APPROVED' ||
       !hasApprovedRequiredKycDocuments(provider),
   );
-  const bankBookingHold = providers.filter((provider) => !hasApprovedBankAccount(provider));
   const firstEarningPayoutGate = providers.filter(partnerPayoutSetupNeedsReview);
   const hardBlocked = providers.filter(deps.hasHardAcceptanceBlocker).length;
   const eligibleNow = providers.filter((provider) => deps.canAcceptBookingNow(provider, opsPolicy)).length;
@@ -117,24 +116,13 @@ export function buildPartnerAcceptanceBlockerBoard(
         samples: partnerBlockerSamples(onboardingHold, deps),
       },
       {
-        title: 'Bank booking gate',
-        count: bankBookingHold.length,
-        status: bankBookingHold.length ? 'Blocks booking' : 'Approved',
-        detail: 'A partner needs at least one approved bank account before receiving paid booking work.',
-        operatorAction:
-          'Approve or reject bank account evidence so booking readiness matches API enforcement.',
-        href: '/partners?review=bank',
-        tone: bankBookingHold.length ? 'warn' : 'ok',
-        samples: partnerBlockerSamples(bankBookingHold, deps),
-      },
-      {
         title: 'First earning payout gate',
         count: firstEarningPayoutGate.length,
         status: firstEarningPayoutGate.length ? 'Payout locked' : 'Deferred',
         detail:
-          'Tax and full payout setup are requested after first earning, not before signup, to reduce onboarding drop-off.',
+          'Withdrawal details are requested after first earning, not before Level 2 approval, to reduce onboarding drop-off.',
         operatorAction:
-          'Keep booking work possible, but block withdrawals until tax, address, bank, and terms are complete.',
+          'Keep booking work possible, but review withdrawal details when the partner requests wallet payout.',
         href: '/partners?review=payout-setup',
         tone: firstEarningPayoutGate.length ? 'info' : 'ok',
         samples: partnerBlockerSamples(firstEarningPayoutGate, deps),

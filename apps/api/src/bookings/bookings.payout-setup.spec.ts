@@ -1,14 +1,14 @@
-import { ProviderAgreementType, ProviderTaxProfileStatus } from '@prisma/client';
+import { ProviderAgreementType } from '@prisma/client';
 import {
   providerPayoutSetupMissingRequirements,
   providerPayoutSetupNeedsNotification,
 } from './bookings.payout-setup';
 
 describe('booking payout setup helpers', () => {
-  it('detects missing payout setup requirements for first revenue notification', () => {
+  it('detects missing payout setup requirements for first revenue notification without tax profile gating', () => {
     const missing = providerPayoutSetupMissingRequirements({
       residentialAddress: null,
-      taxProfile: { status: ProviderTaxProfileStatus.PENDING_REVIEW },
+      taxProfile: { status: 'PENDING_REVIEW' },
       agreements: [
         { type: ProviderAgreementType.TERMS },
         { type: ProviderAgreementType.PRIVACY },
@@ -16,7 +16,7 @@ describe('booking payout setup helpers', () => {
     });
 
     expect(missing).toEqual({
-      taxProfileApproved: true,
+      taxProfileApproved: false,
       residentialAddress: true,
       agreements: [
         ProviderAgreementType.LOCATION,
@@ -30,7 +30,7 @@ describe('booking payout setup helpers', () => {
   it('skips notification when payout setup is complete', () => {
     const missing = providerPayoutSetupMissingRequirements({
       residentialAddress: '12 Nguyen Hue',
-      taxProfile: { status: ProviderTaxProfileStatus.APPROVED },
+      taxProfile: { status: 'MISSING' },
       agreements: [
         { type: ProviderAgreementType.TERMS },
         { type: ProviderAgreementType.PRIVACY },

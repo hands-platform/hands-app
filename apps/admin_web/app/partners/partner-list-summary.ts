@@ -168,7 +168,9 @@ export function buildPartnerReviewQueue(
     (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
   const publicMediaNeedsReview = providers.filter(providerPublicMediaNeedsReview).length;
-  const bankNeedsReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
+  const bankNeedsReview = providers.filter(
+    (provider) => Boolean(provider.bankAccounts?.length) && !hasApprovedBankAccount(provider),
+  ).length;
   const payoutSetupNeedsReview = providers.filter(partnerPayoutSetupNeedsReview).length;
   const cashDebtNeedsReview = providers.filter(
     (provider) => partnerUnsettledWalletBalance(provider) < 0,
@@ -228,14 +230,14 @@ export function buildPartnerReviewQueue(
       label: 'Bank payout review',
       count: bankNeedsReview,
       href: '/partners?review=bank',
-      detail: 'At least one bank account must be approved before partners can receive paid booking work.',
+      detail: 'Bank details are reviewed for wallet withdrawal requests, not Level 2 matching approval.',
     },
     {
       label: 'First earning payout setup',
       count: payoutSetupNeedsReview,
       href: '/partners?review=payout-setup',
       detail:
-        'Partners with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
+        'Partners with first revenue who still need withdrawal address or payout agreement follow-up.',
     },
     {
       label: 'Cash fee debt',
@@ -244,10 +246,10 @@ export function buildPartnerReviewQueue(
       detail: partnerCashDebtMarketplaceAccessCopy,
     },
     {
-      label: 'Tax profile review',
+      label: 'Legacy tax profile review',
       count: taxNeedsReview,
       href: '/partners?review=tax',
-      detail: 'Freelance tax profiles should be approved only after MST and registered address are checked.',
+      detail: 'Tax profile registration is not required for Vietnam MVP; review only submitted legacy records.',
     },
     {
       label: 'Device/session review',

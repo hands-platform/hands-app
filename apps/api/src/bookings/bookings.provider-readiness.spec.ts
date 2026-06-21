@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import {
   BookingStatus,
-  ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
   ProviderKycStatus,
@@ -23,7 +22,7 @@ describe('booking provider readiness helpers', () => {
     ]);
   });
 
-  it('accepts a partner with approved verification, KYC, documents, and bank account', () => {
+  it('accepts a partner with approved verification, KYC, and required documents', () => {
     expect(() => assertProviderCanReceiveBooking(readyProvider())).not.toThrow();
   });
 
@@ -76,7 +75,7 @@ describe('booking provider readiness helpers', () => {
     ).not.toThrow();
   });
 
-  it('rejects missing booking documents and approved bank accounts', () => {
+  it('rejects missing booking documents', () => {
     expect(() =>
       assertProviderCanReceiveBooking(
         readyProvider({
@@ -94,14 +93,6 @@ describe('booking provider readiness helpers', () => {
         'Partner required KYC documents must be approved before receiving bookings: CCCD_BACK, SELFIE',
       ),
     );
-
-    expect(() =>
-      assertProviderCanReceiveBooking(
-        readyProvider({
-          bankAccounts: [{ status: ProviderBankAccountStatus.PENDING_REVIEW, deletedAt: null }],
-        }),
-      ),
-    ).toThrow(new BadRequestException('Partner bank account must be approved before receiving bookings'));
   });
 
   it('accepts active requested services and partners without explicit service rows', () => {
@@ -149,7 +140,7 @@ function readyProvider(
       status: ProviderDocumentStatus.APPROVED,
       deletedAt: null,
     })),
-    bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED, deletedAt: null }],
+    bankAccounts: [],
     ...overrides,
   };
 }

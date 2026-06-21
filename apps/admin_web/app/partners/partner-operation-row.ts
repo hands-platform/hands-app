@@ -10,7 +10,6 @@ import {
   partnerLastCompletedWorkAt,
   partnerUnsettledWalletBalance,
 } from './partner-activity-facts';
-import { partnerHasFirstRevenueSignal } from './partner-finance-readiness-facts';
 import { missingApprovedRequiredKycDocuments } from './partner-kyc-facts';
 import { hasApprovedBankAccount, hasHealthyPush } from './partner-list-profile';
 import { isActivePartnerBooking, shouldHavePartnerChatRoom } from './partner-list-query';
@@ -73,8 +72,7 @@ export function buildPartnerOperationRow(
   const canAccept = deps.canAcceptBookingNow(provider, opsPolicy);
   const marketplaceEligibility = buildPartnerMarketplaceEligibility(provider, opsPolicy);
   const completedWorkCount = partnerCompletedWorkCount(provider);
-  const firstRevenue = partnerHasFirstRevenueSignal(provider);
-  const taxStatus = provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'deferred');
+  const taxStatus = provider.taxProfile?.status ?? 'not required';
   const nextAction = nextPartnerListAction(provider, opsPolicy);
   const matchingFlow = buildPartnerMatchingFlow(provider, opsPolicy);
   const kycReady = provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
@@ -102,14 +100,14 @@ export function buildPartnerOperationRow(
               : 'warn',
       },
       {
-        label: 'Bank',
-        status: hasApprovedBankAccount(provider) ? 'ok' : (provider.bankAccounts?.[0]?.status ?? 'missing'),
-        tone: hasApprovedBankAccount(provider) ? 'ok' : 'warn',
+        label: 'Withdrawal bank',
+        status: hasApprovedBankAccount(provider) ? 'ok' : 'on request',
+        tone: hasApprovedBankAccount(provider) ? 'ok' : 'neutral',
       },
       {
-        label: 'Tax',
+        label: 'Legacy tax',
         status: taxStatus,
-        tone: provider.taxProfile?.status === 'APPROVED' ? 'ok' : firstRevenue ? 'warn' : 'neutral',
+        tone: provider.taxProfile ? 'info' : 'neutral',
       },
       {
         label: 'Wallet',
@@ -238,7 +236,6 @@ export function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: 
   }
   if (provider.kyc?.status !== 'APPROVED') blockers.push(`KYC ${provider.kyc?.status ?? 'MISSING'}`);
   if (!hasApprovedRequiredKycDocuments(provider)) blockers.push('identity documents');
-  if (!hasApprovedBankAccount(provider)) blockers.push('bank account');
   if (provider.status !== 'ONLINE_AVAILABLE') blockers.push(`status ${provider.status}`);
   if (locationState !== 'recent') blockers.push(`location ${locationState}`);
   if (!hasHealthyPush(provider)) blockers.push('push missing');

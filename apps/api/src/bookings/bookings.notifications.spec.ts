@@ -170,18 +170,18 @@ describe('booking notification payloads', () => {
         userId: 'provider-user-1',
         bookingId: 'booking-1',
         providerProfileId: 'provider-1',
-        missing: { taxProfileApproved: true },
+        missing: { residentialAddress: true },
       }),
     ).toEqual({
       userId: 'provider-user-1',
       targetRole: Role.PROVIDER,
       type: 'provider.payout_setup_required',
       title: 'Payout setup required',
-      body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',
+      body: 'Your first HANDS earning is recorded. Add address and payout agreements before requesting payout.',
       data: {
         bookingId: 'booking-1',
         providerProfileId: 'provider-1',
-        missing: { taxProfileApproved: true },
+        missing: { residentialAddress: true },
       },
     });
   });

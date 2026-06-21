@@ -74,7 +74,7 @@ export function buildProviderRegistrationDossier(
   const identityComplete =
     provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
   const bankComplete = hasApprovedBankAccount(provider);
-  const taxDeferredOrComplete = !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
+  const taxDeferredOrComplete = true;
   const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
   const securityClear =
     !provider.blockedAt &&
@@ -110,22 +110,18 @@ export function buildProviderRegistrationDossier(
     },
     {
       label: 'Address and service area',
-      ok: serviceAreaComplete && (!hasFirstRevenue || addressComplete),
-      status: serviceAreaComplete && (!hasFirstRevenue || addressComplete) ? 'READY' : 'MISSING',
+      ok: serviceAreaComplete,
+      status: serviceAreaComplete ? 'READY' : 'MISSING',
       detail:
-        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
-          ? hasFirstRevenue
-            ? 'Residential/tax address, city, and service area/location data are available.'
-            : 'Service area/location data is available. Residential tax address can stay deferred until first earning.'
-          : hasFirstRevenue
-            ? 'Residential/tax address, service city, GPS location, or service area still needs confirmation.'
-            : 'GPS location or service area still needs confirmation before dispatch.',
+        serviceAreaComplete
+          ? addressComplete
+            ? 'Service area/location data and withdrawal address are available.'
+            : 'Service area/location data is available. Withdrawal address can stay deferred until wallet withdrawal.'
+          : 'GPS location or service area still needs confirmation before dispatch.',
       operatorAction:
-        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
+        serviceAreaComplete
           ? 'Use location freshness before dispatching.'
-          : hasFirstRevenue
-            ? 'Ask partner to complete tax address and open the app for location sync.'
-            : 'Ask partner to open the app for location sync.',
+          : 'Ask partner to open the app for location sync.',
     },
     {
       label: 'KYC evidence',
@@ -143,27 +139,25 @@ export function buildProviderRegistrationDossier(
     },
     {
       label: 'Bank and payout account',
-      ok: bankComplete,
-      status: bankAccountStatusLabel(provider),
+      ok: true,
+      status: bankComplete ? bankAccountStatusLabel(provider) : 'DEFERRED',
       detail: bankComplete
         ? 'An approved bank account is available for future payouts.'
-        : 'Bank name, masked account number, account holder, and QR evidence should be approved before withdrawal.',
+        : 'Bank details are collected and approved when the Partner requests wallet withdrawal.',
       operatorAction: bankComplete
         ? 'No bank action unless partner changes account.'
-        : 'Approve or reject the submitted bank account with a clear reason.',
+        : 'Wait for a wallet withdrawal request before approving bank details.',
     },
     {
-      label: 'Freelancer tax profile',
+      label: 'Legacy tax profile',
       ok: taxDeferredOrComplete,
-      status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
+      status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
       detail: taxDeferredOrComplete
-        ? hasFirstRevenue
-          ? 'Tax profile is approved after partner earned revenue.'
-          : 'Tax collection is intentionally deferred until first earning.'
-        : 'Partner has earning history, so tax profile must be approved before payout.',
+        ? 'Tax profile registration is not required for Vietnam MVP operations.'
+        : 'Legacy tax profile is present but does not block partner approval or withdrawal.',
       operatorAction: taxDeferredOrComplete
-        ? 'Follow the staged UX: do not force tax fields before first earning.'
-        : 'Request MST/tax code, legal name, and registered address before withdrawal.',
+        ? 'Do not force tax fields during onboarding or withdrawal.'
+        : 'Review only if finance keeps legacy tax records.',
     },
     {
       label: 'Legal agreements',
@@ -178,14 +172,14 @@ export function buildProviderRegistrationDossier(
         (provider.agreements?.length ?? 0) >= 5
           ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
           : hasFirstRevenue
-            ? 'Partner has first earning and must accept service, privacy, location, payout, and tax policy versions.'
-            : 'Payout and tax agreement collection is intentionally deferred until first earning.',
+            ? 'Partner has first earning and must accept service, privacy, location, and payout policy versions.'
+            : 'Payout agreement collection is intentionally deferred until first earning or withdrawal request.',
       operatorAction:
         (provider.agreements?.length ?? 0) >= 5
           ? 'Keep agreement versions visible for audit.'
           : hasFirstRevenue
             ? 'Show agreement completion flow before payout-level access.'
-            : 'Do not force payout/tax agreements during initial signup.',
+            : 'Do not force payout agreements during initial signup.',
     },
     {
       label: 'Device and session',

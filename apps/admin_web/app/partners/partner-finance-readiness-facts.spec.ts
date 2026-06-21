@@ -39,10 +39,9 @@ describe('partner finance readiness facts', () => {
     expect(partnerTaxPillClass(result)).toBe('pill-neutral');
   });
 
-  it('requires tax profile, residential address, and agreements after first earning', () => {
+  it('requires residential address and agreements after first earning', () => {
     const result = partner({
       earnings: [earning('PENDING')],
-      taxProfile: { id: 'tax-1', status: 'APPROVED', legalName: 'Linh Wellness', registeredAddress: 'District 1' },
       residentialAddress: '',
       agreements: [{ id: 'agreement-1', type: 'SERVICE_TERMS', version: '2026-05', acceptedAt: '2026-05-21T08:00:00.000Z' }],
     });
@@ -55,7 +54,6 @@ describe('partner finance readiness facts', () => {
   it('marks payout setup ready when first earning requirements are complete', () => {
     const result = partner({
       earnings: [earning('AVAILABLE')],
-      taxProfile: { id: 'tax-1', status: 'APPROVED', legalName: 'Linh Wellness', registeredAddress: 'District 1' },
       residentialAddress: 'District 1, Ho Chi Minh City, Vietnam',
       agreements: [
         { id: 'terms-1', type: 'SERVICE_TERMS', version: '2026-05', acceptedAt: '2026-05-21T08:00:00.000Z' },
@@ -67,10 +65,10 @@ describe('partner finance readiness facts', () => {
     });
 
     expect(partnerPayoutSetupNeedsReview(result)).toBe(false);
-    expect(partnerTaxPillClass(result)).toBe('pill-success');
+    expect(partnerTaxPillClass(result)).toBe('pill-neutral');
   });
 
-  it('flags rejected or pending tax profiles for finance review', () => {
+  it('flags submitted rejected or pending tax profiles for legacy finance review only', () => {
     expect(
       partnerTaxNeedsReview(
         partner({

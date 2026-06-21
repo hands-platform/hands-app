@@ -153,7 +153,7 @@ export function PartnerOnboardingCell({
           <ActionMenu actions={bankActions(provider.id, primaryBank)} label={`Bank review actions for ${partnerName}`} />
         ) : null}
         {provider.taxProfile ? (
-          <ActionMenu actions={taxActions(provider)} label={`Tax profile review actions for ${partnerName}`} />
+          <ActionMenu actions={taxActions(provider)} label={`Legacy tax profile review actions for ${partnerName}`} />
         ) : null}
       </div>
       {!canApproveKyc ? (

@@ -238,7 +238,7 @@ export function partnerMatchesReviewQueue(
     return providerPublicMediaNeedsReview(provider);
   }
   if (review === 'bank') {
-    return !hasApprovedBankAccount(provider);
+    return Boolean(provider.bankAccounts?.length) && !hasApprovedBankAccount(provider);
   }
   if (review === 'payout-setup') {
     return partnerPayoutSetupNeedsReview(provider);
@@ -286,10 +286,7 @@ export function partnerNeedsApprovalReview(provider: AdminProvider) {
     (provider.documents ?? []).some((document) =>
       ['PENDING_REVIEW', 'REJECTED'].includes(document.status),
     ) ||
-    providerPublicMediaNeedsReview(provider) ||
-    !hasApprovedBankAccount(provider) ||
-    partnerPayoutSetupNeedsReview(provider) ||
-    partnerTaxNeedsReview(provider)
+    providerPublicMediaNeedsReview(provider)
   );
 }
 

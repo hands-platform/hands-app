@@ -6,7 +6,6 @@ import {
   type ProviderOpsPolicy,
 } from './partner-list-ops';
 import {
-  hasApprovedBankAccount,
   hasHealthyPush,
   providerPublicMedia,
   providerPublicMediaNeedsReview,
@@ -96,7 +95,6 @@ export function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
     provider.verification?.status !== 'APPROVED' ||
     provider.kyc?.status !== 'APPROVED' ||
     !hasApprovedRequiredKycDocuments(provider) ||
-    !hasApprovedBankAccount(provider) ||
     ['account-blocked', 'blocked', 'session-check', 'shared'].includes(partnerSecurityStatus(provider))
   );
 }
@@ -116,9 +114,6 @@ export function providerReviewIssues(
 ): PartnerReviewIssue[] {
   const issues: PartnerReviewIssue[] = [];
   const kycStatus = provider.kyc?.status ?? 'MISSING';
-  const bankStatus = hasApprovedBankAccount(provider)
-    ? 'APPROVED'
-    : (provider.bankAccounts?.[0]?.status ?? 'MISSING');
   const taxStatus = provider.taxProfile?.status ?? 'MISSING';
 
   if (provider.blockedAt) {
@@ -147,17 +142,11 @@ export function providerReviewIssues(
   } else if ((provider.documents ?? []).some((document) => document.status === 'PENDING_REVIEW')) {
     issues.push({ label: 'document pending', severity: 'medium' });
   }
-  if (bankStatus !== 'APPROVED') {
-    issues.push({
-      label: `bank ${bankStatus}`,
-      severity: bankStatus === 'REJECTED' ? 'high' : 'medium',
-    });
-  }
   if (partnerTaxNeedsReview(provider)) {
-    issues.push({ label: `tax ${taxStatus}`, severity: taxStatus === 'REJECTED' ? 'high' : 'medium' });
+    issues.push({ label: `legacy tax ${taxStatus}`, severity: 'medium' });
   }
   if (partnerHasFirstRevenueSignal(provider) && !provider.residentialAddress?.trim()) {
-    issues.push({ label: 'tax address missing', severity: 'high' });
+    issues.push({ label: 'withdrawal address missing', severity: 'high' });
   }
   if (partnerHasFirstRevenueSignal(provider) && (provider.agreements?.length ?? 0) < 5) {
     issues.push({ label: `terms ${(provider.agreements?.length ?? 0).toString()}/5`, severity: 'high' });
