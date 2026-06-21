@@ -53,7 +53,7 @@ describe('partner detail readiness command sections', () => {
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
-  it('renders marketplace repair steps as a Vuexy command table', () => {
+  it('renders dispatch repair steps as a Vuexy command table', () => {
     const section = PartnerAcceptanceRepairCommandSection({
       command: {
         customerImpact: 'Customer choices stay visible, but final acceptance waits for settlement.',
@@ -87,7 +87,7 @@ describe('partner detail readiness command sections', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Marketplace repair command');
+    expect(rendered).toContain('Dispatch repair command');
     expect(rendered).toContain('Settlement warning');
     expect(rendered).toContain('Partner app message');
     expect(rendered).toContain('Customer impact');

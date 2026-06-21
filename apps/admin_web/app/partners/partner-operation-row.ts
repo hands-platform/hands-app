@@ -146,7 +146,7 @@ export function buildPartnerOperationRow(
       ? 'Marketplace ready'
       : walletBalance < 0
         ? 'Settlement warning'
-        : 'Marketplace repair needed',
+        : 'Dispatch repair needed',
     marketplaceAccessDetail: marketplaceEligibility.eligible
       ? `Can participate in marketplace bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,

@@ -32,8 +32,8 @@ describe('PartnerOpsReadinessCell', () => {
           tone: 'success',
         },
         {
-          detail: 'Marketplace participation needs policy repair.',
-          label: 'Marketplace repair',
+          detail: 'Dispatch participation needs policy repair.',
+          label: 'Dispatch repair',
           tone: 'warn',
         },
       ],
@@ -56,7 +56,7 @@ describe('PartnerOpsReadinessCell', () => {
     expect(rendered).toContain('KYC status is PENDING_REVIEW.');
     expect(rendered).toContain('Approve or reject KYC with a clear reason.');
     expect(rendered).toContain('Direct request ready');
-    expect(rendered).toContain('Marketplace repair');
+    expect(rendered).toContain('Dispatch repair');
     expect(rendered).toContain('KYC PENDING_REVIEW');
     expect(rendered).toContain('push missing');
     expect(rendered).toContain('Partner is ready for direct requests and marketplace matching.');

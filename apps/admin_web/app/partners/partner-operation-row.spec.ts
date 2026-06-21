@@ -147,6 +147,27 @@ describe('partner operation row', () => {
     ]);
   });
 
+  it('labels non-wallet marketplace blockers as dispatch repair', () => {
+    const row = buildPartnerOperationRow(
+      partner({
+        earnings: [],
+        user: {
+          id: 'user-1',
+          phone: '0865907184',
+          pushDevices: [],
+        },
+      }),
+      DEFAULT_PROVIDER_OPS_POLICY,
+      {
+        displayName: (item) => item.displayName ?? item.id,
+        canAcceptBookingNow: () => true,
+      },
+    );
+
+    expect(row.marketplaceAccessLabel).toBe('Dispatch repair needed');
+    expect(row.marketplaceAccessDetail).toContain('listed blockers resolved');
+  });
+
   it('summarizes direct request blockers in operations language', () => {
     expect(
       partnerAcceptBlockerSummary(

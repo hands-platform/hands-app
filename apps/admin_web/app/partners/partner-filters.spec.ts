@@ -39,4 +39,9 @@ describe('partner filters', () => {
     expect(description).toContain('location');
     expect(description).not.toContain('bank');
   });
+
+  it('labels legacy marketplace-blocked review values as dispatch repair', () => {
+    expect(providerFilterDescription('review', 'marketplace-blocked')).toContain('Dispatch repair');
+    expect(providerFilterDescription('review', 'marketplace-blocked')).not.toContain('Marketplace repair');
+  });
 });

@@ -54,14 +54,14 @@ export function buildPartnerOpsBadges(
         : partnerAcceptBlockerSummary(provider, opsPolicy),
     },
     {
-      label: marketplaceEligibility.eligible ? 'Marketplace ready' : 'Marketplace repair',
+      label: marketplaceEligibility.eligible ? 'Marketplace ready' : 'Dispatch repair',
       tone: marketplaceEligibility.eligible ? 'success' : 'warn',
       detail: marketplaceEligibility.eligible
         ? `Can participate in marketplace matching within ${formatDistanceMeters(
             opsPolicy.backupRadiusMeters,
           )}.`
         : marketplaceEligibility.blockers.map((blocker) => blocker.label).join(', ') ||
-          'Marketplace participation needs policy repair.',
+          'Dispatch participation needs policy repair.',
     },
     {
       label: walletBalance < 0 ? 'Cash debt' : 'Wallet clear',

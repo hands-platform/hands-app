@@ -275,7 +275,7 @@ const partnerReviewLaneFilterOptions = [
   { label: 'Direct request held', value: 'acceptance-blocked' },
   { label: 'Direct request ready', value: 'direct-ready' },
   { label: 'Marketplace ready', value: 'marketplace-ready' },
-  { label: 'Marketplace repair', value: 'marketplace-blocked' },
+  { label: 'Dispatch repair', value: 'marketplace-blocked' },
 ] as const;
 
 function buildPartnerFilterHref(filters: ProviderFilters, updates: Partial<ProviderFilters>) {

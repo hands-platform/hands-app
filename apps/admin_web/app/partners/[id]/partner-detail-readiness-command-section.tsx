@@ -113,10 +113,10 @@ export function PartnerAcceptanceRepairCommandSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} ${cardClassForTone(command.tone)} admin-mb-16`}
-      description="Exact operator diagnosis for marketplace participation, customer handoff, app message, and finance repair."
+      description="Exact operator diagnosis for dispatch participation, customer handoff, app message, and finance repair."
       resultLabel={command.status}
       resultTone={statusBadgeToneForPartnerOps(command.tone)}
-      title="Marketplace repair command"
+      title="Dispatch repair command"
     >
       <div className="service-trace-summary admin-mt-12">
         <TraceSummaryItem

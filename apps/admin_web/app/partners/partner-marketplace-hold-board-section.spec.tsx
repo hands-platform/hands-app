@@ -11,11 +11,11 @@ describe('PartnerMarketplaceHoldBoardSection', () => {
 
     const rendered = normalizedText(section);
 
-    expect(rendered).toContain('Partner marketplace hold board');
-    expect(rendered).toContain('Shows why partners cannot join marketplace bookings');
+    expect(rendered).toContain('Partner dispatch repair board');
+    expect(rendered).toContain('Shows why partners need dispatch repair before operators rely on booking participation');
     expect(rendered).toContain('2 direct request held');
     expect(rendered).toContain('3 direct-ready');
-    expect(rendered).toContain('1 marketplace held');
+    expect(rendered).toContain('1 dispatch repair');
     expect(rendered).toContain('Cash fee settlement');
     expect(rendered).toContain('Blocks marketplace');
     expect(rendered).toContain('Cash Debt Partner');

@@ -30,7 +30,7 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="Shows why partners cannot join marketplace bookings before operators rely on them for booking recovery. Viewing marketplace requests is not treated as a partner action."
+        description="Shows why partners need dispatch repair before operators rely on booking participation. Viewing marketplace requests is not treated as a partner action."
         status={
           <>
             <span className={`pill ${board.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
@@ -38,11 +38,11 @@ export function PartnerMarketplaceHoldBoardSection({ board }: PartnerMarketplace
             </span>
             <span className="pill pill-info">{board.eligibleNow} direct-ready</span>
             <span className={`pill ${board.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'}`}>
-              {board.marketplaceBlocked} marketplace held
+              {board.marketplaceBlocked} dispatch repair
             </span>
           </>
         }
-        title="Partner marketplace hold board"
+        title="Partner dispatch repair board"
       />
       <div className="grid admin-mt-12">
         {board.cards.map((card) => (

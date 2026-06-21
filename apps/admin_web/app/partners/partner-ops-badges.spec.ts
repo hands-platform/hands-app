@@ -75,7 +75,7 @@ describe('partner ops badges', () => {
 
     expect(badges.map((badge: { label: string }) => badge.label)).toEqual([
       'Direct request ready',
-      'Marketplace repair',
+      'Dispatch repair',
       'Cash debt',
       'KYC ok',
       'Withdrawal bank ok',
@@ -89,7 +89,7 @@ describe('partner ops badges', () => {
       detail: 'Partner owes 12.000 VND before final acceptance, service start, and payout release.',
     });
     expect(
-      badges.find((badge: { label: string; detail: string }) => badge.label === 'Marketplace repair')
+      badges.find((badge: { label: string; detail: string }) => badge.label === 'Dispatch repair')
         ?.detail,
     ).toContain('cash fee debt');
   });
