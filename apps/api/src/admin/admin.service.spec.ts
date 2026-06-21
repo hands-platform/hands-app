@@ -436,6 +436,27 @@ describe('AdminService query orchestration', () => {
     ]);
   });
 
+  it('keeps provider list booking relation windows narrow after summary aggregation', async () => {
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await service.listProviders();
+
+    expect(prisma.providerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: expect.objectContaining({
+          participants: expect.objectContaining({ take: 15 }),
+          preferredBookings: expect.objectContaining({ take: 15 }),
+          selectedBookings: expect.objectContaining({ take: 15 }),
+        }),
+      }),
+    );
+  });
+
   it('adds server-computed activity summaries to customer list rows', async () => {
     const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
     const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');
