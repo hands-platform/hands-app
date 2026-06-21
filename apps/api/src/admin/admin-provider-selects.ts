@@ -202,6 +202,49 @@ export const adminProviderSanctionSummarySelect = {
   updatedAt: true,
 } satisfies Prisma.ProviderSanctionSelect;
 
+export const adminProviderListDocumentSelect = {
+  id: true,
+  type: true,
+  status: true,
+  fileAsset: {
+    select: {
+      id: true,
+      key: true,
+      contentType: true,
+      uploadedAt: true,
+      sizeBytes: true,
+    },
+  },
+} satisfies Prisma.ProviderDocumentSelect;
+
+export const adminProviderListBankAccountSelect = {
+  id: true,
+  bankName: true,
+  accountNumberMasked: true,
+  accountHolderName: true,
+  status: true,
+  isPrimary: true,
+  reviewedAt: true,
+} satisfies Prisma.ProviderBankAccountSelect;
+
+export const adminProviderListReportSelect = {
+  id: true,
+  category: true,
+  summary: true,
+  details: true,
+  severity: true,
+  status: true,
+  createdAt: true,
+} satisfies Prisma.ProviderReportSelect;
+
+export const adminProviderListSanctionSelect = {
+  id: true,
+  type: true,
+  status: true,
+  reason: true,
+  createdAt: true,
+} satisfies Prisma.ProviderSanctionSelect;
+
 export const adminProviderReportDetailSelect = {
   ...adminProviderReportSummarySelect,
   booking: { select: { id: true, status: true } },

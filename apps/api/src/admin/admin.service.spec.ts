@@ -499,6 +499,45 @@ describe('AdminService query orchestration', () => {
         },
       },
     });
+    expect(select.documents.select).toEqual({
+      id: true,
+      type: true,
+      status: true,
+      fileAsset: {
+        select: {
+          id: true,
+          key: true,
+          contentType: true,
+          uploadedAt: true,
+          sizeBytes: true,
+        },
+      },
+    });
+    expect(select.bankAccounts.select).toEqual({
+      id: true,
+      bankName: true,
+      accountNumberMasked: true,
+      accountHolderName: true,
+      status: true,
+      isPrimary: true,
+      reviewedAt: true,
+    });
+    expect(select.reports.select).toEqual({
+      id: true,
+      category: true,
+      summary: true,
+      details: true,
+      severity: true,
+      status: true,
+      createdAt: true,
+    });
+    expect(select.sanctions.select).toEqual({
+      id: true,
+      type: true,
+      status: true,
+      reason: true,
+      createdAt: true,
+    });
   });
 
   it('adds server-computed activity summaries to customer list rows', async () => {

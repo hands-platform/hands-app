@@ -12,6 +12,10 @@ import {
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
   adminProviderKycSummarySelect,
+  adminProviderListBankAccountSelect,
+  adminProviderListDocumentSelect,
+  adminProviderListReportSelect,
+  adminProviderListSanctionSelect,
   adminProviderOverviewUserSelect,
   adminProviderPushDeviceReachabilityOrder,
   adminProviderPublicMediaSelect,
@@ -143,23 +147,23 @@ export const adminProviderListSelect = {
   documents: {
     orderBy: { createdAt: 'desc' },
     take: 6,
-    select: adminProviderDocumentSummarySelect,
+    select: adminProviderListDocumentSelect,
   },
   bankAccounts: {
     orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
     take: 3,
-    select: adminProviderBankAccountSummarySelect,
+    select: adminProviderListBankAccountSelect,
   },
   taxProfile: { select: adminProviderTaxProfileSummarySelect },
   reports: {
     orderBy: { createdAt: 'desc' },
     take: 5,
-    select: adminProviderReportSummarySelect,
+    select: adminProviderListReportSelect,
   },
   sanctions: {
     orderBy: { createdAt: 'desc' },
     take: 5,
-    select: adminProviderSanctionSummarySelect,
+    select: adminProviderListSanctionSelect,
   },
   preferredBookings: {
     orderBy: { createdAt: 'desc' },
