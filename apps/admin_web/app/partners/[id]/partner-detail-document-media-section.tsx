@@ -1,7 +1,13 @@
 import { ExternalLink } from 'lucide-react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerTypedDocumentRow = {
   readonly assetLabel: string;
@@ -42,18 +48,16 @@ type PartnerDetailPublicProfileMediaCardProps = {
 
 export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocumentsCardProps) {
   return (
-    <div className="card" id="documents">
-      <div className="ops-section-header">
-        <div>
-          <h2>Typed documents</h2>
-          <p className="muted">
-            Required Partner onboarding files with review status, asset evidence, and approval actions.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} document(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Required Partner onboarding files with review status, asset evidence, and approval actions."
+      id="documents"
+      resultLabel={`${rows.length} document(s)`}
+      title="Typed documents"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<EvidenceEmptyState message="No typed onboarding documents yet." />}
           headers={typedDocumentHeaders}
           rowCount={rows.length}
@@ -91,24 +95,23 @@ export function PartnerDetailTypedDocumentsCard({ rows }: PartnerDetailTypedDocu
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
 export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPublicProfileMediaCardProps) {
   return (
-    <div className="card" id="media">
-      <div className="ops-section-header">
-        <div>
-          <h2>Public profile media</h2>
-          <p className="muted">
-            Marketplace-visible Partner media with upload state, review outcome, and moderation actions.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} asset(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={partnerDetailReviewCardClassName}
+      description="Marketplace-visible Partner media with upload state, review outcome, and moderation actions."
+      id="media"
+      resultLabel={`${rows.length} asset(s)`}
+      title="Public profile media"
+    >
       <AdminTableScroll>
         <AdminDataTable
+          className={partnerDetailReviewTableClassName}
           emptyMessage={<EvidenceEmptyState message="No public profile image or work photos uploaded yet." />}
           headers={publicMediaHeaders}
           rowCount={rows.length}
@@ -141,7 +144,8 @@ export function PartnerDetailPublicProfileMediaCard({ rows }: PartnerDetailPubli
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }
 
