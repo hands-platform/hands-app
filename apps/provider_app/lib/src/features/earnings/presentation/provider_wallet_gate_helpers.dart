@@ -177,7 +177,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     return const [
       'Cash booking fees are settled.',
       'You can participate in marketplace requests.',
-      'Payout still needs tax, bank, and agreement checks.',
+      'Wallet payouts are checked when you request withdrawal or report a deposit.',
     ];
   }
   final debtAmount = asNum(summary['walletDebtAmount']) ??

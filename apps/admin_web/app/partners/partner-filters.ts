@@ -188,13 +188,13 @@ export function providerFilterDescription(kind: string, value: string) {
     return 'Cash fee debt highlights Partners whose final acceptance, service start, and payout release wait for HANDS commission settlement.';
   }
   if (kind === 'review' && value === 'unapproved') {
-    return 'Unapproved Partners combines registration, KYC, document, bank, tax, public media, and hold items that need admin approval from the Partner detail page.';
+    return 'Unapproved Partners combines registration, KYC, required documents, public media, and hold items that need admin approval from the Partner detail page.';
   }
   if (kind === 'review' && value === 'unsettled') {
     return 'Unsettled Partners shows Partners whose wallet balance is negative and need settlement before final acceptance, service start, or payout release.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Direct request held highlights partners still waiting on account, identity, bank, device, location, or alert gates before preferred direct requests.';
+    return 'Direct request held highlights partners still waiting on account, identity, device, location, or alert gates before preferred direct requests.';
   }
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can receive a preferred customer request immediately.';

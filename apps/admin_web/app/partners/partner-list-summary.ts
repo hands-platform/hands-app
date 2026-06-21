@@ -132,7 +132,7 @@ export function buildPartnerFilterSummary(
     {
       label: 'Approval review',
       value: approvalReview.toString(),
-      detail: 'Partners waiting on registration, KYC, document, bank, tax, media, or hold review',
+      detail: 'Partners waiting on registration, KYC, required documents, public media, or hold review',
       href: '/partners?review=unapproved',
     },
     {
@@ -198,7 +198,7 @@ export function buildPartnerReviewQueue(
       count: acceptanceBlocked,
       href: '/partners?review=acceptance-blocked',
       detail:
-        'Partners who cannot receive direct requests now because identity, bank, location, push, or control gates are not satisfied.',
+        'Partners who cannot receive direct requests now because identity, device, location, push, or control gates are not satisfied.',
     },
     {
       label: 'Account blocks',

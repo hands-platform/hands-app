@@ -138,6 +138,16 @@ bool isProviderBlockedMessage(String value) {
 
 ProviderActionBlockCopy? providerActionBlockCopy(String value) {
   final normalized = value.toLowerCase();
+  if (normalized.contains('bank account must be approved')) {
+    return const ProviderActionBlockCopy(
+      title: 'Wallet bank details required',
+      detail:
+          'Bank details are reviewed for wallet withdrawal/deposit checks, not for receiving paid work.',
+      nextStep:
+          'Open Earnings, request withdrawal or report a deposit, then add or correct the bank details when prompted.',
+      icon: Icons.account_balance_outlined,
+    );
+  }
   if (normalized.contains('wallet') ||
       normalized.contains('settlement') ||
       normalized.contains('hands fee') ||
@@ -171,16 +181,6 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
       nextStep:
           'Upload clear identity photos in Profile and ask HANDS operations to review them.',
       icon: Icons.assignment_ind_outlined,
-    );
-  }
-  if (normalized.contains('bank account must be approved')) {
-    return const ProviderActionBlockCopy(
-      title: 'Bank account approval required',
-      detail:
-          'Your payout bank account must be approved before paid work starts.',
-      nextStep:
-          'Add or correct your bank account in Profile. HANDS must approve it before work starts.',
-      icon: Icons.account_balance_outlined,
     );
   }
   if (normalized.contains('verification must be approved')) {

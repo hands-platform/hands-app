@@ -122,6 +122,8 @@ describe('partner list summary', () => {
     expect(summary.find((item) => item.label === 'Approval review')).toMatchObject({
       href: '/partners?review=unapproved',
       value: '0',
+      detail:
+        'Partners waiting on registration, KYC, required documents, public media, or hold review',
     });
     expect(summary.find((item) => item.label === 'Location refresh')?.value).toBe('1');
   });
@@ -141,6 +143,9 @@ describe('partner list summary', () => {
     );
 
     expect(review.items.find((item) => item.label === 'Account blocks')?.count).toBe(1);
+    expect(review.items.find((item) => item.label === 'Direct request held')?.detail).toBe(
+      'Partners who cannot receive direct requests now because identity, device, location, push, or control gates are not satisfied.',
+    );
     expect(review.items.find((item) => item.label === 'Document review')?.count).toBe(1);
     expect(review.items.find((item) => item.label === 'Cash fee debt')?.href).toBe(
       '/partners?review=unsettled',

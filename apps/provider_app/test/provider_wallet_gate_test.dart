@@ -151,6 +151,12 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Available for payout review');
     expect(providerWalletSettlementSteps(summary),
         contains('Cash booking fees are settled.'));
+    expect(
+      providerWalletSettlementSteps(summary),
+      contains(
+        'Wallet payouts are checked when you request withdrawal or report a deposit.',
+      ),
+    );
   });
 
   test('negative wallet overrides stale explicit marketplace open policy', () {

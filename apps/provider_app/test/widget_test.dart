@@ -189,11 +189,15 @@ void main() {
 
     final bankMessage = providerAppErrorMessage(ApiException(403, {
       'message':
-          'Partner bank account must be approved before receiving paid work.',
+          'Partner bank account must be approved before wallet withdrawal.',
     }));
 
     expect(providerActionBlockCopy(bankMessage)?.title,
-        'Bank account approval required');
+        'Wallet bank details required');
+    expect(
+      providerActionBlockCopy(bankMessage)?.detail,
+      contains('wallet withdrawal/deposit checks'),
+    );
   });
 
   test('partner chat is hidden after operations closes no-show booking', () {
