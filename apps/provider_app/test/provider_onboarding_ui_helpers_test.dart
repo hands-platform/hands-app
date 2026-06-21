@@ -57,6 +57,10 @@ void main() {
       'Rejected: Account holder does not match CCCD. Update the bank details and submit again.',
     );
     expect(
+      providerBankAccountStepDetail(status: 'REJECTED'),
+      '입금 정보가 정확하지 않아 입금이 되지 않습니다. Update the bank details and submit again.',
+    );
+    expect(
       providerBankAccountStepDetail(status: 'PENDING_REVIEW'),
       'Submitted. Waiting for admin approval before payout.',
     );
@@ -186,27 +190,26 @@ void main() {
       'nextRequiredActions': <String>[],
       'kyc': {'status': 'APPROVED'},
       'bankAccounts': [
-        {'status': 'APPROVED'},
+        {'status': 'REJECTED'},
       ],
       'completedBookingCount': 1,
       'taxProfile': {'status': 'PENDING_REVIEW'},
       'payoutGate': {'canWithdraw': false},
     });
 
-    expect(milestones, hasLength(4));
+    expect(milestones, hasLength(2));
     expect(milestones[0].complete, isTrue);
     expect(milestones[1].current, isTrue);
     expect(milestones[1].complete, isTrue);
-    expect(milestones[2].complete, isFalse);
-    expect(milestones[2].detail, contains('wait for admin approval'));
+    expect(milestones[1].detail, contains('can receive bookings'));
 
     final trusted = providerLevelMilestonesFromSnapshot({
       'level': 'LEVEL_4_TRUSTED',
       'payoutGate': {'canWithdraw': true},
     });
 
-    expect(trusted.every((item) => item.complete), isTrue);
-    expect(trusted.last.current, isTrue);
+    expect(trusted, hasLength(2));
+    expect(trusted.last.level, 'LEVEL_2_ACTIVE');
   });
 
   test('describes bank and tax resubmission forms', () {
@@ -216,6 +219,10 @@ void main() {
         rejectionReason: 'Bank number is wrong',
       ),
       contains('Correct the Vietnamese bank account details'),
+    );
+    expect(
+      bankAccountFormDescription(status: 'REJECTED'),
+      startsWith('입금 정보가 정확하지 않아 입금이 되지 않습니다.'),
     );
     expect(
       taxProfileFormDescription(

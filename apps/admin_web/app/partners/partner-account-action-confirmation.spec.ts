@@ -21,7 +21,7 @@ describe('partner account action confirmation', () => {
       cancelHref: '/partners',
       confirmLabel: 'Approve Partner',
       description:
-        'Approve Partner Linh Wellness as an official Partner after identity, profile, bank, app reachability, and operating readiness review.',
+        'Approve Partner Linh Wellness as an official Partner after identity, profile, app reachability, and operating readiness review.',
       disabled: false,
       hiddenInputs: [{ name: 'providerId', value: partner.id }],
       providerId: partner.id,

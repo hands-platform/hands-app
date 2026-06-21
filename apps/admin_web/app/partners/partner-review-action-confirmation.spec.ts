@@ -76,14 +76,16 @@ describe('partner review action confirmation', () => {
 
     expect(confirmation?.textInputs).toEqual([
       {
+        defaultValue: '입금 정보가 정확하지 않아 입금이 되지 않습니다',
         label: 'Reason',
         maxLength: 500,
         minLength: 12,
         name: 'reason',
-        placeholder: 'Bank rejection reason for Partner app correction',
+        placeholder: 'Partner wallet bank correction reason',
         required: true,
       },
     ]);
+    expect(confirmation?.description).toContain('manual wallet withdrawal or deposit checks');
   });
 
   it('disables KYC approval until required identity documents are approved', () => {

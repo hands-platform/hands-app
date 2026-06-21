@@ -41,7 +41,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Payout account evidence used before Partner approval and payout release."
+      description="Manual wallet withdrawal/deposit evidence for operator checks. This does not gate Level 2 matching."
       id="bank"
       resultLabel={bank?.status ?? 'MISSING'}
       resultTone={financeEvidenceStatusBadgeTone(bank?.status)}
@@ -58,7 +58,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
             <tr>
               <td>
                 <strong>Primary payout bank</strong>
-                <p className="muted">Partner receives platform payout through this account after approval.</p>
+                <p className="muted">Used by operators for manual wallet withdrawal/deposit checks.</p>
               </td>
               <td>
                 <EvidenceLine label="Bank" value={bank.bankName} />

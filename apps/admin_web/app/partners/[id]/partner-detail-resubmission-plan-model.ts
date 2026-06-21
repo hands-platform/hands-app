@@ -60,7 +60,7 @@ export function buildProviderResubmissionPlan(
       status: 'REJECTED',
       reason: bankAccount.rejectionReason ?? 'No bank rejection reason was saved.',
       providerInstruction:
-        'Ask for a new account with matching legal holder name, valid bank name, and readable QR if used.',
+        'Ask the Partner to correct wallet bank details. When resubmitted, the bank row returns to pending review for manual wallet checks.',
       operatorAction: 'Bank',
     });
   }

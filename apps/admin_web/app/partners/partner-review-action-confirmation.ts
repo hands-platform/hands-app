@@ -31,6 +31,7 @@ export type PartnerReviewActionConfirmation = {
 };
 
 type PartnerReviewActionTextInput = {
+  readonly defaultValue?: string;
   readonly label: string;
   readonly maxLength: number;
   readonly minLength: number;
@@ -55,6 +56,8 @@ const REVIEW_REASON_INPUT_LIMITS = {
   maxLength: 500,
   minLength: 12,
 } as const;
+
+const BANK_CORRECTION_DEFAULT_REASON = '입금 정보가 정확하지 않아 입금이 되지 않습니다';
 
 export function partnerReviewActionConfirmHref(
   providerId: string,
@@ -183,9 +186,11 @@ function buildBankConfirmation(
   return baseConfirmation({
     action,
     confirmLabel: isReject ? 'Reject bank' : 'Approve bank',
-    description: `${isReject ? 'Reject' : 'Approve'} ${bankAccount.bankName} payout account for Partner ${partnerLabel(
-      provider,
-    )}.`,
+    description: isReject
+      ? `Request Partner ${partnerLabel(provider)} to correct ${bankAccount.bankName} wallet bank details for manual wallet withdrawal or deposit checks.`
+      : `Approve ${bankAccount.bankName} wallet bank details for Partner ${partnerLabel(
+          provider,
+        )} after manual wallet withdrawal or deposit checks.`,
     disabledReason:
       bankAccount.status === blockedStatus ? `Bank account is already ${blockedStatus.toLowerCase()}.` : '',
     hiddenInputs: [
@@ -194,7 +199,8 @@ function buildBankConfirmation(
     ],
     options,
     provider,
-    reasonPlaceholder: isReject ? 'Bank rejection reason for Partner app correction' : '',
+    reasonDefaultValue: isReject ? BANK_CORRECTION_DEFAULT_REASON : '',
+    reasonPlaceholder: isReject ? 'Partner wallet bank correction reason' : '',
     title: `${isReject ? 'Reject' : 'Approve'} bank ${shortId(bankAccount.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
@@ -309,6 +315,7 @@ function baseConfirmation(input: {
   readonly hiddenInputs: readonly { readonly name: string; readonly value: string }[];
   readonly options: PartnerReviewActionOptions;
   readonly provider: AdminProvider;
+  readonly reasonDefaultValue?: string;
   readonly reasonPlaceholder: string;
   readonly title: string;
   readonly tone: StatusBadgeTone;
@@ -326,6 +333,7 @@ function baseConfirmation(input: {
     textInputs: input.reasonPlaceholder
       ? [
           {
+            defaultValue: input.reasonDefaultValue,
             label: 'Reason',
             maxLength: REVIEW_REASON_INPUT_LIMITS.maxLength,
             minLength: REVIEW_REASON_INPUT_LIMITS.minLength,

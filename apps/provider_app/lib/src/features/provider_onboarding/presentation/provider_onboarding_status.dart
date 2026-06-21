@@ -1,5 +1,7 @@
 import 'widgets/provider_document_upload_slots.dart';
 
+const partnerBankCorrectionDefaultReason = '입금 정보가 정확하지 않아 입금이 되지 않습니다';
+
 class ProviderOnboardingPriority {
   const ProviderOnboardingPriority({
     required this.title,
@@ -145,7 +147,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
               status: bankStatus,
               rejectionReason: bankRejectionReason,
             )
-          : 'Bank account approval is required before this partner can become fully active.',
+          : 'Bank details are used for manual wallet withdrawal/deposit checks when money movement is requested.',
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_REVIEW',
       buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
@@ -225,23 +227,12 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
   final nextActions = _asList(snapshot['nextRequiredActions'])
       .map((action) => action.toString())
       .toSet();
-  final completedBookingCount =
-      _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
   final kyc = _asMap(snapshot['kyc']);
   final verification = _asMap(snapshot['verification']);
-  final bankAccounts = _asList(snapshot['bankAccounts']);
-  final taxProfile = _asMap(snapshot['taxProfile']);
-  final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
   final basicProfileComplete = !nextActions.contains('BASIC_PROFILE');
   final kycApproved =
       (kyc?['status']?.toString() ?? verification?['status']?.toString()) ==
           'APPROVED';
-  final bankApproved =
-      bankAccounts.map(_asMap).whereType<Map<String, dynamic>>().any(
-            (account) => account['status']?.toString() == 'APPROVED',
-          );
-  final taxApproved = taxProfile?['status']?.toString() == 'APPROVED';
-  final canWithdraw = payoutGate['canWithdraw'] == true;
   final currentIndex = _providerLevelIndex(currentLevel);
 
   bool completedByLevelOrCondition(String level, bool condition) {
@@ -262,35 +253,12 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
     ProviderOnboardingLevelMilestone(
       level: 'LEVEL_2_ACTIVE',
       title: 'Level 2 - can receive work',
-      detail: kycApproved && bankApproved
-          ? 'Identity check and payout bank account are approved.'
-          : 'Requires approved CCCD/selfie KYC and a reviewed Vietnamese bank account.',
+      detail: kycApproved && basicProfileComplete
+          ? 'Profile, KYC, and required documents are approved. This partner can receive bookings.'
+          : 'Requires approved profile, CCCD/selfie KYC, and service-ready details. Bank setup is handled later from wallet operations.',
       complete: completedByLevelOrCondition(
-          'LEVEL_2_ACTIVE', kycApproved && bankApproved),
+          'LEVEL_2_ACTIVE', kycApproved && basicProfileComplete),
       current: currentLevel == 'LEVEL_2_ACTIVE',
-    ),
-    ProviderOnboardingLevelMilestone(
-      level: 'LEVEL_3_PAYOUT_ENABLED',
-      title: 'Level 3 - withdrawal enabled',
-      detail: canWithdraw
-          ? 'First revenue, tax profile, address, and agreements are complete.'
-          : completedBookingCount == 0
-              ? 'Tax and settlement setup starts after the first earned revenue.'
-              : taxApproved
-                  ? 'Finish address and payout/tax agreements before withdrawal.'
-                  : 'Submit MST/tax profile after earnings exist, then wait for admin approval.',
-      complete:
-          completedByLevelOrCondition('LEVEL_3_PAYOUT_ENABLED', canWithdraw),
-      current: currentLevel == 'LEVEL_3_PAYOUT_ENABLED',
-    ),
-    ProviderOnboardingLevelMilestone(
-      level: 'LEVEL_4_TRUSTED',
-      title: 'Level 4 - profile review',
-      detail: currentLevel == 'LEVEL_4_TRUSTED'
-          ? 'HANDS admin has completed the optional profile review.'
-          : 'Admin can complete this after identity, profile quality, and experience review.',
-      complete: currentLevel == 'LEVEL_4_TRUSTED',
-      current: currentLevel == 'LEVEL_4_TRUSTED',
     ),
   ];
 }
@@ -502,8 +470,9 @@ String providerBankAccountStepDetail({
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();
-    final prefix =
-        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
+    final prefix = reason == null || reason.isEmpty
+        ? '$partnerBankCorrectionDefaultReason.'
+        : 'Rejected: $reason.';
     return '$prefix Update the bank details and submit again.';
   }
   if (status == 'PENDING_REVIEW') {

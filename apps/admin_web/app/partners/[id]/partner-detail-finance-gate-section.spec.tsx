@@ -26,7 +26,9 @@ describe('partner detail finance gate sections', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Bank and payout gate');
+    expect(rendered).toContain('Manual wallet withdrawal/deposit evidence');
     expect(rendered).toContain('Primary payout bank');
+    expect(rendered).toContain('Used by operators for manual wallet withdrawal/deposit checks.');
     expect(rendered).toContain('Vietcombank');
     expect(rendered).toContain('Linh Wellness');
     expect(rendered).toContain('PENDING_REVIEW');

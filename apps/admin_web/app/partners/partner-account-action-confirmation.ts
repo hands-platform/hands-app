@@ -46,7 +46,7 @@ const partnerAccountActionMetadata: Record<PartnerAccountConfirmationAction, Par
     description: (provider) =>
       `Approve Partner ${partnerLabel(
         provider,
-      )} as an official Partner after identity, profile, bank, app reachability, and operating readiness review.`,
+      )} as an official Partner after identity, profile, app reachability, and operating readiness review.`,
     title: (provider) => `Approve Partner ${shortId(provider.id)}?`,
     tone: 'success',
   },
