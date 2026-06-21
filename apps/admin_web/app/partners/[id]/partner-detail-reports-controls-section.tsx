@@ -140,7 +140,9 @@ export function PartnerDetailReportsControlsSection({
           <AdminTableScroll>
             <AdminDataTable
               className={partnerDetailReviewTableClassName}
-              emptyMessage={<ReportsControlsEmptyState message="No active payout hold is currently applied." />}
+              emptyMessage={
+                <ReportsControlsEmptyState message="No active payout hold is currently applied." />
+              }
               headers={payoutHoldTableHeaders}
               rowCount={payoutHold ? 1 : 0}
             >
@@ -220,9 +222,7 @@ export function PartnerDetailReportsControlsSection({
                     ) : null}
                   </td>
                   <td>
-                    <span className={`pill ${reportSeverityPill(report.severity)}`}>
-                      {report.severity}
-                    </span>
+                    <span className={`pill ${reportSeverityPill(report.severity)}`}>{report.severity}</span>
                   </td>
                   <td>
                     <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
@@ -236,49 +236,6 @@ export function PartnerDetailReportsControlsSection({
                       <span className="muted">No booking linked</span>
                     )}
                     <p className="muted">{report.smallLabel}</p>
-                  </td>
-                  <td>
-                    <form className="actions admin-mt-8" action={updateProviderReport}>
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <input type="hidden" name="providerProfileId" value={providerId} />
-                      <AdminFormSelect
-                        label="Report status"
-                        name="status"
-                        defaultValue={report.status}
-                        options={reportStatusOptions}
-                      />
-                      <AdminFormSelect
-                        label="Report severity"
-                        name="severity"
-                        defaultValue={report.severity}
-                        options={reportSeverityOptions}
-                      />
-                      <AdminFormInput
-                        label="Resolution note"
-                        name="resolutionNote"
-                        placeholder="Resolution note"
-                      />
-                      <AdminFormControlButton type="submit">Update</AdminFormControlButton>
-                    </form>
-                    <form className="actions admin-mt-8" action={createProviderSanction}>
-                      <input type="hidden" name="providerProfileId" value={providerId} />
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <AdminFormSelect
-                        label="Control type"
-                        name="type"
-                        defaultValue={report.defaultControlType}
-                        options={accountControlTypeOptions}
-                      />
-                      <AdminFormInput
-                        label="Control reason"
-                        name="reason"
-                        placeholder="Control reason"
-                        required
-                        minLength={12}
-                        maxLength={500}
-                      />
-                      <AdminFormControlButton type="submit">Apply control</AdminFormControlButton>
-                    </form>
                   </td>
                 </tr>
               ))}
@@ -337,11 +294,121 @@ export function PartnerDetailReportsControlsSection({
           <PartnerDetailVuexyTableFooter rowCount={accountControls.length} />
         </div>
       </div>
+      <PartnerReportCommandPanel providerId={providerId} reports={reports} />
     </AdminFilterPanel>
   );
 }
 
-const reportTableHeaders = ['Report', 'Severity', 'Status', 'Linked record', 'Actions'] as const;
+function PartnerReportCommandPanel({
+  providerId,
+  reports,
+}: {
+  readonly providerId: string;
+  readonly reports: readonly PartnerReportRow[];
+}) {
+  const firstReport = reports[0];
+
+  return (
+    <div className="partner-report-command-grid admin-mt-16">
+      <div>
+        <h3>Report command panel</h3>
+        <p className="muted">
+          Update report status or apply a linked control without crowding the report table.
+        </p>
+      </div>
+      {firstReport ? (
+        <>
+          <form className="form-grid compact-form partner-report-command-form" action={updateProviderReport}>
+            <input type="hidden" name="providerProfileId" value={providerId} />
+            <div className="field">
+              <span>Report</span>
+              <AdminFormSelect
+                label="Report"
+                name="reportId"
+                defaultValue={firstReport.id}
+                options={reportSelectOptions(reports)}
+              />
+            </div>
+            <div className="field">
+              <span>Status</span>
+              <AdminFormSelect
+                label="Report status"
+                name="status"
+                defaultValue={firstReport.status}
+                options={reportStatusOptions}
+              />
+            </div>
+            <div className="field">
+              <span>Severity</span>
+              <AdminFormSelect
+                label="Report severity"
+                name="severity"
+                defaultValue={firstReport.severity}
+                options={reportSeverityOptions}
+              />
+            </div>
+            <div className="field full-span">
+              <span>Resolution note</span>
+              <AdminFormInput label="Resolution note" name="resolutionNote" placeholder="Resolution note" />
+            </div>
+            <div className="actions full-span">
+              <AdminFormControlButton type="submit">Update report</AdminFormControlButton>
+            </div>
+          </form>
+          <form
+            className="form-grid compact-form partner-report-command-form"
+            action={createProviderSanction}
+          >
+            <input type="hidden" name="providerProfileId" value={providerId} />
+            <div className="field">
+              <span>Linked report</span>
+              <AdminFormSelect
+                label="Linked report"
+                name="reportId"
+                defaultValue={firstReport.id}
+                options={reportSelectOptions(reports)}
+              />
+            </div>
+            <div className="field">
+              <span>Control type</span>
+              <AdminFormSelect
+                label="Control type"
+                name="type"
+                defaultValue={firstReport.defaultControlType}
+                options={accountControlTypeOptions}
+              />
+            </div>
+            <div className="field full-span">
+              <span>Control reason</span>
+              <AdminFormInput
+                label="Control reason"
+                name="reason"
+                placeholder="Control reason"
+                required
+                minLength={12}
+                maxLength={500}
+              />
+            </div>
+            <div className="actions full-span">
+              <AdminFormControlButton type="submit">Apply linked control</AdminFormControlButton>
+            </div>
+          </form>
+        </>
+      ) : (
+        <p className="muted">No report commands are available until a report is recorded.</p>
+      )}
+    </div>
+  );
+}
+
+function reportSelectOptions(reports: readonly PartnerReportRow[]) {
+  return reports.map((report) => ({
+    label: `${report.smallLabel} / ${report.summary}`,
+    value: report.id,
+  }));
+}
+
+const reportTableHeaders = ['Report', 'Severity', 'Status', 'Linked record'] as const;
 const accountControlTableHeaders = ['Control', 'Status', 'Timeline', 'Actions'] as const;
 const payoutHoldTableHeaders = ['State', 'Control', 'Timeline', 'ID'] as const;
 

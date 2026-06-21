@@ -53,6 +53,9 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(rendered).toContain('Partner payout complaint');
     expect(rendered).toContain('HIGH');
     expect(rendered).toContain('INVESTIGATING');
+    expect(rendered).toContain('Report command panel');
+    expect(rendered).toContain('Update report');
+    expect(rendered).toContain('Apply linked control');
     expect(rendered).toContain('PAYOUT_HOLD');
     expect(rendered).toContain('Payout review pending because a customer complaint is open.');
     expect(hrefsIn(section)).toEqual(
@@ -76,11 +79,13 @@ describe('PartnerDetailReportsControlsSection', () => {
         'admin-form-textarea',
         'admin-form-control-button',
         'admin-form-control-link',
+        'partner-report-command-grid admin-mt-16',
+        'form-grid compact-form partner-report-command-form',
         'pill pill-danger',
         'admin-action-dropdown action-menu-dropdown',
       ]),
     );
-    expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(6);
+    expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(8);
     expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(6);
     expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
     expect(rendered).toContain('Showing 1 to 1 of 1 entries');

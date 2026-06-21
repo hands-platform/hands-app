@@ -1258,6 +1258,26 @@ a.action-button-card:hover {
   margin: 12px 0;
 }
 
+.partner-report-command-grid {
+  align-items: start;
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(220px, 0.72fr) repeat(2, minmax(300px, 1fr));
+  padding: 16px;
+}
+
+.partner-report-command-grid h3,
+.partner-report-command-grid p {
+  margin: 0;
+}
+
+.partner-report-command-form {
+  margin: 0;
+}
+
 .field,
 .filter-grid label,
 .form-grid label,
