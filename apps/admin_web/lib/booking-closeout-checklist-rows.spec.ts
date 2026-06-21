@@ -80,7 +80,7 @@ describe('bookingCloseoutChecklistRows', () => {
     });
   });
 
-  it('holds marketplace alerts, participation, and payout release when cash debt remains', () => {
+  it('holds final acceptance, service start, and payout release when cash debt remains', () => {
     const rows = bookingCloseoutChecklistRows({
       ...baseInput,
       cashDebt: true,
@@ -95,6 +95,10 @@ describe('bookingCloseoutChecklistRows', () => {
       pillClass: 'pill-danger',
     });
     expect(rows[3].detail).toContain('Partner can view marketplace requests');
+    expect(rows[3].detail).toContain('final acceptance and service start are held');
+    expect(rows[3].operatorRule).toContain(
+      'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
+    );
   });
 
   it('keeps terminal and batch evidence factual for admin decisions', () => {

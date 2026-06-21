@@ -97,7 +97,7 @@ export function bookingManualDecisionReadiness(
     },
     {
       lane: 'Cash fee settlement',
-      scope: 'Cash bookings can create partner fee debt; debt blocks marketplace alerts, participation, and payout release until settled.',
+      scope: 'Cash bookings can create partner fee debt; debt blocks final acceptance, service start, and payout release until settled.',
       status: input.cashFeeDebtNeedsSettlement
         ? 'Settlement required'
         : input.paymentMethod === 'CASH'
@@ -110,7 +110,7 @@ export function bookingManualDecisionReadiness(
           : 'pill-neutral',
       evidence: input.cashDebtEvidenceLabel,
       operatorUse:
-        'If debt exists, confirm company fee deposit or admin offset before marketplace alerts, participation, or payout release resumes.',
+        'If debt exists, confirm company fee deposit or admin offset before final acceptance, service start, or payout release resumes.',
       href: '#finance',
     },
     {

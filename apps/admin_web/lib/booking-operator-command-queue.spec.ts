@@ -131,7 +131,7 @@ describe('bookingOperatorCommandQueue', () => {
     });
   });
 
-  it('describes cash debt as a marketplace participation gate, not a general acceptance block', () => {
+  it('describes cash debt as a final acceptance and service start gate', () => {
     const queue = bookingOperatorCommandQueue({
       ...baseInput,
       bookingStatus: 'COMPLETED',
@@ -146,7 +146,7 @@ describe('bookingOperatorCommandQueue', () => {
     expect(queue.commands.find((command) => command.id === 'cash-debt')).toMatchObject({
       title: 'Settle Partner cash fee debt',
       detail:
-        'Cash service fee debt blocks marketplace alerts, participation, and payout release until the company fee is settled.',
+        'Cash service fee debt blocks final acceptance, service start, and payout release until the company fee is settled.',
       owner: 'Finance operator',
     });
   });

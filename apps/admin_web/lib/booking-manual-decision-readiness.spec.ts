@@ -82,9 +82,13 @@ describe('bookingManualDecisionReadiness', () => {
 
     expect(rows[3]).toMatchObject({
       lane: 'Cash fee settlement',
+      scope:
+        'Cash bookings can create partner fee debt; debt blocks final acceptance, service start, and payout release until settled.',
       status: 'Settlement required',
       tone: 'pill-danger',
       evidence: 'Debt 80.000 VND',
+      operatorUse:
+        'If debt exists, confirm company fee deposit or admin offset before final acceptance, service start, or payout release resumes.',
     });
   });
 

@@ -118,10 +118,10 @@ export function bookingCloseoutChecklistRows(
       title: 'Money and wallet gate',
       status: input.cashDebt ? 'Settlement needed' : input.paymentStatus ?? 'No payment',
       detail: input.cashDebt
-        ? `${input.walletLedgerLabel}. Partner can view marketplace requests, but marketplace alerts and participation are held until settled or offset.`
+        ? `${input.walletLedgerLabel}. Partner can view marketplace requests, but final acceptance and service start are held until settled or offset.`
         : `${input.paymentMethod} payment / customer ${input.customerPriceLabel} / Partner ${input.partnerPayoutLabel}.`,
       operatorRule:
-        'Cash fee debt must be resolved before marketplace alerts, participation, or payout batch release.',
+        'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
       href: input.cashDebt ? '/cash-settlements' : '#finance',
       className: input.cashDebt ? 'ops-task-blocked' : input.paymentStatus ? 'ops-task-done' : 'ops-task-warning',
       pillClass: input.cashDebt ? 'pill-danger' : input.paymentStatus ? 'pill-success' : 'pill-warn',

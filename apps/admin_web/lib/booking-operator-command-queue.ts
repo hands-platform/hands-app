@@ -176,7 +176,7 @@ export function bookingOperatorCommandQueue(
       label: 'CASH',
       title: 'Settle Partner cash fee debt',
       detail:
-        'Cash service fee debt blocks marketplace alerts, participation, and payout release until the company fee is settled.',
+        'Cash service fee debt blocks final acceptance, service start, and payout release until the company fee is settled.',
       owner: 'Finance operator',
       tone: 'pill-danger',
       action: { type: 'link', href: '#finance', label: 'Open finance' },
