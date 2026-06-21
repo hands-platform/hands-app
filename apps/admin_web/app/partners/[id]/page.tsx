@@ -141,6 +141,7 @@ import {
   PartnerDetailRegistrationDossierSection,
 } from './partner-detail-review-readiness-section';
 import { buildProviderRegistrationDossier } from './partner-detail-registration-dossier-model';
+import { buildProviderResubmissionPlan } from './partner-detail-resubmission-plan-model';
 import {
   PartnerDetailCashDebtOriginSection,
   type PartnerCashDebtOriginRow,
@@ -3674,81 +3675,6 @@ function level3Blockers(input: {
   if (!input.payoutAgreementsReady) blockers.push(`Required agreements are ${input.agreementCount}/5.`);
   if (!input.hasAddress) blockers.push('Residential address is required for tax/payout records.');
   return blockers.length ? blockers : ['Payout gate needs operator refresh.'];
-}
-
-type ProviderResubmissionItem = {
-  target: string;
-  status: string;
-  reason: string;
-  providerInstruction: string;
-  operatorAction: string;
-};
-
-function buildProviderResubmissionPlan(provider: ProviderDetail) {
-  const items: ProviderResubmissionItem[] = [];
-
-  if (provider.kyc?.status === 'REJECTED') {
-    items.push({
-      target: 'KYC identity review',
-      status: 'REJECTED',
-      reason: provider.kyc.rejectionReason ?? 'No rejection reason was saved.',
-      providerInstruction:
-        'Ask the Partner to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
-      operatorAction: 'KYC',
-    });
-  }
-
-  for (const document of provider.documents ?? []) {
-    if (document.status !== 'REJECTED') continue;
-    items.push({
-      target: providerDocumentLabel(document.type),
-      status: 'REJECTED',
-      reason: document.rejectionReason ?? 'No document rejection reason was saved.',
-      providerInstruction: providerDocumentResubmissionInstruction(document.type),
-      operatorAction: 'Doc',
-    });
-  }
-
-  for (const bankAccount of provider.bankAccounts ?? []) {
-    if (bankAccount.status !== 'REJECTED') continue;
-    items.push({
-      target: `${marketplaceDisplayText(bankAccount.bankName)} bank account`,
-      status: 'REJECTED',
-      reason: bankAccount.rejectionReason ?? 'No bank rejection reason was saved.',
-      providerInstruction:
-        'Ask for a new account with matching legal holder name, valid bank name, and readable QR if used.',
-      operatorAction: 'Bank',
-    });
-  }
-
-  if (provider.taxProfile?.status === 'REJECTED') {
-    items.push({
-      target: 'Freelancer tax profile',
-      status: 'REJECTED',
-      reason: provider.taxProfile.rejectionReason ?? 'No tax rejection reason was saved.',
-      providerInstruction:
-        'Ask for the correct MST/tax code, legal name, and registered address before payout review.',
-      operatorAction: 'Tax',
-    });
-  }
-
-  return { items };
-}
-
-function providerDocumentResubmissionInstruction(type?: string | null) {
-  if (type === 'CCCD_FRONT') {
-    return 'Ask for a clear front-side CCCD/CMND image with readable number, full name, and no glare.';
-  }
-  if (type === 'CCCD_BACK') {
-    return 'Ask for a clear back-side CCCD/CMND image with all corners visible and no cropping.';
-  }
-  if (type === 'SELFIE') {
-    return 'Ask for a live selfie that clearly matches the submitted identity document.';
-  }
-  if (type === 'BANK_QR') {
-    return 'Ask for a readable bank QR image, but still verify the typed bank account fields.';
-  }
-  return 'Ask the Partner to upload a clearer replacement image for review.';
 }
 
 function payoutBlockers(provider: ProviderDetail) {
