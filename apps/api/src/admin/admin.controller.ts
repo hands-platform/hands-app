@@ -74,6 +74,11 @@ export class AdminController {
     return this.admin.listProviders();
   }
 
+  @Get('operations-policy/providers')
+  operationsPolicyProviders() {
+    return this.admin.listOperationsPolicyProviders();
+  }
+
   @Get(['providers/:id/overview', 'partners/:id/overview'])
   providerOverview(@Param('id') providerProfileId: string) {
     return this.admin.getProviderOverview(providerProfileId);

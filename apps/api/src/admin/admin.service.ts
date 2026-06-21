@@ -105,10 +105,12 @@ import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
   ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+  ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderDetailSelect,
   adminProviderFileReviewSelect,
   adminProviderFileReviewWhere,
   adminProviderListSelect,
+  adminProviderOperationsPolicySelect,
   adminProviderOverviewSelect,
 } from './admin-provider-profile-selects';
 import {
@@ -413,6 +415,31 @@ export class AdminService {
       orderBy: { id: 'desc' },
       take: ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
       select: adminProviderFileReviewSelect,
+    });
+  }
+
+  async listOperationsPolicyProviders() {
+    const providers = await this.prisma.providerProfile.findMany({
+      orderBy: { id: 'desc' },
+      take: ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
+      select: adminProviderOperationsPolicySelect,
+    });
+
+    if (providers.length === 0) {
+      return providers;
+    }
+
+    const activitySummaries = await this.getProviderListActivitySummaries(
+      providers.map((provider) => provider.id),
+    );
+
+    return providers.map((provider) => {
+      const activitySummary = activitySummaries.get(provider.id) ?? emptyProviderActivitySummary();
+      return {
+        ...provider,
+        activitySummary,
+        earnings: [{ netAmount: activitySummary.walletBalance }],
+      };
     });
   }
 

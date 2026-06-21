@@ -9,6 +9,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
     listFileReviewProviders: jest.fn(),
+    listOperationsPolicyProviders: jest.fn(),
     retryNotification: jest.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
@@ -58,6 +59,18 @@ describe('AdminController notification and push actions', () => {
       path: 'files/review-providers',
     });
     expect(admin.listFileReviewProviders).toHaveBeenCalledWith();
+  });
+
+  it('exposes operations policy providers as a lightweight GET list', async () => {
+    admin.listOperationsPolicyProviders.mockResolvedValue([{ id: 'partner-1' }]);
+
+    await expect(controller.operationsPolicyProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+
+    expect(routeMetadata('operationsPolicyProviders')).toEqual({
+      method: RequestMethod.GET,
+      path: 'operations-policy/providers',
+    });
+    expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith();
   });
 });
 
