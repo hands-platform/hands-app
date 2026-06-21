@@ -56,7 +56,7 @@ describe('partner detail operating ledger model', () => {
     expect(rows).toHaveLength(13);
   });
 
-  it('marks missing identity, KYC, bank, and legacy tax evidence without first revenue', () => {
+  it('marks missing identity, KYC, withdrawal, and optional tax evidence without first revenue', () => {
     const rows = buildPartnerOperatingLedger(
       {
         auditLogs: [],
@@ -98,11 +98,11 @@ describe('partner detail operating ledger model', () => {
       evidence: 'Missing: CCCD back side, Selfie verification',
       status: 'KYC review needed',
     });
-    expect(rowByArea(rows, 'Bank')).toMatchObject({
+    expect(rowByArea(rows, 'Withdrawal details')).toMatchObject({
       evidence: 'No bank account row',
       status: 'MISSING',
     });
-    expect(rowByArea(rows, 'Legacy tax')).toMatchObject({
+    expect(rowByArea(rows, 'Tax profile optional')).toMatchObject({
       evidence: 'Tax profile is not required for Level 2 approval, matching, or current payout review.',
       status: 'NOT_REQUIRED',
     });

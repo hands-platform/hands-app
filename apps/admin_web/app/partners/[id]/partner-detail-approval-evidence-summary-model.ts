@@ -88,7 +88,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
     {
       id: 'bank-evidence-summary',
       label: 'BANK',
-      title: bankStatus === 'APPROVED' ? 'Payout bank approved' : 'Payout bank needs review',
+      title: bankStatus === 'APPROVED' ? 'Withdrawal details ready' : 'Withdrawal details on request',
       detail: primaryBank
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(
             primaryBank.accountHolderName,
@@ -103,10 +103,10 @@ export function buildPartnerApprovalEvidenceSummaryRows({
       label: 'TAX',
       title:
         taxStatus === 'DEFERRED'
-          ? 'Legacy tax not required'
+          ? 'Tax profile optional'
           : taxStatus === 'APPROVED'
-            ? 'Legacy tax profile approved'
-            : 'Legacy tax profile submitted',
+            ? 'Optional tax profile approved'
+            : 'Optional tax profile submitted',
       detail:
         taxStatus === 'DEFERRED'
           ? 'Tax profile evidence does not block Level 2 approval, matching, or current payout review.'

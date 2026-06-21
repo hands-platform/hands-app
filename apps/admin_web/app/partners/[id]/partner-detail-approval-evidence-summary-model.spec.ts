@@ -63,10 +63,12 @@ describe('partner detail approval evidence summary model', () => {
     });
     expect(rows.find((row) => row.id === 'bank-evidence-summary')).toMatchObject({
       detail: 'VCB / Tran Linh / ****1234.',
+      title: 'Withdrawal details ready',
       status: 'APPROVED',
       tone: 'pill-success',
     });
     expect(rows.find((row) => row.id === 'tax-evidence-summary')).toMatchObject({
+      title: 'Optional tax profile approved',
       status: 'APPROVED',
       tone: 'pill-success',
     });
@@ -85,10 +87,12 @@ describe('partner detail approval evidence summary model', () => {
       tone: 'pill-danger',
     });
     expect(rows.find((row) => row.id === 'bank-evidence-summary')).toMatchObject({
+      title: 'Withdrawal details on request',
       status: 'MISSING',
       tone: 'pill-danger',
     });
     expect(rows.find((row) => row.id === 'tax-evidence-summary')).toMatchObject({
+      title: 'Tax profile optional',
       status: 'DEFERRED',
       tone: 'pill-neutral',
     });

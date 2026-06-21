@@ -45,7 +45,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
       id="bank"
       resultLabel={bank?.status ?? 'MISSING'}
       resultTone={financeEvidenceStatusBadgeTone(bank?.status)}
-      title="Bank and payout gate"
+      title="Withdrawal details"
     >
       <AdminTableScroll>
         <AdminDataTable
@@ -57,7 +57,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
           {bank ? (
             <tr>
               <td>
-                <strong>Primary payout bank</strong>
+                <strong>Primary withdrawal bank</strong>
                 <p className="muted">Used by operators for manual wallet withdrawal/deposit checks.</p>
               </td>
               <td>
@@ -70,7 +70,7 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
                 <span className={`pill ${financeEvidenceStatusTone(bank.status)}`}>{bank.status}</span>
               </td>
               <td>
-                <ActionMenu actions={bank.reviewActions} label="Bank review actions" variant="dropdown" />
+                <ActionMenu actions={bank.reviewActions} label="Withdrawal detail review actions" variant="dropdown" />
               </td>
             </tr>
           ) : null}
@@ -87,11 +87,11 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Legacy tax evidence is optional and does not gate Vietnam MVP approval, matching, work, payout, or wallet withdrawal."
+      description="Optional tax profile evidence does not gate Vietnam MVP approval, matching, work, payout, or wallet withdrawal."
       id="tax"
       resultLabel={taxProfile?.status ?? 'DEFERRED'}
       resultTone={financeEvidenceStatusBadgeTone(taxProfile?.status)}
-      title="Legacy tax profile"
+      title="Tax profile optional"
     >
       <AdminTableScroll>
         <AdminDataTable
@@ -105,7 +105,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
           {taxProfile ? (
             <tr>
               <td>
-                <strong>Tax identity</strong>
+                <strong>Optional tax identity</strong>
                 <p className="muted">Legacy finance record only. This does not block Level 2 activity or withdrawal.</p>
               </td>
               <td>
@@ -120,7 +120,7 @@ export function PartnerDetailTaxProfileCard({ taxProfile }: PartnerDetailTaxProf
                 </span>
               </td>
               <td>
-                <ActionMenu actions={taxProfile.reviewActions} label="Tax review actions" variant="dropdown" />
+                <ActionMenu actions={taxProfile.reviewActions} label="Tax profile optional actions" variant="dropdown" />
               </td>
             </tr>
           ) : null}

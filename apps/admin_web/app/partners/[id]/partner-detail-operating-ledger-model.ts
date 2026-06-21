@@ -148,7 +148,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       href: `/partners/${provider.id}?section=full#documents`,
     },
     {
-      area: 'Bank',
+      area: 'Withdrawal details',
       status: primaryBank?.status ?? 'MISSING',
       evidence: primaryBank
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${
@@ -158,7 +158,7 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
       href: `/partners/${provider.id}?section=full#bank`,
     },
     {
-      area: 'Legacy tax',
+      area: 'Tax profile optional',
       status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
       evidence: provider.taxProfile
         ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`

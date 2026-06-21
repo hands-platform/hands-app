@@ -25,9 +25,9 @@ describe('partner detail finance gate sections', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Bank and payout gate');
+    expect(rendered).toContain('Withdrawal details');
     expect(rendered).toContain('Manual wallet withdrawal/deposit evidence');
-    expect(rendered).toContain('Primary payout bank');
+    expect(rendered).toContain('Primary withdrawal bank');
     expect(rendered).toContain('Used by operators for manual wallet withdrawal/deposit checks.');
     expect(rendered).toContain('Vietcombank');
     expect(rendered).toContain('Linh Wellness');
@@ -49,7 +49,7 @@ describe('partner detail finance gate sections', () => {
     const section = PartnerDetailTaxProfileCard({ taxProfile: null });
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Legacy tax profile');
+    expect(rendered).toContain('Tax profile optional');
     expect(rendered).toContain('DEFERRED');
     expect(rendered).toContain('No finance evidence found');
     expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
