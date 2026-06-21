@@ -63,7 +63,7 @@ export function bookingCashFeeSettlementPath(
         label: 'Wallet debt',
         value: cashDebt ? money(settlementAmount, financeTrace.currency) : financeTrace.walletLedger,
         helper: cashDebt
-          ? 'Marketplace alerts, participation, and payout release stay blocked until settlement evidence clears this.'
+          ? 'Final acceptance, service start, and payout release stay blocked until settlement evidence clears this.'
           : 'No active negative wallet block is visible on this booking.',
         href: cashDebt ? '/cash-settlements' : '#finance',
       },
@@ -120,7 +120,7 @@ export function bookingCashFeeSettlementPath(
         tone: cashDebt ? 'pill-danger' : 'pill-success',
         evidence: cashDebt
           ? `${settlementRef} / ${money(settlementAmount, financeTrace.currency)} due`
-          : 'Marketplace alerts, participation, and payout release are not blocked by this booking.',
+          : 'Final acceptance, service start, and payout release are not blocked by this booking.',
         nextStep: cashDebt
           ? 'Collect company deposit evidence or apply an approved admin offset, then settle the cash debt.'
           : 'No settlement action needed from this booking.',
