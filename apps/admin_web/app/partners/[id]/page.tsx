@@ -10,7 +10,7 @@ import {
   bookingRecordCreatedAt,
   bookingRequestOpenedAt,
 } from '../../../lib/admin-booking-time';
-import { adminActionTitleText, marketplaceDisplayText } from '../../../lib/admin-copy';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   bookingCreateGateFilterLabel,
   bookingCreateGateReasonFilter,
@@ -170,6 +170,7 @@ import {
   buildPartnerSharedDeviceRows,
   displaySessionCheckText,
 } from './partner-detail-device-session-model';
+import { buildPartnerReviewHistoryRows } from './partner-detail-review-history-model';
 import {
   PartnerDetailApprovalEvidenceSummarySection,
   PartnerDetailLevelPathSection,
@@ -273,7 +274,6 @@ import {
   locationAgeLabel,
   locationAgeMinutes,
   maskDeviceId,
-  metadataPreview,
   newestDateValue,
   providerPublicMediaLabel,
   shortRecordId,
@@ -4878,18 +4878,6 @@ function buildPartnerAppActivityRows(records: PartnerActivityRecord[]): PartnerA
   }));
 }
 
-function buildPartnerReviewHistoryRows(provider: ProviderDetail): PartnerReviewHistoryRow[] {
-  return (provider.verificationLogs ?? []).slice(0, 8).map((log) => ({
-    action: log.action,
-    actorLabel: log.actor?.fullName ?? log.actor?.phone ?? 'System',
-    atLabel: formatDate(log.createdAt),
-    id: log.id,
-    preview: metadataPreview(log.metadata),
-    statusLabel: statusTransition(log),
-    title: adminActionTitleText(log.action),
-  }));
-}
-
 function buildPartnerOperatorNoteRows(logs: AdminAuditLog[]): PartnerOperatorNoteRow[] {
   return logs.slice(0, 6).map((log) => ({
     actorTargetLabel: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${log.target}`,
@@ -4964,13 +4952,6 @@ function cashFeeDebtAmount(provider: ProviderDetail) {
   return (provider.earnings ?? [])
     .filter(isCashFeeDebt)
     .reduce((total, earning) => total + Math.abs(amountValue(earning.netAmount)), 0);
-}
-
-function statusTransition(log: NonNullable<ProviderDetail['verificationLogs']>[number]) {
-  if (log.fromStatus || log.toStatus) {
-    return `${log.fromStatus ?? 'New'} -> ${log.toStatus ?? 'Unknown'}`;
-  }
-  return 'Decision recorded';
 }
 
 function activePayoutHold(provider: ProviderDetail) {
