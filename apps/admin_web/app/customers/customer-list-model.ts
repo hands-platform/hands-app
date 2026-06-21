@@ -123,6 +123,7 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
 
 export function buildCustomerRow(customer: AdminCustomer) {
   const bookings = customer.bookings ?? [];
+  const activitySummary = customer.activitySummary;
   const payments = bookings.map((booking) => booking.payment).filter(Boolean);
   const refundAmount = bookings.reduce((sum, booking) => {
     const paymentRefunds = booking.payment?.refunds ?? [];
@@ -146,7 +147,8 @@ export function buildCustomerRow(customer: AdminCustomer) {
     (booking) => booking.closedByRole === 'PROVIDER',
   ).length;
   const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
-  const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
+  const completedBookings =
+    activitySummary?.completedBookingCount ?? bookings.filter((booking) => booking.status === 'COMPLETED').length;
   const openMatchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
   const firstPickBookings = bookings.filter(
     (booking) => booking.preferredProviderId && !booking.selectedProviderId,
@@ -166,15 +168,20 @@ export function buildCustomerRow(customer: AdminCustomer) {
     .filter((payment) => payment?.status === 'CAPTURED')
     .reduce((sum, payment) => sum + Number(payment?.amount ?? 0), 0);
   const addressCount = readAddressCount(customer.addresses) + (customer.selectedLocations?.length ?? 0);
-  const lastBookingAt = bookings
-    .map((booking) => bookingLatestActivityAt(booking))
-    .filter(Boolean)
-    .sort((left, right) => dateMs(right) - dateMs(left))[0];
+  const bookingCount = activitySummary?.bookingCount ?? bookings.length;
+  const lastBookingAt =
+    activitySummary?.lastBookingAt ??
+    bookings
+      .map((booking) => bookingLatestActivityAt(booking))
+      .filter(Boolean)
+      .sort((left, right) => dateMs(right) - dateMs(left))[0];
   const completedRows = bookings
     .filter((booking) => booking.status === 'COMPLETED')
     .sort((left, right) => dateMs(bookingLatestActivityAt(right)) - dateMs(bookingLatestActivityAt(left)));
   const lastCompletedBooking = completedRows[0];
-  const lastCompletedAt = lastCompletedBooking ? bookingLatestActivityAt(lastCompletedBooking) : undefined;
+  const lastCompletedAt =
+    activitySummary?.lastCompletedBookingAt ??
+    (lastCompletedBooking ? bookingLatestActivityAt(lastCompletedBooking) : undefined);
   const commonService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
   const commonArea = mostCommonLabel(
     bookings.map((booking) => bookingAddressLabel(booking)).filter((label) => label !== 'No address'),
@@ -193,8 +200,8 @@ export function buildCustomerRow(customer: AdminCustomer) {
       ? `${activeBookings} active booking(s)`
       : completedBookings > 0
         ? `${completedBookings} completed work record(s)`
-        : bookings.length > 0
-          ? `${bookings.length} booking record(s)`
+        : bookingCount > 0
+          ? `${bookingCount} booking record(s)`
           : 'No booking history yet';
 
   const deviceLanguage = readCustomerDeviceLanguage(customer);
@@ -206,7 +213,7 @@ export function buildCustomerRow(customer: AdminCustomer) {
     phone: customer.user?.phone ?? 'No phone',
     email: customer.user?.email ?? 'No email',
     joinedAt: customer.user?.createdAt,
-    bookingCount: bookings.length,
+    bookingCount,
     activeBookings,
     openMatchingBookings,
     firstPickBookings,

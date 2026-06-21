@@ -372,6 +372,61 @@ describe('AdminService query orchestration', () => {
     ]);
   });
 
+  it('adds server-computed activity summaries to customer list rows', async () => {
+    const lastBookingAt = new Date('2026-06-20T12:00:00.000Z');
+    const lastCompletedBookingAt = new Date('2026-06-19T12:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'customer-1',
+            userId: 'user-1',
+            bookings: [{ id: 'recent-booking-only', status: BookingStatus.CREATED }],
+          },
+        ]),
+      },
+      booking: {
+        groupBy: jest
+          .fn()
+          .mockResolvedValueOnce([
+            {
+              customerProfileId: 'customer-1',
+              _count: { _all: 17 },
+              _max: { updatedAt: lastBookingAt, createdAt: new Date('2026-06-20T10:00:00.000Z') },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              customerProfileId: 'customer-1',
+              _count: { _all: 12 },
+              _max: {
+                updatedAt: lastCompletedBookingAt,
+                createdAt: new Date('2026-06-19T10:00:00.000Z'),
+              },
+            },
+          ]),
+      },
+      adminAuditLog: {
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      $queryRaw: jest.fn().mockResolvedValue([]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCustomers()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'customer-1',
+        activitySummary: {
+          bookingCount: 17,
+          completedBookingCount: 12,
+          lastBookingAt,
+          lastCompletedBookingAt,
+        },
+      }),
+    ]);
+    expect(prisma.booking.groupBy).toHaveBeenCalledTimes(2);
+  });
+
   it('includes persisted matching decision fields in partner overview booking queries', async () => {
     const prisma = {
       providerProfile: {

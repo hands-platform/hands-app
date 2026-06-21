@@ -170,6 +170,13 @@ type AdminProviderActivitySummary = {
   walletBalance: number;
 };
 
+type AdminCustomerActivitySummary = {
+  bookingCount: number;
+  completedBookingCount: number;
+  lastBookingAt: Date | null;
+  lastCompletedBookingAt: Date | null;
+};
+
 type AdminAuditLogSummaryRow = {
   id: string;
   action: string;
@@ -250,13 +257,18 @@ export class AdminService {
       return customers;
     }
 
-    const { logsByTarget, countByTarget } = await this.getAuditLogSummaryByTargets(
-      customers.map((customer) => `customer:${customer.id}`),
-      ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
-    );
+    const customerIds = customers.map((customer) => customer.id);
+    const [activitySummaries, { logsByTarget, countByTarget }] = await Promise.all([
+      this.getCustomerListActivitySummaries(customerIds),
+      this.getAuditLogSummaryByTargets(
+        customerIds.map((customerId) => `customer:${customerId}`),
+        ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
+      ),
+    ]);
 
     return customers.map((customer) => ({
       ...customer,
+      activitySummary: activitySummaries.get(customer.id) ?? emptyCustomerActivitySummary(),
       auditLogs: logsByTarget.get(`customer:${customer.id}`) ?? [],
       auditLogCount: countByTarget.get(`customer:${customer.id}`) ?? 0,
     }));
@@ -2519,6 +2531,41 @@ export class AdminService {
     })) satisfies AdminAuditLogSummary[];
   }
 
+  private async getCustomerListActivitySummaries(customerIds: string[]) {
+    const summaries = new Map<string, AdminCustomerActivitySummary>(
+      customerIds.map((customerId) => [customerId, emptyCustomerActivitySummary()]),
+    );
+
+    const customerWhere = { customerProfileId: { in: customerIds } };
+    const [bookingRows, completedRows] = await Promise.all([
+      this.prisma.booking.groupBy({
+        by: ['customerProfileId'],
+        where: customerWhere,
+        _count: { _all: true },
+        _max: { updatedAt: true, createdAt: true },
+      }),
+      this.prisma.booking.groupBy({
+        by: ['customerProfileId'],
+        where: { ...customerWhere, status: BookingStatus.COMPLETED },
+        _count: { _all: true },
+        _max: { updatedAt: true, createdAt: true },
+      }),
+    ]);
+
+    for (const row of bookingRows) {
+      const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
+      summary.bookingCount = row._count._all;
+      summary.lastBookingAt = latestDate(row._max.updatedAt, row._max.createdAt);
+    }
+    for (const row of completedRows) {
+      const summary = ensureCustomerActivitySummary(summaries, row.customerProfileId);
+      summary.completedBookingCount = row._count._all;
+      summary.lastCompletedBookingAt = latestDate(row._max.updatedAt, row._max.createdAt);
+    }
+
+    return summaries;
+  }
+
   private async getProviderListActivitySummaries(providerIds: string[]) {
     const summaries = new Map<string, AdminProviderActivitySummary>(
       providerIds.map((providerId) => [providerId, emptyProviderActivitySummary()]),
@@ -2598,6 +2645,27 @@ export class AdminService {
 
     return summaries;
   }
+}
+
+function emptyCustomerActivitySummary(): AdminCustomerActivitySummary {
+  return {
+    bookingCount: 0,
+    completedBookingCount: 0,
+    lastBookingAt: null,
+    lastCompletedBookingAt: null,
+  };
+}
+
+function ensureCustomerActivitySummary(
+  summaries: Map<string, AdminCustomerActivitySummary>,
+  customerId: string,
+) {
+  const existing = summaries.get(customerId);
+  if (existing) return existing;
+
+  const summary = emptyCustomerActivitySummary();
+  summaries.set(customerId, summary);
+  return summary;
 }
 
 function emptyProviderActivitySummary(): AdminProviderActivitySummary {

@@ -98,6 +98,12 @@ export type AdminCustomer = {
   id: string;
   userId: string;
   addresses?: unknown;
+  activitySummary?: {
+    bookingCount: number;
+    completedBookingCount: number;
+    lastBookingAt?: string | null;
+    lastCompletedBookingAt?: string | null;
+  };
   user?: {
     id?: string;
     phone?: string;
