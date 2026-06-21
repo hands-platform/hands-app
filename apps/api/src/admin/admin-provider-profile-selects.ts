@@ -12,6 +12,7 @@ import {
   adminProviderDeviceSummarySelect,
   adminProviderDocumentSummarySelect,
   adminProviderKycSummarySelect,
+  adminProviderListPublicMediaSelect,
   adminProviderListBankAccountSelect,
   adminProviderListDocumentSelect,
   adminProviderListReportSelect,
@@ -63,7 +64,7 @@ export const adminProviderListUserSelect = {
     },
     orderBy: { createdAt: 'desc' },
     take: 2,
-    select: adminProviderPublicMediaSelect,
+    select: adminProviderListPublicMediaSelect,
   },
 } satisfies Prisma.UserSelect;
 

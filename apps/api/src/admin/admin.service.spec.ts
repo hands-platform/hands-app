@@ -538,6 +538,20 @@ describe('AdminService query orchestration', () => {
       reason: true,
       createdAt: true,
     });
+    expect(select.user.select.fileAssets.select).toEqual({
+      id: true,
+      key: true,
+      url: true,
+      contentType: true,
+      purpose: true,
+      visibility: true,
+      uploadStatus: true,
+      reviewStatus: true,
+      reviewReason: true,
+      uploadedAt: true,
+      sizeBytes: true,
+      createdAt: true,
+    });
   });
 
   it('adds server-computed activity summaries to customer list rows', async () => {

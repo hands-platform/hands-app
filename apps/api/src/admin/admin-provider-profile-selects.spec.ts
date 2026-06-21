@@ -26,11 +26,27 @@ describe('admin provider profile selects', () => {
       adminProviderPushDeviceReachabilityOrder,
     );
     expect(adminProviderListUserSelect.fileAssets).toMatchObject({ take: 2 });
+    expect(adminProviderListUserSelect.fileAssets.select).toEqual({
+      id: true,
+      key: true,
+      url: true,
+      contentType: true,
+      purpose: true,
+      visibility: true,
+      uploadStatus: true,
+      reviewStatus: true,
+      reviewReason: true,
+      uploadedAt: true,
+      sizeBytes: true,
+      createdAt: true,
+    });
   });
 
   it('keeps provider list booking and participant rows lightweight', () => {
     expect(adminProviderListBookingSelect).toMatchObject({
-      addressSnapshot: expect.any(Object),
+      id: true,
+      status: true,
+      scheduledStartAt: true,
       chatRoom: { select: { id: true, createdAt: true } },
     });
     expect(adminProviderListParticipantSelect.booking).toMatchObject({
@@ -43,9 +59,9 @@ describe('admin provider profile selects', () => {
       select: { id: true, status: true, scheduledStartAt: true },
     });
     expect(adminProviderListSelect).toMatchObject({
-      preferredBookings: { take: 50 },
-      selectedBookings: { take: 50 },
-      participants: { take: 50 },
+      preferredBookings: { take: 15 },
+      selectedBookings: { take: 15 },
+      participants: { take: 15 },
       earnings: { take: 10 },
     });
   });

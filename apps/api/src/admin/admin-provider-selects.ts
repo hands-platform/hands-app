@@ -41,6 +41,21 @@ export const adminProviderPublicMediaSelect = {
   createdAt: true,
 } satisfies Prisma.FileAssetSelect;
 
+export const adminProviderListPublicMediaSelect = {
+  id: true,
+  key: true,
+  url: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  createdAt: true,
+} satisfies Prisma.FileAssetSelect;
+
 export const adminProviderVerificationFileSelect = {
   id: true,
   key: true,
