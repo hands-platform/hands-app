@@ -75,6 +75,7 @@ export function buildPartnerMasterRow(
 ): PartnerMasterRow {
   const bookingRows = partnerBookingRows(provider);
   const earnings = provider.earnings ?? [];
+  const activitySummary = provider.activitySummary;
   const displayName = deps.displayName(provider);
   const lastSeenAt = partnerLastSessionAt(provider);
   const latestSessionFacts = partnerLatestSessionFacts(provider);
@@ -113,7 +114,9 @@ export function buildPartnerMasterRow(
     noShowCount: closureCounts.noShow,
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: partnerGrossRevenue(provider),
-    platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
+    platformFee:
+      activitySummary?.platformFee ??
+      earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
     walletBalance: partnerUnsettledWalletBalance(provider),
     pendingPayout: partnerPendingPayout(provider),
     availablePayout: partnerAvailablePayout(provider),

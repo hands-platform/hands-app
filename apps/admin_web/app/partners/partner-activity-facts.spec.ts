@@ -111,6 +111,41 @@ describe('partner activity facts', () => {
     expect(partnerLastCompletedWorkAt(result)).toBe('2026-05-23T09:00:00.000Z');
   });
 
+  it('prefers server-computed activity summary when list earning rows are capped', () => {
+    const result = partner({
+      activitySummary: {
+        availablePayout: 450000,
+        completedWorkCount: 12,
+        grossRevenue: 4200000,
+        lastCompletedWorkAt: '2026-06-20T09:00:00.000Z',
+        pendingPayout: 830000,
+        platformFee: 900000,
+        walletBalance: -120000,
+      },
+      earnings: [
+        {
+          id: 'recent-row-only',
+          providerProfileId: 'partner-001',
+          bookingId: 'booking-recent',
+          grossAmount: 100000,
+          platformFee: 10000,
+          withholdingAmount: 0,
+          netAmount: 90000,
+          currency: 'VND',
+          status: 'AVAILABLE',
+          createdAt: '2026-06-01T08:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(partnerCompletedWorkCount(result)).toBe(12);
+    expect(partnerGrossRevenue(result)).toBe(4200000);
+    expect(partnerPendingPayout(result)).toBe(830000);
+    expect(partnerAvailablePayout(result)).toBe(450000);
+    expect(partnerUnsettledWalletBalance(result)).toBe(-120000);
+    expect(partnerLastCompletedWorkAt(result)).toBe('2026-06-20T09:00:00.000Z');
+  });
+
   it('calculates unsettled wallet balance from pending and available unbatched earnings only', () => {
     const result = partner({
       earnings: [

@@ -1,6 +1,16 @@
 import type { AdminProvider } from '../../lib/admin-api';
 
 export function partnerHasFirstRevenueSignal(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return (
+      provider.activitySummary.completedWorkCount > 0 ||
+      provider.activitySummary.grossRevenue > 0 ||
+      provider.activitySummary.pendingPayout !== 0 ||
+      provider.activitySummary.availablePayout !== 0 ||
+      provider.activitySummary.walletBalance !== 0
+    );
+  }
+
   return (provider.earnings ?? []).some((earning) =>
     ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
   );

@@ -40,6 +40,10 @@ export function latestPartnerBookingRecord(bookings: AdminBooking[]) {
 }
 
 export function partnerCompletedWorkCount(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.completedWorkCount;
+  }
+
   const cached = partnerCompletedWorkCountCache.get(provider);
   if (cached !== undefined) return cached;
 
@@ -53,6 +57,10 @@ export function partnerCompletedWorkCount(provider: AdminProvider) {
 }
 
 export function partnerGrossRevenue(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.grossRevenue;
+  }
+
   const cached = partnerGrossRevenueCache.get(provider);
   if (cached !== undefined) return cached;
 
@@ -62,6 +70,10 @@ export function partnerGrossRevenue(provider: AdminProvider) {
 }
 
 export function partnerPendingPayout(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.pendingPayout;
+  }
+
   const cached = partnerPendingPayoutCache.get(provider);
   if (cached !== undefined) return cached;
 
@@ -73,6 +85,10 @@ export function partnerPendingPayout(provider: AdminProvider) {
 }
 
 export function partnerAvailablePayout(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.availablePayout;
+  }
+
   const cached = partnerAvailablePayoutCache.get(provider);
   if (cached !== undefined) return cached;
 
@@ -84,6 +100,10 @@ export function partnerAvailablePayout(provider: AdminProvider) {
 }
 
 export function partnerLastCompletedWorkAt(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.lastCompletedWorkAt ?? null;
+  }
+
   const cached = partnerLastCompletedWorkAtCache.get(provider);
   if (cached !== undefined) return cached;
 
@@ -111,6 +131,7 @@ export function partnerLastActivityAt(provider: AdminProvider) {
   const value = latestTimestamp([
     provider.currentLocationUpdatedAt,
     provider.nextAvailableAt,
+    provider.activitySummary?.lastCompletedWorkAt,
     ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
     ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
     ...(provider.user?.pushDevices ?? []).map((device) => device.createdAt),
@@ -138,6 +159,10 @@ export function partnerLastSessionAt(provider: AdminProvider) {
 }
 
 export function partnerUnsettledWalletBalance(provider: AdminProvider) {
+  if (provider.activitySummary) {
+    return provider.activitySummary.walletBalance;
+  }
+
   const cached = partnerWalletBalanceCache.get(provider);
   if (cached !== undefined) return cached;
 

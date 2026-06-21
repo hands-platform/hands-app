@@ -308,6 +308,15 @@ export type AdminProvider = {
       }>;
     };
   }>;
+  activitySummary?: {
+    availablePayout: number;
+    completedWorkCount: number;
+    grossRevenue: number;
+    lastCompletedWorkAt?: string | null;
+    pendingPayout: number;
+    platformFee: number;
+    walletBalance: number;
+  };
   earnings?: AdminEarning[];
   auditLogs?: AdminAuditLog[];
   auditLogCount?: number;

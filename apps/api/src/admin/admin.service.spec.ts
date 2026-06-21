@@ -308,6 +308,70 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('adds server-computed activity summaries to provider list rows', async () => {
+    const latestWorkAt = new Date('2026-06-20T10:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Linh Wellness' }]),
+      },
+      providerEarning: {
+        groupBy: jest
+          .fn()
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { grossAmount: 1_200_000, platformFee: 240_000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { netAmount: 700_000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { netAmount: 450_000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { netAmount: -120_000 },
+            },
+          ])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _count: { _all: 3 },
+              _max: { paidAt: latestWorkAt, availableAt: null, createdAt: new Date('2026-06-19T10:00:00.000Z') },
+            },
+          ]),
+      },
+      adminAuditLog: {
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      $queryRaw: jest.fn().mockResolvedValue([]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listProviders()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-1',
+        activitySummary: {
+          availablePayout: 450_000,
+          completedWorkCount: 3,
+          grossRevenue: 1_200_000,
+          lastCompletedWorkAt: latestWorkAt,
+          pendingPayout: 700_000,
+          platformFee: 240_000,
+          walletBalance: -120_000,
+        },
+      }),
+    ]);
+  });
+
   it('includes persisted matching decision fields in partner overview booking queries', async () => {
     const prisma = {
       providerProfile: {

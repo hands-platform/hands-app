@@ -160,6 +160,16 @@ const adminBookingMarketplaceProviderSelect = {
 
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
 
+type AdminProviderActivitySummary = {
+  availablePayout: number;
+  completedWorkCount: number;
+  grossRevenue: number;
+  lastCompletedWorkAt: Date | null;
+  pendingPayout: number;
+  platformFee: number;
+  walletBalance: number;
+};
+
 type AdminAuditLogSummaryRow = {
   id: string;
   action: string;
@@ -340,13 +350,18 @@ export class AdminService {
       return providers;
     }
 
-    const { logsByTarget, countByTarget } = await this.getAuditLogSummaryByTargets(
-      providers.map((provider) => `provider:${provider.id}`),
-      ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
-    );
+    const providerIds = providers.map((provider) => provider.id);
+    const [activitySummaries, { logsByTarget, countByTarget }] = await Promise.all([
+      this.getProviderListActivitySummaries(providerIds),
+      this.getAuditLogSummaryByTargets(
+        providerIds.map((providerId) => `provider:${providerId}`),
+        ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+      ),
+    ]);
 
     return providers.map((provider) => ({
       ...provider,
+      activitySummary: activitySummaries.get(provider.id) ?? emptyProviderActivitySummary(),
       auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
       auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
     }));
@@ -2503,6 +2518,136 @@ export class AdminService {
       },
     })) satisfies AdminAuditLogSummary[];
   }
+
+  private async getProviderListActivitySummaries(providerIds: string[]) {
+    const summaries = new Map<string, AdminProviderActivitySummary>(
+      providerIds.map((providerId) => [providerId, emptyProviderActivitySummary()]),
+    );
+
+    const providerWhere = { providerProfileId: { in: providerIds } };
+    const [grossRows, pendingRows, availableRows, walletRows, completedRows] = await Promise.all([
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...providerWhere,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] },
+        },
+        _sum: { grossAmount: true, platformFee: true },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...providerWhere,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...providerWhere,
+          status: EarningStatus.AVAILABLE,
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...providerWhere,
+          status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+          payoutBatchId: null,
+        },
+        _sum: { netAmount: true },
+      }),
+      this.prisma.providerEarning.groupBy({
+        by: ['providerProfileId'],
+        where: {
+          ...providerWhere,
+          status: { in: [EarningStatus.AVAILABLE, EarningStatus.PAID] },
+        },
+        _count: { _all: true },
+        _max: { paidAt: true, availableAt: true, createdAt: true },
+      }),
+    ]);
+
+    for (const row of grossRows) {
+      const summary = ensureProviderActivitySummary(summaries, row.providerProfileId);
+      summary.grossRevenue = numberValue(row._sum.grossAmount);
+      summary.platformFee = numberValue(row._sum.platformFee);
+    }
+    for (const row of pendingRows) {
+      ensureProviderActivitySummary(summaries, row.providerProfileId).pendingPayout = numberValue(
+        row._sum.netAmount,
+      );
+    }
+    for (const row of availableRows) {
+      ensureProviderActivitySummary(summaries, row.providerProfileId).availablePayout = numberValue(
+        row._sum.netAmount,
+      );
+    }
+    for (const row of walletRows) {
+      ensureProviderActivitySummary(summaries, row.providerProfileId).walletBalance = numberValue(
+        row._sum.netAmount,
+      );
+    }
+    for (const row of completedRows) {
+      const summary = ensureProviderActivitySummary(summaries, row.providerProfileId);
+      summary.completedWorkCount = row._count._all;
+      summary.lastCompletedWorkAt = latestDate(row._max.paidAt, row._max.availableAt, row._max.createdAt);
+    }
+
+    return summaries;
+  }
+}
+
+function emptyProviderActivitySummary(): AdminProviderActivitySummary {
+  return {
+    availablePayout: 0,
+    completedWorkCount: 0,
+    grossRevenue: 0,
+    lastCompletedWorkAt: null,
+    pendingPayout: 0,
+    platformFee: 0,
+    walletBalance: 0,
+  };
+}
+
+function ensureProviderActivitySummary(
+  summaries: Map<string, AdminProviderActivitySummary>,
+  providerId: string,
+) {
+  const existing = summaries.get(providerId);
+  if (existing) return existing;
+
+  const summary = emptyProviderActivitySummary();
+  summaries.set(providerId, summary);
+  return summary;
+}
+
+function numberValue(value: unknown) {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function latestDate(...values: Array<Date | string | null | undefined>) {
+  let latest: Date | null = null;
+  let latestMs = Number.NEGATIVE_INFINITY;
+
+  for (const value of values) {
+    if (!value) continue;
+
+    const date = value instanceof Date ? value : new Date(value);
+    const timestamp = date.getTime();
+    if (!Number.isFinite(timestamp) || timestamp <= latestMs) continue;
+
+    latest = date;
+    latestMs = timestamp;
+  }
+
+  return latest;
 }
 
 function adminBookingMarketplacePin(booking: {
