@@ -270,17 +270,23 @@ export class ProviderOnboardingService {
     const accountNumber = normalizeIdNumber(input.accountNumber);
     const bankName = requiredString(input.bankName, 'bankName is required');
     const accountHolderName = requiredString(input.accountHolderName, 'accountHolderName is required');
-    const account = await this.prisma.providerBankAccount.create({
-      data: {
-        providerProfileId: provider.id,
-        bankName,
-        accountNumberMasked: maskAccountNumber(accountNumber),
-        accountNumberLast4: accountNumber?.slice(-4),
-        accountHolderName,
-        qrBankingInfo: input.qrBankingInfo === undefined ? undefined : toJson(input.qrBankingInfo),
-        status: input.status ?? ProviderBankAccountStatus.PENDING_REVIEW,
-        isPrimary: true,
-      },
+    const account = await this.prisma.$transaction(async (tx) => {
+      await tx.providerBankAccount.updateMany({
+        where: { providerProfileId: provider.id, isPrimary: true, deletedAt: null },
+        data: { isPrimary: false },
+      });
+      return tx.providerBankAccount.create({
+        data: {
+          providerProfileId: provider.id,
+          bankName,
+          accountNumberMasked: maskAccountNumber(accountNumber),
+          accountNumberLast4: accountNumber?.slice(-4),
+          accountHolderName,
+          qrBankingInfo: input.qrBankingInfo === undefined ? undefined : toJson(input.qrBankingInfo),
+          status: input.status ?? ProviderBankAccountStatus.PENDING_REVIEW,
+          isPrimary: true,
+        },
+      });
     });
     await this.prisma.providerVerificationLog.create({
       data: {
