@@ -19,7 +19,7 @@ describe('PartnerShiftHandoffSection', () => {
     expect(rendered).toContain('Open partner work queue');
     expect(rendered).toContain('Cash debt');
     expect(rendered).toContain('2');
-    expect(rendered).toContain('Negative wallet blocks marketplace alerts and participation.');
+    expect(rendered).toContain('Negative wallet blocks final acceptance, service start, and payout release.');
     expect(rendered).toContain('Finance gate');
     expect(rendered).toContain('Linh Wellness');
     expect(hrefsIn(section)).toEqual(
@@ -58,14 +58,15 @@ function buildHandoff(): PartnerShiftHandoffSectionModel {
       {
         detail: '2 partner(s) have negative wallet balance from cash-service fee or tax debt.',
         href: '/partners?review=cash-debt',
-        operatorAction: 'Collect company fee deposit before marketplace alerts resume.',
+        operatorAction:
+          'Collect company fee deposit before final acceptance, service start, or payout release resumes.',
         samples: ['Linh Wellness'],
         scope: 'Finance gate',
         title: 'Collect cash-fee debt before more bookings',
         tone: 'danger',
       },
     ],
-    detail: 'Collect company fee deposit before marketplace alerts resume.',
+    detail: 'Collect company fee deposit before final acceptance, service start, or payout release resumes.',
     headline: 'Collect cash-fee debt before more bookings',
     label: 'Immediate check',
     primaryAction: {
@@ -74,7 +75,7 @@ function buildHandoff(): PartnerShiftHandoffSectionModel {
     },
     stats: [
       {
-        detail: 'Negative wallet blocks marketplace alerts and participation.',
+        detail: 'Negative wallet blocks final acceptance, service start, and payout release.',
         href: '/cash-settlements',
         label: 'Cash debt',
         tone: 'danger',

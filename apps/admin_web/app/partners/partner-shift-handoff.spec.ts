@@ -75,6 +75,12 @@ describe('partner shift handoff', () => {
     expect(handoff.headline).toBe('Collect cash-fee debt before more bookings');
     expect(handoff.primaryAction.href).toBe('/partners?review=cash-debt');
     expect(handoff.stats.find((item) => item.label === 'Cash debt')?.value).toBe('1');
+    expect(handoff.stats.find((item) => item.label === 'Cash debt')?.detail).toBe(
+      'Negative wallet blocks final acceptance, service start, and payout release.',
+    );
+    expect(handoff.actions[0]?.operatorAction).toBe(
+      'Collect company fee deposit, record evidence, or offset from available earnings before final acceptance, service start, or payout release resumes.',
+    );
     expect(handoff.actions[0]?.samples).toContain('Cash Followup Partner');
   });
 

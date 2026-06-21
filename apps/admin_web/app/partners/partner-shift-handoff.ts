@@ -67,7 +67,7 @@ export function buildPartnerShiftHandoff(
           scope: 'Finance gate',
           detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
           operatorAction:
-            'Collect company fee deposit, record evidence, or offset from available earnings before marketplace alerts and participation resume.',
+            'Collect company fee deposit, record evidence, or offset from available earnings before final acceptance, service start, or payout release resumes.',
           href: '/partners?review=cash-debt',
           tone: 'danger' as const,
           samples: partnerSampleNames(cashDebt, deps),
@@ -218,7 +218,7 @@ export function buildPartnerShiftHandoff(
       {
         label: 'Cash debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet blocks marketplace alerts and participation.',
+        detail: 'Negative wallet blocks final acceptance, service start, and payout release.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
