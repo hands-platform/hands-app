@@ -76,24 +76,24 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
     },
     {
       owner: 'Finance',
-      title: 'Negative wallet marketplace policy',
+      title: 'Negative wallet final gate policy',
       question:
-        'Should cash-fee debt block marketplace alerts and participation only, or also block payout release?',
+        'Should cash-fee debt block final acceptance, service start, and payout release, or only part of that final gate?',
       evidence:
-        'Review cash settlement speed, repeated debt Partners, marketplace participation, and payout exposure before changing wallet gate scope.',
+        'Review cash settlement speed, repeated debt Partners, final acceptance attempts, service starts, and payout exposure before changing wallet gate scope.',
       options: [
         {
-          label: 'Marketplace only',
+          label: 'Full final gate',
           tradeoff:
-            'Keeps payout decisions separate, while settlement is required before participating in new marketplace requests.',
+            'Keeps Partners visible to customers while settlement is required before final acceptance, service start, and payout release.',
         },
         {
-          label: 'Marketplace + payout',
-          tradeoff: 'Adds payout release review while preserving marketplace list visibility.',
+          label: 'Payout only',
+          tradeoff: 'Lets more bookings proceed, but weakens cash-fee recovery before new service work starts.',
         },
       ],
       recommendation:
-        'Keep marketplace list visibility open; apply settlement checks at marketplace alerts, participation, and payout release.',
+        'Keep marketplace list visibility open; apply settlement checks at final acceptance, service start, and payout release.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -104,14 +104,14 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
       owner: 'Finance',
       title: 'Negative wallet direct-request boundary',
       question:
-        'Should unpaid cash-fee debt also block a first-pick Partner from accepting a direct request, or only block marketplace alerts, participation, and payout release?',
+        'Should unpaid cash-fee debt also block a first-pick Partner from accepting a direct request, or only block final acceptance, service start, and payout release after marketplace selection?',
       evidence:
         'Review how often negative-wallet Partners are chosen first by customers, how quickly they settle fees, and whether blocking direct requests creates customer wait issues.',
       options: [
         {
           label: 'Keep current MVP boundary',
           tradeoff:
-            'Marketplace alerts, participation, and payout release stay blocked, while first-pick direct requests remain a separate owner decision.',
+            'Final acceptance, service start, and payout release stay blocked, while first-pick direct requests remain a separate owner decision.',
         },
         {
           label: 'Block all new acceptance',
@@ -120,7 +120,7 @@ export function operationsOwnerDecisionBacklog(): OwnerDecisionBacklogItem[] {
         },
       ],
       recommendation:
-        'Keep the current marketplace/payout gate for MVP, then decide the direct-request gate after real cash-settlement data is visible.',
+        'Keep the current final gate for MVP, then decide the direct-request gate after real cash-settlement data is visible.',
       decisionTrigger:
         'Revisit when repeated cash-fee debt appears after direct first-pick bookings, or settlement time exceeds the finance SLA.',
       href: '/cash-settlements',

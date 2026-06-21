@@ -7,7 +7,7 @@ describe('operations owner decision backlog', () => {
 
     expect(titles).toContain('First-pick Partner timer');
     expect(titles).toContain('Marketplace Partner radius');
-    expect(titles).toContain('Negative wallet marketplace policy');
+    expect(titles).toContain('Negative wallet final gate policy');
     expect(titles).toContain('Negative wallet direct-request boundary');
     expect(titles).toContain('Payout batch cycle');
     expect(titles).toContain('No-show evidence');
@@ -34,5 +34,22 @@ describe('operations owner decision backlog', () => {
       'Keep current MVP boundary',
       'Block all new acceptance',
     ]);
+  });
+
+  it('describes cash fee debt as a final acceptance, service start, and payout release gate', () => {
+    const decision = operationsOwnerDecisionBacklog().find(
+      (item) => item.title === 'Negative wallet final gate policy',
+    );
+    const directRequestDecision = operationsOwnerDecisionBacklog().find(
+      (item) => item.title === 'Negative wallet direct-request boundary',
+    );
+
+    expect(decision).toBeDefined();
+    expect([decision?.question, decision?.recommendation, directRequestDecision?.question].join(' ')).toContain(
+      'final acceptance, service start, and payout release',
+    );
+    expect([decision?.question, decision?.recommendation, directRequestDecision?.question].join(' ')).not.toContain(
+      'marketplace alerts',
+    );
   });
 });
