@@ -52,6 +52,8 @@ const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 10;
 const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
+const ADMIN_PROVIDER_DETAIL_RELATION_LIMIT = 10;
+const ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT = 20;
 const ADMIN_PROVIDER_FILE_REVIEW_FILE_LIMIT = 20;
 const ADMIN_PROVIDER_OPERATIONS_HANDOFF_RELATION_LIMIT = 15;
 const ADMIN_PROVIDER_OPERATIONS_HANDOFF_SIGNAL_LIMIT = 3;
@@ -884,21 +886,23 @@ export const adminProviderDetailSelect = {
   },
   bankAccounts: {
     orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderBankAccountSummarySelect,
   },
   taxProfile: { select: adminProviderTaxProfileSummarySelect },
   reports: {
     orderBy: { createdAt: 'desc' },
-    take: 20,
+    take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderReportDetailSelect,
   },
   sanctions: {
     orderBy: { createdAt: 'desc' },
-    take: 20,
+    take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderSanctionDetailSelect,
   },
   agreements: {
     orderBy: { acceptedAt: 'desc' },
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderAgreementSummarySelect,
   },
   services: {
@@ -906,17 +910,17 @@ export const adminProviderDetailSelect = {
   },
   preferredBookings: {
     orderBy: { createdAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderDetailBookingSelect,
   },
   selectedBookings: {
     orderBy: { createdAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderDetailBookingSelect,
   },
   participants: {
     orderBy: { joinedAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: {
       id: true,
       providerProfileId: true,
@@ -930,32 +934,32 @@ export const adminProviderDetailSelect = {
   },
   locationSnapshots: {
     orderBy: { recordedAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminLocationSnapshotSummarySelect,
   },
   earnings: {
     orderBy: { createdAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderDetailEarningSelect,
   },
   payoutBatches: {
     orderBy: { createdAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderPayoutBatchSummarySelect,
   },
   sessions: {
     orderBy: { lastSeenAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderSessionSummarySelect,
   },
   devices: {
     orderBy: { lastSeenAt: 'desc' },
-    take: 10,
+    take: ADMIN_PROVIDER_DETAIL_RELATION_LIMIT,
     select: adminProviderDeviceSummarySelect,
   },
   verificationLogs: {
     orderBy: { createdAt: 'desc' },
-    take: 20,
+    take: ADMIN_PROVIDER_DETAIL_REVIEW_SIGNAL_LIMIT,
     select: adminProviderVerificationLogSummarySelect,
   },
 } satisfies Prisma.ProviderProfileSelect;

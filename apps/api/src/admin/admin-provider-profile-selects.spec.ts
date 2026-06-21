@@ -80,8 +80,10 @@ describe('admin provider profile selects', () => {
   it('keeps provider detail collections deeper but still bounded', () => {
     expect(adminProviderDetailSelect).toMatchObject({
       documents: { take: 50 },
+      bankAccounts: { take: 10 },
       reports: { take: 20 },
       sanctions: { take: 20 },
+      agreements: { take: 10 },
       preferredBookings: { take: 10 },
       selectedBookings: { take: 10 },
       participants: { take: 10 },
