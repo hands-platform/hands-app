@@ -103,10 +103,15 @@ describe('partner detail connected records model', () => {
       tone: 'pill-warn',
       value: 'DRAFT',
     });
-    expect(linkByLabel(links, 'Legacy tax profile')).toMatchObject({
+    expect(linkByLabel(links, 'Tax profile optional')).toMatchObject({
       detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
       tone: 'pill-neutral',
       value: 'Not required',
+    });
+    expect(linkByLabel(links, 'Withdrawal details')).toMatchObject({
+      detail: 'Collected when wallet withdrawal is requested.',
+      tone: 'pill-warn',
+      value: 'Missing',
     });
   });
 });

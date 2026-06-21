@@ -108,7 +108,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       tone: canApproveKyc ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Withdrawal bank account',
+      label: 'Withdrawal details',
       value: primaryBank?.status ?? 'Missing',
       detail: primaryBank
         ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
@@ -117,7 +117,7 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Legacy tax profile',
+      label: 'Tax profile optional',
       value: provider.taxProfile?.status ?? 'Not required',
       detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
       href: '#tax',

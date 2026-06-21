@@ -138,7 +138,7 @@ export function buildProviderRegistrationDossier(
         : 'Review typed documents first, then approve or reject KYC.',
     },
     {
-      label: 'Bank and payout account',
+      label: 'Withdrawal details',
       ok: true,
       status: bankComplete ? bankAccountStatusLabel(provider) : 'DEFERRED',
       detail: bankComplete
@@ -149,12 +149,12 @@ export function buildProviderRegistrationDossier(
         : 'Wait for a wallet withdrawal request before approving bank details.',
     },
     {
-      label: 'Legacy tax profile',
+      label: 'Tax profile optional',
       ok: taxDeferredOrComplete,
       status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
       detail: taxDeferredOrComplete
         ? 'Tax profile registration is not required for Vietnam MVP operations.'
-        : 'Legacy tax profile is present but does not block partner approval or withdrawal.',
+        : 'Optional tax profile is present but does not block partner approval or withdrawal.',
       operatorAction: taxDeferredOrComplete
         ? 'Do not force tax fields during onboarding or withdrawal.'
         : 'Review only if finance keeps legacy tax records.',

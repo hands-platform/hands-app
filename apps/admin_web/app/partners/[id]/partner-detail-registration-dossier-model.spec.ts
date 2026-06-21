@@ -34,7 +34,7 @@ describe('partner detail registration dossier model', () => {
       blockers: 0,
       ready: true,
     });
-    expect(dossier.items.find((item) => item.label === 'Legacy tax profile')).toMatchObject({
+    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
       ok: true,
       status: 'NOT_REQUIRED',
     });
@@ -67,7 +67,7 @@ describe('partner detail registration dossier model', () => {
       ok: true,
       status: 'READY',
     });
-    expect(dossier.items.find((item) => item.label === 'Legacy tax profile')).toMatchObject({
+    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
       ok: true,
       status: 'NOT_REQUIRED',
     });
@@ -91,7 +91,7 @@ describe('partner detail registration dossier model', () => {
       ok: false,
       status: 'PENDING',
     });
-    expect(dossier.items.find((item) => item.label === 'Bank and payout account')).toMatchObject({
+    expect(dossier.items.find((item) => item.label === 'Withdrawal details')).toMatchObject({
       ok: true,
       status: 'DEFERRED',
     });
