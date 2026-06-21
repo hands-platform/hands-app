@@ -3676,7 +3676,7 @@ function nextProviderAction(
   if (primaryBank && primaryBank.status !== 'APPROVED') {
     return {
       title: 'Next admin action',
-      status: 'WITHDRAWAL BANK',
+      status: 'WITHDRAWAL DETAILS',
       detail: `Submitted bank account is ${primaryBank.status.toLowerCase()}.`,
       action: 'Approve or reject bank details when the Partner requests wallet withdrawal.',
       tone: 'pending',

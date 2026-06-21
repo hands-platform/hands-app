@@ -24,6 +24,7 @@ describe('admin policy copy regression', () => {
     expect(source).not.toContain('Legacy tax profile');
     expect(source).not.toContain('Legacy tax ');
     expect(source).not.toContain('Bank payout review');
+    expect(source).not.toContain('WITHDRAWAL BANK');
 
     expect(source).toContain('Withdrawal details');
     expect(source).toContain('Tax profile optional');

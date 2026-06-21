@@ -81,11 +81,12 @@ describe('partner review action confirmation', () => {
         maxLength: 500,
         minLength: 12,
         name: 'reason',
-        placeholder: 'Partner wallet bank correction reason',
+        placeholder: 'Partner withdrawal detail correction reason',
         required: true,
       },
     ]);
     expect(confirmation?.description).toContain('manual wallet withdrawal or deposit checks');
+    expect(confirmation?.description).toContain('withdrawal details');
   });
 
   it('disables KYC approval until required identity documents are approved', () => {

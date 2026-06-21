@@ -187,8 +187,8 @@ function buildBankConfirmation(
     action,
     confirmLabel: isReject ? 'Reject bank' : 'Approve bank',
     description: isReject
-      ? `Request Partner ${partnerLabel(provider)} to correct ${bankAccount.bankName} wallet bank details for manual wallet withdrawal or deposit checks.`
-      : `Approve ${bankAccount.bankName} wallet bank details for Partner ${partnerLabel(
+      ? `Request Partner ${partnerLabel(provider)} to correct ${bankAccount.bankName} withdrawal details for manual wallet withdrawal or deposit checks.`
+      : `Approve ${bankAccount.bankName} withdrawal details for Partner ${partnerLabel(
           provider,
         )} after manual wallet withdrawal or deposit checks.`,
     disabledReason:
@@ -200,7 +200,7 @@ function buildBankConfirmation(
     options,
     provider,
     reasonDefaultValue: isReject ? BANK_CORRECTION_DEFAULT_REASON : '',
-    reasonPlaceholder: isReject ? 'Partner wallet bank correction reason' : '',
+    reasonPlaceholder: isReject ? 'Partner withdrawal detail correction reason' : '',
     title: `${isReject ? 'Reject' : 'Approve'} bank ${shortId(bankAccount.id)}?`,
     tone: isReject ? 'danger' : 'success',
   });
