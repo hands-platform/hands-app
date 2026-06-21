@@ -1,4 +1,10 @@
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerDetailDailyActivityRecord = {
   readonly at: string;
@@ -29,20 +35,17 @@ export function PartnerDetailDailyActivityDigestSection({
   formatDate,
 }: PartnerDetailDailyActivityDigestSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-daily-digest">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner daily activity digest</h2>
-          <p className="muted">
-            Date-grouped factual partner operations records for same-shift review before reading the full
-            event timeline.
-          </p>
-        </div>
-        <span className="pill pill-info">{days.length} day(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Date-grouped factual partner operations records for same-shift review before reading the full event timeline."
+      id="partner-daily-digest"
+      resultLabel={`${days.length} day(s)`}
+      title="Partner daily activity digest"
+    >
       <div className="admin-mt-16">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerDailyActivityDigestEmptyState />}
             headers={dailyActivityDigestHeaders}
             rowCount={days.length}
@@ -79,8 +82,9 @@ export function PartnerDetailDailyActivityDigestSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={days.length} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 

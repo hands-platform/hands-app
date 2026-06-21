@@ -43,8 +43,15 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('Partner joined the open marketplace request.');
     expect(rendered).toContain('BOOKING / formatted 2026-06-01T10:00:00.000Z');
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'partner-daily-highlight-list']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'partner-daily-highlight-list',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders an empty state when no daily digest rows match the filters', () => {
@@ -58,7 +65,14 @@ describe('PartnerDetailDailyActivityDigestSection', () => {
     expect(rendered).toContain('0 day(s)');
     expect(rendered).toContain('No partner daily activity matched this filter');
     expect(rendered).toContain('Clear the date filter or choose a wider range.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 

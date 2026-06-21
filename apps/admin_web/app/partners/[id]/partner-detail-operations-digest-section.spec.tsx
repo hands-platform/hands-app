@@ -31,8 +31,17 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(rendered).toContain('formatted 2026-06-09T04:00:00.000Z');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#identity', '#chat']));
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'pill pill-success', 'pill pill-neutral', 'text-link']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'pill pill-success',
+        'pill pill-neutral',
+        'text-link',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 2 of 2 entries');
   });
 
   it('renders an empty operations digest table state', () => {
@@ -50,7 +59,14 @@ describe('PartnerDetailOperationsDigestSection', () => {
     expect(rendered).toContain('0 lanes');
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No partner operations digest lanes are currently loaded.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 

@@ -1,7 +1,13 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { PartnerOperationsDigestRow } from './partner-detail-operations-digest-model';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type { PartnerOperationsDigestRow };
 
@@ -23,17 +29,17 @@ export function PartnerDetailOperationsDigestSection({
   title,
 }: PartnerDetailOperationsDigestSectionProps) {
   return (
-    <div className="card admin-mb-16" id={id}>
-      <div className="ops-section-header">
-        <div>
-          <h2>{title}</h2>
-          <p className="muted">{description}</p>
-        </div>
-        <span className="pill pill-info">{rows.length} lanes</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description={description}
+      id={id}
+      resultLabel={`${rows.length} lanes`}
+      title={title}
+    >
       <div className="admin-mt-12">
         <AdminTableScroll>
           <AdminDataTable
+            className={partnerDetailReviewTableClassName}
             emptyMessage={<PartnerOperationsDigestEmptyState />}
             headers={operationsDigestHeaders}
             rowCount={rows.length}
@@ -67,8 +73,9 @@ export function PartnerDetailOperationsDigestSection({
             ))}
           </AdminDataTable>
         </AdminTableScroll>
+        <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 
