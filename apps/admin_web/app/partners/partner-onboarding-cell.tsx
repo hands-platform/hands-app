@@ -67,9 +67,9 @@ export function PartnerOnboardingCell({
           KYC {provider.kyc?.status ?? 'DRAFT'}
         </span>
         <span className={`pill ${primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-neutral'}`}>
-          Bank {primaryBank?.status ?? 'MISSING'}
+          Withdrawal details {primaryBank?.status ?? 'MISSING'}
         </span>
-        <span className={`pill ${partnerTaxPillClass(provider)}`}>Tax {taxStatus}</span>
+        <span className={`pill ${partnerTaxPillClass(provider)}`}>Tax optional {taxStatus}</span>
       </div>
       <p className="muted admin-mb-8">
         {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
@@ -101,7 +101,7 @@ export function PartnerOnboardingCell({
       {bankCorrectionResubmitted ? (
         <div className="admin-mb-8">
           <p className="muted admin-mb-4">
-            Bank correction resubmitted
+            Withdrawal detail correction resubmitted
           </p>
           <p className="muted admin-mb-0">
             Previous issue: {marketplaceDisplayText(rejectedBankReason)}
@@ -110,7 +110,7 @@ export function PartnerOnboardingCell({
       ) : null}
       {provider.taxProfile ? (
         <p className="muted admin-mb-8">
-          Tax code ****{provider.taxProfile.taxCodeLast4 ?? '----'} / {provider.taxProfile.registeredAddress}
+          Optional tax code ****{provider.taxProfile.taxCodeLast4 ?? '----'} / {provider.taxProfile.registeredAddress}
         </p>
       ) : null}
       {documents.length ? (
@@ -162,10 +162,10 @@ export function PartnerOnboardingCell({
       <div className="actions">
         <ActionMenu actions={kycActions(provider, canApproveKyc)} label={`KYC review actions for ${partnerName}`} />
         {primaryBank ? (
-          <ActionMenu actions={bankActions(provider.id, primaryBank)} label={`Bank review actions for ${partnerName}`} />
+          <ActionMenu actions={bankActions(provider.id, primaryBank)} label={`Withdrawal detail review actions for ${partnerName}`} />
         ) : null}
         {provider.taxProfile ? (
-          <ActionMenu actions={taxActions(provider)} label={`Legacy tax profile review actions for ${partnerName}`} />
+          <ActionMenu actions={taxActions(provider)} label={`Tax profile optional review actions for ${partnerName}`} />
         ) : null}
       </div>
       {!canApproveKyc ? (

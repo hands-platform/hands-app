@@ -62,12 +62,12 @@ describe('PartnerOnboardingCell', () => {
 
     expect(rendered).toContain('LEVEL_2_ACTIVE');
     expect(rendered).toContain('KYC APPROVED');
-    expect(rendered).toContain('Bank APPROVED');
-    expect(rendered).toContain('Tax PENDING_REVIEW');
+    expect(rendered).toContain('Withdrawal details APPROVED');
+    expect(rendered).toContain('Tax optional PENDING_REVIEW');
     expect(rendered).toContain('Legal: Linh Wellness LLC / CCCD ****6789');
     expect(rendered).toContain('Agreements: 2 /5 (3 missing)');
     expect(rendered).toContain('Vietcombank / ****1234 / Linh Nguyen');
-    expect(rendered).toContain('Tax code **** 4321 / District 1, Ho Chi Minh City');
+    expect(rendered).toContain('Optional tax code **** 4321 / District 1, Ho Chi Minh City');
     expect(rendered).toContain('Typed documents');
     expect(rendered).toContain('CCCD front side APPROVED');
     expect(rendered).toContain('image/jpeg / 2.0 KB');
@@ -88,8 +88,8 @@ describe('PartnerOnboardingCell', () => {
       expect.arrayContaining([
         'CCCD front side review actions for Linh Wellness',
         'KYC review actions for Linh Wellness',
-        'Bank review actions for Linh Wellness',
-        'Legacy tax profile review actions for Linh Wellness',
+        'Withdrawal detail review actions for Linh Wellness',
+        'Tax profile optional review actions for Linh Wellness',
       ]),
     );
     expect(classNamesIn(cell)).toEqual(
@@ -121,7 +121,7 @@ describe('PartnerOnboardingCell', () => {
 
     expect(rendered).toContain('LEVEL_1_SIGNUP');
     expect(rendered).toContain('KYC DRAFT');
-    expect(rendered).toContain('Bank MISSING');
+    expect(rendered).toContain('Withdrawal details MISSING');
     expect(rendered).toContain('Legal name not saved');
     expect(rendered).toContain('Agreements: 0 /5 (5 missing)');
     expect(rendered).toContain('No typed partner documents yet.');
@@ -165,7 +165,7 @@ describe('PartnerOnboardingCell', () => {
 
     const rendered = normalizedText(cell);
 
-    expect(rendered).toContain('Bank correction resubmitted');
+    expect(rendered).toContain('Withdrawal detail correction resubmitted');
     expect(rendered).toContain('Previous issue: 입금 정보가 정확하지 않아 입금이 되지 않습니다');
     expect(rendered).toContain('Vietcombank / ****5678 / Linh Nguyen');
     expect(rendered).toContain('Review bank');
