@@ -73,8 +73,10 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     );
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'pill pill-danger',
         'pill pill-warn',
         'pill pill-success',
@@ -104,7 +106,14 @@ describe('PartnerDetailPayoutOperationsSection', () => {
     expect(rendered).toContain('No records found');
     expect(rendered).toContain('No earnings yet. Payout eligibility starts after the first completed service.');
     expect(rendered).toContain('No payout batch has been created for this partner yet.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
   });
 });
 

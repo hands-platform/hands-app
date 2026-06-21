@@ -1,6 +1,13 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import type { StatusBadgeTone } from '../../../components/status-badge';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerPayoutOperationsTone = 'done' | 'pending' | 'blocked';
 
@@ -65,16 +72,14 @@ export function PartnerDetailPayoutOperationsSection({
   pillClassForTone,
 }: PartnerDetailPayoutOperationsSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Payout operations</h2>
-          <p className="muted">
-            Settlement view for unpaid earnings, withholding, payout batches, and payout holds.
-          </p>
-        </div>
-        <span className={`pill ${pillClassForTone(operations.tone)}`}>{operations.status}</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Settlement view for unpaid earnings, withholding, payout batches, and payout holds."
+      id="payout-operations"
+      resultLabel={operations.status}
+      resultTone={payoutOperationsStatusTone(operations.tone)}
+      title="Payout operations"
+    >
       <div className="ops-task-grid">
         {operations.cards.map((card) => (
           <div className={`ops-task-card ${cardClassForTone(card.tone)}`} key={card.title}>
@@ -88,60 +93,68 @@ export function PartnerDetailPayoutOperationsSection({
         ))}
       </div>
       {operations.hold ? (
-        <AdminTableScroll>
-          <AdminDataTable
-            emptyMessage={<PartnerPayoutTableEmptyState message="No active payout hold." />}
-            headers={payoutHoldHeaders}
-            rowCount={1}
-          >
-            <tr>
-              <td>
-                <span className="pill pill-danger">HELD</span>
-                <p>
-                  <strong>Active payout hold</strong>
-                </p>
-              </td>
-              <td>
-                <p className="muted">{operations.hold.reason ?? 'No hold reason recorded.'}</p>
-              </td>
-              <td>
-                <span className="muted">Started {operations.hold.startsAtLabel}</span>
-                <p className="muted">Expires {operations.hold.expiresAtLabel}</p>
-              </td>
-              <td>
-                <Link className="text-link" href={partnerControlsHref}>
-                  Reports desk
-                </Link>
-              </td>
-            </tr>
-          </AdminDataTable>
-        </AdminTableScroll>
-      ) : null}
-      {operations.blockers.length ? (
-        <AdminTableScroll>
-          <AdminDataTable
-            emptyMessage={<PartnerPayoutTableEmptyState message="No payout blockers." />}
-            headers={payoutBlockerHeaders}
-            rowCount={operations.blockers.length}
-          >
-            {operations.blockers.map((blocker) => (
-              <tr key={blocker}>
+        <>
+          <AdminTableScroll>
+            <AdminDataTable
+              className={partnerDetailReviewTableClassName}
+              emptyMessage={<PartnerPayoutTableEmptyState message="No active payout hold." />}
+              headers={payoutHoldHeaders}
+              rowCount={1}
+            >
+              <tr>
                 <td>
-                  <span className="pill pill-warn">GATE</span>
+                  <span className="pill pill-danger">HELD</span>
                   <p>
-                    <strong>Payout blocker</strong>
+                    <strong>Active payout hold</strong>
                   </p>
                 </td>
                 <td>
-                  <p className="muted">{blocker}</p>
+                  <p className="muted">{operations.hold.reason ?? 'No hold reason recorded.'}</p>
                 </td>
                 <td>
-                  <span className="muted">Resolve</span>
+                  <span className="muted">Started {operations.hold.startsAtLabel}</span>
+                  <p className="muted">Expires {operations.hold.expiresAtLabel}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={partnerControlsHref}>
+                    Reports desk
+                  </Link>
                 </td>
               </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
+            </AdminDataTable>
+          </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={1} />
+        </>
+      ) : null}
+      {operations.blockers.length ? (
+        <>
+          <AdminTableScroll>
+            <AdminDataTable
+              className={partnerDetailReviewTableClassName}
+              emptyMessage={<PartnerPayoutTableEmptyState message="No payout blockers." />}
+              headers={payoutBlockerHeaders}
+              rowCount={operations.blockers.length}
+            >
+              {operations.blockers.map((blocker) => (
+                <tr key={blocker}>
+                  <td>
+                    <span className="pill pill-warn">GATE</span>
+                    <p>
+                      <strong>Payout blocker</strong>
+                    </p>
+                  </td>
+                  <td>
+                    <p className="muted">{blocker}</p>
+                  </td>
+                  <td>
+                    <span className="muted">Resolve</span>
+                  </td>
+                </tr>
+              ))}
+            </AdminDataTable>
+          </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={operations.blockers.length} />
+        </>
       ) : null}
       <div className="detail-grid admin-mt-16">
         <div>
@@ -160,6 +173,7 @@ export function PartnerDetailPayoutOperationsSection({
           </div>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={
                 <PartnerPayoutTableEmptyState message="No earnings yet. Payout eligibility starts after the first completed service." />
               }
@@ -204,6 +218,7 @@ export function PartnerDetailPayoutOperationsSection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={earningsRows.length} />
         </div>
         <div>
           <div className="ops-section-header">
@@ -214,6 +229,7 @@ export function PartnerDetailPayoutOperationsSection({
           </div>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={
                 <PartnerPayoutTableEmptyState message="No payout batch has been created for this partner yet." />
               }
@@ -241,9 +257,10 @@ export function PartnerDetailPayoutOperationsSection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={payoutBatchRows.length} />
         </div>
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 
@@ -262,6 +279,12 @@ function payoutBatchPill(status: string) {
     return 'pill-danger';
   }
   return 'pill-warn';
+}
+
+function payoutOperationsStatusTone(tone: PartnerPayoutOperationsTone): StatusBadgeTone {
+  if (tone === 'done') return 'success';
+  if (tone === 'blocked') return 'danger';
+  return 'warning';
 }
 
 function PartnerPayoutTableEmptyState({ message }: { readonly message: string }) {
