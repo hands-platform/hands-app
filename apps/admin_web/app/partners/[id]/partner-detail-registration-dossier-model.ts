@@ -1,0 +1,239 @@
+import { providerDocumentLabel } from '../../../lib/admin-api';
+import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../../lib/operations-policy';
+import { jsonStringList } from './partner-detail-format';
+
+type PartnerRegistrationDossierProvider = {
+  readonly activityNickname?: string | null;
+  readonly agreements?: readonly unknown[] | null;
+  readonly bankAccounts?: readonly { readonly status: string }[] | null;
+  readonly bio?: string | null;
+  readonly blockedAt?: string | null;
+  readonly city?: string | null;
+  readonly currentLat?: number | string | null;
+  readonly currentLng?: number | string | null;
+  readonly dateOfBirth?: string | null;
+  readonly devices?: readonly { readonly blockedAt?: string | null }[] | null;
+  readonly displayName?: string | null;
+  readonly documents?: readonly { readonly status: string; readonly type: string }[] | null;
+  readonly earnings?: readonly { readonly status: string }[] | null;
+  readonly experienceYears?: number | null;
+  readonly gender?: string | null;
+  readonly kyc?: { readonly status?: string | null } | null;
+  readonly languages?: unknown;
+  readonly legalName?: string | null;
+  readonly residentialAddress?: string | null;
+  readonly serviceArea?: unknown;
+  readonly serviceStyle?: string | null;
+  readonly sessions?: readonly { readonly suspicious: boolean }[] | null;
+  readonly specialties?: unknown;
+  readonly taxProfile?: { readonly status?: string | null } | null;
+  readonly user?: { readonly phone?: string | null } | null;
+};
+
+export type PartnerRegistrationDossierItem = {
+  readonly detail: string;
+  readonly label: string;
+  readonly ok: boolean;
+  readonly operatorAction: string;
+  readonly status: string;
+};
+
+export type PartnerRegistrationDossier = {
+  readonly blockers: number;
+  readonly items: PartnerRegistrationDossierItem[];
+  readonly ready: boolean;
+};
+
+export function buildProviderRegistrationDossier(
+  provider: PartnerRegistrationDossierProvider,
+): PartnerRegistrationDossier {
+  const specialties = jsonStringList(provider.specialties);
+  const languages = jsonStringList(provider.languages);
+  const hasProfileQuality =
+    (provider.experienceYears ?? 0) > 0 &&
+    specialties.length > 0 &&
+    languages.length > 0 &&
+    Boolean(provider.serviceStyle?.trim());
+  const profileComplete = Boolean(
+    provider.legalName?.trim() &&
+      provider.dateOfBirth &&
+      provider.gender?.trim() &&
+      provider.user?.phone?.trim() &&
+      provider.displayName?.trim(),
+  );
+  const publicProfileComplete = Boolean(
+    provider.activityNickname?.trim() ||
+      (provider.bio?.trim() &&
+        (provider.documents ?? []).some((document) => document.type === 'PROFILE_PHOTO')) ||
+      hasProfileQuality,
+  );
+  const addressComplete = Boolean(provider.residentialAddress?.trim() && provider.city?.trim());
+  const hasFirstRevenue = partnerHasFirstRevenueSignal(provider);
+  const serviceAreaComplete =
+    Boolean(provider.serviceArea) || Boolean(provider.currentLat && provider.currentLng);
+  const identityComplete =
+    provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
+  const bankComplete = hasApprovedBankAccount(provider);
+  const taxDeferredOrComplete = !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
+  const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
+  const securityClear =
+    !provider.blockedAt &&
+    !(provider.devices ?? []).some((device) => device.blockedAt) &&
+    !(provider.sessions ?? []).some((session) => session.suspicious);
+
+  const items: PartnerRegistrationDossierItem[] = [
+    {
+      label: 'Basic identity',
+      ok: profileComplete,
+      status: profileComplete ? 'READY' : 'MISSING',
+      detail: profileComplete
+        ? 'Legal name, date of birth, gender, phone, and display name are present.'
+        : 'Real name, date of birth, gender, phone, and public display name should be collected before approval.',
+      operatorAction: profileComplete
+        ? 'Continue KYC and public profile review.'
+        : 'Ask partner to complete basic profile fields in the Partner app.',
+    },
+    {
+      label: 'Public working profile',
+      ok: publicProfileComplete,
+      status: publicProfileComplete ? 'READY' : 'DRAFT',
+      detail: publicProfileComplete
+        ? `Partner has public-facing profile material for customer review. Quality fields: ${
+            hasProfileQuality
+              ? `${provider.experienceYears} year(s), ${specialties.length} specialty, ${languages.length} language.`
+              : 'partial quality profile.'
+          }`
+        : 'Activity nickname, introduction, profile photo, and work photos should be reviewed before customer launch.',
+      operatorAction: publicProfileComplete
+        ? 'Check whether photos, service style, specialties, and bio are suitable for the HANDS customer app.'
+        : 'Keep as draft until public profile content is ready.',
+    },
+    {
+      label: 'Address and service area',
+      ok: serviceAreaComplete && (!hasFirstRevenue || addressComplete),
+      status: serviceAreaComplete && (!hasFirstRevenue || addressComplete) ? 'READY' : 'MISSING',
+      detail:
+        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
+          ? hasFirstRevenue
+            ? 'Residential/tax address, city, and service area/location data are available.'
+            : 'Service area/location data is available. Residential tax address can stay deferred until first earning.'
+          : hasFirstRevenue
+            ? 'Residential/tax address, service city, GPS location, or service area still needs confirmation.'
+            : 'GPS location or service area still needs confirmation before dispatch.',
+      operatorAction:
+        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
+          ? 'Use location freshness before dispatching.'
+          : hasFirstRevenue
+            ? 'Ask partner to complete tax address and open the app for location sync.'
+            : 'Ask partner to open the app for location sync.',
+    },
+    {
+      label: 'KYC evidence',
+      ok: identityComplete,
+      status: identityComplete ? 'APPROVED' : (provider.kyc?.status ?? 'DRAFT'),
+      detail: identityComplete
+        ? 'CCCD/CMND and selfie evidence are approved.'
+        : `KYC requires approved CCCD front/back and selfie. Missing: ${
+            missingApprovedRequiredKycDocuments(provider).map(providerDocumentLabel).join(', ') ||
+            'KYC decision'
+          }.`,
+      operatorAction: identityComplete
+        ? 'Identity gate is clear.'
+        : 'Review typed documents first, then approve or reject KYC.',
+    },
+    {
+      label: 'Bank and payout account',
+      ok: bankComplete,
+      status: bankAccountStatusLabel(provider),
+      detail: bankComplete
+        ? 'An approved bank account is available for future payouts.'
+        : 'Bank name, masked account number, account holder, and QR evidence should be approved before withdrawal.',
+      operatorAction: bankComplete
+        ? 'No bank action unless partner changes account.'
+        : 'Approve or reject the submitted bank account with a clear reason.',
+    },
+    {
+      label: 'Freelancer tax profile',
+      ok: taxDeferredOrComplete,
+      status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
+      detail: taxDeferredOrComplete
+        ? hasFirstRevenue
+          ? 'Tax profile is approved after partner earned revenue.'
+          : 'Tax collection is intentionally deferred until first earning.'
+        : 'Partner has earning history, so tax profile must be approved before payout.',
+      operatorAction: taxDeferredOrComplete
+        ? 'Follow the staged UX: do not force tax fields before first earning.'
+        : 'Request MST/tax code, legal name, and registered address before withdrawal.',
+    },
+    {
+      label: 'Legal agreements',
+      ok: agreementsDeferredOrComplete,
+      status:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'READY'
+          : hasFirstRevenue
+            ? `${provider.agreements?.length ?? 0}/5`
+            : 'DEFERRED',
+      detail:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
+          : hasFirstRevenue
+            ? 'Partner has first earning and must accept service, privacy, location, payout, and tax policy versions.'
+            : 'Payout and tax agreement collection is intentionally deferred until first earning.',
+      operatorAction:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'Keep agreement versions visible for audit.'
+          : hasFirstRevenue
+            ? 'Show agreement completion flow before payout-level access.'
+            : 'Do not force payout/tax agreements during initial signup.',
+    },
+    {
+      label: 'Device and session',
+      ok: securityClear,
+      status: securityClear ? 'CLEAR' : 'CHECK',
+      detail: securityClear
+        ? 'No account block, blocked partner device, or session check is active.'
+        : 'A block, device issue, or session check needs admin review.',
+      operatorAction: securityClear
+        ? 'Continue normal monitoring.'
+        : 'Review device/session section and reports desk before approval or payout.',
+    },
+  ];
+
+  return {
+    items,
+    blockers: items.filter((item) => !item.ok).length,
+    ready: items.every((item) => item.ok),
+  };
+}
+
+function approvedBankAccount(provider: PartnerRegistrationDossierProvider) {
+  return (provider.bankAccounts ?? []).find((bankAccount) => bankAccount.status === 'APPROVED') ?? null;
+}
+
+function hasApprovedBankAccount(provider: PartnerRegistrationDossierProvider) {
+  return Boolean(approvedBankAccount(provider));
+}
+
+function bankAccountStatusLabel(provider: PartnerRegistrationDossierProvider) {
+  return approvedBankAccount(provider)?.status ?? provider.bankAccounts?.[0]?.status ?? 'MISSING';
+}
+
+function hasApprovedRequiredKycDocuments(provider: PartnerRegistrationDossierProvider) {
+  return missingApprovedRequiredKycDocuments(provider).length === 0;
+}
+
+function missingApprovedRequiredKycDocuments(provider: PartnerRegistrationDossierProvider) {
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
+}
+
+function partnerHasFirstRevenueSignal(provider: PartnerRegistrationDossierProvider) {
+  return (provider.earnings ?? []).some((earning) =>
+    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
+  );
+}
