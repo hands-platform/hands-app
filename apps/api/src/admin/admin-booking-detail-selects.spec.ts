@@ -1,4 +1,8 @@
-import { adminBookingDetailSelect, adminPaymentDetailSelect } from './admin-booking-detail-selects';
+import {
+  ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,
+  adminBookingDetailSelect,
+  adminPaymentDetailSelect,
+} from './admin-booking-detail-selects';
 import { adminBookingDetailProviderSelect } from './admin-provider-profile-selects';
 
 describe('admin booking detail selects', () => {
@@ -13,12 +17,12 @@ describe('admin booking detail selects', () => {
     });
   });
 
-  it('keeps booking detail chat transcript complete for admin review', () => {
+  it('keeps booking detail chat transcript capped for initial admin review', () => {
     expect(adminBookingDetailSelect.chatRoom.select.messages).toMatchObject({
       orderBy: { createdAt: 'desc' },
+      take: ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT,
       select: expect.any(Object),
     });
-    expect(adminBookingDetailSelect.chatRoom.select.messages).not.toHaveProperty('take');
   });
 
   it('keeps payment detail attached to booking detail and refunds', () => {
