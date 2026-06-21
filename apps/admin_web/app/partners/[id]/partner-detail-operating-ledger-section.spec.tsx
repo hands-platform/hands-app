@@ -24,8 +24,15 @@ describe('PartnerDetailOperatingLedgerSection', () => {
       expect.arrayContaining(['/partners/partner-1?section=full#partner-master-facts']),
     );
     expect(classNamesIn(section)).toEqual(
-      expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table', 'text-link']),
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'text-link',
+      ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 });
 

@@ -1,7 +1,13 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import type { PartnerOperatingLedgerRow } from './partner-detail-operating-ledger-model';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 type PartnerDetailOperatingLedgerSectionProps = {
   readonly rows: readonly PartnerOperatingLedgerRow[];
@@ -11,19 +17,20 @@ const PARTNER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] 
 
 export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOperatingLedgerSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-operating-ledger">
-      <div className="ops-section-header">
-        <div>
-          <h2>Partner operating ledger</h2>
-          <p className="muted">
-            Compact factual ledger for identity, booking work, chat archive, service pricing, wallet,
-            payout, tax, location, device, and audit evidence.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} record areas</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Compact factual ledger for identity, booking work, chat archive, service pricing, wallet, payout, tax, location, device, and audit evidence."
+      id="partner-operating-ledger"
+      resultLabel={`${rows.length} record areas`}
+      title="Partner operating ledger"
+    >
       <AdminTableScroll>
-        <AdminDataTable emptyMessage={null} headers={PARTNER_OPERATING_LEDGER_HEADERS} rowCount={rows.length}>
+        <AdminDataTable
+          className={partnerDetailReviewTableClassName}
+          emptyMessage={null}
+          headers={PARTNER_OPERATING_LEDGER_HEADERS}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
             <tr key={row.area}>
               <td>{row.area}</td>
@@ -38,6 +45,7 @@ export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOpera
           ))}
         </AdminDataTable>
       </AdminTableScroll>
-    </div>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
+    </AdminFilterPanel>
   );
 }

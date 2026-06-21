@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerBookingOpsLedgerRow = {
   id: string;
@@ -36,19 +42,20 @@ export function PartnerDetailBookingOpsLedgerSection({
   statusPillClass,
 }: PartnerDetailBookingOpsLedgerSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-booking-ops-ledger">
-      <div className="ops-section-header">
-        <div>
-          <h2>Booking operations note ledger</h2>
-          <p className="muted">
-            Booking-level notes, manual closeout context, and staff tasks linked to this partner. This is
-            factual operator history only for follow-up, settlement, and evidence review.
-          </p>
-        </div>
-        <span className="pill pill-info">{rows.length} booking note row(s)</span>
-      </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Booking-level notes, manual closeout context, and staff tasks linked to this partner. This is factual operator history only for follow-up, settlement, and evidence review."
+      id="partner-booking-ops-ledger"
+      resultLabel={`${rows.length} booking note row(s)`}
+      title="Booking operations note ledger"
+    >
       <AdminTableScroll>
-        <AdminDataTable emptyMessage={null} headers={PARTNER_BOOKING_OPS_LEDGER_HEADERS} rowCount={rows.length}>
+        <AdminDataTable
+          className={partnerDetailReviewTableClassName}
+          emptyMessage={null}
+          headers={PARTNER_BOOKING_OPS_LEDGER_HEADERS}
+          rowCount={rows.length}
+        >
           {rows.map((row) => (
             <tr key={`${row.id}-${row.relation}`}>
               <td>
@@ -83,11 +90,12 @@ export function PartnerDetailBookingOpsLedgerSection({
           ))}
         </AdminDataTable>
       </AdminTableScroll>
+      <PartnerDetailVuexyTableFooter rowCount={rows.length} />
       {rows.length === 0 ? (
         <p className="muted admin-mt-12">
           No booking-level operation notes or staff tasks matched this partner date filter.
         </p>
       ) : null}
-    </div>
+    </AdminFilterPanel>
   );
 }

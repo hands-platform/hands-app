@@ -33,12 +33,15 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['/bookings/BK-1001', '/chat-archive?q=BK-1001']));
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'text-link admin-ml-10',
         'pill pill-success',
       ]),
     );
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders the existing empty message outside the table', () => {
@@ -53,6 +56,14 @@ describe('PartnerDetailBookingOpsLedgerSection', () => {
     expect(rendered).toContain(
       'No booking-level operation notes or staff tasks matched this partner date filter.',
     );
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 
