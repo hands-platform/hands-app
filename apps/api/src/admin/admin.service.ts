@@ -104,12 +104,14 @@ import {
 import {
   ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
   ADMIN_PROVIDER_CONTROL_LIST_LIMIT,
+  ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT,
   ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT,
   ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
   ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT,
   ADMIN_PROVIDER_OPERATIONS_POLICY_LIST_LIMIT,
   adminProviderControlSelect,
   adminProviderDetailSelect,
+  adminProviderDirectorySelect,
   adminProviderFileReviewSelect,
   adminProviderFileReviewWhere,
   adminProviderListSelect,
@@ -388,6 +390,36 @@ export class AdminService {
       orderBy: { id: 'desc' },
       take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
       select: adminProviderListSelect,
+    });
+
+    if (providers.length === 0) {
+      return providers;
+    }
+
+    const providerIds = providers.map((provider) => provider.id);
+    const [bookingSummaries, activitySummaries, { logsByTarget, countByTarget }] = await Promise.all([
+      this.getProviderListBookingSummaries(providerIds),
+      this.getProviderListActivitySummaries(providerIds),
+      this.getAuditLogSummaryByTargets(
+        providerIds.map((providerId) => `provider:${providerId}`),
+        ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+      ),
+    ]);
+
+    return providers.map((provider) => ({
+      ...provider,
+      bookingSummary: bookingSummaries.get(provider.id) ?? emptyProviderBookingSummary(),
+      activitySummary: activitySummaries.get(provider.id) ?? emptyProviderActivitySummary(),
+      auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
+      auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
+    }));
+  }
+
+  async listPartnerDirectoryProviders() {
+    const providers = await this.prisma.providerProfile.findMany({
+      orderBy: { id: 'desc' },
+      take: ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT,
+      select: adminProviderDirectorySelect,
     });
 
     if (providers.length === 0) {

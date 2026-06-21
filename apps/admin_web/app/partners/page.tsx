@@ -116,7 +116,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const params = searchParams ? await searchParams : {};
   const filters = buildProviderFilters(params);
   const [rawProviders, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
+    adminGet<AdminProvider[]>('/admin/partners/list-providers', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);

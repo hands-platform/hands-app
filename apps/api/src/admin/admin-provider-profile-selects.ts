@@ -41,6 +41,7 @@ import {
 import { adminPushDeviceSummarySelect, adminUserSummarySelect } from './admin-user-selects';
 
 export const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
+export const ADMIN_PROVIDER_DIRECTORY_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_FILE_REVIEW_LIST_LIMIT = 500;
 export const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
 export const ADMIN_PROVIDER_OPERATIONS_HANDOFF_LIST_LIMIT = 500;
@@ -547,6 +548,80 @@ export const adminProviderListSelect = {
     orderBy: { createdAt: 'desc' },
     take: ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT,
     select: adminProviderListEarningSelect,
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderListSessionSelect,
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderListDeviceSelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
+export const adminProviderDirectorySelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  legalName: true,
+  dateOfBirth: true,
+  gender: true,
+  facebookId: true,
+  activityNickname: true,
+  bio: true,
+  experienceYears: true,
+  specialties: true,
+  languages: true,
+  serviceStyle: true,
+  residentialAddress: true,
+  city: true,
+  serviceArea: true,
+  level: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  nextAvailableAt: true,
+  blockedAt: true,
+  blockedReason: true,
+  trustedAt: true,
+  deletedAt: true,
+  updatedAt: true,
+  user: { select: adminProviderListUserSelect },
+  verification: { select: adminProviderListVerificationSelect },
+  kyc: { select: adminProviderKycSummarySelect },
+  documents: {
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+    select: adminProviderListDocumentSelect,
+  },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: 3,
+    select: adminProviderListBankAccountSelect,
+  },
+  taxProfile: { select: adminProviderTaxProfileSummarySelect },
+  reports: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderListReportSelect,
+  },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderListSanctionSelect,
+  },
+  agreements: {
+    orderBy: { acceptedAt: 'desc' },
+    take: 5,
+    select: adminProviderAgreementSummarySelect,
+  },
+  services: {
+    select: adminProviderListServiceSelect,
   },
   sessions: {
     orderBy: { lastSeenAt: 'desc' },

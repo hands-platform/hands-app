@@ -12,6 +12,7 @@ describe('AdminController notification and push actions', () => {
     listOperationsHandoffProviders: jest.fn(),
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
+    listPartnerDirectoryProviders: jest.fn(),
     retryNotification: jest.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
@@ -97,6 +98,18 @@ describe('AdminController notification and push actions', () => {
       path: 'partner-controls/providers',
     });
     expect(admin.listPartnerControlProviders).toHaveBeenCalledWith();
+  });
+
+  it('exposes partner directory providers as a lightweight GET list', async () => {
+    admin.listPartnerDirectoryProviders.mockResolvedValue([{ id: 'partner-1' }]);
+
+    await expect(controller.partnerDirectoryProviders()).resolves.toEqual([{ id: 'partner-1' }]);
+
+    expect(routeMetadata('partnerDirectoryProviders')).toEqual({
+      method: RequestMethod.GET,
+      path: 'partners/list-providers',
+    });
+    expect(admin.listPartnerDirectoryProviders).toHaveBeenCalledWith();
   });
 });
 

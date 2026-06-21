@@ -89,6 +89,11 @@ export class AdminController {
     return this.admin.listPartnerControlProviders();
   }
 
+  @Get('partners/list-providers')
+  partnerDirectoryProviders() {
+    return this.admin.listPartnerDirectoryProviders();
+  }
+
   @Get(['providers/:id/overview', 'partners/:id/overview'])
   providerOverview(@Param('id') providerProfileId: string) {
     return this.admin.getProviderOverview(providerProfileId);

@@ -584,6 +584,83 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('lists partner directory providers without loading per-booking or earning rows', async () => {
+    const latestBookingAt = new Date('2026-06-20T12:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'provider-1', displayName: 'Directory Partner' }]),
+      },
+      providerEarning: {
+        groupBy: jest
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            {
+              providerProfileId: 'provider-1',
+              _sum: { netAmount: -80000 },
+            },
+          ])
+          .mockResolvedValueOnce([]),
+      },
+      adminAuditLog: {
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            providerId: 'provider-1',
+            activeBookingCount: 2,
+            adminClosedBookingCount: 0,
+            bookingCount: 7,
+            chatMissingCount: 0,
+            chatRoomCount: 2,
+            closedBookingCount: 1,
+            completedBookingCount: 3,
+            customerClosedBookingCount: 0,
+            latestBookingAt,
+            matchingBookingCount: 1,
+            noShowBookingCount: 0,
+            participatingBookingCount: 2,
+            partnerClosedBookingCount: 1,
+            preferredBookingCount: 1,
+            selectedBookingCount: 2,
+            workingBookingCount: 1,
+          },
+        ])
+        .mockResolvedValueOnce([]),
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listPartnerDirectoryProviders()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'provider-1',
+        activitySummary: expect.objectContaining({ walletBalance: -80000 }),
+        bookingSummary: expect.objectContaining({
+          bookingCount: 7,
+          latestBookingAt,
+          preferredBookingCount: 1,
+        }),
+      }),
+    ]);
+
+    const query = prisma.providerProfile.findMany.mock.calls[0][0];
+    const select = query.select;
+    expect(query).toEqual(expect.objectContaining({ take: 500 }));
+    expect(select.preferredBookings).toBeUndefined();
+    expect(select.selectedBookings).toBeUndefined();
+    expect(select.participants).toBeUndefined();
+    expect(select.earnings).toBeUndefined();
+    expect(select.services).toBeDefined();
+    expect(select.documents).toBeDefined();
+    expect(select.user.select.fileAssets).toBeDefined();
+    expect(select.user.select.pushDevices.take).toBe(2);
+    expect(select.sessions.take).toBe(3);
+    expect(select.devices.take).toBe(3);
+  });
+
   it('lists file review providers without loading full partner operations payload', async () => {
     const prisma = {
       providerProfile: {
