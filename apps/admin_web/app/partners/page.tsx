@@ -1,14 +1,8 @@
 import Link from 'next/link';
-import { ArrowRight, Download, Filter, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import { adminGet } from '../../lib/admin-api';
 import { ConfirmDialog } from '../../components/confirm-dialog';
-import {
-  AdminFormControlButton,
-  AdminFormControlLink,
-  AdminFormSearch,
-  AdminFormSelect,
-} from '../../components/admin-form-controls';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -57,6 +51,7 @@ import { PartnerShiftHandoffSection } from './partner-shift-handoff-section';
 import { PartnerLegacyOperationsTableSection } from './partner-legacy-operations-table-section';
 import { buildPartnerOperationRow } from './partner-operation-row';
 import { buildPartnerExportRows, PARTNER_EXPORT_COLUMNS } from './partner-export-rows';
+import { PartnerFilterBoard } from './partner-filter-board';
 import { PartnerMasterListSection } from './partner-master-list-section';
 import { PartnerOperationsListSection } from './partner-operations-list-section';
 import { buildPartnerMasterRow } from './partner-master-row';
@@ -267,226 +262,16 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       ) : null}
       <h1>Partners</h1>
       <PartnerPrimaryListTabs activeMode={primaryPartnerListMode} />
-      <div className="card admin-mb-16 partner-filter-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Partner filters</h2>
-            <p className="muted">
-              Start with approval, app state, KYC, readiness, and sort. Open advanced filters only for
-              location, device, booking-flow, or review-lane work.
-            </p>
-          </div>
-          <span className="pill pill-info">{providers.length} matching</span>
-        </div>
-        <form className="form-grid" action="/partners">
-          <AdminFormSearch
-            className="partner-filter-search"
-            defaultValue={filters.q}
-            label="Search"
-            name="q"
-            placeholder="Name, phone, city, partner id"
-          />
-          <AdminFormSelect
-            className="partner-filter-select"
-            defaultValue={filters.verification}
-            label="Verification"
-            name="verification"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Approved', value: 'APPROVED' },
-              { label: 'Submitted', value: 'SUBMITTED' },
-              { label: 'Pending', value: 'PENDING' },
-              { label: 'Rejected', value: 'REJECTED' },
-              { label: 'Blocked', value: 'BLOCKED' },
-            ]}
-          />
-          <AdminFormSelect
-            className="partner-filter-select"
-            defaultValue={filters.providerStatus}
-            label="Partner status"
-            name="providerStatus"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Online available', value: 'ONLINE_AVAILABLE' },
-              { label: 'Online busy', value: 'ONLINE_BUSY' },
-              { label: 'Available soon', value: 'ONLINE_AVAILABLE_SOON' },
-              { label: 'Offline', value: 'OFFLINE' },
-            ]}
-          />
-          <AdminFormSelect
-            className="partner-filter-select"
-            defaultValue={filters.kyc}
-            label="KYC"
-            name="kyc"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Approved', value: 'APPROVED' },
-              { label: 'Pending', value: 'PENDING' },
-              { label: 'Rejected', value: 'REJECTED' },
-              { label: 'Draft', value: 'DRAFT' },
-              { label: 'Missing', value: 'MISSING' },
-            ]}
-          />
-          <AdminFormSelect
-            className="partner-filter-select"
-            defaultValue={filters.readiness}
-            label="Readiness"
-            name="readiness"
-            options={[
-              { label: 'All', value: '' },
-              { label: 'Ready for dispatch', value: 'ready' },
-              { label: 'Needs review', value: 'needs-review' },
-              { label: 'Approved but offline', value: 'approved-offline' },
-              { label: 'Push missing', value: 'push-missing' },
-            ]}
-          />
-          <AdminFormSelect
-            className="partner-filter-select"
-            defaultValue={filters.sort}
-            label="Sort"
-            name="sort"
-            options={[
-              { label: 'Checklist order', value: 'ops-priority' },
-              { label: 'Last completed work', value: 'last-work' },
-              { label: 'Booking count', value: 'booking-count' },
-              { label: 'Completed work count', value: 'completed-count' },
-              { label: 'Gross revenue', value: 'gross-revenue' },
-              { label: 'Pending payout', value: 'pending-payout' },
-              { label: 'Available payout', value: 'available-payout' },
-              { label: 'Last app activity', value: 'last-activity' },
-              { label: 'Location freshness', value: 'location-freshness' },
-              { label: 'Wallet debt first', value: 'wallet-debt' },
-              { label: 'Name', value: 'name' },
-            ]}
-          />
-          <details className="partner-advanced-filter-group full-span" open={showAdvancedPartnerFilters}>
-            <summary>
-              <span>Advanced ops filters</span>
-              <small>Location, device/session, booking flow, and review lane</small>
-            </summary>
-            <div className="partner-advanced-filter-grid">
-              <AdminFormSelect
-                className="partner-filter-select"
-                defaultValue={filters.location}
-                label="Location"
-                name="location"
-                options={[
-                  { label: 'All locations', value: '' },
-                  { label: 'Recent', value: 'recent' },
-                  { label: 'Stale', value: 'stale' },
-                  { label: 'Expired', value: 'expired' },
-                  { label: 'Missing', value: 'missing' },
-                ]}
-              />
-              <AdminFormSelect
-                className="partner-filter-select"
-                defaultValue={filters.security}
-                label="Device/session"
-                name="security"
-                options={[
-                  { label: 'All devices', value: '' },
-                  { label: 'Account blocked', value: 'account-blocked' },
-                  { label: 'Blocked device', value: 'blocked' },
-                  { label: 'Session check', value: 'session-check' },
-                  { label: 'Shared device', value: 'shared' },
-                  { label: 'No app device', value: 'missing' },
-                  { label: 'Clear', value: 'clear' },
-                ]}
-              />
-              <AdminFormSelect
-                className="partner-filter-select"
-                defaultValue={filters.bookingFlow}
-                label="Booking flow"
-                name="bookingFlow"
-                options={[
-                  { label: 'All booking flows', value: '' },
-                  { label: 'Has active booking', value: 'active-booking' },
-                  { label: 'First-pick booking', value: 'first-pick' },
-                  { label: 'Marketplace participant', value: 'marketplace-joined' },
-                  { label: 'Customer final choice', value: 'final-partner' },
-                  { label: 'Chat room opened', value: 'chat-live' },
-                  { label: 'Matched but chat missing', value: 'chat-missing' },
-                  { label: 'Completed work', value: 'completed-work' },
-                  { label: 'No completed work', value: 'no-work' },
-                ]}
-              />
-              <AdminFormSelect
-                className="partner-filter-select"
-                defaultValue={filters.review}
-                label="Review queue"
-                name="review"
-                options={[
-                  { label: 'All review lanes', value: '' },
-                  { label: 'Unapproved Partners', value: 'unapproved' },
-                  { label: 'Unsettled Partners', value: 'unsettled' },
-                  { label: 'KYC updates', value: 'kyc' },
-                  { label: 'Document review', value: 'documents' },
-                  { label: 'Public media review', value: 'public-media' },
-                  { label: 'Bank payout review', value: 'bank' },
-                  { label: 'First earning payout setup', value: 'payout-setup' },
-                  { label: 'Cash fee debt', value: 'cash-debt' },
-                  { label: 'Tax profile review', value: 'tax' },
-                  { label: 'Device/session check', value: 'security' },
-                  { label: 'Reports/controls', value: 'reports' },
-                  { label: 'Account blocks', value: 'blocked' },
-                  { label: 'Location freshness', value: 'location' },
-                  { label: 'Push alert readiness', value: 'push' },
-                  { label: 'Direct request held', value: 'acceptance-blocked' },
-                  { label: 'Direct request ready', value: 'direct-ready' },
-                  { label: 'Marketplace ready', value: 'marketplace-ready' },
-                  { label: 'Marketplace repair', value: 'marketplace-blocked' },
-                ]}
-              />
-            </div>
-          </details>
-          <div className="actions full-span">
-            <AdminFormControlButton className="partner-filter-button">
-              <Filter aria-hidden="true" size={16} />
-              Apply filters
-            </AdminFormControlButton>
-            <AdminFormControlLink className="partner-filter-link" href="/partners">
-              <X aria-hidden="true" size={16} />
-              Clear filters
-            </AdminFormControlLink>
-            <AdminFormControlLink
-              className="partner-filter-link"
-              download={`hands-partners-${partnerExportFileSlug}.csv`}
-              href={partnerListCsvHref}
-            >
-              <Download aria-hidden="true" size={16} />
-              Export visible CSV
-            </AdminFormControlLink>
-            <span className="muted">
-              Showing {visibleProviders.length} of {providers.length} matching partners
-              {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
-            </span>
-            <AdminFormControlLink className="partner-filter-link" href="/operations-policy">
-              <SlidersHorizontal aria-hidden="true" size={16} />
-              Location freshness: {opsPolicy.staleLocationMinutes}m
-            </AdminFormControlLink>
-          </div>
-          {activeFilters.length > 0 ? (
-            <div className="full-span">
-              <div className="participant-list">
-                <span className="pill pill-info">Active filters</span>
-                {activeFilters.map((filter) => (
-                  <span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>
-                    {filter.label}
-                  </span>
-                ))}
-              </div>
-              <p className="muted admin-mt-8">
-                {activeFilters.map((filter) => filter.description).join(' ')}
-              </p>
-            </div>
-          ) : (
-            <p className="muted full-span">
-              No partner filter is active. Showing the first {PROVIDER_LIST_RENDER_LIMIT} rows from the
-              operator queue for faster loading.
-            </p>
-          )}
-        </form>
-      </div>
+      <PartnerFilterBoard
+        activeFilters={activeFilters}
+        csvDownloadName={`hands-partners-${partnerExportFileSlug}.csv`}
+        csvHref={partnerListCsvHref}
+        filteredCount={visibleProviders.length}
+        filters={filters}
+        locationFreshnessLabel={`Location freshness: ${opsPolicy.staleLocationMinutes}m`}
+        showAdvancedFilters={showAdvancedPartnerFilters}
+        totalCount={providers.length}
+      />
       <section className="card admin-mb-16">
         <div className="ops-section-header">
           <div>
