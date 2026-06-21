@@ -69,11 +69,9 @@ import { PartnerOnboardingCell } from './partner-onboarding-cell';
 import { PartnerOpsReadinessCell } from './partner-ops-readiness-cell';
 import { providerDisplayName } from './partner-display';
 import {
-  partnerPrimaryListMode,
   shouldRenderPartnerDeepOpsSections,
   shouldRenderPartnerOperationsList,
 } from './partner-review-mode';
-import { PartnerPrimaryListTabs } from './partner-primary-list-tabs';
 import {
   buildPartnerChecklistLaneItems,
   buildPartnerPriorityLane as buildProviderPriorityLane,
@@ -153,7 +151,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     dispatchReady: providerDispatchReady,
   });
   const activeFilters = buildProviderActiveFilters(filters);
-  const primaryPartnerListMode = partnerPrimaryListMode(filters.review);
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
   const filterSummary = buildPartnerFilterSummary(
@@ -261,7 +258,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         />
       ) : null}
       <h1>Partners</h1>
-      <PartnerPrimaryListTabs activeMode={primaryPartnerListMode} />
       <PartnerFilterBoard
         activeFilters={activeFilters}
         csvDownloadName={`hands-partners-${partnerExportFileSlug}.csv`}
