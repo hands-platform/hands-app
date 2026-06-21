@@ -117,6 +117,29 @@ describe('booking acceptance matrix builder', () => {
     const alertCard = matrix.cards.find((card) => card.title === 'Partner alert delivery');
     expect(alertCard?.operatorAction).not.toContain('production SMS credentials');
   });
+
+  it('describes bank gaps as wallet review follow-up instead of paid work blocking', () => {
+    const matrix = buildBookingAcceptanceMatrix(
+      [
+        setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, 10),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 10000),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 30),
+        setting(OPERATIONAL_POLICY_KEYS.preferredAcceptMode, 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'),
+        setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'IMMEDIATE_WITHIN_WINDOW'),
+        setting(OPERATIONAL_POLICY_KEYS.partnerAlertChannel, 'IN_APP_ONLY'),
+        setting(OPERATIONAL_POLICY_KEYS.walletNegativeGate, 'BLOCK_MARKETPLACE_PARTICIPATION'),
+      ],
+      [provider({ bankAccounts: [] })],
+    );
+
+    expect(matrix.impact).toContainEqual(
+      expect.objectContaining({
+        helper: 'Bank details are reviewed when the Partner requests wallet withdrawal or deposit support.',
+        label: 'Bank review',
+        value: '1',
+      }),
+    );
+  });
 });
 
 function setting(key: string, value: string | number): AdminOperationalPolicySetting {

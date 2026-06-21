@@ -238,7 +238,7 @@ function buildPartnerAcceptancePolicyImpact(
   );
   const walletGateHeld = providers.filter((provider) => adminPartnerWalletBalance(provider) < 0);
   const identityBlocked = providers.filter((provider) => !adminPartnerIdentityReady(provider));
-  const bankBlocked = providers.filter((provider) => !adminPartnerBankReady(provider));
+  const bankReview = providers.filter((provider) => !adminPartnerBankReady(provider));
   const locationBlocked = providers.filter(
     (provider) => !adminPartnerLocationFresh(provider, policy.backupLocationFreshnessMinutes, Date.now()),
   );
@@ -265,8 +265,7 @@ function buildPartnerAcceptancePolicyImpact(
           adminPartnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }),
         )
         .length.toString(),
-      helper:
-        'Account controls, identity failure, missing approved bank, or negative wallet can hold marketplace alerts and participation.',
+      helper: 'Account controls, identity failure, or negative wallet can hold final matching controls.',
     },
     {
       label: 'Cash debt gate',
@@ -281,9 +280,9 @@ function buildPartnerAcceptancePolicyImpact(
       helper: 'Partner approval, KYC, and required CCCD/selfie documents are not all approved.',
     },
     {
-      label: 'Bank block',
-      value: bankBlocked.length.toString(),
-      helper: 'No approved bank account is available, so paid work acceptance should stay blocked.',
+      label: 'Bank review',
+      value: bankReview.length.toString(),
+      helper: 'Bank details are reviewed when the Partner requests wallet withdrawal or deposit support.',
     },
     {
       label: 'Location block',

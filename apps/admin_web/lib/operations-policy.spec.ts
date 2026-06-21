@@ -222,6 +222,34 @@ describe('admin live operations policy helpers', () => {
     expect(readiness.walletBalance).toBe(-120000);
   });
 
+  it('does not block Level 2 marketplace readiness just because bank details are missing', () => {
+    const readiness = buildAdminPartnerMarketplaceReadiness({
+      provider: {
+        status: 'ONLINE_AVAILABLE',
+        verification: { id: 'verification-1', status: 'APPROVED' },
+        kyc: { id: 'kyc-1', status: 'APPROVED' },
+        documents: [
+          { id: 'doc-1', type: 'CCCD_FRONT', status: 'APPROVED' },
+          { id: 'doc-2', type: 'CCCD_BACK', status: 'APPROVED' },
+          { id: 'doc-3', type: 'SELFIE', status: 'APPROVED' },
+        ],
+        bankAccounts: [],
+        earnings: [{ netAmount: 0 }],
+        currentLat: 10.7769,
+        currentLng: 106.7009,
+        currentLocationUpdatedAt: new Date().toISOString(),
+        user: { pushDevices: [{ id: 'push-1', platform: 'android', enabled: true }] },
+      },
+      freshnessMinutes: 30,
+      hardWalletBlock: true,
+    });
+
+    expect(readiness.bankReady).toBe(false);
+    expect(readiness.marketplaceBlocked).toBe(false);
+    expect(readiness.finalGateHeld).toBe(false);
+    expect(readiness.canCompleteFinalGate).toBe(true);
+  });
+
   it('separates account, identity, bank, location, and push readiness reasons', () => {
     const readiness = buildAdminPartnerMarketplaceReadiness({
       provider: {

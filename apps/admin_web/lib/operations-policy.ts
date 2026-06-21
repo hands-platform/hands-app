@@ -211,7 +211,6 @@ export function adminPartnerMarketplaceBlocked(
   return (
     adminPartnerAccountNeedsFollowUp(provider) ||
     !adminPartnerIdentityReady(provider) ||
-    !adminPartnerBankReady(provider) ||
     (policy.hardWalletBlock === true && adminPartnerWalletBalance(provider) < 0)
   );
 }
