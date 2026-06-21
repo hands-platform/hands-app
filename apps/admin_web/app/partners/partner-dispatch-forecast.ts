@@ -89,7 +89,7 @@ export function buildPartnerDispatchForecast(
         label: 'Online capacity',
         value: `${online}/${bookingBase}`,
         detail:
-          'Partners currently online versus the pool that has passed identity, bank, and control gates.',
+          'Partners currently online versus the pool that has passed identity and account gates.',
         tone: online > 0 ? 'info' : bookingBase > 0 ? 'warn' : 'danger',
         href: '/partners?providerStatus=ONLINE_AVAILABLE',
       },
@@ -97,7 +97,7 @@ export function buildPartnerDispatchForecast(
         label: 'Hard blockers',
         value: hardBlocked.toString(),
         detail:
-          'Identity, account, bank, or device/session blockers that should not be bypassed by dispatch.',
+          'Identity, account, or device/session blockers that should not be bypassed by dispatch.',
         tone: hardBlocked > 0 ? 'danger' : 'ok',
         href: hardBlocked > 0 ? '/partners?review=acceptance-blocked' : '/partners?review=security',
       },
@@ -133,9 +133,9 @@ export function buildPartnerDispatchForecast(
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },
       {
-        label: 'Payout/tax lock',
+        label: 'Wallet setup',
         count: payoutLocked,
-        detail: 'First-earning partners who still need tax, bank, address, or agreement completion.',
+        detail: 'First-earning partners who still need wallet withdrawal/deposit follow-up or agreement completion.',
         href: '/partners?review=payout-setup',
         tone: payoutLocked > 0 ? 'warn' : 'ok',
       },

@@ -14,6 +14,7 @@ describe('PartnerChecklistLaneSection', () => {
 
     expect(rendered).toContain('Partner checklist lane');
     expect(rendered).toContain('Suggested operator order for fixing factual blockers');
+    expect(rendered).not.toContain('bank, tax');
     expect(rendered).toContain('2 blocked');
     expect(rendered).toContain('Linh Wellness');
     expect(rendered).toContain('KYC status is PENDING.');

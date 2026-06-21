@@ -23,7 +23,7 @@ export function PartnerChecklistLaneSection({ blockedCount, items }: PartnerChec
   return (
     <section className="card admin-mb-16">
       <AdminSectionHeader
-        description="Suggested operator order for fixing factual blockers from profile, KYC, document, bank, tax, wallet, location, and push readiness."
+        description="Suggested operator order for fixing factual blockers from profile, KYC, required documents, public media, wallet settlement, location, and push readiness."
         status={
           <span className={`pill ${blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
             {blockedCount} blocked

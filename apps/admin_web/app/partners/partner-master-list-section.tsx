@@ -287,7 +287,7 @@ function buildPartnerMasterListSectionCopy(
   if (mode === 'unapproved') {
     return {
       description:
-        'Approval-first list for Partners who cannot operate yet because registration, KYC, documents, public media, bank, tax, device, or account-hold facts still need admin review.',
+        'Approval-first list for Partners who cannot operate yet because registration, KYC, required documents, public media, device, or account-hold facts still need admin review.',
       statusLabel: `${rowCount} approval row(s)`,
       title: 'Unapproved Partners',
     };

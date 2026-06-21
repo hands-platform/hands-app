@@ -34,10 +34,10 @@ export function partnerReviewModeContent(review: string): PartnerReviewModeConte
       description:
         'Partners in this view need admin approval before they become regular Partners or return from a hold.',
       detailFocus:
-        'Open the Partner detail page, review all registration, KYC, document, bank, tax, public media, device, and hold facts, then approve or hold with a clear correction reason.',
+        'Open the Partner detail page, review registration, KYC, required documents, public media, device, and hold facts, then approve or hold with a clear correction reason.',
       steps: [
         'Confirm the Partner profile, legal name, phone, gender, address, and app device facts.',
-        'Review KYC, required documents, public media, withdrawal bank account, legacy tax profile, and agreement status.',
+        'Review KYC, required documents, public media, wallet bank details, legacy tax records, and agreement status as finance follow-up; bank and tax are not Level 2 gates.',
         'Approve only when all required facts pass; otherwise place the Partner on hold with a reason the Partner app can show for correction.',
       ],
     };

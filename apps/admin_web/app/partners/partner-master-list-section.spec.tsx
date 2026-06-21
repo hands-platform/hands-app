@@ -71,6 +71,8 @@ describe('PartnerMasterListSection', () => {
 
     expect(rendered).toContain('Unapproved Partners');
     expect(rendered).toContain('Approval-first list for Partners who cannot operate yet');
+    expect(rendered).toContain('registration, KYC, required documents, public media, device, or account-hold facts');
+    expect(rendered).not.toContain('public media, bank, tax');
     expect(rendered).toContain('1 approval row(s)');
     expect(rendered).toContain('Approval needs');
     expect(rendered).toContain('KYC / Level');

@@ -50,6 +50,13 @@ describe('partner dispatch forecast', () => {
       ['Online capacity', '2/2'],
       ['Hard blockers', '1'],
     ]);
+    expect(forecast.totals.find((item) => item.label === 'Online capacity')?.detail).toContain(
+      'identity and account gates',
+    );
+    expect(forecast.totals.find((item) => item.label === 'Hard blockers')?.detail).not.toContain('bank');
+    expect(forecast.blockers.find((item) => item.label === 'Wallet setup')?.detail).toContain(
+      'withdrawal/deposit follow-up',
+    );
     expect(forecast.blockers.find((item) => item.label === 'Location refresh')).toMatchObject({
       count: 3,
       tone: 'warn',

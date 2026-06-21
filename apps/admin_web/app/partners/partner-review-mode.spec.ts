@@ -12,7 +12,11 @@ describe('partner review mode content', () => {
     expect(content?.title).toBe('Unapproved Partners');
     expect(content?.detailFocus).toContain('Partner detail page');
     expect(content?.detailFocus).toContain('approve or hold');
+    expect(content?.detailFocus).not.toContain('bank');
+    expect(content?.detailFocus).not.toContain('tax');
     expect(content?.steps.join(' ')).toContain('Partner app');
+    expect(content?.steps.join(' ')).toContain('wallet bank details');
+    expect(content?.steps.join(' ')).toContain('not Level 2 gates');
   });
 
   it('explains unsettled partner wallet settlement risk', () => {
