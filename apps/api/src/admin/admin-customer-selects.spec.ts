@@ -1,5 +1,9 @@
 import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
-import { adminCustomerDetailSelect, adminCustomerNotificationSelect } from './admin-customer-selects';
+import {
+  ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
+  adminCustomerDetailSelect,
+  adminCustomerNotificationSelect,
+} from './admin-customer-selects';
 
 describe('admin customer selects', () => {
   it('keeps customer notifications bounded with delivery context', () => {
@@ -19,6 +23,9 @@ describe('admin customer selects', () => {
     expect(adminCustomerDetailSelect.user.select.notifications).toMatchObject({
       take: 50,
       select: adminCustomerNotificationSelect,
+    });
+    expect(adminCustomerDetailSelect.user.select.pushDevices).toMatchObject({
+      take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
     });
     expect(adminCustomerDetailSelect.selectedLocations).toMatchObject({ take: 25 });
     expect(adminCustomerDetailSelect.bookings).toMatchObject({

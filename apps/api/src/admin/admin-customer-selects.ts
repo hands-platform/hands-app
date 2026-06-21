@@ -25,6 +25,8 @@ export const adminCustomerNotificationSelect = {
   },
 } satisfies Prisma.NotificationSelect;
 
+export const ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT = 10;
+
 export const adminCustomerDetailSelect = {
   id: true,
   userId: true,
@@ -39,6 +41,7 @@ export const adminCustomerDetailSelect = {
       },
       pushDevices: {
         orderBy: { updatedAt: 'desc' },
+        take: ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
         select: adminPushDeviceSummarySelect,
       },
       notifications: {
