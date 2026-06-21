@@ -132,6 +132,7 @@ export function partnerLastActivityAt(provider: AdminProvider) {
     provider.currentLocationUpdatedAt,
     provider.nextAvailableAt,
     provider.activitySummary?.lastCompletedWorkAt,
+    provider.bookingSummary?.latestBookingAt,
     ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
     ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
     ...(provider.user?.pushDevices ?? []).map((device) => device.createdAt),

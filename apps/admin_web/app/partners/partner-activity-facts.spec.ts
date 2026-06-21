@@ -221,4 +221,32 @@ describe('partner activity facts', () => {
     expect(partnerLastActivityAt(result)).toBe('2026-05-22T11:00:00.000Z');
     expect(partnerLastSessionAt(result)).toBe('2026-05-22T10:00:00.000Z');
   });
+
+  it('uses server booking summary latest activity when booking relation rows are capped', () => {
+    const result = partner({
+      bookingSummary: {
+        activeBookingCount: 1,
+        adminClosedBookingCount: 0,
+        bookingCount: 24,
+        chatMissingCount: 0,
+        chatRoomCount: 1,
+        closedBookingCount: 0,
+        completedBookingCount: 7,
+        customerClosedBookingCount: 0,
+        latestBookingAt: '2026-06-20T12:00:00.000Z',
+        matchingBookingCount: 0,
+        noShowBookingCount: 0,
+        participatingBookingCount: 8,
+        partnerClosedBookingCount: 0,
+        preferredBookingCount: 5,
+        selectedBookingCount: 7,
+        workingBookingCount: 1,
+      },
+      selectedBookings: [
+        booking({ id: 'capped-recent-row', updatedAt: '2026-06-01T12:00:00.000Z' }),
+      ],
+    });
+
+    expect(partnerLastActivityAt(result)).toBe('2026-06-20T12:00:00.000Z');
+  });
 });
