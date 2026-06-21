@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { ActionMenu } from '../../../components/action-menu';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -14,6 +15,11 @@ import {
   createProviderSanction,
   updateProviderReport,
 } from '../../partner-controls/actions';
+import {
+  PartnerDetailVuexyTableFooter,
+  partnerDetailReviewCardClassName,
+  partnerDetailReviewTableClassName,
+} from './partner-detail-vuexy-table';
 
 export type PartnerReportControlPayoutHold = {
   readonly idLabel: string;
@@ -65,19 +71,19 @@ export function PartnerDetailReportsControlsSection({
   reportsDeskHref,
 }: PartnerDetailReportsControlsSectionProps) {
   return (
-    <div className="card admin-mb-16">
-      <div className="ops-section-header">
-        <div>
-          <h2>Reports and account controls</h2>
-          <p className="muted">
-            Keep customer complaints, staff findings, payout holds, and account blocks visible on the
-            partner profile.
-          </p>
-        </div>
+    <AdminFilterPanel
+      className={`${partnerDetailReviewCardClassName} admin-mb-16`}
+      description="Keep customer complaints, staff findings, payout holds, and account blocks visible on the partner profile."
+      footer={
         <Link className="text-link" href={reportsDeskHref}>
           Open reports desk
         </Link>
-      </div>
+      }
+      id="partner-reports-controls"
+      resultLabel={`${reports.length} report(s)`}
+      resultTone={payoutHold ? 'danger' : 'info'}
+      title="Reports and account controls"
+    >
       <form className="form-grid admin-mb-16" action={createProviderReport}>
         <input type="hidden" name="providerProfileId" value={providerId} />
         <div className="field">
@@ -133,6 +139,7 @@ export function PartnerDetailReportsControlsSection({
         <div className="admin-mb-12">
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={<ReportsControlsEmptyState message="No active payout hold is currently applied." />}
               headers={payoutHoldTableHeaders}
               rowCount={payoutHold ? 1 : 0}
@@ -156,6 +163,7 @@ export function PartnerDetailReportsControlsSection({
               ) : null}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={payoutHold ? 1 : 0} />
         </div>
         <form className="form-grid" action={createProviderSanction}>
           <input type="hidden" name="providerProfileId" value={providerId} />
@@ -194,6 +202,7 @@ export function PartnerDetailReportsControlsSection({
           <h3>Recent reports</h3>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={<ReportsControlsEmptyState message="No Partner reports recorded yet." />}
               headers={reportTableHeaders}
               rowCount={reports.length}
@@ -275,11 +284,13 @@ export function PartnerDetailReportsControlsSection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={reports.length} />
         </div>
         <div>
           <h3>Recent account controls</h3>
           <AdminTableScroll>
             <AdminDataTable
+              className={partnerDetailReviewTableClassName}
               emptyMessage={
                 <ReportsControlsEmptyState message="No active or historical account control recorded yet." />
               }
@@ -323,9 +334,10 @@ export function PartnerDetailReportsControlsSection({
               ))}
             </AdminDataTable>
           </AdminTableScroll>
+          <PartnerDetailVuexyTableFooter rowCount={accountControls.length} />
         </div>
       </div>
-    </div>
+    </AdminFilterPanel>
   );
 }
 

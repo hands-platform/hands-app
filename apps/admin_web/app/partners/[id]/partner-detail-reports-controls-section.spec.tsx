@@ -67,8 +67,10 @@ describe('PartnerDetailReportsControlsSection', () => {
 
     expect(classNames).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card admin-mb-16',
         'admin-table-scroll',
-        'table vuexy-data-table',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
         'admin-form-select',
         'admin-form-input',
         'admin-form-textarea',
@@ -81,6 +83,7 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(classNames.filter((className) => className === 'admin-form-select')).toHaveLength(6);
     expect(classNames.filter((className) => className === 'admin-form-input')).toHaveLength(6);
     expect(classNames.filter((className) => className === 'admin-form-control-button')).toHaveLength(4);
+    expect(rendered).toContain('Showing 1 to 1 of 1 entries');
   });
 
   it('renders an empty payout hold table when no hold is active', () => {
@@ -98,7 +101,14 @@ describe('PartnerDetailReportsControlsSection', () => {
     expect(rendered).toContain('No active payout hold is currently applied.');
     expect(rendered).toContain('No Partner reports recorded yet.');
     expect(rendered).toContain('No active or historical account control recorded yet.');
-    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['admin-table-scroll', 'table vuexy-data-table']));
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'admin-table-scroll',
+        'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
+        'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+      ]),
+    );
+    expect(rendered).toContain('Showing 0 entries');
   });
 });
 
