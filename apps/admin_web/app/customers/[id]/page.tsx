@@ -307,7 +307,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     filteredAuditLogs,
     customer.id,
   );
-  const accountFacts = buildCustomerAccountFacts(customer, bookings, addresses);
+  const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
+  const accountFacts = buildCustomerAccountFacts({
+    addresses,
+    bookings,
+    customer,
+    customerCountry,
+    latestSession,
+    notificationCount: notifications.length,
+    pushDevices,
+  });
   const customerOperatorCommandQueue = buildCustomerOperatorCommandQueue({
     customer,
     bookings,
@@ -329,7 +338,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
-  const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
   const overviewPartnerRails = buildCustomerPartnerRails(
     bookings,
     customer.favoriteProviders ?? [],
@@ -433,7 +441,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       detail: 'Live work, completed work, cancellations, gate attempts, and command queue.',
     },
     {
-      href: '#customer-info',
+      href: '#customer-account-facts',
       label: 'Account',
       value: customer.user?.phone ?? 'No phone',
       detail: 'Identity, reachability, profile facts, wallet, and saved locations.',
@@ -746,62 +754,23 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
         status={<span className="pill pill-info">Profile and wallet</span>}
       >
-      <section className="card admin-mb-16" id="customer-info">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer information</h2>
-            <p className="muted">Identity, contact, reachability, and app activity for support operators.</p>
-          </div>
-          <span
-            className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}
-          >
-            {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
-          </span>
-        </div>
-        <div className="service-trace-summary">
-          <div>
-            <span>Name</span>
-            <strong>{customer.user?.fullName ?? 'Not saved'}</strong>
-            <small className="muted">Customer profile name</small>
-          </div>
-          <div>
-            <span>Phone</span>
-            <strong>{customer.user?.phone ?? 'Not saved'}</strong>
-            <small className="muted">OTP identity</small>
-          </div>
-          <div>
-            <span>Email</span>
-            <strong>{customer.user?.email ?? 'Not saved'}</strong>
-            <small className="muted">Optional contact</small>
-          </div>
-          <div>
-            <span>Joined</span>
-            <strong>{formatDate(customer.user?.createdAt)}</strong>
-            <small className="muted">Account created</small>
-          </div>
-          <div>
-            <span>Last seen</span>
-            <strong>{formatDate(latestSession?.lastSeenAt)}</strong>
-            <small className="muted">{latestSession?.platform ?? 'No platform'}</small>
-          </div>
-          <div>
-            <span>Notifications</span>
-            <strong>{notifications.length}</strong>
-            <small className="muted">Recent in-app rows</small>
-          </div>
-        </div>
-      </section>
-
       <section className="card admin-mb-16" id="customer-account-facts">
         <div className="ops-section-header">
           <div>
             <h2>Customer account facts</h2>
             <p className="muted">
-              Factual profile, booking, payment, support, and account fields. Missing values are shown as not
-              captured instead of guessed.
+              One factual readout for identity, reachability, booking, payment, saved location, and support
+              context. Missing values are shown plainly instead of guessed.
             </p>
           </div>
-          <span className="pill pill-info">{accountFacts.length} field(s)</span>
+          <div className="participant-list">
+            <span className="pill pill-info">{accountFacts.length} field(s)</span>
+            <span
+              className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}
+            >
+              {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
+            </span>
+          </div>
         </div>
         <div className="service-trace-summary admin-mt-12">
           {accountFacts.map((fact) => (
@@ -2048,14 +2017,24 @@ function buildCustomerOperatorCommandQueue({
   };
 }
 
-function buildCustomerAccountFacts(
-  customer: AdminCustomerDetail,
-  bookings: AdminBookingDetail[],
-  addresses: Array<{ key: string; label: string; value: string }>,
-) {
+function buildCustomerAccountFacts({
+  addresses,
+  bookings,
+  customer,
+  customerCountry,
+  latestSession,
+  notificationCount,
+  pushDevices,
+}: {
+  addresses: Array<{ key: string; label: string; value: string }>;
+  bookings: AdminBookingDetail[];
+  customer: AdminCustomerDetail;
+  customerCountry: { fullLabel: string; sourceLabel: string };
+  latestSession?: AdminAppSession;
+  notificationCount: number;
+  pushDevices: CustomerPushDevice[];
+}) {
   const sessions = customer.user?.appSessions ?? [];
-  const pushDevices = customer.user?.pushDevices ?? [];
-  const latestSession = sessions[0];
   const refunds = bookings.flatMap((booking) => [
     ...(booking.payment?.refunds ?? []),
     ...(booking.refunds ?? []),
@@ -2079,39 +2058,53 @@ function buildCustomerAccountFacts(
       helper: 'Internal admin identifier',
     },
     {
+      label: 'Name',
+      value: customer.user?.fullName ?? 'Not saved',
+      helper: 'Customer profile name',
+    },
+    {
+      label: 'Phone',
+      value: customer.user?.phone ?? 'Not saved',
+      helper: customer.user?.phone ? 'Phone OTP identity' : 'Phone login is not saved',
+    },
+    {
+      label: 'Email',
+      value: customer.user?.email ?? 'Not saved',
+      helper: 'Optional contact field',
+    },
+    {
       label: 'Login method',
       value: customer.user?.phone ? 'Phone OTP' : 'Not captured',
       helper: 'Phone auth remains the primary customer login method',
     },
     {
+      label: 'Country',
+      value: customerCountry.fullLabel,
+      helper: customerCountry.sourceLabel === 'Unknown' ? 'No device language loaded.' : customerCountry.sourceLabel,
+    },
+    {
       label: 'Gender',
-      value: 'Not captured',
-      helper: 'Customer app does not collect this field yet',
+      value: readCustomerGenderLabel(customer),
+      helper: 'Customer profile gender value when available.',
     },
     {
-      label: 'Birth / age',
-      value: 'Not captured',
-      helper: 'Add later only if operations really needs it',
+      label: 'Sign-up Date',
+      value: formatDate(customer.user?.createdAt),
+      helper: customer.user?.updatedAt
+        ? `Last account update ${formatDate(customer.user.updatedAt)}`
+        : 'No account update timestamp loaded.',
     },
     {
-      label: 'Nationality / language',
-      value: 'Not captured',
-      helper: 'Designed for VN, EN, KO, ZH, and JA localization later',
+      label: 'Last Login Date',
+      value: formatDate(latestSession?.lastSeenAt),
+      helper: latestSession
+        ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
+        : 'No app session loaded.',
     },
     {
-      label: 'Signup source',
-      value: 'Mobile app / phone',
-      helper: 'Campaign attribution table is not connected yet',
-    },
-    {
-      label: 'Account state',
-      value: 'Open',
-      helper: 'No customer suspension or deletion request is recorded',
-    },
-    {
-      label: 'Recent login IP',
-      value: latestSession?.ipAddress ?? 'Not saved',
-      helper: latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded',
+      label: 'Last Login Address',
+      value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
+      helper: latestSession?.ipAddress ? `IP ${latestSession.ipAddress}` : 'No login location evidence loaded.',
     },
     {
       label: 'Devices',
@@ -2156,14 +2149,9 @@ function buildCustomerAccountFacts(
       helper: notes[0]?.createdAt ? `Latest ${formatDate(notes[0].createdAt)}` : 'No support note saved',
     },
     {
-      label: 'Terms agreement',
-      value: 'Not captured',
-      helper: 'Customer agreement history table can be added in the Supabase phase',
-    },
-    {
-      label: 'Withdrawal request',
-      value: 'None recorded',
-      helper: 'No customer deletion request table is connected yet',
+      label: 'Notifications',
+      value: notificationCount.toString(),
+      helper: 'Recent in-app notification rows',
     },
   ];
 }
@@ -2704,7 +2692,7 @@ function buildCustomerActivityRecords(
       at: session.lastSeenAt,
       title: `${session.active ? 'Active' : 'Inactive'} customer app session`,
       detail: `${session.platform ?? 'Unknown platform'} / ${session.appVersion ?? 'No app version'} / device ${session.deviceId}`,
-      href: '#customer-info',
+      href: '#customer-account-facts',
     });
   }
 
@@ -2715,7 +2703,7 @@ function buildCustomerActivityRecords(
       at: device.updatedAt ?? device.createdAt ?? '',
       title: `${device.enabled ? 'Enabled' : 'Disabled'} push device`,
       detail: `${device.platform} / ${device.deliveries?.[0]?.status ?? 'No delivery attempt'}`,
-      href: '#customer-info',
+      href: '#customer-account-facts',
     });
 
     for (const delivery of device.deliveries ?? []) {

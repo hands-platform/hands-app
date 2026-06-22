@@ -53,5 +53,11 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Filtered chat rooms');
     expect(pageSource).not.toContain('Filtered activity');
     expect(pageSource).not.toContain('Filtered notices');
+    expect(pageSource).not.toContain('Customer information');
+    expect(pageSource).not.toContain('#customer-info');
+    expect(pageSource).not.toContain('Birth / age');
+    expect(pageSource).not.toContain('Signup source');
+    expect(pageSource).not.toContain('Terms agreement');
+    expect(pageSource).not.toContain('Withdrawal request');
   });
 });
