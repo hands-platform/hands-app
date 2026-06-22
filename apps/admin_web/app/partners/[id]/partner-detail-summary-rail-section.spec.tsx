@@ -1,7 +1,10 @@
 import {
   PartnerDetailSummaryRailSection,
 } from './partner-detail-summary-rail-section';
-import type { PartnerDetailSummaryRailItem } from './partner-detail-summary-rail-model';
+import type {
+  PartnerDetailSummaryRailItem,
+  PartnerDetailUsageRegionSummary,
+} from './partner-detail-summary-rail-model';
 
 describe('PartnerDetailSummaryRailSection', () => {
   it('renders summary rail items with links and status label', () => {
@@ -11,6 +14,7 @@ describe('PartnerDetailSummaryRailSection', () => {
       items: buildItems(),
       statusLabel: 'Above-fold summary',
       title: 'Partner operator first read',
+      usageSummary: buildUsageSummary(),
     });
 
     const rendered = textContent(section);
@@ -22,7 +26,15 @@ describe('PartnerDetailSummaryRailSection', () => {
     expect(rendered).toContain('Massage Partner');
     expect(rendered).toContain('Wallet and payout');
     expect(rendered).toContain('Payout gate clear.');
+    expect(rendered).toContain('Usage and region summary');
+    expect(rendered).toContain('No live GPS polling');
+    expect(rendered).toContain('Primary booking region');
+    expect(rendered).toContain('District 1, Ho Chi Minh City');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#partner-master-facts', '#payout']));
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining([
+      'partner-detail-usage-summary admin-mt-12',
+      'partner-detail-usage-region-list',
+    ]));
   });
 });
 
@@ -41,6 +53,32 @@ function buildItems(): PartnerDetailSummaryRailItem[] {
       value: 'READY',
     },
   ];
+}
+
+function buildUsageSummary(): PartnerDetailUsageRegionSummary {
+  return {
+    helper: 'Built from stored app sessions and booking address snapshots. No live GPS polling.',
+    items: [
+      {
+        detail: 'Latest 13 Jun 2026, 03:02.',
+        label: 'App sessions',
+        value: '1',
+      },
+      {
+        detail: 'Most common service area from stored booking addresses.',
+        label: 'Primary booking region',
+        value: 'District 1, Ho Chi Minh City',
+      },
+    ],
+    regionRows: [
+      {
+        detail: 'Latest booking 13 Jun 2026, 03:02.',
+        label: 'District 1, Ho Chi Minh City',
+        value: '2',
+      },
+    ],
+    title: 'Usage and region summary',
+  };
 }
 
 function textContent(value: unknown): string {
@@ -73,6 +111,21 @@ function hrefsIn(value: unknown): string[] {
   const props = readRecord(record?.props);
   const href = typeof props?.href === 'string' ? [props.href] : [];
   return [...href, ...hrefsIn(props?.children)];
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
 }
 
 function resolveElement(value: unknown): unknown {

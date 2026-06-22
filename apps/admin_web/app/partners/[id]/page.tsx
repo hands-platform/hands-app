@@ -264,6 +264,7 @@ import {
 import {
   buildPartnerOperationsQuickRail,
   buildPartnerOperatorFirstRead,
+  buildPartnerUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
 import {
@@ -629,6 +630,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     responseWindowMinutes: dispatchPolicy.responseWindowMinutes,
     unpaidNetDetail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail,
   });
+  const partnerUsageRegionSummary = buildPartnerUsageRegionSummary({
+    bookingArchive: partnerBookingArchive,
+    devices: provider.devices ?? [],
+    latestLocationRecordedAt: newestDateValue([
+      provider.currentLocationUpdatedAt,
+      ...(provider.locationSnapshots ?? []).map((snapshot) => snapshot.recordedAt),
+    ]),
+    locationSnapshotCount: provider.locationSnapshots?.length ?? 0,
+    sessions: provider.sessions ?? [],
+  });
   const partnerChatMessageCount = partnerBookingArchive.reduce(
     (sum, record) => sum + readPartnerChatMessages(record.booking).length,
     0,
@@ -774,6 +785,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         items={partnerOperatorFirstRead}
         statusLabel="Above-fold summary"
         title="Partner operator first read"
+        usageSummary={partnerUsageRegionSummary}
       />
 
       <PartnerDetailStatusCardsSection cards={partnerStatusCards} />

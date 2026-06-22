@@ -8084,13 +8084,15 @@ textarea:focus-visible {
   min-width: 0;
 }
 
-.customer-detail-usage-summary {
+.customer-detail-usage-summary,
+.partner-detail-usage-summary {
   border-top: 1px solid var(--admin-border);
   margin-top: 18px;
   padding-top: 18px;
 }
 
-.customer-detail-usage-summary-header {
+.customer-detail-usage-summary-header,
+.partner-detail-usage-summary-header {
   align-items: flex-start;
   display: flex;
   gap: 12px;
@@ -8098,11 +8100,13 @@ textarea:focus-visible {
   margin-bottom: 12px;
 }
 
-.customer-detail-usage-summary-header > div {
+.customer-detail-usage-summary-header > div,
+.partner-detail-usage-summary-header > div {
   min-width: 0;
 }
 
-.customer-detail-usage-summary-header span {
+.customer-detail-usage-summary-header span,
+.partner-detail-usage-summary-header span {
   color: var(--admin-text);
   display: block;
   font-size: 13px;
@@ -8110,7 +8114,8 @@ textarea:focus-visible {
   line-height: 1.45;
 }
 
-.customer-detail-usage-summary-header strong {
+.customer-detail-usage-summary-header strong,
+.partner-detail-usage-summary-header strong {
   align-items: center;
   background: var(--admin-primary-soft);
   border-radius: 999px;
@@ -8123,17 +8128,22 @@ textarea:focus-visible {
 }
 
 .customer-detail-usage-summary-grid,
-.customer-detail-usage-region-list {
+.customer-detail-usage-region-list,
+.partner-detail-usage-summary-grid,
+.partner-detail-usage-region-list {
   display: grid;
   gap: 12px;
 }
 
-.customer-detail-usage-summary-grid {
+.customer-detail-usage-summary-grid,
+.partner-detail-usage-summary-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .customer-detail-usage-summary-grid > div,
-.customer-detail-usage-region-list > div {
+.customer-detail-usage-region-list > div,
+.partner-detail-usage-summary-grid > div,
+.partner-detail-usage-region-list > div {
   background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
   border: 1px solid var(--admin-border);
   border-radius: 10px;
@@ -8142,14 +8152,17 @@ textarea:focus-visible {
 }
 
 .customer-detail-usage-summary-grid strong,
-.customer-detail-usage-region-list strong {
+.customer-detail-usage-region-list strong,
+.partner-detail-usage-summary-grid strong,
+.partner-detail-usage-region-list strong {
   color: var(--admin-text);
   display: block;
   font-size: 15px;
   line-height: 1.45;
 }
 
-.customer-detail-usage-region-list {
+.customer-detail-usage-region-list,
+.partner-detail-usage-region-list {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 12px;
 }

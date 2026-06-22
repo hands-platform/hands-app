@@ -1,5 +1,8 @@
 import Link from 'next/link';
-import type { PartnerDetailSummaryRailItem } from './partner-detail-summary-rail-model';
+import type {
+  PartnerDetailSummaryRailItem,
+  PartnerDetailUsageRegionSummary,
+} from './partner-detail-summary-rail-model';
 
 type PartnerDetailSummaryRailSectionProps = {
   readonly description: string;
@@ -7,6 +10,7 @@ type PartnerDetailSummaryRailSectionProps = {
   readonly items: readonly PartnerDetailSummaryRailItem[];
   readonly statusLabel: string;
   readonly title: string;
+  readonly usageSummary?: PartnerDetailUsageRegionSummary;
 };
 
 export function PartnerDetailSummaryRailSection({
@@ -15,6 +19,7 @@ export function PartnerDetailSummaryRailSection({
   items,
   statusLabel,
   title,
+  usageSummary,
 }: PartnerDetailSummaryRailSectionProps) {
   return (
     <div className="card admin-mb-16" id={id}>
@@ -34,6 +39,35 @@ export function PartnerDetailSummaryRailSection({
           </Link>
         ))}
       </div>
+      {usageSummary ? (
+        <section className="partner-detail-usage-summary admin-mt-12">
+          <div className="partner-detail-usage-summary-header">
+            <div>
+              <span>{usageSummary.title}</span>
+              <p className="muted">{usageSummary.helper}</p>
+            </div>
+            <strong>{usageSummary.regionRows.length} region(s)</strong>
+          </div>
+          <div className="partner-detail-usage-summary-grid">
+            {usageSummary.items.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </div>
+            ))}
+          </div>
+          <div className="partner-detail-usage-region-list">
+            {usageSummary.regionRows.map((region) => (
+              <div key={region.label}>
+                <span>{region.label}</span>
+                <strong>{region.value}</strong>
+                <small>{region.detail}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

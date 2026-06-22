@@ -1,6 +1,7 @@
 import {
   buildPartnerOperationsQuickRail,
   buildPartnerOperatorFirstRead,
+  buildPartnerUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 
 describe('partner detail summary rail model', () => {
@@ -175,5 +176,81 @@ describe('partner detail summary rail model', () => {
     expect(rows.find((row) => row.label === 'Booking journey')).toMatchObject({
       detail: '15m first-pick / 8km marketplace policy.',
     });
+  });
+
+  it('builds partner usage and region summary without live GPS coordinates', () => {
+    const summary = buildPartnerUsageRegionSummary({
+      bookingArchive: [
+        {
+          booking: {
+            addressSnapshot: {
+              addressText: '22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City',
+              latitude: '10.77',
+              longitude: '106.70',
+            },
+            createdAt: '2026-06-13T03:02:00.000Z',
+            id: 'booking-1',
+            status: 'COMPLETED',
+            updatedAt: '2026-06-13T04:02:00.000Z',
+          },
+          lastMessage: null,
+          relation: 'Selected',
+        },
+        {
+          booking: {
+            address: {
+              formattedAddress: '85/9 Phạm Viết Chánh, Thạnh Mỹ Tây, Hồ Chí Minh 700000 베트남',
+            },
+            createdAt: '2026-06-14T03:02:00.000Z',
+            id: 'booking-2',
+            status: 'MATCHED',
+          },
+          lastMessage: null,
+          relation: 'Joined',
+        },
+        {
+          booking: {
+            addressSnapshot: {
+              addressText: '23 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City',
+              latitude: '10.78',
+              longitude: '106.71',
+            },
+            createdAt: '2026-06-12T03:02:00.000Z',
+            id: 'booking-3',
+            status: 'COMPLETED',
+          },
+          lastMessage: null,
+          relation: 'Selected',
+        },
+      ],
+      devices: [{ enabled: true, id: 'device-1', lastSeenAt: '2026-06-14T01:30:00.000Z' }],
+      latestLocationRecordedAt: '2026-06-14T01:45:00.000Z',
+      locationSnapshotCount: 2,
+      sessions: [
+        {
+          appVersion: '1.0.0',
+          id: 'session-1',
+          lastSeenAt: '2026-06-14T01:00:00.000Z',
+          suspicious: false,
+        },
+      ],
+    });
+
+    expect(summary.title).toBe('Usage and region summary');
+    expect(summary.helper).toContain('No live GPS polling');
+    expect(summary.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'App sessions', value: '1' }),
+      expect.objectContaining({ label: 'Primary booking region', value: 'District 1, Ho Chi Minh City' }),
+      expect.objectContaining({ label: 'Location evidence', value: '2 snapshot(s)' }),
+      expect.objectContaining({ label: 'Push/device reach', value: '1 enabled' }),
+    ]));
+    expect(summary.regionRows).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: 'District 1, Ho Chi Minh City', value: '2' }),
+      expect.objectContaining({ label: 'Thạnh Mỹ Tây, Hồ Chí Minh', value: '1' }),
+    ]));
+    expect(JSON.stringify(summary)).not.toContain('10.77');
+    expect(JSON.stringify(summary)).not.toContain('106.70');
+    expect(JSON.stringify(summary)).not.toContain('10.78');
+    expect(JSON.stringify(summary)).not.toContain('106.71');
   });
 });
