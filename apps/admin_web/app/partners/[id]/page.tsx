@@ -315,6 +315,8 @@ type PartnerKycEvidence = PartnerKycDecisionEvidence & {
 };
 type PartnerBookingArchiveRecord = PartnerBookingArchiveModelRecord<PartnerDetailBooking>;
 type PartnerDetailDevice = NonNullable<AdminProvider['devices']>[number];
+type PartnerEarning = NonNullable<ProviderDetail['earnings']>[number];
+type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
@@ -491,6 +493,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
   const payoutOperationsView = buildPartnerPayoutOperationsView(payoutOps);
   const payoutEarningRows = buildPartnerPayoutEarningRows(partnerEarnings);
+  const partnerEarningsByBookingId = buildPartnerEarningsByBookingId(partnerEarnings);
   const payoutBatchRows = buildPartnerPayoutBatchRows(provider.payoutBatches ?? []);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
@@ -500,7 +503,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     ),
     activityOrder,
   );
-  const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(provider, filteredPartnerBookingArchive);
+  const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(
+    provider,
+    filteredPartnerBookingArchive,
+    partnerEarningsByBookingId,
+  );
   const partnerBookingChatRecordRows = buildPartnerBookingChatRecordRows(filteredPartnerBookingArchive);
   const filteredPartnerActivityRecords = orderPartnerActivityRecords(
     partnerActivityRecords.filter(
@@ -565,6 +572,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     provider,
     filteredPartnerBookingArchive,
     dispatchPolicy,
+    partnerEarningsByBookingId,
   );
   const partnerChatRetentionRows = buildPartnerChatRetentionRows(filteredPartnerBookingArchive);
   const partnerChatRetentionSummary = buildPartnerChatRetentionSummary(partnerChatRetentionRows);
@@ -1628,15 +1636,28 @@ function buildPartnerBookingChatRecordRows(
   });
 }
 
+function buildPartnerEarningsByBookingId(earnings: readonly PartnerEarning[]): PartnerEarningsByBookingId {
+  const earningsByBookingId = new Map<string, PartnerEarning>();
+
+  for (const earning of earnings) {
+    if (earning.bookingId) {
+      earningsByBookingId.set(earning.bookingId, earning);
+    }
+  }
+
+  return earningsByBookingId;
+}
+
 function buildPartnerBookingEvidenceRows(
   provider: ProviderDetail,
   bookingArchive: PartnerBookingArchiveRecord[],
+  earningsByBookingId: PartnerEarningsByBookingId,
 ): PartnerBookingEvidenceRow[] {
   return bookingArchive.slice(0, 30).map((record) => {
     const booking = record.booking;
     const chatMessages = readPartnerChatMessages(booking);
     const participant = (booking.participants ?? []).find((item) => item.providerProfileId === provider.id);
-    const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
+    const earning = earningsByBookingId.get(booking.id);
     const walletRows = earning?.walletLedgerEntries ?? [];
     const latestLocation = provider.currentLocationUpdatedAt
       ? `${locationAgeLabel(provider.currentLocationUpdatedAt)} / ${provider.currentLat ?? '?'}:${provider.currentLng ?? '?'}`
@@ -1704,13 +1725,14 @@ function buildPartnerBookingJourneyRows(
   provider: ProviderDetail,
   bookingArchive: PartnerBookingArchiveRecord[],
   dispatchPolicy: PartnerDispatchPolicy,
+  earningsByBookingId: PartnerEarningsByBookingId,
 ): PartnerBookingJourneyRow[] {
   return bookingArchive.slice(0, 20).map((record) => {
     const booking = record.booking;
     const participant = (booking.participants ?? []).find((item) => item.providerProfileId === provider.id);
     const chatMessages = readPartnerChatMessages(booking);
     const latestMessage = chatMessages[chatMessages.length - 1];
-    const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
+    const earning = earningsByBookingId.get(booking.id);
     const walletRows = earning?.walletLedgerEntries ?? [];
     const isFinalPartner = record.relation === 'Selected';
     const hasChat = Boolean(booking.chatRoom);
