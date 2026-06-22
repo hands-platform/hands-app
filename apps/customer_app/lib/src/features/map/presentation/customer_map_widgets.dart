@@ -246,8 +246,6 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
     super.initState();
     selectedPoint = LatLng(widget.initialLatitude, widget.initialLongitude);
     selectedAddress = widget.initialAddress;
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => unawaited(useCurrentLocation(initialLoad: true)));
   }
 
   @override
@@ -295,7 +293,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
     }
   }
 
-  Future<void> useCurrentLocation({bool initialLoad = false}) async {
+  Future<void> useCurrentLocation() async {
     final location = await resolveCustomerLocation(ref);
     if (!mounted) {
       return;
@@ -309,7 +307,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
           ? 'GPS unavailable or outside Vietnam. You can browse partners from anywhere, but booking needs a Vietnam service pin.'
           : 'Current GPS location loaded. Drag the map to fine tune the pin.';
     });
-    if (!initialLoad || location.isDemoLocation == false) {
+    if (location.isDemoLocation == false) {
       await controller?.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
     }
   }
