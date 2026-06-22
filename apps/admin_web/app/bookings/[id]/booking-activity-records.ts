@@ -8,7 +8,6 @@ import {
   addressLabel,
   bookingServiceOptionLabel,
   compactActivityText,
-  coordinateLabel,
   distanceLabel,
   formatDate,
   money,
@@ -246,7 +245,7 @@ export function buildBookingActivityRecords({
     const snapshotAddress = readAddressText(snapshot);
     const locationDetail = snapshotAddress
       ? serviceAddressAreaLabel(snapshotAddress)
-      : coordinateLabel(snapshot.lat, snapshot.lng);
+      : 'Location recorded without readable address';
 
     records.push({
       id: snapshot.id,

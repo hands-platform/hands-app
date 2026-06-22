@@ -66,7 +66,7 @@ describe('buildBookingActivityRecords', () => {
     );
   });
 
-  it('keeps general Partner location snapshots as coordinate evidence', () => {
+  it('hides raw coordinates for general Partner location snapshots without readable addresses', () => {
     const records = recordsFor({
       locationSnapshots: [
         location({
@@ -81,12 +81,13 @@ describe('buildBookingActivityRecords', () => {
     expect(records).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          detail: '10.0000, 106.0000',
+          detail: 'Location recorded without readable address',
           id: 'general-location',
           title: 'Partner location snapshot',
         }),
       ]),
     );
+    expect(JSON.stringify(records)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 
   it('summarizes action and general location evidence together', () => {
