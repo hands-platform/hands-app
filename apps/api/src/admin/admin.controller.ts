@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { FileReviewStatus, Role, VerificationStatus } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -72,6 +72,11 @@ export class AdminController {
   @Get('vietnam-overview')
   vietnamOverview() {
     return this.admin.getVietnamOverview();
+  }
+
+  @Get('usage-overview')
+  usageOverview(@Query('range') range?: string) {
+    return this.admin.getUsageOverview(range);
   }
 
   @Get(['providers', 'partners'])

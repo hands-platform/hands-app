@@ -9,6 +9,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
     listFileReviewProviders: jest.fn(),
+    getUsageOverview: jest.fn(),
     getVietnamOverview: jest.fn(),
     listOperationsHandoffProviders: jest.fn(),
     listOperationsPolicyProviders: jest.fn(),
@@ -87,6 +88,22 @@ describe('AdminController notification and push actions', () => {
       path: 'vietnam-overview',
     });
     expect(admin.getVietnamOverview).toHaveBeenCalledWith();
+  });
+
+  it('exposes usage overview as a bounded aggregate GET list', async () => {
+    admin.getUsageOverview.mockResolvedValue({ range: 'month', customerUsage: [], partnerUsage: [] });
+
+    await expect(controller.usageOverview('month')).resolves.toEqual({
+      range: 'month',
+      customerUsage: [],
+      partnerUsage: [],
+    });
+
+    expect(routeMetadata('usageOverview')).toEqual({
+      method: RequestMethod.GET,
+      path: 'usage-overview',
+    });
+    expect(admin.getUsageOverview).toHaveBeenCalledWith('month');
   });
 
   it('exposes operations handoff providers as a lightweight GET list', async () => {

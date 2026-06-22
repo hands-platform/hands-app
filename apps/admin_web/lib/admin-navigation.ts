@@ -31,6 +31,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Region aggregate operating picture without individual GPS points.',
       },
       {
+        href: '/usage-overview',
+        label: 'Usage Overview',
+        description: 'Stored app usage, Partner searches, requests, and completed-work rankings.',
+      },
+      {
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',

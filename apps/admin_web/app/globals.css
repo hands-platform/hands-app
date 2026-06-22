@@ -3523,6 +3523,127 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.usage-overview-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.usage-overview-page > .toolbar,
+.usage-overview-page > .card {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.usage-overview-page > .toolbar {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  padding: 24px;
+}
+
+.usage-overview-page > .toolbar h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+
+.usage-overview-filter-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.usage-overview-range-buttons {
+  justify-content: flex-start;
+}
+
+.usage-overview-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.usage-overview-ranking-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.usage-overview-ranking-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.usage-overview-table-wrap {
+  border-radius: var(--admin-radius-lg);
+  margin-top: 0;
+}
+
+.usage-overview-table {
+  min-width: 720px;
+}
+
+.usage-overview-table th {
+  background: var(--admin-surface);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.usage-overview-rank {
+  align-items: center;
+  background: rgb(var(--admin-primary-channel) / 0.12);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  height: 30px;
+  justify-content: center;
+  min-width: 42px;
+}
+
+.usage-overview-name-cell {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.usage-overview-name-cell > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.usage-overview-name-cell a,
+.usage-overview-name-cell strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-overview-name-cell small {
+  color: var(--admin-muted);
+}
+
+.usage-overview-avatar {
+  align-items: center;
+  background: rgb(var(--admin-info-channel) / 0.14);
+  border-radius: 50%;
+  color: var(--admin-info-text);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
 .operations-policy-page {
   display: grid;
   gap: 16px;

@@ -133,6 +133,11 @@ import {
   VIETNAM_REGION_BUCKETS,
   vietnamRegionCodeFromValues,
 } from './admin-vietnam-region-overview';
+import {
+  adminUsageDateWhere,
+  adminUsageRangeWindow,
+  normalizeAdminUsageRange,
+} from './admin-usage-overview';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
@@ -144,6 +149,7 @@ const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
+const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
@@ -620,6 +626,225 @@ export class AdminService {
         currency: 'VND',
       },
       regions: regionRows,
+    };
+  }
+
+  async getUsageOverview(rangeInput?: string) {
+    const window = adminUsageRangeWindow(normalizeAdminUsageRange(rangeInput));
+    const dateWhere = adminUsageDateWhere(window);
+    const sessionWhere = {
+      role: Role.CUSTOMER,
+      ...(dateWhere ? { lastSeenAt: dateWhere } : {}),
+    };
+    const completedBookingWhere = {
+      status: BookingStatus.COMPLETED,
+      ...(dateWhere ? { closedAt: dateWhere } : {}),
+    };
+    const bookingRequestWhere = {
+      preferredProviderId: { not: null },
+      ...(dateWhere ? { createdAt: dateWhere } : {}),
+    };
+    const completedPartnerBookingWhere = {
+      status: BookingStatus.COMPLETED,
+      selectedProviderId: { not: null },
+      ...(dateWhere ? { closedAt: dateWhere } : {}),
+    };
+    const profileViewWhere = dateWhere ? { lastViewedAt: dateWhere } : {};
+
+    const [
+      customerSessionRows,
+      completedCustomerRows,
+      viewedPartnerRows,
+      requestedPartnerRows,
+      completedPartnerRows,
+      customerSessionCount,
+      completedBookingCount,
+      profileViewCount,
+      bookingRequestCount,
+    ] = await Promise.all([
+      this.prisma.appSession.groupBy({
+        by: ['userId'],
+        where: sessionWhere,
+        _count: { _all: true },
+        _max: { lastSeenAt: true },
+        orderBy: { _count: { userId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.booking.groupBy({
+        by: ['customerProfileId'],
+        where: completedBookingWhere,
+        _count: { _all: true },
+        _max: { closedAt: true, updatedAt: true },
+        orderBy: { _count: { customerProfileId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.customerProviderProfileView.groupBy({
+        by: ['providerProfileId'],
+        where: profileViewWhere,
+        _count: { _all: true },
+        _sum: { viewCount: true },
+        _max: { lastViewedAt: true },
+        orderBy: { _sum: { viewCount: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.booking.groupBy({
+        by: ['preferredProviderId'],
+        where: bookingRequestWhere,
+        _count: { _all: true },
+        _max: { createdAt: true },
+        orderBy: { _count: { preferredProviderId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.booking.groupBy({
+        by: ['selectedProviderId'],
+        where: completedPartnerBookingWhere,
+        _count: { _all: true },
+        _max: { closedAt: true, updatedAt: true },
+        orderBy: { _count: { selectedProviderId: 'desc' } },
+        take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.appSession.count({ where: sessionWhere }),
+      this.prisma.booking.count({ where: completedBookingWhere }),
+      this.prisma.customerProviderProfileView.count({ where: profileViewWhere }),
+      this.prisma.booking.count({ where: bookingRequestWhere }),
+    ]);
+
+    const customerUserIds = customerSessionRows.map((row) => row.userId);
+    const customerProfileIds = completedCustomerRows.map((row) => row.customerProfileId);
+    const providerProfileIds = uniqueStrings([
+      ...viewedPartnerRows.map((row) => row.providerProfileId),
+      ...requestedPartnerRows.map((row) => row.preferredProviderId),
+      ...completedPartnerRows.map((row) => row.selectedProviderId),
+    ]);
+
+    const [customerUsers, customerProfiles, providers] = await Promise.all([
+      customerUserIds.length
+        ? this.prisma.user.findMany({
+            where: { id: { in: customerUserIds } },
+            select: {
+              id: true,
+              phone: true,
+              fullName: true,
+              customerProfile: { select: { id: true } },
+            },
+          })
+        : [],
+      customerProfileIds.length
+        ? this.prisma.customerProfile.findMany({
+            where: { id: { in: customerProfileIds } },
+            select: {
+              id: true,
+              user: {
+                select: {
+                  phone: true,
+                  fullName: true,
+                },
+              },
+            },
+          })
+        : [],
+      providerProfileIds.length
+        ? this.prisma.providerProfile.findMany({
+            where: { id: { in: providerProfileIds } },
+            select: {
+              id: true,
+              displayName: true,
+              city: true,
+              user: {
+                select: {
+                  phone: true,
+                },
+              },
+            },
+          })
+        : [],
+    ]);
+
+    const customerUserMap = new Map(customerUsers.map((user) => [user.id, user]));
+    const customerProfileMap = new Map(customerProfiles.map((profile) => [profile.id, profile]));
+    const providerMap = new Map(providers.map((provider) => [provider.id, provider]));
+
+    return {
+      generatedAt: new Date().toISOString(),
+      refreshSeconds: 60,
+      source: 'stored-usage-aggregates',
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt?.toISOString() ?? null,
+      windowEndAt: window.endAt?.toISOString() ?? null,
+      totals: {
+        customerSessionCount,
+        completedBookingCount,
+        partnerProfileViewCount: profileViewCount,
+        partnerBookingRequestCount: bookingRequestCount,
+      },
+      customerUsage: {
+        mostActiveCustomers: customerSessionRows.map((row, index) => {
+          const user = customerUserMap.get(row.userId);
+
+          return {
+            rank: index + 1,
+            id: user?.customerProfile?.id ?? row.userId,
+            userId: row.userId,
+            label: user?.fullName ?? user?.phone ?? 'Unknown customer',
+            secondary: user?.phone ?? null,
+            href: user?.customerProfile?.id ? `/customers/${user.customerProfile.id}` : null,
+            value: row._count._all,
+            valueLabel: 'sessions',
+            lastActivityAt: row._max.lastSeenAt?.toISOString() ?? null,
+          };
+        }),
+        completedBookingCustomers: completedCustomerRows.map((row, index) => {
+          const profile = customerProfileMap.get(row.customerProfileId);
+
+          return {
+            rank: index + 1,
+            id: row.customerProfileId,
+            label: profile?.user.fullName ?? profile?.user.phone ?? 'Unknown customer',
+            secondary: profile?.user.phone ?? null,
+            href: `/customers/${row.customerProfileId}`,
+            value: row._count._all,
+            valueLabel: 'completed',
+            lastActivityAt: latestDate(row._max.closedAt, row._max.updatedAt)?.toISOString() ?? null,
+          };
+        }),
+      },
+      partnerUsage: {
+        mostViewedPartners: viewedPartnerRows.map((row, index) =>
+          providerUsageRow(
+            row.providerProfileId,
+            row._sum.viewCount ?? row._count._all,
+            'views',
+            row._max.lastViewedAt,
+            index,
+            providerMap,
+          ),
+        ),
+        requestedPartners: requestedPartnerRows
+          .filter((row) => Boolean(row.preferredProviderId))
+          .map((row, index) =>
+            providerUsageRow(
+              row.preferredProviderId as string,
+              row._count._all,
+              'requests',
+              row._max.createdAt,
+              index,
+              providerMap,
+            ),
+        ),
+        completedPartners: completedPartnerRows
+          .filter((row) => Boolean(row.selectedProviderId))
+          .map((row, index) =>
+            providerUsageRow(
+              row.selectedProviderId as string,
+              row._count._all,
+              'completed',
+              latestDate(row._max.closedAt, row._max.updatedAt),
+              index,
+              providerMap,
+            ),
+          ),
+      },
     };
   }
 
@@ -3263,6 +3488,40 @@ function ensureVietnamOverviewRegion(
 
 function integerValue(value: unknown) {
   return Math.trunc(numberValue(value));
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
+}
+
+function providerUsageRow(
+  providerProfileId: string,
+  value: number,
+  valueLabel: string,
+  lastActivityAt: Date | null | undefined,
+  index: number,
+  providerMap: Map<
+    string,
+    {
+      id: string;
+      displayName: string;
+      city: string | null;
+      user: { phone: string };
+    }
+  >,
+) {
+  const provider = providerMap.get(providerProfileId);
+
+  return {
+    rank: index + 1,
+    id: providerProfileId,
+    label: provider?.displayName ?? 'Unknown Partner',
+    secondary: provider?.city ?? provider?.user.phone ?? null,
+    href: `/partners/${providerProfileId}`,
+    value,
+    valueLabel,
+    lastActivityAt: lastActivityAt?.toISOString() ?? null,
+  };
 }
 
 function latestDate(...values: Array<Date | string | null | undefined>) {

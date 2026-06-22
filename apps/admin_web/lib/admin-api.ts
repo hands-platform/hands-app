@@ -94,6 +94,45 @@ export type AdminAppSession = {
   user?: AdminUser | null;
 };
 
+export type AdminUsageOverviewRange = 'today' | 'yesterday' | '7d' | 'month' | 'all';
+
+export type AdminUsageOverviewRankRow = {
+  rank: number;
+  id: string;
+  userId?: string;
+  label: string;
+  secondary?: string | null;
+  href?: string | null;
+  value: number;
+  valueLabel: string;
+  lastActivityAt?: string | null;
+};
+
+export type AdminUsageOverview = {
+  generatedAt: string;
+  refreshSeconds: number;
+  source: 'stored-usage-aggregates';
+  range: AdminUsageOverviewRange;
+  rangeLabel: string;
+  windowStartAt?: string | null;
+  windowEndAt?: string | null;
+  totals: {
+    customerSessionCount: number;
+    completedBookingCount: number;
+    partnerProfileViewCount: number;
+    partnerBookingRequestCount: number;
+  };
+  customerUsage: {
+    mostActiveCustomers: AdminUsageOverviewRankRow[];
+    completedBookingCustomers: AdminUsageOverviewRankRow[];
+  };
+  partnerUsage: {
+    mostViewedPartners: AdminUsageOverviewRankRow[];
+    requestedPartners: AdminUsageOverviewRankRow[];
+    completedPartners: AdminUsageOverviewRankRow[];
+  };
+};
+
 export type AdminCustomer = {
   id: string;
   userId: string;
