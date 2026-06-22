@@ -113,6 +113,8 @@ const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
 ] as const;
 const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
 const CUSTOMER_BOOKING_HISTORY_PAGE_SIZE = 10;
+const CUSTOMER_CHAT_RETENTION_PAGE_SIZE = 10;
+const CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE = 10;
 const CUSTOMER_BOOKING_HISTORY_HEADERS = [
   'Booking',
   'Service',
@@ -232,6 +234,45 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const customerChatRetentionRows = buildCustomerChatRetentionRows(filteredBookings);
   const customerChatRetentionSummary = buildCustomerChatRetentionSummary(customerChatRetentionRows);
   const customerBookingOpsLedgerRows = buildCustomerBookingOpsLedgerRows(filteredBookings);
+  const chatRetentionPage = readCustomerBookingOperationPage(detailSearchParams, 'chatRetentionPage');
+  const chatRetentionTotalPages = Math.max(
+    1,
+    Math.ceil(customerChatRetentionRows.length / CUSTOMER_CHAT_RETENTION_PAGE_SIZE),
+  );
+  const chatRetentionActivePage = Math.min(chatRetentionPage, chatRetentionTotalPages);
+  const chatRetentionStartIndex =
+    (chatRetentionActivePage - 1) * CUSTOMER_CHAT_RETENTION_PAGE_SIZE;
+  const visibleCustomerChatRetentionRows = customerChatRetentionRows.slice(
+    chatRetentionStartIndex,
+    chatRetentionStartIndex + CUSTOMER_CHAT_RETENTION_PAGE_SIZE,
+  );
+  const chatRetentionPageFrom =
+    customerChatRetentionRows.length === 0 ? 0 : chatRetentionStartIndex + 1;
+  const chatRetentionPageTo = Math.min(
+    customerChatRetentionRows.length,
+    chatRetentionStartIndex + visibleCustomerChatRetentionRows.length,
+  );
+  const bookingOpsLedgerPage = readCustomerBookingOperationPage(
+    detailSearchParams,
+    'bookingOpsLedgerPage',
+  );
+  const bookingOpsLedgerTotalPages = Math.max(
+    1,
+    Math.ceil(customerBookingOpsLedgerRows.length / CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE),
+  );
+  const bookingOpsLedgerActivePage = Math.min(bookingOpsLedgerPage, bookingOpsLedgerTotalPages);
+  const bookingOpsLedgerStartIndex =
+    (bookingOpsLedgerActivePage - 1) * CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE;
+  const visibleCustomerBookingOpsLedgerRows = customerBookingOpsLedgerRows.slice(
+    bookingOpsLedgerStartIndex,
+    bookingOpsLedgerStartIndex + CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE,
+  );
+  const bookingOpsLedgerPageFrom =
+    customerBookingOpsLedgerRows.length === 0 ? 0 : bookingOpsLedgerStartIndex + 1;
+  const bookingOpsLedgerPageTo = Math.min(
+    customerBookingOpsLedgerRows.length,
+    bookingOpsLedgerStartIndex + visibleCustomerBookingOpsLedgerRows.length,
+  );
   const filteredCustomerActivityRecords = orderCustomerActivityRecords(
     customerActivityRecords.filter(
       (record) =>
@@ -1125,17 +1166,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-mb-16" id="customer-chat-retention-ledger">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer chat retention ledger</h2>
-            <p className="muted">
-              Matched booking chat archive status for cancellation, no-show, and service evidence review.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerChatRetentionRows.length} booking row(s)</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
+      <AdminFilterPanel
+        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-chat-retention-section"
+        description="Matched booking chat archive status for cancellation, no-show, and service evidence review."
+        id="customer-chat-retention-ledger"
+        resultLabel={`${customerChatRetentionRows.length} booking row(s)`}
+        resultTone="info"
+        title="Customer chat retention ledger"
+      >
+        <div className="service-trace-summary customer-chat-retention-summary">
           {customerChatRetentionSummary.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -1146,11 +1185,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
         <AdminTableScroll>
           <AdminDataTable
-            emptyMessage={null}
+            className="vuexy-booking-table"
+            emptyMessage="No booking row matched this date filter."
             headers={CUSTOMER_CHAT_RETENTION_HEADERS}
-            rowCount={customerChatRetentionRows.length}
+            rowCount={visibleCustomerChatRetentionRows.length}
           >
-            {customerChatRetentionRows.map((row) => (
+            {visibleCustomerChatRetentionRows.map((row) => (
               <tr key={row.id}>
                 <td>
                   <strong>{row.bookingLabel}</strong>
@@ -1186,30 +1226,45 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        {customerChatRetentionRows.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No booking row matched this date filter.
-          </p>
-        ) : null}
-      </section>
-
-      <section className="card admin-mb-16" id="customer-booking-ops-ledger">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking operations note ledger</h2>
-            <p className="muted">
-              Booking-level notes, staff tasks, and closeout context linked to this customer.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerBookingOpsLedgerRows.length} booking note row(s)</span>
+        <div className="vuexy-booking-table-footer customer-chat-retention-footer">
+          <span>
+            Showing {chatRetentionPageFrom} to {chatRetentionPageTo} of {customerChatRetentionRows.length} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={chatRetentionActivePage}
+            ariaLabel="Customer chat retention ledger pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) =>
+              buildCustomerDetailPageHref(
+                `/customers/${id}`,
+                detailSearchParams,
+                'chatRetentionPage',
+                page,
+                'customer-chat-retention-ledger',
+              )
+            }
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={chatRetentionTotalPages}
+          />
         </div>
+      </AdminFilterPanel>
+
+      <AdminFilterPanel
+        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-ops-ledger-section"
+        description="Booking-level notes, staff tasks, and closeout context linked to this customer."
+        id="customer-booking-ops-ledger"
+        resultLabel={`${customerBookingOpsLedgerRows.length} booking note row(s)`}
+        resultTone="info"
+        title="Booking operations note ledger"
+      >
         <AdminTableScroll>
           <AdminDataTable
-            emptyMessage={null}
+            className="vuexy-booking-table"
+            emptyMessage="No booking-level operation notes or staff tasks matched this customer date filter."
             headers={CUSTOMER_BOOKING_OPS_LEDGER_HEADERS}
-            rowCount={customerBookingOpsLedgerRows.length}
+            rowCount={visibleCustomerBookingOpsLedgerRows.length}
           >
-            {customerBookingOpsLedgerRows.map((row) => (
+            {visibleCustomerBookingOpsLedgerRows.map((row) => (
               <tr key={row.id}>
                 <td>
                   <strong>{row.bookingLabel}</strong>
@@ -1242,12 +1297,28 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        {customerBookingOpsLedgerRows.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No booking-level operation notes or staff tasks matched this customer date filter.
-          </p>
-        ) : null}
-      </section>
+        <div className="vuexy-booking-table-footer customer-booking-ops-ledger-footer">
+          <span>
+            Showing {bookingOpsLedgerPageFrom} to {bookingOpsLedgerPageTo} of {customerBookingOpsLedgerRows.length} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={bookingOpsLedgerActivePage}
+            ariaLabel="Booking operations note ledger pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) =>
+              buildCustomerDetailPageHref(
+                `/customers/${id}`,
+                detailSearchParams,
+                'bookingOpsLedgerPage',
+                page,
+                'customer-booking-ops-ledger',
+              )
+            }
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={bookingOpsLedgerTotalPages}
+          />
+        </div>
+      </AdminFilterPanel>
 
       <section className="card admin-mb-16" id="chat-history">
         <div className="ops-section-header">

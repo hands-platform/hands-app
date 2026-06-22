@@ -7633,14 +7633,23 @@ textarea:focus-visible {
 }
 
 .customer-detail-page .customer-detail-section-band .customer-booking-operation-section,
-.customer-detail-page .customer-detail-section-band .customer-booking-history-section {
+.customer-detail-page .customer-detail-section-band .customer-booking-history-section,
+.customer-detail-page .customer-detail-section-band .customer-chat-retention-section,
+.customer-detail-page .customer-detail-section-band .customer-booking-ops-ledger-section {
   max-height: none;
   overflow: visible;
 }
 
 .customer-detail-page .customer-booking-operation-section .admin-filter-panel-body,
-.customer-detail-page .customer-booking-history-section .admin-filter-panel-body {
+.customer-detail-page .customer-booking-history-section .admin-filter-panel-body,
+.customer-detail-page .customer-chat-retention-section .admin-filter-panel-body,
+.customer-detail-page .customer-booking-ops-ledger-section .admin-filter-panel-body {
   padding: 0;
+}
+
+.customer-detail-page .customer-chat-retention-summary {
+  margin: 0;
+  padding: 0 24px 14px;
 }
 
 .customer-detail-page .admin-table-scroll {
