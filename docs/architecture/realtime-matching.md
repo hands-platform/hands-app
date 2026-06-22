@@ -3,7 +3,7 @@
 ## Redis Keys
 
 - `providers:status` - provider id to status hash.
-- `provider:{providerId}:location` - latest provider location, 10 minute TTL.
+- `provider:{providerId}:location` - latest Partner location cache. Treat entries older than 90 minutes as stale; idle apps refresh at most every 60 minutes or after 3000m movement, and active bookings refresh at most every 30 minutes.
 - `matching:active` - set of active matching booking ids.
 - `matching:{bookingId}` - active matching payload, 10 minute TTL by default.
 - `matching:{bookingId}:participants` - partners with actual marketplace participation records for a booking.
