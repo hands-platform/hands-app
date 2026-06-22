@@ -21,7 +21,7 @@ export function bookingAddressSnapshotStateFromFacts(
       label: input.snapshotAddressText ? 'Address locked' : 'Pin locked',
       detail: input.snapshotAddressText ?? 'Customer confirmed this map pin without a text address.',
       pin: input.snapshotPinLabel
-        ? `Pin ${input.snapshotPinLabel}`
+        ? 'Service address snapshot saved'
         : 'Pin saved without readable coordinates',
       tone: 'pill-success',
     };
@@ -31,7 +31,7 @@ export function bookingAddressSnapshotStateFromFacts(
     return {
       label: 'Stored address fallback',
       detail: input.legacyAddressText,
-      pin: input.legacyPinLabel ? `Pin ${input.legacyPinLabel}` : 'No locked pin snapshot',
+      pin: input.legacyPinLabel ? 'Stored booking location saved' : 'No locked pin snapshot',
       tone: 'pill-warn',
     };
   }

@@ -23,7 +23,7 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
     ).toEqual({
       label: 'Address locked',
       detail: '12 Nguyen Hue, District 1',
-      pin: 'Pin 10.776, 106.700',
+      pin: 'Service address snapshot saved',
       tone: 'pill-success',
     });
   });
@@ -38,7 +38,7 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
     ).toEqual({
       label: 'Pin locked',
       detail: 'Customer confirmed this map pin without a text address.',
-      pin: 'Pin 10.776, 106.700',
+      pin: 'Service address snapshot saved',
       tone: 'pill-success',
     });
   });
@@ -66,9 +66,20 @@ describe('bookingAddressSnapshotStateFromFacts', () => {
     ).toEqual({
       label: 'Stored address fallback',
       detail: 'Legacy customer address',
-      pin: 'Pin 10.770, 106.690',
+      pin: 'Stored booking location saved',
       tone: 'pill-warn',
     });
+  });
+
+  it('does not echo raw coordinate labels in any snapshot state text', () => {
+    const state = bookingAddressSnapshotStateFromFacts({
+      ...baseInput,
+      hasAddressSnapshot: true,
+      snapshotAddressText: '12 Nguyen Hue, District 1',
+      snapshotPinLabel: '10.7769, 106.7009',
+    });
+
+    expect(JSON.stringify(state)).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
   });
 
   it('returns missing state when neither snapshot nor legacy address is available', () => {
