@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { BellRing, Bookmark, MapPin, MessageSquareText, Smartphone, Wallet } from 'lucide-react';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -15,36 +13,20 @@ export type CustomerDetailOverviewHighlight = {
   readonly value: string;
 };
 
-export type CustomerDetailOverviewAction = {
-  readonly href: string;
-  readonly label: string;
-};
-
-export type CustomerDetailOverviewNavItem = {
-  readonly detail: string;
-  readonly href: string;
-  readonly label: string;
-  readonly value: string;
-};
-
 type CustomerDetailOverviewShellProps = {
-  readonly actions: readonly CustomerDetailOverviewAction[];
   readonly avatarStatus: AdminAvatarStatus;
   readonly facts: readonly CustomerDetailOverviewFact[];
   readonly highlights: readonly CustomerDetailOverviewHighlight[];
   readonly name: string;
-  readonly navigation: readonly CustomerDetailOverviewNavItem[];
   readonly statusBadges: readonly string[];
   readonly subtitle: string;
 };
 
 export function CustomerDetailOverviewShell({
-  actions,
   avatarStatus,
   facts,
   highlights,
   name,
-  navigation,
   statusBadges,
   subtitle,
 }: CustomerDetailOverviewShellProps) {
@@ -86,41 +68,6 @@ export function CustomerDetailOverviewShell({
             </div>
           ))}
         </div>
-
-        <div className="customer-detail-action-list">
-          {actions.map((action, index) => (
-            <Link className={index === 0 ? 'customer-detail-action-primary' : 'customer-detail-action-link'} href={action.href} key={action.href}>
-              {action.label}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card customer-detail-overview-card">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer record navigation</h2>
-            <p className="muted">
-              Same detail flow, but grouped like Vuexy user view: overview first, then records and
-              operating evidence.
-            </p>
-          </div>
-          <span className="pill pill-neutral">{navigation.length} sections</span>
-        </div>
-        <div className="customer-detail-nav-list">
-          {navigation.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span className="customer-detail-nav-icon" aria-hidden="true">
-                {iconForSection(item.label)}
-              </span>
-              <div>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </div>
-              <em>{item.value}</em>
-            </a>
-          ))}
-        </div>
       </section>
     </aside>
   );
@@ -138,26 +85,4 @@ function readInitials(name: string) {
   }
 
   return tokens.map((token) => token[0]?.toUpperCase() ?? '').join('');
-}
-
-function iconForSection(label: string) {
-  const normalized = label.toLowerCase();
-
-  if (normalized.includes('booking')) {
-    return <Bookmark size={15} />;
-  }
-  if (normalized.includes('wallet') || normalized.includes('payment')) {
-    return <Wallet size={15} />;
-  }
-  if (normalized.includes('chat')) {
-    return <MessageSquareText size={15} />;
-  }
-  if (normalized.includes('address')) {
-    return <MapPin size={15} />;
-  }
-  if (normalized.includes('activity') || normalized.includes('session')) {
-    return <Smartphone size={15} />;
-  }
-
-  return <BellRing size={15} />;
 }

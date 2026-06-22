@@ -67,10 +67,8 @@ import {
 } from './customer-detail-filters';
 import {
   CustomerDetailOverviewShell,
-  type CustomerDetailOverviewAction,
   type CustomerDetailOverviewFact,
   type CustomerDetailOverviewHighlight,
-  type CustomerDetailOverviewNavItem,
 } from './customer-detail-overview-shell';
 import {
   CustomerDetailSectionBand,
@@ -557,64 +555,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         'No repeated service area found.',
     },
   ];
-  const overviewActions: CustomerDetailOverviewAction[] = [
-    {
-      href: latestBooking?.id ? `/bookings/${latestBooking.id}` : '#booking-history',
-      label: latestBooking ? 'Open latest booking' : 'Open booking history',
-    },
-    {
-      href: `/payments?customer=${encodeURIComponent(customer.id)}`,
-      label: 'Open payments',
-    },
-    {
-      href: `/chat-archive?q=${encodeURIComponent(customer.id)}`,
-      label: 'Open chat archive',
-    },
-  ];
-  const overviewNavigation: CustomerDetailOverviewNavItem[] = [
-    {
-      href: '#customer-operations-digest',
-      label: 'Operations digest',
-      value: `${customerOperationsDigest.length} lanes`,
-      detail: 'Single-screen customer operating state.',
-    },
-    {
-      href: '#customer-connected-operations-records',
-      label: 'Linked records',
-      value: `${connectedCustomerRecordLinks.length} links`,
-      detail: 'Bookings, payments, chat archives, sessions, and notes.',
-    },
-    {
-      href: '#wallet',
-      label: 'Payment ledger',
-      value: formatMoney(wallet.capturedSpend),
-      detail: `${wallet.refundCount} refund row(s) tracked for this customer.`,
-    },
-    {
-      href: '#booking-history',
-      label: 'Booking history',
-      value: `${bookings.length} rows`,
-      detail: 'Active, completed, cancelled, refunded, and no-show records.',
-    },
-    {
-      href: '#customer-chat-retention-ledger',
-      label: 'Chat retention',
-      value: `${chatRooms.length} room(s)`,
-      detail: 'Customer and Partner chat evidence retained for admin review.',
-    },
-    {
-      href: '#customer-activity',
-      label: 'Activity timeline',
-      value: `${filteredCustomerActivityRecords.length} events`,
-      detail: `${dateFilters.label} / ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}.`,
-    },
-    {
-      href: '#notifications',
-      label: 'Notifications',
-      value: `${filteredNotifications.length} rows`,
-      detail: 'Recent customer push and in-app notification history.',
-    },
-  ];
   const detailShortcuts: CustomerDetailShortcut[] = [
     {
       href: '#customer-operations-digest',
@@ -681,12 +621,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
       <div className="customer-detail-shell">
         <CustomerDetailOverviewShell
-          actions={overviewActions}
           avatarStatus={customerAvatarStatus}
           facts={overviewFacts}
           highlights={overviewHighlights}
           name={customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer'}
-          navigation={overviewNavigation}
           statusBadges={overviewStatusBadges}
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
         />
