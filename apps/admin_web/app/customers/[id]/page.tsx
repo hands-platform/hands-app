@@ -1267,30 +1267,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               support trace.
             </p>
           </div>
-          <span className="pill pill-info">
-            {pushDevices.length} device(s) / {filteredNotifications.length} notification row(s)
-          </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Push devices</span>
-            <strong>{pushDevices.filter((device) => device.enabled).length}/{pushDevices.length}</strong>
-            <small>Enabled push targets</small>
-          </div>
-          <div>
-            <span>App sessions</span>
-            <strong>{appSessions.filter((session) => session.active).length}/{appSessions.length}</strong>
-            <small>Active customer sessions</small>
-          </div>
-          <div>
-            <span>Notifications</span>
-            <strong>{filteredNotifications.length}</strong>
-            <small>Rows in selected filter</small>
-          </div>
-          <div>
-            <span>Audit logs</span>
-            <strong>{filteredAuditLogs.length}</strong>
-            <small>Operator/system actions</small>
+          <div className="participant-list">
+            <span className="pill pill-info">{pushDevices.length} device(s)</span>
+            <span className="pill pill-info">
+              {appSessions.filter((session) => session.active).length}/{appSessions.length} active session(s)
+            </span>
+            <span className="pill pill-info">{filteredNotifications.length} notification row(s)</span>
+            <span className="pill pill-info">{filteredAuditLogs.length} audit log(s)</span>
           </div>
         </div>
         <div className="grid admin-mt-16">

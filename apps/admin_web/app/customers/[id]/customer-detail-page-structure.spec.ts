@@ -62,5 +62,10 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Withdrawal request');
     expect(pageSource).not.toContain('Customer payment ledger');
     expect(pageSource).not.toContain('id="wallet"');
+    expect(pageSource).not.toContain('<span>Push devices</span>');
+    expect(pageSource).not.toContain('<span>Notifications</span>');
+    expect(pageSource).not.toContain('<span>Audit logs</span>');
+    expect(pageSource).not.toContain('<small>Enabled push targets</small>');
+    expect(pageSource).not.toContain('<small>Operator/system actions</small>');
   });
 });
