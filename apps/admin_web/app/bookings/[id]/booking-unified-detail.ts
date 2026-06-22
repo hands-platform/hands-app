@@ -11,7 +11,6 @@ import type { bookingFinanceTrace } from './booking-finance-trace';
 import {
   bookingServiceOptionLabel,
   approximateDistanceMeters,
-  coordinateLabel,
   distanceLabel,
   formatDate,
   money,
@@ -168,8 +167,7 @@ function bookingUnifiedCustomerRows({
     {
       label: 'Service address',
       value: addressLine,
-      detail:
-        addressPin === 'No pin' ? 'Booking address snapshot.' : `Booking address snapshot. Pin ${addressPin}`,
+      detail: addressPin === 'No pin' ? 'Booking address snapshot.' : 'Booking address snapshot saved.',
     },
     {
       label: 'Live customer location',
@@ -414,25 +412,16 @@ function customerDeviceLanguage(booking: AdminBookingDetail) {
   );
 }
 
-function customerActualLocationLabel(booking: AdminBookingDetail) {
+function customerActualLocationDetail(booking: AdminBookingDetail) {
   if (
     booking.lat === undefined ||
     booking.lat === null ||
     booking.lng === undefined ||
     booking.lng === null
   ) {
-    return 'No live customer location';
-  }
-
-  return coordinateLabel(booking.lat, booking.lng);
-}
-
-function customerActualLocationDetail(booking: AdminBookingDetail) {
-  const pin = customerActualLocationLabel(booking);
-  if (pin === 'No live customer location') {
     return {
       detail: 'Customer live position was not recorded for this booking request.',
-      value: pin,
+      value: 'No live customer location',
     };
   }
 
@@ -444,23 +433,15 @@ function customerActualLocationDetail(booking: AdminBookingDetail) {
   );
   if (distance !== null) {
     return {
-      detail: `Within ${distanceLabel(distance)} of the reservation address. Pin ${pin}`,
+      detail: `Within ${distanceLabel(distance)} of the reservation address. Raw coordinates are hidden in the admin UI.`,
       value: 'Live customer location captured',
     };
   }
 
   return {
-    detail: `Separate from the reservation address. Pin ${pin}`,
+    detail: 'Separate from the reservation address. Raw coordinates are hidden in the admin UI.',
     value: 'Live customer location captured',
   };
-}
-
-function providerCurrentLocationLabel(provider: NonNullable<AdminBookingDetail['selectedProvider']> | null) {
-  if (!provider) {
-    return 'No matched Partner location';
-  }
-
-  return coordinateLabel(provider.currentLat, provider.currentLng);
 }
 
 function bookingUnifiedParticipantPeople(booking: AdminBookingDetail): BookingUnifiedDetailPerson[] {
@@ -772,11 +753,10 @@ function providerLocationCheckpointDetail({
   }
 
   const snapshotAddress = readAddressText(snapshot);
-  const pin = coordinateLabel(snapshot.lat, snapshot.lng);
 
   if (snapshotAddress) {
     return {
-      detail: `${checkpointMeta} / Pin ${pin}`,
+      detail: checkpointMeta,
       value: serviceAddressAreaLabel(snapshotAddress),
     };
   }
@@ -795,7 +775,7 @@ function providerLocationCheckpointDetail({
   }
 
   return {
-    detail: `${checkpointMeta} / Pin ${pin}`,
+    detail: `${checkpointMeta} / Location coordinate recorded without readable address text`,
     value: snapshot || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };
 }
@@ -851,14 +831,20 @@ function providerLocationAddressDetail({
     return liveLocationAtReservationAddress;
   }
 
-  const pin = latestLocation
-    ? coordinateLabel(latestLocation.lat, latestLocation.lng)
-    : providerCurrentLocationLabel(selectedProvider);
+  const hasProviderCoordinate =
+    selectedProvider?.currentLat !== undefined &&
+    selectedProvider.currentLat !== null &&
+    selectedProvider?.currentLng !== undefined &&
+    selectedProvider.currentLng !== null;
 
   return {
     detail: latestLocation
-      ? `Pin ${pin} / recorded ${formatDate(latestLocation.recordedAt)}`
-      : `Current live address was not recorded. Coordinate ${pin}`,
+      ? `Recorded ${formatDate(latestLocation.recordedAt)}. Readable address was not recorded.`
+      : hasProviderCoordinate
+        ? 'Current live coordinate exists, but readable address was not recorded.'
+        : selectedProvider
+          ? 'Current live address was not recorded.'
+          : 'No matched Partner location.',
     value:
       latestLocation || selectedProvider ? 'Location address not recorded' : 'No matched Partner location',
   };

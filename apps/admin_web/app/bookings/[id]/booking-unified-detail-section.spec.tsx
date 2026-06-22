@@ -63,6 +63,7 @@ describe('BookingUnifiedDetailSection', () => {
     expect(rendered).toContain('Service payout matrix');
     expect(rendered).toContain('3 chat messages');
     expect(rendered).toContain('500.000 VND customer -&gt; 400.000 VND Partner');
+    expect(rendered).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
     expect(rendered.indexOf('Payment record')).toBeLessThan(rendered.indexOf('Service state'));
     expect(rendered.indexOf('Partner earning')).toBeLessThan(rendered.indexOf('Service state'));
     expect(rendered.indexOf('HANDS fee and costs')).toBeLessThan(rendered.indexOf('Service state'));
@@ -104,7 +105,7 @@ describe('BookingUnifiedDetailSection', () => {
     const liveLocationRow = unifiedDetail.customerRows.find((row) => row.label === 'Live customer location');
 
     expect(liveLocationRow).toMatchObject({
-      detail: 'Within 0 m of the reservation address. Pin 21.0360, 105.7820',
+      detail: 'Within 0 m of the reservation address. Raw coordinates are hidden in the admin UI.',
       value: 'Live customer location captured',
     });
   });
