@@ -458,7 +458,11 @@ export class AdminService {
           selectedLocations: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { addressText: true },
+            select: {
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
           },
           user: {
             select: {
@@ -483,6 +487,8 @@ export class AdminService {
           residentialAddress: true,
           serviceArea: true,
           status: true,
+          currentLat: true,
+          currentLng: true,
           currentLocationUpdatedAt: true,
         },
       }),
@@ -492,10 +498,14 @@ export class AdminService {
         select: {
           status: true,
           address: true,
+          lat: true,
+          lng: true,
           addressSnapshot: {
             select: {
               address: true,
               addressText: true,
+              latitude: true,
+              longitude: true,
             },
           },
           payment: {
@@ -512,11 +522,17 @@ export class AdminService {
     for (const customer of customers) {
       const region = ensureVietnamOverviewRegion(
         regions,
-        vietnamRegionCodeFromValues([
-          customer.selectedLocations[0]?.addressText,
-          customer.addresses,
-          customer.user.appSessions[0]?.lastLoginAddress,
-        ]),
+        vietnamRegionCodeFromValues(
+          [
+            customer.selectedLocations[0]?.addressText,
+            customer.addresses,
+            customer.user.appSessions[0]?.lastLoginAddress,
+          ],
+          {
+            latitude: customer.selectedLocations[0]?.latitude,
+            longitude: customer.selectedLocations[0]?.longitude,
+          },
+        ),
       );
       region.customerCount += 1;
 
@@ -529,11 +545,17 @@ export class AdminService {
     for (const provider of providers) {
       const region = ensureVietnamOverviewRegion(
         regions,
-        vietnamRegionCodeFromValues([
-          provider.city,
-          provider.residentialAddress,
-          provider.serviceArea,
-        ]),
+        vietnamRegionCodeFromValues(
+          [
+            provider.city,
+            provider.residentialAddress,
+            provider.serviceArea,
+          ],
+          {
+            latitude: provider.currentLat,
+            longitude: provider.currentLng,
+          },
+        ),
       );
       region.partnerCount += 1;
 
@@ -549,11 +571,17 @@ export class AdminService {
     for (const booking of bookings) {
       const region = ensureVietnamOverviewRegion(
         regions,
-        vietnamRegionCodeFromValues([
-          booking.addressSnapshot?.addressText,
-          booking.address,
-          booking.addressSnapshot?.address,
-        ]),
+        vietnamRegionCodeFromValues(
+          [
+            booking.addressSnapshot?.addressText,
+            booking.address,
+            booking.addressSnapshot?.address,
+          ],
+          {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+        ),
       );
 
       if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(booking.status)) {

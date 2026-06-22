@@ -14,6 +14,11 @@ export type VietnamRegionBucket = {
   shortName: string;
 };
 
+export type VietnamCoordinateInput = {
+  latitude?: unknown;
+  longitude?: unknown;
+};
+
 export const VIETNAM_REGION_BUCKETS: readonly VietnamRegionBucket[] = [
   { code: 'hanoi', name: 'Ha Noi', shortName: 'HN' },
   { code: 'hcm', name: 'Ho Chi Minh City', shortName: 'HCMC' },
@@ -58,11 +63,30 @@ const REGION_MATCHERS: Array<{ code: VietnamRegionCode; pattern: RegExp }> = [
   },
 ];
 
+const REGION_BOUNDING_BOXES: Array<{
+  code: Exclude<VietnamRegionCode, 'other-vietnam'>;
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}> = [
+  { code: 'hcm', minLat: 10.3, maxLat: 11.2, minLng: 106.2, maxLng: 107.3 },
+  { code: 'vung-tau', minLat: 10.2, maxLat: 10.65, minLng: 106.95, maxLng: 107.45 },
+  { code: 'hanoi', minLat: 20.75, maxLat: 21.35, minLng: 105.5, maxLng: 106.15 },
+  { code: 'da-nang', minLat: 15.85, maxLat: 16.25, minLng: 107.85, maxLng: 108.45 },
+  { code: 'nha-trang', minLat: 12.1, maxLat: 12.4, minLng: 109.0, maxLng: 109.4 },
+  { code: 'da-lat', minLat: 11.75, maxLat: 12.1, minLng: 108.25, maxLng: 108.65 },
+  { code: 'can-tho', minLat: 9.8, maxLat: 10.2, minLng: 105.55, maxLng: 106.1 },
+];
+
 export function vietnamRegionLabel(code: string | null | undefined) {
   return VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === code)?.name ?? 'Other Vietnam';
 }
 
-export function vietnamRegionCodeFromValues(values: readonly unknown[]): VietnamRegionCode {
+export function vietnamRegionCodeFromValues(
+  values: readonly unknown[],
+  coordinates?: VietnamCoordinateInput | null,
+): VietnamRegionCode {
   const normalized = normalizeRegionText(values.map(flattenText).filter(Boolean).join(' '));
 
   for (const matcher of REGION_MATCHERS) {
@@ -71,7 +95,32 @@ export function vietnamRegionCodeFromValues(values: readonly unknown[]): Vietnam
     }
   }
 
+  const coordinateRegion = vietnamRegionCodeFromCoordinate(coordinates);
+  if (coordinateRegion) {
+    return coordinateRegion;
+  }
+
   return 'other-vietnam';
+}
+
+export function vietnamRegionCodeFromCoordinate(
+  coordinates?: VietnamCoordinateInput | null,
+): Exclude<VietnamRegionCode, 'other-vietnam'> | null {
+  const latitude = numberValue(coordinates?.latitude);
+  const longitude = numberValue(coordinates?.longitude);
+  if (latitude === null || longitude === null) {
+    return null;
+  }
+
+  const match = REGION_BOUNDING_BOXES.find(
+    (box) =>
+      latitude >= box.minLat &&
+      latitude <= box.maxLat &&
+      longitude >= box.minLng &&
+      longitude <= box.maxLng,
+  );
+
+  return match?.code ?? null;
 }
 
 function flattenText(value: unknown): string {
@@ -88,6 +137,18 @@ function flattenText(value: unknown): string {
   }
 
   return '';
+}
+
+function numberValue(value: unknown) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'object' && 'toString' in value) {
+    const parsed = Number(value.toString());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function normalizeRegionText(value: string) {

@@ -1,4 +1,8 @@
-import { vietnamRegionCodeFromValues, vietnamRegionLabel } from './admin-vietnam-region-overview';
+import {
+  vietnamRegionCodeFromCoordinate,
+  vietnamRegionCodeFromValues,
+  vietnamRegionLabel,
+} from './admin-vietnam-region-overview';
 
 describe('admin Vietnam region overview helpers', () => {
   it('maps Vietnamese booking address text to the operating region bucket', () => {
@@ -29,6 +33,19 @@ describe('admin Vietnam region overview helpers', () => {
         },
       ]),
     ).toBe('hcm');
+  });
+
+  it('uses stored coordinates as an aggregate-only fallback when address text is incomplete', () => {
+    expect(
+      vietnamRegionCodeFromValues(['Custom price payout smoke flow'], {
+        latitude: '10.7769',
+        longitude: '106.7009',
+      }),
+    ).toBe('hcm');
+
+    expect(vietnamRegionCodeFromCoordinate({ latitude: 21.0278, longitude: 105.8342 })).toBe(
+      'hanoi',
+    );
   });
 
   it('keeps unknown Vietnamese addresses in the other Vietnam bucket', () => {
