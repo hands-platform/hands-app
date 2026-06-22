@@ -194,8 +194,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     bookings,
     allCustomerBookingOperationBuckets,
   );
-  const customerBookingOperationGroups =
-    buildCustomerBookingOperationGroups(customerBookingOperationBuckets);
+  const customerBookingOperationGroups = buildCustomerBookingOperationGroups(
+    customerBookingOperationBuckets,
+    detailSearchParams,
+  );
   const filteredChatBookings = bookings.filter((booking) => {
     if (!booking.chatRoom) return false;
     return (
@@ -564,8 +566,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
 
       <CustomerBookingOperationBoard
+        basePath={`/customers/${id}`}
         groups={customerBookingOperationGroups}
         metrics={customerBookingOperationMetrics}
+        searchParams={detailSearchParams}
       />
 
       <section className="card admin-mb-16" id="customer-recent-operations-timeline">
@@ -2017,6 +2021,7 @@ function buildCustomerBookingOperationMetrics(
 
 function buildCustomerBookingOperationGroups(
   buckets: CustomerBookingOperationBuckets,
+  searchParams: Record<string, string | string[] | undefined>,
 ): CustomerBookingOperationGroup[] {
   return [
     {
@@ -2024,6 +2029,8 @@ function buildCustomerBookingOperationGroups(
       description: 'Bookings still waiting for matching, matched, on the way, arrived, or in service.',
       emptyMessage: 'No current or in-progress booking matched this filter.',
       key: 'live',
+      page: readCustomerBookingOperationPage(searchParams, 'liveBookingsPage'),
+      pageParam: 'liveBookingsPage',
       rows: buildCustomerBookingOperationRows(buckets.live),
       title: 'Current / In Progress',
     },
@@ -2032,6 +2039,8 @@ function buildCustomerBookingOperationGroups(
       description: 'Completed service rows with service price, Partner, address, and state timestamp.',
       emptyMessage: 'No completed booking matched this filter.',
       key: 'completed',
+      page: readCustomerBookingOperationPage(searchParams, 'completedBookingsPage'),
+      pageParam: 'completedBookingsPage',
       rows: buildCustomerBookingOperationRows(buckets.completed),
       title: 'Completed',
     },
@@ -2040,6 +2049,8 @@ function buildCustomerBookingOperationGroups(
       description: 'Bookings closed before a final matched Partner signal was recorded.',
       emptyMessage: 'No pre-match cancellation matched this filter.',
       key: 'pre-match-cancelled',
+      page: readCustomerBookingOperationPage(searchParams, 'preMatchCancelledBookingsPage'),
+      pageParam: 'preMatchCancelledBookingsPage',
       rows: buildCustomerBookingOperationRows(buckets.preMatchCancelled),
       title: 'Pre-match Cancellations',
     },
@@ -2048,6 +2059,8 @@ function buildCustomerBookingOperationGroups(
       description: 'Partner-side post-match cancellations and no-show style rows for admin review history.',
       emptyMessage: 'No Partner cancellation matched this filter.',
       key: 'partner-cancelled',
+      page: readCustomerBookingOperationPage(searchParams, 'partnerCancelledBookingsPage'),
+      pageParam: 'partnerCancelledBookingsPage',
       rows: buildCustomerBookingOperationRows(buckets.partnerCancelled),
       title: 'Partner Cancellations',
     },
@@ -2057,7 +2070,7 @@ function buildCustomerBookingOperationGroups(
 function buildCustomerBookingOperationRows(
   bookings: readonly AdminBookingDetail[],
 ): CustomerBookingOperationRow[] {
-  return bookings.slice(0, 10).map((booking) => {
+  return bookings.map((booking) => {
     const partnerId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? booking.preferredProviderId;
     const participantCount = booking.participants?.length ?? 0;
     const selectedPartner = Boolean(booking.selectedProviderId ?? booking.selectedProvider);
@@ -2082,6 +2095,16 @@ function buildCustomerBookingOperationRows(
       stateTone: bookingStatusPillClass(booking.status),
     };
   });
+}
+
+function readCustomerBookingOperationPage(
+  searchParams: Record<string, string | string[] | undefined>,
+  pageParam: string,
+) {
+  const rawValue = searchParams[pageParam];
+  const rawPage = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+  const page = rawPage ? Number(rawPage) : 1;
+  return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
 function isCustomerPreMatchCancellation(booking: AdminBookingDetail) {

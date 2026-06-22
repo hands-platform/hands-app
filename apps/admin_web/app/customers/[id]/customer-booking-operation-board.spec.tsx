@@ -7,8 +7,10 @@ import {
 describe('CustomerBookingOperationBoard', () => {
   it('renders booking situation metrics and Partner avatar rows', () => {
     const board = CustomerBookingOperationBoard({
+      basePath: '/customers/customer-1',
       groups: buildGroups(),
       metrics: buildMetrics(),
+      searchParams: { range: '7d' },
     });
 
     const rendered = textContent(board).replace(/\s+/g, ' ');
@@ -18,9 +20,12 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Pre-match Cancellations');
     expect(rendered).toContain('Partner Cancellations');
+    expect(rendered).toContain('Showing 1 to 10 of 11 entries');
     expect(rendered).toContain('Smoke Partner');
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
+        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',
+        'vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',
         'vuexy-booking-person',
         'admin-avatar-status-dot is-working',
@@ -51,13 +56,14 @@ function group(key: string, title: string, description: string): CustomerBooking
     description,
     emptyMessage: 'Empty',
     key,
-    rows: [
-      {
+    page: 1,
+    pageParam: `${key}Page`,
+    rows: Array.from({ length: key === 'live' ? 11 : 1 }, (_, index) => ({
         addressLabel: 'District 1, Ho Chi Minh City',
         bookingHelper: 'OPEN_MATCHING / State 19 Jun 2026, 10:00',
-        bookingHref: '/bookings/booking-1',
-        bookingLabel: 'booking-1',
-        id: `${key}-booking-1`,
+        bookingHref: `/bookings/booking-${index + 1}`,
+        bookingLabel: `booking-${index + 1}`,
+        id: `${key}-booking-${index + 1}`,
         partnerAvatarStatus: 'working',
         partnerHelper: 'Selected Partner / 2 participating',
         partnerHref: '/partners/partner-1',
@@ -68,8 +74,7 @@ function group(key: string, title: string, description: string): CustomerBooking
         stateDetail: '19 Jun 2026, 10:00',
         stateLabel: 'OPEN_MATCHING',
         stateTone: 'pill-info',
-      },
-    ],
+      })),
     title,
   };
 }

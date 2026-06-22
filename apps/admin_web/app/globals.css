@@ -7748,21 +7748,12 @@ textarea:focus-visible {
   min-width: 0;
 }
 
-.customer-booking-operation-stack {
-  display: grid;
-  gap: 16px;
-}
-
-.customer-booking-operation-section {
-  background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
-  border: 1px solid var(--admin-border);
-  border-radius: 10px;
-  overflow: hidden;
-  padding: 16px;
-}
-
 .customer-booking-operation-section .admin-table-scroll {
-  margin-top: 12px;
+  margin-top: 0;
+}
+
+.customer-booking-operation-footer {
+  margin-top: 14px;
 }
 
 .customer-booking-operation-metric.pill-warn strong {
