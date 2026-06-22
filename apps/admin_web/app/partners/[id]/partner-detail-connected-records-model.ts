@@ -61,6 +61,11 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
   );
   const chatRoomCount = bookingArchive.filter((record) => record.booking.chatRoom).length;
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === PARTNER_OPS_NOTE_ACTION);
+  const latestLocationSaved =
+    provider.currentLat !== null &&
+    provider.currentLat !== undefined &&
+    provider.currentLng !== null &&
+    provider.currentLng !== undefined;
 
   return [
     {
@@ -98,10 +103,9 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
     {
       label: 'Location',
       value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
-      detail:
-        provider.currentLat && provider.currentLng
-          ? `${provider.currentLat}, ${provider.currentLng}`
-          : 'No latest location loaded.',
+      detail: latestLocationSaved
+        ? 'Latest Partner location saved for dispatch checks.'
+        : 'No latest location loaded.',
       href: '#location',
       tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
     },

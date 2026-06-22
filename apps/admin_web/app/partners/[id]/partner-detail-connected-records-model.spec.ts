@@ -50,6 +50,14 @@ describe('partner detail connected records model', () => {
       tone: 'pill-danger',
       value: 'Payout blocked',
     });
+    expect(linkByLabel(links, 'Location')).toMatchObject({
+      detail: 'Latest Partner location saved for dispatch checks.',
+      tone: 'pill-info',
+      value: '10 Jun 2026, 14:00',
+    });
+    expect(JSON.stringify(linkByLabel(links, 'Location'))).not.toMatch(
+      /\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/,
+    );
     expect(linkByLabel(links, 'Operator notes')).toMatchObject({
       detail: 'Manual partner note',
       tone: 'pill-info',
