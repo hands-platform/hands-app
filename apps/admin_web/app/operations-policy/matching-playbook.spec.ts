@@ -8,7 +8,7 @@ describe('operations policy matching playbook', () => {
       'matching.marketplace_partner_invitation_limit': '50',
       'matching.marketplace_open_mode': 'Open marketplace immediately',
       'matching.preferred_accept_mode': 'Customer final confirmation',
-      'wallet.negative_balance_gate': 'Block marketplace participation while negative',
+      'wallet.negative_balance_gate': 'Final Gate Hold',
       'notification.partner_alert_channel': 'In-app first',
     };
 
@@ -25,7 +25,7 @@ describe('operations policy matching playbook', () => {
     ]);
     expect(playbook[2].detail).toContain('50 Partners inside 10 km');
     expect(playbook[4].tags[0]).toEqual({
-      label: 'Block marketplace participation while negative',
+      label: 'Final Gate Hold',
       tone: 'pill-danger',
     });
     expect(playbook[5].detail).toContain('Partner alert routing currently follows "In-app first"');
@@ -39,7 +39,7 @@ describe('operations policy matching playbook', () => {
       'matching.marketplace_partner_invitation_limit': '50 partners',
       'matching.marketplace_open_mode': 'Open marketplace immediately',
       'matching.preferred_accept_mode': 'Customer final confirmation',
-      'wallet.negative_balance_gate': 'Block marketplace participation while negative',
+      'wallet.negative_balance_gate': 'Final Gate Hold',
       'notification.partner_alert_channel': 'In-app first',
     };
 

@@ -281,23 +281,23 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: WALLET_NEGATIVE_BALANCE_GATE_KEY,
     category: 'Decision',
-    label: 'Negative wallet marketplace gate',
+    label: 'Negative wallet final gate',
     description:
-      'Controls how unpaid cash-service platform fees block partner marketplace alerts, participation, and payout release.',
+      'Controls how unpaid cash-service platform fees block final acceptance, service start, and payout release.',
     value: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
     recommendedValue: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
     options: [
       {
         value: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
-        label: 'Block marketplace alerts and participation while negative',
+        label: 'Hold final acceptance while negative',
         tradeoff:
-          'Keeps marketplace requests visible for review, but blocks marketplace alerts, participation, and payout release while debt is open.',
+          'Keeps marketplace requests visible for review, but blocks final acceptance, service start, and payout release while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
         label: 'Historical exception disabled',
         tradeoff:
-          'Compatibility value for old policy rows only. HANDS MVP blocks marketplace alerts, participation, and payout release while the wallet is negative.',
+          'Compatibility value for old policy rows only. HANDS MVP blocks final acceptance, service start, and payout release while the wallet is negative.',
       },
     ],
     enforced: true,

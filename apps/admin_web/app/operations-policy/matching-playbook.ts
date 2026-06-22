@@ -35,6 +35,10 @@ function formatPartnerLimitForSentence(value: string): string {
     .replace(/\bpartner\b/gi, 'Partner');
 }
 
+function isWalletFinalGateHold(value: string): boolean {
+  return /\b(block|hold)\b/i.test(value);
+}
+
 export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => string): MatchingPlaybookItem[] {
   const responseWindow = displayPolicyByKey('matching.provider_response_window_minutes');
   const backupRadius = displayPolicyByKey(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
@@ -44,6 +48,7 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
   const backupOpenMode = displayPolicyByKey(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode);
   const preferredAcceptMode = displayPolicyByKey('matching.preferred_accept_mode');
   const walletGate = displayPolicyByKey('wallet.negative_balance_gate');
+  const walletFinalGateHeld = isWalletFinalGateHold(walletGate);
   const alertChannel = displayPolicyByKey('notification.partner_alert_channel');
 
   return [
@@ -94,9 +99,9 @@ export function buildMatchingPlaybook(displayPolicyByKey: (key: string) => strin
       step: '5',
       title: 'Wallet and control gates protect operations',
       detail: `Negative cash-fee debt follows "${walletGate}". Payout holds, account blocks, and stale location should be reviewed before Partner dispatch.`,
-      className: walletGate.includes('Block') ? 'timeline-active' : 'timeline-done',
+      className: walletFinalGateHeld ? 'timeline-active' : 'timeline-done',
       tags: [
-        { label: walletGate, tone: walletGate.includes('Block') ? 'pill-danger' : 'pill-warn' },
+        { label: walletGate, tone: walletFinalGateHeld ? 'pill-danger' : 'pill-warn' },
         { label: 'Partner controls', tone: 'pill-info' },
       ],
     },

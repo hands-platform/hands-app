@@ -59,7 +59,7 @@ describe('matching policy', () => {
     expect(MATCH_SOURCE_CUSTOMER_SELECTED_PARTNER).toBe('CUSTOMER_SELECTED_PARTNER');
   });
 
-  it('defines negative wallet policy as marketplace participation blocking', () => {
+  it('defines negative wallet policy as final acceptance, service start, and payout blocking', () => {
     const definition = OPERATIONAL_POLICY_DEFINITIONS.find(
       (item) => item.key === WALLET_NEGATIVE_BALANCE_GATE_KEY,
     );
@@ -67,8 +67,11 @@ describe('matching policy', () => {
     expect(definition?.value).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
     expect(definition?.recommendedValue).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
     expect(definition?.options?.[0]?.value).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
-    expect(definition?.label).toBe('Negative wallet marketplace gate');
-    expect(JSON.stringify(definition)).toContain('marketplace alerts');
+    expect(definition?.label).toBe('Negative wallet final gate');
+    expect(JSON.stringify(definition)).toContain('final acceptance');
+    expect(JSON.stringify(definition)).toContain('service start');
+    expect(JSON.stringify(definition)).toContain('payout release');
+    expect(JSON.stringify(definition)).not.toContain('block partner marketplace alerts');
   });
 
   it('keeps operational policy copy factual instead of scoring people', () => {

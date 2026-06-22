@@ -46,7 +46,7 @@ npm.cmd run external:check:maps
      - marketplace radius: 10km
      - marketplace stale threshold: 90 minutes; active booking refresh: 30 minutes
      - final partner connection: first-pick valid acceptance first, otherwise customer fallback selection
-     - negative partner wallet: marketplace participation blocked until settlement
+     - negative partner wallet: marketplace visibility remains open, but final acceptance, service start, and payout release are held until settlement
    - Legacy env keys may still contain `BACKUP`; treat them as marketplace settings.
 
 5. SMS/Phone Auth
