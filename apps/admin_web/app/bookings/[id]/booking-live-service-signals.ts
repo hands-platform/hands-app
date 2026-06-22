@@ -7,7 +7,6 @@ import {
   addressLabel,
   approximateDistanceMeters,
   bookingAddressSnapshotLabel,
-  coordinateLabel,
   distanceLabel,
   isTerminalPayment,
 } from './booking-formatters';
@@ -15,6 +14,7 @@ import {
   latestProviderLocation,
   latestProviderLocationFreshness,
 } from './booking-status-location';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export type BookingLiveServiceSignal = {
   label: string;
@@ -26,10 +26,8 @@ export type BookingLiveServiceSignal = {
 export function bookingLiveServiceSignals(booking: AdminBookingDetail): BookingLiveServiceSignal[] {
   const latest = latestProviderLocation(booking);
   const freshness = latestProviderLocationFreshness(booking);
-  const serviceAddressPin = booking.addressSnapshot
-    ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-    : coordinateLabel(booking.lat, booking.lng);
-  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No Partner pin';
+  const serviceAddressValue = serviceAddressLocationLabel(booking);
+  const providerLocationValue = latest ? latestLocationLabel(latest) : 'No Partner location';
   const distanceMeters = latest
     ? approximateDistanceMeters(
         booking.addressSnapshot?.latitude ?? booking.lat,
@@ -42,16 +40,14 @@ export function bookingLiveServiceSignals(booking: AdminBookingDetail): BookingL
 
   return [
     {
-      label: 'Service address pin',
-      value: serviceAddressPin,
-      helper: booking.addressSnapshot
-        ? bookingAddressSnapshotLabel(booking)
-        : addressLabel(booking.address),
+      label: 'Service address',
+      value: serviceAddressValue,
+      helper: booking.addressSnapshot ? 'Booking address snapshot saved.' : 'Stored booking address fallback.',
       tone: booking.addressSnapshot || (booking.lat && booking.lng) ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Partner pin',
-      value: providerPin,
+      label: 'Partner location',
+      value: providerLocationValue,
       helper: latest
         ? bookingProviderLocationMetricHelper(latest.recordedAt)
         : 'Ask Partner to share current location from chat.',
@@ -67,7 +63,7 @@ export function bookingLiveServiceSignals(booking: AdminBookingDetail): BookingL
     {
       label: 'Approx. gap',
       value: distanceMeters === null ? 'Unknown' : distanceLabel(Math.round(distanceMeters / 100) * 100),
-      helper: 'Calculated from the service address pin and latest Partner pin. It is not a route or ETA.',
+      helper: 'Calculated from the service address and latest Partner location. It is not a route or ETA.',
       tone: distanceMeters === null ? 'pill-info' : distanceMeters > 5000 ? 'pill-warn' : 'pill-success',
     },
     {
@@ -100,4 +96,19 @@ export function bookingLiveServiceSignals(booking: AdminBookingDetail): BookingL
             : 'pill-info',
     },
   ];
+}
+
+function serviceAddressLocationLabel(booking: AdminBookingDetail) {
+  const address = booking.addressSnapshot
+    ? bookingAddressSnapshotLabel(booking)
+    : addressLabel(booking.address);
+
+  return address === 'Address pending' || address === 'No pin'
+    ? 'No service address location'
+    : address;
+}
+
+function latestLocationLabel(latest: NonNullable<ReturnType<typeof latestProviderLocation>>) {
+  const address = readAddressText(latest);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

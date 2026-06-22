@@ -21,19 +21,19 @@ describe('bookingLiveServiceSignals', () => {
 
     expect(signals).toEqual([
       {
-        helper: 'District 1 service address',
-        label: 'Service address pin',
+        helper: 'Stored booking address fallback.',
+        label: 'Service address',
         tone: 'pill-warn',
-        value: 'No pin',
+        value: 'District 1 service address',
       },
       {
         helper: 'Ask Partner to share current location from chat.',
-        label: 'Partner pin',
+        label: 'Partner location',
         tone: 'pill-danger',
-        value: 'No Partner pin',
+        value: 'No Partner location',
       },
       {
-        helper: 'Calculated from the service address pin and latest Partner pin. It is not a route or ETA.',
+        helper: 'Calculated from the service address and latest Partner location. It is not a route or ETA.',
         label: 'Approx. gap',
         tone: 'pill-info',
         value: 'Unknown',
@@ -93,15 +93,16 @@ describe('bookingLiveServiceSignals', () => {
       }),
     );
 
-    expect(signals.find((signal) => signal.label === 'Service address pin')).toMatchObject({
+    expect(signals.find((signal) => signal.label === 'Service address')).toMatchObject({
       tone: 'pill-success',
-      value: '10.7626, 106.6602',
+      value: 'District 3 service address',
     });
-    expect(signals.find((signal) => signal.label === 'Partner pin')).toMatchObject({
+    expect(signals.find((signal) => signal.label === 'Partner location')).toMatchObject({
       helper: 'Updated just now',
       tone: 'pill-success',
-      value: '10.7627, 106.6603',
+      value: 'Location recorded without readable address',
     });
+    expect(JSON.stringify(signals)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
     expect(signals.find((signal) => signal.label === 'Service contact')).toMatchObject({
       helper: 'Linh Partner is the current handoff Partner.',
       tone: 'pill-success',
