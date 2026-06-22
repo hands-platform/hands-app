@@ -1204,6 +1204,10 @@ export type AdminVietnamOverview = {
   generatedAt: string;
   refreshSeconds: number;
   source: 'stored-address-aggregates';
+  range: 'today' | 'yesterday' | '7d' | '30d' | 'all';
+  rangeLabel: string;
+  windowStartAt: string | null;
+  windowEndAt: string | null;
   totals: {
     customerCount: number;
     activeCustomerCount: number;

@@ -14,13 +14,24 @@ import {
   AdminVietnamOverviewRegion,
   adminGet,
 } from '../../lib/admin-api';
+import {
+  normalizeVietnamOverviewRange,
+  vietnamOverviewHref,
+  vietnamOverviewRangeOptions,
+} from './vietnam-overview-model';
 
 export const dynamic = 'force-dynamic';
+
+type VietnamOverviewPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const emptyVietnamOverview: AdminVietnamOverview = {
   generatedAt: new Date(0).toISOString(),
   refreshSeconds: 60,
   source: 'stored-address-aggregates',
+  range: 'today',
+  rangeLabel: 'Today',
+  windowStartAt: null,
+  windowEndAt: null,
   totals: {
     customerCount: 0,
     activeCustomerCount: 0,
@@ -35,9 +46,15 @@ const emptyVietnamOverview: AdminVietnamOverview = {
   regions: [],
 };
 
-export default async function VietnamOverviewPage() {
+export default async function VietnamOverviewPage({
+  searchParams,
+}: {
+  searchParams?: VietnamOverviewPageSearchParams;
+}) {
+  const params = await searchParams;
+  const range = normalizeVietnamOverviewRange(params?.range);
   const overview = await adminGet<AdminVietnamOverview>(
-    '/admin/vietnam-overview',
+    `/admin/vietnam-overview?range=${range}`,
     emptyVietnamOverview,
   );
   const regions = overview.regions;
@@ -56,7 +73,7 @@ export default async function VietnamOverviewPage() {
     {
       label: 'Customers',
       value: formatNumber(overview.totals.customerCount),
-      detail: `${formatNumber(overview.totals.activeCustomerCount)} active in 30 days`,
+      detail: `${formatNumber(overview.totals.activeCustomerCount)} active in ${overview.rangeLabel}`,
       icon: Users,
       tone: 'info',
     },
@@ -110,6 +127,30 @@ export default async function VietnamOverviewPage() {
         <div className="actions">
           <span className="pill pill-success">Vietnam only</span>
           <span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>
+        </div>
+      </section>
+
+      <section className="card admin-filter-panel vietnam-overview-filter-panel">
+        <div className="admin-filter-panel-header">
+          <div>
+            <h2>Overview range</h2>
+            <p className="muted">
+              Bound booking aggregates by date while keeping region output free of individual location
+              coordinates.
+            </p>
+          </div>
+          <span className="pill pill-info">{overview.rangeLabel}</span>
+        </div>
+        <div className="booking-date-filter-buttons vietnam-overview-range-buttons">
+          {vietnamOverviewRangeOptions.map((option) => (
+            <a
+              key={option.value}
+              className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
+              href={vietnamOverviewHref(option.value)}
+            >
+              {option.label}
+            </a>
+          ))}
         </div>
       </section>
 

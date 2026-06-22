@@ -131,6 +131,9 @@ import {
 } from './admin-user-selects';
 import {
   VIETNAM_REGION_BUCKETS,
+  adminVietnamOverviewDateWhere,
+  adminVietnamOverviewRangeWindow,
+  normalizeAdminVietnamOverviewRange,
   vietnamRegionCodeFromValues,
 } from './admin-vietnam-region-overview';
 import {
@@ -433,8 +436,18 @@ export class AdminService {
     });
   }
 
-  async getVietnamOverview() {
+  async getVietnamOverview(rangeInput?: string) {
     const now = new Date();
+    const window = adminVietnamOverviewRangeWindow(
+      normalizeAdminVietnamOverviewRange(rangeInput),
+      now,
+    );
+    const dateWhere = adminVietnamOverviewDateWhere(window);
+    const bookingWhere: Prisma.BookingWhereInput = dateWhere
+      ? {
+          OR: [{ createdAt: dateWhere }, { updatedAt: dateWhere }, { closedAt: dateWhere }],
+        }
+      : {};
     const activeCustomerSince = new Date(now.getTime() - ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS);
     const onlinePartnerSince = new Date(now.getTime() - ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS);
     const regions = new Map<string, AdminVietnamOverviewRegion>(
@@ -475,7 +488,10 @@ export class AdminService {
           user: {
             select: {
               appSessions: {
-                where: { role: Role.CUSTOMER },
+                where: {
+                  role: Role.CUSTOMER,
+                  ...(dateWhere ? { lastSeenAt: dateWhere } : {}),
+                },
                 orderBy: { lastSeenAt: 'desc' },
                 take: 1,
                 select: {
@@ -501,6 +517,7 @@ export class AdminService {
         },
       }),
       this.prisma.booking.findMany({
+        where: bookingWhere,
         orderBy: { createdAt: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
         select: {
@@ -545,7 +562,7 @@ export class AdminService {
       region.customerCount += 1;
 
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
-      if (lastSeenAt && lastSeenAt >= activeCustomerSince) {
+      if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
         region.activeCustomerCount += 1;
       }
     }
@@ -616,6 +633,10 @@ export class AdminService {
       generatedAt: now.toISOString(),
       refreshSeconds: 60,
       source: 'stored-address-aggregates',
+      range: window.range,
+      rangeLabel: window.label,
+      windowStartAt: window.startAt?.toISOString() ?? null,
+      windowEndAt: window.endAt?.toISOString() ?? null,
       totals: {
         customerCount: regionRows.reduce((total, region) => total + region.customerCount, 0),
         activeCustomerCount: regionRows.reduce((total, region) => total + region.activeCustomerCount, 0),

@@ -69,9 +69,9 @@ export class AdminController {
     return this.admin.listAppSessions();
   }
 
-  @Get('vietnam-overview')
-  vietnamOverview() {
-    return this.admin.getVietnamOverview();
+  @Get(['vietnam-overview', 'maps/vietnam-overview'])
+  vietnamOverview(@Query('range') range?: string) {
+    return this.admin.getVietnamOverview(range);
   }
 
   @Get('usage-overview')

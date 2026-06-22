@@ -19,6 +19,15 @@ export type VietnamCoordinateInput = {
   longitude?: unknown;
 };
 
+export type AdminVietnamOverviewRange = 'today' | 'yesterday' | '7d' | '30d' | 'all';
+
+export type AdminVietnamOverviewWindow = {
+  range: AdminVietnamOverviewRange;
+  label: string;
+  startAt: Date | null;
+  endAt: Date | null;
+};
+
 export const VIETNAM_REGION_BUCKETS: readonly VietnamRegionBucket[] = [
   { code: 'hanoi', name: 'Ha Noi', shortName: 'HN' },
   { code: 'hcm', name: 'Ho Chi Minh City', shortName: 'HCMC' },
@@ -29,6 +38,22 @@ export const VIETNAM_REGION_BUCKETS: readonly VietnamRegionBucket[] = [
   { code: 'can-tho', name: 'Can Tho', shortName: 'CT' },
   { code: 'other-vietnam', name: 'Other Vietnam', shortName: 'VN' },
 ];
+
+const DEFAULT_VIETNAM_OVERVIEW_RANGE: AdminVietnamOverviewRange = 'today';
+const VIETNAM_OVERVIEW_RANGE_LABELS: Record<AdminVietnamOverviewRange, string> = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  all: 'All time',
+};
+const SUPPORTED_VIETNAM_OVERVIEW_RANGES = new Set<AdminVietnamOverviewRange>([
+  'today',
+  'yesterday',
+  '7d',
+  '30d',
+  'all',
+]);
 
 const REGION_MATCHERS: Array<{ code: VietnamRegionCode; pattern: RegExp }> = [
   {
@@ -81,6 +106,69 @@ const REGION_BOUNDING_BOXES: Array<{
 
 export function vietnamRegionLabel(code: string | null | undefined) {
   return VIETNAM_REGION_BUCKETS.find((bucket) => bucket.code === code)?.name ?? 'Other Vietnam';
+}
+
+export function normalizeAdminVietnamOverviewRange(value: unknown): AdminVietnamOverviewRange {
+  if (typeof value !== 'string') {
+    return DEFAULT_VIETNAM_OVERVIEW_RANGE;
+  }
+
+  return SUPPORTED_VIETNAM_OVERVIEW_RANGES.has(value as AdminVietnamOverviewRange)
+    ? (value as AdminVietnamOverviewRange)
+    : DEFAULT_VIETNAM_OVERVIEW_RANGE;
+}
+
+export function adminVietnamOverviewRangeWindow(
+  rangeInput: AdminVietnamOverviewRange,
+  now = new Date(),
+): AdminVietnamOverviewWindow {
+  const range = normalizeAdminVietnamOverviewRange(rangeInput);
+  const todayStart = startOfUtcDay(now);
+
+  if (range === 'all') {
+    return {
+      range,
+      label: VIETNAM_OVERVIEW_RANGE_LABELS[range],
+      startAt: null,
+      endAt: null,
+    };
+  }
+
+  if (range === 'today') {
+    return {
+      range,
+      label: VIETNAM_OVERVIEW_RANGE_LABELS[range],
+      startAt: todayStart,
+      endAt: addUtcDays(todayStart, 1),
+    };
+  }
+
+  if (range === 'yesterday') {
+    return {
+      range,
+      label: VIETNAM_OVERVIEW_RANGE_LABELS[range],
+      startAt: addUtcDays(todayStart, -1),
+      endAt: todayStart,
+    };
+  }
+
+  return {
+    range,
+    label: VIETNAM_OVERVIEW_RANGE_LABELS[range],
+    startAt: addUtcDays(todayStart, range === '7d' ? -6 : -29),
+    endAt: addUtcDays(todayStart, 1),
+  };
+}
+
+export function adminVietnamOverviewDateWhere(window: AdminVietnamOverviewWindow) {
+  if (!window.startAt || !window.endAt) {
+    return undefined;
+  }
+
+  return {
+    gte: window.startAt,
+    lt: window.endAt,
+  };
 }
 
 export function vietnamRegionCodeFromValues(
@@ -160,4 +248,14 @@ function normalizeRegionText(value: string) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function startOfUtcDay(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function addUtcDays(value: Date, days: number) {
+  const next = new Date(value);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
 }
