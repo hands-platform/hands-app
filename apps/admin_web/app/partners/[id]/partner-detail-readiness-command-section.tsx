@@ -67,7 +67,7 @@ export function PartnerDetailReadinessSnapshotSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and service readiness."
+      description="Fast active-work checks for direct first-pick, marketplace matching, KYC, service pricing, location, and app reachability. Wallet evidence stays in finance sections."
       resultLabel={snapshot.status}
       resultTone={statusBadgeToneForPartnerOps(snapshot.tone)}
       title="Partner readiness snapshot"

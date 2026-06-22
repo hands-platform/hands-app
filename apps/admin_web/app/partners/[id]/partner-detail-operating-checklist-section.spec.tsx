@@ -1,21 +1,21 @@
 import { PartnerDetailOperatingChecklistSection } from './partner-detail-operating-checklist-section';
 
 describe('PartnerDetailOperatingChecklistSection', () => {
-  it('renders operating checks as a Vuexy table', () => {
+  it('renders active-work checks as a Vuexy table', () => {
     const section = PartnerDetailOperatingChecklistSection({
       pillClassForTone: (tone) => `pill-${tone}`,
       rows: [
         {
-          area: 'Bookings',
+          area: 'Booking participation',
           detail: 'Partner can accept direct requests but marketplace is blocked.',
           href: '#booking-gates',
-          nextAction: 'Review wallet debt',
+          nextAction: 'Resolve participation gate',
           status: 'Needs action',
           tone: 'blocked',
         },
         {
-          area: 'Location',
-          detail: 'Latest location is fresh for dispatch.',
+          area: 'App connection',
+          detail: 'Latest location and push alerts are ready for dispatch.',
           href: '#app-activity',
           nextAction: 'Monitor',
           status: 'Ready',
@@ -26,18 +26,18 @@ describe('PartnerDetailOperatingChecklistSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Partner operating checklist');
+    expect(rendered).toContain('Partner active-work checklist');
     expect(rendered).toContain('2 check(s)');
     expect(rendered).toContain('Area');
-    expect(rendered).toContain('Status');
-    expect(rendered).toContain('Detail');
-    expect(rendered).toContain('Next Action');
-    expect(rendered).toContain('Action');
-    expect(rendered).toContain('Bookings');
+    expect(rendered).toContain('Readiness');
+    expect(rendered).toContain('Operator read');
+    expect(rendered).toContain('Next action');
+    expect(rendered).toContain('Open');
+    expect(rendered).toContain('Booking participation');
     expect(rendered).toContain('Partner can accept direct requests but marketplace is blocked.');
-    expect(rendered).toContain('Review wallet debt');
-    expect(rendered).toContain('Location');
-    expect(rendered).toContain('Latest location is fresh for dispatch.');
+    expect(rendered).toContain('Resolve participation gate');
+    expect(rendered).toContain('App connection');
+    expect(rendered).toContain('Latest location and push alerts are ready for dispatch.');
     expect(rendered).toContain('Monitor');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#booking-gates', '#app-activity']));
     expect(classNamesIn(section)).toEqual(
@@ -62,10 +62,10 @@ describe('PartnerDetailOperatingChecklistSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Partner operating checklist');
+    expect(rendered).toContain('Partner active-work checklist');
     expect(rendered).toContain('0 check(s)');
     expect(rendered).toContain('No records found');
-    expect(rendered).toContain('No partner operating checks are currently loaded.');
+    expect(rendered).toContain('No partner active-work checks are currently loaded.');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'admin-table-scroll',

@@ -24,7 +24,7 @@ type PartnerDetailOperatingChecklistSectionProps = {
   readonly rows: readonly PartnerOperatingChecklistRow[];
 };
 
-const operatingChecklistHeaders = ['Area', 'Status', 'Detail', 'Next Action', 'Action'];
+const operatingChecklistHeaders = ['Area', 'Readiness', 'Operator read', 'Next action', 'Open'];
 
 export function PartnerDetailOperatingChecklistSection({
   pillClassForTone,
@@ -33,10 +33,10 @@ export function PartnerDetailOperatingChecklistSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Factual work-control checklist for support and operations. It shows whether bookings, payout, tax, location, and service setup need action."
+      description="Compact active-work checklist for account hold, Level 2 approval, booking participation, service setup, and app connection. Finance and withdrawal evidence stays in the dedicated wallet sections."
       id="partner-operating-checklist"
       resultLabel={`${rows.length} check(s)`}
-      title="Partner operating checklist"
+      title="Partner active-work checklist"
     >
       <div className="admin-mt-16">
         <AdminTableScroll>
@@ -79,7 +79,7 @@ function PartnerOperatingChecklistEmptyState() {
   return (
     <div className="empty-state">
       <strong>No records found</strong>
-      <p className="muted">No partner operating checks are currently loaded.</p>
+      <p className="muted">No partner active-work checks are currently loaded.</p>
     </div>
   );
 }

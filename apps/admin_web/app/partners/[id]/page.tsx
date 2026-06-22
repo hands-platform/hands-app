@@ -449,7 +449,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const readinessSnapshot = buildPartnerReadinessSnapshotView({
     provider,
     bookingAcceptance,
-    payoutOps,
     dispatchPolicy,
   });
   const acceptanceRepairCommand = buildPartnerAcceptanceRepairCommand(
@@ -539,8 +538,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
   const partnerOperatingChecklist = buildPartnerOperatingChecklist(
     provider,
-    primaryBank,
-    payoutOps,
     bookingAcceptance,
     providerServicePricing,
     dispatchPolicy,
@@ -775,7 +772,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailStatusCardsSection cards={partnerStatusCards} />
 
       <PartnerDetailSummaryRailSection
-        description="Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace participation, wallet debt, payout, tax, location, retained chats, and staff notes."
+        description="Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace participation, wallet follow-up, location, retained chats, and staff notes."
         id="partner-operations-quick-rail"
         items={partnerOperationsQuickRail}
         statusLabel={`${partnerOperationsQuickRail.length} shortcuts`}
@@ -1415,18 +1412,16 @@ type PartnerOperatingChecklistItem = {
 function buildPartnerReadinessSnapshotView({
   provider,
   bookingAcceptance,
-  payoutOps,
   dispatchPolicy,
 }: {
   provider: ProviderDetail;
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
-  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
   dispatchPolicy: PartnerDispatchPolicy;
 }): PartnerReadinessSnapshotView {
   const canJoinMarketplace = bookingAcceptance.canJoinMarketplace;
 
   return {
-    badges: buildPartnerDetailOpsBadges(provider, bookingAcceptance, payoutOps, dispatchPolicy),
+    badges: buildPartnerDetailOpsBadges(provider, bookingAcceptance, dispatchPolicy),
     gate: {
       detail: bookingAcceptance.primaryReason,
       helper: canJoinMarketplace
@@ -2388,17 +2383,11 @@ function buildPartnerMasterFacts(
 
 function buildPartnerOperatingChecklist(
   provider: ProviderDetail,
-  primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null,
-  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
   providerServicePricing: ReturnType<typeof buildProviderServicePricing>,
   dispatchPolicy: PartnerDispatchPolicy,
 ): PartnerOperatingChecklistItem[] {
-  const cashDebt = cashFeeDebtAmount(provider);
   const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
-  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
-  const addressReady = Boolean(provider.residentialAddress?.trim());
-  const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
   const locationFresh = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
@@ -2417,38 +2406,11 @@ function buildPartnerOperatingChecklist(
       tone: provider.blockedAt ? 'blocked' : 'done',
     },
     {
-      area: 'Booking',
-      status: bookingAcceptance.canJoinMarketplace
-        ? cashDebt > 0
-          ? 'Marketplace participation warning'
-          : 'Marketplace participation clear'
-        : 'Marketplace participation on hold',
-      detail: bookingAcceptance.primaryReason,
-      nextAction: bookingAcceptance.canJoinMarketplace
-        ? cashDebt > 0
-          ? 'Clear settlement before final acceptance'
-          : 'Ready for marketplace participation'
-        : 'Resolve marketplace participation gate',
-      href: `/partners/${provider.id}?section=full#booking-chat-records`,
-      tone: bookingAcceptance.canJoinMarketplace ? (cashDebt > 0 ? 'pending' : 'done') : 'blocked',
-    },
-    {
-      area: 'Cash',
-      status: cashDebt > 0 ? 'Cash fee debt exists' : 'Cash fee clear',
-      detail:
-        cashDebt > 0
-          ? `Partner wallet has ${formatCurrency(cashDebt)} unpaid HANDS commission from cash bookings.`
-          : 'No unpaid cash commission is open.',
-      nextAction: cashDebt > 0 ? 'Collect or offset debt' : 'No cash action',
-      href: '/cash-settlements',
-      tone: cashDebt > 0 ? 'blocked' : 'done',
-    },
-    {
-      area: 'KYC',
+      area: 'Level 2 approval',
       status:
         provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
-          ? 'KYC complete'
-          : 'KYC needs review',
+          ? 'KYC and documents ready'
+          : 'KYC or document review',
       detail:
         missingKycDocs.length > 0
           ? `Missing approved document(s): ${missingKycDocs.join(', ')}.`
@@ -2463,36 +2425,16 @@ function buildPartnerOperatingChecklist(
             : 'pending',
     },
     {
-      area: 'Bank',
-      status: primaryBank?.status === 'APPROVED' ? 'Bank approved' : 'Bank setup needed',
-      detail: primaryBank
-        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${primaryBank.status}`
-        : 'No primary bank account is saved.',
-      nextAction: primaryBank?.status === 'APPROVED' ? 'Ready for payout' : 'Review bank account',
-      href: `/partners/${provider.id}?section=full#bank`,
-      tone: primaryBank?.status === 'APPROVED' ? 'done' : 'pending',
-    },
-    {
-      area: 'Tax profile optional',
-      status: hasFirstRevenue
-        ? provider.taxProfile?.status ?? 'Not required'
-        : 'Not required',
-      detail: hasFirstRevenue
-        ? `Optional tax ${provider.taxProfile?.status ?? 'NOT_REQUIRED'} / address ${
-            addressReady ? 'saved' : 'missing'
-          } / agreements ${agreementsAccepted}.`
-        : 'Do not force tax information before approval, matching, or payout review.',
-      nextAction: 'Review only if optional tax data was submitted',
-      href: `/partners/${provider.id}?section=full#tax`,
-      tone: 'done',
-    },
-    {
-      area: 'Payout',
-      status: payoutOps.status,
-      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
-      nextAction: payoutOps.tone === 'done' ? 'No payout action' : 'Review payout gate',
-      href: `/partners/${provider.id}?section=full#payout`,
-      tone: payoutOps.tone,
+      area: 'Booking participation',
+      status: bookingAcceptance.canJoinMarketplace
+        ? 'Marketplace participation clear'
+        : 'Marketplace participation on hold',
+      detail: bookingAcceptance.primaryReason,
+      nextAction: bookingAcceptance.canJoinMarketplace
+        ? 'Ready for customer choice'
+        : 'Resolve participation gate',
+      href: `/partners/${provider.id}?section=full#booking-chat-records`,
+      tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
     },
     {
       area: 'Services',
@@ -2507,22 +2449,24 @@ function buildPartnerOperatingChecklist(
       tone: providerServicePricing.readyCount > 0 ? 'done' : 'blocked',
     },
     {
-      area: 'Location',
-      status: locationFresh ? 'Location fresh' : 'Location refresh needed',
+      area: 'App connection',
+      status:
+        locationFresh && enabledPushCount > 0
+          ? 'Location and push ready'
+          : locationFresh
+            ? 'Push device missing'
+            : 'Location refresh needed',
       detail: `Last location is ${locationAgeLabel(
         provider.currentLocationUpdatedAt,
-      )}; marketplace matching policy allows ${dispatchPolicy.locationFreshnessMinutes}m.`,
-      nextAction: locationFresh ? 'Ready for distance checks' : 'Ask app reopen/location update',
-      href: `/partners/${provider.id}?section=full#location`,
-      tone: locationFresh ? 'done' : 'pending',
-    },
-    {
-      area: 'App',
-      status: enabledPushCount > 0 ? 'App reachable' : 'Push device missing',
-      detail: `${enabledPushCount} enabled push device(s), ${deviceCount} device row(s), ${sessionCount} session row(s).`,
-      nextAction: enabledPushCount > 0 ? 'Can receive alerts' : 'Register device token',
+      )}; ${enabledPushCount} enabled push device(s), ${deviceCount} device row(s), ${sessionCount} session row(s).`,
+      nextAction:
+        locationFresh && enabledPushCount > 0
+          ? 'Can receive alerts'
+          : !locationFresh
+            ? 'Ask app reopen/location update'
+            : 'Register device token',
       href: `/partners/${provider.id}?section=full#app-activity`,
-      tone: enabledPushCount > 0 ? 'done' : 'pending',
+      tone: locationFresh && enabledPushCount > 0 ? 'done' : 'pending',
     },
   ];
 }
@@ -3047,7 +2991,6 @@ function buildPartnerAcceptanceUnblockPlaybook(
 function buildPartnerDetailOpsBadges(
   provider: ProviderDetail,
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
-  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   dispatchPolicy: PartnerDispatchPolicy,
 ): PartnerReadinessSnapshotBadge[] {
   const cashDebt = cashFeeDebtAmount(provider);
@@ -3056,7 +2999,6 @@ function buildPartnerDetailOpsBadges(
     locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
   const identityGate = gate('Identity and approval');
-  const bankGate = gate('Withdrawal details');
   const onlineGate = gate('Online and reachable');
   const serviceGate = gate('Bookable services');
 
@@ -3094,11 +3036,6 @@ function buildPartnerDetailOpsBadges(
       detail: identityGate?.detail ?? 'Identity gate has not been evaluated.',
     },
     {
-      label: bankGate?.ok ? 'Bank approved' : 'Bank pending',
-      tone: bankGate?.ok ? 'done' : 'pending',
-      detail: bankGate?.detail ?? 'Bank gate has not been evaluated.',
-    },
-    {
       label: locationFresh ? 'Location fresh' : 'Refresh location',
       tone: locationFresh ? 'done' : 'pending',
       detail: `Last location is ${locationAgeLabel(
@@ -3117,14 +3054,6 @@ function buildPartnerDetailOpsBadges(
       label: serviceGate?.ok ? 'Services bookable' : 'Pricing needed',
       tone: serviceGate?.ok ? 'done' : 'blocked',
       detail: serviceGate?.detail ?? 'Service pricing gate has not been evaluated.',
-    },
-    {
-      label: payoutOps.status === 'UNLOCKED' ? 'Payout ready' : `Payout ${payoutOps.status.toLowerCase()}`,
-      tone: payoutOps.tone,
-      detail:
-        payoutOps.blockers[0] ??
-        payoutOps.hold?.reason ??
-        'Payout gate is deferred until wallet action or already clear.',
     },
   ];
 }
