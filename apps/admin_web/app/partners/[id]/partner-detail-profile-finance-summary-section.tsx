@@ -7,6 +7,8 @@ import {
   partnerDetailReviewTableClassName,
 } from './partner-detail-vuexy-table';
 
+const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
+
 export type PartnerDetailInfoLine = {
   readonly label: string;
   readonly value?: string | null;
@@ -180,6 +182,7 @@ export function PartnerDetailLocationActivityCard({
   snapshots,
 }: PartnerDetailLocationActivityCardProps) {
   const rowCount = 3;
+  const locationEvidenceLabel = safeLocationEvidenceLabel(coordinatesLabel);
 
   return (
     <AdminFilterPanel
@@ -206,10 +209,10 @@ export function PartnerDetailLocationActivityCard({
           </tr>
           <tr>
             <td>
-              <strong>Coordinates</strong>
+              <strong>Location evidence</strong>
             </td>
             <td>
-              <ProfileValue value={coordinatesLabel} />
+              <ProfileValue value={locationEvidenceLabel} />
             </td>
           </tr>
           <tr>
@@ -235,6 +238,13 @@ export function PartnerDetailLocationActivityCard({
       <PartnerDetailVuexyTableFooter rowCount={rowCount} />
     </AdminFilterPanel>
   );
+}
+
+function safeLocationEvidenceLabel(value?: string | null) {
+  if (!value) return null;
+  return COORDINATE_PAIR_TEXT_RE.test(value)
+    ? 'Partner location saved for dispatch checks.'
+    : value;
 }
 
 const profileTableHeaders = ['Field', 'Value'] as const;

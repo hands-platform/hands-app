@@ -49,9 +49,10 @@ describe('partner detail profile and location sections', () => {
     expect(rendered).toContain('Location and activity');
     expect(rendered).toContain('2 snapshot(s)');
     expect(rendered).toContain('Last location');
-    expect(rendered).toContain('Coordinates');
+    expect(rendered).toContain('Location evidence');
     expect(rendered).toContain('Recent snapshots');
-    expect(rendered).toContain('21.02776, 105.83416');
+    expect(rendered).toContain('Partner location saved for dispatch checks.');
+    expect(rendered).not.toContain('21.02776, 105.83416');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',

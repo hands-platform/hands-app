@@ -1003,7 +1003,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <PartnerDetailLocationActivityCard
           coordinatesLabel={
             provider.currentLat && provider.currentLng
-              ? `${Number(provider.currentLat).toFixed(5)}, ${Number(provider.currentLng).toFixed(5)}`
+              ? partnerLocationSavedLabel()
               : null
           }
           lastLocationLabel={
@@ -1037,6 +1037,10 @@ function partnerDetailAccountServerAction(action: PartnerAccountConfirmationActi
     case 'unblock':
       return unblockProviderAccount;
   }
+}
+
+function partnerLocationSavedLabel() {
+  return 'Latest Partner location saved for dispatch checks.';
 }
 
 function partnerDetailDeviceServerAction(action: PartnerDeviceConfirmationAction) {
@@ -1269,7 +1273,7 @@ function PartnerDetailFastOverview({
       value: locationAgeLabel(provider.currentLocationUpdatedAt),
       detail:
         provider.currentLat && provider.currentLng
-          ? `${provider.currentLat}, ${provider.currentLng}`
+          ? partnerLocationSavedLabel()
           : 'No latest partner location pin is saved.',
       href: fullSectionHref('#location'),
       tone: hasFreshLocation ? 'pill-success' : 'pill-warn',
@@ -1672,7 +1676,7 @@ function buildPartnerBookingEvidenceRows(
     const earning = earningsByBookingId.get(booking.id);
     const walletRows = earning?.walletLedgerEntries ?? [];
     const latestLocation = provider.currentLocationUpdatedAt
-      ? `${locationAgeLabel(provider.currentLocationUpdatedAt)} / ${provider.currentLat ?? '?'}:${provider.currentLng ?? '?'}`
+      ? `${locationAgeLabel(provider.currentLocationUpdatedAt)} / ${partnerLocationSavedLabel()}`
       : 'No latest location loaded';
     const addressDetail = partnerBookingAddressEvidenceLabel(booking);
     const moneyParts = [
@@ -2358,7 +2362,7 @@ function buildPartnerMasterFacts(
       value: locationAgeLabel(provider.currentLocationUpdatedAt),
       helper:
         provider.currentLat && provider.currentLng
-          ? `${provider.currentLat}, ${provider.currentLng}`
+          ? partnerLocationSavedLabel()
           : 'No GPS pin',
     },
     {
