@@ -5,6 +5,7 @@ import {
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
+  ProviderStatus,
   ProviderWalletLedgerType,
   Role,
 } from '@prisma/client';
@@ -306,6 +307,83 @@ describe('AdminService query orchestration', () => {
         }),
       }),
     );
+  });
+
+  it('returns Vietnam overview aggregates without exposing individual GPS fields', async () => {
+    const now = new Date();
+    const prisma = {
+      customerProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            addresses: ['85/9 Pham Viet Chanh, Ho Chi Minh City'],
+            selectedLocations: [
+              {
+                addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+              },
+            ],
+            user: {
+              appSessions: [
+                {
+                  lastLoginAddress: 'Ho Chi Minh City',
+                  lastSeenAt: now,
+                },
+              ],
+            },
+          },
+        ]),
+      },
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            city: 'Ho Chi Minh City',
+            residentialAddress: null,
+            serviceArea: null,
+            status: ProviderStatus.ONLINE_AVAILABLE,
+            currentLat: 10.7769,
+            currentLng: 106.7009,
+            currentLocationUpdatedAt: now,
+          },
+        ]),
+      },
+      booking: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            status: BookingStatus.COMPLETED,
+            address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+            lat: 10.7769,
+            lng: 106.7009,
+            addressSnapshot: {
+              address: null,
+              addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+              latitude: 10.7769,
+              longitude: 106.7009,
+            },
+            payment: null,
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    const overview = await service.getVietnamOverview('today');
+    const hcm = overview.regions.find((region) => region.regionCode === 'hcm');
+    const serialized = JSON.stringify(overview);
+
+    expect(overview).toMatchObject({
+      refreshSeconds: 60,
+      source: 'stored-address-aggregates',
+    });
+    expect(hcm).toMatchObject({
+      customerCount: 1,
+      partnerCount: 1,
+      completedBookingCount: 1,
+    });
+    expect(serialized).not.toContain('latitude');
+    expect(serialized).not.toContain('longitude');
+    expect(serialized).not.toContain('currentLat');
+    expect(serialized).not.toContain('currentLng');
   });
 
   it('adds server-computed activity summaries to provider list rows', async () => {
