@@ -69,6 +69,11 @@ export class AdminController {
     return this.admin.listAppSessions();
   }
 
+  @Get('vietnam-overview')
+  vietnamOverview() {
+    return this.admin.getVietnamOverview();
+  }
+
   @Get(['providers', 'partners'])
   providers() {
     return this.admin.listProviders();

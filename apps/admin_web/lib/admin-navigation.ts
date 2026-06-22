@@ -26,6 +26,11 @@ export const adminNavSections: AdminNavSection[] = [
         description: 'Shared operations calendar for live planning and follow-up blocks.',
       },
       {
+        href: '/vietnam-overview',
+        label: 'Vietnam Overview',
+        description: 'Region aggregate operating picture without individual GPS points.',
+      },
+      {
         href: '/app-sessions',
         label: 'App Presence',
         description: 'Customers and Partners currently or recently active in the apps.',

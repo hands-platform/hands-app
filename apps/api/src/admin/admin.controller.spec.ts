@@ -9,6 +9,7 @@ describe('AdminController notification and push actions', () => {
   const admin = {
     enablePushDevice: jest.fn(),
     listFileReviewProviders: jest.fn(),
+    getVietnamOverview: jest.fn(),
     listOperationsHandoffProviders: jest.fn(),
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
@@ -74,6 +75,18 @@ describe('AdminController notification and push actions', () => {
       path: 'operations-policy/providers',
     });
     expect(admin.listOperationsPolicyProviders).toHaveBeenCalledWith();
+  });
+
+  it('exposes Vietnam region overview as an aggregate GET list', async () => {
+    admin.getVietnamOverview.mockResolvedValue({ regions: [] });
+
+    await expect(controller.vietnamOverview()).resolves.toEqual({ regions: [] });
+
+    expect(routeMetadata('vietnamOverview')).toEqual({
+      method: RequestMethod.GET,
+      path: 'vietnam-overview',
+    });
+    expect(admin.getVietnamOverview).toHaveBeenCalledWith();
   });
 
   it('exposes operations handoff providers as a lightweight GET list', async () => {

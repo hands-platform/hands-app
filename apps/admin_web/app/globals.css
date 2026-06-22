@@ -3345,6 +3345,184 @@ a.action-button-card:hover {
   z-index: 2;
 }
 
+.vietnam-overview-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.vietnam-overview-page > .toolbar,
+.vietnam-overview-page > .card {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.vietnam-overview-page > .toolbar {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  padding: 24px;
+}
+
+.vietnam-overview-page > .toolbar h1 {
+  font-size: 26px;
+  line-height: 1.18;
+  margin-bottom: 8px;
+}
+
+.vietnam-overview-metric-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.vietnam-overview-metric {
+  min-height: 132px;
+}
+
+.vietnam-overview-metric.is-primary .metric-card-icon {
+  background: rgb(var(--admin-primary-channel) / 0.14);
+  color: var(--admin-accent-strong);
+}
+
+.vietnam-overview-metric.is-success .metric-card-icon {
+  background: rgb(var(--admin-success-channel) / 0.14);
+  color: var(--admin-success-text);
+}
+
+.vietnam-overview-metric.is-warning .metric-card-icon {
+  background: rgb(var(--admin-warning-channel) / 0.16);
+  color: var(--admin-warning-text);
+}
+
+.vietnam-overview-metric.is-danger .metric-card-icon {
+  background: rgb(var(--admin-danger-channel) / 0.14);
+  color: var(--admin-danger-text);
+}
+
+.vietnam-overview-metric.is-info .metric-card-icon {
+  background: rgb(var(--admin-info-channel) / 0.14);
+  color: var(--admin-info-text);
+}
+
+.vietnam-overview-map-card {
+  display: grid;
+  gap: 18px;
+  overflow: visible;
+}
+
+.vietnam-overview-map-layout {
+  align-items: stretch;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(360px, 0.42fr) minmax(720px, 1fr);
+}
+
+.vietnam-region-map {
+  background:
+    linear-gradient(180deg, rgb(var(--admin-primary-channel) / 0.08), transparent 52%),
+    var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  display: grid;
+  gap: 12px;
+  grid-template-rows: repeat(8, minmax(72px, 1fr));
+  min-height: 680px;
+  padding: 16px;
+}
+
+.vietnam-region-block {
+  align-items: center;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(var(--admin-primary-channel) / 0.18) 0 var(--region-intensity),
+      rgb(var(--admin-surface-channel) / 0.98) var(--region-intensity) 100%
+    );
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-text);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+  min-width: 0;
+  padding: 14px;
+}
+
+.vietnam-region-block > div {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.vietnam-region-block span,
+.vietnam-region-name span {
+  align-items: center;
+  background: rgb(var(--admin-primary-channel) / 0.12);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 700;
+  height: 32px;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.vietnam-region-block strong,
+.vietnam-region-name strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-region-block small {
+  color: var(--admin-muted);
+  grid-column: 1 / -1;
+  line-height: 18px;
+}
+
+.vietnam-region-block.is-rank-1 {
+  border-color: rgb(var(--admin-primary-channel) / 0.34);
+}
+
+.vietnam-region-block.is-rank-2,
+.vietnam-region-block.is-rank-3 {
+  border-color: rgb(var(--admin-info-channel) / 0.28);
+}
+
+.vietnam-overview-table-wrap {
+  border-radius: var(--admin-radius-lg);
+  margin-top: 0;
+}
+
+.vietnam-overview-table {
+  min-width: 960px;
+}
+
+.vietnam-overview-table th {
+  background: var(--admin-surface);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.vietnam-region-name {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
 .operations-policy-page {
   display: grid;
   gap: 16px;

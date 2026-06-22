@@ -129,6 +129,10 @@ import {
   adminUserListSelect,
   adminUserSummarySelect,
 } from './admin-user-selects';
+import {
+  VIETNAM_REGION_BUCKETS,
+  vietnamRegionCodeFromValues,
+} from './admin-vietnam-region-overview';
 
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_BOOKING_LIST_LIMIT = 100;
@@ -139,9 +143,30 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
+const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_LIMIT = 120;
 const ADMIN_BOOKING_MARKETPLACE_PROVIDER_RADIUS_METERS = 50_000;
+const ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES = new Set<BookingStatus>([
+  BookingStatus.CREATED,
+  BookingStatus.OPEN_MATCHING,
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+]);
+const ADMIN_VIETNAM_CANCELLATION_STATUSES = new Set<BookingStatus>([
+  BookingStatus.CANCELLED,
+  BookingStatus.NO_SHOW,
+  BookingStatus.EXPIRED,
+  BookingStatus.REFUNDED,
+]);
+const ADMIN_VIETNAM_REVENUE_STATUSES = new Set<PaymentStatus>([
+  PaymentStatus.CAPTURED,
+  PaymentStatus.RELEASED,
+]);
 const adminAuditLogSelect = {
   id: true,
   action: true,
@@ -209,6 +234,21 @@ type AdminCustomerActivitySummary = {
   completedBookingCount: number;
   lastBookingAt: Date | null;
   lastCompletedBookingAt: Date | null;
+};
+
+type AdminVietnamOverviewRegion = {
+  regionCode: string;
+  regionName: string;
+  shortName: string;
+  customerCount: number;
+  activeCustomerCount: number;
+  partnerCount: number;
+  onlinePartnerCount: number;
+  activeBookingCount: number;
+  completedBookingCount: number;
+  cancellationCount: number;
+  revenueAmount: number;
+  currency: string;
 };
 
 type AdminAuditLogSummaryRow = {
@@ -383,6 +423,176 @@ export class AdminService {
       take: ADMIN_APP_SESSION_LIST_LIMIT,
       select: adminAppSessionListSelect,
     });
+  }
+
+  async getVietnamOverview() {
+    const now = new Date();
+    const activeCustomerSince = new Date(now.getTime() - ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS);
+    const onlinePartnerSince = new Date(now.getTime() - ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS);
+    const regions = new Map<string, AdminVietnamOverviewRegion>(
+      VIETNAM_REGION_BUCKETS.map((bucket) => [
+        bucket.code,
+        {
+          regionCode: bucket.code,
+          regionName: bucket.name,
+          shortName: bucket.shortName,
+          customerCount: 0,
+          activeCustomerCount: 0,
+          partnerCount: 0,
+          onlinePartnerCount: 0,
+          activeBookingCount: 0,
+          completedBookingCount: 0,
+          cancellationCount: 0,
+          revenueAmount: 0,
+          currency: 'VND',
+        },
+      ]),
+    );
+
+    const [customers, providers, bookings] = await Promise.all([
+      this.prisma.customerProfile.findMany({
+        orderBy: { id: 'desc' },
+        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        select: {
+          addresses: true,
+          selectedLocations: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { addressText: true },
+          },
+          user: {
+            select: {
+              appSessions: {
+                where: { role: Role.CUSTOMER },
+                orderBy: { lastSeenAt: 'desc' },
+                take: 1,
+                select: {
+                  lastLoginAddress: true,
+                  lastSeenAt: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.providerProfile.findMany({
+        orderBy: { updatedAt: 'desc' },
+        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        select: {
+          city: true,
+          residentialAddress: true,
+          serviceArea: true,
+          status: true,
+          currentLocationUpdatedAt: true,
+        },
+      }),
+      this.prisma.booking.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
+        select: {
+          status: true,
+          address: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+            },
+          },
+          payment: {
+            select: {
+              amount: true,
+              currency: true,
+              status: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    for (const customer of customers) {
+      const region = ensureVietnamOverviewRegion(
+        regions,
+        vietnamRegionCodeFromValues([
+          customer.selectedLocations[0]?.addressText,
+          customer.addresses,
+          customer.user.appSessions[0]?.lastLoginAddress,
+        ]),
+      );
+      region.customerCount += 1;
+
+      const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
+      if (lastSeenAt && lastSeenAt >= activeCustomerSince) {
+        region.activeCustomerCount += 1;
+      }
+    }
+
+    for (const provider of providers) {
+      const region = ensureVietnamOverviewRegion(
+        regions,
+        vietnamRegionCodeFromValues([
+          provider.city,
+          provider.residentialAddress,
+          provider.serviceArea,
+        ]),
+      );
+      region.partnerCount += 1;
+
+      if (
+        provider.status !== ProviderStatus.OFFLINE &&
+        provider.currentLocationUpdatedAt &&
+        provider.currentLocationUpdatedAt >= onlinePartnerSince
+      ) {
+        region.onlinePartnerCount += 1;
+      }
+    }
+
+    for (const booking of bookings) {
+      const region = ensureVietnamOverviewRegion(
+        regions,
+        vietnamRegionCodeFromValues([
+          booking.addressSnapshot?.addressText,
+          booking.address,
+          booking.addressSnapshot?.address,
+        ]),
+      );
+
+      if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(booking.status)) {
+        region.activeBookingCount += 1;
+      }
+
+      if (booking.status === BookingStatus.COMPLETED) {
+        region.completedBookingCount += 1;
+      }
+
+      if (ADMIN_VIETNAM_CANCELLATION_STATUSES.has(booking.status)) {
+        region.cancellationCount += 1;
+      }
+
+      if (booking.payment && ADMIN_VIETNAM_REVENUE_STATUSES.has(booking.payment.status)) {
+        region.revenueAmount += numberValue(booking.payment.amount);
+        region.currency = booking.payment.currency || region.currency;
+      }
+    }
+
+    const regionRows = Array.from(regions.values());
+
+    return {
+      generatedAt: now.toISOString(),
+      refreshSeconds: 60,
+      source: 'stored-address-aggregates',
+      totals: {
+        customerCount: regionRows.reduce((total, region) => total + region.customerCount, 0),
+        activeCustomerCount: regionRows.reduce((total, region) => total + region.activeCustomerCount, 0),
+        partnerCount: regionRows.reduce((total, region) => total + region.partnerCount, 0),
+        onlinePartnerCount: regionRows.reduce((total, region) => total + region.onlinePartnerCount, 0),
+        activeBookingCount: regionRows.reduce((total, region) => total + region.activeBookingCount, 0),
+        completedBookingCount: regionRows.reduce((total, region) => total + region.completedBookingCount, 0),
+        cancellationCount: regionRows.reduce((total, region) => total + region.cancellationCount, 0),
+        revenueAmount: regionRows.reduce((total, region) => total + region.revenueAmount, 0),
+        currency: 'VND',
+      },
+      regions: regionRows,
+    };
   }
 
   async listProviders() {
@@ -2998,6 +3208,29 @@ function numberValue(value: unknown) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function ensureVietnamOverviewRegion(
+  regions: Map<string, AdminVietnamOverviewRegion>,
+  regionCode: string,
+) {
+  const region = regions.get(regionCode) ?? regions.get('other-vietnam');
+  if (region) return region;
+
+  return {
+    regionCode: 'other-vietnam',
+    regionName: 'Other Vietnam',
+    shortName: 'VN',
+    customerCount: 0,
+    activeCustomerCount: 0,
+    partnerCount: 0,
+    onlinePartnerCount: 0,
+    activeBookingCount: 0,
+    completedBookingCount: 0,
+    cancellationCount: 0,
+    revenueAmount: 0,
+    currency: 'VND',
+  };
 }
 
 function integerValue(value: unknown) {

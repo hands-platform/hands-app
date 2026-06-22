@@ -10,6 +10,7 @@ describe('admin navigation', () => {
 
     expect(linksByHref.get('/')).toBe('Command: Start Shift');
     expect(linksByHref.get('/operations-handoff')).toBe('Command: Handoff');
+    expect(linksByHref.get('/vietnam-overview')).toBe('Command: Vietnam Overview');
     expect(linksByHref.get('/bookings')).toBe('Bookings: All Bookings');
     expect(linksByHref.get('/cash-settlements')).toBe('Finance: Cash Debt');
   });

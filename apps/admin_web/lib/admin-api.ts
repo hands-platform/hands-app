@@ -1136,6 +1136,39 @@ export type AdminExternalReadiness = {
   }>;
 };
 
+export type AdminVietnamOverviewRegion = {
+  regionCode: string;
+  regionName: string;
+  shortName: string;
+  customerCount: number;
+  activeCustomerCount: number;
+  partnerCount: number;
+  onlinePartnerCount: number;
+  activeBookingCount: number;
+  completedBookingCount: number;
+  cancellationCount: number;
+  revenueAmount: number;
+  currency: string;
+};
+
+export type AdminVietnamOverview = {
+  generatedAt: string;
+  refreshSeconds: number;
+  source: 'stored-address-aggregates';
+  totals: {
+    customerCount: number;
+    activeCustomerCount: number;
+    partnerCount: number;
+    onlinePartnerCount: number;
+    activeBookingCount: number;
+    completedBookingCount: number;
+    cancellationCount: number;
+    revenueAmount: number;
+    currency: string;
+  };
+  regions: AdminVietnamOverviewRegion[];
+};
+
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
