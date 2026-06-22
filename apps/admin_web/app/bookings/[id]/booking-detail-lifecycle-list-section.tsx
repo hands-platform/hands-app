@@ -9,7 +9,7 @@ import {
 import { type BookingMonitorListRow, type BookingTableGroupKey } from '../booking-monitor-list-section';
 import { buildBookingMonitorListRow } from '../booking-monitor-list-row-model';
 import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
-import { bookingAddressSnapshotLabel, coordinateLabel, formatDate } from './booking-formatters';
+import { bookingAddressSnapshotLabel, formatDate } from './booking-formatters';
 
 export type BookingDetailLifecycleListRow = {
   readonly groupKey: BookingTableGroupKey;
@@ -421,7 +421,7 @@ function partnerLifecycleLocationCheckpoint(
   const address = readAddressText(snapshot);
   const locationLabel = address
     ? serviceAddressAreaLabel(address)
-    : `Pin ${coordinateLabel(snapshot.lat, snapshot.lng)}`;
+    : 'Location recorded without readable address';
 
   return {
     capture: `Recorded ${formatDate(snapshot.recordedAt)}`,

@@ -151,6 +151,32 @@ describe('bookingDetailLifecycleListRows', () => {
     expect(completed?.detail).toContain('Completion location is captured only when the Partner taps complete.');
   });
 
+  it('hides raw coordinate fallback for lifecycle checkpoint locations', () => {
+    const items = bookingDetailLifecycleTimelineItems(
+      bookingFixture({
+        closedAt: '2026-06-19T08:40:00.000Z',
+        closedReason: 'partner_cancelled',
+        snapshots: [
+          {
+            id: 'action-location-without-address',
+            lat: 21.0245,
+            lng: 105.8067,
+            providerProfileId: 'partner-1',
+            recordedAt: '2026-06-19T08:39:00.000Z',
+          },
+        ],
+        status: 'CANCELLED',
+        statusChangedAt: '2026-06-19T08:40:00.000Z',
+      }),
+      new Date('2026-06-19T09:00:00.000Z').getTime(),
+    );
+
+    expect(items.at(-1)?.meta.find((meta) => meta.label === 'Cancellation location')?.value).toBe(
+      'Location recorded without readable address',
+    );
+    expect(JSON.stringify(items)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
+  });
+
   it('renders Vuexy-style lifecycle timeline markup', () => {
     const rendered = renderToStaticMarkup(
       <BookingDetailLifecycleListSection
