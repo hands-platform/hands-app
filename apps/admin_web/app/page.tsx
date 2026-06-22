@@ -2395,7 +2395,7 @@ function buildMatchingControlRoom(
           : 'No online Partner has a fresh location update in the current admin sample.',
         operatorAction: freshOnlinePartners.length
           ? 'This is enough to validate the low-cost last-location model.'
-          : 'Ask Partners to open the app so the 10-minute location update flow can seed matching.',
+          : 'Ask Partners to open the app so one fresh low-cost location update can seed matching.',
         className: freshOnlinePartners.length ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: freshOnlinePartners.length ? 'pill-success' : 'pill-danger',
       },

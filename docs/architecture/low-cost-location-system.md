@@ -15,7 +15,7 @@ HANDS is not a realtime GPS tracking product. The MVP uses confirmed service add
 
 - Do not continuously track customer location.
 - On app open, use the last known location/address first.
-- Refresh customer GPS only when the user explicitly needs it, such as choosing "use current location".
+- Refresh customer GPS only when the user explicitly needs it, such as choosing "use current location" or submitting a booking with a confirmed service address.
 - Do not request customer GPS more often than every 15 minutes for normal foreground use.
 - Address search uses Geoapify only after a 500 ms debounce and at least 3 query characters.
 - Cache repeated normalized address searches in memory.
