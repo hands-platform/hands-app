@@ -23,7 +23,7 @@ describe('partner detail record helpers', () => {
     expect(bookingTotal(booking)).toBe(390_000);
   });
 
-  it('prefers address snapshot text for booking address evidence', () => {
+  it('prefers address snapshot text without exposing raw coordinates', () => {
     expect(
       partnerBookingAddressEvidenceLabel({
         id: 'booking_1',
@@ -33,7 +33,18 @@ describe('partner detail record helpers', () => {
           longitude: '105.79',
         },
       }),
-    ).toBe('Cau Giay, Ha Noi / snapshot 21.03, 105.79');
+    ).toBe('Cau Giay, Ha Noi / snapshot saved');
+  });
+
+  it('uses a safe label when only legacy booking coordinates exist', () => {
+    const label = partnerBookingAddressEvidenceLabel({
+      id: 'booking_1',
+      lat: '21.03',
+      lng: '105.79',
+    });
+
+    expect(label).toBe('Stored booking location saved');
+    expect(label).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
   });
 
   it('sorts retained chat messages by creation time', () => {

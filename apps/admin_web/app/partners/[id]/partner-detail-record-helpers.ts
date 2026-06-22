@@ -110,17 +110,15 @@ export function partnerBookingAddressEvidenceLabel(booking: PartnerDetailBooking
     const snapshotText = stringifyPartnerAddress(
       booking.addressSnapshot.addressText ?? booking.addressSnapshot.address,
     );
-    const coordinates =
-      booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null
-        ? `${booking.addressSnapshot.latitude}, ${booking.addressSnapshot.longitude}`
-        : 'coordinates not stored';
-    return `${snapshotText} / snapshot ${coordinates}`;
+    const snapshotLocationSaved =
+      booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null;
+    return `${snapshotText} / ${snapshotLocationSaved ? 'snapshot saved' : 'snapshot location not stored'}`;
   }
   if (booking.address) {
     return stringifyPartnerAddress(booking.address);
   }
   if (booking.lat != null && booking.lng != null) {
-    return `coordinates ${booking.lat}, ${booking.lng}`;
+    return 'Stored booking location saved';
   }
   return 'No booking address evidence loaded';
 }
