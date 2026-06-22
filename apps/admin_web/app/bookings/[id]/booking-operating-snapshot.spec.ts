@@ -71,6 +71,10 @@ describe('bookingOperatingSnapshot', () => {
       helper: 'Ledger 240.000 VND',
       value: 'CARD / CAPTURED',
     });
+    expect(snapshot.facts.find((fact) => fact.label === 'Confirmed address')).toMatchObject({
+      helper: 'Service address snapshot saved / customer_confirmation / 14 Jun 2026, 08:10',
+    });
+    expect(JSON.stringify(snapshot)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 
   it('uses warning tone for non-high attention checks', () => {

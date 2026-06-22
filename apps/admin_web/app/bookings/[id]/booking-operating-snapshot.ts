@@ -1,5 +1,6 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import type { AttentionFlag } from '../../../lib/admin-attention-flags';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import {
   compactActivityText,
@@ -75,7 +76,7 @@ export function bookingOperatingSnapshot({
       {
         label: 'Confirmed address',
         value: compactActivityText(addressLine, 42),
-        helper: `${addressPin} / ${addressSource}`,
+        helper: `${serviceAddressSnapshotStateLabel(addressPin)} / ${addressSource}`,
       },
       {
         label: 'Customer final choice',
@@ -110,4 +111,13 @@ export function bookingOperatingSnapshot({
       },
     ],
   };
+}
+
+function serviceAddressSnapshotStateLabel(addressPin: string) {
+  const address = readAddressText(addressPin);
+  if (address) {
+    return serviceAddressAreaLabel(address);
+  }
+
+  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
 }
