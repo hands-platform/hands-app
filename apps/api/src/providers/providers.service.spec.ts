@@ -321,6 +321,50 @@ describe('ProvidersService location updates', () => {
     expect(prisma.providerProfile.update).not.toHaveBeenCalled();
     expect(setProviderLocation).not.toHaveBeenCalled();
   });
+
+  it('skips too-frequent active booking partner location writes before touching Postgres', async () => {
+    const now = new Date();
+    const getProviderLocation = jest.fn().mockResolvedValue({
+      lat: 10.7769,
+      lng: 106.7009,
+      recordedAt: now.toISOString(),
+    });
+    const setProviderLocation = jest.fn();
+    const prisma = {
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
+      },
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          blockedAt: null,
+          blockedReason: null,
+          currentLocationUpdatedAt: now,
+        }),
+        update: jest.fn(),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      { getProviderLocation, setProviderLocation } as never,
+      { get: jest.fn() } as never,
+    );
+
+    const result = await service.updateLocation('provider-user-1', {
+      bookingId: 'booking-1',
+      lat: 10.7769,
+      lng: 106.7409,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        locationUpdated: false,
+        locationUpdateSkippedReason: 'TOO_FREQUENT_ACTIVE_BOOKING_LOCATION_UPDATE',
+      }),
+    );
+    expect(prisma.providerProfile.update).not.toHaveBeenCalled();
+    expect(setProviderLocation).not.toHaveBeenCalled();
+  });
 });
 
 function createServiceWithNearbyProviders(providers: unknown[]) {
