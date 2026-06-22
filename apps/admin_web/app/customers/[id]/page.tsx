@@ -114,18 +114,16 @@ const CUSTOMER_BOOKING_HISTORY_HEADERS = [
 ] as const;
 const CUSTOMER_CHAT_RETENTION_HEADERS = [
   'Booking',
-  'Room state',
+  'Chat state',
   'Latest message',
-  'Mobile visibility',
-  'Admin archive',
+  'Retention',
   'Open',
 ] as const;
 const CUSTOMER_BOOKING_OPS_LEDGER_HEADERS = [
   'Booking',
   'Partner',
-  'Manual notes',
-  'Staff tasks',
-  'Closeout context',
+  'Notes and tasks',
+  'Closeout',
   'Open',
 ] as const;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
@@ -1393,8 +1391,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer chat retention ledger</h2>
             <p className="muted">
-              Matched bookings must create a chat room. Mobile apps can hide the room after completion, while
-              admin keeps the full archive for cancellation, no-show, and service evidence review.
+              Matched booking chat archive status for cancellation, no-show, and service evidence review.
             </p>
           </div>
           <span className="pill pill-info">{customerChatRetentionRows.length} booking row(s)</span>
@@ -1431,12 +1428,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
                 </td>
                 <td>
-                  <strong>{row.mobileVisibility}</strong>
-                  <p className="muted">{row.mobileVisibilityDetail}</p>
-                </td>
-                <td>
                   <strong>{row.adminRetention}</strong>
-                  <p className="muted">{row.adminRetentionDetail}</p>
+                  <p className="muted">
+                    {row.mobileVisibility} / {row.adminRetentionDetail}
+                  </p>
                 </td>
                 <td>
                   <Link className="text-link" href={row.bookingHref}>
@@ -1464,8 +1459,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Booking operations note ledger</h2>
             <p className="muted">
-              Booking-level notes, manual closeout context, and staff tasks linked to this customer. This is
-              factual operator history for support follow-up and evidence review.
+              Booking-level notes, staff tasks, and closeout context linked to this customer.
             </p>
           </div>
           <span className="pill pill-info">{customerBookingOpsLedgerRows.length} booking note row(s)</span>
@@ -1487,14 +1481,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 <td>
                   <strong>{row.noteStatus}</strong>
                   <p className="muted">{row.noteDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.taskStatus}</strong>
-                  <p className="muted">{row.taskDetail}</p>
+                  <p className="muted">
+                    {row.taskStatus} / {compactText(row.taskDetail, 88)}
+                  </p>
                 </td>
                 <td>
                   <strong>{row.closeoutStatus}</strong>
-                  <p className="muted">{row.closeoutDetail}</p>
+                  <p className="muted">{compactText(row.closeoutDetail, 96)}</p>
                 </td>
                 <td>
                   <Link className="text-link" href={row.bookingHref}>
