@@ -160,12 +160,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const latestPartnerBooking = bookings.find(
     (booking) => booking.selectedProviderId || booking.preferredProviderId,
   );
-  const latestSession = customer.user?.appSessions?.[0];
+  const appSessions = customer.user?.appSessions ?? [];
+  const latestSession = appSessions[0];
   const pushDevices = customer.user?.pushDevices ?? [];
   const customerAvatarStatus = adminAvatarStatusFromSignals({
     devices: pushDevices,
     matching: Boolean(activeBooking && MATCHING_AVATAR_STATUSES.has(activeBooking.status)),
-    sessions: customer.user?.appSessions,
+    sessions: appSessions,
     working: Boolean(activeBooking && WORKING_AVATAR_STATUSES.has(activeBooking.status)),
   });
   const notifications = customer.user?.notifications ?? [];
@@ -1683,52 +1684,101 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="grid admin-mb-16">
-        <section className="card">
-          <h2>Push devices</h2>
-          <div className="setup-stage-list admin-mt-12">
-            {pushDevices.length > 0 ? (
-              pushDevices.map((device) => (
-                <div className="ops-row" key={device.id}>
-                  <strong>{device.platform}</strong>
-                  <span>
-                    {device.enabled ? 'Enabled' : 'Disabled'} /{' '}
-                    {formatDate(device.updatedAt ?? device.createdAt)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="muted">No customer push device recorded.</p>
-            )}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2>App sessions</h2>
-          <div className="setup-stage-list admin-mt-12">
-            {(customer.user?.appSessions ?? []).length > 0 ? (
-              (customer.user?.appSessions ?? []).slice(0, 8).map((session) => (
-                <div className="ops-row" key={session.id}>
-                  <strong>{session.platform ?? session.role}</strong>
-                  <span>
-                    {session.active ? 'Active' : 'Inactive'} / {formatDate(session.lastSeenAt)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="muted">No app session recorded.</p>
-            )}
-          </div>
-        </section>
-      </section>
-
       <section className="card" id="notifications">
         <div className="ops-section-header">
           <div>
-            <h2>Recent customer notifications</h2>
+            <h2>Support and device trace</h2>
             <p className="muted">
-              Delivery status helps support explain missed booking, payment, and chat updates.
+              Device reachability, app sessions, notification delivery, and customer audit rows in one
+              support trace.
             </p>
+          </div>
+          <span className="pill pill-info">
+            {pushDevices.length} device(s) / {filteredNotifications.length} notification row(s)
+          </span>
+        </div>
+        <div className="service-trace-summary admin-mt-12">
+          <div>
+            <span>Push devices</span>
+            <strong>{pushDevices.filter((device) => device.enabled).length}/{pushDevices.length}</strong>
+            <small>Enabled push targets</small>
+          </div>
+          <div>
+            <span>App sessions</span>
+            <strong>{appSessions.filter((session) => session.active).length}/{appSessions.length}</strong>
+            <small>Active customer sessions</small>
+          </div>
+          <div>
+            <span>Notifications</span>
+            <strong>{filteredNotifications.length}</strong>
+            <small>Rows in selected filter</small>
+          </div>
+          <div>
+            <span>Audit logs</span>
+            <strong>{filteredAuditLogs.length}</strong>
+            <small>Operator/system actions</small>
+          </div>
+        </div>
+        <div className="grid admin-mt-16">
+          <div>
+            <h3>Device and session state</h3>
+            <div className="setup-stage-list admin-mt-12">
+              {pushDevices.length > 0 ? (
+                pushDevices.map((device) => (
+                  <div className="ops-row" key={device.id}>
+                    <strong>{device.platform}</strong>
+                    <span>
+                      {device.enabled ? 'Enabled' : 'Disabled'} /{' '}
+                      {formatDate(device.updatedAt ?? device.createdAt)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="muted">No customer push device recorded.</p>
+              )}
+              {appSessions.length > 0 ? (
+                appSessions.slice(0, 8).map((session) => (
+                  <div className="ops-row" key={session.id}>
+                    <strong>{session.platform ?? session.role}</strong>
+                    <span>
+                      {session.active ? 'Active' : 'Inactive'} / {formatDate(session.lastSeenAt)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="muted">No app session recorded.</p>
+              )}
+            </div>
+          </div>
+          <div>
+            <h3>Latest support rows</h3>
+            <div className="setup-stage-list admin-mt-12">
+              <div className="ops-row">
+                <strong>Notification</strong>
+                <span>
+                  {filteredNotifications[0]
+                    ? `${displayMarketplaceText(filteredNotifications[0].title)} / ${formatDate(
+                        filteredNotifications[0].createdAt,
+                      )}`
+                    : 'No notification row'}
+                </span>
+              </div>
+              <div className="ops-row">
+                <strong>Audit</strong>
+                <span>
+                  {filteredAuditLogs[0]
+                    ? `${filteredAuditLogs[0].action} / ${formatDate(filteredAuditLogs[0].createdAt)}`
+                    : 'No audit row'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="ops-section-header admin-mt-16">
+          <div>
+            <h3>Recent customer notifications</h3>
+            <p className="muted">Delivery status for missed booking, payment, and chat updates.</p>
           </div>
           <span className="pill pill-info">{filteredNotifications.length} rows</span>
         </div>
@@ -1751,12 +1801,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-      </section>
 
-      <section className="card admin-mt-16" id="audit-trail">
-        <div className="ops-section-header">
+        <div className="ops-section-header admin-mt-16" id="audit-trail">
           <div>
-            <h2>Customer audit trail</h2>
+            <h3>Customer audit trail</h3>
             <p className="muted">Recent operator notes and system actions attached to this customer.</p>
           </div>
           <span className="pill pill-info">{filteredAuditLogs.length} logs</span>
