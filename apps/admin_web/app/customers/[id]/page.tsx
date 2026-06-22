@@ -175,7 +175,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     working: Boolean(activeBooking && WORKING_AVATAR_STATUSES.has(activeBooking.status)),
   });
   const notifications = customer.user?.notifications ?? [];
-  const activityPlan = buildCustomerActivityPlan(customer, bookings, wallet, bookingStats, addresses);
+  const activityPlan = buildCustomerActivityPlan(bookings, wallet, bookingStats, addresses);
   const chatRooms = bookings.filter((booking) => booking.chatRoom);
   const chatMessageCount = chatRooms.reduce(
     (sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0),
@@ -716,15 +716,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </p>
           </div>
           <span className={`pill ${customerSupportPillClass(activityPlan.tone)}`}>{activityPlan.status}</span>
-        </div>
-        <div className="service-trace-summary">
-          {activityPlan.cards.map((card) => (
-            <Link className="text-link" href={card.href} key={card.title}>
-              <span>{card.title}</span>
-              <strong>{card.value}</strong>
-              <small className="muted">{card.detail}</small>
-            </Link>
-          ))}
         </div>
         <div className="ops-task-note ops-task-pending admin-mt-14">
           <div className="ops-row">
@@ -2211,16 +2202,12 @@ function buildCustomerAccountFacts(
 }
 
 function buildCustomerActivityPlan(
-  customer: AdminCustomerDetail,
   bookings: AdminBookingDetail[],
   wallet: ReturnType<typeof customerWalletSummary>,
   bookingStats: ReturnType<typeof buildBookingStats>,
   addresses: Array<{ key: string; label: string; value: string }>,
 ) {
   const latestBooking = bookings[0];
-  const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
-  const unreadNotifications =
-    customer.user?.notifications?.filter((notification) => !notification.readAt).length ?? 0;
   const paymentIssueCount = bookings.filter((booking) => {
     return booking.payment && !['AUTHORIZED', 'CAPTURED'].includes(booking.payment.status);
   }).length;
@@ -2247,52 +2234,6 @@ function buildCustomerActivityPlan(
         : 'When this customer books, the profile, booking, payment, chat archive, and address records will appear here.',
     primaryHref,
     primaryAction,
-    cards: [
-      {
-        title: 'Latest booking',
-        value: latestBooking ? `${shortId(latestBooking.id)} / ${latestBooking.status}` : 'None',
-        detail: latestBooking ? bookingServiceLabel(latestBooking) : 'No booking history yet',
-        href: latestBooking ? `/bookings/${latestBooking.id}` : '/bookings',
-      },
-      {
-        title: 'Last completed work',
-        value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
-        detail: lastCompletedBooking
-          ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(bookingLatestActivityAt(lastCompletedBooking))}`
-          : 'No finished service record',
-        href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '/bookings',
-      },
-      {
-        title: 'Payment records',
-        value: `${paymentIssueCount} non-captured row(s)`,
-        detail: `${formatMoney(wallet.refundAmount)} refund records`,
-        href: '/payments',
-      },
-      {
-        title: 'Chat archive',
-        value: `${chatArchiveCount} room(s)`,
-        detail: 'App chat closes after completion; admin keeps the archive',
-        href: latestBooking ? `/bookings/${latestBooking.id}#chat` : '/bookings?view=chat',
-      },
-      {
-        title: 'Saved locations',
-        value: addresses.length ? `${addresses.length} saved` : 'Missing',
-        detail: missingAddress ? 'No stored address row' : 'Profile and selected pins exist',
-        href: latestBooking ? `/bookings/${latestBooking.id}#customer` : '/customers',
-      },
-      {
-        title: 'Notifications',
-        value: `${unreadNotifications} unread`,
-        detail: `${customer.user?.pushDevices?.filter((device) => device.enabled).length ?? 0} enabled push device(s)`,
-        href: '/notifications',
-      },
-      {
-        title: 'Operator notes',
-        value: `${customer.auditLogs?.length ?? 0} logs`,
-        detail: 'Recent customer-linked audit actions',
-        href: '/audit-log',
-      },
-    ],
     badges: [
       {
         label: bookingStats.active ? 'Live booking' : 'No live booking',
