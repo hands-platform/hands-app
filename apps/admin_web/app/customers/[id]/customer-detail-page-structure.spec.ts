@@ -22,9 +22,15 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Customer connected operations records');
     expect(pageSource).not.toContain('Customer full record index');
     expect(pageSource).not.toContain('Customer operating ledger');
+    expect(pageSource).not.toContain('Customer booking evidence bundles');
+    expect(pageSource).not.toContain('Customer booking journey');
     expect(pageSource).not.toContain('CustomerOperatingLedgerRow');
     expect(pageSource).not.toContain('CustomerOperationsDigestRow');
+    expect(pageSource).not.toContain('CustomerBookingEvidenceRow');
+    expect(pageSource).not.toContain('CustomerBookingJourneyRow');
     expect(pageSource).not.toContain('buildCustomerOperatingLedger');
     expect(pageSource).not.toContain('buildCustomerOperationsDigest');
+    expect(pageSource).not.toContain('buildCustomerBookingEvidenceRows');
+    expect(pageSource).not.toContain('buildCustomerBookingJourneyRows');
   });
 });

@@ -103,15 +103,6 @@ const ACTIVE_STATUSES = [
 const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
-  'Booking',
-  'Address',
-  'Partner',
-  'Chat archive',
-  'Finance',
-  'Ops',
-  'Open',
-] as const;
 const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
 const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 4;
 const CUSTOMER_BOOKING_HISTORY_PAGE_SIZE = 10;
@@ -299,8 +290,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     ),
     activityOrder,
   );
-  const customerBookingEvidenceRows = buildCustomerBookingEvidenceRows(filteredBookings);
-  const customerBookingJourneyRows = buildCustomerBookingJourneyRows(filteredBookings);
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const customerDailyActivityDigest = buildCustomerDailyActivityDigest(
     filteredCustomerActivityRecords,
@@ -636,71 +625,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         )}
       </section>
 
-      <section className="card admin-mb-16" id="customer-booking-evidence-bundles">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer booking evidence bundles</h2>
-            <p className="muted">
-              Compact booking-by-booking evidence for address, Partner state, chat, finance, and staff
-              records.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerBookingEvidenceRows.length} booking bundle(s)</span>
-        </div>
-        <AdminTableScroll>
-          <AdminDataTable
-            emptyMessage={null}
-            headers={CUSTOMER_BOOKING_EVIDENCE_HEADERS}
-            rowCount={customerBookingEvidenceRows.length}
-          >
-            {customerBookingEvidenceRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.addressStatus}</strong>
-                  <p className="muted">{row.addressDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.partnerStatus}</strong>
-                  <p className="muted">{row.partnerDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.chatStatus}</strong>
-                  <p className="muted">{row.chatDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.moneyStatus}</strong>
-                  <p className="muted">{row.moneyDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.opsStatus}</strong>
-                  <p className="muted">{row.opsDetail}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link admin-ml-10" href={row.chatHref}>
-                      Chat
-                    </Link>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        {customerBookingEvidenceRows.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No booking bundle matched this date filter.
-          </p>
-        ) : null}
-      </section>
-
       <section className="card admin-mb-16" id="customer-operator-command-queue">
         <div className="ops-section-header">
           <div>
@@ -737,58 +661,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className="card admin-mb-16" id="customer-booking-journey">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer booking journey</h2>
-            <p className="muted">
-              Booking-by-booking journey for support review: service address, Partner handoff,
-              retained chat, payment rows, and staff records are grouped as factual records only.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerBookingJourneyRows.length} journey row(s)</span>
-        </div>
-        <div className="setup-stage-list admin-mt-14">
-          {customerBookingJourneyRows.length > 0 ? (
-            customerBookingJourneyRows.map((row) => (
-              <div className="setup-stage-item" key={`journey-${row.id}`}>
-                <span>{row.status}</span>
-                <div>
-                  <Link className="text-link" href={`/bookings/${row.id}`}>
-                    <strong>{row.heading}</strong>
-                  </Link>
-                  <p className="muted">{row.detail}</p>
-                  <div className="participant-list admin-mt-8">
-                    {row.steps.map((step) => (
-                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
-                        {step.label}: {step.value}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="participant-list admin-mt-8">
-                    {row.links.map((link) => (
-                      <Link className="text-link" href={link.href} key={link.label}>
-                        {link.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No booking journey matched this filter</strong>
-                <p className="muted">Use a wider date range to show older booking rows.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
         </div>
       </section>
 
@@ -1727,34 +1599,6 @@ type CustomerDailyActivityDigest = {
   latestAt?: string;
   typeCounts: Array<{ type: string; count: number }>;
   highlights: CustomerActivityRecord[];
-};
-
-type CustomerBookingEvidenceRow = {
-  id: string;
-  bookingLabel: string;
-  serviceLabel: string;
-  status: string;
-  addressStatus: string;
-  addressDetail: string;
-  partnerStatus: string;
-  partnerDetail: string;
-  chatStatus: string;
-  chatDetail: string;
-  chatHref?: string;
-  moneyStatus: string;
-  moneyDetail: string;
-  opsStatus: string;
-  opsDetail: string;
-};
-
-type CustomerBookingJourneyRow = {
-  id: string;
-  status: string;
-  heading: string;
-  detail: string;
-  latestAt?: string;
-  steps: Array<{ label: string; value: string; tone: string }>;
-  links: Array<{ label: string; href: string }>;
 };
 
 type CustomerChatRetentionRow = {
@@ -3255,164 +3099,6 @@ function buildCustomerBookingGateAttemptRows(
       };
     })
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
-}
-
-function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): CustomerBookingEvidenceRow[] {
-  return bookings.slice(0, 30).map((booking) => {
-    const chatMessages = readChatMessages(booking);
-    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
-    const participantCount = booking.participants?.length ?? 0;
-    const acceptedParticipants =
-      booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
-        .length ?? 0;
-    const hasAddressSnapshot = Boolean(booking.addressSnapshot);
-    const addressText = bookingAddressEvidenceLabel(booking);
-    const moneyParts = [
-      booking.payment
-        ? `${booking.payment.status} ${booking.payment.method} ${formatMoney(
-            Number(booking.payment.amount ?? 0),
-            booking.payment.currency ?? 'VND',
-          )}`
-        : 'No payment row',
-      booking.earning ? `earning ${booking.earning.status}` : 'no earning row',
-      refunds.length ? `${refunds.length} refund row(s)` : 'no refund rows',
-    ];
-    const opsParts = [
-      `${booking.opsTasks?.length ?? 0} ops task(s)`,
-      `${booking.auditLogs?.length ?? 0} audit row(s)`,
-      `${booking.platformFeeLogs?.length ?? 0} platform fee row(s)`,
-      `${booking.taxLogs?.length ?? 0} tax row(s)`,
-      `${booking.walletLedgerEntries?.length ?? 0} wallet row(s)`,
-    ];
-
-    return {
-      id: booking.id,
-      bookingLabel: `${shortId(booking.id)} / ${formatDate(bookingLatestActivityAt(booking))}`,
-      serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
-      status: booking.status,
-      addressStatus: hasAddressSnapshot ? 'Snapshot saved' : 'No address snapshot',
-      addressDetail: compactText(addressText, 86),
-      partnerStatus: booking.selectedProviderId
-        ? 'Final Partner selected'
-        : booking.preferredProviderId
-          ? 'Preferred Partner first-pick'
-          : participantCount
-            ? 'Marketplace participation'
-            : 'No Partner participation',
-      partnerDetail: `${bookingPartnerDisplayName(booking)} / ${participantCount} participating / ${acceptedParticipants} accepted`,
-      chatStatus: booking.chatRoom ? `${chatMessages.length} message(s)` : 'No chat room',
-      chatDetail: booking.chatRoom
-        ? `Room ${shortId(booking.chatRoom.id)} / ${bookingChatArchiveLabel(booking)}`
-        : bookingChatArchiveLabel(booking),
-      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
-      moneyStatus: booking.payment?.status ?? 'No payment',
-      moneyDetail: compactText(moneyParts.join(' / '), 96),
-      opsStatus:
-        (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0
-          ? 'Operator records'
-          : 'No operator rows',
-      opsDetail: compactText(opsParts.join(' / '), 96),
-    };
-  });
-}
-
-function buildCustomerBookingJourneyRows(bookings: AdminBookingDetail[]): CustomerBookingJourneyRow[] {
-  return bookings.slice(0, 20).map((booking) => {
-    const chatMessages = readChatMessages(booking);
-    const latestMessage = chatMessages[chatMessages.length - 1];
-    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
-    const participantCount = booking.participants?.length ?? 0;
-    const selectedPartner = booking.selectedProviderId ? bookingPartnerDisplayName(booking) : null;
-    const hasAddressSnapshot = Boolean(booking.addressSnapshot);
-    const hasMoneyCloseout =
-      Boolean(booking.earning) ||
-      (booking.platformFeeLogs?.length ?? 0) > 0 ||
-      (booking.taxLogs?.length ?? 0) > 0 ||
-      (booking.walletLedgerEntries?.length ?? 0) > 0;
-    const latestAt =
-      latestMessage?.createdAt ??
-      booking.updatedAt ??
-      booking.closedAt ??
-      bookingRecordCreatedAt(booking);
-    const moneyValue = booking.payment
-      ? `${booking.payment.status} ${formatMoney(
-          Number(booking.payment.amount ?? 0),
-          booking.payment.currency ?? 'VND',
-        )}`
-      : hasMoneyCloseout
-        ? 'Closeout rows'
-        : 'No row';
-    const partnerValue = selectedPartner
-      ? selectedPartner
-      : booking.preferredProviderId
-        ? participantCount
-          ? `First-pick plus ${participantCount} participant(s)`
-          : 'First-pick waiting'
-        : participantCount
-          ? `${participantCount} participant(s)`
-          : 'No participant';
-    const chatValue = booking.chatRoom
-      ? `${chatMessages.length} retained`
-      : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)
-        ? 'Needs room check'
-        : 'Not opened';
-
-    return {
-      id: booking.id,
-      status: booking.status,
-      heading: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
-      detail: `${formatMoney(bookingTotal(booking))} / ${bookingAddressEvidenceLabel(booking)}`,
-      latestAt,
-      steps: [
-        {
-          label: 'Address',
-          value: hasAddressSnapshot ? 'Snapshot saved' : 'Review',
-          tone: hasAddressSnapshot ? 'pill-success' : 'pill-warn',
-        },
-        {
-          label: 'Partner',
-          value: partnerValue,
-          tone: selectedPartner ? 'pill-success' : participantCount ? 'pill-info' : 'pill-neutral',
-        },
-        {
-          label: 'Chat',
-          value: chatValue,
-          tone: booking.chatRoom
-            ? 'pill-success'
-            : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-                  booking.status,
-                )
-              ? 'pill-warn'
-              : 'pill-neutral',
-        },
-        {
-          label: 'Payment',
-          value: moneyValue,
-          tone: booking.payment ? 'pill-info' : hasMoneyCloseout ? 'pill-success' : 'pill-neutral',
-        },
-        {
-          label: 'Refund',
-          value: refunds.length ? `${refunds.length} row(s)` : 'None',
-          tone: refunds.length ? 'pill-warn' : 'pill-neutral',
-        },
-        {
-          label: 'Staff',
-          value: `${booking.opsTasks?.length ?? 0} task(s) / ${booking.auditLogs?.length ?? 0} log(s)`,
-          tone:
-            (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0
-              ? 'pill-info'
-              : 'pill-neutral',
-        },
-      ],
-      links: [
-        { label: 'Open booking', href: `/bookings/${booking.id}` },
-        ...(booking.chatRoom
-          ? [{ label: 'Open chat archive', href: `/chat-archive?q=${encodeURIComponent(booking.id)}` }]
-          : []),
-        ...(booking.payment ? [{ label: 'Open payments', href: '/payments' }] : []),
-      ],
-    };
-  });
 }
 
 function buildCustomerBookingOpsLedgerRows(bookings: AdminBookingDetail[]): CustomerBookingOpsLedgerRow[] {
