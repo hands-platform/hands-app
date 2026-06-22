@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import {
   bookingDetailProviderLocationMetricHelper,
   bookingDetailProviderLocationMetricValue,
@@ -100,7 +101,7 @@ export function bookingDetailOperationsQuickRail({
     {
       href: '#address-radius-contract',
       label: 'Address',
-      value: addressPin,
+      value: quickRailAddressStateLabel(addressPin),
       detail: addressLine,
     },
     {
@@ -122,4 +123,13 @@ export function bookingDetailOperationsQuickRail({
       detail: 'Date-ordered booking, chat, payment, alert, location, and audit events.',
     },
   ];
+}
+
+function quickRailAddressStateLabel(addressPin: string) {
+  const address = readAddressText(addressPin);
+  if (address) {
+    return serviceAddressAreaLabel(address);
+  }
+
+  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
 }

@@ -86,6 +86,11 @@ describe('bookingDetailOperationsQuickRail', () => {
       detail: '30.000 VND withholding / 90.000 VND net HANDS fee.',
       value: '120.000 VND',
     });
+    expect(rows.find((row) => row.label === 'Address')).toMatchObject({
+      detail: 'District service address',
+      value: 'Service address snapshot saved',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
     expect(rows.find((row) => row.label === 'Location')).toMatchObject({
       detail: 'Updated just now',
       value: 'Recent',
