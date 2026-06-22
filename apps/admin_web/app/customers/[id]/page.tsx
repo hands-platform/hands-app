@@ -220,7 +220,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     bookingStats,
     addresses,
     latestSession,
-    pushDevices,
     notifications: filteredNotifications,
     activityRecords: filteredCustomerActivityRecords,
   });
@@ -670,17 +669,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <div className="setup-stage-item" key={row.lane}>
               <span>{row.lane}</span>
               <div>
-                <Link className="text-link" href={row.href}>
-                  <strong>{row.status}</strong>
-                </Link>
+                <strong>{row.status}</strong>
                 <p className="muted">{row.detail}</p>
-                <div className="participant-list admin-mt-8">
-                  {row.evidence.map((item) => (
-                    <span className="pill pill-neutral" key={item}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
               </div>
               <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
             </div>
@@ -1901,9 +1891,7 @@ type CustomerOperationsDigestRow = {
   lane: string;
   status: string;
   detail: string;
-  href: string;
   latestAt?: string;
-  evidence: string[];
 };
 
 type CustomerBookingGateAttemptRow = {
@@ -2450,7 +2438,6 @@ function buildCustomerOperationsDigest({
   bookingStats,
   addresses,
   latestSession,
-  pushDevices,
   notifications,
   activityRecords,
 }: {
@@ -2460,14 +2447,11 @@ function buildCustomerOperationsDigest({
   bookingStats: ReturnType<typeof buildBookingStats>;
   addresses: Array<{ key: string; label: string; value: string }>;
   latestSession?: AdminAppSession;
-  pushDevices: CustomerPushDevice[];
   notifications: AdminNotification[];
   activityRecords: CustomerActivityRecord[];
 }): CustomerOperationsDigestRow[] {
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status));
   const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED');
-  const closedBookings = bookings.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
-  const latestBooking = bookings[0];
   const latestActiveBooking = activeBookings[0];
   const lastCompletedBooking = completedBookings[0];
   const chatBookings = bookings.filter((booking) => booking.chatRoom);
@@ -2481,7 +2465,6 @@ function buildCustomerOperationsDigest({
     (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
   )[0];
   const latestStaffRecord = activityRecords.find((record) => ['OPS', 'AUDIT'].includes(record.type));
-  const enabledPushCount = pushDevices.filter((device) => device.enabled).length;
 
   return [
     {
@@ -2492,13 +2475,7 @@ function buildCustomerOperationsDigest({
             latestSession.platform ?? 'unknown platform'
           }.`
         : 'No customer app session is loaded for this account.',
-      href: '#customer-info',
       latestAt: latestSession?.lastSeenAt ?? customer.user?.createdAt,
-      evidence: [
-        customer.user?.phone ?? 'No phone',
-        `${enabledPushCount}/${pushDevices.length} push-ready`,
-        `Joined ${formatDate(customer.user?.createdAt)}`,
-      ],
     },
     {
       lane: 'Work history',
@@ -2506,16 +2483,10 @@ function buildCustomerOperationsDigest({
       detail: lastCompletedBooking
         ? `Last completed work is ${bookingServiceLabel(lastCompletedBooking)}.`
         : 'No completed work record is loaded in this filter.',
-      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '#booking-history',
       latestAt:
         lastCompletedBooking?.updatedAt ??
         lastCompletedBooking?.scheduledEndAt ??
         lastCompletedBooking?.createdAt,
-      evidence: [
-        `${activeBookings.length} active`,
-        `${closedBookings.length} closed`,
-        latestBooking ? `Latest ${shortId(latestBooking.id)}` : 'No latest booking',
-      ],
     },
     {
       lane: 'Live booking',
@@ -2523,13 +2494,7 @@ function buildCustomerOperationsDigest({
       detail: latestActiveBooking
         ? `${bookingServiceLabel(latestActiveBooking)} is the newest active booking in this filter.`
         : 'No active booking appears in the selected date range.',
-      href: latestActiveBooking ? `/bookings/${latestActiveBooking.id}` : '#booking-history',
       latestAt: latestActiveBooking ? (bookingLatestActivityAt(latestActiveBooking) ?? undefined) : undefined,
-      evidence: [
-        latestActiveBooking ? shortId(latestActiveBooking.id) : 'None',
-        `${activeBookings.length} active row(s)`,
-        'Customer final choice only',
-      ],
     },
     {
       lane: 'Chat archive',
@@ -2537,9 +2502,7 @@ function buildCustomerOperationsDigest({
       detail: latestChatMessage
         ? `Latest message: ${compactText(latestChatMessage.body, 90)}`
         : 'No retained chat message appears in this filter.',
-      href: latestChatMessage?.bookingId ? `/bookings/${latestChatMessage.bookingId}#chat` : '#chat-history',
       latestAt: latestChatMessage?.createdAt,
-      evidence: ['Admin retained', 'Hidden in apps after completion', `${chatMessages.length} message(s)`],
     },
     {
       lane: 'Payment and wallet',
@@ -2547,25 +2510,13 @@ function buildCustomerOperationsDigest({
       detail: `${formatMoney(wallet.pendingPaymentAmount)} pending or authorized / ${formatMoney(
         wallet.refundAmount,
       )} refunded / ${formatMoney(wallet.cashBookingAmount)} cash amount.`,
-      href: '#wallet',
       latestAt: activityRecords.find((record) => ['PAYMENT', 'REFUND'].includes(record.type))?.at,
-      evidence: [
-        `${wallet.refundCount} refund row(s)`,
-        `${bookings.filter((booking) => booking.payment).length} payment row(s)`,
-        'Factual records only',
-      ],
     },
     {
       lane: 'Address records',
       status: addresses.length ? `${addresses.length} saved` : 'No saved address',
       detail: addresses[0]?.value ?? 'No customer address or selected map pin is loaded.',
-      href: '#addresses',
       latestAt: activityRecords.find((record) => record.type === 'ADDRESS')?.at,
-      evidence: [
-        `${bookings.filter((booking) => booking.addressSnapshot).length} booking snapshot(s)`,
-        `${addresses.length} saved location(s)`,
-        'Address-based discovery',
-      ],
     },
     {
       lane: 'Notifications',
@@ -2575,13 +2526,7 @@ function buildCustomerOperationsDigest({
             latestNotification.createdAt,
           )}`
         : 'No notification row matched this filter.',
-      href: '#notifications',
       latestAt: latestNotification?.createdAt,
-      evidence: [
-        `${notifications.filter((notification) => !notification.readAt).length} unread`,
-        `${enabledPushCount} enabled device(s)`,
-        'Delivery trace',
-      ],
     },
     {
       lane: 'Staff trail',
@@ -2589,9 +2534,7 @@ function buildCustomerOperationsDigest({
       detail: latestStaffRecord
         ? `${latestStaffRecord.title} / ${latestStaffRecord.detail}`
         : 'No staff record appears in the selected filter.',
-      href: '#audit-trail',
       latestAt: latestStaffRecord?.at,
-      evidence: ['Operator notes', 'Audit history', 'Factual activity only'],
     },
   ];
 }
