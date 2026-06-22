@@ -84,18 +84,18 @@ Scope: performance, DB query, realtime, and external API cost risks found during
 - Safe now or human approval: human approval needed.
 - Suggested test or smoke check: booking smoke with eligible, outside-radius, stale-location, blocked, and negative-wallet Partners.
 
-### PCR-007: Provider realtime updates need server-side rate controls
+### PCR-007: Provider realtime updates need continued server-side rate-control coverage
 
 - File path: `apps/api/src/locations/locations.gateway.ts`, `apps/api/src/redis/redis-state.service.ts`
 - Module/page/service name: Socket.IO provider location updates
 - Issue type: realtime overuse risk
 - Severity: high
-- Current behavior: Redis TTL is 10 minutes and client heartbeat is 10 minutes, but server-side rate limiting is not explicit.
+- Current behavior: Partner current location uses a 90 minute stale TTL. On 2026-06-22, REST and Socket.IO location updates were aligned to the server policy: 60 minute idle refresh, 3000m idle movement exception, 30 minute active-booking refresh, and Vietnam service-area coordinate validation.
 - Why it matters: realtime inputs are externally triggered and can be noisy.
-- Risk to speed/cost/business correctness: Redis/socket traffic spikes and unreliable dispatch state.
-- Recommended fix: reject updates faster than the allowed interval except explicit booking-stage events, and validate coordinates before writing.
-- Safe now or human approval: safe now for guardrails; approval if changing accepted update cadence.
-- Suggested test or smoke check: socket update flood test should write only allowed updates.
+- Risk to speed/cost/business correctness: lower after the server guard, but still important because future app changes can increase update volume.
+- Recommended fix: keep server throttling as the source of truth and add any future cadence changes through policy constants plus tests.
+- Safe now or human approval: current guardrails are safe; approval required for changing accepted update cadence.
+- Suggested test or smoke check: socket and REST update flood tests should write only allowed updates.
 
 ### PCR-008: SMS OTP cost controls are incomplete
 
@@ -153,6 +153,6 @@ Scope: performance, DB query, realtime, and external API cost risks found during
 
 1. SMS OTP per-phone throttling.
 2. FCM token pruning and fan-out cap.
-3. Provider location server throttling.
+3. Provider location server throttling regression coverage.
 4. Map search debounce/caching verification.
 5. Payment callback volume monitoring.

@@ -53,18 +53,18 @@ Scope: prioritized, small commit-sized follow-up plan from the code health audit
 - Safe now or human approval: safe now.
 - Suggested test or smoke check: Playwright route smoke at 1440px and 1980px.
 
-### 4. Add provider location gateway guards
+### 4. Keep provider location server guards covered
 
 - File path: `apps/api/src/locations/locations.gateway.ts`, `apps/api/src/redis/redis-state.service.ts`
 - Module/page/service name: Provider location realtime
 - Issue type: realtime overuse and location correctness
 - Severity: high
-- Current behavior: client heartbeat is cost-controlled, but server-side validation/throttling needs strengthening.
+- Current behavior: REST and Socket.IO Partner location updates now share server-side validation/throttling. The remaining work is regression coverage and avoiding future cadence drift.
 - Why it matters: realtime location influences matching and operator confidence.
 - Risk to speed/cost/business correctness: Redis traffic and incorrect dispatch visibility.
-- Recommended fix: validate finite coordinates, reject out-of-area coordinates, throttle general updates, and allow explicit stage snapshots only when required.
-- Safe now or human approval: safe for strict invalid-input rejection; approval if changing allowed cadence.
-- Suggested test or smoke check: socket gateway tests for invalid coordinate, fast repeat, wrong role, and valid booking-stage update.
+- Recommended fix: keep policy constants centralized and extend tests whenever a new location write path is added.
+- Safe now or human approval: safe for regression tests; approval required if changing allowed cadence.
+- Suggested test or smoke check: socket and REST tests for invalid coordinate, out-of-area coordinate, fast repeat, wrong role, and valid booking-stage update.
 
 ### 5. Design DB-backed Partner radius query
 
@@ -161,7 +161,7 @@ Scope: prioritized, small commit-sized follow-up plan from the code health audit
 
 1. Read-model caps for booking/customer detail.
 2. Admin route performance smoke.
-3. Provider location gateway guards.
+3. Provider location guard regression coverage.
 4. FCM fan-out cap.
 5. OTP cost controls after limit approval.
 6. DB-backed radius query design and approval.
@@ -174,7 +174,7 @@ Scope: prioritized, small commit-sized follow-up plan from the code health audit
 
 - Commit 1: Admin read caps and detail fetch scoping.
 - Commit 2: Admin smoke/performance checks.
-- Commit 3: Provider location gateway validation and throttle tests.
+- Commit 3: Provider location guard regression tests.
 - Commit 4: FCM fan-out cap and stale-token tests.
 - Commit 5: OTP cooldown after approved limits.
 - Commit 6: Location query design doc, then implementation only after approval.

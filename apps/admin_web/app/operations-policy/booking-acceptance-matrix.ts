@@ -134,7 +134,7 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
       status: baseline.locationFreshness ? '30m default' : 'Custom freshness',
       detail: `Marketplace Partner location freshness is checked at ${policy.backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
       operatorAction: baseline.locationFreshness
-        ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
+        ? 'This matches the active-booking guard. Idle partners refresh at 60 minutes or 3000m movement.'
         : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
       className: baseline.locationFreshness ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baseline.locationFreshness ? 'pill-success' : 'pill-warn',

@@ -372,7 +372,7 @@ function freshnessSensitivityRead(
     return 'No visible partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
   }
   if (freshness < currentFreshness) {
-    return 'Stricter freshness improves distance confidence, but may hide partners who update every 10 minutes imperfectly.';
+    return 'Stricter freshness improves distance confidence, but may hide partners before the 30 minute active-booking refresh window.';
   }
   if (freshness > currentFreshness) {
     return 'Looser freshness exposes more supply, but stale pins can create bad arrival expectations.';

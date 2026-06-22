@@ -75,18 +75,18 @@ The main health risks are not fundamental architecture breaks. They are operatio
 - Safe now or human approval: human approval recommended because matching behavior is protected business logic.
 - Suggested test or smoke check: smoke booking creation with preferred Partner, backup Partners inside radius, outside radius, stale location, and negative wallet cases.
 
-### CHA-005: Provider Socket.IO location updates need server-side validation and throttling
+### CHA-005: Provider Socket.IO location updates needed server-side validation and throttling
 
 - File path: `apps/api/src/locations/locations.gateway.ts`, `apps/api/src/redis/redis-state.service.ts`
 - Module/page/service name: Provider realtime location gateway
 - Issue type: realtime overuse risk, location correctness risk
 - Severity: high
-- Current behavior: authenticated provider sockets can send `provider.location.update`; the gateway writes payload coordinates to Redis and can emit booking updates. Client heartbeat is cost-controlled, but server-side coordinate validation and rate limiting are not explicit in the gateway.
+- Current behavior: originally, authenticated provider sockets could send `provider.location.update` and rely mainly on client-side cost control. On 2026-06-22 this was tightened: Socket.IO and REST Partner location updates now reject out-of-service-area coordinates and share the 60 minute idle / 3000m movement / 30 minute active-booking server throttle.
 - Why it matters: client throttling is helpful but cannot be the only guard.
 - Risk to speed/cost/business correctness: Redis/realtime traffic risk; business correctness risk if invalid or out-of-service-area coordinates affect dispatch visibility.
-- Recommended fix: validate finite coordinates, enforce active HANDS service area, reject too-frequent updates server-side, and record only required booking-stage location snapshots.
-- Safe now or human approval: safe now for validation/rate-limit guards; human approval if it changes which Partner locations are accepted.
-- Suggested test or smoke check: socket tests for invalid coordinates, too-frequent updates, stale booking IDs, non-provider role, and valid booking-bound update.
+- Recommended fix: keep these guards as the authoritative server policy and avoid adding unbounded location history.
+- Safe now or human approval: implemented as a safe guardrail; future cadence changes require human approval.
+- Suggested test or smoke check: keep socket and REST tests for invalid coordinates, out-of-area coordinates, too-frequent updates, stale booking IDs, non-provider role, and valid booking-bound update.
 
 ### CHA-006: Push notification fan-out can grow with stale enabled devices
 
@@ -204,6 +204,6 @@ The main health risks are not fundamental architecture breaks. They are operatio
 
 1. Bound Admin read models before adding more dashboard screens.
 2. Move Partner radius lookup toward DB-backed, indexed filtering with smoke tests.
-3. Add server-side guards for realtime Partner location updates.
+3. Keep server-side Partner location guards covered while tuning any future cadence.
 4. Clarify negative-wallet participation/final-acceptance semantics.
 5. Add external API cost smokes for SMS, push fan-out, and map search.
