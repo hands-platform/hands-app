@@ -55,6 +55,13 @@ describe('partner detail operations digest model', () => {
       status: '1 audit row(s)',
       tone: 'pill-info',
     });
+    expect(rowByLane(rows, 'Location')).toMatchObject({
+      detail: 'Latest Partner location saved for dispatch checks. Policy freshness Infinitym.',
+      tone: 'pill-success',
+    });
+    expect(JSON.stringify(rowByLane(rows, 'Location'))).not.toMatch(
+      /\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/,
+    );
     expect(rows.map((row) => row.lane)).not.toEqual(
       expect.arrayContaining(['Finance', 'Withdrawal setup']),
     );

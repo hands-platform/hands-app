@@ -96,6 +96,11 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const sessionCount = provider.sessions?.length ?? 0;
   const deviceCount = provider.devices?.length ?? 0;
+  const latestLocationSaved =
+    provider.currentLat !== null &&
+    provider.currentLat !== undefined &&
+    provider.currentLng !== null &&
+    provider.currentLng !== undefined;
   const auditCount =
     (provider.auditLogs?.length ?? 0) +
     (provider.verificationLogs?.length ?? 0) +
@@ -168,10 +173,9 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
     {
       area: 'Location',
       status: locationAgeLabel(provider.currentLocationUpdatedAt),
-      evidence:
-        provider.currentLat && provider.currentLng
-          ? `${provider.currentLat}, ${provider.currentLng}`
-          : 'No current location pin saved.',
+      evidence: latestLocationSaved
+        ? 'Latest Partner location saved for dispatch checks.'
+        : 'No current location pin saved.',
       href: `/partners/${provider.id}?section=full#location`,
     },
     {

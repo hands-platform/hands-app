@@ -81,6 +81,11 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
   const cashDebt = cashFeeDebtAmount(provider);
   const locationFresh = locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const latestStaffRecord = activityRecords.find((record) => STAFF_ACTIVITY_TYPES.includes(record.type));
+  const latestLocationSaved =
+    provider.currentLat !== null &&
+    provider.currentLat !== undefined &&
+    provider.currentLng !== null &&
+    provider.currentLng !== undefined;
 
   return [
     {
@@ -131,7 +136,9 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
     {
       lane: 'Location',
       status: locationAgeLabel(provider.currentLocationUpdatedAt),
-      detail: provider.currentLat && provider.currentLng ? `${provider.currentLat}, ${provider.currentLng}. Policy freshness ${dispatchPolicy.locationFreshnessMinutes}m.` : 'No latest location pin is saved.',
+      detail: latestLocationSaved
+        ? `Latest Partner location saved for dispatch checks. Policy freshness ${dispatchPolicy.locationFreshnessMinutes}m.`
+        : 'No latest location pin is saved.',
       href: '#location',
       latestAt: optionalDate(provider.currentLocationUpdatedAt ?? provider.locationSnapshots?.[0]?.recordedAt),
       tone: locationFresh ? 'pill-success' : 'pill-warn',

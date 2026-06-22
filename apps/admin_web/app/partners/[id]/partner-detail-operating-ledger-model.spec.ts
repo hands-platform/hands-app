@@ -47,6 +47,12 @@ describe('partner detail operating ledger model', () => {
       evidence: '1 session(s) / 2 device(s)',
       status: '1 push-ready',
     });
+    expect(rowByArea(rows, 'Location')).toMatchObject({
+      evidence: 'Latest Partner location saved for dispatch checks.',
+    });
+    expect(JSON.stringify(rowByArea(rows, 'Location'))).not.toMatch(
+      /\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/,
+    );
     expect(rows.map((row) => row.area)).not.toEqual(
       expect.arrayContaining(['Withdrawal details', 'Tax profile optional']),
     );
