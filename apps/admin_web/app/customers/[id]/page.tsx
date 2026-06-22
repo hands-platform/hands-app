@@ -34,6 +34,7 @@ import {
 import { bookingChatOpensAfterMatchOrSelectionCopy } from '../../../lib/booking-chat-copy';
 import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
 import {
+  type DetailDateFilters,
   detailDateRangeOptions,
   isWithinDetailDateFilter,
   readDetailDateFilters,
@@ -112,6 +113,7 @@ const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
   'Open',
 ] as const;
 const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
+const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 4;
 const CUSTOMER_BOOKING_HISTORY_PAGE_SIZE = 10;
 const CUSTOMER_CHAT_RETENTION_PAGE_SIZE = 10;
 const CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE = 10;
@@ -231,6 +233,22 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
     );
   });
+  const chatHistoryPage = readCustomerBookingOperationPage(detailSearchParams, 'chatHistoryPage');
+  const chatHistoryTotalPages = Math.max(
+    1,
+    Math.ceil(filteredChatBookings.length / CUSTOMER_CHAT_HISTORY_PAGE_SIZE),
+  );
+  const chatHistoryActivePage = Math.min(chatHistoryPage, chatHistoryTotalPages);
+  const chatHistoryStartIndex = (chatHistoryActivePage - 1) * CUSTOMER_CHAT_HISTORY_PAGE_SIZE;
+  const visibleChatBookings = filteredChatBookings.slice(
+    chatHistoryStartIndex,
+    chatHistoryStartIndex + CUSTOMER_CHAT_HISTORY_PAGE_SIZE,
+  );
+  const chatHistoryPageFrom = filteredChatBookings.length === 0 ? 0 : chatHistoryStartIndex + 1;
+  const chatHistoryPageTo = Math.min(
+    filteredChatBookings.length,
+    chatHistoryStartIndex + visibleChatBookings.length,
+  );
   const customerChatRetentionRows = buildCustomerChatRetentionRows(filteredBookings);
   const customerChatRetentionSummary = buildCustomerChatRetentionSummary(customerChatRetentionRows);
   const customerBookingOpsLedgerRows = buildCustomerBookingOpsLedgerRows(filteredBookings);
@@ -1320,66 +1338,54 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </AdminFilterPanel>
 
-      <section className="card admin-mb-16" id="chat-history">
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat history</h2>
-            <p className="muted">
-              Admin archive for every matched booking. Customer and Partner apps hide the chat after
-              completion, but operations keeps the full message history here.
-            </p>
-          </div>
-          <span className="pill pill-info">{filteredChatBookings.length} rooms</span>
-        </div>
-        <div className="setup-stage-list admin-mt-12">
-          {filteredChatBookings.length > 0 ? (
-            filteredChatBookings.map((booking) => (
-              <div className="card" key={booking.id}>
-                <div className="ops-section-header">
-                  <div>
-                    <strong>
-                      {shortId(booking.id)} / {bookingServiceLabel(booking)}
-                    </strong>
-                    <p className="muted">
-                      {booking.status} / Room {booking.chatRoom?.id}
-                    </p>
-                  </div>
-                  <Link className="text-link" href={`/bookings/${booking.id}`}>
-                    Open booking
-                  </Link>
-                  {booking.chatRoom ? (
-                    <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
-                      Open full chat archive
-                    </Link>
-                  ) : null}
-                </div>
-                <div className="admin-grid-gap-8 admin-mt-10">
-                  {readChatMessages(booking)
-                    .filter((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
-                    .map((message) => (
-                      <div className="ops-task-note" key={message.id}>
-                        <strong>
-                          {message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}
-                        </strong>
-                        <p>{message.body}</p>
-                        <p className="muted">{formatDate(message.createdAt)}</p>
-                      </div>
-                    ))}
-                  {readChatMessages(booking).filter((message) =>
-                    isWithinDetailDateFilter(message.createdAt, dateFilters),
-                  ).length === 0 ? (
-                    <p className="muted">
-                      No messages in this date filter, but the room belongs to this period.
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+      <AdminFilterPanel
+        className="customer-chat-history-section"
+        description={
+          <>
+            Admin archive for every matched booking. Customer and Partner apps hide the chat after
+            completion, but operations keeps the full message history here.
+          </>
+        }
+        id="chat-history"
+        resultLabel={`${filteredChatBookings.length} rooms`}
+        resultTone="info"
+        title="Chat history"
+      >
+        <div className="setup-stage-list customer-chat-history-list">
+          {visibleChatBookings.length > 0 ? (
+            visibleChatBookings.map((booking) => (
+              <CustomerChatHistoryRoomCard
+                booking={booking}
+                dateFilters={dateFilters}
+                key={booking.id}
+              />
             ))
           ) : (
             <p className="muted">No chat rooms matched this date filter.</p>
           )}
         </div>
-      </section>
+        <div className="vuexy-booking-table-footer customer-chat-history-footer">
+          <span>
+            Showing {chatHistoryPageFrom} to {chatHistoryPageTo} of {filteredChatBookings.length} rooms
+          </span>
+          <AdminRoundedPagination
+            activePage={chatHistoryActivePage}
+            ariaLabel="Customer chat history pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) =>
+              buildCustomerDetailPageHref(
+                `/customers/${id}`,
+                detailSearchParams,
+                'chatHistoryPage',
+                page,
+                'chat-history',
+              )
+            }
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={chatHistoryTotalPages}
+          />
+        </div>
+      </AdminFilterPanel>
 
       <section className="card admin-mb-16" id="customer-activity">
         <div className="ops-section-header">
@@ -1638,6 +1644,55 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </section>
       </CustomerDetailSectionBand>
+    </div>
+  );
+}
+
+function CustomerChatHistoryRoomCard({
+  booking,
+  dateFilters,
+}: {
+  readonly booking: AdminBookingDetail;
+  readonly dateFilters: DetailDateFilters;
+}) {
+  const filteredMessages = readChatMessages(booking).filter((message) =>
+    isWithinDetailDateFilter(message.createdAt, dateFilters),
+  );
+
+  return (
+    <div className="card customer-chat-history-room-card">
+      <div className="ops-section-header">
+        <div>
+          <strong>
+            {shortId(booking.id)} / {bookingServiceLabel(booking)}
+          </strong>
+          <p className="muted">
+            {booking.status} / Room {booking.chatRoom?.id}
+          </p>
+        </div>
+        <div className="customer-chat-history-actions">
+          <Link className="text-link" href={`/bookings/${booking.id}`}>
+            Open booking
+          </Link>
+          {booking.chatRoom ? (
+            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+              Open full chat archive
+            </Link>
+          ) : null}
+        </div>
+      </div>
+      <div className="admin-grid-gap-8 admin-mt-10">
+        {filteredMessages.map((message) => (
+          <div className="ops-task-note" key={message.id}>
+            <strong>{message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}</strong>
+            <p>{message.body}</p>
+            <p className="muted">{formatDate(message.createdAt)}</p>
+          </div>
+        ))}
+        {filteredMessages.length === 0 ? (
+          <p className="muted">No messages in this date filter, but the room belongs to this period.</p>
+        ) : null}
+      </div>
     </div>
   );
 }

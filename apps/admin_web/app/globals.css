@@ -7652,6 +7652,22 @@ textarea:focus-visible {
   padding: 0 24px 14px;
 }
 
+.customer-detail-page .customer-chat-history-list {
+  margin-top: 0;
+}
+
+.customer-detail-page .customer-chat-history-room-card {
+  box-shadow: var(--admin-shadow-xs);
+}
+
+.customer-detail-page .customer-chat-history-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .customer-detail-page .admin-table-scroll {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
