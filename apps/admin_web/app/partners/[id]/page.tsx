@@ -419,6 +419,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
   const partnerDisplayLabel = providerDisplayLabel(provider);
   const cashFeeDebtTotal = cashFeeDebtAmount(provider);
+  const partnerAuditLogs = provider.auditLogs ?? [];
+  const partnerEarnings = provider.earnings ?? [];
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
@@ -484,11 +486,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerAgreementBadges = buildPartnerAgreementBadges(provider);
   const partnerRecentPayoutRecordLines = buildPartnerRecentPayoutRecordLines(provider);
   const partnerLocationSnapshotBadges = buildPartnerLocationSnapshotBadges(provider);
-  const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
-  const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
+  const hasCashFeeDebt = partnerEarnings.some(isCashFeeDebt);
+  const openCashDebtEarnings = partnerEarnings.filter(isCashFeeDebt);
   const cashDebtOriginRows = buildPartnerCashDebtOriginRows(openCashDebtEarnings);
   const payoutOperationsView = buildPartnerPayoutOperationsView(payoutOps);
-  const payoutEarningRows = buildPartnerPayoutEarningRows(provider.earnings ?? []);
+  const payoutEarningRows = buildPartnerPayoutEarningRows(partnerEarnings);
   const payoutBatchRows = buildPartnerPayoutBatchRows(provider.payoutBatches ?? []);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
@@ -568,12 +570,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerChatRetentionSummary = buildPartnerChatRetentionSummary(partnerChatRetentionRows);
   const partnerBookingOpsLedgerRows = buildPartnerBookingOpsLedgerRows(filteredPartnerBookingArchive);
   const partnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
-    provider.auditLogs ?? [],
+    partnerAuditLogs,
     provider.id,
   );
-  const filteredPartnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
-    (provider.auditLogs ?? []).filter((log) => isWithinDetailDateFilter(log.createdAt, dateFilters)),
-    provider.id,
+  const filteredPartnerBookingGateAttempts = partnerBookingGateAttempts.filter((attempt) =>
+    isWithinDetailDateFilter(attempt.at, dateFilters),
   );
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
@@ -581,7 +582,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerServicePricing,
     canApproveKyc,
   });
-  const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const partnerOpsNotes = partnerAuditLogs.filter((log) => log.action === 'provider.ops_note.add');
   const partnerOperatorNoteRows = buildPartnerOperatorNoteRows(partnerOpsNotes);
   const partnerFirstReadNextAction = nextProviderAction(provider, dispatchPolicy);
   const connectedPartnerRecordLinks = buildPartnerConnectedRecordLinks({
@@ -994,7 +995,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
 
         <PartnerDetailRecentPayoutRecordsCard
-          earningCount={provider.earnings?.length ?? 0}
+          earningCount={partnerEarnings.length}
           earnings={partnerRecentPayoutRecordLines}
           payoutBatchCount={provider.payoutBatches?.length ?? 0}
         />
