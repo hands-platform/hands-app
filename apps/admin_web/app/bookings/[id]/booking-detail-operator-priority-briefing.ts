@@ -4,7 +4,7 @@ import { bookingOperatorPriorityBriefing as buildBookingOperatorPriorityBriefing
 import type { BookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
-import { bookingAddressSnapshotLabel, coordinateLabel } from './booking-formatters';
+import { bookingAddressSnapshotLabel } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingOperatingNextAction } from './booking-operating-next-action';
 import { bookingPartnerHint } from '../../../lib/booking-partner-decision-copy';
@@ -12,6 +12,7 @@ import {
   bookingDetailProviderLocationMetricHelper,
   bookingDetailProviderLocationMetricValue,
 } from './booking-provider-location-metric';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export type BookingDetailOperatorPriorityBriefingInput = {
   booking: AdminBookingDetail;
@@ -66,7 +67,7 @@ export function bookingDetailOperatorPriorityBriefing({
     messageCount,
     locationLabel,
     locationHelper: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${bookingDetailProviderLocationMetricHelper(booking)}`
+      ? `${latestLocationLabel(latestLocation)} / ${bookingDetailProviderLocationMetricHelper(booking)}`
       : bookingDetailProviderLocationMetricHelper(booking),
     paymentLabel,
     paymentHint: bookingPaymentHint(booking, {
@@ -77,4 +78,9 @@ export function bookingDetailOperatorPriorityBriefing({
     closeoutOpenItemCount: closeoutReadiness.openItems.length,
     financeFlagTitles: financeFlags.map((flag) => flag.title),
   });
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot) {
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

@@ -116,9 +116,10 @@ describe('bookingDetailOperatorPriorityBriefing', () => {
       value: 'Linh Partner',
     });
     expect(briefing.rows.find((row) => row.label === 'Location record')).toMatchObject({
-      helper: '10.7627, 106.6603 / Updated just now',
+      helper: 'Location recorded without readable address / Updated just now',
       value: 'Recent',
     });
+    expect(JSON.stringify(briefing)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
     expect(briefing.rows.find((row) => row.label === 'Payment')).toMatchObject({
       helper: 'Hold is active; capture after service completion.',
       value: 'CARD / AUTHORIZED',
