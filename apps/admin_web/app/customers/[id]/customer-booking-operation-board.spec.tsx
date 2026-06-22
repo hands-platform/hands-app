@@ -22,6 +22,8 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).toContain('Partner Cancellations');
     expect(rendered).toContain('Showing 1 to 10 of 11 entries');
     expect(rendered).toContain('Smoke Partner');
+    expect(rendered).not.toContain('Open');
+    expect(rendered).not.toContain('View');
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',

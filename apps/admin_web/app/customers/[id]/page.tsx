@@ -31,7 +31,6 @@ import {
   bookingCreateGateReasonFilter,
   bookingCreateGateReasonLabel,
 } from '../../../lib/booking-create-gate-reasons';
-import { bookingChatOpensAfterMatchOrSelectionCopy } from '../../../lib/booking-chat-copy';
 import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
 import {
   type DetailDateFilters,
@@ -82,8 +81,6 @@ import {
 } from './customer-detail-overview-shell';
 import {
   CustomerDetailSectionBand,
-  CustomerDetailShortcutStrip,
-  type CustomerDetailShortcut,
 } from './customer-detail-section-shell';
 
 type PageProps = {
@@ -102,32 +99,7 @@ const ACTIVE_STATUSES = [
 const MATCHING_AVATAR_STATUSES = new Set(['CREATED', 'OPEN_MATCHING']);
 const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
 const CUSTOMER_CHAT_HISTORY_PAGE_SIZE = 4;
-const CUSTOMER_BOOKING_HISTORY_PAGE_SIZE = 10;
-const CUSTOMER_CHAT_RETENTION_PAGE_SIZE = 10;
-const CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE = 10;
-const CUSTOMER_BOOKING_HISTORY_HEADERS = [
-  'Booking',
-  'Service',
-  'Status',
-  'Partner',
-  'Open',
-] as const;
-const CUSTOMER_CHAT_RETENTION_HEADERS = [
-  'Booking',
-  'Chat state',
-  'Latest message',
-  'Retention',
-  'Open',
-] as const;
-const CUSTOMER_BOOKING_OPS_LEDGER_HEADERS = [
-  'Booking',
-  'Partner',
-  'Notes and tasks',
-  'Closeout',
-  'Open',
-] as const;
 const CUSTOMER_NOTIFICATION_HEADERS = ['Notification', 'Type', 'Created', 'Delivery'] as const;
 const CUSTOMER_AUDIT_TRAIL_HEADERS = ['Action', 'Actor', 'Created', 'Metadata'] as const;
 
@@ -184,23 +156,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredBookings = bookings.filter((booking) =>
     isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters),
   );
-  const bookingHistoryPage = readCustomerBookingHistoryPage(detailSearchParams);
-  const bookingHistoryTotalPages = Math.max(
-    1,
-    Math.ceil(filteredBookings.length / CUSTOMER_BOOKING_HISTORY_PAGE_SIZE),
-  );
-  const bookingHistoryActivePage = Math.min(bookingHistoryPage, bookingHistoryTotalPages);
-  const bookingHistoryStartIndex =
-    (bookingHistoryActivePage - 1) * CUSTOMER_BOOKING_HISTORY_PAGE_SIZE;
-  const visibleBookingHistoryRows = filteredBookings.slice(
-    bookingHistoryStartIndex,
-    bookingHistoryStartIndex + CUSTOMER_BOOKING_HISTORY_PAGE_SIZE,
-  );
-  const bookingHistoryPageFrom = filteredBookings.length === 0 ? 0 : bookingHistoryStartIndex + 1;
-  const bookingHistoryPageTo = Math.min(
-    filteredBookings.length,
-    bookingHistoryStartIndex + visibleBookingHistoryRows.length,
-  );
   const customerBookingOperationBuckets = buildCustomerBookingOperationBuckets(filteredBookings);
   const allCustomerBookingOperationBuckets = buildCustomerBookingOperationBuckets(bookings);
   const customerBookingOperationMetrics = buildCustomerBookingOperationMetrics(
@@ -237,48 +192,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     filteredChatBookings.length,
     chatHistoryStartIndex + visibleChatBookings.length,
   );
-  const customerChatRetentionRows = buildCustomerChatRetentionRows(filteredBookings);
-  const customerChatRetentionSummary = buildCustomerChatRetentionSummary(customerChatRetentionRows);
-  const customerBookingOpsLedgerRows = buildCustomerBookingOpsLedgerRows(filteredBookings);
-  const chatRetentionPage = readCustomerBookingOperationPage(detailSearchParams, 'chatRetentionPage');
-  const chatRetentionTotalPages = Math.max(
-    1,
-    Math.ceil(customerChatRetentionRows.length / CUSTOMER_CHAT_RETENTION_PAGE_SIZE),
-  );
-  const chatRetentionActivePage = Math.min(chatRetentionPage, chatRetentionTotalPages);
-  const chatRetentionStartIndex =
-    (chatRetentionActivePage - 1) * CUSTOMER_CHAT_RETENTION_PAGE_SIZE;
-  const visibleCustomerChatRetentionRows = customerChatRetentionRows.slice(
-    chatRetentionStartIndex,
-    chatRetentionStartIndex + CUSTOMER_CHAT_RETENTION_PAGE_SIZE,
-  );
-  const chatRetentionPageFrom =
-    customerChatRetentionRows.length === 0 ? 0 : chatRetentionStartIndex + 1;
-  const chatRetentionPageTo = Math.min(
-    customerChatRetentionRows.length,
-    chatRetentionStartIndex + visibleCustomerChatRetentionRows.length,
-  );
-  const bookingOpsLedgerPage = readCustomerBookingOperationPage(
-    detailSearchParams,
-    'bookingOpsLedgerPage',
-  );
-  const bookingOpsLedgerTotalPages = Math.max(
-    1,
-    Math.ceil(customerBookingOpsLedgerRows.length / CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE),
-  );
-  const bookingOpsLedgerActivePage = Math.min(bookingOpsLedgerPage, bookingOpsLedgerTotalPages);
-  const bookingOpsLedgerStartIndex =
-    (bookingOpsLedgerActivePage - 1) * CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE;
-  const visibleCustomerBookingOpsLedgerRows = customerBookingOpsLedgerRows.slice(
-    bookingOpsLedgerStartIndex,
-    bookingOpsLedgerStartIndex + CUSTOMER_BOOKING_OPS_LEDGER_PAGE_SIZE,
-  );
-  const bookingOpsLedgerPageFrom =
-    customerBookingOpsLedgerRows.length === 0 ? 0 : bookingOpsLedgerStartIndex + 1;
-  const bookingOpsLedgerPageTo = Math.min(
-    customerBookingOpsLedgerRows.length,
-    bookingOpsLedgerStartIndex + visibleCustomerBookingOpsLedgerRows.length,
-  );
   const filteredCustomerActivityRecords = orderCustomerActivityRecords(
     customerActivityRecords.filter(
       (record) =>
@@ -287,7 +200,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     ),
     activityOrder,
   );
-  const visibleCustomerActivityRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_RECENT_ACTIVITY_LIMIT);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
@@ -423,39 +335,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       helper: `${wallet.refundCount} refund row(s) / captured spend ${formatMoney(wallet.capturedSpend)}`,
     },
   ];
-  const detailShortcuts: CustomerDetailShortcut[] = [
-    {
-      href: '#customer-booking-situation-board',
-      label: 'Operations',
-      value: `${filteredBookings.length} rows`,
-      detail: 'Live work, completed work, cancellations, gate attempts, and command queue.',
-    },
-    {
-      href: '#customer-account-evidence',
-      label: 'Account',
-      value: customer.user?.phone ?? 'No phone',
-      detail: 'Contact, reachability, wallet, saved locations, and support evidence.',
-    },
-    {
-      href: '#customer-chat-retention-ledger',
-      label: 'Chat archive',
-      value: `${chatRooms.length} room(s)`,
-      detail: 'Retention checks, transcript access, and booking-linked room evidence.',
-    },
-    {
-      href: '#booking-history',
-      label: 'Booking records',
-      value: `${filteredBookings.length} rows`,
-      detail: 'Booking ledger, cancellation history, and booking-level operating notes.',
-    },
-    {
-      href: '#customer-activity',
-      label: 'Activity timeline',
-      value: `${filteredCustomerActivityRecords.length} events`,
-      detail: 'Cross-surface events grouped by date filter and record type.',
-    },
-  ];
-
   return (
     <div className="customer-detail-page">
       <section className="toolbar">
@@ -484,8 +363,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </Link>
         </div>
       </section>
-
-      <CustomerDetailShortcutStrip items={detailShortcuts} />
 
       <CustomerDetailSectionBand
         eyebrow="Operations"
@@ -842,226 +719,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
       <CustomerDetailSectionBand
         eyebrow="Records"
-        title="Bookings, chat, and audit record"
-        description="Historical booking rows, retained chat evidence, operator note ledgers, customer activity, notifications, and audit trail in one archive block."
+        title="Chat and audit record"
+        description="Retained chat history, customer notification delivery, and audit trail in one archive block."
         status={<span className="pill pill-info">Historical archive</span>}
       >
-      <AdminFilterPanel
-        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-history-section"
-        description="All loaded bookings with Partner, service, and booking status. Payment, refund, and chat evidence stay in the dedicated ledgers below."
-        id="booking-history"
-        resultLabel={`${filteredBookings.length} bookings`}
-        resultTone="info"
-        title="Booking and cancellation history"
-      >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No booking record matched this date filter."
-            headers={CUSTOMER_BOOKING_HISTORY_HEADERS}
-            rowCount={visibleBookingHistoryRows.length}
-          >
-            {visibleBookingHistoryRows.map((booking) => (
-              <tr key={booking.id}>
-                <td>
-                  <strong>{shortId(booking.id)}</strong>
-                  <p className="muted">{formatDate(bookingRecordCreatedAt(booking))}</p>
-                </td>
-                <td>
-                  <strong>{bookingServiceLabel(booking)}</strong>
-                  <p className="muted">{formatMoney(bookingTotal(booking))}</p>
-                </td>
-                <td>
-                  <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
-                  <p className="muted">{bookingStatusOperatorHint(booking)}</p>
-                  {isClosedCustomerBooking(booking) ? (
-                    <p className="muted">
-                      {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
-                    </p>
-                  ) : null}
-                </td>
-                <td>{bookingPartnerDisplayName(booking)}</td>
-                <td>
-                  <Link className="text-link" href={`/bookings/${booking.id}`}>
-                    Booking
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        <div className="vuexy-booking-table-footer customer-booking-history-footer">
-          <span>
-            Showing {bookingHistoryPageFrom} to {bookingHistoryPageTo} of {filteredBookings.length} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={bookingHistoryActivePage}
-            ariaLabel="Booking and cancellation history pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) =>
-              buildCustomerDetailPageHref(
-                `/customers/${id}`,
-                detailSearchParams,
-                'bookingHistoryPage',
-                page,
-                'booking-history',
-              )
-            }
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={bookingHistoryTotalPages}
-          />
-        </div>
-      </AdminFilterPanel>
-
-      <AdminFilterPanel
-        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-chat-retention-section"
-        description="Matched booking chat archive status for cancellation, no-show, and service evidence review."
-        id="customer-chat-retention-ledger"
-        resultLabel={`${customerChatRetentionRows.length} booking row(s)`}
-        resultTone="info"
-        title="Customer chat retention ledger"
-      >
-        <div className="service-trace-summary customer-chat-retention-summary">
-          {customerChatRetentionSummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No booking row matched this date filter."
-            headers={CUSTOMER_CHAT_RETENTION_HEADERS}
-            rowCount={visibleCustomerChatRetentionRows.length}
-          >
-            {visibleCustomerChatRetentionRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>
-                  <strong>{row.roomStatus}</strong>
-                  <p className="muted">{row.roomDetail}</p>
-                </td>
-                <td>
-                  <strong>{row.latestSender}</strong>
-                  <p className="muted">{row.latestMessage}</p>
-                  <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
-                </td>
-                <td>
-                  <strong>{row.adminRetention}</strong>
-                  <p className="muted">
-                    {row.mobileVisibility} / {row.adminRetentionDetail}
-                  </p>
-                </td>
-                <td>
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking
-                  </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link admin-ml-10" href={row.chatHref}>
-                      Archive
-                    </Link>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        <div className="vuexy-booking-table-footer customer-chat-retention-footer">
-          <span>
-            Showing {chatRetentionPageFrom} to {chatRetentionPageTo} of {customerChatRetentionRows.length} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={chatRetentionActivePage}
-            ariaLabel="Customer chat retention ledger pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) =>
-              buildCustomerDetailPageHref(
-                `/customers/${id}`,
-                detailSearchParams,
-                'chatRetentionPage',
-                page,
-                'customer-chat-retention-ledger',
-              )
-            }
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={chatRetentionTotalPages}
-          />
-        </div>
-      </AdminFilterPanel>
-
-      <AdminFilterPanel
-        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-ops-ledger-section"
-        description="Booking-level notes, staff tasks, and closeout context linked to this customer. Full chat transcripts stay in Chat history below."
-        id="customer-booking-ops-ledger"
-        resultLabel={`${customerBookingOpsLedgerRows.length} booking note row(s)`}
-        resultTone="info"
-        title="Booking operations note ledger"
-      >
-        <AdminTableScroll>
-          <AdminDataTable
-            className="vuexy-booking-table"
-            emptyMessage="No booking-level operation notes or staff tasks matched this customer date filter."
-            headers={CUSTOMER_BOOKING_OPS_LEDGER_HEADERS}
-            rowCount={visibleCustomerBookingOpsLedgerRows.length}
-          >
-            {visibleCustomerBookingOpsLedgerRows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.bookingLabel}</strong>
-                  <p className="muted">{row.serviceLabel}</p>
-                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
-                </td>
-                <td>{row.partnerLabel}</td>
-                <td>
-                  <strong>{row.noteStatus}</strong>
-                  <p className="muted">{row.noteDetail}</p>
-                  <p className="muted">
-                    {row.taskStatus} / {compactText(row.taskDetail, 88)}
-                  </p>
-                </td>
-                <td>
-                  <strong>{row.closeoutStatus}</strong>
-                  <p className="muted">{compactText(row.closeoutDetail, 96)}</p>
-                </td>
-                <td>
-                  <Link className="text-link" href={row.bookingHref}>
-                    Booking
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
-        <div className="vuexy-booking-table-footer customer-booking-ops-ledger-footer">
-          <span>
-            Showing {bookingOpsLedgerPageFrom} to {bookingOpsLedgerPageTo} of {customerBookingOpsLedgerRows.length} entries
-          </span>
-          <AdminRoundedPagination
-            activePage={bookingOpsLedgerActivePage}
-            ariaLabel="Booking operations note ledger pages"
-            className="vuexy-booking-pagination"
-            hrefForPage={(page) =>
-              buildCustomerDetailPageHref(
-                `/customers/${id}`,
-                detailSearchParams,
-                'bookingOpsLedgerPage',
-                page,
-                'customer-booking-ops-ledger',
-              )
-            }
-            pageLinkClassName="vuexy-booking-page-link"
-            totalPages={bookingOpsLedgerTotalPages}
-          />
-        </div>
-      </AdminFilterPanel>
-
       <AdminFilterPanel
         className="customer-chat-history-section"
         description={
@@ -1110,57 +771,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           />
         </div>
       </AdminFilterPanel>
-
-      <section className="card admin-mb-16" id="customer-activity">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer chronological activity</h2>
-            <p className="muted">
-              Latest customer events across the selected date and activity filters.
-            </p>
-          </div>
-          <span className="pill pill-info">
-            {visibleCustomerActivityRecords.length}/{filteredCustomerActivityRecords.length} latest
-          </span>
-        </div>
-        <div className="setup-stage-list admin-mt-12">
-          {visibleCustomerActivityRecords.length > 0 ? (
-            visibleCustomerActivityRecords.map((record) => (
-              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
-                <span>{record.type}</span>
-                <div>
-                  {record.href ? (
-                    <Link className="text-link" href={record.href}>
-                      <strong>{record.title}</strong>
-                    </Link>
-                  ) : (
-                    <strong>{record.title}</strong>
-                  )}
-                  <p className="muted">{record.detail}</p>
-                </div>
-                <small>{formatDate(record.at)}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No customer activity matched this date filter</strong>
-                <p className="muted">
-                  Clear the date filter or choose a wider range to review the full activity archive.
-                </p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-        {filteredCustomerActivityRecords.length > visibleCustomerActivityRecords.length ? (
-          <p className="muted admin-mt-12">
-            {filteredCustomerActivityRecords.length - visibleCustomerActivityRecords.length} more event(s) are
-            available through the date and activity filters above.
-          </p>
-        ) : null}
-      </section>
 
       <section className="card" id="notifications">
         <div className="ops-section-header">
@@ -1305,43 +915,6 @@ type CustomerActivityRecord = {
   title: string;
   detail: string;
   href?: string;
-};
-
-type CustomerChatRetentionRow = {
-  id: string;
-  bookingLabel: string;
-  serviceLabel: string;
-  status: string;
-  roomStatus: string;
-  roomDetail: string;
-  latestSender: string;
-  latestMessage: string;
-  latestMessageAt?: string;
-  mobileVisibility: string;
-  mobileVisibilityDetail: string;
-  adminRetention: string;
-  adminRetentionDetail: string;
-  bookingHref: string;
-  chatHref?: string;
-  hasRoom: boolean;
-  requiresRoom: boolean;
-  messageCount: number;
-  mobileHidden: boolean;
-};
-type CustomerBookingOpsLedgerRow = {
-  id: string;
-  bookingLabel: string;
-  serviceLabel: string;
-  status: string;
-  partnerLabel: string;
-  noteStatus: string;
-  noteDetail: string;
-  taskStatus: string;
-  taskDetail: string;
-  closeoutStatus: string;
-  closeoutDetail: string;
-  bookingHref: string;
-  chatHref?: string;
 };
 
 type CustomerBookingGateAttemptRow = {
@@ -1543,12 +1116,6 @@ function readCustomerBookingOperationPage(
   const rawPage = Array.isArray(rawValue) ? rawValue[0] : rawValue;
   const page = rawPage ? Number(rawPage) : 1;
   return Number.isInteger(page) && page > 0 ? page : 1;
-}
-
-function readCustomerBookingHistoryPage(
-  searchParams: Record<string, string | string[] | undefined>,
-) {
-  return readCustomerBookingOperationPage(searchParams, 'bookingHistoryPage');
 }
 
 function buildCustomerDetailPageHref(
@@ -2631,155 +2198,6 @@ function buildCustomerBookingGateAttemptRows(
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
 }
 
-function buildCustomerBookingOpsLedgerRows(bookings: AdminBookingDetail[]): CustomerBookingOpsLedgerRow[] {
-  return bookings
-    .filter((booking) => {
-      return (
-        Boolean(booking.notes?.trim()) ||
-        (booking.opsTasks?.length ?? 0) > 0 ||
-        Boolean(booking.closedAt || booking.closedReason || booking.closedNote)
-      );
-    })
-    .slice(0, 40)
-    .map((booking) => {
-      const tasks = [...(booking.opsTasks ?? [])].sort(
-        (left, right) => dateMs(right.updatedAt) - dateMs(left.updatedAt),
-      );
-      const latestTask = tasks[0];
-      const latestNote = latestCustomerBookingManualNote(booking.notes);
-
-      return {
-        id: booking.id,
-        bookingLabel: `${shortId(booking.id)} / ${formatDate(bookingLatestActivityAt(booking))}`,
-        serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
-        status: booking.status,
-        partnerLabel: bookingPartnerDisplayName(booking),
-        noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
-        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this booking.',
-        taskStatus: tasks.length ? `${tasks.length} task row(s)` : 'No staff task',
-        taskDetail: latestTask
-          ? `${latestTask.status} ${latestTask.type} / ${latestTask.note ?? 'No task note'} / ${
-              latestTask.actor?.fullName ?? latestTask.actor?.phone ?? 'System'
-            }`
-          : 'No linked booking operation task is loaded.',
-        closeoutStatus: booking.closedAt ? 'Closed by operator flow' : 'Not closed',
-        closeoutDetail: booking.closedAt
-          ? `${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
-          : 'No cancellation, no-show, refund, or closeout decision is saved.',
-        bookingHref: `/bookings/${booking.id}`,
-        chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
-      };
-    });
-}
-
-function latestCustomerBookingManualNote(notes?: string | null) {
-  if (!notes?.trim()) return null;
-  const lines = notes
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const latest = lines[lines.length - 1];
-  return latest ? compactText(latest, 180) : null;
-}
-
-function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): CustomerChatRetentionRow[] {
-  return bookings.slice(0, 40).map((booking) => {
-    const chatMessages = readChatMessages(booking);
-    const latestMessage = chatMessages[chatMessages.length - 1];
-    const requiresRoom = bookingRequiresRetainedChat(booking);
-    const mobileHidden = bookingChatHiddenInMobile(booking);
-    const latestSender =
-      latestMessage?.sender?.fullName ??
-      latestMessage?.sender?.phone ??
-      latestMessage?.sender?.roles?.join(', ') ??
-      'No message';
-
-    return {
-      id: booking.id,
-      bookingLabel: `${shortId(booking.id)} / ${formatDate(bookingLatestActivityAt(booking))}`,
-      serviceLabel: `${bookingServiceLabel(booking)} / ${bookingPartnerDisplayName(booking)}`,
-      status: booking.status,
-      roomStatus: booking.chatRoom
-        ? `${chatMessages.length} retained message(s)`
-        : requiresRoom
-          ? 'Matched booking without room'
-          : 'No room required yet',
-      roomDetail: booking.chatRoom
-        ? `Room ${shortId(booking.chatRoom.id)} / ${bookingChatArchiveLabel(booking)}`
-        : requiresRoom
-          ? 'Matched or service-stage booking should have a retained chat room.'
-          : 'Pre-match bookings do not open customer and Partner chat yet.',
-      latestSender,
-      latestMessage: latestMessage ? compactText(latestMessage.body, 120) : 'No retained message loaded',
-      latestMessageAt: latestMessage?.createdAt,
-      mobileVisibility: mobileHidden
-        ? 'Hidden in mobile after closeout'
-        : booking.chatRoom
-          ? 'Visible while service is active'
-          : 'Not visible yet',
-      mobileVisibilityDetail: mobileHidden
-        ? 'Customer and Partner apps may hide completed or closed chats, but admin keeps the archive.'
-        : booking.chatRoom
-          ? 'Room should remain visible until the service is completed or closed.'
-          : bookingChatOpensAfterMatchOrSelectionCopy,
-      adminRetention: booking.chatRoom
-        ? 'Admin archive retained'
-        : requiresRoom
-          ? 'Admin repair needed'
-          : 'Waiting for match',
-      adminRetentionDetail: booking.chatRoom
-        ? 'Use the archive link for full message evidence.'
-        : requiresRoom
-          ? 'Open the booking detail to repair or investigate the missing room.'
-          : 'No customer and Partner chat evidence is expected before matching.',
-      bookingHref: `/bookings/${booking.id}`,
-      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
-      hasRoom: Boolean(booking.chatRoom),
-      requiresRoom,
-      messageCount: chatMessages.length,
-      mobileHidden,
-    };
-  });
-}
-
-function buildCustomerChatRetentionSummary(rows: CustomerChatRetentionRow[]) {
-  const retainedRooms = rows.filter((row) => row.hasRoom).length;
-  const retainedMessages = rows.reduce((sum, row) => sum + row.messageCount, 0);
-  const matchedWithoutRoom = rows.filter((row) => row.requiresRoom && !row.hasRoom).length;
-  const mobileHidden = rows.filter((row) => row.mobileHidden && row.hasRoom).length;
-
-  return [
-    {
-      label: 'Retained rooms',
-      value: retainedRooms.toString(),
-      helper: 'Chat rooms saved for admin evidence.',
-    },
-    {
-      label: 'Retained messages',
-      value: retainedMessages.toString(),
-      helper: 'Loaded messages across this customer date filter.',
-    },
-    {
-      label: 'Matched without room',
-      value: matchedWithoutRoom.toString(),
-      helper: 'Matched/service-stage bookings that need chat-room repair.',
-    },
-    {
-      label: 'Hidden in mobile',
-      value: mobileHidden.toString(),
-      helper: 'Completed or closed chat rooms still retained by admin.',
-    },
-  ];
-}
-
-function bookingRequiresRetainedChat(booking: AdminBookingDetail) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status);
-}
-
-function bookingChatHiddenInMobile(booking: AdminBookingDetail) {
-  return ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status);
-}
-
 function bookingOpsTaskCount(booking: unknown) {
   const record = booking && typeof booking === 'object' ? (booking as { opsTasks?: unknown }) : {};
   return Array.isArray(record.opsTasks) ? record.opsTasks.length : 0;
@@ -2829,14 +2247,6 @@ function reviewBookingServiceLabel(booking?: { services?: AdminBookingDetail['se
   const first = booking?.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
-}
-
-function bookingStatusOperatorHint(booking: AdminBookingDetail) {
-  if (ACTIVE_STATUSES.includes(booking.status)) return 'Live booking';
-  if (booking.status === 'COMPLETED') return 'Closeout done';
-  if (booking.status === 'NO_SHOW') return 'No-show record';
-  if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return 'Closed booking record';
-  return 'Historical row';
 }
 
 function isClosedCustomerBooking(booking: AdminBookingDetail) {

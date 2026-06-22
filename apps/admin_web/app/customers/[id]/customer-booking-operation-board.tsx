@@ -49,7 +49,6 @@ const CUSTOMER_BOOKING_OPERATION_HEADERS = [
   'Partner',
   'Address',
   'State',
-  'Open',
 ] as const;
 
 type CustomerBookingOperationBoardProps = {
@@ -168,11 +167,6 @@ function CustomerBookingOperationSection({
             <td>
               <span className={`pill ${row.stateTone}`}>{row.stateLabel}</span>
               <p className="muted">{row.stateDetail}</p>
-            </td>
-            <td>
-              <Link className="text-link" href={row.bookingHref}>
-                View
-              </Link>
             </td>
           </tr>
         ))}

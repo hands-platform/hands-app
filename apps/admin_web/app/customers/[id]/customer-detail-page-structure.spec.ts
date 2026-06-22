@@ -7,14 +7,7 @@ describe('customer detail page structure', () => {
 
     expect(pageSource).toContain('Customer operating picture');
     expect(pageSource).toContain('CustomerBookingOperationBoard');
-    expect(pageSource).toContain('Booking and cancellation history');
-    expect(pageSource).toContain('customer-booking-history-section');
-    expect(pageSource).toContain('customer-chat-retention-section');
-    expect(pageSource).toContain('customer-booking-ops-ledger-section');
     expect(pageSource).toContain('customer-chat-history-section');
-    expect(pageSource).toContain('bookingHistoryPage');
-    expect(pageSource).toContain('chatRetentionPage');
-    expect(pageSource).toContain('bookingOpsLedgerPage');
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminRoundedPagination');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
@@ -57,6 +50,19 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Filtered notices');
     expect(pageSource).not.toContain('Customer information');
     expect(pageSource).not.toContain('#customer-info');
+    expect(pageSource).not.toContain('Customer workspace');
+    expect(pageSource).not.toContain('CustomerDetailShortcutStrip');
+    expect(pageSource).not.toContain('Booking and cancellation history');
+    expect(pageSource).not.toContain('customer-booking-history-section');
+    expect(pageSource).not.toContain('Customer chat retention ledger');
+    expect(pageSource).not.toContain('customer-chat-retention-section');
+    expect(pageSource).not.toContain('Booking operations note ledger');
+    expect(pageSource).not.toContain('customer-booking-ops-ledger-section');
+    expect(pageSource).not.toContain('Customer chronological activity');
+    expect(pageSource).not.toContain('id="customer-activity"');
+    expect(pageSource).not.toContain('bookingHistoryPage');
+    expect(pageSource).not.toContain('chatRetentionPage');
+    expect(pageSource).not.toContain('bookingOpsLedgerPage');
     expect(pageSource).not.toContain('Customer account facts');
     expect(pageSource).not.toContain('customer-account-facts');
     expect(pageSource).not.toContain('Birth / age');
@@ -78,7 +84,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain("booking.payment?.status ?? 'No payment'");
     expect(pageSource).not.toContain("formatMoney(Number(booking.payment.amount ?? 0))");
     expect(pageSource).not.toContain('booking.chatRoom.messages?.length ?? 0');
-    expect(pageSource.match(/href=\{row\.chatHref\}/g)?.length).toBe(1);
+    expect(pageSource).not.toContain('href={row.chatHref}');
     expect(pageSource).not.toContain('customerActivitySummary');
     expect(pageSource).not.toContain('buildCustomerActivitySummary');
     expect(pageSource).not.toContain('Loaded range');
