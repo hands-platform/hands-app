@@ -71,5 +71,6 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('customer-daily-digest');
     expect(pageSource).not.toContain('buildCustomerDailyActivityDigest');
     expect(pageSource).not.toContain('CustomerDailyActivityDigest');
+    expect(pageSource).not.toContain('Latest support rows');
   });
 });
