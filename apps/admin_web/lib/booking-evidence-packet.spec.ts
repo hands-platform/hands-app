@@ -146,4 +146,19 @@ describe('bookingEvidencePacket', () => {
     );
     expect(JSON.stringify(packet)).not.toMatch(/\bpin\b/i);
   });
+
+  it('does not echo raw coordinate labels in address or location records', () => {
+    const packet = bookingEvidencePacket({
+      ...baseInput,
+      hasAddressSnapshot: true,
+      addressSnapshotLabel: 'District 1, Ho Chi Minh City',
+      addressPinLabel: '10.7769, 106.7009',
+      latestLocationCoordinateLabel: '10.7769, 106.7009',
+      latestLocationAtLabel: '07 Jun 2026 10:30',
+    });
+
+    expect(packet.records[0].evidence).toBe('Address snapshot Service address snapshot saved');
+    expect(packet.records[2].detail).toBe('Latest Partner location is saved for dispatch checks.');
+    expect(JSON.stringify(packet.records)).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
+  });
 });

@@ -2,6 +2,24 @@ import { bookingChatOpensAfterMatchOrSelectionCopy } from './booking-chat-copy';
 
 type EvidenceBundleTone = 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
 
+const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
+
+function safeLatestLocationEvidenceLabel(label?: string | null) {
+  if (!label) {
+    return null;
+  }
+
+  return label.replace(COORDINATE_PAIR_TEXT_RE, 'Latest Partner location saved');
+}
+
+function safeServiceAddressPinEvidence(label: string) {
+  if (COORDINATE_PAIR_TEXT_RE.test(label)) {
+    return 'Service address snapshot saved';
+  }
+
+  return ['Service address snapshot', label].join(' ');
+}
+
 export type BookingEvidenceBundleRowsInput = {
   bookingId: string;
   customerProfileId?: string | null;
@@ -118,7 +136,9 @@ export function bookingEvidenceBundleRows(
       recordLabel: input.latestLocationShortId ?? 'No latest location',
       status: input.hasLocationTrace ? input.locationStatusLabel : 'Missing',
       tone: input.hasLocationTrace ? 'pill-info' : 'pill-neutral',
-      evidence: input.latestLocationEvidenceLabel ?? `Service address snapshot ${input.serviceAddressPinLabel}`,
+      evidence:
+        safeLatestLocationEvidenceLabel(input.latestLocationEvidenceLabel) ??
+        safeServiceAddressPinEvidence(input.serviceAddressPinLabel),
       operatorUse:
         'Use location rows only as operational history; routing and live tracking are not required for MVP.',
       href: '#location',

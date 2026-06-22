@@ -159,4 +159,18 @@ describe('bookingEvidenceBundleRows', () => {
       evidence: 'Service address snapshot District 1, Ho Chi Minh City',
     });
   });
+
+  it('does not echo raw coordinate labels in location evidence', () => {
+    const rows = bookingEvidenceBundleRows({
+      ...baseInput,
+      latestLocationEvidenceLabel: '10.7769, 106.7009 / 07 Jun 2026 10:31',
+      serviceAddressPinLabel: '10.7769, 106.7009',
+    });
+
+    expect(rows[5]).toMatchObject({
+      lane: 'Location',
+      evidence: 'Latest Partner location saved / 07 Jun 2026 10:31',
+    });
+    expect(JSON.stringify(rows[5])).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
+  });
 });

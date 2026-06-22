@@ -34,6 +34,28 @@ export type BookingEvidencePacketInput = {
 
 type EvidenceTone = 'pill-success' | 'pill-warn';
 
+const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
+
+function safeAddressSnapshotLabel(label: string) {
+  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Service address snapshot saved' : label;
+}
+
+function safePartnerLocationEvidenceLabel(label: string) {
+  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'saved for dispatch checks' : label;
+}
+
+function partnerLocationMetricHelper(label?: string | null) {
+  if (!label) {
+    return 'No Partner location is saved for this booking yet.';
+  }
+
+  if (COORDINATE_PAIR_TEXT_RE.test(label)) {
+    return 'Latest Partner location is saved for dispatch checks.';
+  }
+
+  return `${label} latest Partner location.`;
+}
+
 export type BookingEvidencePacket = {
   status: string;
   tone: EvidenceTone;
@@ -70,6 +92,10 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
   const summary = hasDecisionEvidence
     ? `Admin can review ${evidenceCount} retained evidence item(s) before changing booking outcome.`
     : 'No chat, alert, location, or operator note evidence is attached yet; add a note before manual outcome changes.';
+  const addressSnapshotLabel = safeAddressSnapshotLabel(input.addressSnapshotLabel);
+  const addressEvidenceLabel = safeAddressSnapshotLabel(
+    input.addressPinLabel ?? input.addressSnapshotLabel,
+  );
 
   return {
     status,
@@ -86,9 +112,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
       {
         label: 'Location evidence',
         value: input.latestLocationAtLabel ?? `${input.locationTrailCount} row(s)`,
-        helper: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} latest Partner location.`
-          : 'No Partner location is saved for this booking yet.',
+        helper: partnerLocationMetricHelper(input.latestLocationCoordinateLabel),
       },
       {
         label: 'Payment evidence',
@@ -119,10 +143,10 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Address',
         title: 'Address evidence',
         detail: input.hasAddressSnapshot
-          ? `Locked address snapshot: ${input.addressSnapshotLabel}.`
+          ? `Locked address snapshot: ${addressSnapshotLabel}.`
           : 'No immutable address snapshot is attached yet.',
         evidence: input.hasAddressSnapshot
-          ? `Address snapshot ${input.addressPinLabel ?? input.addressSnapshotLabel}`
+          ? ['Address snapshot', addressEvidenceLabel].join(' ')
           : 'Stored-address fallback or missing booking address needs operator review.',
         href: '#address-radius-contract',
       },
@@ -143,7 +167,9 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Location',
         title: 'Location evidence',
         detail: input.latestLocationCoordinateLabel
-          ? `Latest Partner location is ${input.latestLocationCoordinateLabel}.`
+          ? `Latest Partner location is ${safePartnerLocationEvidenceLabel(
+              input.latestLocationCoordinateLabel,
+            )}.`
           : 'No Partner location has been retained.',
         evidence: input.latestLocationAtLabel
           ? `Recorded ${input.latestLocationAtLabel}`
