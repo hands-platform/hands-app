@@ -110,7 +110,6 @@ const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
   'Open',
 ] as const;
 const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
-const CUSTOMER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
 const CUSTOMER_BOOKING_HISTORY_HEADERS = [
   'Booking',
   'Service',
@@ -232,16 +231,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
-  const customerOperationsDigest = buildCustomerOperationsDigest({
-    customer,
-    bookings: filteredBookings,
-    wallet,
-    bookingStats,
-    addresses,
-    latestSession,
-    notifications: filteredNotifications,
-    activityRecords: filteredCustomerActivityRecords,
-  });
   const filteredAuditLogs = recentAuditLogs.filter((log) =>
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
@@ -260,149 +249,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     latestSession,
     pushDevices,
     notifications,
-  });
-  const connectedCustomerRecordLinks = [
-    {
-      label: 'Active booking',
-      value: activeBooking ? shortId(activeBooking.id) : 'None',
-      detail: activeBooking
-        ? `${activeBooking.status} / ${bookingServiceLabel(activeBooking)}`
-        : 'No live customer booking is currently loaded.',
-      href: activeBooking ? `/bookings/${activeBooking.id}` : '#booking-history',
-      tone: activeBooking ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      label: 'Latest booking',
-      value: latestBooking ? shortId(latestBooking.id) : 'None',
-      detail: latestBooking
-        ? `${latestBooking.status} / ${bookingServiceLabel(latestBooking)}`
-        : 'No booking has been created for this customer.',
-      href: latestBooking ? `/bookings/${latestBooking.id}` : '#booking-history',
-      tone: latestBooking ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Blocked create attempts',
-      value: `${bookingCreateGateAttempts.length} attempt(s)`,
-      detail: bookingCreateGateAttempts[0]
-        ? `${bookingCreateGateAttempts[0].gateLabel} / latest ${formatDate(bookingCreateGateAttempts[0].at)}`
-        : 'No booking create gate attempt is linked to this customer.',
-      href: bookingCreateGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
-      tone: bookingCreateGateAttempts.length ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      label: 'Last completed work',
-      value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
-      detail: lastCompletedBooking
-        ? formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.createdAt)
-        : 'No completed service record yet.',
-      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '#booking-history',
-      tone: lastCompletedBooking ? 'pill-success' : 'pill-neutral',
-    },
-    {
-      label: 'Latest Partner link',
-      value: latestPartnerBooking
-        ? shortId(latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId ?? '')
-        : 'None',
-      detail: latestPartnerBooking
-        ? `${bookingPartnerDisplayName(latestPartnerBooking)} / booking ${shortId(latestPartnerBooking.id)}`
-        : 'No preferred or final Partner is attached to the loaded booking records.',
-      href:
-        latestPartnerBooking?.selectedProviderId || latestPartnerBooking?.preferredProviderId
-          ? `/partners/${latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId}`
-          : '#booking-history',
-      tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Chat archive',
-      value: `${chatMessageCount} message(s)`,
-      detail: latestChatBooking
-        ? `Latest room ${shortId(latestChatBooking.chatRoom?.id)} / ${chatRooms.length} retained room(s).`
-        : 'No customer and Partner chat archive is attached yet.',
-      href: latestChatBooking
-        ? `/chat-archive?q=${encodeURIComponent(latestChatBooking.id)}`
-        : `/chat-archive?q=${encodeURIComponent(customer.id)}`,
-      tone: chatRooms.length ? 'pill-success' : 'pill-neutral',
-    },
-    {
-      label: 'Address snapshot',
-      value: latestAddressSnapshotBooking ? shortId(latestAddressSnapshotBooking.id) : 'None',
-      detail: latestAddressSnapshotBooking
-        ? bookingAddressEvidenceLabel(latestAddressSnapshotBooking)
-        : 'No immutable booking address snapshot is loaded yet.',
-      href: latestAddressSnapshotBooking
-        ? `/bookings/${latestAddressSnapshotBooking.id}#address-evidence`
-        : '#addresses',
-      tone: latestAddressSnapshotBooking ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Payment records',
-      value: formatMoney(wallet.capturedSpend),
-      detail: latestPaymentBooking
-        ? `${customerPaymentCount} payment row(s), latest ${latestPaymentBooking.payment?.status ?? 'UNKNOWN'} on ${shortId(
-            latestPaymentBooking.id,
-          )}.`
-        : `${customerPaymentCount} payment row(s), ${wallet.refundCount} refund row(s).`,
-      href: latestPaymentBooking
-        ? `/bookings/${latestPaymentBooking.id}#payment-evidence`
-        : `/payments?customer=${encodeURIComponent(customer.id)}`,
-      tone: customerPaymentCount ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Refund records',
-      value: formatMoney(wallet.refundAmount),
-      detail: latestRefundBooking
-        ? `Latest refund evidence is on booking ${shortId(latestRefundBooking.id)}.`
-        : 'No refund row loaded.',
-      href: latestRefundBooking ? `/bookings/${latestRefundBooking.id}#refund-evidence` : '#wallet',
-      tone: wallet.refundCount ? 'pill-warn' : 'pill-neutral',
-    },
-    {
-      label: 'Saved locations',
-      value: `${addresses.length} location(s)`,
-      detail: addresses[0]?.value ?? 'No saved address or selected map pin.',
-      href: '#addresses',
-      tone: addresses.length ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'App sessions',
-      value: latestSession ? 'Seen' : 'None',
-      detail: latestSession
-        ? `${latestSession.platform ?? 'Unknown'} / ${formatDate(latestSession.lastSeenAt)}`
-        : 'No app session loaded.',
-      href: customer.user?.id
-        ? `/app-sessions?user=${encodeURIComponent(customer.user.id)}`
-        : '#customer-info',
-      tone: latestSession ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Booking ops records',
-      value: latestOpsBooking ? shortId(latestOpsBooking.id) : 'None',
-      detail: latestOpsBooking
-        ? `${bookingOpsTaskCount(latestOpsBooking)} task(s), ${bookingAuditLogCount(
-            latestOpsBooking,
-          )} audit row(s).`
-        : 'No booking-level operator task is attached yet.',
-      href: latestOpsBooking ? `/bookings/${latestOpsBooking.id}#ops-evidence` : '#customer-activity',
-      tone: latestOpsBooking ? 'pill-info' : 'pill-neutral',
-    },
-    {
-      label: 'Operator notes',
-      value: `${recentAuditLogs.length} note(s)`,
-      detail: recentAuditLogs[0]?.action ?? 'No operator note loaded.',
-      href: `/audit-log?target=${encodeURIComponent(`customer:${customer.id}`)}`,
-      tone: recentAuditLogs.length ? 'pill-info' : 'pill-neutral',
-    },
-  ];
-  const customerOperatingLedger = buildCustomerOperatingLedger({
-    customer,
-    bookings,
-    wallet,
-    bookingStats,
-    addresses,
-    latestSession,
-    pushDevices,
-    notifications,
-    activityRecords: customerActivityRecords,
   });
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredCustomerActivityRecords.map((record) => ({
@@ -515,10 +361,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   ];
   const detailShortcuts: CustomerDetailShortcut[] = [
     {
-      href: '#customer-operations-digest',
+      href: '#customer-booking-situation-board',
       label: 'Operations',
-      value: `${customerOperationsDigest.length} lanes`,
-      detail: 'Dispatch, linked records, gate attempts, journey, and command queue.',
+      value: `${filteredBookings.length} rows`,
+      detail: 'Live work, completed work, cancellations, gate attempts, and command queue.',
     },
     {
       href: '#customer-info',
@@ -641,56 +487,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <small>0</small>
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="card admin-mb-16" id="customer-operations-digest">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer operations digest</h2>
-            <p className="muted">
-              One-screen factual digest for the customer desk. It keeps completed work, latest work, active
-              booking, chat archive, payment, address, app access, and staff records together.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerOperationsDigest.length} lanes</span>
-        </div>
-        <div className="setup-stage-list admin-mt-12">
-          {customerOperationsDigest.map((row) => (
-            <div className="setup-stage-item" key={row.lane}>
-              <span>{row.lane}</span>
-              <div>
-                <strong>{row.status}</strong>
-                <p className="muted">{row.detail}</p>
-              </div>
-              <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card admin-mb-16" id="customer-connected-operations-records">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer connected operations records</h2>
-            <p className="muted">
-              Jump from this customer to the linked bookings, completed work, chat archive, payment, refund,
-              saved location, app session, and operator records.
-            </p>
-          </div>
-          <span className="pill pill-info">{connectedCustomerRecordLinks.length} links</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {connectedCustomerRecordLinks.map((record) => (
-            <div key={record.label}>
-              <span>{record.label}</span>
-              <strong>{record.value}</strong>
-              <small>{record.detail}</small>
-              <Link className={`pill ${record.tone}`} href={record.href}>
-                Open
-              </Link>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -915,89 +711,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           )}
         </div>
-      </section>
-
-      <section className="card admin-mb-16" id="customer-full-record-index">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer full record index</h2>
-            <p className="muted">
-              Factual customer record map for operators. This page shows booking, work, payment, chat,
-              address, notification, app session, and operator history.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <a href="#customer-info">
-            <span>Customer info</span>
-            <strong>{customer.user?.phone ?? 'No phone'}</strong>
-            <small>Identity, contact, account age.</small>
-          </a>
-          <a href="#wallet">
-            <span>Wallet and payment</span>
-            <strong>{formatMoney(wallet.capturedSpend)}</strong>
-            <small>Captured, pending, cash, refund rows.</small>
-          </a>
-          <a href="#addresses">
-            <span>Addresses</span>
-            <strong>{addresses.length}</strong>
-            <small>Saved address and selected map pins.</small>
-          </a>
-          <a href="#booking-history">
-            <span>Bookings</span>
-            <strong>{bookings.length}</strong>
-            <small>{bookingStats.completed} completed work record(s).</small>
-          </a>
-          <a href="#chat-history">
-            <span>Chat archive</span>
-            <strong>{chatMessageCount}</strong>
-            <small>{chatRooms.length} room(s), retained for admin.</small>
-          </a>
-          <a href="#customer-activity">
-            <span>Activity timeline</span>
-            <strong>{customerActivityRecords.length}</strong>
-            <small>Date-ordered app and operations events.</small>
-          </a>
-          <a href="#customer-daily-digest">
-            <span>Daily digest</span>
-            <strong>{customerDailyActivityDigest.length}</strong>
-            <small>Date-grouped customer activity.</small>
-          </a>
-        </div>
-      </section>
-
-      <section className="card admin-mb-16" id="customer-operating-ledger">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer operating ledger</h2>
-            <p className="muted">
-              Compact factual ledger for account, booking work, chat archive, payment, wallet, address, app
-              device, notification, and operator history. This ledger is factual history only.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
-        </div>
-        <AdminTableScroll>
-          <AdminDataTable
-            emptyMessage={null}
-            headers={CUSTOMER_OPERATING_LEDGER_HEADERS}
-            rowCount={customerOperatingLedger.length}
-          >
-            {customerOperatingLedger.map((row) => (
-              <tr key={row.area}>
-                <td>{row.area}</td>
-                <td>{row.status}</td>
-                <td>{row.evidence}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </AdminDataTable>
-        </AdminTableScroll>
       </section>
 
       <section className="card admin-mb-16" id="record-date-filter">

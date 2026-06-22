@@ -1,0 +1,17 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+describe('customer detail page structure', () => {
+  it('keeps the customer detail page focused on overview and booking operation lists', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'app/customers/[id]/page.tsx'), 'utf8');
+
+    expect(pageSource).toContain('Customer operating picture');
+    expect(pageSource).toContain('CustomerBookingOperationBoard');
+    expect(pageSource).toContain('Booking and cancellation history');
+
+    expect(pageSource).not.toContain('Customer operations digest');
+    expect(pageSource).not.toContain('Customer connected operations records');
+    expect(pageSource).not.toContain('Customer full record index');
+    expect(pageSource).not.toContain('Customer operating ledger');
+  });
+});
