@@ -40,11 +40,6 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Completed');
     expect(rendered).toContain('Revenue');
     expect(rendered).toContain('Wallet debt');
-    expect(rendered).toContain('More filters');
-    expect(rendered).toContain('Location');
-    expect(rendered).toContain('Device/session');
-    expect(rendered).toContain('Booking flow');
-    expect(rendered).toContain('Review lane');
     expect(rendered).toContain('Export');
     expect(rendered).toContain('Apply');
     expect(rendered).toContain('Location freshness: 30m');
@@ -53,12 +48,17 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Review: Unapproved Partners');
     expect(rendered).toContain('Sort: booking count');
     expect(rendered).toContain('type="hidden" name="sort" value="booking-count"');
+    expect(rendered).toContain('type="hidden" name="review" value="unapproved"');
     expect(rendered).toContain(
       'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;review=unapproved&amp;sort=last-work"',
     );
     expect(rendered).toContain(
       'href="/partners?q=linh&amp;providerStatus=ONLINE_AVAILABLE&amp;review=unapproved&amp;sort=wallet-debt"',
     );
+    expect(rendered).not.toContain('More filters');
+    expect(rendered).not.toContain('Device/session');
+    expect(rendered).not.toContain('Booking flow');
+    expect(rendered).not.toContain('Review lane');
     expect(rendered).not.toContain('Partner pages');
     expect(rendered).not.toContain('Partner filters');
     expect(rendered).not.toContain('Start with approval');
@@ -81,6 +81,33 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('href="/partners"');
     expect(rendered).toContain('admin-form-control-link vuexy-partner-button is-ghost');
+  });
+
+  it('opens advanced filters for non-primary operational review lanes', () => {
+    const filters = providerFilters({
+      review: 'marketplace-ready',
+      sort: 'ops-priority',
+    });
+    const rendered = renderToStaticMarkup(
+      PartnerFilterBoard({
+        activeFilters: buildProviderActiveFilters(filters),
+        csvDownloadName: 'hands-partners-review-marketplace-ready.csv',
+        csvHref: 'data:text/csv,partner',
+        filteredCount: 3,
+        filters,
+        locationFreshnessLabel: 'Location freshness: 30m',
+        showAdvancedFilters: true,
+        totalCount: 12,
+      }),
+    );
+
+    expect(rendered).toContain('More filters');
+    expect(rendered).toContain('Location');
+    expect(rendered).toContain('Device/session');
+    expect(rendered).toContain('Booking flow');
+    expect(rendered).toContain('Review lane');
+    expect(rendered).toContain('Review: Marketplace ready');
+    expect(rendered).not.toContain('type="hidden" name="review"');
   });
 });
 

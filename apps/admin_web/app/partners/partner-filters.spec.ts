@@ -52,7 +52,7 @@ describe('partner filters', () => {
     expect(paginatePartnerRows(rows, { ...filters, page: 99 }).page).toBe(2);
   });
 
-  it.each<keyof ProviderFilters>(['location', 'security', 'bookingFlow', 'review'])(
+  it.each<keyof ProviderFilters>(['location', 'security', 'bookingFlow'])(
     'opens advanced operational filters when %s is active',
     (key) => {
       const filters = { ...buildProviderFilters({}), [key]: 'active' };
@@ -60,6 +60,14 @@ describe('partner filters', () => {
       expect(partnerHasAdvancedOperationalFilters(filters)).toBe(true);
     },
   );
+
+  it('keeps primary partner pages compact while opening non-primary review lanes', () => {
+    expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'unapproved' }))).toBe(false);
+    expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'unsettled' }))).toBe(false);
+    expect(partnerHasAdvancedOperationalFilters(buildProviderFilters({ review: 'marketplace-ready' }))).toBe(
+      true,
+    );
+  });
 
   it('keeps unapproved review copy focused on Level 2 readiness, not bank or tax', () => {
     const description = providerFilterDescription('review', 'unapproved');

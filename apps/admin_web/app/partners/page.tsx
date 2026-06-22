@@ -277,41 +277,45 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         showAdvancedFilters={showAdvancedPartnerFilters}
         totalCount={providers.length}
       />
-      <section className="card admin-mb-16">
-        <div className="ops-section-header">
-          <div>
-            <h2>Current filter summary</h2>
-            <p className="muted">
-              A factual snapshot of the partner rows currently loaded on this page before export, review,
-              dispatch checks, or account follow-up.
-            </p>
-          </div>
-          <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          {filterSummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small className="muted">{item.detail}</small>
-              {item.href ? (
-                <Link className="button button-secondary partner-summary-action" href={item.href}>
-                  <ArrowRight aria-hidden="true" size={14} />
-                  Open subset
-                </Link>
-              ) : null}
+      {showDeepPartnerOpsSections ? (
+        <>
+          <section className="card admin-mb-16">
+            <div className="ops-section-header">
+              <div>
+                <h2>Current filter summary</h2>
+                <p className="muted">
+                  A factual snapshot of the partner rows currently loaded on this page before export, review,
+                  dispatch checks, or account follow-up.
+                </p>
+              </div>
+              <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
             </div>
-          ))}
-        </div>
-      </section>
-      <div className="grid admin-mb-16">
-        {summary.map(([label, value]) => (
-          <div className="card" key={label}>
-            <p>{label}</p>
-            <h2>{value}</h2>
+            <div className="service-trace-summary admin-mt-14">
+              {filterSummary.map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small className="muted">{item.detail}</small>
+                  {item.href ? (
+                    <Link className="button button-secondary partner-summary-action" href={item.href}>
+                      <ArrowRight aria-hidden="true" size={14} />
+                      Open subset
+                    </Link>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="grid admin-mb-16">
+            {summary.map(([label, value]) => (
+              <div className="card" key={label}>
+                <p>{label}</p>
+                <h2>{value}</h2>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      ) : null}
       <PartnerMasterListSection
         filters={filters}
         mode={partnerMasterListMode}

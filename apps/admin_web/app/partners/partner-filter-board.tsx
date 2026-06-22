@@ -64,6 +64,9 @@ export function PartnerFilterBoard({
     >
       <form action="/partners" className="vuexy-partner-form">
         <input name="sort" type="hidden" value={filters.sort} />
+        {filters.review && !showAdvancedFilters ? (
+          <input name="review" type="hidden" value={filters.review} />
+        ) : null}
         <div className="vuexy-partner-filter-grid">
           <div className="vuexy-partner-filter-group is-primary" aria-label="Partner list filters">
             <AdminFormSearch
@@ -103,7 +106,7 @@ export function PartnerFilterBoard({
             <AdminFormControlButton className="vuexy-partner-button">Apply</AdminFormControlButton>
           </div>
         </div>
-        <div className="vuexy-partner-filter-strip" aria-label="Partner sort filters">
+        <div className="booking-date-filter-bar vuexy-partner-filter-strip" aria-label="Partner sort filters">
           <span className="vuexy-partner-filter-group-label">Partner sort</span>
           <div className="booking-date-filter-buttons vuexy-partner-filter-buttons" role="group">
             {partnerSortButtonOptions.map((option) => (
@@ -118,42 +121,44 @@ export function PartnerFilterBoard({
             ))}
           </div>
         </div>
-        <details className="vuexy-partner-filter-details" open={showAdvancedFilters}>
-          <summary>
-            <span>More filters</span>
-            <small>Location, device/session, booking flow, and review lane</small>
-          </summary>
-          <div className="vuexy-partner-advanced-filter-grid">
-            <AdminFormSelect
-              className="vuexy-partner-select"
-              defaultValue={filters.location}
-              label="Location"
-              name="location"
-              options={partnerLocationFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-partner-select"
-              defaultValue={filters.security}
-              label="Device/session"
-              name="security"
-              options={partnerDeviceSessionFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-partner-select"
-              defaultValue={filters.bookingFlow}
-              label="Booking flow"
-              name="bookingFlow"
-              options={partnerBookingFlowFilterOptions}
-            />
-            <AdminFormSelect
-              className="vuexy-partner-select"
-              defaultValue={filters.review}
-              label="Review lane"
-              name="review"
-              options={partnerReviewLaneFilterOptions}
-            />
-          </div>
-        </details>
+        {showAdvancedFilters ? (
+          <details className="vuexy-partner-filter-details" open>
+            <summary>
+              <span>More filters</span>
+              <small>Location, device/session, booking flow, and review lane</small>
+            </summary>
+            <div className="vuexy-partner-advanced-filter-grid">
+              <AdminFormSelect
+                className="vuexy-partner-select"
+                defaultValue={filters.location}
+                label="Location"
+                name="location"
+                options={partnerLocationFilterOptions}
+              />
+              <AdminFormSelect
+                className="vuexy-partner-select"
+                defaultValue={filters.security}
+                label="Device/session"
+                name="security"
+                options={partnerDeviceSessionFilterOptions}
+              />
+              <AdminFormSelect
+                className="vuexy-partner-select"
+                defaultValue={filters.bookingFlow}
+                label="Booking flow"
+                name="bookingFlow"
+                options={partnerBookingFlowFilterOptions}
+              />
+              <AdminFormSelect
+                className="vuexy-partner-select"
+                defaultValue={filters.review}
+                label="Review lane"
+                name="review"
+                options={partnerReviewLaneFilterOptions}
+              />
+            </div>
+          </details>
+        ) : null}
         <div className="vuexy-partner-filter-meta" aria-label="Partner filter status">
           <span className="muted">
             Showing {filteredCount} of {totalCount} matching partners

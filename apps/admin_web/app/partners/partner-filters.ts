@@ -288,7 +288,12 @@ export function emptyProviderMessage(activeFilters: Array<{ description: string 
 }
 
 export function partnerHasAdvancedOperationalFilters(filters: ProviderFilters) {
-  return Boolean(filters.location || filters.security || filters.bookingFlow || filters.review);
+  return Boolean(
+    filters.location ||
+      filters.security ||
+      filters.bookingFlow ||
+      (filters.review && !isPrimaryPartnerReview(filters.review)),
+  );
 }
 
 export function partnerSortLabel(sort: string) {
@@ -438,6 +443,10 @@ function readPartnerSort(value: string) {
   ].includes(value)
     ? value
     : 'ops-priority';
+}
+
+function isPrimaryPartnerReview(value: string) {
+  return value === 'unapproved' || value === 'unsettled';
 }
 
 const partnerFilterHrefParamKeys = [
