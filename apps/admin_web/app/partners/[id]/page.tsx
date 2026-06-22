@@ -578,11 +578,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
-    primaryBank,
-    payoutOps,
     bookingAcceptance,
     providerServicePricing,
-    dispatchPolicy,
     canApproveKyc,
   });
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
@@ -1445,28 +1442,17 @@ function buildPartnerReadinessSnapshotView({
 
 function buildPartnerOperatorCommandQueue({
   provider,
-  primaryBank,
-  payoutOps,
   bookingAcceptance,
   providerServicePricing,
-  dispatchPolicy,
   canApproveKyc,
 }: {
   provider: ProviderDetail;
-  primaryBank: ReturnType<typeof primaryBankAccount>;
-  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
   providerServicePricing: ReturnType<typeof buildProviderServicePricing>;
-  dispatchPolicy: PartnerDispatchPolicy;
   canApproveKyc: boolean;
 }) {
   const commands: PartnerOperatorCommand[] = [];
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
-  const cashDebt = cashFeeDebtAmount(provider);
-  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
-  const pushDeviceCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
-  const locationAge = locationAgeMinutes(provider.currentLocationUpdatedAt);
-  const locationFresh = locationAge <= dispatchPolicy.locationFreshnessMinutes;
   const profileApproved = provider.verification?.status === 'APPROVED';
   const profileRejected = provider.verification?.status === 'REJECTED';
   const kycApproved = provider.kyc?.status === 'APPROVED';
@@ -1494,18 +1480,6 @@ function buildPartnerOperatorCommandQueue({
       owner: 'Account control',
       tone: 'pending',
       action: { type: 'hold-account', label: 'Hold Partner' },
-    });
-  }
-
-  if (cashDebt > 0) {
-    add({
-      id: 'cash-fee-debt',
-      label: 'CASH',
-      title: 'Cash fee debt needs settlement review',
-      detail: `${formatCurrency(cashDebt)} must be settled before final acceptance, service start, or payout release. Marketplace visibility and participation stay visible as a warning state. Customers never carry this wallet debt.`,
-      owner: 'Finance',
-      tone: 'pending',
-      action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
     });
   }
 
@@ -1569,43 +1543,6 @@ function buildPartnerOperatorCommandQueue({
     });
   }
 
-  if (primaryBank && primaryBank.status !== 'APPROVED') {
-    add({
-      id: 'bank-review',
-      label: 'BANK',
-      title: 'Bank account needs approval',
-      detail: `${marketplaceDisplayText(primaryBank.bankName ?? 'Bank')} / ${marketplaceDisplayText(
-        primaryBank.accountHolderName ?? 'holder missing',
-      )} / ${primaryBank.status}.`,
-      owner: 'Finance',
-      tone: 'pending',
-      action: { type: 'approve-bank', bankAccountId: primaryBank.id, label: 'Approve bank' },
-    });
-  } else if (!primaryBank) {
-    add({
-      id: 'bank-missing',
-      label: 'BANK',
-      title: 'Bank account is missing',
-      detail: 'Partner can start onboarding lightly, but payout needs an approved account later.',
-      owner: 'Finance',
-      tone: hasFirstRevenue ? 'blocked' : 'pending',
-      action: { type: 'link', href: '#bank', label: 'Open bank' },
-    });
-  }
-
-  if (provider.taxProfile?.status === 'PENDING') {
-    add({
-      id: 'tax-approve',
-      label: 'TAX',
-      title: 'Optional tax profile submitted',
-      detail:
-        'Tax profile is optional for current Vietnam operations. Review only if finance keeps this record.',
-      owner: 'Finance',
-      tone: 'pending',
-      action: { type: 'approve-tax', label: 'Approve tax' },
-    });
-  }
-
   if (providerServicePricing.readyCount === 0) {
     add({
       id: 'service-pricing',
@@ -1616,54 +1553,6 @@ function buildPartnerOperatorCommandQueue({
       owner: 'Catalog',
       tone: 'blocked',
       action: { type: 'link', href: '#service-pricing', label: 'Open services' },
-    });
-  }
-
-  if (!locationFresh) {
-    add({
-      id: 'location-refresh',
-      label: 'LOC',
-      title: 'Location refresh needed',
-      detail: `Last location is ${provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'missing'}. Booking discovery uses last saved location only.`,
-      owner: 'Dispatch',
-      tone: bookingAcceptance.canJoinMarketplace ? 'pending' : 'blocked',
-      action: { type: 'link', href: '#location', label: 'Open location' },
-    });
-  }
-
-  if (pushDeviceCount === 0) {
-    add({
-      id: 'push-device',
-      label: 'APP',
-      title: 'No reachable app device',
-      detail: 'Partner should sign in on the real app so request alerts can be delivered.',
-      owner: 'Support',
-      tone: 'pending',
-      action: { type: 'link', href: '#app-activity', label: 'Open app activity' },
-    });
-  }
-
-  if (!bookingAcceptance.canJoinMarketplace && commands.every((command) => command.id !== 'cash-fee-debt')) {
-    add({
-      id: 'acceptance-gate',
-      label: 'ACCEPT',
-      title: 'Marketplace booking gate is on hold',
-      detail: bookingAcceptance.primaryReason,
-      owner: 'Dispatch',
-      tone: 'blocked',
-      action: { type: 'link', href: '#partner-operating-checklist', label: 'Open gates' },
-    });
-  }
-
-  if (payoutOps.tone !== 'done' && commands.every((command) => !command.id.startsWith('tax-'))) {
-    add({
-      id: 'payout-gate',
-      label: 'PAYOUT',
-      title: `Payout ${payoutOps.status.toLowerCase()}`,
-      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout setup is not fully clear.',
-      owner: 'Finance',
-      tone: payoutOps.tone,
-      action: { type: 'link', href: '#payout', label: 'Open payout' },
     });
   }
 
@@ -1689,27 +1578,24 @@ function buildPartnerOperatorCommandQueue({
     tone: queueTone,
     metrics: [
       {
-        label: 'Booking gates',
-        value: bookingAcceptance.canJoinMarketplace ? 'Join ready' : 'Join hold',
+        label: 'Booking gate',
+        value: bookingAcceptance.canJoinMarketplace ? 'Ready' : 'Hold',
         helper: bookingAcceptance.primaryReason,
       },
       {
-        label: 'Cash fee debt',
-        value: formatCurrency(cashDebt),
-        helper:
-          cashDebt > 0
-            ? 'Settlement warning before final acceptance, service start, and payout release.'
-            : 'No cash fee debt.',
+        label: 'KYC',
+        value: kycApproved ? 'Approved' : missingDocuments.length ? `${missingDocuments.length} missing` : 'Review',
+        helper: kycApproved ? 'Identity approval is complete.' : 'Resolve required identity evidence.',
       },
       {
-        label: 'First revenue',
-        value: hasFirstRevenue ? 'Yes' : 'No',
-        helper: hasFirstRevenue ? 'Wallet payout follow-up applies.' : 'Keep onboarding light.',
+        label: 'Profile',
+        value: profileApproved ? 'Approved' : profileRejected ? 'Rejected' : 'Review',
+        helper: 'Public Partner profile approval state.',
       },
       {
-        label: 'App reachability',
-        value: `${pushDeviceCount} device(s)`,
-        helper: locationFresh ? 'Location fresh enough.' : 'Location refresh needed.',
+        label: 'Services',
+        value: `${providerServicePricing.readyCount} ready`,
+        helper: providerServicePricing.readyCount > 0 ? 'Bookable service setup exists.' : 'Add one bookable service option.',
       },
     ],
     commands: commands.slice(0, 10),

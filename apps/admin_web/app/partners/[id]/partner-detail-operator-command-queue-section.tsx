@@ -57,7 +57,7 @@ export function PartnerDetailOperatorCommandQueueSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Same-shift partner operations queue for onboarding, direct and marketplace readiness gates, payout, location, app reachability, and service setup. This is factual handling for operators."
+      description="Same-shift approval queue for account holds, KYC, public profile review, and service setup. Settlement, location, and app reachability evidence stays in the dedicated sections below."
       id="partner-operator-command-queue"
       resultLabel={queue.status}
       resultTone={statusBadgeToneForPartnerOps(queue.tone)}
