@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { BookingStatus, Role } from '@prisma/client';
 
 import { SOCKET_ROOMS } from '../common/domain';
 import { LocationsGateway } from './locations.gateway';
@@ -6,6 +6,7 @@ import { LocationsGateway } from './locations.gateway';
 describe('LocationsGateway provider location updates', () => {
   function createGateway() {
     const redisState = {
+      getProviderLocation: jest.fn().mockResolvedValue(null),
       setProviderLocation: jest.fn().mockResolvedValue(undefined),
     };
     const socketAuth = {
@@ -17,7 +18,7 @@ describe('LocationsGateway provider location updates', () => {
         findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
       },
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
       },
     };
     const emit = jest.fn();
@@ -54,8 +55,42 @@ describe('LocationsGateway provider location updates', () => {
     expect(result).toEqual({ ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' });
     expect(prisma.booking.findFirst).toHaveBeenCalledWith({
       where: { id: 'booking-for-another-provider', selectedProviderId: 'provider-profile-1' },
-      select: { id: true },
+      select: { id: true, status: true },
     });
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('does not write idle provider location updates that are too frequent and nearby', async () => {
+    const { gateway, redisState, emit } = createGateway();
+    redisState.getProviderLocation.mockResolvedValue({
+      lat: 10.7769,
+      lng: 106.7009,
+      recordedAt: new Date().toISOString(),
+    });
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      lat: 10.7769,
+      lng: 106.7109,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'TOO_FREQUENT_IDLE_LOCATION_UPDATE' });
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it('does not write booking-specific location updates after the booking is closed', async () => {
+    const { gateway, redisState, prisma, emit } = createGateway();
+    prisma.booking.findFirst.mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED });
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'booking-1',
+      lat: 10.7769,
+      lng: 106.7009,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'BOOKING_LOCATION_INACTIVE' });
+    expect(redisState.getProviderLocation).not.toHaveBeenCalled();
     expect(redisState.setProviderLocation).not.toHaveBeenCalled();
     expect(emit).not.toHaveBeenCalled();
   });
@@ -70,10 +105,13 @@ describe('LocationsGateway provider location updates', () => {
     });
 
     expect(result).toEqual({ ok: true });
-    expect(redisState.setProviderLocation).toHaveBeenCalledWith('provider-profile-1', {
-      lat: 10.7769,
-      lng: 106.7009,
-    });
+    expect(redisState.setProviderLocation).toHaveBeenCalledWith(
+      'provider-profile-1',
+      expect.objectContaining({
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    );
     expect(to).toHaveBeenCalledWith(SOCKET_ROOMS.booking('booking-1'));
     expect(emit).toHaveBeenCalledWith(
       'provider.location.updated',

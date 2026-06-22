@@ -2,6 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/src/features/map/domain/services/provider_location_heartbeat.dart';
 
 void main() {
+  test('uses a cost-controlled idle refresh interval', () {
+    expect(ProviderLocationHeartbeat.interval, const Duration(minutes: 60));
+  });
+
   test('runs an immediate location update by default', () async {
     var calls = 0;
     final heartbeat = ProviderLocationHeartbeat(() async {

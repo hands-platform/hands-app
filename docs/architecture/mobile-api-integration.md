@@ -32,7 +32,7 @@ The partner Flutter app now includes:
 - API client with Bearer token headers
 - Socket.IO client using JWT handshake auth
 - Online/offline API calls
-- REST location update calls on app open and every 10 minutes while open
+- A location update when going online, then cost-controlled refreshes: 60 minutes or 3000m movement while idle, and at most every 30 minutes during an active booking
 - Open booking loading from `GET /api/partner/bookings/open`
 - Join booking through `POST /api/partner/bookings/:id/join`
 - Accept/reject participation through `POST /api/partner/bookings/:id/accept` and `POST /api/partner/bookings/:id/reject`

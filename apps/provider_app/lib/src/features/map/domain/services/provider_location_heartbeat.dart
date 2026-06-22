@@ -46,7 +46,7 @@ class ProviderLocationHeartbeatSnapshot {
 class ProviderLocationHeartbeat {
   ProviderLocationHeartbeat(this._updateLocation);
 
-  static const interval = Duration(minutes: 10);
+  static const interval = Duration(minutes: 60);
 
   final Future<void> Function() _updateLocation;
   final _snapshots =

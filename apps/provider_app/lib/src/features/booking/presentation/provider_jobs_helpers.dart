@@ -106,7 +106,7 @@ String providerLocationHeartbeatLabel(
   final lastSuccess = snapshot.lastSuccessAt;
   if (lastSuccess == null) {
     return snapshot.active
-        ? 'Sharing location now. Auto-refresh runs every 10 minutes.'
+        ? 'Sharing location now. Idle refresh runs every 60 minutes.'
         : 'Your last known location is saved when you go online.';
   }
   return '${formatRelativeMoment(lastSuccess.toIso8601String())}. ${formatNextLocationRefresh(snapshot.nextUpdateAt)}';

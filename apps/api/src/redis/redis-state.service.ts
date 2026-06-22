@@ -1,9 +1,9 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { PROVIDER_LOCATION_TTL_SECONDS, ProviderCachedLocation } from '../locations/location-update-policy';
 import { resolveMatchingPolicy } from '../matching/matching.policy';
 
-const PROVIDER_LOCATION_TTL_SECONDS = 60 * 10;
 const OTP_TTL_SECONDS = 60 * 5;
 
 @Injectable()
@@ -45,6 +45,23 @@ export class RedisStateService implements OnModuleDestroy {
       'EX',
       PROVIDER_LOCATION_TTL_SECONDS,
     );
+  }
+
+  async getProviderLocation(providerId: string): Promise<ProviderCachedLocation | null> {
+    const raw = await this.redis.get(`provider:${providerId}:location`);
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<ProviderCachedLocation>;
+      const lat = Number(parsed.lat);
+      const lng = Number(parsed.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+      }
+      return { lat, lng, recordedAt: parsed.recordedAt ?? null };
+    } catch {
+      return null;
+    }
   }
 
   async openMatching(bookingId: string, payload: unknown, ttlSeconds = this.activeMatchingTtlSeconds) {

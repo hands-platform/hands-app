@@ -1,36 +1,53 @@
 # Low-Cost Location System
 
-HANDS now avoids Google Maps Directions, routing APIs, and realtime location streaming for MVP cost control.
+HANDS is not a realtime GPS tracking product. The MVP uses confirmed service addresses, short-lived partner availability signals, and aggregate admin views to keep map, SMS, push, and database costs predictable.
 
-## Runtime Flow
+## Source Of Truth
 
-Customer app:
+- Customer discovery is address-based, not transient GPS-based.
+- Booking creation requires a confirmed service address inside the active Vietnam HANDS service area.
+- Every booking stores an immutable `BookingAddressSnapshot`.
+- The booking service address is the operational source of truth for matching, service delivery, cancellation review, and admin reporting.
+- Fresh customer GPS can be used as optional anti-mismatch evidence during booking creation. If supplied and it is 50km or more away from the selected service address, booking creation is rejected.
+- Customers can browse the app from outside Vietnam, but they cannot create a booking outside the active service area.
 
-- Loads MapTiler only on map screens.
-- Requests GPS once when choosing a service location.
-- Shows a fixed center pin over the MapLibre map.
-- Lets the customer search Vietnam addresses through Geoapify.
-- Debounces Geoapify calls by 500 ms and caches repeated queries in memory.
-- Saves `latitude`, `longitude`, and `address_text` before booking.
-- Loads nearby partners from the HANDS API using the selected/customer coordinate.
-- Demo Ho Chi Minh City coordinates can be used for local partner discovery, but booking confirmation requires explicit map/address confirmation before saving a booking location.
+## Customer App
 
-Partner app:
+- Do not continuously track customer location.
+- On app open, use the last known location/address first.
+- Refresh customer GPS only when the user explicitly needs it, such as choosing "use current location".
+- Do not request customer GPS more often than every 15 minutes for normal foreground use.
+- Address search uses Geoapify only after a 500 ms debounce and at least 3 query characters.
+- Cache repeated normalized address searches in memory.
+- Reverse geocode only when the customer selects or saves an address, not on every map movement or location update.
+- After booking creation, do not track the customer for that booking.
 
-- Requests GPS when the partner logs in and goes online.
-- Sends one location update immediately.
-- Sends another update every 10 minutes while the app is open.
-- Does not run background tracking when the app is closed.
-- Keeps the last stored partner location available to customers.
-- If GPS is denied, reuses the last valid stored partner location only; it does not overwrite the server with a fake/demo coordinate.
+## Partner App
 
-Backend:
+- Request GPS when the partner logs in and goes online.
+- Send one location update immediately after going online.
+- While online without an active booking, refresh only every 60 minutes or after the partner moved at least 3000m.
+- While assigned to an active booking, refresh at most every 30 minutes until the booking is completed or closed.
+- Stop location updates when the partner goes offline, completes the booking, or the app is closed.
+- Do not run background tracking.
+- If GPS is denied, reuse the last valid stored partner location only; do not overwrite the server with fake/demo coordinates.
 
-- Stores `ProviderProfile.currentLat`, `currentLng`, and `currentLocationUpdatedAt`.
-- Stores customer-confirmed pins in `CustomerSelectedLocation`.
-- Filters nearby partners with a 10 km default radius for the current matching MVP.
-- Marks locations older than 30 minutes as not recent.
-- Hides partner locations older than 24 hours from discovery.
+## Backend Guardrails
+
+- The API must enforce partner location throttling even if the app sends updates too often.
+- Current partner location is a short-lived Redis signal with a 90 minute TTL.
+- Locations older than 90 minutes are stale for operations and matching.
+- PostgreSQL should store only durable facts: booking address snapshots, selected customer addresses, and operational audit records when needed.
+- Do not reverse geocode every partner location update.
+- Do not store high-frequency location history unless a specific audit flow requires it.
+
+## Admin Map And Analytics
+
+- Admin overview maps must use Vietnam region aggregates, not individual customer or partner coordinates.
+- Default admin map rendering should use static SVG, GeoJSON, or local mock shapes. Do not use paid external map tiles by default.
+- Refresh aggregate admin map data at low frequency, such as 60 seconds or user-triggered navigation.
+- Region stats should be keyed by `regionCode` and may include customer count, active customer count, online partner count, active booking count, completed booking count, cancellation count, and revenue.
+- Admin usage dashboards should aggregate by today, yesterday, 7 days, this month, and all time. Avoid per-user realtime polling.
 
 ## Environment Variables
 
@@ -40,7 +57,7 @@ GEOAPIFY_API_KEY=
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 PROVIDER_SEARCH_RADIUS_METERS=5000
-PROVIDER_STALE_AFTER_MINUTES=30
+PROVIDER_STALE_AFTER_MINUTES=90
 PROVIDER_HIDE_AFTER_HOURS=24
 ```
 
@@ -54,16 +71,19 @@ powershell -ExecutionPolicy Bypass -File C:\dev\massage-on-demand-vn\infra\scrip
 
 ## Supabase SQL
 
-Use [location-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/location-schema.sql) if HANDS later stores map/location data directly in Supabase.
+Use [location-schema.sql](/C:/dev/massage-on-demand-vn/infra/supabase/location-schema.sql) only if HANDS later stores map/location data directly in Supabase.
 
-The current MVP implementation uses the existing NestJS API and PostgreSQL/PostGIS-compatible schema so mobile apps do not need direct Supabase access yet.
+The current MVP implementation uses the NestJS API and PostgreSQL/PostGIS-compatible schema so mobile apps do not need direct Supabase access for business writes.
 
 ## Cost Controls
 
 - No Directions API.
 - No Routing API.
-- No WebSocket GPS streaming.
+- No continuous customer GPS tracking.
+- No continuous WebSocket GPS streaming.
 - No background location updates.
-- Partner app updates location every 10 minutes only while open.
-- Nearby partner search hides old locations instead of polling continuously.
+- No reverse geocoding on every location update.
+- Partner idle location refresh is 60 minutes or 3000m movement.
+- Partner active-booking location refresh is at most 30 minutes.
+- Nearby partner search hides stale locations instead of polling continuously.
 - Geoapify search runs only after 500 ms debounce and reuses cached results.

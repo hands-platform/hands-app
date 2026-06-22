@@ -6,7 +6,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Role } from '@prisma/client';
+import { BookingStatus, Role } from '@prisma/client';
 import { Server } from 'socket.io';
 import { Socket } from 'socket.io';
 import { SocketAuthService } from '../auth/socket-auth.service';
@@ -14,6 +14,14 @@ import { SOCKET_ROOMS } from '../common/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
+import { providerLocationUpdateDecision } from './location-update-policy';
+
+const ACTIVE_BOOKING_LOCATION_STATUSES = new Set<BookingStatus>([
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+]);
 
 type ParsedProviderLocationPayload =
   | { ok: true; bookingId?: string; lat: number; lng: number }
@@ -85,19 +93,36 @@ export class LocationsGateway implements OnGatewayConnection {
       return { ok: false, error: 'PROVIDER_PROFILE_NOT_FOUND' };
     }
 
+    let hasActiveBookingContext = false;
     if (parsedPayload.bookingId) {
       const booking = await this.prisma.booking.findFirst({
         where: { id: parsedPayload.bookingId, selectedProviderId: provider.id },
-        select: { id: true },
+        select: { id: true, status: true },
       });
       if (!booking) {
         return { ok: false, error: 'BOOKING_LOCATION_FORBIDDEN' };
       }
+      if (!ACTIVE_BOOKING_LOCATION_STATUSES.has(booking.status)) {
+        return { ok: false, error: 'BOOKING_LOCATION_INACTIVE' };
+      }
+      hasActiveBookingContext = true;
+    }
+
+    const recordedAt = new Date().toISOString();
+    const decision = providerLocationUpdateDecision({
+      previous: await this.redisState.getProviderLocation(provider.id),
+      next: { lat: parsedPayload.lat, lng: parsedPayload.lng },
+      now: new Date(recordedAt),
+      hasActiveBookingContext,
+    });
+    if (!decision.allowed) {
+      return { ok: false, error: decision.reason };
     }
 
     await this.redisState.setProviderLocation(provider.id, {
       lat: parsedPayload.lat,
       lng: parsedPayload.lng,
+      recordedAt,
     });
 
     if (parsedPayload.bookingId) {
@@ -106,7 +131,7 @@ export class LocationsGateway implements OnGatewayConnection {
         providerProfileId: provider.id,
         lat: parsedPayload.lat,
         lng: parsedPayload.lng,
-        recordedAt: new Date().toISOString(),
+        recordedAt,
       });
     }
     return { ok: true };
