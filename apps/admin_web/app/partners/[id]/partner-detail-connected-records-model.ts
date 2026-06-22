@@ -17,18 +17,9 @@ type PartnerConnectedRecordProvider = {
   readonly currentLat?: string | number | null;
   readonly currentLng?: string | number | null;
   readonly currentLocationUpdatedAt?: string | null;
-  readonly earnings?: readonly { readonly status: string }[] | null;
   readonly id: string;
   readonly kyc?: { readonly status?: string | null } | null;
-  readonly taxProfile?: { readonly status?: string | null } | null;
   readonly verification?: { readonly status?: string | null } | null;
-};
-
-type PartnerConnectedRecordBank = {
-  readonly accountNumberLast4?: string | null;
-  readonly accountNumberMasked?: string | null;
-  readonly bankName?: string | null;
-  readonly status?: string | null;
 };
 
 type PartnerConnectedRecordPayoutOps = {
@@ -54,7 +45,6 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
   bookingGateAttempts,
   kycEvidence,
   canApproveKyc,
-  primaryBank,
   payoutOps,
 }: {
   readonly provider: PartnerConnectedRecordProvider;
@@ -62,7 +52,6 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
   readonly bookingGateAttempts: readonly PartnerConnectedRecordGateAttempt[];
   readonly kycEvidence: PartnerConnectedRecordKycEvidence;
   readonly canApproveKyc: boolean;
-  readonly primaryBank: PartnerConnectedRecordBank | null;
   readonly payoutOps: PartnerConnectedRecordPayoutOps;
 }): PartnerDetailConnectedRecordLink[] {
   const latestBooking = bookingArchive[0]?.booking;
@@ -72,7 +61,6 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
   );
   const chatRoomCount = bookingArchive.filter((record) => record.booking.chatRoom).length;
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === PARTNER_OPS_NOTE_ACTION);
-  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
 
   return [
     {
@@ -106,22 +94,6 @@ export function buildPartnerConnectedRecordLinks<TBooking extends PartnerBooking
       detail: `${kycEvidence.missingDocuments.length} required document(s) missing approval.`,
       href: '#kyc',
       tone: canApproveKyc ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Withdrawal details',
-      value: primaryBank?.status ?? 'Missing',
-      detail: primaryBank
-        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
-        : 'Collected when wallet withdrawal is requested.',
-      href: '#bank',
-      tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
-    },
-    {
-      label: 'Tax profile optional',
-      value: provider.taxProfile?.status ?? 'Not required',
-      detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
-      href: '#tax',
-      tone: provider.taxProfile?.status === 'REJECTED' ? 'pill-warn' : 'pill-neutral',
     },
     {
       label: 'Location',
@@ -165,12 +137,6 @@ function bookingServiceLabel(booking: PartnerBookingArchiveBooking) {
     })
     .filter(Boolean);
   return labels.length ? labels.join(', ') : 'No service';
-}
-
-function providerHasFirstRevenueSignal(provider: PartnerConnectedRecordProvider) {
-  return (provider.earnings ?? []).some((earning) =>
-    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
-  );
 }
 
 function pillClass(tone: PartnerConnectedRecordPayoutOps['tone']) {

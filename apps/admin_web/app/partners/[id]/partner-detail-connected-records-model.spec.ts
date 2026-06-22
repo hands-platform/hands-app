@@ -5,7 +5,7 @@ import {
 } from './partner-detail-connected-records-model';
 
 describe('partner detail connected records model', () => {
-  it('builds connected record links from booking, compliance, finance, and note evidence', () => {
+  it('builds connected record links from booking, compliance, payout, and note evidence', () => {
     const links = buildPartnerConnectedRecordLinks({
       bookingArchive: buildBookingArchive(),
       bookingGateAttempts: [
@@ -23,11 +23,6 @@ describe('partner detail connected records model', () => {
         blockers: ['Withdrawal address missing'],
         status: 'Payout blocked',
         tone: 'blocked',
-      },
-      primaryBank: {
-        accountNumberMasked: '****6789',
-        bankName: 'VCB',
-        status: 'APPROVED',
       },
       provider: buildProvider(),
     });
@@ -60,7 +55,10 @@ describe('partner detail connected records model', () => {
       tone: 'pill-info',
       value: '1 note(s)',
     });
-    expect(links).toHaveLength(9);
+    expect(links.map((link) => link.label)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional']),
+    );
+    expect(links).toHaveLength(7);
   });
 
   it('builds fallback links when connected evidence is missing', () => {
@@ -77,10 +75,8 @@ describe('partner detail connected records model', () => {
         status: 'Deferred',
         tone: 'pending',
       },
-      primaryBank: null,
       provider: {
         auditLogs: [],
-        earnings: [],
         id: 'partner-empty',
         verification: { status: 'DRAFT' },
       },
@@ -103,16 +99,9 @@ describe('partner detail connected records model', () => {
       tone: 'pill-warn',
       value: 'DRAFT',
     });
-    expect(linkByLabel(links, 'Tax profile optional')).toMatchObject({
-      detail: 'Tax profile does not gate Level 2 approval, matching, or current payout review.',
-      tone: 'pill-neutral',
-      value: 'Not required',
-    });
-    expect(linkByLabel(links, 'Withdrawal details')).toMatchObject({
-      detail: 'Collected when wallet withdrawal is requested.',
-      tone: 'pill-warn',
-      value: 'Missing',
-    });
+    expect(links.map((link) => link.label)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional']),
+    );
   });
 });
 

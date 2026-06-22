@@ -19,7 +19,7 @@ export function PartnerDetailOperatingLedgerSection({ rows }: PartnerDetailOpera
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Compact factual ledger for identity, booking work, chat archive, service pricing, wallet, payout, tax, location, device, and audit evidence."
+      description="Compact factual ledger for identity, booking work, chat archive, service pricing, wallet, payout, location, device, and audit evidence."
       id="partner-operating-ledger"
       resultLabel={`${rows.length} record areas`}
       title="Partner operating ledger"

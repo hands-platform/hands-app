@@ -47,11 +47,6 @@ type PartnerOperatingLedgerProvider = {
   readonly reports?: readonly unknown[] | null;
   readonly sanctions?: readonly unknown[] | null;
   readonly sessions?: readonly unknown[] | null;
-  readonly taxProfile?: {
-    readonly legalName?: string | null;
-    readonly status?: string | null;
-    readonly taxCodeLast4?: string | null;
-  } | null;
   readonly user?: {
     readonly phone?: string | null;
     readonly pushDevices?: readonly { readonly enabled?: boolean | null }[] | null;
@@ -61,14 +56,6 @@ type PartnerOperatingLedgerProvider = {
     readonly status?: string | null;
   } | null;
   readonly verificationLogs?: readonly unknown[] | null;
-};
-
-type PartnerOperatingLedgerBank = {
-  readonly accountHolderName?: string | null;
-  readonly accountNumberLast4?: string | null;
-  readonly accountNumberMasked?: string | null;
-  readonly bankName?: string | null;
-  readonly status?: string | null;
 };
 
 type PartnerOperatingLedgerPayoutOps = {
@@ -89,7 +76,6 @@ type PartnerOperatingLedgerServicePricing = {
 export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchiveBooking>(
   provider: PartnerOperatingLedgerProvider,
   bookingArchive: readonly PartnerBookingArchiveRecord<TBooking>[],
-  primaryBank: PartnerOperatingLedgerBank | null,
   payoutOps: PartnerOperatingLedgerPayoutOps,
   bookingAcceptance: PartnerOperatingLedgerBookingAcceptance,
   providerServicePricing: PartnerOperatingLedgerServicePricing,
@@ -107,7 +93,6 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
   const verificationFileCount = provider.verification?.files?.length ?? 0;
   const documentCount = provider.documents?.length ?? 0;
   const cashDebt = cashFeeDebtAmount(provider);
-  const firstRevenue = providerHasFirstRevenueSignal(provider);
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const sessionCount = provider.sessions?.length ?? 0;
   const deviceCount = provider.devices?.length ?? 0;
@@ -146,24 +131,6 @@ export function buildPartnerOperatingLedger<TBooking extends PartnerBookingArchi
           : 'No files',
       evidence: `${documentCount} typed document(s) / ${verificationFileCount} verification file(s)`,
       href: `/partners/${provider.id}?section=full#documents`,
-    },
-    {
-      area: 'Withdrawal details',
-      status: primaryBank?.status ?? 'MISSING',
-      evidence: primaryBank
-        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${
-            primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
-          }`
-        : 'No bank account row',
-      href: `/partners/${provider.id}?section=full#bank`,
-    },
-    {
-      area: 'Tax profile optional',
-      status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
-      evidence: provider.taxProfile
-        ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
-        : 'Tax profile is not required for Level 2 approval, matching, or current payout review.',
-      href: `/partners/${provider.id}?section=full#tax`,
     },
     {
       area: 'Services',
@@ -237,12 +204,6 @@ function missingApprovedRequiredKycDocuments(provider: PartnerOperatingLedgerPro
       .map((document) => document.type),
   );
   return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
-}
-
-function providerHasFirstRevenueSignal(provider: PartnerOperatingLedgerProvider) {
-  return (provider.earnings ?? []).some((earning) =>
-    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
-  );
 }
 
 function isCashFeeDebt(earning: PartnerOperatingLedgerEarning) {

@@ -548,7 +548,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerOperatingLedger = buildPartnerOperatingLedger(
     provider,
     partnerBookingArchive,
-    primaryBank,
     payoutOps,
     bookingAcceptance,
     providerServicePricing,
@@ -597,7 +596,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     bookingGateAttempts: partnerBookingGateAttempts,
     kycEvidence,
     canApproveKyc,
-    primaryBank,
     payoutOps,
   });
   const filteredActivityCsvHref = buildCsvDataHref(

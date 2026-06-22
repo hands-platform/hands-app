@@ -5,16 +5,10 @@ import {
 } from './partner-detail-operating-ledger-model';
 
 describe('partner detail operating ledger model', () => {
-  it('builds admin operating ledger rows from partner, booking, finance, and app evidence', () => {
+  it('builds admin operating ledger rows from partner, booking, payout, and app evidence', () => {
     const rows = buildPartnerOperatingLedger(
       buildProvider(),
       buildBookingArchive(),
-      {
-        accountHolderName: 'Linh Partner',
-        accountNumberMasked: '****6789',
-        bankName: 'VCB',
-        status: 'APPROVED',
-      },
       {
         blockers: ['Withdrawal address missing'],
         status: 'Payout blocked',
@@ -53,10 +47,13 @@ describe('partner detail operating ledger model', () => {
       evidence: '1 session(s) / 2 device(s)',
       status: '1 push-ready',
     });
-    expect(rows).toHaveLength(13);
+    expect(rows.map((row) => row.area)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional']),
+    );
+    expect(rows).toHaveLength(11);
   });
 
-  it('marks missing identity, KYC, withdrawal, and optional tax evidence without first revenue', () => {
+  it('marks missing identity and KYC evidence without duplicating finance-only rows', () => {
     const rows = buildPartnerOperatingLedger(
       {
         auditLogs: [],
@@ -75,7 +72,6 @@ describe('partner detail operating ledger model', () => {
         verificationLogs: [],
       },
       [],
-      null,
       {
         blockers: [],
         hold: { reason: 'Manual payout check' },
@@ -98,14 +94,9 @@ describe('partner detail operating ledger model', () => {
       evidence: 'Missing: CCCD back side, Selfie verification',
       status: 'KYC review needed',
     });
-    expect(rowByArea(rows, 'Withdrawal details')).toMatchObject({
-      evidence: 'No bank account row',
-      status: 'MISSING',
-    });
-    expect(rowByArea(rows, 'Tax profile optional')).toMatchObject({
-      evidence: 'Tax profile is not required for Level 2 approval, matching, or current payout review.',
-      status: 'NOT_REQUIRED',
-    });
+    expect(rows.map((row) => row.area)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional']),
+    );
   });
 });
 
