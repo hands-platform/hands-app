@@ -21,13 +21,7 @@ describe('customer filters', () => {
     expect(filters.q).toBe('linh');
     expect(filters.country).toBe('VN');
     expect(filters.gender).toBe('female');
-    expect(filters.booking).toBe('');
-    expect(filters.payment).toBe('');
-    expect(filters.seen).toBe('');
     expect(filters.sort).toBe('booking-count-asc');
-    expect(filters.minBookings).toBeNull();
-    expect(filters.minCompleted).toBeNull();
-    expect(filters.minSpend).toBeNull();
     expect(filters.joinedRange).toBe('today');
     expect(filters.joinedFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(filters.joinedTo).toBe(filters.joinedFrom);
@@ -37,6 +31,17 @@ describe('customer filters', () => {
     expect(filters.lastLoginRange).toBe('30d');
     expect(filters.lastLoginFrom).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(filters.lastLoginTo).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    const href = buildCustomerListHref(filters);
+    const activeFilters = buildCustomerActiveFilters(filters);
+
+    expect(href).not.toContain('booking=');
+    expect(href).not.toContain('payment=');
+    expect(href).not.toContain('seen=');
+    expect(href).not.toContain('minBookings=');
+    expect(activeFilters).not.toEqual(expect.arrayContaining([expect.stringContaining('Booking:')]));
+    expect(activeFilters).not.toEqual(expect.arrayContaining([expect.stringContaining('Payment:')]));
+    expect(activeFilters).not.toEqual(expect.arrayContaining([expect.stringContaining('Recent access:')]));
   });
 
   it('keeps custom date values in generated customer links and active chips', () => {

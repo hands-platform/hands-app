@@ -153,7 +153,7 @@ function CustomerDateButtonGroup({
   const showCustomDateRange = activeRange === 'custom';
 
   return (
-    <div className="vuexy-customer-date-filter-group">
+    <div className="booking-date-filter-bar vuexy-customer-date-filter-group">
       <span className="vuexy-customer-filter-group-label">{label}</span>
       <input name={rangeKey} type="hidden" value={activeRange} />
       <div className="booking-date-filter-buttons vuexy-customer-date-buttons" role="group" aria-label={label}>
@@ -191,7 +191,7 @@ function CustomerDateButtonGroup({
 
 function CustomerReservationSortGroup({ filters }: { readonly filters: CustomerFilters }) {
   return (
-    <div className="vuexy-customer-date-filter-group is-compact">
+    <div className="booking-date-filter-bar vuexy-customer-date-filter-group is-compact">
       <span className="vuexy-customer-filter-group-label">Reservation Count</span>
       <div
         className="booking-date-filter-buttons vuexy-customer-date-buttons"

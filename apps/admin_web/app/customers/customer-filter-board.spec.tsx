@@ -85,10 +85,6 @@ describe('CustomerFilterBoard', () => {
 
 function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
   return {
-    address: '',
-    booking: '',
-    bookingFlow: '',
-    chat: '',
     country: '',
     gender: '',
     joinedRange: '',
@@ -100,16 +96,9 @@ function filters(input: Partial<CustomerFilters> = {}): CustomerFilters {
     lastLoginRange: '',
     lastLoginFrom: '',
     lastLoginTo: '',
-    memo: '',
-    minBookings: null,
-    minCompleted: null,
-    minSpend: null,
     page: 1,
     pageSize: 10,
-    payment: '',
     q: '',
-    reachability: '',
-    seen: '',
     sort: 'last-booking',
     ...input,
   };

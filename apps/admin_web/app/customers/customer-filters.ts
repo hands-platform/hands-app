@@ -7,15 +7,8 @@ export type CustomerFilters = {
   page: number;
   pageSize: number;
   q: string;
-  booking: string;
-  bookingFlow: string;
   country: string;
   gender: string;
-  reachability: string;
-  address: string;
-  payment: string;
-  chat: string;
-  memo: string;
   sort: string;
   joinedRange: string;
   joinedFrom: string;
@@ -26,10 +19,6 @@ export type CustomerFilters = {
   lastLoginRange: string;
   lastLoginFrom: string;
   lastLoginTo: string;
-  seen: string;
-  minBookings: number | null;
-  minCompleted: number | null;
-  minSpend: number | null;
 };
 
 export function buildCustomerFilters(params: Record<string, string | string[] | undefined>): CustomerFilters {
@@ -56,15 +45,8 @@ export function buildCustomerFilters(params: Record<string, string | string[] | 
     page: readPageNumber(params.page),
     pageSize: readPageSize(params.pageSize),
     q: readSearchParam(params.q),
-    booking: '',
-    bookingFlow: normalizeCustomerBookingFlowFilter(readSearchParam(params.bookingFlow)),
     country: normalizeCustomerCountryFilter(readSearchParam(params.country)),
     gender: normalizeCustomerGenderFilter(readSearchParam(params.gender)),
-    reachability: readSearchParam(params.reachability),
-    address: readSearchParam(params.address),
-    payment: '',
-    chat: readSearchParam(params.chat),
-    memo: readSearchParam(params.memo),
     sort: readCustomerSort(params.sort),
     joinedRange,
     joinedFrom: joinedDateRange.from,
@@ -75,10 +57,6 @@ export function buildCustomerFilters(params: Record<string, string | string[] | 
     lastLoginRange,
     lastLoginFrom: lastLoginDateRange.from,
     lastLoginTo: lastLoginDateRange.to,
-    seen: '',
-    minBookings: null,
-    minCompleted: null,
-    minSpend: null,
   };
 }
 
@@ -91,13 +69,8 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
   const params = new URLSearchParams();
 
   appendTextParam(params, 'q', next.q);
-  appendTextParam(params, 'bookingFlow', next.bookingFlow);
   appendTextParam(params, 'country', next.country);
   appendTextParam(params, 'gender', next.gender);
-  appendTextParam(params, 'reachability', next.reachability);
-  appendTextParam(params, 'address', next.address);
-  appendTextParam(params, 'chat', next.chat);
-  appendTextParam(params, 'memo', next.memo);
   appendTextParam(params, 'joinedRange', next.joinedRange);
   if (!next.joinedRange || next.joinedRange === 'custom') {
     appendTextParam(params, 'joinedFrom', next.joinedFrom);
@@ -127,30 +100,16 @@ export function buildCustomerListHref(filters: CustomerFilters, overrides: Parti
 }
 
 export function customerSortLabel(sort: string) {
-  if (sort === 'last-work') return 'last completed work';
   if (sort === 'booking-count') return 'reservations many first';
   if (sort === 'booking-count-asc') return 'reservations few first';
-  if (sort === 'completed-count') return 'completed work count';
-  if (sort === 'captured-spend') return 'captured spend';
-  if (sort === 'last-seen') return 'last app session';
-  if (sort === 'joined') return 'first signup date';
-  if (sort === 'name') return 'customer name';
   return 'latest booking progress date';
 }
 
 export function buildCustomerActiveFilters(filters: CustomerFilters) {
   const labels: string[] = [];
   if (filters.q) labels.push(`Search: ${filters.q}`);
-  if (filters.booking) labels.push(`Booking: ${filters.booking}`);
-  if (filters.bookingFlow)
-    labels.push(`Booking flow: ${customerBookingFlowFilterLabel(filters.bookingFlow)}`);
   if (filters.country) labels.push(`Country: ${customerCountryFilterLabel(filters.country)}`);
   if (filters.gender) labels.push(`Gender: ${customerGenderFilterLabel(filters.gender)}`);
-  if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
-  if (filters.address) labels.push(`Address: ${filters.address}`);
-  if (filters.payment) labels.push(`Payment: ${filters.payment}`);
-  if (filters.chat) labels.push(`Chat: ${filters.chat}`);
-  if (filters.memo) labels.push(`Memo: ${filters.memo}`);
   if (filters.joinedRange) {
     labels.push(
       `Sign-up date: ${customerDateRangeFilterLabel(filters.joinedRange, filters.joinedFrom, filters.joinedTo)}`,
@@ -183,7 +142,6 @@ export function buildCustomerActiveFilters(filters: CustomerFilters) {
     if (filters.lastLoginFrom) labels.push(`Last login from: ${filters.lastLoginFrom}`);
     if (filters.lastLoginTo) labels.push(`Last login to: ${filters.lastLoginTo}`);
   }
-  if (filters.seen) labels.push(`Recent access: ${filters.seen}`);
   if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
 }
@@ -235,17 +193,7 @@ function customerDateRangeFilterLabel(range: string, from: string, to: string) {
 
 function readCustomerSort(value: string | string[] | undefined) {
   const sort = readSearchParam(value);
-  return [
-    'last-booking',
-    'last-work',
-    'booking-count',
-    'booking-count-asc',
-    'completed-count',
-    'captured-spend',
-    'last-seen',
-    'joined',
-    'name',
-  ].includes(sort)
+  return ['last-booking', 'booking-count', 'booking-count-asc'].includes(sort)
     ? sort
     : 'last-booking';
 }
@@ -281,21 +229,6 @@ function appendTextParam(params: URLSearchParams, key: string, value: string) {
   }
 }
 
-function normalizeCustomerBookingFlowFilter(value: string) {
-  const allowed = [
-    'open-matching',
-    'first-pick',
-    'customer-choice',
-    'chat-live',
-    'chat-missing',
-    'service-live',
-    'completed-work',
-    'closed-record',
-    'address-snapshot',
-  ];
-  return allowed.includes(value) ? value : '';
-}
-
 function normalizeCustomerCountryFilter(value: string) {
   const normalized = value.toUpperCase();
   const allowed = ['VN', 'KR', 'JP', 'CN', 'SG', 'TH', 'US', 'UNKNOWN'];
@@ -306,21 +239,6 @@ function normalizeCustomerGenderFilter(value: string) {
   const normalized = value.toLowerCase();
   const allowed = ['female', 'male', 'other', 'unknown'];
   return allowed.includes(normalized) ? normalized : '';
-}
-
-function customerBookingFlowFilterLabel(flow: string) {
-  const labels: Record<string, string> = {
-    'open-matching': 'Open matching wait',
-    'first-pick': 'First-pick pending',
-    'customer-choice': 'Customer final choice',
-    'chat-live': 'Chat room opened',
-    'chat-missing': 'Matched but chat missing',
-    'service-live': 'Service in progress',
-    'completed-work': 'Completed work',
-    'closed-record': 'Closed or no-show record',
-    'address-snapshot': 'Address snapshot saved',
-  };
-  return labels[flow] ?? flow;
 }
 
 function customerCountryFilterLabel(country: string) {

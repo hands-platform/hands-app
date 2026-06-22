@@ -35,40 +35,8 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
     ) {
       return false;
     }
-    if (filters.booking === 'active' && row.activeBookings === 0) return false;
-    if (filters.booking === 'completed' && row.completedBookings === 0) return false;
-    if (filters.booking === 'closed' && row.cancelledBookings === 0) return false;
-    if (filters.booking === 'no-booking' && row.bookingCount > 0) return false;
-    if (filters.bookingFlow === 'open-matching' && row.openMatchingBookings === 0) return false;
-    if (filters.bookingFlow === 'first-pick' && row.firstPickBookings === 0) return false;
-    if (filters.bookingFlow === 'customer-choice' && row.customerChoiceBookings === 0) return false;
-    if (filters.bookingFlow === 'chat-live' && row.chatRooms === 0) return false;
-    if (filters.bookingFlow === 'chat-missing' && row.chatMissingBookings === 0) return false;
-    if (filters.bookingFlow === 'service-live' && row.serviceLiveBookings === 0) return false;
-    if (filters.bookingFlow === 'completed-work' && row.completedBookings === 0) return false;
-    if (filters.bookingFlow === 'closed-record' && row.cancelledBookings === 0) return false;
-    if (filters.bookingFlow === 'address-snapshot' && row.addressSnapshotBookings === 0) return false;
     if (filters.country && row.deviceLanguageCountryCode !== filters.country) return false;
     if (filters.gender && row.gender !== filters.gender) return false;
-    if (filters.reachability === 'in-app' && !row.isLive) return false;
-    if (filters.reachability === 'push-ready' && !row.pushReachable) return false;
-    if (filters.reachability === 'no-push' && row.pushReachable) return false;
-    if (filters.reachability === 'no-session' && row.lastSeenAt) return false;
-    if (filters.seen === 'live' && !row.isLive) return false;
-    if (filters.seen === '7d' && !isWithinRecentDays(row.lastSeenAt, 7)) return false;
-    if (filters.seen === '30d' && !isWithinRecentDays(row.lastSeenAt, 30)) return false;
-    if (filters.seen === 'inactive-30d' && isWithinRecentDays(row.lastSeenAt, 30)) return false;
-    if (filters.seen === 'never' && row.lastSeenAt) return false;
-    if (filters.address === 'saved' && row.addressCount === 0) return false;
-    if (filters.address === 'missing' && row.addressCount > 0) return false;
-    if (filters.payment === 'captured' && row.capturedSpend <= 0) return false;
-    if (filters.payment === 'issue' && row.paymentIssues === 0) return false;
-    if (filters.payment === 'refund' && row.refundAmount <= 0) return false;
-    if (filters.payment === 'no-payment' && row.paymentCount > 0) return false;
-    if (filters.chat === 'has-chat' && row.chatRooms === 0) return false;
-    if (filters.chat === 'no-chat' && row.chatRooms > 0) return false;
-    if (filters.memo === 'has-memo' && row.memoCount === 0) return false;
-    if (filters.memo === 'no-memo' && row.memoCount > 0) return false;
     if (filters.joinedFrom && !isOnOrAfterDate(row.joinedAt, filters.joinedFrom)) return false;
     if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
     if (filters.lastBookingFrom && !isOnOrAfterDate(row.lastBookingAt, filters.lastBookingFrom)) return false;
@@ -82,9 +50,6 @@ export function filterCustomerRows(rows: CustomerRow[], filters: CustomerFilters
 export function sortCustomerRows(rows: CustomerRow[], sort: string) {
   const sorted = [...rows];
   sorted.sort((left, right) => {
-    if (sort === 'last-work') {
-      return dateMs(right.lastCompletedAt) - dateMs(left.lastCompletedAt);
-    }
     if (sort === 'booking-count') {
       return (
         right.bookingCount - left.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
@@ -92,26 +57,6 @@ export function sortCustomerRows(rows: CustomerRow[], sort: string) {
     }
     if (sort === 'booking-count-asc') {
       return left.bookingCount - right.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
-    }
-    if (sort === 'completed-count') {
-      return (
-        right.completedBookings - left.completedBookings ||
-        dateMs(right.lastCompletedAt) - dateMs(left.lastCompletedAt)
-      );
-    }
-    if (sort === 'captured-spend') {
-      return (
-        right.capturedSpend - left.capturedSpend || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
-      );
-    }
-    if (sort === 'last-seen') {
-      return dateMs(right.lastSeenAt) - dateMs(left.lastSeenAt);
-    }
-    if (sort === 'joined') {
-      return dateMs(right.joinedAt) - dateMs(left.joinedAt);
-    }
-    if (sort === 'name') {
-      return left.name.localeCompare(right.name);
     }
     return dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
   });
