@@ -3,7 +3,6 @@ import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/adm
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingServiceOptionLabel,
-  coordinateLabel,
   formatDate,
   providerName,
 } from './booking-formatters';
@@ -24,7 +23,7 @@ export function bookingDetailCustomerRows({
     { label: 'Name', value: booking.customerProfile?.user?.fullName ?? 'Customer' },
     { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
     { label: 'Address', value: addressLine },
-    { label: 'Pin', value: addressPin },
+    { label: 'Address snapshot', value: addressPin === 'No pin' ? 'No snapshot saved' : 'Snapshot saved' },
     { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
     { label: 'Expires', value: formatDate(booking.expiresAt) },
   ];
@@ -57,11 +56,11 @@ export function bookingDetailHandoffRows({
     { label: 'Final', value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not selected' },
     { label: 'Final phone', value: booking.selectedProvider?.user?.phone ?? 'No phone' },
     {
-      label: 'Latest Partner pin',
-      value: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet',
+      label: 'Latest Partner location',
+      value: latestPartnerLocationValue(latestLocation),
     },
     {
-      label: 'Latest pin time',
+      label: 'Latest location time',
       value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared',
     },
     { label: 'Location freshness', value: bookingDetailProviderLocationMetricHelper(booking) },
@@ -85,11 +84,19 @@ export function bookingDetailLocationTrailRows(
 
 function locationTrailDisplayValue(snapshot: AdminLocationSnapshot) {
   const address = readAddressText(snapshot);
-  return address ? serviceAddressAreaLabel(address) : coordinateLabel(snapshot.lat, snapshot.lng);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }
 
 function locationTrailDetail(snapshot: AdminLocationSnapshot) {
   const address = readAddressText(snapshot);
-  const coordinate = coordinateLabel(snapshot.lat, snapshot.lng);
-  return address ? `Pin ${coordinate}` : 'Address not recorded for this location snapshot.';
+  return address ? 'Coordinate retained for distance checks.' : 'Address not recorded for this location snapshot.';
+}
+
+function latestPartnerLocationValue(latestLocation?: AdminLocationSnapshot | null) {
+  if (!latestLocation) {
+    return 'No live location yet';
+  }
+
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

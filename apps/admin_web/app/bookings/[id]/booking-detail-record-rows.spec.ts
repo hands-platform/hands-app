@@ -29,7 +29,7 @@ function location(input: Partial<AdminLocationSnapshot> = {}): AdminLocationSnap
 }
 
 describe('booking detail record rows', () => {
-  it('builds customer rows with address, pin, opened, and expiry copy', () => {
+  it('builds customer rows with address snapshot, opened, and expiry copy without exposing coordinates', () => {
     const rows = bookingDetailCustomerRows({
       booking: booking({
         customerProfile: {
@@ -49,13 +49,14 @@ describe('booking detail record rows', () => {
       { label: 'Name', value: 'Mai Customer' },
       { label: 'Phone', value: '+84000000001' },
       { label: 'Address', value: 'District service address' },
-      { label: 'Pin', value: '10.7627, 106.6603' },
+      { label: 'Address snapshot', value: 'Snapshot saved' },
       { label: 'Request opened', value: '14 Jun 2026, 08:15' },
       { label: 'Expires', value: '14 Jun 2026, 10:00' },
     ]);
+    expect(rows.map((row) => row.value).join(' ')).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
   });
 
-  it('builds handoff rows with preferred, final, phone, and latest location copy', () => {
+  it('builds handoff rows with preferred, final, phone, and latest location copy without exposing coordinates', () => {
     const latestLocation = location({ recordedAt: '2999-01-01T00:00:00.000Z' });
     const input = booking({
       preferredProvider: {
@@ -80,10 +81,11 @@ describe('booking detail record rows', () => {
       { label: 'Preferred', value: 'Preferred Partner' },
       { label: 'Final', value: 'Linh Partner' },
       { label: 'Final phone', value: '+84987654321' },
-      { label: 'Latest Partner pin', value: '10.7627, 106.6603' },
-      { label: 'Latest pin time', value: '1 Jan 2999, 07:00' },
+      { label: 'Latest Partner location', value: 'Location recorded without readable address' },
+      { label: 'Latest location time', value: '1 Jan 2999, 07:00' },
       { label: 'Location freshness', value: 'Updated just now' },
     ]);
+    expect(rows.map((row) => row.value).join(' ')).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
   });
 
   it('builds service rows from the loaded booking service snapshot', () => {
@@ -126,7 +128,7 @@ describe('booking detail record rows', () => {
       {
         badge: 'Live',
         badgeTone: 'pill-neutral',
-        coordinate: '10.7627, 106.6603',
+        coordinate: 'Location recorded without readable address',
         detail: 'Address not recorded for this location snapshot.',
         id: 'trail-1',
         label: 'Partner live snapshot',
@@ -152,7 +154,7 @@ describe('booking detail record rows', () => {
         badge: 'Action',
         badgeTone: 'pill-info',
         coordinate: 'District 1, Ho Chi Minh City',
-        detail: 'Pin 10.7627, 106.6603',
+        detail: 'Coordinate retained for distance checks.',
         id: 'action-trail-1',
         label: 'Booking action snapshot',
         recordedAt: '14 Jun 2026, 09:00',
