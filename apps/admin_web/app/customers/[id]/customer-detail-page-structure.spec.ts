@@ -19,6 +19,14 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('AdminRoundedPagination');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
 
+    const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');
+    const bookingBoardStart = pageSource.indexOf('<CustomerBookingOperationBoard');
+    const accountBandStart = pageSource.indexOf('title="Customer account and balance"');
+    expect(operatingBandStart).toBeGreaterThan(-1);
+    expect(bookingBoardStart).toBeGreaterThan(operatingBandStart);
+    expect(accountBandStart).toBeGreaterThan(bookingBoardStart);
+    expect(pageSource.slice(operatingBandStart, bookingBoardStart)).toContain('</CustomerDetailSectionBand>');
+
     expect(pageSource).not.toContain('Customer operations digest');
     expect(pageSource).not.toContain('Customer connected operations records');
     expect(pageSource).not.toContain('Customer full record index');

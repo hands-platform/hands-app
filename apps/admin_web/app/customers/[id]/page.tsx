@@ -504,6 +504,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           statusBadges={overviewStatusBadges}
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
         />
+      </CustomerDetailSectionBand>
 
       <CustomerBookingOperationBoard
         basePath={`/customers/${id}`}
@@ -780,7 +781,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </AdminFormControlButton>
         </form>
       </section>
-      </CustomerDetailSectionBand>
 
       <CustomerDetailSectionBand
         eyebrow="Account"
