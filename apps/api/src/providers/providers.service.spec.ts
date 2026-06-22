@@ -1,4 +1,5 @@
 import {
+  BookingStatus,
   ProviderStatus,
   VerificationStatus,
   ProviderKycStatus,
@@ -163,9 +164,10 @@ describe('ProvidersService nearby discovery', () => {
 describe('ProvidersService location updates', () => {
   it('links action-time partner location snapshots to the booking context', async () => {
     const setProviderLocation = jest.fn();
+    const getProviderLocation = jest.fn().mockResolvedValue(null);
     const prisma = {
       booking: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.IN_SERVICE }),
       },
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue({
@@ -183,7 +185,7 @@ describe('ProvidersService location updates', () => {
     };
     const service = new ProvidersService(
       prisma as never,
-      { setProviderLocation } as never,
+      { getProviderLocation, setProviderLocation } as never,
       { get: jest.fn() } as never,
     );
 
@@ -202,7 +204,7 @@ describe('ProvidersService location updates', () => {
           { participants: { some: { providerProfileId: 'partner-1' } } },
         ],
       },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     expect(prisma.providerProfile.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -248,6 +250,76 @@ describe('ProvidersService location updates', () => {
       }),
     ).rejects.toThrow('Partner location booking context is invalid');
     expect(prisma.providerProfile.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects booking-linked partner locations after the booking is no longer active', async () => {
+    const prisma = {
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED }),
+      },
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          blockedAt: null,
+          blockedReason: null,
+        }),
+        update: jest.fn(),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      { getProviderLocation: jest.fn(), setProviderLocation: jest.fn() } as never,
+      { get: jest.fn() } as never,
+    );
+
+    await expect(
+      service.updateLocation('provider-user-1', {
+        bookingId: 'booking-1',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    ).rejects.toThrow('Partner location booking context is inactive');
+    expect(prisma.providerProfile.update).not.toHaveBeenCalled();
+  });
+
+  it('skips too-frequent idle partner location writes before touching Postgres', async () => {
+    const now = new Date();
+    const getProviderLocation = jest.fn().mockResolvedValue({
+      lat: 10.7769,
+      lng: 106.7009,
+      recordedAt: now.toISOString(),
+    });
+    const setProviderLocation = jest.fn();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'partner-1',
+          blockedAt: null,
+          blockedReason: null,
+          currentLocationUpdatedAt: now,
+        }),
+        update: jest.fn(),
+      },
+    };
+    const service = new ProvidersService(
+      prisma as never,
+      { getProviderLocation, setProviderLocation } as never,
+      { get: jest.fn() } as never,
+    );
+
+    const result = await service.updateLocation('provider-user-1', {
+      lat: 10.7769,
+      lng: 106.701,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        locationUpdated: false,
+        locationUpdateSkippedReason: 'TOO_FREQUENT_IDLE_LOCATION_UPDATE',
+      }),
+    );
+    expect(prisma.providerProfile.update).not.toHaveBeenCalled();
+    expect(setProviderLocation).not.toHaveBeenCalled();
   });
 });
 

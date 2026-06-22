@@ -2,6 +2,7 @@ import {
   PARTNER_ACTIVE_LOCATION_MIN_INTERVAL_MINUTES,
   PARTNER_IDLE_LOCATION_MIN_DISTANCE_METERS,
   PARTNER_IDLE_LOCATION_MIN_INTERVAL_MINUTES,
+  isVietnamServiceAreaCoordinate,
   providerLocationUpdateDecision,
 } from './location-update-policy';
 
@@ -100,5 +101,12 @@ describe('providerLocationUpdateDecision', () => {
     });
 
     expect(decision).toEqual({ allowed: true });
+  });
+
+  it('identifies coordinates inside the active Vietnam service area only', () => {
+    expect(isVietnamServiceAreaCoordinate(10.7769, 106.7009)).toBe(true);
+    expect(isVietnamServiceAreaCoordinate(21.0278, 105.8342)).toBe(true);
+    expect(isVietnamServiceAreaCoordinate(37.5665, 126.978)).toBe(false);
+    expect(isVietnamServiceAreaCoordinate(Number.NaN, 106.7009)).toBe(false);
   });
 });

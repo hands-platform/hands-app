@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { isVietnamServiceAreaCoordinate } from './location-update-policy';
 
 @Injectable()
 export class LocationsService {
@@ -15,7 +16,7 @@ export class LocationsService {
     if (!Number.isFinite(input.lat) || !Number.isFinite(input.lng)) {
       throw new BadRequestException('lat and lng are required');
     }
-    if (!isVietnamCoordinate(input.lat, input.lng)) {
+    if (!isVietnamServiceAreaCoordinate(input.lat, input.lng)) {
       throw new BadRequestException('Selected location must be inside Vietnam');
     }
     if (!input.addressText?.trim()) {
@@ -36,8 +37,4 @@ export class LocationsService {
       },
     });
   }
-}
-
-function isVietnamCoordinate(lat: number, lng: number) {
-  return lat >= 8.0 && lat <= 24.0 && lng >= 102.0 && lng <= 110.0;
 }

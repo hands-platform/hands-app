@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BookingStatus,
   FilePurpose,
   FileReviewStatus,
   FileUploadStatus,
@@ -17,6 +18,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 import { safeDistanceMeters } from '../matching/matching.policy';
+import {
+  isVietnamServiceAreaCoordinate,
+  providerLocationUpdateDecision,
+} from '../locations/location-update-policy';
 
 const REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -27,6 +32,12 @@ const DEFAULT_BROWSE_COORDINATE = {
   lat: 10.7769,
   lng: 106.7009,
 };
+const ACTIVE_PROVIDER_LOCATION_BOOKING_STATUSES = new Set<BookingStatus>([
+  BookingStatus.MATCHED,
+  BookingStatus.PROVIDER_ON_THE_WAY,
+  BookingStatus.ARRIVED,
+  BookingStatus.IN_SERVICE,
+]);
 
 @Injectable()
 export class ProvidersService {
@@ -331,10 +342,25 @@ export class ProvidersService {
     assertVietnamCoordinate(input.lat, input.lng, 'Partner location must be inside Vietnam');
     const bookingId = normalizeOptional(input.bookingId);
     const addressText = normalizeOptional(input.addressText);
+    let hasActiveBookingContext = false;
     if (bookingId) {
-      await this.assertProviderLocationBookingContext(provider.id, bookingId);
+      hasActiveBookingContext = await this.assertProviderLocationBookingContext(provider.id, bookingId);
     }
     const recordedAt = new Date();
+    const decision = providerLocationUpdateDecision({
+      previous: await this.redisState.getProviderLocation(provider.id),
+      next: { lat: input.lat, lng: input.lng },
+      now: recordedAt,
+      hasActiveBookingContext,
+    });
+    if (!decision.allowed) {
+      return {
+        ...provider,
+        currentLocationUpdatedAt: provider.currentLocationUpdatedAt?.toISOString() ?? null,
+        locationUpdated: false,
+        locationUpdateSkippedReason: decision.reason,
+      };
+    }
     const updated = await this.prisma.providerProfile.update({
       where: { id: provider.id },
       data: {
@@ -369,11 +395,15 @@ export class ProvidersService {
           { participants: { some: { providerProfileId } } },
         ],
       },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (!booking) {
       throw new BadRequestException('Partner location booking context is invalid');
     }
+    if (!ACTIVE_PROVIDER_LOCATION_BOOKING_STATUSES.has(booking.status)) {
+      throw new BadRequestException('Partner location booking context is inactive');
+    }
+    return true;
   }
 
   async listServices(userId: string | undefined) {
@@ -564,7 +594,7 @@ export class ProvidersService {
 
 function assertVietnamCoordinate(lat: number, lng: number, message: string) {
   assertCoordinate(lat, lng, message);
-  if (!isVietnamCoordinate(lat, lng)) {
+  if (!isVietnamServiceAreaCoordinate(lat, lng)) {
     throw new BadRequestException(message);
   }
 }
@@ -612,10 +642,6 @@ function assertProviderServicePrice(service: { basePrice: number; priceStep: num
   if (price % service.priceStep !== 0) {
     throw new BadRequestException(`Partner service price must use ${service.priceStep} VND increments`);
   }
-}
-
-function isVietnamCoordinate(lat: number, lng: number) {
-  return lat >= 8.0 && lat <= 24.0 && lng >= 102.0 && lng <= 110.0;
 }
 
 function normalizeRequired(value: string | undefined, message: string) {

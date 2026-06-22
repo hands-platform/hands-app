@@ -3,6 +3,12 @@ export const PARTNER_IDLE_LOCATION_MIN_DISTANCE_METERS = 3000;
 export const PARTNER_ACTIVE_LOCATION_MIN_INTERVAL_MINUTES = 30;
 export const PARTNER_LOCATION_STALE_AFTER_MINUTES = 90;
 export const PROVIDER_LOCATION_TTL_SECONDS = PARTNER_LOCATION_STALE_AFTER_MINUTES * 60;
+export const VIETNAM_SERVICE_AREA_BOUNDS = {
+  minLat: 8.0,
+  maxLat: 24.0,
+  minLng: 102.0,
+  maxLng: 110.0,
+} as const;
 
 export type ProviderLocationUpdateDeniedReason =
   | 'TOO_FREQUENT_IDLE_LOCATION_UPDATE'
@@ -53,6 +59,17 @@ export function providerLocationUpdateDecision(
   return movedMeters >= PARTNER_IDLE_LOCATION_MIN_DISTANCE_METERS
     ? { allowed: true }
     : { allowed: false, reason: 'TOO_FREQUENT_IDLE_LOCATION_UPDATE' };
+}
+
+export function isVietnamServiceAreaCoordinate(lat: number, lng: number) {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= VIETNAM_SERVICE_AREA_BOUNDS.minLat &&
+    lat <= VIETNAM_SERVICE_AREA_BOUNDS.maxLat &&
+    lng >= VIETNAM_SERVICE_AREA_BOUNDS.minLng &&
+    lng <= VIETNAM_SERVICE_AREA_BOUNDS.maxLng
+  );
 }
 
 function distanceMeters(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {

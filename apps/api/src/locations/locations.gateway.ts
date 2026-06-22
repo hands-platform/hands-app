@@ -14,7 +14,10 @@ import { SOCKET_ROOMS } from '../common/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { corsOriginFromEnv } from '../security/cors-origin';
-import { providerLocationUpdateDecision } from './location-update-policy';
+import {
+  isVietnamServiceAreaCoordinate,
+  providerLocationUpdateDecision,
+} from './location-update-policy';
 
 const ACTIVE_BOOKING_LOCATION_STATUSES = new Set<BookingStatus>([
   BookingStatus.MATCHED,
@@ -25,7 +28,7 @@ const ACTIVE_BOOKING_LOCATION_STATUSES = new Set<BookingStatus>([
 
 type ParsedProviderLocationPayload =
   | { ok: true; bookingId?: string; lat: number; lng: number }
-  | { ok: false; error: 'INVALID_LOCATION_PAYLOAD' };
+  | { ok: false; error: 'INVALID_LOCATION_PAYLOAD' | 'LOCATION_OUTSIDE_SERVICE_AREA' };
 
 function parseProviderLocationPayload(payload: {
   bookingId?: unknown;
@@ -40,6 +43,9 @@ function parseProviderLocationPayload(payload: {
   }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };
+  }
+  if (!isVietnamServiceAreaCoordinate(lat, lng)) {
+    return { ok: false, error: 'LOCATION_OUTSIDE_SERVICE_AREA' };
   }
   if (payload.bookingId !== undefined && typeof payload.bookingId !== 'string') {
     return { ok: false, error: 'INVALID_LOCATION_PAYLOAD' };

@@ -42,6 +42,19 @@ describe('LocationsGateway provider location updates', () => {
     expect(redisState.setProviderLocation).not.toHaveBeenCalled();
   });
 
+  it('rejects provider location updates outside the Vietnam service area', async () => {
+    const { gateway, redisState, prisma } = createGateway();
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      lat: 37.5665,
+      lng: 126.978,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'LOCATION_OUTSIDE_SERVICE_AREA' });
+    expect(prisma.providerProfile.findUnique).not.toHaveBeenCalled();
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+  });
+
   it('does not write provider location state for forbidden booking-specific updates', async () => {
     const { gateway, redisState, prisma, emit } = createGateway();
     prisma.booking.findFirst.mockResolvedValue(null);
