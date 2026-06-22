@@ -128,42 +128,50 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const providerPagination = paginatePartnerRows(providers, filters);
   const visibleProviders = providerPagination.rows;
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
-  const summary = buildProviderSummary(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const commandCenter = buildProviderCommandCenter(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const reviewQueue = buildProviderReviewQueue(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const priorityLane = buildProviderPriorityLane(providers, opsPolicy, {
-    displayName: providerDisplayName,
-    nextAction: nextProviderListAction,
-  });
-  const priorityLaneItems = buildPartnerChecklistLaneItems(priorityLane.items, {
-    displayName: providerDisplayName,
-  });
-  const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy, {
-    dispatchReady: providerDispatchReady,
-    hasHardAcceptanceBlocker: partnerHasHardAcceptanceBlocker,
-  });
-  const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(
-    providers,
-    opsPolicy,
-    PARTNER_LIST_QUERY_DEPS,
-  );
-  const kycReviewBoard = buildPartnerKycReviewBoard(providers, providerDisplayName);
-  const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy, {
-    displayName: providerDisplayName,
-    dispatchReady: providerDispatchReady,
-  });
   const activeFilters = buildProviderActiveFilters(filters);
   const showDeepPartnerOpsSections = shouldRenderPartnerDeepOpsSections(filters.review);
   const showPartnerOperationsList = shouldRenderPartnerOperationsList(filters.review);
-  const filterSummary = buildPartnerFilterSummary(
-    providers,
-    allProviders,
-    opsPolicy,
-    activeFilters.length,
-    PARTNER_LIST_QUERY_DEPS,
-  );
+  const deepPartnerOps = showDeepPartnerOpsSections
+    ? (() => {
+        const priorityLane = buildProviderPriorityLane(providers, opsPolicy, {
+          displayName: providerDisplayName,
+          nextAction: nextProviderListAction,
+        });
+
+        return {
+          acceptanceBlockerBoard: buildPartnerAcceptanceBlockerBoard(
+            providers,
+            opsPolicy,
+            PARTNER_LIST_QUERY_DEPS,
+          ),
+          commandCenter: buildProviderCommandCenter(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS),
+          dailyActionQueue: buildPartnerDailyActionQueue(providers, opsPolicy, {
+            displayName: providerDisplayName,
+            dispatchReady: providerDispatchReady,
+          }),
+          dispatchForecast: buildPartnerDispatchForecast(providers, opsPolicy, {
+            dispatchReady: providerDispatchReady,
+            hasHardAcceptanceBlocker: partnerHasHardAcceptanceBlocker,
+          }),
+          dispatchHandoff: buildPartnerDispatchHandoff(allProviders, opsPolicy, PARTNER_LIST_QUERY_DEPS),
+          filterSummary: buildPartnerFilterSummary(
+            providers,
+            allProviders,
+            opsPolicy,
+            activeFilters.length,
+            PARTNER_LIST_QUERY_DEPS,
+          ),
+          kycReviewBoard: buildPartnerKycReviewBoard(providers, providerDisplayName),
+          priorityLane,
+          priorityLaneItems: buildPartnerChecklistLaneItems(priorityLane.items, {
+            displayName: providerDisplayName,
+          }),
+          reviewQueue: buildProviderReviewQueue(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS),
+          shiftHandoff: buildPartnerShiftHandoff(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS),
+          summary: buildProviderSummary(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS),
+        };
+      })()
+    : null;
   const partnerExportFilterLabel =
     activeFilters.length > 0 ? activeFilters.map((filter) => filter.label).join(' | ') : 'All partners';
   const partnerExportFileSlug = buildPartnerExportSlug(filters);
@@ -173,12 +181,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       canAcceptBookingNow: partnerCanAcceptBookingNow,
     }),
   );
-  const directReadyPartnerCount = providers.filter((provider) =>
-    partnerCanAcceptBookingNow(provider, opsPolicy),
-  ).length;
-  const settlementWarningPartnerCount = providers.filter(
-    (provider) => providerUnsettledWalletBalance(provider) < 0,
-  ).length;
+  const directReadyPartnerCount = showPartnerOperationsList
+    ? providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length
+    : 0;
+  const settlementWarningPartnerCount = showPartnerOperationsList
+    ? providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length
+    : 0;
   const partnerMasterRows = visibleProviders.map((provider) =>
     buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
   );
@@ -277,7 +285,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         showAdvancedFilters={showAdvancedPartnerFilters}
         totalCount={providers.length}
       />
-      {showDeepPartnerOpsSections ? (
+      {deepPartnerOps ? (
         <>
           <section className="card admin-mb-16">
             <div className="ops-section-header">
@@ -291,7 +299,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
             </div>
             <div className="service-trace-summary admin-mt-14">
-              {filterSummary.map((item) => (
+              {deepPartnerOps.filterSummary.map((item) => (
                 <div key={item.label}>
                   <span>{item.label}</span>
                   <strong>{item.value}</strong>
@@ -307,7 +315,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </div>
           </section>
           <div className="grid admin-mb-16">
-            {summary.map(([label, value]) => (
+            {deepPartnerOps.summary.map(([label, value]) => (
               <div className="card" key={label}>
                 <p>{label}</p>
                 <h2>{value}</h2>
@@ -330,20 +338,26 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           totalPartnerCount={providers.length}
         />
       ) : null}
-      {showDeepPartnerOpsSections ? (
+      {deepPartnerOps ? (
         <>
-          <PartnerChecklistWorkQueueSection partnerName={providerDisplayName} queue={dailyActionQueue} />
-          <PartnerDispatchHandoffSection handoff={dispatchHandoff} />
-          <PartnerShiftHandoffSection handoff={shiftHandoff} />
-          <PartnerCommandCenterSection lanes={commandCenter} />
-          <PartnerMarketplaceHoldBoardSection board={acceptanceBlockerBoard} />
-          <PartnerKycReviewBoardSection board={kycReviewBoard} />
+          <PartnerChecklistWorkQueueSection
+            partnerName={providerDisplayName}
+            queue={deepPartnerOps.dailyActionQueue}
+          />
+          <PartnerDispatchHandoffSection handoff={deepPartnerOps.dispatchHandoff} />
+          <PartnerShiftHandoffSection handoff={deepPartnerOps.shiftHandoff} />
+          <PartnerCommandCenterSection lanes={deepPartnerOps.commandCenter} />
+          <PartnerMarketplaceHoldBoardSection board={deepPartnerOps.acceptanceBlockerBoard} />
+          <PartnerKycReviewBoardSection board={deepPartnerOps.kycReviewBoard} />
           <PartnerDispatchForecastSection
-            forecast={dispatchForecast}
+            forecast={deepPartnerOps.dispatchForecast}
             staleLocationMinutes={opsPolicy.staleLocationMinutes}
           />
-          <PartnerReviewQueueSection queue={reviewQueue} />
-          <PartnerChecklistLaneSection blockedCount={priorityLane.blockedCount} items={priorityLaneItems} />
+          <PartnerReviewQueueSection queue={deepPartnerOps.reviewQueue} />
+          <PartnerChecklistLaneSection
+            blockedCount={deepPartnerOps.priorityLane.blockedCount}
+            items={deepPartnerOps.priorityLaneItems}
+          />
           <PartnerLegacyOperationsTableSection
             emptyMessage={emptyProviderMessage(activeFilters)}
             hiddenPartnerCount={hiddenProviderCount}
