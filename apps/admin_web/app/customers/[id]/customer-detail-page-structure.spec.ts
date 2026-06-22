@@ -72,5 +72,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('buildCustomerDailyActivityDigest');
     expect(pageSource).not.toContain('CustomerDailyActivityDigest');
     expect(pageSource).not.toContain('Latest support rows');
+    expect(pageSource).not.toContain("booking.payment?.status ?? 'No payment'");
+    expect(pageSource).not.toContain("formatMoney(Number(booking.payment.amount ?? 0))");
+    expect(pageSource).not.toContain('booking.chatRoom.messages?.length ?? 0');
   });
 });

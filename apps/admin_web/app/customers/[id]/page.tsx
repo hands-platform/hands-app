@@ -112,8 +112,6 @@ const CUSTOMER_BOOKING_HISTORY_HEADERS = [
   'Service',
   'Status',
   'Partner',
-  'Payment',
-  'Chat',
   'Open',
 ] as const;
 const CUSTOMER_CHAT_RETENTION_HEADERS = [
@@ -853,7 +851,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       >
       <AdminFilterPanel
         className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-history-section"
-        description="All loaded bookings with Partner, service, payment, refund, review, and chat state."
+        description="All loaded bookings with Partner, service, and booking status. Payment, refund, and chat evidence stay in the dedicated ledgers below."
         id="booking-history"
         resultLabel={`${filteredBookings.length} bookings`}
         resultTone="info"
@@ -887,29 +885,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 </td>
                 <td>{bookingPartnerDisplayName(booking)}</td>
                 <td>
-                  <strong>{booking.payment?.status ?? 'No payment'}</strong>
-                  <p className="muted">
-                    {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
-                  </p>
-                </td>
-                <td>
-                  <strong>
-                    {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
-                  </strong>
-                  <p className="muted">{bookingChatArchiveLabel(booking)}</p>
-                </td>
-                <td>
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
                     Booking
                   </Link>
-                  {booking.chatRoom ? (
-                    <Link
-                      className="text-link admin-ml-10"
-                      href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
-                    >
-                      Chat archive
-                    </Link>
-                  ) : null}
                 </td>
               </tr>
             ))}
