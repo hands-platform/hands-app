@@ -297,7 +297,7 @@ function marketplaceLocationFreshnessPosture(
       : 'Only recently refreshed partner locations are eligible for distance-sensitive marketplace matching.',
     operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
     alignedAction:
-      'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
+      'Freshness is at the 90-minute stale-location baseline; idle updates remain cost-controlled.',
     className: looser ? 'ops-task-pending' : 'ops-task-done',
     pillClass: looser ? 'pill-warn' : 'pill-success',
   };
@@ -423,7 +423,7 @@ function bookingCurrentLocationFreshnessPosture(
       'This controls how recent optional customer GPS evidence is retained when the app can provide it.',
     operatorAction:
       'Verify address search and optional current-location capture before changing evidence freshness.',
-    alignedAction: 'Optional customer GPS evidence matches the 10 minute support-evidence baseline.',
+    alignedAction: 'Optional customer GPS evidence matches the 15 minute support-evidence baseline.',
     className: looser ? 'ops-task-pending' : 'ops-task-done',
     pillClass: looser ? 'pill-warn' : 'pill-success',
   };

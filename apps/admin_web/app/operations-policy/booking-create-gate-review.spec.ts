@@ -74,6 +74,8 @@ describe('booking create gate review builder', () => {
       ),
     ).toEqual(
       expect.objectContaining({
+        current: '15 min',
+        defaultValue: '15 min',
         evidence: '2 historical row(s)',
         pillClass: 'pill-success',
       }),

@@ -188,12 +188,12 @@ function buildBookingCreateGateRows(
       key: OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes,
       gate: 'Optional GPS freshness',
       current: `${policy.freshnessMinutes} min`,
-      defaultValue: '10 min',
+      defaultValue: '15 min',
       operatorMeaning:
         'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
       evidence: `${bookingCreateGateCustomerGpsRejectCount(reasonCounts)} historical row(s)`,
       href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
-      pillClass: policy.freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
+      pillClass: policy.freshnessMinutes === 15 ? 'pill-success' : 'pill-warn',
     },
   ];
 }

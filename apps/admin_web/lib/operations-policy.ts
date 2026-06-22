@@ -41,7 +41,7 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   marketplaceInvitationLimit: 50,
   bookingMaxCustomerCurrentToAddressKm: 50,
   bookingMaxPreferredPartnerDistanceKm: 50,
-  bookingCurrentLocationFreshnessMinutes: 10,
+  bookingCurrentLocationFreshnessMinutes: 15,
   marketplaceOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
   // Compatibility alias for older saved policy snapshots and Admin pages.
   backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',

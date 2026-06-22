@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   BACKUP_OPEN_IMMEDIATE,
+  DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
   DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
   DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
   DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
@@ -52,6 +53,8 @@ describe('matching policy', () => {
     expect(policy.bookingDistanceGateEnabled).toBe(true);
     expect(policy.bookingServiceAreaRequired).toBe(true);
     expect(policy.bookingMaxCustomerCurrentToAddressKm).toBe(50);
+    expect(policy.bookingCurrentLocationFreshnessMinutes).toBe(15);
+    expect(DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES).toBe(15);
   });
 
   it('freezes booking match source contract values for API and Admin audit consumers', () => {
