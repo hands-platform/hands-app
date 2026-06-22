@@ -1001,7 +1001,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
       <AdminFilterPanel
         className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-ops-ledger-section"
-        description="Booking-level notes, staff tasks, and closeout context linked to this customer."
+        description="Booking-level notes, staff tasks, and closeout context linked to this customer. Full chat transcripts stay in Chat history below."
         id="customer-booking-ops-ledger"
         resultLabel={`${customerBookingOpsLedgerRows.length} booking note row(s)`}
         resultTone="info"
@@ -1037,11 +1037,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <Link className="text-link" href={row.bookingHref}>
                     Booking
                   </Link>
-                  {row.chatHref ? (
-                    <Link className="text-link admin-ml-10" href={row.chatHref}>
-                      Chat
-                    </Link>
-                  ) : null}
                 </td>
               </tr>
             ))}
