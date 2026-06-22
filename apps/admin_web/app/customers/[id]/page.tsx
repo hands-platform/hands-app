@@ -1098,6 +1098,8 @@ function buildCustomerBookingOperationRows(
       partnerHelper: customerBookingPartnerHelper(selectedPartner, preferredPartner, participantCount),
       partnerHref: partnerId ? `/partners/${partnerId}` : null,
       partnerLabel: partnerId ? bookingPartnerDisplayName(booking) : 'No Partner selected',
+      paymentDetailLabel: customerBookingPaymentDetailLabel(booking),
+      paymentTypeLabel: customerBookingPaymentTypeLabel(booking),
       requestTimeLabel: formatDate(bookingRequestOpenedAt(booking)),
       serviceLabel: bookingServiceLabel(booking),
       servicePriceLabel: formatMoney(bookingTotal(booking)),
@@ -1106,6 +1108,35 @@ function buildCustomerBookingOperationRows(
       stateTone: bookingStatusPillClass(booking.status),
     };
   });
+}
+
+function customerBookingPaymentTypeLabel(booking: AdminBookingDetail) {
+  const method = booking.payment?.method?.toUpperCase();
+
+  switch (method) {
+    case 'CASH':
+      return 'Cash';
+    case 'MOMO':
+    case 'WALLET':
+    case 'ZALOPAY':
+      return 'Wallet';
+    case 'CARD':
+    case 'VNPAY':
+      return 'Card';
+    default:
+      return method ? displayMarketplaceText(method) : 'No payment';
+  }
+}
+
+function customerBookingPaymentDetailLabel(booking: AdminBookingDetail) {
+  if (!booking.payment) {
+    return 'No payment row';
+  }
+
+  return `${booking.payment.status} / ${formatMoney(
+    Number(booking.payment.amount ?? 0),
+    booking.payment.currency ?? 'VND',
+  )}`;
 }
 
 function readCustomerBookingOperationPage(

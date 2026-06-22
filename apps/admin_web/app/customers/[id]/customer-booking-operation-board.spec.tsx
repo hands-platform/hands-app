@@ -22,6 +22,9 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).toContain('Partner Cancellations');
     expect(rendered).toContain('Showing 1 to 10 of 11 entries');
     expect(rendered).toContain('Smoke Partner');
+    expect(rendered).toContain('Payment Type');
+    expect(rendered).toContain('Wallet');
+    expect(rendered).toContain('CAPTURED / 500.000 VND');
     expect(rendered).not.toContain('Open');
     expect(rendered).not.toContain('View');
     expect(classNamesIn(board)).toEqual(
@@ -72,6 +75,8 @@ function group(key: string, title: string, description: string): CustomerBooking
         partnerHelper: 'Selected Partner / 2 participating',
         partnerHref: '/partners/partner-1',
         partnerLabel: 'Smoke Partner',
+        paymentDetailLabel: 'CAPTURED / 500.000 VND',
+        paymentTypeLabel: 'Wallet',
         requestTimeLabel: '19 Jun 2026, 09:30',
         serviceLabel: 'Aromatherapy Massage / 90 min',
         servicePriceLabel: '500.000 VND',

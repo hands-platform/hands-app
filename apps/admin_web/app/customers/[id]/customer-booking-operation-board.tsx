@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Eye } from 'lucide-react';
 import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
@@ -22,6 +23,8 @@ export type CustomerBookingOperationRow = {
   readonly partnerHelper: string;
   readonly partnerHref: string | null;
   readonly partnerLabel: string;
+  readonly paymentDetailLabel: string;
+  readonly paymentTypeLabel: string;
   readonly requestTimeLabel: string;
   readonly serviceLabel: string;
   readonly servicePriceLabel: string;
@@ -47,6 +50,7 @@ const CUSTOMER_BOOKING_OPERATION_HEADERS = [
   'Booking',
   'Service Type',
   'Partner',
+  'Payment Type',
   'Address',
   'State',
 ] as const;
@@ -142,9 +146,12 @@ function CustomerBookingOperationSection({
               <span className="muted">{row.requestTimeLabel}</span>
             </td>
             <td>
-              <Link className="text-link" href={row.bookingHref}>
-                <strong>{row.bookingLabel}</strong>
-              </Link>
+              <div className="vuexy-booking-id-line">
+                <Link className="text-link" href={row.bookingHref} title="Open booking detail">
+                  <Eye aria-hidden="true" size={14} />
+                  <strong>{row.bookingLabel}</strong>
+                </Link>
+              </div>
               <p className="muted">{row.bookingHelper}</p>
             </td>
             <td>
@@ -162,6 +169,10 @@ function CustomerBookingOperationSection({
                 label={row.partnerLabel}
                 linkClassName="vuexy-booking-person-link"
               />
+            </td>
+            <td>
+              <span className="pill pill-neutral">{row.paymentTypeLabel}</span>
+              <p className="muted">{row.paymentDetailLabel}</p>
             </td>
             <td>{row.addressLabel}</td>
             <td>
