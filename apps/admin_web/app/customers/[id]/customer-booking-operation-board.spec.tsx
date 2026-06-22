@@ -24,7 +24,7 @@ describe('CustomerBookingOperationBoard', () => {
     expect(rendered).toContain('Smoke Partner');
     expect(classNamesIn(board)).toEqual(
       expect.arrayContaining([
-        'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',
+        'card admin-filter-panel booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section',
         'table vuexy-data-table vuexy-booking-table',
         'vuexy-booking-pagination',
         'vuexy-booking-avatar is-partner',

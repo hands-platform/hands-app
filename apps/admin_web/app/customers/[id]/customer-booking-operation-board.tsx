@@ -124,7 +124,7 @@ function CustomerBookingOperationSection({
 
   return (
     <AdminFilterPanel
-      className="booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section"
+      className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-operation-section"
       description={group.description}
       id={sectionId}
       resultLabel={`${group.rows.length} booking(s)`}

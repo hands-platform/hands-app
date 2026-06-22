@@ -7632,6 +7632,15 @@ textarea:focus-visible {
   scrollbar-gutter: stable;
 }
 
+.customer-detail-page .customer-detail-section-band .customer-booking-operation-section {
+  max-height: none;
+  overflow: visible;
+}
+
+.customer-detail-page .customer-booking-operation-section .admin-filter-panel-body {
+  padding: 0;
+}
+
 .customer-detail-page .admin-table-scroll {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-lg);
