@@ -44,18 +44,13 @@ type PartnerOperationsDigestProvider = {
   readonly kyc?: { readonly reviewedAt?: string | null; readonly status?: string | null; readonly submittedAt?: string | null } | null;
   readonly legalName?: string | null;
   readonly locationSnapshots?: readonly { readonly recordedAt?: string | null }[] | null;
-  readonly payoutBatches?: readonly { readonly createdAt?: string | null }[] | null;
   readonly reports?: readonly unknown[] | null;
-  readonly residentialAddress?: unknown;
   readonly sanctions?: readonly unknown[] | null;
   readonly sessions?: readonly { readonly lastSeenAt?: string | null; readonly loggedInAt?: string | null }[] | null;
-  readonly taxProfile?: { readonly approvedAt?: string | null; readonly status?: string | null } | null;
   readonly user?: { readonly createdAt?: string | null; readonly phone?: string | null; readonly pushDevices?: readonly { readonly enabled?: boolean | null }[] | null; readonly updatedAt?: string | null } | null;
   readonly verification?: { readonly files?: readonly unknown[] | null; readonly status?: string | null } | null;
   readonly verificationLogs?: readonly unknown[] | null;
 };
-type PartnerOperationsDigestBank = { readonly bankName?: string | null; readonly reviewedAt?: string | null; readonly status?: string | null };
-type PartnerOperationsDigestPayoutOps = { readonly blockers: readonly string[]; readonly hold?: { readonly reason?: string | null } | null; readonly status: string; readonly tone: PartnerOpsTone };
 type PartnerOperationsDigestBookingAcceptance = { readonly canJoinMarketplace: boolean; readonly primaryReason: string };
 type PartnerOperationsDigestServicePricing = { readonly readyCount: number };
 type PartnerOperationsDigestPolicy = { readonly backupRadiusMeters: number; readonly locationFreshnessMinutes: number };
@@ -63,8 +58,6 @@ type PartnerOperationsDigestPolicy = { readonly backupRadiusMeters: number; read
 export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArchiveBooking>({
   provider,
   bookingArchive,
-  primaryBank,
-  payoutOps,
   bookingAcceptance,
   providerServicePricing,
   dispatchPolicy,
@@ -72,8 +65,6 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
 }: {
   readonly provider: PartnerOperationsDigestProvider;
   readonly bookingArchive: readonly PartnerBookingArchiveRecord<TBooking>[];
-  readonly primaryBank: PartnerOperationsDigestBank | null;
-  readonly payoutOps: PartnerOperationsDigestPayoutOps;
   readonly bookingAcceptance: PartnerOperationsDigestBookingAcceptance;
   readonly providerServicePricing: PartnerOperationsDigestServicePricing;
   readonly dispatchPolicy: PartnerOperationsDigestPolicy;
@@ -88,7 +79,6 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
   const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
   const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
   const cashDebt = cashFeeDebtAmount(provider);
-  const firstRevenue = providerHasFirstRevenueSignal(provider);
   const locationFresh = locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const latestStaffRecord = activityRecords.find((record) => STAFF_ACTIVITY_TYPES.includes(record.type));
 
@@ -148,24 +138,6 @@ export function buildPartnerOperationsDigest<TBooking extends PartnerBookingArch
       evidence: [`${provider.locationSnapshots?.length ?? 0} snapshot(s)`, `${Math.round(dispatchPolicy.backupRadiusMeters / 1000)}km marketplace radius`, locationFresh ? 'Fresh enough' : 'Refresh needed'],
     },
     {
-      lane: 'Finance',
-      status: payoutOps.status,
-      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
-      href: '#payout',
-      latestAt: optionalDate(provider.earnings?.[0]?.createdAt ?? provider.payoutBatches?.[0]?.createdAt),
-      tone: pillClass(payoutOps.tone),
-      evidence: [`${provider.earnings?.length ?? 0} earning row(s)`, `${provider.payoutBatches?.length ?? 0} payout batch row(s)`, firstRevenue ? 'First earning exists' : 'Payout setup deferred'],
-    },
-    {
-      lane: 'Withdrawal setup',
-      status: `${primaryBank?.status ?? 'BANK MISSING'} / ${provider.residentialAddress ? 'ADDRESS SAVED' : 'ADDRESS MISSING'}`,
-      detail: firstRevenue ? 'First earning exists; address, agreements, bank rows, and holds must be complete before payout.' : 'Do not force bank or tax setup before payout is requested.',
-      href: '#tax',
-      latestAt: provider.taxProfile?.approvedAt ?? primaryBank?.reviewedAt ?? undefined,
-      tone: (!firstRevenue || primaryBank?.status === 'APPROVED') && provider.residentialAddress ? 'pill-success' : 'pill-warn',
-      evidence: [primaryBank ? marketplaceDisplayText(primaryBank.bankName) : 'No bank row', `${provider.agreements?.length ?? 0} agreement row(s)`, provider.residentialAddress ? 'Address saved' : 'Address missing'],
-    },
-    {
       lane: 'App reachability',
       status: enabledPushCount > 0 ? 'Push-ready' : 'Push missing',
       detail: latestAccessAt ? `Last app access ${formatDate(latestAccessAt)}.` : 'No app access row is loaded for this partner.',
@@ -203,10 +175,6 @@ function missingApprovedRequiredKycDocuments(provider: PartnerOperationsDigestPr
   return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
-function providerHasFirstRevenueSignal(provider: PartnerOperationsDigestProvider) {
-  return (provider.earnings ?? []).some((earning) => ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status));
-}
-
 function isCashFeeDebt(earning: PartnerOperationsDigestEarning) {
   return amountValue(earning.netAmount) < 0 && earning.booking?.payment?.method === 'CASH' && earning.status !== 'PAID';
 }
@@ -218,10 +186,4 @@ function cashFeeDebtAmount(provider: PartnerOperationsDigestProvider) {
 function bookingServiceLabel(booking: PartnerBookingArchiveBooking) {
   const labels = (booking.services ?? []).map((item) => `${item.service?.name ?? 'Service'}${item.service?.durationMin ? ` ${item.service.durationMin}m` : ''}`).filter(Boolean);
   return labels.length ? labels.join(', ') : 'No service';
-}
-
-function pillClass(tone: PartnerOpsTone) {
-  if (tone === 'done') return 'pill-success';
-  if (tone === 'blocked') return 'pill-danger';
-  return 'pill-warn';
 }

@@ -25,16 +25,6 @@ describe('partner detail operations digest model', () => {
         backupRadiusMeters: 10000,
         locationFreshnessMinutes: Number.POSITIVE_INFINITY,
       },
-      payoutOps: {
-        blockers: [],
-        status: 'Payout clear',
-        tone: 'done',
-      },
-      primaryBank: {
-        bankName: 'VCB',
-        reviewedAt: '2026-06-10T06:00:00.000Z',
-        status: 'APPROVED',
-      },
       provider: buildProvider(),
       providerServicePricing: {
         readyCount: 2,
@@ -60,17 +50,15 @@ describe('partner detail operations digest model', () => {
       detail: '1 retained message(s). Admin keeps chat history after mobile closeout.',
       status: '1 room(s)',
     });
-    expect(rowByLane(rows, 'Finance')).toMatchObject({
-      evidence: ['2 earning row(s)', '1 payout batch row(s)', 'First earning exists'],
-      status: 'Payout clear',
-      tone: 'pill-success',
-    });
     expect(rowByLane(rows, 'Staff trail')).toMatchObject({
       detail: 'KYC approved / KYC approved by operations',
       status: '1 audit row(s)',
       tone: 'pill-info',
     });
-    expect(rows).toHaveLength(10);
+    expect(rows.map((row) => row.lane)).not.toEqual(
+      expect.arrayContaining(['Finance', 'Withdrawal setup']),
+    );
+    expect(rows).toHaveLength(8);
   });
 
   it('builds hold-state digest lanes when partner evidence is missing', () => {
@@ -85,12 +73,6 @@ describe('partner detail operations digest model', () => {
         backupRadiusMeters: 8000,
         locationFreshnessMinutes: 30,
       },
-      payoutOps: {
-        blockers: ['Bank account missing'],
-        status: 'Payout blocked',
-        tone: 'blocked',
-      },
-      primaryBank: null,
       provider: {
         auditLogs: [],
         city: null,
@@ -101,7 +83,6 @@ describe('partner detail operations digest model', () => {
         id: 'partner-empty',
         legalName: '',
         locationSnapshots: [],
-        payoutBatches: [],
         reports: [],
         sanctions: [],
         sessions: [],
@@ -129,11 +110,9 @@ describe('partner detail operations digest model', () => {
       status: '0 total',
       tone: 'pill-neutral',
     });
-    expect(rowByLane(rows, 'Withdrawal setup')).toMatchObject({
-      detail: 'Do not force bank or tax setup before payout is requested.',
-      status: 'BANK MISSING / ADDRESS MISSING',
-      tone: 'pill-warn',
-    });
+    expect(rows.map((row) => row.lane)).not.toEqual(
+      expect.arrayContaining(['Finance', 'Withdrawal setup']),
+    );
   });
 });
 
@@ -213,7 +192,6 @@ function buildProvider() {
     },
     legalName: 'Linh Partner',
     locationSnapshots: [{ id: 'location-1', recordedAt: '2026-06-10T06:59:00.000Z' }],
-    payoutBatches: [{ createdAt: '2026-06-10T08:00:00.000Z', id: 'batch-1' }],
     reports: [{ id: 'report-1' }],
     residentialAddress: 'District 1',
     sanctions: [],

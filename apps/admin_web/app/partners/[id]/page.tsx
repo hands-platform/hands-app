@@ -555,8 +555,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerOperationsDigest = buildPartnerOperationsDigest({
     provider,
     bookingArchive: filteredPartnerBookingArchive,
-    primaryBank,
-    payoutOps,
     bookingAcceptance,
     providerServicePricing,
     dispatchPolicy,
@@ -792,7 +790,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
 
       <PartnerDetailOperationsDigestSection
-        description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, location, service pricing, finance, payout, tax, app reachability, and staff records."
+        description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
         formatLatestAt={formatDate}
         id="partner-operations-digest"
         rows={partnerOperationsDigest}
