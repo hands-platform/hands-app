@@ -116,6 +116,11 @@ describe('bookingDetailOperatingLedger', () => {
       evidence: 'No refund ledger row.',
       status: 'No refund record',
     });
+    expect(rows.find((row) => row.area === 'Location')).toMatchObject({
+      evidence: 'Location recorded without readable address / 14 Jun 2026, 09:00',
+      status: 'Partner location saved',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 
   it('keeps missing records and cash settlement blocks visible', () => {
@@ -154,8 +159,9 @@ describe('bookingDetailOperatingLedger', () => {
       status: 'Partner blocked until settled',
     });
     expect(rows.find((row) => row.area === 'Location')).toMatchObject({
-      evidence: '10.7627, 106.6603',
-      status: 'No Partner pin',
+      evidence: 'Service address snapshot saved',
+      status: 'No Partner location',
     });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 });

@@ -1,8 +1,9 @@
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
-import { coordinateLabel, formatDate, shortId } from './booking-formatters';
+import { formatDate, shortId } from './booking-formatters';
 import type { OperatingLedgerRow } from './booking-operating-sections';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export type BookingDetailOperatingLedgerInput = {
   booking: AdminBookingDetail;
@@ -138,10 +139,10 @@ export function bookingDetailOperatingLedger({
     },
     {
       area: 'Location',
-      status: latestLocation ? 'Partner pin saved' : 'No Partner pin',
+      status: latestLocation ? 'Partner location saved' : 'No Partner location',
       evidence: latestLocation
-        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-        : addressPin,
+        ? `${latestLocationLabel(latestLocation)} / ${formatDate(latestLocation.recordedAt)}`
+        : serviceAddressFallbackLabel(addressPin),
       href: '#location',
     },
     {
@@ -171,4 +172,18 @@ export function bookingDetailOperatingLedger({
       href: '#booking-activity',
     },
   ];
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot) {
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
+}
+
+function serviceAddressFallbackLabel(addressPin: string) {
+  const address = readAddressText(addressPin);
+  if (address) {
+    return serviceAddressAreaLabel(address);
+  }
+
+  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
 }
