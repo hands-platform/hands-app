@@ -30,6 +30,19 @@ export type CustomerDetailPartnerRail = {
   readonly totalCount?: number;
 };
 
+export type CustomerDetailUsageSummaryItem = {
+  readonly helper: string;
+  readonly label: string;
+  readonly value: string;
+};
+
+export type CustomerDetailUsageSummary = {
+  readonly helper: string;
+  readonly items: readonly CustomerDetailUsageSummaryItem[];
+  readonly regionRows: readonly CustomerDetailUsageSummaryItem[];
+  readonly title: string;
+};
+
 type CustomerDetailOverviewShellProps = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly facts: readonly CustomerDetailOverviewFact[];
@@ -38,6 +51,7 @@ type CustomerDetailOverviewShellProps = {
   readonly partnerRails?: readonly CustomerDetailPartnerRail[];
   readonly statusBadges: readonly string[];
   readonly subtitle: string;
+  readonly usageSummary?: CustomerDetailUsageSummary;
 };
 
 export function CustomerDetailOverviewShell({
@@ -48,6 +62,7 @@ export function CustomerDetailOverviewShell({
   partnerRails = [],
   statusBadges,
   subtitle,
+  usageSummary,
 }: CustomerDetailOverviewShellProps) {
   return (
     <section className="card customer-detail-overview-card">
@@ -93,6 +108,36 @@ export function CustomerDetailOverviewShell({
           </div>
         ))}
       </div>
+
+      {usageSummary ? (
+        <section className="customer-detail-usage-summary">
+          <div className="customer-detail-usage-summary-header">
+            <div>
+              <span>{usageSummary.title}</span>
+              <small>{usageSummary.helper}</small>
+            </div>
+            <strong>{usageSummary.regionRows.length} region(s)</strong>
+          </div>
+          <div className="customer-detail-usage-summary-grid">
+            {usageSummary.items.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.helper}</small>
+              </div>
+            ))}
+          </div>
+          <div className="customer-detail-usage-region-list">
+            {usageSummary.regionRows.map((row) => (
+              <div key={row.label}>
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
+                <small>{row.helper}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {partnerRails.length > 0 ? (
         <div className="customer-detail-partner-rail-grid">

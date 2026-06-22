@@ -45,6 +45,7 @@ import {
 } from '../../../lib/detail-activity-filter';
 import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../../lib/csv-export';
+import { readAddressText, serviceAddressAreaLabel } from '../../bookings/booking-address-readers';
 import { addCustomerOpsNote } from './actions';
 import {
   bookingPartnerDisplayName,
@@ -78,6 +79,7 @@ import {
   type CustomerDetailOverviewHighlight,
   type CustomerDetailPartnerAvatar,
   type CustomerDetailPartnerRail,
+  type CustomerDetailUsageSummary,
 } from './customer-detail-overview-shell';
 import {
   CustomerDetailSectionBand,
@@ -245,6 +247,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     customer.favoriteProviders ?? [],
     customer.viewedProviders ?? [],
   );
+  const overviewUsageSummary = buildCustomerUsageSummary({
+    appSessions,
+    bookings,
+    customer,
+    favoriteProviders: customer.favoriteProviders ?? [],
+    viewedProviders: customer.viewedProviders ?? [],
+  });
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
@@ -378,6 +387,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           partnerRails={overviewPartnerRails}
           statusBadges={overviewStatusBadges}
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
+          usageSummary={overviewUsageSummary}
         />
       </CustomerDetailSectionBand>
 
@@ -1731,6 +1741,129 @@ function buildSavedAddressListValue(addresses: Array<{ key: string; label: strin
   }
 
   return compactText(addresses.slice(0, 3).map((address) => address.value).join(' / '), 132);
+}
+
+type CustomerUsageSummaryInput = {
+  readonly appSessions: readonly AdminAppSession[];
+  readonly bookings: readonly AdminBookingDetail[];
+  readonly customer: AdminCustomerDetail;
+  readonly favoriteProviders: NonNullable<AdminCustomerDetail['favoriteProviders']>;
+  readonly viewedProviders: NonNullable<AdminCustomerDetail['viewedProviders']>;
+};
+
+type CustomerBookingRegionCount = {
+  readonly count: number;
+  readonly label: string;
+  readonly latestAt: string | null;
+};
+
+function buildCustomerUsageSummary({
+  appSessions,
+  bookings,
+  customer,
+  favoriteProviders,
+  viewedProviders,
+}: CustomerUsageSummaryInput): CustomerDetailUsageSummary {
+  const latestSession = appSessions[0];
+  const bookingRegions = buildCustomerBookingRegionRows(bookings);
+  const primaryRegion = bookingRegions[0];
+  const addressSnapshotCount = bookings.filter((booking) => customerStoredBookingAddressText(booking)).length;
+  const selectedLocationCount = (customer.selectedLocations ?? []).filter((location) =>
+    readAddressText(location.addressText),
+  ).length;
+  const favoriteCount = countCustomerFavoritePartners(favoriteProviders);
+  const viewedCount = countCustomerViewedPartners(viewedProviders);
+  const completedPartnerCount = countCustomerCompletedPartners([...bookings]);
+
+  return {
+    title: 'Usage and region summary',
+    helper: 'Built from stored sessions, service addresses, and Partner links. No live GPS polling.',
+    items: [
+      {
+        helper: latestSession
+          ? `Latest ${formatDate(latestSession.lastSeenAt)} / ${latestSession.platform ?? 'Unknown platform'}`
+          : 'No app session loaded.',
+        label: 'App sessions',
+        value: String(appSessions.length),
+      },
+      {
+        helper: primaryRegion
+          ? `${primaryRegion.count} booking row(s) / latest ${formatDate(primaryRegion.latestAt)}`
+          : 'Stored booking address snapshots will populate this.',
+        label: 'Primary booking region',
+        value: primaryRegion?.label ?? 'No booking region',
+      },
+      {
+        helper: `${selectedLocationCount} saved selected location row(s).`,
+        label: 'Address snapshots',
+        value: `${addressSnapshotCount}/${bookings.length}`,
+      },
+      {
+        helper: `${completedPartnerCount} completed Partner link(s).`,
+        label: 'Partner engagement',
+        value: `${favoriteCount} saved / ${viewedCount} viewed`,
+      },
+    ],
+    regionRows:
+      bookingRegions.length > 0
+        ? bookingRegions.slice(0, 3).map((region) => ({
+            helper: `Latest ${formatDate(region.latestAt)}`,
+            label: region.label,
+            value: `${region.count}`,
+          }))
+        : [
+            {
+              helper: 'No stored booking service address has been captured for this customer yet.',
+              label: 'No booking region',
+              value: '0',
+            },
+          ],
+  };
+}
+
+function buildCustomerBookingRegionRows(
+  bookings: readonly AdminBookingDetail[],
+): CustomerBookingRegionCount[] {
+  const regionCounts = new Map<string, { count: number; latestAt: string | null }>();
+
+  for (const booking of bookings) {
+    const addressText = customerStoredBookingAddressText(booking);
+    if (!addressText) continue;
+
+    const regionLabel = serviceAddressAreaLabel(addressText);
+    if (!regionLabel || regionLabel === addressText && /^no\s+/i.test(regionLabel)) continue;
+
+    const latestAt = bookingLatestActivityAt(booking);
+    const current = regionCounts.get(regionLabel);
+    if (!current) {
+      regionCounts.set(regionLabel, { count: 1, latestAt });
+      continue;
+    }
+
+    regionCounts.set(regionLabel, {
+      count: current.count + 1,
+      latestAt: dateMs(latestAt) > dateMs(current.latestAt) ? latestAt : current.latestAt,
+    });
+  }
+
+  return [...regionCounts.entries()]
+    .map(([label, value]) => ({ label, ...value }))
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+
+      return dateMs(right.latestAt) - dateMs(left.latestAt);
+    });
+}
+
+function customerStoredBookingAddressText(booking: AdminBookingDetail) {
+  return (
+    readAddressText(booking.serviceAddressText) ??
+    readAddressText(booking.addressSnapshot?.addressText) ??
+    readAddressText(booking.addressSnapshot?.address) ??
+    readAddressText(booking.address)
+  );
 }
 
 function buildCustomerPartnerRails(
