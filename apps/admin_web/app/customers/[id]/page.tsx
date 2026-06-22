@@ -41,7 +41,7 @@ import {
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
-import { adminAvatarStatusFromSignals } from '../../../lib/admin-avatar-status';
+import { adminAvatarStatusFromSignals, type AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { addCustomerOpsNote } from './actions';
 import {
@@ -74,6 +74,8 @@ import {
   CustomerDetailOverviewShell,
   type CustomerDetailOverviewFact,
   type CustomerDetailOverviewHighlight,
+  type CustomerDetailPartnerAvatar,
+  type CustomerDetailPartnerRail,
 } from './customer-detail-overview-shell';
 import {
   CustomerDetailSectionBand,
@@ -415,6 +417,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
+  const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
+  const overviewPartnerRails = buildCustomerPartnerRails(bookings);
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
@@ -433,57 +437,76 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         : `${bookingStats.active} active / ${bookings.length} total`,
     },
     {
-      label: 'Last completed work',
-      value: lastCompletedBooking ? formatDate(bookingLatestActivityAt(lastCompletedBooking)) : 'None',
-      helper: `${bookingStats.completed} completed booking(s)`,
+      label: 'Wallet amount',
+      value: formatMoney(wallet.customerBalance),
+      helper: `Captured ${formatMoney(wallet.capturedSpend)} / refunded ${formatMoney(wallet.refundAmount)}`,
     },
     {
-      label: 'Captured spend',
-      value: formatMoney(wallet.capturedSpend),
-      helper: `${wallet.refundCount} refund row(s) / ${formatMoney(wallet.refundAmount)} refunded`,
+      label: 'Completed work',
+      value: `${bookingStats.completed}`,
+      helper: lastCompletedBooking
+        ? `Latest ${formatDate(bookingLatestActivityAt(lastCompletedBooking))}`
+        : 'No completed service record yet.',
     },
     {
-      label: 'Reachability',
-      value: latestSession ? 'Seen' : 'No session',
-      helper: `${pushDevices.filter((device) => device.enabled).length} push target(s) / ${chatMessageCount} chat messages`,
+      label: 'Saved addresses',
+      value: `${addresses.length}`,
+      helper: addresses[0]?.value ? compactText(addresses[0].value, 72) : 'No saved address loaded yet.',
     },
   ];
   const overviewFacts: CustomerDetailOverviewFact[] = [
     {
-      label: 'Phone',
-      value: customer.user?.phone ?? 'No phone',
-      helper: customer.user?.email ?? 'No email linked to this customer account.',
+      label: 'Country',
+      value: customerCountry.fullLabel,
+      helper: customerCountry.sourceLabel === 'Unknown' ? 'No device language loaded.' : customerCountry.sourceLabel,
     },
     {
-      label: 'Joined',
+      label: 'Gender',
+      value: readCustomerGenderLabel(customer),
+      helper: 'Customer profile gender value from admin API when available.',
+    },
+    {
+      label: 'Sign-up Date',
       value: formatDate(customer.user?.createdAt),
       helper: customer.user?.updatedAt
         ? `Last account update ${formatDate(customer.user.updatedAt)}`
         : 'No account update timestamp loaded.',
     },
     {
-      label: 'Latest booking',
+      label: 'Last Login Date',
+      value: formatDate(latestSession?.lastSeenAt),
+      helper: latestSession
+        ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
+        : 'No app session loaded.',
+    },
+    {
+      label: 'Last Login Address',
+      value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
+      helper: latestSession?.ipAddress ? `IP ${latestSession.ipAddress}` : 'No login location evidence loaded.',
+    },
+    {
+      label: 'Total Work Completed',
+      value: `${bookingStats.completed}`,
+      helper: lastCompletedBooking
+        ? `Latest completed booking ${shortId(lastCompletedBooking.id)}`
+        : 'No completed service record yet.',
+    },
+    {
+      label: 'Saved Address List',
+      value: buildSavedAddressListValue(addresses),
+      helper: `${addresses.length} saved address row(s) loaded.`,
+    },
+    {
+      label: 'Latest Reservation',
       value: latestBooking ? shortId(latestBooking.id) : 'None',
       helper: latestBooking
         ? `${latestBooking.status} / ${formatDate(bookingLatestActivityAt(latestBooking))}`
         : 'No booking has been created for this customer.',
     },
     {
-      label: 'Frequent service',
-      value: mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking))) ?? 'Not enough history',
-      helper:
-        mostCommonLabel(bookings.map((booking) => bookingAddressEvidenceLabel(booking))) ??
-        'No repeated service area found.',
-    },
-    {
-      label: 'Saved locations',
-      value: `${addresses.length} saved`,
-      helper: addresses[0]?.value ?? 'No saved location loaded yet.',
-    },
-    {
-      label: 'Customer ID',
-      value: customer.id,
-      helper: 'Stable admin customer profile id.',
+      label: 'Wallet Amount',
+      value: formatMoney(wallet.customerBalance),
+      helper: `${wallet.refundCount} refund row(s) / captured spend ${formatMoney(wallet.capturedSpend)}`,
     },
   ];
   const detailShortcuts: CustomerDetailShortcut[] = [
@@ -561,6 +584,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           facts={overviewFacts}
           highlights={overviewHighlights}
           name={customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer'}
+          partnerRails={overviewPartnerRails}
           statusBadges={overviewStatusBadges}
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
         />
@@ -2897,6 +2921,162 @@ function buildAddressRows(customer: AdminCustomerDetail) {
     });
   }
   return rows;
+}
+
+function readCustomerDeviceLanguageLabel(appSessions: readonly AdminAppSession[]) {
+  const language = appSessions.find((session) => session.deviceLanguage)?.deviceLanguage;
+  return language ?? 'Unknown';
+}
+
+function customerCountryDisplay(label: string) {
+  const sourceLabel = label.trim() || 'Unknown';
+  const region = customerCountryRegion(sourceLabel);
+
+  return {
+    fullLabel: region ? customerCountryName(region) : 'Unknown',
+    sourceLabel,
+  };
+}
+
+function customerCountryRegion(label: string) {
+  if (!label || label === 'Unknown') {
+    return null;
+  }
+
+  const normalized = label.replace(/_/g, '-').trim();
+  const parts = normalized.split('-').filter(Boolean);
+  const lastPart = parts.at(-1);
+
+  if (lastPart && /^[a-z]{2}$/i.test(lastPart) && parts.length > 1) {
+    return lastPart.toUpperCase();
+  }
+
+  if (/^[a-z]{2}$/i.test(normalized) && normalized.toLowerCase() === 'vi') {
+    return 'VN';
+  }
+
+  return null;
+}
+
+function customerCountryName(region: string) {
+  const countryNames: Record<string, string> = {
+    CN: 'China',
+    JP: 'Japan',
+    KR: 'South Korea',
+    SG: 'Singapore',
+    TH: 'Thailand',
+    US: 'United States',
+    VN: 'Vietnam',
+  };
+
+  return countryNames[region] ?? region;
+}
+
+function readCustomerGenderLabel(customer: AdminCustomerDetail) {
+  const directGender = readString(readCustomerLooseField(customer, 'gender'));
+  if (directGender) return normalizeCustomerGenderLabel(directGender);
+
+  const user = customer.user as (NonNullable<AdminCustomerDetail['user']> & {
+    gender?: unknown;
+    metadata?: unknown;
+    rawUserMetaData?: unknown;
+    userMetadata?: unknown;
+  }) | undefined;
+  const userGender = readString(user?.gender);
+  if (userGender) return normalizeCustomerGenderLabel(userGender);
+
+  const metadata = {
+    ...readMetadataObject(user?.metadata),
+    ...readMetadataObject(user?.userMetadata),
+    ...readMetadataObject(user?.rawUserMetaData),
+  };
+  const metadataGender =
+    readString(metadata.gender) ??
+    readString(metadata.sex) ??
+    readString(metadata.profileGender) ??
+    readString(metadata.customerGender);
+
+  return metadataGender ? normalizeCustomerGenderLabel(metadataGender) : 'Not saved';
+}
+
+function readCustomerLooseField(customer: AdminCustomerDetail, key: string) {
+  return (customer as AdminCustomerDetail & Record<string, unknown>)[key];
+}
+
+function normalizeCustomerGenderLabel(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (['female', 'f', 'woman', 'women'].includes(normalized)) return 'Female';
+  if (['male', 'm', 'man', 'men'].includes(normalized)) return 'Male';
+  return value.trim();
+}
+
+function buildSavedAddressListValue(addresses: Array<{ key: string; label: string; value: string }>) {
+  if (addresses.length === 0) {
+    return 'No saved address';
+  }
+
+  return compactText(addresses.slice(0, 3).map((address) => address.value).join(' / '), 132);
+}
+
+function buildCustomerPartnerRails(bookings: AdminBookingDetail[]): CustomerDetailPartnerRail[] {
+  return [
+    {
+      title: 'Viewed Partners',
+      helper: 'Partner profiles this customer opened in the app.',
+      emptyMessage: 'No viewed Partner profile data is loaded for this customer yet.',
+      partners: [],
+    },
+    {
+      title: 'Favorite Partners',
+      helper: 'Partners the customer saved for direct requests.',
+      emptyMessage: 'No favorite Partner data is loaded for this customer yet.',
+      partners: [],
+    },
+    {
+      title: 'Completed Partners',
+      helper: 'Partners with completed customer work.',
+      emptyMessage: 'No completed Partner history is loaded yet.',
+      partners: buildCompletedPartnerAvatars(bookings),
+    },
+  ];
+}
+
+function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
+  const partners = new Map<string, CustomerDetailPartnerAvatar>();
+  const completedBookings = bookings
+    .filter((booking) => booking.status === 'COMPLETED')
+    .sort((left, right) => dateMs(bookingLatestActivityAt(right)) - dateMs(bookingLatestActivityAt(left)));
+
+  for (const booking of completedBookings) {
+    const partnerId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? booking.preferredProviderId;
+    if (!partnerId || partners.has(partnerId)) {
+      continue;
+    }
+
+    const label = bookingPartnerDisplayName(booking);
+    partners.set(partnerId, {
+      id: `${partnerId}-${booking.id}`,
+      href: `/partners/${partnerId}`,
+      label,
+      helper: `Latest completed ${formatDate(bookingLatestActivityAt(booking))}`,
+      status: partnerAvatarStatusFromBooking(booking),
+    });
+  }
+
+  return [...partners.values()].slice(0, 8);
+}
+
+function partnerAvatarStatusFromBooking(booking: AdminBookingDetail): AdminAvatarStatus {
+  const providerStatus = (
+    booking.selectedProvider?.status ??
+    booking.preferredProvider?.status ??
+    ''
+  ).toUpperCase();
+  if (WORKING_AVATAR_STATUSES.has(booking.status)) return 'working';
+  if (MATCHING_AVATAR_STATUSES.has(booking.status)) return 'matching';
+  if (providerStatus.includes('ONLINE') || providerStatus.includes('AVAILABLE')) return 'online';
+  if (providerStatus.includes('DELETED') || providerStatus.includes('REMOVED')) return 'app-deleted';
+  return 'offline';
 }
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {

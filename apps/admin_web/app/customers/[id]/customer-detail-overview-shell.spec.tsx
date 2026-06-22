@@ -2,6 +2,7 @@ import {
   CustomerDetailOverviewShell,
   type CustomerDetailOverviewFact,
   type CustomerDetailOverviewHighlight,
+  type CustomerDetailPartnerRail,
 } from './customer-detail-overview-shell';
 
 describe('CustomerDetailOverviewShell', () => {
@@ -11,6 +12,7 @@ describe('CustomerDetailOverviewShell', () => {
       facts: buildFacts(),
       highlights: buildHighlights(),
       name: 'Customer One',
+      partnerRails: buildPartnerRails(),
       statusBadges: ['Active booking', 'Push ready', 'In app now'],
       subtitle: '+84900000000 / customer@example.com',
     });
@@ -20,6 +22,9 @@ describe('CustomerDetailOverviewShell', () => {
     expect(rendered).toContain('Customer One');
     expect(rendered).toContain('Active booking');
     expect(rendered).toContain('Captured spend');
+    expect(rendered).toContain('Favorite Partners');
+    expect(rendered).toContain('Smoke Partner');
+    expect(rendered).toContain('No viewed Partner profile data is loaded for this customer yet.');
     expect(rendered).not.toContain('Customer record navigation');
     expect(rendered).not.toContain('Open latest booking');
     expect(classNamesIn(section)).toEqual(
@@ -28,6 +33,8 @@ describe('CustomerDetailOverviewShell', () => {
         'admin-avatar-status-dot is-online',
         'card customer-detail-overview-card',
         'vuexy-booking-avatar customer-detail-avatar',
+        'customer-detail-partner-rail-grid',
+        'vuexy-booking-avatar is-partner',
       ]),
     );
   });
@@ -44,6 +51,31 @@ function buildHighlights(): readonly CustomerDetailOverviewHighlight[] {
   return [
     { label: 'Bookings', value: '5', helper: '2 active / 1 completed' },
     { label: 'Captured spend', value: '1,200,000', helper: '0 refund row(s)' },
+  ];
+}
+
+function buildPartnerRails(): readonly CustomerDetailPartnerRail[] {
+  return [
+    {
+      title: 'Viewed Partners',
+      helper: 'Partner profiles this customer opened in the app.',
+      emptyMessage: 'No viewed Partner profile data is loaded for this customer yet.',
+      partners: [],
+    },
+    {
+      title: 'Favorite Partners',
+      helper: 'Partners the customer saved for direct requests.',
+      emptyMessage: 'No favorite Partner data is loaded for this customer yet.',
+      partners: [
+        {
+          helper: 'Latest completed Jun 12, 2026',
+          href: '/partners/provider-1',
+          id: 'provider-1',
+          label: 'Smoke Partner',
+          status: 'working',
+        },
+      ],
+    },
   ];
 }
 

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AdminAvatar } from '../../../components/admin-person-cell';
 import type { AdminAvatarStatus } from '../../../lib/admin-avatar-status';
 
@@ -13,11 +14,27 @@ export type CustomerDetailOverviewHighlight = {
   readonly value: string;
 };
 
+export type CustomerDetailPartnerAvatar = {
+  readonly helper: string;
+  readonly href: string | null;
+  readonly id: string;
+  readonly label: string;
+  readonly status: AdminAvatarStatus;
+};
+
+export type CustomerDetailPartnerRail = {
+  readonly emptyMessage: string;
+  readonly helper: string;
+  readonly partners: readonly CustomerDetailPartnerAvatar[];
+  readonly title: string;
+};
+
 type CustomerDetailOverviewShellProps = {
   readonly avatarStatus: AdminAvatarStatus;
   readonly facts: readonly CustomerDetailOverviewFact[];
   readonly highlights: readonly CustomerDetailOverviewHighlight[];
   readonly name: string;
+  readonly partnerRails?: readonly CustomerDetailPartnerRail[];
   readonly statusBadges: readonly string[];
   readonly subtitle: string;
 };
@@ -27,6 +44,7 @@ export function CustomerDetailOverviewShell({
   facts,
   highlights,
   name,
+  partnerRails = [],
   statusBadges,
   subtitle,
 }: CustomerDetailOverviewShellProps) {
@@ -74,6 +92,48 @@ export function CustomerDetailOverviewShell({
           </div>
         ))}
       </div>
+
+      {partnerRails.length > 0 ? (
+        <div className="customer-detail-partner-rail-grid">
+          {partnerRails.map((rail) => (
+            <section className="customer-detail-partner-rail" key={rail.title}>
+              <div className="customer-detail-partner-rail-header">
+                <div>
+                  <span>{rail.title}</span>
+                  <small>{rail.helper}</small>
+                </div>
+                <strong>{rail.partners.length}</strong>
+              </div>
+
+              {rail.partners.length > 0 ? (
+                <div className="customer-detail-partner-avatar-list">
+                  {rail.partners.map((partner) => (
+                    <div className="customer-detail-partner-avatar-item" key={partner.id}>
+                      <AdminAvatar
+                        className="vuexy-booking-avatar is-partner"
+                        initials={readInitials(partner.label)}
+                        status={partner.status}
+                      />
+                      <div className="customer-detail-partner-avatar-copy">
+                        {partner.href ? (
+                          <Link className="vuexy-booking-person-link" href={partner.href}>
+                            {partner.label}
+                          </Link>
+                        ) : (
+                          <strong>{partner.label}</strong>
+                        )}
+                        <small>{partner.helper}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="customer-detail-partner-empty">{rail.emptyMessage}</p>
+              )}
+            </section>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

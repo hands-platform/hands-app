@@ -7748,6 +7748,89 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.customer-detail-partner-rail-grid {
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.customer-detail-partner-rail {
+  background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.customer-detail-partner-rail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.customer-detail-partner-rail-header > div {
+  min-width: 0;
+}
+
+.customer-detail-partner-rail-header span {
+  color: var(--admin-text);
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.customer-detail-partner-rail-header strong {
+  align-items: center;
+  background: var(--admin-primary-soft);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  height: 26px;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0 8px;
+}
+
+.customer-detail-partner-avatar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.customer-detail-partner-avatar-item {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.customer-detail-partner-avatar-copy {
+  min-width: 0;
+}
+
+.customer-detail-partner-avatar-copy small {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.customer-detail-partner-empty {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+
 .customer-booking-operation-footer {
   margin-top: 14px;
 }
