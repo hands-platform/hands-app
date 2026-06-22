@@ -1,0 +1,120 @@
+import {
+  CustomerBookingOperationBoard,
+  type CustomerBookingOperationGroup,
+  type CustomerBookingOperationMetric,
+} from './customer-booking-operation-board';
+
+describe('CustomerBookingOperationBoard', () => {
+  it('renders booking situation metrics and Partner avatar rows', () => {
+    const board = CustomerBookingOperationBoard({
+      groups: buildGroups(),
+      metrics: buildMetrics(),
+    });
+
+    const rendered = textContent(board).replace(/\s+/g, ' ');
+
+    expect(rendered).toContain('Customer booking situation board');
+    expect(rendered).toContain('Current / In Progress');
+    expect(rendered).toContain('Completed');
+    expect(rendered).toContain('Pre-match Cancellations');
+    expect(rendered).toContain('Partner Cancellations');
+    expect(rendered).toContain('Smoke Partner');
+    expect(classNamesIn(board)).toEqual(
+      expect.arrayContaining([
+        'vuexy-booking-avatar is-partner',
+        'vuexy-booking-person',
+        'admin-avatar-status-dot is-working',
+      ]),
+    );
+  });
+});
+
+function buildMetrics(): readonly CustomerBookingOperationMetric[] {
+  return [
+    { label: 'Total bookings', value: '4', helper: '1 live / 1 completed', tone: 'pill-info' },
+    { label: 'Cancellation split', value: '2', helper: '1 pre-match / 1 Partner cancel', tone: 'pill-warn' },
+  ];
+}
+
+function buildGroups(): readonly CustomerBookingOperationGroup[] {
+  return [
+    group('live', 'Current / In Progress', 'Current booking rows.'),
+    group('completed', 'Completed', 'Completed booking rows.'),
+    group('pre-match', 'Pre-match Cancellations', 'Cancelled before matching.'),
+    group('partner-cancelled', 'Partner Cancellations', 'Partner cancelled after matching.'),
+  ];
+}
+
+function group(key: string, title: string, description: string): CustomerBookingOperationGroup {
+  return {
+    countTone: 'pill-info',
+    description,
+    emptyMessage: 'Empty',
+    key,
+    rows: [
+      {
+        addressLabel: 'District 1, Ho Chi Minh City',
+        bookingHelper: 'OPEN_MATCHING / State 19 Jun 2026, 10:00',
+        bookingHref: '/bookings/booking-1',
+        bookingLabel: 'booking-1',
+        id: `${key}-booking-1`,
+        partnerAvatarStatus: 'working',
+        partnerHelper: 'Selected Partner / 2 participating',
+        partnerHref: '/partners/partner-1',
+        partnerLabel: 'Smoke Partner',
+        requestTimeLabel: '19 Jun 2026, 09:30',
+        serviceLabel: 'Aromatherapy Massage / 90 min',
+        servicePriceLabel: '500.000 VND',
+        stateDetail: '19 Jun 2026, 10:00',
+        stateLabel: 'OPEN_MATCHING',
+        stateTone: 'pill-info',
+      },
+    ],
+    title,
+  };
+}
+
+function textContent(value: unknown): string {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value === 'boolean') {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(textContent).join(' ');
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return textContent(props?.children);
+}
+
+function classNamesIn(value: unknown): string[] {
+  value = resolveElement(value);
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(classNamesIn);
+  }
+
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  const className = typeof props?.className === 'string' ? [props.className] : [];
+  return [...className, ...classNamesIn(props?.children)];
+}
+
+function resolveElement(value: unknown): unknown {
+  const record = readRecord(value);
+  const props = readRecord(record?.props);
+  return typeof record?.type === 'function' ? resolveElement(record.type(props)) : value;
+}
+
+function readRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

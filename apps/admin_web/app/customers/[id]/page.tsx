@@ -65,6 +65,12 @@ import {
   readDetailActivityOrder,
 } from './customer-detail-filters';
 import {
+  CustomerBookingOperationBoard,
+  type CustomerBookingOperationGroup,
+  type CustomerBookingOperationMetric,
+  type CustomerBookingOperationRow,
+} from './customer-booking-operation-board';
+import {
   CustomerDetailOverviewShell,
   type CustomerDetailOverviewFact,
   type CustomerDetailOverviewHighlight,
@@ -182,6 +188,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredBookings = bookings.filter((booking) =>
     isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters),
   );
+  const customerBookingOperationBuckets = buildCustomerBookingOperationBuckets(filteredBookings);
+  const allCustomerBookingOperationBuckets = buildCustomerBookingOperationBuckets(bookings);
+  const customerBookingOperationMetrics = buildCustomerBookingOperationMetrics(
+    bookings,
+    allCustomerBookingOperationBuckets,
+  );
+  const customerBookingOperationGroups =
+    buildCustomerBookingOperationGroups(customerBookingOperationBuckets);
   const filteredChatBookings = bookings.filter((booking) => {
     if (!booking.chatRoom) return false;
     return (
@@ -399,53 +413,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
-  const customerOperatorFirstRead = [
-    {
-      href: '#customer-info',
-      label: 'Identity',
-      value: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
-      detail: `${customer.user?.phone ?? 'No phone'} / joined ${formatDate(customer.user?.createdAt)}`,
-    },
-    {
-      href: activeBooking ? `/bookings/${activeBooking.id}` : '#booking-history',
-      label: 'Current booking',
-      value: activeBooking ? activeBooking.status : 'None',
-      detail: activeBooking
-        ? `${bookingServiceLabel(activeBooking)} / ${shortId(activeBooking.id)}`
-        : 'No active booking is loaded now.',
-    },
-    {
-      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '#booking-history',
-      label: 'Last completed work',
-      value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
-      detail: lastCompletedBooking
-        ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(
-            bookingLatestActivityAt(lastCompletedBooking),
-          )}`
-        : 'No completed service record yet.',
-    },
-    {
-      href: '#customer-chat-retention-ledger',
-      label: 'Retained chat',
-      value: `${chatMessageCount} messages`,
-      detail: `${chatRooms.length} room(s) retained for admin review after completion.`,
-    },
-    {
-      href: '#wallet',
-      label: 'Payments',
-      value: formatMoney(wallet.capturedSpend),
-      detail: `${wallet.refundCount} refund row(s), ${formatMoney(wallet.refundAmount)} refunded.`,
-    },
-    {
-      href: '#addresses',
-      label: 'Locations',
-      value: `${addresses.length} saved`,
-      detail:
-        latestAddressSnapshotBooking?.addressSnapshot?.addressText ??
-        addresses[0]?.value ??
-        'No selected service address loaded.',
-    },
-  ];
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
@@ -596,26 +563,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
         />
 
-      <section className="card admin-mb-16" id="customer-operator-first-read">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer operator first read</h2>
-            <p className="muted">
-              The first facts an operator checks before opening the full customer record.
-            </p>
-          </div>
-          <span className="pill pill-info">Above-fold summary</span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {customerOperatorFirstRead.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </div>
-      </section>
+      <CustomerBookingOperationBoard
+        groups={customerBookingOperationGroups}
+        metrics={customerBookingOperationMetrics}
+      />
 
       <section className="card admin-mb-16" id="customer-recent-operations-timeline">
         <div className="ops-section-header">
@@ -2003,6 +1954,202 @@ function buildBookingStats(bookings: AdminBookingDetail[]) {
     partnerClosed: closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length,
     noShow: bookings.filter((booking) => booking.status === 'NO_SHOW').length,
   };
+}
+
+type CustomerBookingOperationBuckets = {
+  readonly live: readonly AdminBookingDetail[];
+  readonly completed: readonly AdminBookingDetail[];
+  readonly preMatchCancelled: readonly AdminBookingDetail[];
+  readonly partnerCancelled: readonly AdminBookingDetail[];
+};
+
+function buildCustomerBookingOperationBuckets(
+  bookings: readonly AdminBookingDetail[],
+): CustomerBookingOperationBuckets {
+  const orderedBookings = [...bookings].sort(
+    (left, right) => dateMs(bookingLatestActivityAt(right)) - dateMs(bookingLatestActivityAt(left)),
+  );
+
+  return {
+    live: orderedBookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)),
+    completed: orderedBookings.filter((booking) => booking.status === 'COMPLETED'),
+    preMatchCancelled: orderedBookings.filter(isCustomerPreMatchCancellation),
+    partnerCancelled: orderedBookings.filter(isCustomerPartnerCancellation),
+  };
+}
+
+function buildCustomerBookingOperationMetrics(
+  bookings: readonly AdminBookingDetail[],
+  buckets: CustomerBookingOperationBuckets,
+): CustomerBookingOperationMetric[] {
+  const cancellationCount = buckets.preMatchCancelled.length + buckets.partnerCancelled.length;
+  const latestActivityAt = bookings
+    .map((booking) => bookingLatestActivityAt(booking))
+    .sort((left, right) => dateMs(right) - dateMs(left))[0];
+
+  return [
+    {
+      helper: latestActivityAt ? `Latest update ${formatDate(latestActivityAt)}` : 'No booking activity loaded.',
+      label: 'Total bookings',
+      tone: 'pill-info',
+      value: String(bookings.length),
+    },
+    {
+      helper: `${buckets.live.length} booking(s) currently visible at the top of this board.`,
+      label: 'Current work',
+      tone: buckets.live.length ? 'pill-warn' : 'pill-neutral',
+      value: String(buckets.live.length),
+    },
+    {
+      helper: 'Completed service rows retained for customer support.',
+      label: 'Completed work',
+      tone: 'pill-success',
+      value: String(buckets.completed.length),
+    },
+    {
+      helper: `${buckets.preMatchCancelled.length} pre-match / ${buckets.partnerCancelled.length} Partner cancel`,
+      label: 'Cancellation split',
+      tone: cancellationCount ? 'pill-warn' : 'pill-neutral',
+      value: String(cancellationCount),
+    },
+  ];
+}
+
+function buildCustomerBookingOperationGroups(
+  buckets: CustomerBookingOperationBuckets,
+): CustomerBookingOperationGroup[] {
+  return [
+    {
+      countTone: buckets.live.length ? 'pill-warn' : 'pill-neutral',
+      description: 'Bookings still waiting for matching, matched, on the way, arrived, or in service.',
+      emptyMessage: 'No current or in-progress booking matched this filter.',
+      key: 'live',
+      rows: buildCustomerBookingOperationRows(buckets.live),
+      title: 'Current / In Progress',
+    },
+    {
+      countTone: 'pill-success',
+      description: 'Completed service rows with service price, Partner, address, and state timestamp.',
+      emptyMessage: 'No completed booking matched this filter.',
+      key: 'completed',
+      rows: buildCustomerBookingOperationRows(buckets.completed),
+      title: 'Completed',
+    },
+    {
+      countTone: buckets.preMatchCancelled.length ? 'pill-warn' : 'pill-neutral',
+      description: 'Bookings closed before a final matched Partner signal was recorded.',
+      emptyMessage: 'No pre-match cancellation matched this filter.',
+      key: 'pre-match-cancelled',
+      rows: buildCustomerBookingOperationRows(buckets.preMatchCancelled),
+      title: 'Pre-match Cancellations',
+    },
+    {
+      countTone: buckets.partnerCancelled.length ? 'pill-danger' : 'pill-neutral',
+      description: 'Partner-side post-match cancellations and no-show style rows for admin review history.',
+      emptyMessage: 'No Partner cancellation matched this filter.',
+      key: 'partner-cancelled',
+      rows: buildCustomerBookingOperationRows(buckets.partnerCancelled),
+      title: 'Partner Cancellations',
+    },
+  ];
+}
+
+function buildCustomerBookingOperationRows(
+  bookings: readonly AdminBookingDetail[],
+): CustomerBookingOperationRow[] {
+  return bookings.slice(0, 10).map((booking) => {
+    const partnerId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? booking.preferredProviderId;
+    const participantCount = booking.participants?.length ?? 0;
+    const selectedPartner = Boolean(booking.selectedProviderId ?? booking.selectedProvider);
+    const preferredPartner = !selectedPartner && Boolean(booking.preferredProviderId ?? booking.preferredProvider);
+    const stateAt = booking.statusChangedAt ?? booking.closedAt ?? bookingLatestActivityAt(booking);
+
+    return {
+      addressLabel: compactText(customerBookingAddressListLabel(booking), 84),
+      bookingHelper: `${booking.status} / State ${formatDate(stateAt)}`,
+      bookingHref: `/bookings/${booking.id}`,
+      bookingLabel: shortId(booking.id),
+      id: booking.id,
+      partnerAvatarStatus: customerBookingPartnerAvatarStatus(booking),
+      partnerHelper: customerBookingPartnerHelper(selectedPartner, preferredPartner, participantCount),
+      partnerHref: partnerId ? `/partners/${partnerId}` : null,
+      partnerLabel: partnerId ? bookingPartnerDisplayName(booking) : 'No Partner selected',
+      requestTimeLabel: formatDate(bookingRequestOpenedAt(booking)),
+      serviceLabel: bookingServiceLabel(booking),
+      servicePriceLabel: formatMoney(bookingTotal(booking)),
+      stateDetail: formatDate(stateAt),
+      stateLabel: customerBookingStateLabel(booking),
+      stateTone: bookingStatusPillClass(booking.status),
+    };
+  });
+}
+
+function isCustomerPreMatchCancellation(booking: AdminBookingDetail) {
+  return (
+    ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status) &&
+    !isCustomerPartnerCancellation(booking)
+  );
+}
+
+function isCustomerPartnerCancellation(booking: AdminBookingDetail) {
+  if (booking.status === 'NO_SHOW') return true;
+  if (!['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return false;
+  if (booking.closedByRole === 'PROVIDER') return true;
+  return customerBookingHasMatchedPartnerSignal(booking);
+}
+
+function customerBookingHasMatchedPartnerSignal(booking: AdminBookingDetail) {
+  const matchedValue = Boolean(
+    booking.selectedProviderId ??
+      booking.selectedProvider ??
+      booking.matchedAt ??
+      booking.earning ??
+      booking.matchingEvidence?.matchedAt,
+  );
+
+  return (
+    matchedValue ||
+    booking.matchingEvidence?.stage === 'MATCHED' ||
+    booking.matchingEvidence?.stage === 'SERVICE_ACTIVE'
+  );
+}
+
+function customerBookingAddressListLabel(booking: AdminBookingDetail) {
+  return (
+    booking.serviceAddressText ??
+    booking.addressSnapshot?.addressText ??
+    (booking.addressSnapshot?.address ? stringifyAddress(booking.addressSnapshot.address) : null) ??
+    (booking.address ? stringifyAddress(booking.address) : null) ??
+    'No booking address loaded'
+  );
+}
+
+function customerBookingPartnerAvatarStatus(booking: AdminBookingDetail) {
+  if (MATCHING_AVATAR_STATUSES.has(booking.status)) return 'matching';
+  if (WORKING_AVATAR_STATUSES.has(booking.status)) return 'working';
+  if (booking.status === 'COMPLETED') return 'offline';
+  if (isCustomerPartnerCancellation(booking)) return 'offline';
+  return 'offline';
+}
+
+function customerBookingPartnerHelper(
+  selectedPartner: boolean,
+  preferredPartner: boolean,
+  participantCount: number,
+) {
+  if (selectedPartner) return `Matched Partner / ${participantCount} participating`;
+  if (preferredPartner) return `Requested Partner / ${participantCount} participating`;
+  if (participantCount > 0) return `${participantCount} participating`;
+  return 'No Partner activity';
+}
+
+function customerBookingStateLabel(booking: AdminBookingDetail) {
+  if (booking.status === 'COMPLETED') return 'Completed';
+  if (isCustomerPartnerCancellation(booking)) return booking.status === 'NO_SHOW' ? 'No-show' : 'Partner cancel';
+  if (isCustomerPreMatchCancellation(booking)) return 'Pre-match cancel';
+  if (WORKING_AVATAR_STATUSES.has(booking.status)) return 'In progress';
+  if (MATCHING_AVATAR_STATUSES.has(booking.status)) return 'Matching';
+  return booking.status;
 }
 
 function buildCustomerOperatorCommandQueue({
