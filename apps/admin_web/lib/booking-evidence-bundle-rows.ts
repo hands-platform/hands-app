@@ -115,10 +115,10 @@ export function bookingEvidenceBundleRows(
     },
     {
       lane: 'Location',
-      recordLabel: input.latestLocationShortId ?? 'No latest pin',
+      recordLabel: input.latestLocationShortId ?? 'No latest location',
       status: input.hasLocationTrace ? input.locationStatusLabel : 'Missing',
       tone: input.hasLocationTrace ? 'pill-info' : 'pill-neutral',
-      evidence: input.latestLocationEvidenceLabel ?? `Service address pin ${input.serviceAddressPinLabel}`,
+      evidence: input.latestLocationEvidenceLabel ?? `Service address snapshot ${input.serviceAddressPinLabel}`,
       operatorUse:
         'Use location rows only as operational history; routing and live tracking are not required for MVP.',
       href: '#location',

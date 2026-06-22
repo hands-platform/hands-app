@@ -9,10 +9,10 @@ import { bookingChatRepairNeedsOps } from './booking-chat-repair-state';
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingAddressSnapshotLabel,
-  coordinateLabel,
   formatDate,
   shortId,
 } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import type { bookingFinanceTrace } from './booking-finance-trace';
 import { bookingDispatchPin } from './booking-marketplace-supply';
 import type { bookingNotificationTrace } from './booking-notification-trace';
@@ -52,6 +52,7 @@ export function bookingDetailEvidenceBundleRows({
   const latestActivity = bookingActivityRecords[0];
   const latestMessage = messages[messages.length - 1];
   const dispatchPin = bookingDispatchPin(booking);
+  const addressSnapshotLabel = bookingAddressSnapshotLabel(booking);
 
   return buildBookingEvidenceBundleRowsFromFacts({
     bookingId: booking.id,
@@ -61,7 +62,7 @@ export function bookingDetailEvidenceBundleRows({
       booking.customerProfile?.user?.phone ?? 'No phone'
     }`,
     addressReady: Boolean(booking.addressSnapshot),
-    addressLabel: bookingAddressSnapshotLabel(booking),
+    addressLabel: addressSnapshotLabel,
     addressSourceLabel: dispatchPin.source,
     finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
     finalPartnerRecordLabel: finalPartnerSummary.id ? shortId(finalPartnerSummary.id) : 'Selection pending',
@@ -85,10 +86,8 @@ export function bookingDetailEvidenceBundleRows({
     hasLocationTrace: Boolean(latestLocation || locationTrailCount),
     latestLocationShortId: latestLocation ? shortId(latestLocation.id) : null,
     locationStatusLabel: bookingDetailProviderLocationMetricValue(booking),
-    latestLocationEvidenceLabel: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-      : null,
-    serviceAddressPinLabel: dispatchPin.label,
+    latestLocationEvidenceLabel: latestLocationEvidenceLabel(latestLocation),
+    serviceAddressPinLabel: addressSnapshotLabel,
     notificationCount: notificationTrace.rows.length,
     failedAlertCount,
     partnerAlertCount: notificationTrace.rows.filter((row) => row.isPartnerAlert).length,
@@ -99,4 +98,17 @@ export function bookingDetailEvidenceBundleRows({
       : null,
     latestOperatorNote: operatorNoteLines[operatorNoteLines.length - 1] ?? null,
   });
+}
+
+function latestLocationEvidenceLabel(latestLocation: AdminLocationSnapshot | null) {
+  if (!latestLocation) {
+    return null;
+  }
+
+  const address = readAddressText(latestLocation);
+  const locationLabel = address
+    ? serviceAddressAreaLabel(address)
+    : 'Location recorded without readable address';
+
+  return `${locationLabel} / ${formatDate(latestLocation.recordedAt)}`;
 }

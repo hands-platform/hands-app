@@ -143,4 +143,20 @@ describe('bookingEvidenceBundleRows', () => {
       new RegExp([`ri${'sk'}`, `sco${'re'}`, `ra${'nk'}`].join('|'), 'i'),
     );
   });
+
+  it('uses service address snapshot copy when no latest location label is available', () => {
+    const rows = bookingEvidenceBundleRows({
+      ...baseInput,
+      hasLocationTrace: false,
+      latestLocationEvidenceLabel: null,
+      latestLocationShortId: null,
+      serviceAddressPinLabel: 'District 1, Ho Chi Minh City',
+    });
+
+    expect(rows[5]).toMatchObject({
+      lane: 'Location',
+      recordLabel: 'No latest location',
+      evidence: 'Service address snapshot District 1, Ho Chi Minh City',
+    });
+  });
 });

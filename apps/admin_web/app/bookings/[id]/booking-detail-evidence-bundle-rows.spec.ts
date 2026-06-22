@@ -140,6 +140,10 @@ describe('bookingDetailEvidenceBundleRows', () => {
       status: '1 failed',
       tone: 'pill-warn',
     });
+    expect(rows.find((row) => row.lane === 'Location')).toMatchObject({
+      evidence: 'Location recorded without readable address / 14 Jun 2026, 08:10',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 
   it('keeps missing chat, money, and operator trail evidence visible', () => {
@@ -177,5 +181,26 @@ describe('bookingDetailEvidenceBundleRows', () => {
       evidence: 'No operator trail loaded',
       status: 'Empty',
     });
+  });
+
+  it('uses the service address snapshot label instead of service address coordinates', () => {
+    const input = booking({
+      addressSnapshot: {
+        addressText: 'District 3 service address',
+        latitude: 10.762622,
+        longitude: 106.660172,
+      } as AdminBookingDetail['addressSnapshot'],
+    });
+
+    const rows = bookingDetailEvidenceBundleRows({
+      ...baseInput(input),
+      latestLocation: null,
+      locationTrailCount: 0,
+    });
+
+    expect(rows.find((row) => row.lane === 'Location')).toMatchObject({
+      evidence: 'Service address snapshot District 3 service address',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 });
