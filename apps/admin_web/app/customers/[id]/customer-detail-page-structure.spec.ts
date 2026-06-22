@@ -17,6 +17,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('bookingOpsLedgerPage');
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminRoundedPagination');
+    expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
 
     expect(pageSource).not.toContain('Customer operations digest');
     expect(pageSource).not.toContain('Customer connected operations records');
@@ -34,5 +35,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('buildCustomerOperationsDigest');
     expect(pageSource).not.toContain('buildCustomerBookingEvidenceRows');
     expect(pageSource).not.toContain('buildCustomerBookingJourneyRows');
+    expect(pageSource).not.toContain('customerOperatorCommandQueue.metrics');
+    expect(pageSource).not.toContain('customerOperatorCommandQueue.metrics.map');
   });
 });

@@ -311,8 +311,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const customerOperatorCommandQueue = buildCustomerOperatorCommandQueue({
     customer,
     bookings,
-    wallet,
-    bookingStats,
     addresses,
     latestSession,
     pushDevices,
@@ -593,15 +591,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <span className={`pill ${customerSupportPillClass(customerOperatorCommandQueue.tone)}`}>
             {customerOperatorCommandQueue.status}
           </span>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          {customerOperatorCommandQueue.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.detail}</small>
-            </div>
-          ))}
         </div>
         <div className="setup-stage-list admin-mt-14">
           {customerOperatorCommandQueue.commands.map((command) => (
@@ -1900,8 +1889,6 @@ function customerBookingStateLabel(booking: AdminBookingDetail) {
 function buildCustomerOperatorCommandQueue({
   customer,
   bookings,
-  wallet,
-  bookingStats,
   addresses,
   latestSession,
   pushDevices,
@@ -1909,8 +1896,6 @@ function buildCustomerOperatorCommandQueue({
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  wallet: ReturnType<typeof customerWalletSummary>;
-  bookingStats: ReturnType<typeof buildBookingStats>;
   addresses: Array<{ key: string; label: string; value: string }>;
   latestSession?: AdminAppSession;
   pushDevices: CustomerPushDevice[];
@@ -2101,40 +2086,6 @@ function buildCustomerOperatorCommandQueue({
   return {
     status: blocking ? 'Follow-up queued' : activeBooking ? 'Live monitoring' : 'Record ready',
     tone: blocking ? ('warn' as const) : activeBooking ? ('info' as const) : ('success' as const),
-    metrics: [
-      {
-        label: 'Live bookings',
-        value: activeBookings.length.toString(),
-        detail: activeBooking
-          ? `${shortId(activeBooking.id)} / ${activeBooking.status}`
-          : 'No active booking',
-      },
-      {
-        label: 'Completed work',
-        value: bookingStats.completed.toString(),
-        detail: 'Finished service records only',
-      },
-      {
-        label: 'Captured spend',
-        value: formatMoney(wallet.capturedSpend),
-        detail: `${formatMoney(wallet.pendingPaymentAmount)} pending or authorized`,
-      },
-      {
-        label: 'Chat archive',
-        value: bookings.filter((booking) => booking.chatRoom).length.toString(),
-        detail: `${bookings.reduce((sum, booking) => sum + readChatMessages(booking).length, 0)} message(s) retained`,
-      },
-      {
-        label: 'Saved locations',
-        value: addresses.length.toString(),
-        detail: missingAddress ? 'No saved address loaded' : (addresses[0]?.value ?? 'Address loaded'),
-      },
-      {
-        label: 'App reachability',
-        value: enabledPushDevices.length ? 'Push enabled' : 'Phone/manual',
-        detail: latestSession ? `Last seen ${formatDate(latestSession.lastSeenAt)}` : 'No app session',
-      },
-    ],
     commands: commands.slice(0, 8),
   };
 }
