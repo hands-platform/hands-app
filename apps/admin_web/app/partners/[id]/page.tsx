@@ -417,6 +417,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }
 
   const providerOpsPolicy = buildProviderOpsPolicy(operationalPolicies);
+  const partnerDisplayLabel = providerDisplayLabel(provider);
+  const cashFeeDebtTotal = cashFeeDebtAmount(provider);
   const partnerApprovalIssues = providerReviewIssues(provider, providerOpsPolicy);
   const primaryBank = primaryBankAccount(provider);
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
@@ -434,7 +436,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const reviewHistoryRows = buildPartnerReviewHistoryRows(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const reviewControlPanel = buildPartnerReviewControlPanel({
-    cashDebtAmount: cashFeeDebtAmount(provider),
+    cashDebtAmount: cashFeeDebtTotal,
     dossier: registrationDossier,
     provider,
     resubmissionPlan,
@@ -463,6 +465,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
   const kycEvidence = buildPartnerKycEvidence(provider);
   const canApproveKyc = kycEvidence.allRequiredApproved;
+  const missingKycDocumentCount = kycEvidence.missingDocuments.length;
   const partnerKycReviewActions = buildPartnerKycReviewActions(provider, canApproveKyc);
   const partnerTypedDocumentRows = buildPartnerTypedDocumentRows(provider);
   const partnerPublicMediaRows = buildPartnerPublicMediaRows(provider);
@@ -533,6 +536,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     primaryBank,
     payoutOps,
     bookingAcceptance,
+    cashFeeDebtTotal,
   );
   const partnerOperatingChecklist = buildPartnerOperatingChecklist(
     provider,
@@ -605,11 +609,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     activityTypeLabel: detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
     bookingJourneyRowCount: partnerBookingJourneyRows.length,
-    cashDebtLabel: formatCurrency(cashFeeDebtAmount(provider)),
+    cashDebtLabel: formatCurrency(cashFeeDebtTotal),
     chatRetentionRowCount: partnerChatRetentionRows.length,
     connectedRecordLinkCount: connectedPartnerRecordLinks.length,
     dateFilterLabel: dateFilters.label,
-    missingKycDocumentCount: missingApprovedRequiredKycDocuments(provider).length,
+    missingKycDocumentCount,
     openCashDebtEarningCount: openCashDebtEarnings.length,
     operationsDigestCount: partnerOperationsDigest.length,
     payoutStatus: payoutOps.status,
@@ -623,12 +627,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerOperatorFirstRead = buildPartnerOperatorFirstRead({
     backupRadiusMeters: dispatchPolicy.backupRadiusMeters,
     bookingRecordCount: partnerBookingArchive.length,
-    cashDebtLabel: formatCurrency(cashFeeDebtAmount(provider)),
+    cashDebtLabel: formatCurrency(cashFeeDebtTotal),
     chatMessageCount: partnerChatMessageCount,
     chatRetentionRowCount: partnerChatRetentionRows.length,
-    displayLabel: marketplaceDisplayText(
-      provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
-    ),
+    displayLabel: partnerDisplayLabel,
     hasCashFeeDebt,
     joinedAtLabel: formatDate(provider.user?.createdAt),
     latestStaffNoteDetail: partnerOpsNotes[0]
@@ -739,9 +741,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </Link>
           </p>
           <h1>
-            {marketplaceDisplayText(
-              provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
-            )}
+            {partnerDisplayLabel}
           </h1>
           <p className="muted">
             {marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} /{' '}
@@ -754,7 +754,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </Link>
           <ActionMenu
             actions={partnerDetailAccountActionMenuItems(provider)}
-            label={`Partner detail account actions for ${providerDisplayLabel(provider)}`}
+            label={`Partner detail account actions for ${partnerDisplayLabel}`}
           />
         </div>
       </section>
@@ -838,9 +838,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailFullRecordIndexSection
         appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
         bookingRecordCount={partnerBookingArchive.length}
-        cashDebtLabel={formatCurrency(cashFeeDebtAmount(provider))}
+        cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
         dailyDigestCount={partnerDailyActivityDigest.length}
-        missingKycDocumentCount={missingApprovedRequiredKycDocuments(provider).length}
+        missingKycDocumentCount={missingKycDocumentCount}
       />
 
       <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
@@ -898,7 +898,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailCashDebtOriginSection
         hasCashFeeDebt={hasCashFeeDebt}
         hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
-        openDebtLabel={formatCurrency(cashFeeDebtAmount(provider))}
+        openDebtLabel={formatCurrency(cashFeeDebtTotal)}
         openRowCount={openCashDebtEarnings.length}
         rows={cashDebtOriginRows}
       />
@@ -2253,6 +2253,7 @@ function buildPartnerMasterFacts(
   primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null,
   payoutOps: ReturnType<typeof buildProviderPayoutOps>,
   bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  cashFeeDebtTotal: number,
 ) {
   const earnings = provider.earnings ?? [];
   const completedBookings = bookingArchive.filter((record) => record.booking.status === 'COMPLETED').length;
@@ -2343,9 +2344,7 @@ function buildPartnerMasterFacts(
     {
       label: 'Payout',
       value: payoutOps.status,
-      helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(
-        cashFeeDebtAmount(provider),
-      )}`,
+      helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(cashFeeDebtTotal)}`,
     },
     {
       label: 'Tax profile optional',
