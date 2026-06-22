@@ -65,7 +65,7 @@ describe('booking detail chat evidence decision board', () => {
         }),
         expect.objectContaining({
           label: 'Location handoff',
-          helper: '10.7627, 106.6603 latest Partner pin.',
+          helper: 'Location recorded without readable address latest Partner location.',
           value: '14 Jun 2026, 09:10',
         }),
         expect.objectContaining({
@@ -81,5 +81,6 @@ describe('booking detail chat evidence decision board', () => {
         record: '2 notification row(s), 1 audit row(s), 1 note(s).',
       }),
     );
+    expect(JSON.stringify(board)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 });

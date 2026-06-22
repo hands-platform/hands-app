@@ -45,7 +45,7 @@ describe('bookingChatEvidenceDecisionBoard', () => {
     });
   });
 
-  it('summarizes retained chat, latest message, and Partner pin context', () => {
+  it('summarizes retained chat, latest message, and Partner location context', () => {
     const board = bookingChatEvidenceDecisionBoard({
       ...baseInput,
       bookingStatus: 'IN_SERVICE',
@@ -56,7 +56,7 @@ describe('bookingChatEvidenceDecisionBoard', () => {
       latestMessagePreview: 'Partner: I am on the way.',
       hasLatestLocation: true,
       latestLocationAtLabel: '07 Jun 2026 10:31',
-      latestLocationCoordinateLabel: '10.7769, 106.7009',
+      latestLocationCoordinateLabel: 'District 1, Ho Chi Minh City',
       alertCount: 2,
       auditLogCount: 1,
       operatorNoteLines: ['Customer asked for arrival update.'],
@@ -69,11 +69,21 @@ describe('bookingChatEvidenceDecisionBoard', () => {
       value: '07 Jun 2026 10:30',
       helper: 'Partner: I am on the way.',
     });
+    expect(board.metrics[2]).toMatchObject({
+      label: 'Location handoff',
+      value: '07 Jun 2026 10:31',
+      helper: 'District 1, Ho Chi Minh City latest Partner location.',
+    });
+    expect(board.rows[2]).toMatchObject({
+      lane: 'Movement evidence',
+      record: 'District 1, Ho Chi Minh City / 07 Jun 2026 10:31',
+    });
     expect(board.rows[3]).toMatchObject({
       lane: 'Admin retained context',
       state: 'Context loaded',
       record: '2 notification row(s), 1 audit row(s), 1 note(s).',
     });
+    expect(JSON.stringify(board)).not.toMatch(/\bpin\b/i);
   });
 
   it('keeps closed mobile chat available in the admin archive', () => {

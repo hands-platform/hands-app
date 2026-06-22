@@ -7,10 +7,10 @@ import { bookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evid
 import { messageSenderLabel } from './booking-communication-movement-handoff';
 import {
   compactActivityText,
-  coordinateLabel,
   formatDate,
   shortId,
 } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export type BookingDetailChatEvidenceDecisionBoardInput = {
   booking: AdminBookingDetail;
@@ -41,11 +41,18 @@ export function bookingDetailChatEvidenceDecisionBoard({
       : null,
     hasLatestLocation: Boolean(latestLocation),
     latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
-    latestLocationCoordinateLabel: latestLocation
-      ? coordinateLabel(latestLocation.lat, latestLocation.lng)
-      : null,
+    latestLocationCoordinateLabel: latestLocationLabel(latestLocation),
     alertCount: notificationCount,
     auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines: [...operatorNoteLines],
   });
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot | null) {
+  if (!latestLocation) {
+    return null;
+  }
+
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

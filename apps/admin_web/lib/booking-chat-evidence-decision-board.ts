@@ -95,9 +95,9 @@ export function bookingChatEvidenceDecisionBoard(
       },
       {
         label: 'Location handoff',
-        value: input.latestLocationAtLabel ?? 'No pin',
+        value: input.latestLocationAtLabel ?? 'No location',
         helper: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} latest Partner pin.`
+          ? `${input.latestLocationCoordinateLabel} latest Partner location.`
           : 'No Partner location record is attached to this booking.',
       },
       {
