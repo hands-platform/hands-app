@@ -9,9 +9,9 @@ import {
   bookingProviderLocationMetricValue,
 } from '../../../lib/booking-provider-location-copy';
 import { bookingLocationTrail } from '../../../lib/booking-status-location-helpers';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import {
   compactActivityText,
-  coordinateLabel,
   formatDate,
   safeTime,
 } from './booking-formatters';
@@ -122,7 +122,7 @@ export function bookingCommunicationMovementHandoff({
       id: `location-${snapshot.id}`,
       type: 'LOC',
       title: 'Partner location snapshot',
-      detail: `${coordinateLabel(snapshot.lat, snapshot.lng)} / ${locationAgeLabel}`,
+      detail: `${partnerLocationSnapshotLabel(snapshot)} / ${locationAgeLabel}`,
       at: snapshot.recordedAt,
     })),
   ]
@@ -167,7 +167,7 @@ export function bookingCommunicationMovementHandoff({
         helper:
           movementFreshness === 'missing'
             ? 'No Partner movement snapshot yet.'
-            : `${locationAgeLabel} / ${coordinateLabel(latestLocation?.lat, latestLocation?.lng)}`,
+            : `${locationAgeLabel} / ${partnerLocationSnapshotLabel(latestLocation)}`,
       },
       {
         label: 'Movement rows',
@@ -179,6 +179,11 @@ export function bookingCommunicationMovementHandoff({
     ],
     events,
   };
+}
+
+function partnerLocationSnapshotLabel(snapshot?: AdminLocationSnapshot | null) {
+  const address = readAddressText(snapshot);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }
 
 export function messageSenderLabel(message: AdminChatMessage) {

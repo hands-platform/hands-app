@@ -165,6 +165,15 @@ describe('bookingCommunicationMovementHandoff', () => {
     expect(handoff.metrics.find((metric) => metric.label === 'Movement rows')).toMatchObject({
       value: '2',
     });
+    expect(handoff.events.find((event) => event.id === 'location-location-new')).toMatchObject({
+      detail: expect.stringContaining('Location recorded without readable address / Updated'),
+    });
+    expect(
+      [
+        ...handoff.metrics.map((metric) => metric.helper),
+        ...handoff.events.map((event) => event.detail),
+      ].join(' '),
+    ).not.toMatch(/\d{2}\.\d{4},\s*\d{3}\.\d{4}/);
   });
 });
 
