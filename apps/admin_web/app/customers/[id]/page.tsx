@@ -94,13 +94,14 @@ const WORKING_AVATAR_STATUSES = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRI
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
   'Booking',
-  'Customer location',
-  'Partner flow',
+  'Address',
+  'Partner',
   'Chat archive',
-  'Money records',
-  'Ops evidence',
+  'Finance',
+  'Ops',
   'Open',
 ] as const;
+const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
 const CUSTOMER_OPERATING_LEDGER_HEADERS = ['Area', 'Status', 'Evidence', 'Open'] as const;
 const CUSTOMER_BOOKING_HISTORY_HEADERS = [
   'Booking',
@@ -210,6 +211,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     filteredCustomerActivityRecords,
     activityOrder,
   );
+  const visibleCustomerActivityRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_RECENT_ACTIVITY_LIMIT);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
@@ -775,9 +777,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer booking evidence bundles</h2>
             <p className="muted">
-              Booking-by-booking operating bundle for customer desk review. Each row connects the
-              selected address snapshot, Partner state, chat archive, payment, refund, earning, wallet, tax,
-              and staff task records as factual history only.
+              Compact booking-by-booking evidence for address, Partner state, chat, finance, and staff
+              records.
             </p>
           </div>
           <span className="pill pill-info">{customerBookingEvidenceRows.length} booking bundle(s)</span>
@@ -1582,11 +1583,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer chronological activity</h2>
             <p className="muted">
-              Date-sorted factual history across bookings, completed work, chat messages, payments, refunds,
-              addresses, app sessions, push devices, notifications, reviews, and operator notes.
+              Latest customer events across bookings, work, chat, payment, address, app, notification,
+              review, and staff records.
             </p>
           </div>
-          <span className="pill pill-info">{filteredCustomerActivityRecords.length} event(s)</span>
+          <span className="pill pill-info">
+            {visibleCustomerActivityRecords.length}/{filteredCustomerActivityRecords.length} latest
+          </span>
         </div>
         <div className="service-trace-summary admin-mt-14">
           {customerActivitySummary.map((item) => (
@@ -1598,8 +1601,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           ))}
         </div>
         <div className="setup-stage-list admin-mt-12">
-          {filteredCustomerActivityRecords.length > 0 ? (
-            filteredCustomerActivityRecords.slice(0, 40).map((record) => (
+          {visibleCustomerActivityRecords.length > 0 ? (
+            visibleCustomerActivityRecords.map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
@@ -1628,6 +1631,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           )}
         </div>
+        {filteredCustomerActivityRecords.length > visibleCustomerActivityRecords.length ? (
+          <p className="muted admin-mt-12">
+            {filteredCustomerActivityRecords.length - visibleCustomerActivityRecords.length} more event(s) are grouped
+            in the daily activity digest below.
+          </p>
+        ) : null}
       </section>
 
       <section className="card admin-mb-16" id="customer-daily-digest">
@@ -3122,7 +3131,7 @@ function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): Custo
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
       status: booking.status,
       addressStatus: hasAddressSnapshot ? 'Snapshot saved' : 'No address snapshot',
-      addressDetail: addressText,
+      addressDetail: compactText(addressText, 86),
       partnerStatus: booking.selectedProviderId
         ? 'Final Partner selected'
         : booking.preferredProviderId
@@ -3130,19 +3139,19 @@ function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): Custo
           : participantCount
             ? 'Marketplace participation'
             : 'No Partner participation',
-      partnerDetail: `${bookingPartnerDisplayName(booking)} / ${participantCount} participant(s), ${acceptedParticipants} accepted/selected`,
+      partnerDetail: `${bookingPartnerDisplayName(booking)} / ${participantCount} participating / ${acceptedParticipants} accepted`,
       chatStatus: booking.chatRoom ? `${chatMessages.length} message(s)` : 'No chat room',
       chatDetail: booking.chatRoom
         ? `Room ${shortId(booking.chatRoom.id)} / ${bookingChatArchiveLabel(booking)}`
         : bookingChatArchiveLabel(booking),
       chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
       moneyStatus: booking.payment?.status ?? 'No payment',
-      moneyDetail: moneyParts.join(' / '),
+      moneyDetail: compactText(moneyParts.join(' / '), 96),
       opsStatus:
         (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0
           ? 'Operator records'
           : 'No operator rows',
-      opsDetail: opsParts.join(' / '),
+      opsDetail: compactText(opsParts.join(' / '), 96),
     };
   });
 }
