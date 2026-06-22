@@ -8,11 +8,11 @@ import { bookingProviderLocationMetricHelper } from '../../../lib/booking-provid
 import {
   bookingServiceOptionLabel,
   compactActivityText,
-  coordinateLabel,
   distanceLabel,
   providerName,
 } from './booking-formatters';
 import type { BookingOperatingTimelineItem } from './booking-operating-timeline-items';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export function bookingOperatingBaseTimelineItems({
   booking,
@@ -41,7 +41,7 @@ export function bookingOperatingBaseTimelineItems({
       type: 'ADDR',
       title: booking.addressSnapshot ? 'Address snapshot locked' : 'Address snapshot missing',
       detail: booking.addressSnapshot
-        ? `${compactActivityText(addressLine, 84)} / pin ${addressPin}`
+        ? `${compactActivityText(addressLine, 84)} / ${addressSnapshotStateLabel(addressPin)}`
         : 'This booking is still using older address data. Confirm before dispatch.',
       at: booking.addressSnapshot?.createdAt,
       status: booking.addressSnapshot ? 'Locked' : 'Pending',
@@ -165,7 +165,7 @@ export function bookingOperatingBaseTimelineItems({
       id: `location-${latestLocation.id}`,
       type: 'LOC',
       title: 'Latest Partner location shared',
-      detail: `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${bookingProviderLocationMetricHelper(
+      detail: `${latestLocationLabel(latestLocation)} / ${bookingProviderLocationMetricHelper(
         latestLocation.recordedAt,
       )}`,
       at: latestLocation.recordedAt,
@@ -182,4 +182,13 @@ export function bookingOperatingBaseTimelineItems({
   }
 
   return items;
+}
+
+function addressSnapshotStateLabel(addressPin: string) {
+  return readAddressText(addressPin) ? serviceAddressAreaLabel(addressPin) : 'service address snapshot saved';
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot) {
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

@@ -68,6 +68,10 @@ describe('bookingOperatingBaseTimelineItems', () => {
   it('adds matching, participant, and customer selection items', () => {
     const items = bookingOperatingBaseTimelineItems({
       booking: booking({
+        addressSnapshot: {
+          addressText: 'District 2 address',
+          id: 'address-snapshot-1',
+        } as AdminBookingDetail['addressSnapshot'],
         openedAt: '2026-06-14T01:05:00.000Z',
         participants: [
           {
@@ -112,6 +116,10 @@ describe('bookingOperatingBaseTimelineItems', () => {
     expect(items.find((item) => item.id === 'selected-partner-selected')).toMatchObject({
       detail: 'Selected Partner is the final customer-selected Partner.',
     });
+    expect(items.find((item) => item.id === 'address-address-snapshot-1')).toMatchObject({
+      detail: 'District 2 address / service address snapshot saved',
+    });
+    expect(JSON.stringify(items)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 
   it('adds chat ready, latest message, and latest location items when evidence exists', () => {
@@ -138,10 +146,12 @@ describe('bookingOperatingBaseTimelineItems', () => {
     });
     expect(items.find((item) => item.type === 'MSG')?.detail).toContain('Customer One: ');
     expect(items.find((item) => item.type === 'LOC')).toMatchObject({
+      detail: expect.stringMatching(/^Location recorded without readable address \//),
       id: 'location-location-1',
       status: 'Location',
       title: 'Latest Partner location shared',
     });
+    expect(JSON.stringify(items)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
   });
 
   it('adds pending chat and location items for active bookings without handoff evidence', () => {
