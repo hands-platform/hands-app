@@ -60,6 +60,11 @@ describe('bookingDetailOperatorFirstRead', () => {
       value: 'Linh Partner',
       detail: 'Final Partner exists; confirm chat handoff before service coordination.',
     });
+    expect(rows.find((row) => row.label === 'Service address')).toMatchObject({
+      detail: 'District service address',
+      value: 'Service address snapshot saved',
+    });
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
     expect(rows.find((row) => row.label === 'Chat evidence')).toMatchObject({
       value: '2 messages',
     });

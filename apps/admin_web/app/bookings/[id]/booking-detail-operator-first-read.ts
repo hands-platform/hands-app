@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { shortId } from './booking-formatters';
@@ -43,7 +44,7 @@ export function bookingDetailOperatorFirstRead({
     {
       href: '#address-radius-contract',
       label: 'Service address',
-      value: addressPin,
+      value: firstReadServiceAddressStateLabel(addressPin),
       detail: addressLine,
     },
     {
@@ -84,4 +85,13 @@ export function bookingDetailOperatorFirstRead({
           : `${paymentEvidence.paymentMethodAmountLabel}.`,
     },
   ];
+}
+
+function firstReadServiceAddressStateLabel(addressPin: string) {
+  const address = readAddressText(addressPin);
+  if (address) {
+    return serviceAddressAreaLabel(address);
+  }
+
+  return addressPin === 'No pin' ? 'No service address location' : 'Service address snapshot saved';
 }
