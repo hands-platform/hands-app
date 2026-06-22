@@ -136,6 +136,7 @@ import {
 import {
   adminUsageDateWhere,
   adminUsageRangeWindow,
+  buildAdminUsageRegionRows,
   normalizeAdminUsageRange,
 } from './admin-usage-overview';
 
@@ -150,6 +151,7 @@ const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
+const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 500;
 const ADMIN_VIETNAM_ACTIVE_CUSTOMER_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const ADMIN_VIETNAM_ONLINE_PARTNER_WINDOW_MS = 90 * 60 * 1000;
 const ADMIN_BOOKING_DETAIL_NOTIFICATION_LIMIT = 100;
@@ -657,6 +659,9 @@ export class AdminService {
       viewedPartnerRows,
       requestedPartnerRows,
       completedPartnerRows,
+      regionSessionRows,
+      regionBookingRequestRows,
+      regionCompletedBookingRows,
       customerSessionCount,
       completedBookingCount,
       profileViewCount,
@@ -702,6 +707,48 @@ export class AdminService {
         _max: { closedAt: true, updatedAt: true },
         orderBy: { _count: { selectedProviderId: 'desc' } },
         take: ADMIN_USAGE_OVERVIEW_RANK_LIMIT,
+      }),
+      this.prisma.appSession.findMany({
+        where: sessionWhere,
+        orderBy: { lastSeenAt: 'desc' },
+        take: ADMIN_USAGE_OVERVIEW_REGION_LIMIT,
+        select: { lastLoginAddress: true },
+      }),
+      this.prisma.booking.findMany({
+        where: bookingRequestWhere,
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_USAGE_OVERVIEW_REGION_LIMIT,
+        select: {
+          address: true,
+          lat: true,
+          lng: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+      }),
+      this.prisma.booking.findMany({
+        where: completedBookingWhere,
+        orderBy: { closedAt: 'desc' },
+        take: ADMIN_USAGE_OVERVIEW_REGION_LIMIT,
+        select: {
+          address: true,
+          lat: true,
+          lng: true,
+          addressSnapshot: {
+            select: {
+              address: true,
+              addressText: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
       }),
       this.prisma.appSession.count({ where: sessionWhere }),
       this.prisma.booking.count({ where: completedBookingWhere }),
@@ -809,6 +856,28 @@ export class AdminService {
           };
         }),
       },
+      regionUsage: buildAdminUsageRegionRows([
+        ...regionSessionRows.map((row) => ({
+          regionValues: [row.lastLoginAddress],
+          customerSessionCount: 1,
+        })),
+        ...regionBookingRequestRows.map((booking) => ({
+          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          coordinates: {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+          bookingRequestCount: 1,
+        })),
+        ...regionCompletedBookingRows.map((booking) => ({
+          regionValues: [booking.addressSnapshot?.addressText, booking.addressSnapshot?.address, booking.address],
+          coordinates: {
+            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
+            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+          },
+          completedBookingCount: 1,
+        })),
+      ]),
       partnerUsage: {
         mostViewedPartners: viewedPartnerRows.map((row, index) =>
           providerUsageRow(

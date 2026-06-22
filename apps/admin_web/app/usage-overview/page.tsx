@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import {
   AdminUsageOverview,
+  AdminUsageOverviewRegionRow,
   AdminUsageOverviewRankRow,
   adminGet,
 } from '../../lib/admin-api';
@@ -40,6 +41,7 @@ const emptyUsageOverview: AdminUsageOverview = {
     mostActiveCustomers: [],
     completedBookingCustomers: [],
   },
+  regionUsage: [],
   partnerUsage: {
     mostViewedPartners: [],
     requestedPartners: [],
@@ -180,8 +182,69 @@ export default async function UsageOverviewPage({
           rows={overview.partnerUsage.completedPartners}
           valueHeading="Completed"
         />
+        <RegionUsageCard rows={overview.regionUsage} />
       </section>
     </div>
+  );
+}
+
+function RegionUsageCard({ rows }: { rows: readonly AdminUsageOverviewRegionRow[] }) {
+  const activeRows = rows.filter(
+    (row) =>
+      row.customerSessionCount > 0 || row.bookingRequestCount > 0 || row.completedBookingCount > 0,
+  );
+
+  return (
+    <article className="card usage-overview-ranking-card usage-overview-region-card">
+      <div className="ops-section-header">
+        <div>
+          <h2>Region usage</h2>
+          <p className="muted">
+            RegionCode aggregate from stored customer login address and booking address snapshots. It
+            intentionally excludes individual location points.
+          </p>
+        </div>
+        <MapPinned size={18} aria-hidden="true" />
+      </div>
+      <div className="admin-table-scroll usage-overview-table-wrap">
+        <table className="table usage-overview-table">
+          <thead>
+            <tr>
+              <th>Region</th>
+              <th>Customer sessions</th>
+              <th>Requests</th>
+              <th>Completed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeRows.map((row) => (
+              <tr key={row.regionCode}>
+                <td>
+                  <div className="vietnam-region-name">
+                    <span>{row.shortName}</span>
+                    <strong>{row.regionName}</strong>
+                  </div>
+                </td>
+                <td>{formatNumber(row.customerSessionCount)}</td>
+                <td>{formatNumber(row.bookingRequestCount)}</td>
+                <td>{formatNumber(row.completedBookingCount)}</td>
+              </tr>
+            ))}
+            {activeRows.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <div className="empty-state">
+                    <MapPinned size={20} aria-hidden="true" />
+                    <strong>No region usage loaded.</strong>
+                    <p className="muted">Try another stored usage range.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </article>
   );
 }
 

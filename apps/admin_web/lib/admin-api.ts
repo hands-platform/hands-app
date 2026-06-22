@@ -108,6 +108,15 @@ export type AdminUsageOverviewRankRow = {
   lastActivityAt?: string | null;
 };
 
+export type AdminUsageOverviewRegionRow = {
+  regionCode: string;
+  regionName: string;
+  shortName: string;
+  customerSessionCount: number;
+  bookingRequestCount: number;
+  completedBookingCount: number;
+};
+
 export type AdminUsageOverview = {
   generatedAt: string;
   refreshSeconds: number;
@@ -126,6 +135,7 @@ export type AdminUsageOverview = {
     mostActiveCustomers: AdminUsageOverviewRankRow[];
     completedBookingCustomers: AdminUsageOverviewRankRow[];
   };
+  regionUsage: AdminUsageOverviewRegionRow[];
   partnerUsage: {
     mostViewedPartners: AdminUsageOverviewRankRow[];
     requestedPartners: AdminUsageOverviewRankRow[];

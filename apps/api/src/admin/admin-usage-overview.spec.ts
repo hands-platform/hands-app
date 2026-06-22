@@ -1,6 +1,7 @@
 import {
   adminUsageDateWhere,
   adminUsageRangeWindow,
+  buildAdminUsageRegionRows,
   normalizeAdminUsageRange,
 } from './admin-usage-overview';
 
@@ -59,5 +60,37 @@ describe('admin usage overview helpers', () => {
       gte: new Date('2026-06-22T00:00:00.000Z'),
       lt: new Date('2026-06-23T00:00:00.000Z'),
     });
+  });
+
+  it('builds regionCode usage aggregates without returning individual GPS points', () => {
+    const rows = buildAdminUsageRegionRows([
+      {
+        regionValues: ['Cầu Giấy, Hà Nội'],
+        customerSessionCount: 1,
+      },
+      {
+        regionValues: ['22 Le Thanh Ton, Ben Nghe Ward, District 1, Ho Chi Minh City'],
+        bookingRequestCount: 2,
+      },
+      {
+        regionValues: ['Smoke booking address'],
+        coordinates: { latitude: 10.7769, longitude: 106.7009 },
+        completedBookingCount: 1,
+      },
+    ]);
+
+    expect(rows.find((row) => row.regionCode === 'hanoi')).toMatchObject({
+      regionName: 'Ha Noi',
+      customerSessionCount: 1,
+      bookingRequestCount: 0,
+      completedBookingCount: 0,
+    });
+    expect(rows.find((row) => row.regionCode === 'hcm')).toMatchObject({
+      customerSessionCount: 0,
+      bookingRequestCount: 2,
+      completedBookingCount: 1,
+    });
+    expect(rows.find((row) => row.regionCode === 'hcm')).not.toHaveProperty('latitude');
+    expect(rows.find((row) => row.regionCode === 'hcm')).not.toHaveProperty('longitude');
   });
 });

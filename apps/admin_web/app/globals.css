@@ -3572,7 +3572,8 @@ a.action-button-card:hover {
   padding: 18px;
 }
 
-.usage-overview-ranking-card:last-child {
+.usage-overview-ranking-card:last-child,
+.usage-overview-region-card {
   grid-column: 1 / -1;
 }
 
