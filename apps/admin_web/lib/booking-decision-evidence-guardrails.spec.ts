@@ -47,6 +47,20 @@ describe('bookingDecisionEvidenceGuardrails', () => {
     });
   });
 
+  it('does not echo raw coordinate labels in required address evidence', () => {
+    const rows = bookingDecisionEvidenceGuardrails({
+      ...baseInput,
+      addressSnapshotLabel: 'District 1, Ho Chi Minh City',
+      addressPinLabel: '10.7769, 106.7009',
+    });
+
+    expect(rows[0]).toMatchObject({
+      id: 'required-address',
+      evidence: 'District 1, Ho Chi Minh City / Service address snapshot saved',
+    });
+    expect(JSON.stringify(rows[0])).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
+  });
+
   it('keeps open matching visible without auto-selecting a Partner', () => {
     const rows = bookingDecisionEvidenceGuardrails({
       ...baseInput,

@@ -49,6 +49,12 @@ const CHAT_REQUIRED_STATUSES = new Set([
   'COMPLETED',
 ]);
 
+const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
+
+function safeAddressPinEvidence(label: string) {
+  return COORDINATE_PAIR_TEXT_RE.test(label) ? 'Service address snapshot saved' : label;
+}
+
 export function bookingDecisionEvidenceGuardrails(
   input: BookingDecisionEvidenceGuardrailsInput,
 ): BookingDecisionEvidenceGuardrailRow[] {
@@ -69,7 +75,7 @@ export function bookingDecisionEvidenceGuardrails(
       status: input.hasAddressSnapshot ? 'Ready' : 'Needs repair',
       tone: input.hasAddressSnapshot ? 'pill-success' : 'pill-danger',
       evidence: input.hasAddressSnapshot
-        ? `${input.addressSnapshotLabel} / ${input.addressPinLabel}`
+        ? `${input.addressSnapshotLabel} / ${safeAddressPinEvidence(input.addressPinLabel)}`
         : 'No BookingAddressSnapshot is attached.',
       nextStep: input.hasAddressSnapshot
         ? 'Use this address for Partner radius, support, and settlement review.'
