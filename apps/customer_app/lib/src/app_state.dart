@@ -71,6 +71,21 @@ class CustomerRepository {
     return _discoveryRepository.getProviderDetail(providerId);
   }
 
+  Future<bool> isFavoriteProvider(String providerId) async {
+    final favorites = await _discoveryRepository.listFavoriteProviderIds();
+    return favorites.contains(providerId);
+  }
+
+  Future<void> setFavoriteProvider({
+    required String providerId,
+    required bool favorite,
+  }) async {
+    await _discoveryRepository.setFavoriteProvider(
+      providerId: providerId,
+      favorite: favorite,
+    );
+  }
+
   Future<Map<String, dynamic>> getBooking(String bookingId) async {
     return _bookingRepository.getBooking(bookingId);
   }

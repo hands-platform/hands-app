@@ -140,6 +140,12 @@ export type AdminCustomer = {
   }>;
   bookings?: AdminBooking[];
   reviews?: AdminReview[];
+  favoriteProviders?: Array<{
+    id: string;
+    providerProfileId: string;
+    createdAt: string;
+    providerProfile?: AdminProvider | null;
+  }>;
   auditLogs?: AdminAuditLog[];
   auditLogCount?: number;
 };

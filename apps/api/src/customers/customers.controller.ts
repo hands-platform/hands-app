@@ -1,11 +1,11 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { CreateCustomerReviewDto, PreviewCouponDto } from './customers.dto';
+import { CreateCustomerReviewDto, PreviewCouponDto, SetCustomerFavoriteProviderDto } from './customers.dto';
 import { CustomersService } from './customers.service';
 
 @Controller('customer')
@@ -29,5 +29,23 @@ export class CustomersController {
     @Body() body: CreateCustomerReviewDto,
   ) {
     return this.customers.createReview(user.id, body);
+  }
+
+  @Get('partner-favorites')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  listFavoriteProviders(@CurrentUser() user: AuthenticatedUser) {
+    return this.customers.listFavoriteProviders(user.id);
+  }
+
+  @Post('partners/:providerId/favorite')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  setFavoriteProvider(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('providerId') providerId: string,
+    @Body() body: SetCustomerFavoriteProviderDto,
+  ) {
+    return this.customers.setFavoriteProvider(user.id, providerId, body.favorite ?? true);
   }
 }

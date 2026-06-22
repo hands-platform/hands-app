@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 
 import { CustomersService } from './customers.service';
@@ -117,5 +117,147 @@ describe('CustomersService reviews', () => {
     expect(tx.review.create).not.toHaveBeenCalled();
     expect(tx.review.aggregate).not.toHaveBeenCalled();
     expect(tx.providerProfile.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('CustomersService favorite partners', () => {
+  it('lists favorite partners for the authenticated customer', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerFavoriteProvider: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'favorite-1',
+            providerProfileId: 'partner-1',
+          },
+        ]),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.listFavoriteProviders('user-1')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'favorite-1',
+        providerProfileId: 'partner-1',
+      }),
+    ]);
+
+    expect(prisma.customerProfile.findUniqueOrThrow).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+    });
+    expect(prisma.customerFavoriteProvider.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { customerProfileId: 'customer-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+    );
+  });
+
+  it('saves a favorite partner with an idempotent upsert', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      providerProfile: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      customerFavoriteProvider: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'favorite-1',
+          providerProfileId: 'partner-1',
+        }),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.setFavoriteProvider('user-1', 'partner-1', true)).resolves.toMatchObject({
+      favorite: true,
+      providerProfileId: 'partner-1',
+      record: {
+        id: 'favorite-1',
+        providerProfileId: 'partner-1',
+      },
+    });
+
+    expect(prisma.providerProfile.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'partner-1',
+        blockedAt: null,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(prisma.customerFavoriteProvider.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerProfileId_providerProfileId: {
+            customerProfileId: 'customer-1',
+            providerProfileId: 'partner-1',
+          },
+        },
+        create: {
+          customerProfileId: 'customer-1',
+          providerProfileId: 'partner-1',
+        },
+        update: {},
+      }),
+    );
+  });
+
+  it('removes a favorite partner without touching other favorite rows', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      providerProfile: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      customerFavoriteProvider: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.setFavoriteProvider('user-1', 'partner-1', false)).resolves.toEqual({
+      favorite: false,
+      providerProfileId: 'partner-1',
+    });
+
+    expect(prisma.customerFavoriteProvider.deleteMany).toHaveBeenCalledWith({
+      where: {
+        customerProfileId: 'customer-1',
+        providerProfileId: 'partner-1',
+      },
+    });
+  });
+
+  it('rejects favorite changes for a missing or unavailable partner', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      providerProfile: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      customerFavoriteProvider: {
+        upsert: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.setFavoriteProvider('user-1', 'missing-partner', true)).rejects.toThrow(
+      new NotFoundException('Partner profile not found'),
+    );
+
+    expect(prisma.customerFavoriteProvider.upsert).not.toHaveBeenCalled();
+    expect(prisma.customerFavoriteProvider.deleteMany).not.toHaveBeenCalled();
   });
 });

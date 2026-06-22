@@ -44,6 +44,28 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
     final result = await _api.getJson('/customer/partners/$providerId');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
+
+  @override
+  Future<Set<String>> listFavoriteProviderIds() async {
+    final result = await _api.getJson('/customer/partner-favorites');
+    if (result is! List<dynamic>) {
+      return <String>{};
+    }
+    return result
+        .map((item) => item is Map ? item['providerProfileId'] : null)
+        .whereType<String>()
+        .toSet();
+  }
+
+  @override
+  Future<void> setFavoriteProvider({
+    required String providerId,
+    required bool favorite,
+  }) async {
+    await _api.postJson('/customer/partners/$providerId/favorite', {
+      'favorite': favorite,
+    });
+  }
 }
 
 Iterable<Map<String, dynamic>> _serviceItemsFromResult(dynamic result) sync* {

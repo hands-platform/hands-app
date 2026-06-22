@@ -1,20 +1,92 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+const customerFavoriteProviderSelect = {
+  id: true,
+  providerProfileId: true,
+  createdAt: true,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      status: true,
+      ratingAvg: true,
+      reviewCount: true,
+      user: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.CustomerFavoriteProviderSelect;
 
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async listFavoriteProviders(userId: string | undefined) {
+    const customer = await this.requireCustomer(userId);
+    return this.prisma.customerFavoriteProvider.findMany({
+      where: { customerProfileId: customer.id },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: customerFavoriteProviderSelect,
+    });
+  }
+
+  async setFavoriteProvider(userId: string | undefined, providerProfileId: string, favorite: boolean) {
+    const customer = await this.requireCustomer(userId);
+    const provider = await this.prisma.providerProfile.findFirst({
+      where: {
+        id: providerProfileId,
+        blockedAt: null,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!provider) {
+      throw new NotFoundException('Partner profile not found');
+    }
+
+    if (!favorite) {
+      await this.prisma.customerFavoriteProvider.deleteMany({
+        where: {
+          customerProfileId: customer.id,
+          providerProfileId,
+        },
+      });
+      return { favorite: false, providerProfileId };
+    }
+
+    const record = await this.prisma.customerFavoriteProvider.upsert({
+      where: {
+        customerProfileId_providerProfileId: {
+          customerProfileId: customer.id,
+          providerProfileId,
+        },
+      },
+      create: {
+        customerProfileId: customer.id,
+        providerProfileId,
+      },
+      update: {},
+      select: customerFavoriteProviderSelect,
+    });
+
+    return {
+      favorite: true,
+      providerProfileId,
+      record,
+    };
+  }
+
   async createReview(
     userId: string | undefined,
     input: { bookingId: string; rating: number; comment?: string },
   ) {
-    if (!userId) {
-      throw new BadRequestException('Authenticated customer is required');
-    }
-
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({ where: { userId } });
+    const customer = await this.requireCustomer(userId);
     const booking = await this.prisma.booking.findUniqueOrThrow({ where: { id: input.bookingId } });
     if (booking.customerProfileId !== customer.id) {
       throw new BadRequestException('Booking does not belong to this customer');
@@ -96,6 +168,14 @@ export class CustomersService {
       discountAmount,
       finalAmount,
     };
+  }
+
+  private async requireCustomer(userId: string | undefined) {
+    if (!userId) {
+      throw new BadRequestException('Authenticated customer is required');
+    }
+
+    return this.prisma.customerProfile.findUniqueOrThrow({ where: { userId } });
   }
 }
 

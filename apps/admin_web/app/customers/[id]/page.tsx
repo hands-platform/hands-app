@@ -418,7 +418,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
   const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
-  const overviewPartnerRails = buildCustomerPartnerRails(bookings);
+  const overviewPartnerRails = buildCustomerPartnerRails(bookings, customer.favoriteProviders ?? []);
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
@@ -3018,8 +3018,12 @@ function buildSavedAddressListValue(addresses: Array<{ key: string; label: strin
   return compactText(addresses.slice(0, 3).map((address) => address.value).join(' / '), 132);
 }
 
-function buildCustomerPartnerRails(bookings: AdminBookingDetail[]): CustomerDetailPartnerRail[] {
+function buildCustomerPartnerRails(
+  bookings: AdminBookingDetail[],
+  favoriteProviders: NonNullable<AdminCustomerDetail['favoriteProviders']>,
+): CustomerDetailPartnerRail[] {
   const viewedPartners = buildViewedPartnerAvatars(bookings);
+  const favoritePartners = buildFavoritePartnerAvatars(favoriteProviders);
   const completedPartners = buildCompletedPartnerAvatars(bookings);
 
   return [
@@ -3033,7 +3037,7 @@ function buildCustomerPartnerRails(bookings: AdminBookingDetail[]): CustomerDeta
       title: 'Favorite Partners',
       helper: 'Partners the customer saved for direct requests.',
       emptyMessage: 'No favorite Partner rows are captured for this customer yet.',
-      partners: [],
+      partners: favoritePartners,
     },
     {
       title: 'Completed Partners',
@@ -3042,6 +3046,27 @@ function buildCustomerPartnerRails(bookings: AdminBookingDetail[]): CustomerDeta
       partners: completedPartners,
     },
   ];
+}
+
+function buildFavoritePartnerAvatars(
+  favorites: NonNullable<AdminCustomerDetail['favoriteProviders']>,
+): CustomerDetailPartnerAvatar[] {
+  return favorites
+    .filter((favorite) => favorite.providerProfileId || favorite.providerProfile?.id)
+    .map((favorite) => {
+      const partner = favorite.providerProfile;
+      const partnerId = favorite.providerProfileId ?? partner?.id ?? null;
+      return {
+        id: `favorite-${favorite.id}`,
+        href: partnerId ? `/partners/${partnerId}` : null,
+        label: displayMarketplaceText(
+          partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'Favorite Partner',
+        ),
+        helper: `Saved ${formatDate(favorite.createdAt)}`,
+        status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
+      };
+    })
+    .slice(0, 8);
 }
 
 function buildViewedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
@@ -3100,7 +3125,10 @@ function partnerAvatarStatusFromBooking(booking: AdminBookingDetail): AdminAvata
   );
 }
 
-function partnerAvatarStatusFromProviderStatus(status: string | null | undefined, bookingStatus: string) {
+function partnerAvatarStatusFromProviderStatus(
+  status: string | null | undefined,
+  bookingStatus: string,
+): AdminAvatarStatus {
   const providerStatus = (status ?? '').toUpperCase();
   if (WORKING_AVATAR_STATUSES.has(bookingStatus)) return 'working';
   if (MATCHING_AVATAR_STATUSES.has(bookingStatus)) return 'matching';

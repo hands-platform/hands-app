@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 function trimString(value: unknown) {
   return typeof value === 'string' ? value.trim() : value;
@@ -11,6 +11,19 @@ function numberString(value: unknown) {
   }
   const trimmed = value.trim();
   return trimmed === '' ? value : Number(trimmed);
+}
+
+function booleanValue(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  return value;
 }
 
 export class PreviewCouponDto {
@@ -50,4 +63,11 @@ export class CreateCustomerReviewDto {
   @IsString()
   @MaxLength(1000)
   comment?: string;
+}
+
+export class SetCustomerFavoriteProviderDto {
+  @IsOptional()
+  @Transform(({ value }) => booleanValue(value))
+  @IsBoolean()
+  favorite?: boolean;
 }

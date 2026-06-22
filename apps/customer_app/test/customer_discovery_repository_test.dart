@@ -1,5 +1,7 @@
 import 'package:customer_app/src/core/api_client.dart';
+import 'package:customer_app/src/core/app_session_reporter.dart';
 import 'package:customer_app/src/features/discovery/data/repositories/customer_discovery_repository_impl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -28,7 +30,16 @@ void main() {
         ],
       },
     ]);
-    final repository = CustomerDiscoveryRepositoryImpl(api);
+    final repository = CustomerDiscoveryRepositoryImpl(
+      api,
+      AppSessionReporter(
+        api: api,
+        addressStorageKey: 'test-customer-address',
+        storage: const FlutterSecureStorage(),
+        role: 'CUSTOMER',
+        storageKey: 'test-customer-device',
+      ),
+    );
 
     final services = await repository.listServices();
 

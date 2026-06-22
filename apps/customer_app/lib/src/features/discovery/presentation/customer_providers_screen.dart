@@ -162,9 +162,15 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       MaterialPageRoute(
         builder: (context) => ProviderDetailPage(
           providerPreview: provider,
+          favoriteLoader: () => ref
+              .read(customerRepositoryProvider)
+              .isFavoriteProvider(providerId),
           loader: () => ref
               .read(customerRepositoryProvider)
               .getProviderDetail(providerId),
+          onFavoriteChanged: (favorite) => ref
+              .read(customerRepositoryProvider)
+              .setFavoriteProvider(providerId: providerId, favorite: favorite),
           onBookService: (detail, service) async {
             final navigator = Navigator.of(context);
             final booked = await navigator.push<Map<String, dynamic>>(

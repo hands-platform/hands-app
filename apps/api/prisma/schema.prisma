@@ -299,8 +299,23 @@ model CustomerProfile {
   addresses         Json?
   bookings          Booking[]
   bookingSnapshots  BookingAddressSnapshot[]
+  favoriteProviders CustomerFavoriteProvider[]
   reviews           Review[]
   selectedLocations CustomerSelectedLocation[]
+}
+
+model CustomerFavoriteProvider {
+  id                String          @id @default(cuid())
+  customerProfileId String
+  providerProfileId String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([customerProfileId, providerProfileId])
+  @@index([customerProfileId, createdAt])
+  @@index([providerProfileId, createdAt])
 }
 
 model ProviderProfile {
@@ -347,6 +362,7 @@ model ProviderProfile {
   devices                  ProviderDevice[]
   services                 ProviderService[]
   participants             BookingParticipant[]
+  favoritedByCustomers     CustomerFavoriteProvider[]
   preferredBookings        Booking[]                   @relation("PreferredProvider")
   selectedBookings         Booking[]                   @relation("SelectedProvider")
   locationSnapshots        LocationSnapshot[]

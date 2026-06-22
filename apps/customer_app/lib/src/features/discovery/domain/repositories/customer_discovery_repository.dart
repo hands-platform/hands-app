@@ -13,4 +13,11 @@ abstract class CustomerDiscoveryRepository {
   });
 
   Future<Map<String, dynamic>> getProviderDetail(String providerId);
+
+  Future<Set<String>> listFavoriteProviderIds();
+
+  Future<void> setFavoriteProvider({
+    required String providerId,
+    required bool favorite,
+  });
 }

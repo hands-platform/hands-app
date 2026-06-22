@@ -26,6 +26,7 @@ export const adminCustomerNotificationSelect = {
 } satisfies Prisma.NotificationSelect;
 
 export const ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT = 10;
+export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 25;
 
 export const adminCustomerDetailSelect = {
   id: true,
@@ -79,6 +80,16 @@ export const adminCustomerDetailSelect = {
       createdAt: true,
       providerProfile: { select: adminProviderSummarySelect },
       booking: { select: { id: true, services: { select: adminBookingServiceSummarySelect } } },
+    },
+  },
+  favoriteProviders: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
+    select: {
+      id: true,
+      providerProfileId: true,
+      createdAt: true,
+      providerProfile: { select: adminProviderSummarySelect },
     },
   },
 } satisfies Prisma.CustomerProfileSelect;

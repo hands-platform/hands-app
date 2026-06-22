@@ -11,11 +11,15 @@ class ProviderDetailPage extends StatelessWidget {
     super.key,
     required this.providerPreview,
     required this.loader,
+    this.favoriteLoader,
+    this.onFavoriteChanged,
     required this.onBookService,
   });
 
   final Map<String, dynamic> providerPreview;
   final Future<Map<String, dynamic>> Function() loader;
+  final Future<bool> Function()? favoriteLoader;
+  final Future<void> Function(bool favorite)? onFavoriteChanged;
   final Future<void> Function(
       Map<String, dynamic> detail, Map<String, dynamic> service) onBookService;
 
@@ -57,17 +61,17 @@ class ProviderDetailPage extends StatelessWidget {
                 pinned: true,
                 leading: const BackButton(color: Colors.black),
                 backgroundColor: Colors.white,
-                actions: const [
-                  CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.favorite_border, color: Colors.black)),
-                  SizedBox(width: 8),
+                actions: [
+                  ProviderFavoriteAction(
+                    loader: favoriteLoader,
+                    onChanged: onFavoriteChanged,
+                  ),
+                  const SizedBox(width: 8),
                   CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.white,
                       child: Icon(Icons.share_outlined, color: Colors.black)),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Stack(
@@ -347,6 +351,124 @@ class ProviderDetailPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class ProviderFavoriteAction extends StatefulWidget {
+  const ProviderFavoriteAction({
+    super.key,
+    this.loader,
+    this.onChanged,
+  });
+
+  final Future<bool> Function()? loader;
+  final Future<void> Function(bool favorite)? onChanged;
+
+  @override
+  State<ProviderFavoriteAction> createState() => _ProviderFavoriteActionState();
+}
+
+class _ProviderFavoriteActionState extends State<ProviderFavoriteAction> {
+  bool _favorite = false;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorite();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProviderFavoriteAction oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.loader != widget.loader) {
+      _loadFavorite();
+    }
+  }
+
+  Future<void> _loadFavorite() async {
+    final loader = widget.loader;
+    if (loader == null) {
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      final favorite = await loader();
+      if (!mounted) {
+        return;
+      }
+      setState(() => _favorite = favorite);
+    } catch (_) {
+      // Favorite state is optional; keep the profile readable if sync fails.
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final onChanged = widget.onChanged;
+    if (onChanged == null || _loading) {
+      return;
+    }
+
+    final next = !_favorite;
+    setState(() {
+      _favorite = next;
+      _loading = true;
+    });
+
+    try {
+      await onChanged(next);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(next ? 'Partner saved.' : 'Partner removed.')),
+      );
+    } catch (exception) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _favorite = !next);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update saved partner: $exception')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = widget.onChanged == null || _loading;
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: Colors.white,
+      child: _loading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.black,
+              ),
+            )
+          : IconButton(
+              padding: EdgeInsets.zero,
+              tooltip: _favorite ? 'Remove saved partner' : 'Save partner',
+              onPressed: disabled ? null : _toggleFavorite,
+              icon: Icon(
+                _favorite ? Icons.favorite : Icons.favorite_border,
+                color: _favorite ? Colors.redAccent : Colors.black,
+                size: 20,
+              ),
+            ),
     );
   }
 }
