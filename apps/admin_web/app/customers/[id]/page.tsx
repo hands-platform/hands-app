@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Download, Filter, Save, X } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import {
   AdminFormControlButton,
   AdminFormControlLink,
@@ -9,6 +10,7 @@ import {
   AdminFormSelect,
   AdminFormTextarea,
 } from '../../../components/admin-form-controls';
+import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -110,6 +112,7 @@ const CUSTOMER_BOOKING_EVIDENCE_HEADERS = [
   'Open',
 ] as const;
 const CUSTOMER_RECENT_ACTIVITY_LIMIT = 12;
+const CUSTOMER_BOOKING_HISTORY_PAGE_SIZE = 10;
 const CUSTOMER_BOOKING_HISTORY_HEADERS = [
   'Booking',
   'Service',
@@ -188,6 +191,23 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const recentAuditLogs = customer.auditLogs ?? [];
   const filteredBookings = bookings.filter((booking) =>
     isWithinDetailDateFilter(bookingLatestActivityAt(booking), dateFilters),
+  );
+  const bookingHistoryPage = readCustomerBookingHistoryPage(detailSearchParams);
+  const bookingHistoryTotalPages = Math.max(
+    1,
+    Math.ceil(filteredBookings.length / CUSTOMER_BOOKING_HISTORY_PAGE_SIZE),
+  );
+  const bookingHistoryActivePage = Math.min(bookingHistoryPage, bookingHistoryTotalPages);
+  const bookingHistoryStartIndex =
+    (bookingHistoryActivePage - 1) * CUSTOMER_BOOKING_HISTORY_PAGE_SIZE;
+  const visibleBookingHistoryRows = filteredBookings.slice(
+    bookingHistoryStartIndex,
+    bookingHistoryStartIndex + CUSTOMER_BOOKING_HISTORY_PAGE_SIZE,
+  );
+  const bookingHistoryPageFrom = filteredBookings.length === 0 ? 0 : bookingHistoryStartIndex + 1;
+  const bookingHistoryPageTo = Math.min(
+    filteredBookings.length,
+    bookingHistoryStartIndex + visibleBookingHistoryRows.length,
   );
   const customerBookingOperationBuckets = buildCustomerBookingOperationBuckets(filteredBookings);
   const allCustomerBookingOperationBuckets = buildCustomerBookingOperationBuckets(bookings);
@@ -1018,23 +1038,22 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Historical booking rows, retained chat evidence, operator note ledgers, customer activity, notifications, and audit trail in one archive block."
         status={<span className="pill pill-info">Historical archive</span>}
       >
-      <section className="card admin-mb-16" id="booking-history">
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking and cancellation history</h2>
-            <p className="muted">
-              All loaded bookings with Partner, service, payment, refund, review, and chat state.
-            </p>
-          </div>
-          <span className="pill pill-info">{filteredBookings.length} bookings</span>
-        </div>
+      <AdminFilterPanel
+        className="booking-monitor booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-booking-table-group customer-booking-history-section"
+        description="All loaded bookings with Partner, service, payment, refund, review, and chat state."
+        id="booking-history"
+        resultLabel={`${filteredBookings.length} bookings`}
+        resultTone="info"
+        title="Booking and cancellation history"
+      >
         <AdminTableScroll>
           <AdminDataTable
-            emptyMessage={null}
+            className="vuexy-booking-table"
+            emptyMessage="No booking record matched this date filter."
             headers={CUSTOMER_BOOKING_HISTORY_HEADERS}
-            rowCount={filteredBookings.length}
+            rowCount={visibleBookingHistoryRows.length}
           >
-            {filteredBookings.map((booking) => (
+            {visibleBookingHistoryRows.map((booking) => (
               <tr key={booking.id}>
                 <td>
                   <strong>{shortId(booking.id)}</strong>
@@ -1083,12 +1102,28 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             ))}
           </AdminDataTable>
         </AdminTableScroll>
-        {filteredBookings.length === 0 ? (
-          <p className="muted admin-mt-12">
-            No booking record matched this date filter.
-          </p>
-        ) : null}
-      </section>
+        <div className="vuexy-booking-table-footer customer-booking-history-footer">
+          <span>
+            Showing {bookingHistoryPageFrom} to {bookingHistoryPageTo} of {filteredBookings.length} entries
+          </span>
+          <AdminRoundedPagination
+            activePage={bookingHistoryActivePage}
+            ariaLabel="Booking and cancellation history pages"
+            className="vuexy-booking-pagination"
+            hrefForPage={(page) =>
+              buildCustomerDetailPageHref(
+                `/customers/${id}`,
+                detailSearchParams,
+                'bookingHistoryPage',
+                page,
+                'booking-history',
+              )
+            }
+            pageLinkClassName="vuexy-booking-page-link"
+            totalPages={bookingHistoryTotalPages}
+          />
+        </div>
+      </AdminFilterPanel>
 
       <section className="card admin-mb-16" id="customer-chat-retention-ledger">
         <div className="ops-section-header">
@@ -1832,6 +1867,40 @@ function readCustomerBookingOperationPage(
   const rawPage = Array.isArray(rawValue) ? rawValue[0] : rawValue;
   const page = rawPage ? Number(rawPage) : 1;
   return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function readCustomerBookingHistoryPage(
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  return readCustomerBookingOperationPage(searchParams, 'bookingHistoryPage');
+}
+
+function buildCustomerDetailPageHref(
+  basePath: string,
+  searchParams: Record<string, string | string[] | undefined>,
+  pageParam: string,
+  page: number,
+  sectionId: string,
+) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === pageParam || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, item);
+      }
+    } else {
+      params.set(key, value);
+    }
+  }
+
+  if (page > 1) {
+    params.set(pageParam, String(page));
+  }
+
+  const query = params.toString();
+  return `${basePath}${query ? `?${query}` : ''}#${sectionId}`;
 }
 
 function isCustomerPreMatchCancellation(booking: AdminBookingDetail) {

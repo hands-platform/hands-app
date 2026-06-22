@@ -7632,12 +7632,14 @@ textarea:focus-visible {
   scrollbar-gutter: stable;
 }
 
-.customer-detail-page .customer-detail-section-band .customer-booking-operation-section {
+.customer-detail-page .customer-detail-section-band .customer-booking-operation-section,
+.customer-detail-page .customer-detail-section-band .customer-booking-history-section {
   max-height: none;
   overflow: visible;
 }
 
-.customer-detail-page .customer-booking-operation-section .admin-filter-panel-body {
+.customer-detail-page .customer-booking-operation-section .admin-filter-panel-body,
+.customer-detail-page .customer-booking-history-section .admin-filter-panel-body {
   padding: 0;
 }
 

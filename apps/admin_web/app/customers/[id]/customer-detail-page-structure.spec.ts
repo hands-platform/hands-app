@@ -8,6 +8,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('Customer operating picture');
     expect(pageSource).toContain('CustomerBookingOperationBoard');
     expect(pageSource).toContain('Booking and cancellation history');
+    expect(pageSource).toContain('customer-booking-history-section');
+    expect(pageSource).toContain('bookingHistoryPage');
+    expect(pageSource).toContain('AdminRoundedPagination');
 
     expect(pageSource).not.toContain('Customer operations digest');
     expect(pageSource).not.toContain('Customer connected operations records');
