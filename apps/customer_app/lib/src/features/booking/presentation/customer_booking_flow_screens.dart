@@ -54,7 +54,6 @@ class _BookingConfirmationPageState
   String? locationMessage;
   bool applyingCoupon = false;
   bool submitting = false;
-  bool loadingLocation = false;
   bool locationConfirmed = false;
   String? error;
 
@@ -89,54 +88,6 @@ class _BookingConfirmationPageState
     super.dispose();
   }
 
-  Future<void> loadCustomerLocation() async {
-    setState(() => loadingLocation = true);
-    try {
-      final location = await resolveCustomerLocation(ref);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        customerLat = location.latitude;
-        customerLng = location.longitude;
-        addressController.text = location.addressText ?? addressController.text;
-        locationConfirmed = !location.isDemoLocation;
-        if (location.currentLatitude != null &&
-            location.currentLongitude != null) {
-          currentGpsLat = location.currentLatitude;
-          currentGpsLng = location.currentLongitude;
-          currentGpsUpdatedAt = DateTime.now();
-        } else if (location.isDemoLocation) {
-          currentGpsLat = null;
-          currentGpsLng = null;
-          currentGpsUpdatedAt = null;
-        } else {
-          currentGpsLat = location.latitude;
-          currentGpsLng = location.longitude;
-          currentGpsUpdatedAt = DateTime.now();
-        }
-        locationMessage = location.isDemoLocation
-            ? 'You can browse partners from anywhere. Choose a Vietnam service pin before booking; current GPS must be near that service address.'
-            : 'GPS loaded. You can still adjust the service pin on the map.';
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        customerLat = demoCustomerLat;
-        customerLng = demoCustomerLng;
-        locationConfirmed = false;
-        locationMessage =
-            'Could not read GPS. Search the address or choose the service pin manually.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() => loadingLocation = false);
-      }
-    }
-  }
-
   Future<void> openLocationSelector() async {
     final selected = await Navigator.of(context).push<SelectedCustomerLocation>(
       MaterialPageRoute(
@@ -163,6 +114,32 @@ class _BookingConfirmationPageState
     ref.read(selectedCustomerLocationProvider.notifier).state = selected;
   }
 
+  Future<void> refreshCurrentGpsEvidenceForBooking() async {
+    try {
+      final location = await resolveCustomerLocation(ref);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        currentGpsLat = location.currentLatitude;
+        currentGpsLng = location.currentLongitude;
+        currentGpsUpdatedAt = location.currentLatitude != null &&
+                location.currentLongitude != null
+            ? DateTime.now()
+            : null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        currentGpsLat = null;
+        currentGpsLng = null;
+        currentGpsUpdatedAt = null;
+      });
+    }
+  }
+
   Future<void> confirmBooking() async {
     final lat = customerLat;
     final lng = customerLng;
@@ -178,6 +155,10 @@ class _BookingConfirmationPageState
       error = null;
     });
     try {
+      await refreshCurrentGpsEvidenceForBooking();
+      if (!mounted) {
+        return;
+      }
       final savedLocation =
           await ref.read(customerRepositoryProvider).saveSelectedLocation(
                 lat: lat,
@@ -423,10 +404,6 @@ class _BookingConfirmationPageState
                   if (locationMessage != null) ...[
                     const SizedBox(height: 8),
                     InfoBanner(text: locationMessage!),
-                  ],
-                  if (loadingLocation) ...[
-                    const SizedBox(height: 6),
-                    const LinearProgressIndicator(minHeight: 4),
                   ],
                   const SizedBox(height: 4),
                   Text(
