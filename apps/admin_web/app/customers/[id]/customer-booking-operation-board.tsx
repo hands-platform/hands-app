@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AdminDataTable, AdminTableScroll } from '../../../components/admin-data-table';
+import { AdminDataTable } from '../../../components/admin-data-table';
 import { AdminFilterPanel } from '../../../components/admin-filter-panel';
 import { AdminPersonCell } from '../../../components/admin-person-cell';
 import { AdminRoundedPagination } from '../../../components/admin-rounded-pagination';
@@ -131,54 +131,52 @@ function CustomerBookingOperationSection({
       resultTone={customerBookingOperationResultTone(group.countTone)}
       title={group.title}
     >
-      <AdminTableScroll>
-        <AdminDataTable
-          className="vuexy-booking-table"
-          emptyMessage={group.emptyMessage}
-          headers={CUSTOMER_BOOKING_OPERATION_HEADERS}
-          rowCount={visibleRows.length}
-        >
-          {visibleRows.map((row) => (
-            <tr key={row.id}>
-              <td>
-                <span className="muted">{row.requestTimeLabel}</span>
-              </td>
-              <td>
-                <Link className="text-link" href={row.bookingHref}>
-                  <strong>{row.bookingLabel}</strong>
-                </Link>
-                <p className="muted">{row.bookingHelper}</p>
-              </td>
-              <td>
-                <strong>{row.serviceLabel}</strong>
-                <p className="muted">{row.servicePriceLabel}</p>
-              </td>
-              <td>
-                <AdminPersonCell
-                  avatarClassName="vuexy-booking-avatar is-partner"
-                  avatarStatus={row.partnerAvatarStatus}
-                  className="vuexy-booking-person"
-                  copyClassName="vuexy-booking-person-copy"
-                  helper={row.partnerHelper}
-                  href={row.partnerHref}
-                  label={row.partnerLabel}
-                  linkClassName="vuexy-booking-person-link"
-                />
-              </td>
-              <td>{row.addressLabel}</td>
-              <td>
-                <span className={`pill ${row.stateTone}`}>{row.stateLabel}</span>
-                <p className="muted">{row.stateDetail}</p>
-              </td>
-              <td>
-                <Link className="text-link" href={row.bookingHref}>
-                  View
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </AdminDataTable>
-      </AdminTableScroll>
+      <AdminDataTable
+        className="vuexy-booking-table"
+        emptyMessage={group.emptyMessage}
+        headers={CUSTOMER_BOOKING_OPERATION_HEADERS}
+        rowCount={visibleRows.length}
+      >
+        {visibleRows.map((row) => (
+          <tr key={row.id}>
+            <td>
+              <span className="muted">{row.requestTimeLabel}</span>
+            </td>
+            <td>
+              <Link className="text-link" href={row.bookingHref}>
+                <strong>{row.bookingLabel}</strong>
+              </Link>
+              <p className="muted">{row.bookingHelper}</p>
+            </td>
+            <td>
+              <strong>{row.serviceLabel}</strong>
+              <p className="muted">{row.servicePriceLabel}</p>
+            </td>
+            <td>
+              <AdminPersonCell
+                avatarClassName="vuexy-booking-avatar is-partner"
+                avatarStatus={row.partnerAvatarStatus}
+                className="vuexy-booking-person"
+                copyClassName="vuexy-booking-person-copy"
+                helper={row.partnerHelper}
+                href={row.partnerHref}
+                label={row.partnerLabel}
+                linkClassName="vuexy-booking-person-link"
+              />
+            </td>
+            <td>{row.addressLabel}</td>
+            <td>
+              <span className={`pill ${row.stateTone}`}>{row.stateLabel}</span>
+              <p className="muted">{row.stateDetail}</p>
+            </td>
+            <td>
+              <Link className="text-link" href={row.bookingHref}>
+                View
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </AdminDataTable>
 
       <div className="vuexy-booking-table-footer customer-booking-operation-footer">
         <span>
