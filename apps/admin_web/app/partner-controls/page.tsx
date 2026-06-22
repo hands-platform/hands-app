@@ -65,7 +65,7 @@ const DEFAULT_PARTNER_CONTROL_POLICY: PartnerControlPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10000,
   invitationLimit: 50,
-  locationFreshnessMinutes: 30,
+  locationFreshnessMinutes: 90,
 };
 
 export default async function PartnerControlsPage({

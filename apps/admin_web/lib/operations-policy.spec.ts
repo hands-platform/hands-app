@@ -84,7 +84,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.providerResponseWindowMinutes).toBe(10);
     expect(policy.travelBufferMinutes).toBe(30);
     expect(policy.marketplaceRadiusMeters).toBe(10000);
-    expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
+    expect(policy.marketplaceLocationFreshnessMinutes).toBe(90);
     expect(policy.marketplaceInvitationLimit).toBe(50);
     expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
     expect(policy.preferredAcceptMode).toBe('CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT');

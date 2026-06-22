@@ -30,7 +30,7 @@ export type BookingLocationNeedsOpsFromFactsInput = {
 
 const decidedPreferredParticipantStatuses = new Set(['ACCEPTED', 'SELECTED', 'REJECTED']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
-const defaultStaleLocationMinutes = 30;
+const defaultStaleLocationMinutes = 90;
 const defaultExpiredLocationHours = 24;
 
 export function isPreferredAwaitingDecision(input: PreferredAwaitingDecisionInput): boolean {

@@ -17,7 +17,7 @@ export type ProviderOpsPolicy = {
 };
 
 export const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
-  staleLocationMinutes: 30,
+  staleLocationMinutes: 90,
   expiredLocationHours: 24,
   backupRadiusMeters: 10000,
   responseWindowMinutes: 10,

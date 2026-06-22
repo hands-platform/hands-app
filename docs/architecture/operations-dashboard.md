@@ -90,7 +90,7 @@ The dashboard intentionally mirrors the current MVP operations policy:
 
 - Preferred partner response window: 10 minutes.
 - Marketplace partner radius: 10km.
-- Marketplace partner location freshness: 30 minutes.
+- Marketplace partner stale threshold: 90 minutes. Active bookings refresh at most every 30 minutes.
 - Marketplace partners can appear while the preferred partner is still deciding.
 - First-pick valid acceptance can match first; otherwise the customer selects from participating partners.
 - A negative partner wallet can still allow marketplace list visibility and join records, but blocks final acceptance, service start, and payout release until settlement or admin offset clears the debt.

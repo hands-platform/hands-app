@@ -322,7 +322,7 @@ type PartnerEarningsByBookingId = ReadonlyMap<string, PartnerEarning>;
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
-  locationFreshnessMinutes: 30,
+  locationFreshnessMinutes: 90,
 };
 
 function readPartnerDetailSection(

@@ -99,7 +99,9 @@ function readBookingAcceptancePolicy(
 
 function baselineForPolicy(policy: BookingAcceptancePolicy): BookingAcceptanceBaseline {
   return {
-    locationFreshness: policy.backupLocationFreshnessMinutes === 30,
+    locationFreshness:
+      policy.backupLocationFreshnessMinutes ===
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes,
     radius: policy.backupRadiusMeters === 10000,
     timer: policy.responseWindowMinutes === 10,
   };
@@ -131,10 +133,12 @@ function buildBookingAcceptanceCards(policy: BookingAcceptancePolicy, baseline: 
     },
     {
       title: 'Marketplace location freshness',
-      status: baseline.locationFreshness ? '30m default' : 'Custom freshness',
+      status: baseline.locationFreshness
+        ? `${ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes}m default`
+        : 'Custom freshness',
       detail: `Marketplace Partner location freshness is checked at ${policy.backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
       operatorAction: baseline.locationFreshness
-        ? 'This matches the active-booking guard. Idle partners refresh at 60 minutes or 3000m movement.'
+        ? 'This matches the low-cost stale threshold. Idle partners refresh at 60 minutes or 3000m movement; active bookings refresh every 30 minutes.'
         : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
       className: baseline.locationFreshness ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baseline.locationFreshness ? 'pill-success' : 'pill-warn',

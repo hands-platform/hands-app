@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   BACKUP_OPEN_IMMEDIATE,
+  DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
   DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
   DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
   MATCHING_BACKUP_OPEN_MODE_KEY,
@@ -42,6 +43,10 @@ describe('matching policy', () => {
 
     expect(policy.providerResponseWindowMinutes).toBe(DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES);
     expect(policy.backupProviderRadiusMeters).toBe(DEFAULT_BACKUP_PROVIDER_RADIUS_METERS);
+    expect(policy.backupProviderLocationMaxAgeMinutes).toBe(
+      DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+    );
+    expect(policy.backupProviderLocationMaxAgeMinutes).toBe(90);
     expect(policy.preferredAcceptMode).toBe(PREFERRED_ACCEPT_CUSTOMER_CONFIRM);
     expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
     expect(policy.bookingDistanceGateEnabled).toBe(true);

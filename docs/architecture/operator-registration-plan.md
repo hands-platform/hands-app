@@ -44,7 +44,7 @@ npm.cmd run external:check:maps
    - Current defaults:
      - first-pick response window: 10 minutes
      - marketplace radius: 10km
-     - marketplace location freshness: 30 minutes
+     - marketplace stale threshold: 90 minutes; active booking refresh: 30 minutes
      - final partner connection: first-pick valid acceptance first, otherwise customer fallback selection
      - negative partner wallet: marketplace participation blocked until settlement
    - Legacy env keys may still contain `BACKUP`; treat them as marketplace settings.

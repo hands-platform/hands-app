@@ -1662,7 +1662,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Stale location</span>
               <strong>{partnerSupply.staleLocation}</strong>
-              <small>Last pin older than 30m</small>
+              <small>Last saved location older than 90m</small>
             </div>
             <div>
               <span>Cash debt gate</span>

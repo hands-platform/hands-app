@@ -91,7 +91,8 @@ describe('booking status location helpers', () => {
     const now = new Date('2026-06-07T10:00:00.000Z').getTime();
 
     expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:45:00.000Z', now)).toBe('recent');
-    expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:20:00.000Z', now)).toBe('stale');
+    expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:20:00.000Z', now)).toBe('recent');
+    expect(providerLocationFreshnessFromTimestamp('2026-06-07T08:20:00.000Z', now)).toBe('stale');
     expect(providerLocationFreshnessFromTimestamp('2026-06-06T08:00:00.000Z', now)).toBe('expired');
     expect(providerLocationFreshnessFromTimestamp(null, now)).toBe('missing');
     expect(providerLocationFreshnessFromTimestamp('bad-date', now)).toBe('missing');
@@ -176,6 +177,18 @@ describe('booking status location helpers', () => {
           currentLat: '10.7769',
           currentLng: '106.7009',
           currentLocationUpdatedAt: '2026-06-07T09:20:00.000Z',
+        },
+        nowMs: now,
+      }),
+    ).toBe(false);
+
+    expect(
+      bookingLocationNeedsOpsFromProvider({
+        status: 'ARRIVED',
+        provider: {
+          currentLat: '10.7769',
+          currentLng: '106.7009',
+          currentLocationUpdatedAt: '2026-06-07T08:20:00.000Z',
         },
         nowMs: now,
       }),

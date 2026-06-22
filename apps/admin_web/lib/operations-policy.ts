@@ -37,7 +37,7 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   travelBufferMinutes: 30,
   providerResponseWindowMinutes: 10,
   marketplaceRadiusMeters: 10_000,
-  marketplaceLocationFreshnessMinutes: 30,
+  marketplaceLocationFreshnessMinutes: 90,
   marketplaceInvitationLimit: 50,
   bookingMaxCustomerCurrentToAddressKm: 50,
   bookingMaxPreferredPartnerDistanceKm: 50,
