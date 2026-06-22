@@ -619,7 +619,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
       <CustomerDetailShortcutStrip items={detailShortcuts} />
 
-      <div className="customer-detail-shell">
+      <CustomerDetailSectionBand
+        eyebrow="Operations"
+        title="Customer operating picture"
+        description="Above-fold decision support for the desk: what is live now, what is blocked, what evidence exists, and which linked records matter next."
+        status={<span className="pill pill-info">Operator flow</span>}
+      >
         <CustomerDetailOverviewShell
           avatarStatus={customerAvatarStatus}
           facts={overviewFacts}
@@ -629,13 +634,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           subtitle={`${customer.user?.phone ?? 'No phone'} / ${customer.user?.email ?? 'No email'}`}
         />
 
-        <div className="customer-detail-main">
-      <CustomerDetailSectionBand
-        eyebrow="Operations"
-        title="Customer operating picture"
-        description="Above-fold decision support for the desk: what is live now, what is blocked, what evidence exists, and which linked records matter next."
-        status={<span className="pill pill-info">Operator flow</span>}
-      >
       <section className="card admin-mb-16" id="customer-operator-first-read">
         <div className="ops-section-header">
           <div>
@@ -1905,8 +1903,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </AdminTableScroll>
       </section>
       </CustomerDetailSectionBand>
-        </div>
-      </div>
     </div>
   );
 }

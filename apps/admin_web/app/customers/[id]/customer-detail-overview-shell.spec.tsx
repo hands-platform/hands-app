@@ -24,7 +24,6 @@ describe('CustomerDetailOverviewShell', () => {
     expect(rendered).not.toContain('Open latest booking');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
-        'customer-detail-sidebar',
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-online',
         'card customer-detail-overview-card',
