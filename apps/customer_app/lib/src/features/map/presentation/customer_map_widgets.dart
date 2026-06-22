@@ -265,7 +265,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
 
   Future<void> searchAddress(String query) async {
     final text = query.trim();
-    if (text.length < 2) {
+    if (text.length < 3) {
       setState(() => searchResults = []);
       return;
     }

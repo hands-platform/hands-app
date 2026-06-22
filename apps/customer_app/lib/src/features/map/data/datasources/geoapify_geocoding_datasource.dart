@@ -14,7 +14,7 @@ class GeoapifyGeocodingDataSource {
 
   Future<List<AddressSearchResult>> search(String query) async {
     final normalized = query.trim().toLowerCase();
-    if (normalized.length < 2 || apiKey.isEmpty) {
+    if (normalized.length < 3 || apiKey.isEmpty) {
       return [];
     }
 

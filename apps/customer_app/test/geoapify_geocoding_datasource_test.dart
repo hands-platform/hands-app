@@ -14,8 +14,10 @@ void main() {
         GeoapifyGeocodingDataSource(apiKey: 'test-key', client: client);
 
     final results = await dataSource.search('a');
+    final twoCharacterResults = await dataSource.search('ab');
 
     expect(results, isEmpty);
+    expect(twoCharacterResults, isEmpty);
     expect(client.callCount, 0);
   });
 
