@@ -22,6 +22,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Customer connected operations records');
     expect(pageSource).not.toContain('Customer full record index');
     expect(pageSource).not.toContain('Customer operating ledger');
+    expect(pageSource).not.toContain('Customer recent operations timeline');
+    expect(pageSource).not.toContain('customer-recent-operations-timeline');
     expect(pageSource).not.toContain('Customer booking evidence bundles');
     expect(pageSource).not.toContain('Customer booking journey');
     expect(pageSource).not.toContain('CustomerOperatingLedgerRow');

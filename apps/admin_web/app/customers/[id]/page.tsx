@@ -514,50 +514,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         searchParams={detailSearchParams}
       />
 
-      <section className="card admin-mb-16" id="customer-recent-operations-timeline">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer recent operations timeline</h2>
-            <p className="muted">
-              Latest factual customer events in the order operators need them: app, address, booking, chat,
-              payment, refund, review, and staff records.
-            </p>
-          </div>
-          <Link className="text-link" href="#customer-activity">
-            Open full timeline
-          </Link>
-        </div>
-        <div className="setup-stage-list admin-mt-12">
-          {filteredCustomerActivityRecords.length > 0 ? (
-            filteredCustomerActivityRecords.slice(0, 8).map((record) => (
-              <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}`}>
-                <span>{record.type}</span>
-                <div>
-                  {record.href ? (
-                    <Link className="text-link" href={record.href}>
-                      <strong>{record.title}</strong>
-                    </Link>
-                  ) : (
-                    <strong>{record.title}</strong>
-                  )}
-                  <p className="muted">{record.detail}</p>
-                </div>
-                <small>{formatDate(record.at)}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No customer event matched this filter</strong>
-                <p className="muted">Clear the date filter or choose a wider period.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </section>
-
       <section className="card admin-mb-16" id="customer-booking-create-gates">
         <div className="ops-section-header">
           <div>
