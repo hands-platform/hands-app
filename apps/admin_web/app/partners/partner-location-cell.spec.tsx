@@ -3,7 +3,7 @@ import { DEFAULT_PROVIDER_OPS_POLICY } from './partner-list-ops';
 import { PartnerLocationCell } from './partner-location-cell';
 
 describe('PartnerLocationCell', () => {
-  it('renders recent partner coordinates with location status', () => {
+  it('renders recent partner location status without exposing raw coordinates', () => {
     const cell = PartnerLocationCell({
       opsPolicy: DEFAULT_PROVIDER_OPS_POLICY,
       provider: {
@@ -17,8 +17,9 @@ describe('PartnerLocationCell', () => {
     const rendered = normalizedText(cell);
 
     expect(rendered).toContain('Location recent');
-    expect(rendered).toContain('10.1235');
-    expect(rendered).toContain('106.9877');
+    expect(rendered).toContain('Partner location saved for dispatch checks.');
+    expect(rendered).not.toContain('10.1235');
+    expect(rendered).not.toContain('106.9877');
     expect(classNamesIn(cell)).toEqual(expect.arrayContaining(['pill pill-success']));
   });
 
@@ -34,7 +35,7 @@ describe('PartnerLocationCell', () => {
 
     expect(rendered).toContain('No location');
     expect(rendered).toContain('Partner app has not shared a location.');
-    expect(rendered).toContain('No saved coordinates yet.');
+    expect(rendered).toContain('No saved location yet.');
     expect(classNamesIn(cell)).toEqual(expect.arrayContaining(['pill pill-neutral']));
   });
 });

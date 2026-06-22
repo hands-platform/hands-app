@@ -26,11 +26,9 @@ export function PartnerLocationCell({ opsPolicy, provider }: PartnerLocationCell
         {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}
       </p>
       {hasCoordinate ? (
-        <p className="muted">
-          {Number(provider.currentLat).toFixed(4)}, {Number(provider.currentLng).toFixed(4)}
-        </p>
+        <p className="muted">Partner location saved for dispatch checks.</p>
       ) : (
-        <p className="muted">No saved coordinates yet.</p>
+        <p className="muted">No saved location yet.</p>
       )}
     </div>
   );
