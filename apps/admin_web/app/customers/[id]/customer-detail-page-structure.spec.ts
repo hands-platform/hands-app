@@ -46,5 +46,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('customerOperatorCommandQueue.metrics');
     expect(pageSource).not.toContain('customerOperatorCommandQueue.metrics.map');
     expect(pageSource).not.toContain('activityPlan.cards');
+    expect(pageSource).not.toContain('Loaded attempts');
+    expect(pageSource).not.toContain('Filtered attempts');
+    expect(pageSource).not.toContain('Latest gate');
   });
 });

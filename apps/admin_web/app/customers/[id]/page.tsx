@@ -522,27 +522,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               evidence for customer support and setup checks.
             </p>
           </div>
-          <Link className="text-link" href="/bookings?view=blocked-create">
-            Open gate queue
-          </Link>
-        </div>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Loaded attempts</span>
-            <strong>{bookingCreateGateAttempts.length}</strong>
-            <small>All recent customer-linked gate attempts.</small>
-          </div>
-          <div>
-            <span>Filtered attempts</span>
-            <strong>{filteredBookingCreateGateAttempts.length}</strong>
-            <small>Matches current date filter.</small>
-          </div>
-          <div>
-            <span>Latest gate</span>
-            <strong>{bookingCreateGateAttempts[0]?.gateLabel ?? 'None'}</strong>
-            <small>
-              {bookingCreateGateAttempts[0] ? formatDate(bookingCreateGateAttempts[0].at) : 'No gate row'}
-            </small>
+          <div className="participant-list">
+            <span
+              className={`pill ${
+                filteredBookingCreateGateAttempts.length > 0 ? 'pill-warn' : 'pill-neutral'
+              }`}
+            >
+              {filteredBookingCreateGateAttempts.length} filtered
+            </span>
+            <span className="pill pill-neutral">{bookingCreateGateAttempts.length} total</span>
+            <Link className="text-link" href="/bookings?view=blocked-create">
+              Open gate queue
+            </Link>
           </div>
         </div>
         {filteredBookingCreateGateAttempts.length === 0 ? (
