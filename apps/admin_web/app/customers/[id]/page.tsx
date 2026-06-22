@@ -85,7 +85,6 @@ import {
   CustomerDetailShortcutStrip,
   type CustomerDetailShortcut,
 } from './customer-detail-section-shell';
-import type { DetailActivityOrder } from './customer-detail-filters';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -291,10 +290,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     activityOrder,
   );
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
-  const customerDailyActivityDigest = buildCustomerDailyActivityDigest(
-    filteredCustomerActivityRecords,
-    activityOrder,
-  );
   const visibleCustomerActivityRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_RECENT_ACTIVITY_LIMIT);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
@@ -1201,61 +1196,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
         {filteredCustomerActivityRecords.length > visibleCustomerActivityRecords.length ? (
           <p className="muted admin-mt-12">
-            {filteredCustomerActivityRecords.length - visibleCustomerActivityRecords.length} more event(s) are grouped
-            in the daily activity digest below.
+            {filteredCustomerActivityRecords.length - visibleCustomerActivityRecords.length} more event(s) are
+            available through the date and activity filters above.
           </p>
         ) : null}
-      </section>
-
-      <section className="card admin-mb-16" id="customer-daily-digest">
-        <div className="ops-section-header">
-          <div>
-            <h2>Customer daily activity digest</h2>
-            <p className="muted">
-              Date-grouped factual activity for quick operator review. Use this before opening the full
-              chronological timeline.
-            </p>
-          </div>
-          <span className="pill pill-info">{customerDailyActivityDigest.length} day(s)</span>
-        </div>
-        <div className="setup-stage-list admin-mt-12">
-          {customerDailyActivityDigest.length > 0 ? (
-            customerDailyActivityDigest.map((day) => (
-              <div className="setup-stage-item" key={day.key}>
-                <span>{day.label}</span>
-                <div>
-                  <strong>{day.total} event(s)</strong>
-                  <p className="muted">
-                    {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
-                  </p>
-                  <div className="setup-stage-list admin-mt-10">
-                    {day.highlights.map((record) => (
-                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}`}>
-                        <strong>{record.title}</strong>
-                        <small>
-                          {record.type} / {formatDate(record.at)}
-                        </small>
-                        <p className="muted admin-m-0">
-                          {record.detail}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No daily activity matched this filter</strong>
-                <p className="muted">Clear the date filter or choose a wider range.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
       </section>
 
       <section className="card" id="notifications">
@@ -1461,14 +1405,6 @@ type CustomerActivityRecord = {
   title: string;
   detail: string;
   href?: string;
-};
-type CustomerDailyActivityDigest = {
-  key: string;
-  label: string;
-  total: number;
-  latestAt?: string;
-  typeCounts: Array<{ type: string; count: number }>;
-  highlights: CustomerActivityRecord[];
 };
 
 type CustomerChatRetentionRow = {
@@ -2814,39 +2750,6 @@ function buildCustomerActivitySummary(
   ];
 }
 
-function buildCustomerDailyActivityDigest(
-  records: CustomerActivityRecord[],
-  order: DetailActivityOrder = 'newest',
-): CustomerDailyActivityDigest[] {
-  const grouped = new Map<string, CustomerActivityRecord[]>();
-
-  for (const record of records) {
-    const key = activityDateKey(record.at);
-    if (!key) continue;
-    grouped.set(key, [...(grouped.get(key) ?? []), record]);
-  }
-
-  return [...grouped.entries()]
-    .sort(([left], [right]) => (order === 'oldest' ? left.localeCompare(right) : right.localeCompare(left)))
-    .slice(0, 14)
-    .map(([key, dayRecords]) => {
-      const typeCounts = [...countActivityTypes(dayRecords).entries()]
-        .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-        .map(([type, count]) => ({ type, count }));
-      const newestRecords = orderCustomerActivityRecords(dayRecords, 'newest');
-      const sortedRecords = orderCustomerActivityRecords(dayRecords, order);
-
-      return {
-        key,
-        label: formatActivityDateLabel(key),
-        total: dayRecords.length,
-        latestAt: newestRecords[0]?.at,
-        typeCounts,
-        highlights: sortedRecords.slice(0, 4),
-      };
-    });
-}
-
 function buildCustomerBookingGateAttemptRows(
   auditLogs: AdminAuditLog[],
   customerId: string,
@@ -3059,31 +2962,6 @@ function bookingOpsTaskCount(booking: unknown) {
 function bookingAuditLogCount(booking: unknown) {
   const record = booking && typeof booking === 'object' ? (booking as { auditLogs?: unknown }) : {};
   return Array.isArray(record.auditLogs) ? record.auditLogs.length : 0;
-}
-
-function countActivityTypes(records: Array<{ type: string }>) {
-  const counts = new Map<string, number>();
-  for (const record of records) {
-    counts.set(record.type, (counts.get(record.type) ?? 0) + 1);
-  }
-  return counts;
-}
-
-function activityDateKey(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString().slice(0, 10);
-}
-
-function formatActivityDateLabel(key: string) {
-  const date = new Date(`${key}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return key;
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  }).format(date);
 }
 
 function bookingTotal(booking: AdminBookingDetail) {

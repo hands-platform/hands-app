@@ -67,5 +67,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('<span>Audit logs</span>');
     expect(pageSource).not.toContain('<small>Enabled push targets</small>');
     expect(pageSource).not.toContain('<small>Operator/system actions</small>');
+    expect(pageSource).not.toContain('Customer daily activity digest');
+    expect(pageSource).not.toContain('customer-daily-digest');
+    expect(pageSource).not.toContain('buildCustomerDailyActivityDigest');
+    expect(pageSource).not.toContain('CustomerDailyActivityDigest');
   });
 });
