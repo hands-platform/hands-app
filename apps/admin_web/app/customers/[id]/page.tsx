@@ -304,8 +304,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     addresses,
     bookings,
     customer,
-    customerCountry,
-    latestSession,
     notificationCount: notifications.length,
     pushDevices,
   });
@@ -433,10 +431,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       detail: 'Live work, completed work, cancellations, gate attempts, and command queue.',
     },
     {
-      href: '#customer-account-facts',
+      href: '#customer-account-evidence',
       label: 'Account',
       value: customer.user?.phone ?? 'No phone',
-      detail: 'Identity, reachability, profile facts, wallet, and saved locations.',
+      detail: 'Contact, reachability, wallet, saved locations, and support evidence.',
     },
     {
       href: '#customer-chat-retention-ledger',
@@ -746,13 +744,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         description="Identity, saved contact facts, wallet readout, and location evidence grouped together so support can answer profile questions without scanning the full ledger."
         status={<span className="pill pill-info">Profile and wallet</span>}
       >
-      <section className="card admin-mb-16" id="customer-account-facts">
+      <section className="card admin-mb-16" id="customer-account-evidence">
         <div className="ops-section-header">
           <div>
-            <h2>Customer account facts</h2>
+            <h2>Customer contact and evidence</h2>
             <p className="muted">
-              One factual readout for identity, reachability, booking, payment, saved location, and support
-              context. Missing values are shown plainly instead of guessed.
+              Contact, device, booking, payment, and support evidence that is not already repeated in the
+              profile overview. Missing values are shown plainly instead of guessed.
             </p>
           </div>
           <div className="participant-list">
@@ -1857,16 +1855,12 @@ function buildCustomerAccountFacts({
   addresses,
   bookings,
   customer,
-  customerCountry,
-  latestSession,
   notificationCount,
   pushDevices,
 }: {
   addresses: Array<{ key: string; label: string; value: string }>;
   bookings: AdminBookingDetail[];
   customer: AdminCustomerDetail;
-  customerCountry: { fullLabel: string; sourceLabel: string };
-  latestSession?: AdminAppSession;
   notificationCount: number;
   pushDevices: CustomerPushDevice[];
 }) {
@@ -1912,35 +1906,6 @@ function buildCustomerAccountFacts({
       label: 'Login method',
       value: customer.user?.phone ? 'Phone OTP' : 'Not captured',
       helper: 'Phone auth remains the primary customer login method',
-    },
-    {
-      label: 'Country',
-      value: customerCountry.fullLabel,
-      helper: customerCountry.sourceLabel === 'Unknown' ? 'No device language loaded.' : customerCountry.sourceLabel,
-    },
-    {
-      label: 'Gender',
-      value: readCustomerGenderLabel(customer),
-      helper: 'Customer profile gender value when available.',
-    },
-    {
-      label: 'Sign-up Date',
-      value: formatDate(customer.user?.createdAt),
-      helper: customer.user?.updatedAt
-        ? `Last account update ${formatDate(customer.user.updatedAt)}`
-        : 'No account update timestamp loaded.',
-    },
-    {
-      label: 'Last Login Date',
-      value: formatDate(latestSession?.lastSeenAt),
-      helper: latestSession
-        ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.appVersion ?? 'No app version'}`
-        : 'No app session loaded.',
-    },
-    {
-      label: 'Last Login Address',
-      value: latestSession?.lastLoginAddress ?? latestSession?.ipAddress ?? 'No login address loaded',
-      helper: latestSession?.ipAddress ? `IP ${latestSession.ipAddress}` : 'No login location evidence loaded.',
     },
     {
       label: 'Devices',
@@ -2528,7 +2493,7 @@ function buildCustomerActivityRecords(
       at: session.lastSeenAt,
       title: `${session.active ? 'Active' : 'Inactive'} customer app session`,
       detail: `${session.platform ?? 'Unknown platform'} / ${session.appVersion ?? 'No app version'} / device ${session.deviceId}`,
-      href: '#customer-account-facts',
+      href: '#customer-account-evidence',
     });
   }
 
@@ -2539,7 +2504,7 @@ function buildCustomerActivityRecords(
       at: device.updatedAt ?? device.createdAt ?? '',
       title: `${device.enabled ? 'Enabled' : 'Disabled'} push device`,
       detail: `${device.platform} / ${device.deliveries?.[0]?.status ?? 'No delivery attempt'}`,
-      href: '#customer-account-facts',
+      href: '#customer-account-evidence',
     });
 
     for (const delivery of device.deliveries ?? []) {

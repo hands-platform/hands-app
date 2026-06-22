@@ -18,6 +18,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminRoundedPagination');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
+    expect(pageSource).toContain('Customer contact and evidence');
     expect(pageSource).toContain('Customer account operations');
 
     const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');
@@ -56,6 +57,8 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Filtered notices');
     expect(pageSource).not.toContain('Customer information');
     expect(pageSource).not.toContain('#customer-info');
+    expect(pageSource).not.toContain('Customer account facts');
+    expect(pageSource).not.toContain('customer-account-facts');
     expect(pageSource).not.toContain('Birth / age');
     expect(pageSource).not.toContain('Signup source');
     expect(pageSource).not.toContain('Terms agreement');
@@ -86,5 +89,20 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Device and session state');
     expect(pageSource).not.toContain('No customer push device recorded.');
     expect(pageSource).not.toContain('active session(s)');
+
+    const accountEvidenceStart = pageSource.indexOf('id="customer-account-evidence"');
+    const accountOperationsStart = pageSource.indexOf('id="customer-account-operations"');
+    expect(accountEvidenceStart).toBeGreaterThan(-1);
+    expect(accountOperationsStart).toBeGreaterThan(accountEvidenceStart);
+    const accountFactsBuilderStart = pageSource.indexOf('function buildCustomerAccountFacts');
+    const accountFactsBuilderEnd = pageSource.indexOf('function buildCustomerActivityPlan');
+    expect(accountFactsBuilderStart).toBeGreaterThan(-1);
+    expect(accountFactsBuilderEnd).toBeGreaterThan(accountFactsBuilderStart);
+    const accountFactsBuilderSource = pageSource.slice(accountFactsBuilderStart, accountFactsBuilderEnd);
+    expect(accountFactsBuilderSource).not.toContain("label: 'Country'");
+    expect(accountFactsBuilderSource).not.toContain("label: 'Gender'");
+    expect(accountFactsBuilderSource).not.toContain("label: 'Sign-up Date'");
+    expect(accountFactsBuilderSource).not.toContain("label: 'Last Login Date'");
+    expect(accountFactsBuilderSource).not.toContain("label: 'Last Login Address'");
   });
 });
