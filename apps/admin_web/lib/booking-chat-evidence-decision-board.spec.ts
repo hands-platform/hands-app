@@ -99,4 +99,25 @@ describe('bookingChatEvidenceDecisionBoard', () => {
       'This booking can hide chat in mobile after closeout, but admin keeps the retained transcript for operations review.',
     );
   });
+
+  it('does not echo raw coordinate labels in movement evidence', () => {
+    const board = bookingChatEvidenceDecisionBoard({
+      ...baseInput,
+      bookingStatus: 'IN_SERVICE',
+      hasChatRoom: true,
+      hasLatestLocation: true,
+      latestLocationAtLabel: '07 Jun 2026 10:31',
+      latestLocationCoordinateLabel: '10.7769, 106.7009',
+    });
+
+    expect(board.metrics[2]).toMatchObject({
+      label: 'Location handoff',
+      helper: 'Latest Partner location is saved for dispatch checks.',
+    });
+    expect(board.rows[2]).toMatchObject({
+      lane: 'Movement evidence',
+      record: 'Latest Partner location saved / 07 Jun 2026 10:31',
+    });
+    expect(JSON.stringify(board)).not.toMatch(/\d{1,3}\.\d{2,},\s*\d{1,3}\.\d{2,}/);
+  });
 });

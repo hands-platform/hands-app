@@ -42,6 +42,28 @@ const CHAT_REQUIRED_STATUSES = new Set([
 
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
+const COORDINATE_PAIR_TEXT_RE = /\b-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}\b/;
+
+function partnerLocationMetricHelper(label?: string | null) {
+  if (!label) {
+    return 'No Partner location record is attached to this booking.';
+  }
+
+  if (COORDINATE_PAIR_TEXT_RE.test(label)) {
+    return 'Latest Partner location is saved for dispatch checks.';
+  }
+
+  return `${label} latest Partner location.`;
+}
+
+function partnerMovementRecord(label: string, atLabel?: string | null) {
+  const safeLabel = COORDINATE_PAIR_TEXT_RE.test(label)
+    ? 'Latest Partner location saved'
+    : label;
+
+  return `${safeLabel} / ${atLabel ?? 'No timestamp'}`;
+}
+
 export function bookingChatEvidenceDecisionBoard(
   input: BookingChatEvidenceDecisionBoardInput,
 ): BookingChatEvidenceDecisionBoard {
@@ -96,9 +118,7 @@ export function bookingChatEvidenceDecisionBoard(
       {
         label: 'Location handoff',
         value: input.latestLocationAtLabel ?? 'No location',
-        helper: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} latest Partner location.`
-          : 'No Partner location record is attached to this booking.',
+        helper: partnerLocationMetricHelper(input.latestLocationCoordinateLabel),
       },
       {
         label: 'Alerts and notes',
@@ -140,7 +160,10 @@ export function bookingChatEvidenceDecisionBoard(
         state: input.hasLatestLocation ? 'Location retained' : 'No location',
         tone: input.hasLatestLocation ? 'pill-info' : 'pill-warn',
         record: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} / ${input.latestLocationAtLabel ?? 'No timestamp'}`
+          ? partnerMovementRecord(
+              input.latestLocationCoordinateLabel,
+              input.latestLocationAtLabel,
+            )
           : 'No Partner movement row is attached.',
         operatorUse:
           'Use movement context with chat and alerts; do not judge either side from one signal alone.',
