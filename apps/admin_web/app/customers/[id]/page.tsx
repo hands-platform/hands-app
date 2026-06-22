@@ -783,13 +783,29 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="grid admin-mb-16">
-        <section className="card" id="wallet">
-          <h2>Customer payment ledger</h2>
-          <p className="muted">
-            Factual payment readout. Partner cash-fee debt is never carried on the customer account.
-          </p>
-          <div className="setup-stage-list admin-mt-12">
+      <section className="card admin-mb-16" id="customer-account-operations">
+        <div className="ops-section-header">
+          <div>
+            <h2>Customer account operations</h2>
+            <p className="muted">
+              Payment ledger and saved address evidence in one operator readout. Partner cash-fee debt is
+              never carried on the customer account.
+            </p>
+          </div>
+          <div className="participant-list">
+            <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
+            <span className="pill pill-neutral">{addresses.length} saved address(es)</span>
+          </div>
+        </div>
+        <div className="setup-stage-list admin-mt-12">
+          <div className="ops-task-note ops-task-info">
+            <div className="ops-section-header">
+              <div>
+                <h3>Payment ledger</h3>
+                <p className="muted">{wallet.operatorNote}</p>
+              </div>
+              <span className="pill pill-info">{formatMoney(wallet.customerBalance)}</span>
+            </div>
             <div className="ops-row">
               <strong>Captured payments</strong>
               <span>{formatMoney(wallet.capturedSpend)}</span>
@@ -811,15 +827,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <span>{formatMoney(wallet.customerBalance)}</span>
             </div>
           </div>
-          <p className="muted admin-mt-12">
-            {wallet.operatorNote}
-          </p>
-        </section>
-
-        <section className="card" id="addresses">
-          <h2>Saved addresses</h2>
-          <p className="muted">Profile addresses and map pins selected in the customer app.</p>
-          <div className="setup-stage-list admin-mt-12">
+          <div className="ops-task-note ops-task-info" id="addresses">
+            <div className="ops-section-header">
+              <div>
+                <h3>Saved addresses</h3>
+                <p className="muted">Profile addresses and map pins selected in the customer app.</p>
+              </div>
+              <span className="pill pill-neutral">{addresses.length} row(s)</span>
+            </div>
             {addresses.length > 0 ? (
               addresses.slice(0, 6).map((address) => (
                 <div className="ops-row" key={address.key}>
@@ -831,7 +846,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <p className="muted">No saved address yet.</p>
             )}
           </div>
-        </section>
+        </div>
       </section>
       </CustomerDetailSectionBand>
 

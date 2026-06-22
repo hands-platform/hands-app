@@ -18,6 +18,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).toContain('chatHistoryPage');
     expect(pageSource).toContain('AdminRoundedPagination');
     expect(pageSource).toContain('customerOperatorCommandQueue.commands.map');
+    expect(pageSource).toContain('Customer account operations');
 
     const operatingBandStart = pageSource.indexOf('title="Customer operating picture"');
     const bookingBoardStart = pageSource.indexOf('<CustomerBookingOperationBoard');
@@ -59,5 +60,7 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Signup source');
     expect(pageSource).not.toContain('Terms agreement');
     expect(pageSource).not.toContain('Withdrawal request');
+    expect(pageSource).not.toContain('Customer payment ledger');
+    expect(pageSource).not.toContain('id="wallet"');
   });
 });
