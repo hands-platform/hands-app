@@ -131,6 +131,13 @@ describe('bookingDetailCloseoutChecklist', () => {
     expect(rows.find((row) => row.title === 'Chat archive')).toMatchObject({
       status: 'Archived',
     });
+    expect(rows.find((row) => row.title === 'Location and alert trail')).toMatchObject({
+      detail: 'Location recorded without readable address / 14 Jun 2026, 08:10.',
+      status: 'Movement saved',
+    });
+    expect(rows.find((row) => row.title === 'Location and alert trail')?.detail).not.toMatch(
+      /\d{2}\.\d{4},\s*\d{3}\.\d{4}/,
+    );
   });
 
   it('keeps repair and cash settlement blockers visible', () => {

@@ -5,7 +5,8 @@ import type {
 } from '../../../lib/admin-api';
 import { bookingCloseoutChecklistRows as buildBookingCloseoutChecklistRowsFromFacts } from '../../../lib/booking-closeout-checklist-rows';
 import type { BookingActivityRecord } from './booking-activity-records';
-import { bookingAddressSnapshotLabel, coordinateLabel, formatDate, shortId } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
+import { bookingAddressSnapshotLabel, formatDate, shortId } from './booking-formatters';
 import type { bookingFinanceTrace } from './booking-finance-trace';
 import type { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import type { bookingNotificationTrace } from './booking-notification-trace';
@@ -86,9 +87,19 @@ export function bookingDetailCloseoutChecklist({
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
     taxRows: booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0,
     operatorTrailCount: operatorNoteLines.length + bookingActivityRecords.length + (booking.auditLogs?.length ?? 0),
-    latestLocationLabel: latestLocation
-      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-      : null,
+    latestLocationLabel: latestCloseoutLocationLabel(latestLocation),
     notificationCount: notificationTrace.rows.length,
   });
+}
+
+function latestCloseoutLocationLabel(latestLocation: AdminLocationSnapshot | null) {
+  if (!latestLocation) {
+    return null;
+  }
+
+  const address = readAddressText(latestLocation);
+  const locationLabel = address
+    ? serviceAddressAreaLabel(address)
+    : 'Location recorded without readable address';
+  return `${locationLabel} / ${formatDate(latestLocation.recordedAt)}`;
 }
