@@ -5,7 +5,6 @@ import { canMarkNoShow } from '../../../lib/booking-operator-action-rules';
 import type { bookingCloseoutReadiness } from './booking-closeout-readiness';
 import {
   bookingAddressSnapshotLabel,
-  coordinateLabel,
   formatDate,
   money,
   providerName,
@@ -76,9 +75,7 @@ export function bookingDetailDecisionReadiness({
       bookingStatus: booking.status,
       hasAddressSnapshot: Boolean(booking.addressSnapshot),
       addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
-      addressPinLabel: booking.addressSnapshot
-        ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-        : 'No pin',
+      addressPinLabel: bookingAddressSnapshotEvidenceState(booking),
       hasSelectedPartner: decisionFinalPartner.selected,
       selectedPartnerLabel: decisionFinalPartner.label,
       participantCount: booking.participants?.length ?? 0,
@@ -106,6 +103,10 @@ export function bookingDetailDecisionReadiness({
       partnerPayoutLabel: financeTrace.providerPayout,
     }),
   };
+}
+
+function bookingAddressSnapshotEvidenceState(booking: AdminBookingDetail) {
+  return booking.addressSnapshot ? 'service address snapshot saved' : 'No service address snapshot';
 }
 
 function bookingManualDecisionEvidenceSummary({

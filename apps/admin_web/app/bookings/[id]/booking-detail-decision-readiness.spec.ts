@@ -96,9 +96,11 @@ describe('bookingDetailDecisionReadiness', () => {
       tone: 'pill-success',
     });
     expect(result.decisionEvidenceGuardrails.find((row) => row.id === 'required-address')).toMatchObject({
+      evidence: 'District service address / service address snapshot saved',
       status: 'Ready',
       tone: 'pill-success',
     });
+    expect(JSON.stringify(result)).not.toMatch(/\d{1,3}\.\d{4,6},\s*\d{1,3}\.\d{4,6}/);
     expect(result.decisionEvidenceGuardrails.find((row) => row.id === 'required-final-partner')).toMatchObject({
       evidence: 'Selected Partner',
       status: 'Final Partner saved',
