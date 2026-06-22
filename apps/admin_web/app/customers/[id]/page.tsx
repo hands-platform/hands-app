@@ -68,6 +68,10 @@ import {
   readDetailActivityOrder,
 } from './customer-detail-filters';
 import {
+  customerBookingAddressEvidenceLabel,
+  customerSelectedLocationDetail,
+} from './customer-detail-location-copy';
+import {
   CustomerBookingOperationBoard,
   type CustomerBookingOperationGroup,
   type CustomerBookingOperationMetric,
@@ -1641,8 +1645,8 @@ function buildAddressRows(customer: AdminCustomerDetail) {
   for (const location of customer.selectedLocations ?? []) {
     rows.push({
       key: location.id,
-      label: `Selected pin ${formatDate(location.createdAt)}`,
-      value: `${location.addressText} / ${location.latitude}, ${location.longitude}`,
+      label: `Selected service address ${formatDate(location.createdAt)}`,
+      value: customerSelectedLocationDetail(location),
     });
   }
   return rows;
@@ -2201,7 +2205,7 @@ function buildCustomerActivityRecords(
       type: 'ADDRESS',
       at: location.createdAt,
       title: 'Customer selected service location',
-      detail: `${location.addressText} / ${location.latitude}, ${location.longitude}`,
+      detail: customerSelectedLocationDetail(location),
       href: '#addresses',
     });
   }
@@ -2385,18 +2389,7 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
 }
 
-function bookingAddressEvidenceLabel(booking: AdminBookingDetail) {
-  if (booking.addressSnapshot) {
-    const coordinate =
-      booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null
-        ? ` / ${booking.addressSnapshot.latitude}, ${booking.addressSnapshot.longitude}`
-        : '';
-    return `${booking.addressSnapshot.addressText ?? stringifyAddress(booking.addressSnapshot.address)}${coordinate}`;
-  }
-  if (booking.address) return stringifyAddress(booking.address);
-  if (booking.lat != null && booking.lng != null) return `${booking.lat}, ${booking.lng}`;
-  return 'No booking address evidence loaded';
-}
+const bookingAddressEvidenceLabel = customerBookingAddressEvidenceLabel;
 
 function mostCommonLabel(values: string[]) {
   const counts = new Map<string, number>();
