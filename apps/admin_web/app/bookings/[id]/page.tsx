@@ -89,7 +89,6 @@ import {
 import {
   bookingAddressSnapshotLabel,
   money,
-  coordinateLabel,
   shortId,
 } from './booking-formatters';
 import { BookingEvidenceSections, type BookingEvidenceSectionsProps } from './booking-evidence-sections';
@@ -154,6 +153,7 @@ import {
   humanizeAuditAction,
 } from './booking-operations-trace';
 import {
+  bookingDispatchPin,
   bookingMarketplacePartnerSupply,
 } from './booking-marketplace-supply';
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
@@ -253,9 +253,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const locationTrailSnapshots = bookingDetailLocationTrail(booking);
   const locationTrailCount = locationTrailSnapshots.length;
   const addressLine = bookingAddressSnapshotLabel(booking);
-  const addressPin = booking.addressSnapshot
-    ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-    : coordinateLabel(booking.lat, booking.lng);
+  const addressPin = bookingDispatchPin(booking).label;
   const attentionFlags = bookingDetailAttentionFlags(booking);
   const attentionSummary = attentionLevel(attentionFlags);
   const liveSignals = bookingLiveServiceSignals(booking);
