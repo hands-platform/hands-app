@@ -1,7 +1,7 @@
 import { PartnerDetailAcceptanceUnblockPlaybookSection } from './partner-detail-acceptance-unblock-playbook-section';
 
 describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
-  it('renders marketplace and payout unblock steps as a Vuexy table', () => {
+  it('renders active-work repair steps as a Vuexy table', () => {
     const section = PartnerDetailAcceptanceUnblockPlaybookSection({
       pillClassForTone: (tone) => `pill-${tone}`,
       steps: [
@@ -39,25 +39,24 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
 
     const rendered = normalizeSpaces(textContent(section));
 
-    expect(rendered).toContain('Partner approval, settlement, and payout playbook');
+    expect(rendered).toContain('Partner active-work repair playbook');
     expect(rendered).toContain(
-      'Tax profile remains optional for current Vietnam operations and does not block Level 2 approval, matching, work, or wallet withdrawal.',
+      'Only the Partner items that still need operator repair.',
     );
     expect(rendered).not.toContain('tax stays deferred until first earning and then blocks payout');
     expect(rendered).toContain('0 booking blocker(s)');
     expect(rendered).toContain('Step');
-    expect(rendered).toContain('Unblock item');
-    expect(rendered).toContain('Booking impact');
-    expect(rendered).toContain('Payout impact');
+    expect(rendered).toContain('Repair item');
+    expect(rendered).toContain('Operator read');
+    expect(rendered).toContain('Booking effect');
     expect(rendered).toContain('Status');
-    expect(rendered).toContain('Action');
+    expect(rendered).toContain('Open');
     expect(rendered).toContain('Clear cash fee debt');
     expect(rendered).toContain('Cash fee debt is below zero and must be collected.');
     expect(rendered).toContain(
       'Marketplace visibility and participation stay open; final acceptance and service start wait for settlement.',
     );
     expect(rendered).toContain('Settlement warning');
-    expect(rendered).toContain('Payout release stays locked while balance is negative.');
     expect(rendered).toContain('Approve identity');
     expect(rendered).toContain('Operator check');
     expect(hrefsIn(section)).toEqual(expect.arrayContaining(['#wallet', '#kyc']));

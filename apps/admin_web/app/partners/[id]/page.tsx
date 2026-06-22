@@ -135,7 +135,6 @@ import {
   PartnerDetailAcceptanceUnblockPlaybookSection,
   type PartnerAcceptanceUnblockStep,
 } from './partner-detail-acceptance-unblock-playbook-section';
-import { PartnerDetailOpsCommandCenterSection } from './partner-detail-ops-command-center-section';
 import {
   PartnerDetailApprovalChecklistSection,
   PartnerDetailRegistrationDossierSection,
@@ -423,7 +422,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerBankPayoutGate = buildPartnerBankPayoutGateView(provider.id, primaryBank);
   const partnerTaxProfile = buildPartnerTaxProfileView(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
-  const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
   const securitySummary = buildProviderSecuritySummary(provider);
   const partnerDeviceRows = buildPartnerDeviceRows(provider, (device) =>
@@ -908,13 +906,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailAcceptanceUnblockPlaybookSection
         pillClassForTone={pillClass}
         steps={acceptanceUnblockPlaybook}
-      />
-
-      <PartnerDetailOpsCommandCenterSection
-        cardClassForTone={cardClass}
-        locationFreshnessMinutes={dispatchPolicy.locationFreshnessMinutes}
-        pillClassForTone={pillClass}
-        summary={opsSummary}
       />
 
       <PartnerDetailPayoutOperationsSection
@@ -2866,7 +2857,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
   const payoutReady = payoutOps.status === 'UNLOCKED';
   const payoutGateOpen = !hasFirstRevenue || payoutReady;
 
-  return [
+  const steps: PartnerAcceptanceUnblockStep[] = [
     {
       id: 'cash-debt',
       step: '1',
@@ -2986,6 +2977,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
       bookingBlocked: false,
     },
   ];
+
+  return steps.filter((step) => step.tone !== 'done' || step.bookingBlocked);
 }
 
 function buildPartnerDetailOpsBadges(
@@ -3056,121 +3049,6 @@ function buildPartnerDetailOpsBadges(
       detail: serviceGate?.detail ?? 'Service pricing gate has not been evaluated.',
     },
   ];
-}
-
-function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY) {
-  const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
-  const hasRecentLocation = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
-  const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
-  const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
-  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
-  const agreementsAccepted = provider.agreements?.length ?? 0;
-  const payoutAgreementsReady = agreementsAccepted >= 5;
-  const nextAction = nextProviderAction(provider, dispatchPolicy);
-  const payoutHold = activePayoutHold(provider);
-  const payoutReady =
-    hasFirstRevenue &&
-    hasApprovedBankAccount(provider) &&
-    Boolean(provider.residentialAddress?.trim()) &&
-    payoutAgreementsReady &&
-    !payoutHold;
-  const accountClear = !provider.blockedAt;
-
-  const cards: ProviderOpsCard[] = [
-    {
-      title: 'Dispatch readiness',
-      status:
-        accountClear &&
-        provider.verification?.status === 'APPROVED' &&
-        provider.status === 'ONLINE_AVAILABLE' &&
-        hasRecentLocation &&
-        hasEnabledPush
-          ? 'READY'
-          : 'CHECK',
-      detail: !accountClear
-        ? `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
-        : provider.verification?.status !== 'APPROVED'
-          ? 'Partner verification is not approved yet.'
-          : provider.status !== 'ONLINE_AVAILABLE'
-            ? 'Partner is approved but not online for direct booking or marketplace matching.'
-            : !hasRecentLocation
-              ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
-              : !hasEnabledPush
-                ? 'No enabled push device is registered for request alerts.'
-                : 'Partner can receive customer direct requests and marketplace matching alerts.',
-      action: !accountClear
-        ? 'Unblock only after the account-level issue is resolved.'
-        : provider.verification?.status !== 'APPROVED'
-          ? 'Finish verification review first.'
-          : provider.status !== 'ONLINE_AVAILABLE'
-            ? 'Ask partner to open the app and go online.'
-            : !hasRecentLocation
-              ? 'Ask partner to refresh location.'
-              : !hasEnabledPush
-                ? 'Ask partner to reopen the app and register alerts.'
-                : 'No dispatch blocker.',
-      tone: !accountClear
-        ? 'blocked'
-        : provider.verification?.status === 'APPROVED' &&
-            provider.status === 'ONLINE_AVAILABLE' &&
-            hasRecentLocation &&
-            hasEnabledPush
-          ? 'done'
-          : provider.verification?.status !== 'APPROVED'
-            ? 'blocked'
-            : 'pending',
-    },
-    {
-      title: 'Identity and documents',
-      status: provider.kyc?.status === 'APPROVED' && requiredDocumentsReady ? 'APPROVED' : 'REVIEW',
-      detail:
-        provider.kyc?.status === 'APPROVED' && requiredDocumentsReady
-          ? 'KYC and required CCCD/selfie documents are approved.'
-          : requiredDocumentsReady
-            ? `Required documents are approved, KYC status is ${provider.kyc?.status ?? 'DRAFT'}.`
-            : `Missing or unapproved documents: ${missingApprovedRequiredKycDocuments(provider)
-                .map(providerDocumentLabel)
-                .join(', ')}.`,
-      action:
-        provider.kyc?.status === 'APPROVED' && requiredDocumentsReady
-          ? 'Identity gate is clear.'
-          : requiredDocumentsReady
-            ? 'Approve or reject KYC below.'
-            : 'Review each typed document below.',
-      tone: provider.kyc?.status === 'APPROVED' && requiredDocumentsReady ? 'done' : 'blocked',
-    },
-    {
-      title: 'Payout readiness',
-      status: payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasFirstRevenue ? 'BLOCKED' : 'DEFERRED',
-      detail: payoutHold
-        ? `Active payout hold: ${payoutHold.reason}`
-        : payoutReady
-          ? 'Partner has completed service, approved bank, address, and agreements.'
-          : hasFirstRevenue
-            ? payoutBlockers(provider).join(' ')
-            : 'Withdrawal details stay deferred until wallet withdrawal/deposit is requested.',
-      action: payoutHold
-        ? 'Lift the control only after finance or account-control follow-up is resolved.'
-        : payoutReady
-          ? 'Partner can request payout when earnings are available.'
-          : hasFirstRevenue
-            ? 'Clear payout blockers before approving withdrawal.'
-            : 'No action until wallet request.',
-      tone: payoutReady ? 'done' : hasFirstRevenue || payoutHold ? 'blocked' : 'pending',
-    },
-    {
-      title: 'Next admin action',
-      status: nextAction.status,
-      detail: nextAction.detail,
-      action: nextAction.action,
-      tone: nextAction.tone,
-    },
-  ];
-
-  return {
-    cards,
-    ready: cards.every((card) => card.tone === 'done' || card.status === 'DEFERRED'),
-  };
 }
 
 function buildProviderPayoutOps(provider: ProviderDetail) {

@@ -30,7 +30,7 @@ type PartnerDetailAcceptanceUnblockPlaybookSectionProps = {
   steps: PartnerAcceptanceUnblockStep[];
 };
 
-const unblockPlaybookHeaders = ['Step', 'Unblock item', 'Booking impact', 'Payout impact', 'Status', 'Action'];
+const unblockPlaybookHeaders = ['Step', 'Repair item', 'Operator read', 'Booking effect', 'Status', 'Open'];
 
 export function PartnerDetailAcceptanceUnblockPlaybookSection({
   pillClassForTone,
@@ -41,11 +41,11 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Operator order for approval holds, settlement warnings, booking gates, and payout release. Finance warnings stay visible without hiding marketplace participation. Tax profile remains optional for current Vietnam operations and does not block Level 2 approval, matching, work, or wallet withdrawal."
+      description="Only the Partner items that still need operator repair. Completed checks stay out of this list so finance, location, and approval evidence remain in their dedicated sections."
       id="payout"
       resultLabel={`${bookingBlockerCount} booking blocker(s)`}
       resultTone={bookingBlockerCount ? 'danger' : 'success'}
-      title="Partner approval, settlement, and payout playbook"
+      title="Partner active-work repair playbook"
     >
       <div className="admin-mt-16">
         <AdminTableScroll>
@@ -65,10 +65,10 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
                   <p className="muted">{step.detail}</p>
                 </td>
                 <td>
-                  <span className="muted">{step.bookingImpact}</span>
+                  <span className="muted">{step.action}</span>
                 </td>
                 <td>
-                  <span className="muted">{step.payoutImpact}</span>
+                  <span className="muted">{step.bookingImpact}</span>
                 </td>
                 <td>
                   <div className="participant-list">
