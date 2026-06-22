@@ -75,7 +75,8 @@ class _BookingConfirmationPageState
           'Nearby partners used a fallback city pin. Choose the exact service location before booking.';
     }
     if (customerLat == null || customerLng == null) {
-      unawaited(loadCustomerLocation());
+      locationMessage =
+          'Choose the exact Vietnam service location before booking.';
     }
   }
 
