@@ -3019,26 +3019,53 @@ function buildSavedAddressListValue(addresses: Array<{ key: string; label: strin
 }
 
 function buildCustomerPartnerRails(bookings: AdminBookingDetail[]): CustomerDetailPartnerRail[] {
+  const viewedPartners = buildViewedPartnerAvatars(bookings);
+  const completedPartners = buildCompletedPartnerAvatars(bookings);
+
   return [
     {
       title: 'Viewed Partners',
-      helper: 'Partner profiles this customer opened in the app.',
-      emptyMessage: 'No viewed Partner profile data is loaded for this customer yet.',
-      partners: [],
+      helper: 'Booking-sourced Partner profile selections and requests.',
+      emptyMessage: 'No viewed Partner rows are captured for this customer yet.',
+      partners: viewedPartners,
     },
     {
       title: 'Favorite Partners',
       helper: 'Partners the customer saved for direct requests.',
-      emptyMessage: 'No favorite Partner data is loaded for this customer yet.',
+      emptyMessage: 'No favorite Partner rows are captured for this customer yet.',
       partners: [],
     },
     {
       title: 'Completed Partners',
       helper: 'Partners with completed customer work.',
       emptyMessage: 'No completed Partner history is loaded yet.',
-      partners: buildCompletedPartnerAvatars(bookings),
+      partners: completedPartners,
     },
   ];
+}
+
+function buildViewedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
+  const partners = new Map<string, CustomerDetailPartnerAvatar>();
+  const requestedBookings = [...bookings]
+    .filter((booking) => booking.preferredProviderId ?? booking.preferredProvider?.id)
+    .sort((left, right) => dateMs(bookingRecordCreatedAt(right)) - dateMs(bookingRecordCreatedAt(left)));
+
+  for (const booking of requestedBookings) {
+    const partnerId = booking.preferredProviderId ?? booking.preferredProvider?.id;
+    if (!partnerId || partners.has(partnerId)) {
+      continue;
+    }
+
+    partners.set(partnerId, {
+      id: `viewed-${partnerId}-${booking.id}`,
+      href: `/partners/${partnerId}`,
+      label: preferredPartnerDisplayName(booking),
+      helper: `Requested ${formatDate(bookingRequestOpenedAt(booking) ?? bookingRecordCreatedAt(booking))}`,
+      status: partnerAvatarStatusFromProviderStatus(booking.preferredProvider?.status, booking.status),
+    });
+  }
+
+  return [...partners.values()].slice(0, 8);
 }
 
 function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
@@ -3067,16 +3094,28 @@ function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerD
 }
 
 function partnerAvatarStatusFromBooking(booking: AdminBookingDetail): AdminAvatarStatus {
-  const providerStatus = (
-    booking.selectedProvider?.status ??
-    booking.preferredProvider?.status ??
-    ''
-  ).toUpperCase();
-  if (WORKING_AVATAR_STATUSES.has(booking.status)) return 'working';
-  if (MATCHING_AVATAR_STATUSES.has(booking.status)) return 'matching';
+  return partnerAvatarStatusFromProviderStatus(
+    booking.selectedProvider?.status ?? booking.preferredProvider?.status,
+    booking.status,
+  );
+}
+
+function partnerAvatarStatusFromProviderStatus(status: string | null | undefined, bookingStatus: string) {
+  const providerStatus = (status ?? '').toUpperCase();
+  if (WORKING_AVATAR_STATUSES.has(bookingStatus)) return 'working';
+  if (MATCHING_AVATAR_STATUSES.has(bookingStatus)) return 'matching';
   if (providerStatus.includes('ONLINE') || providerStatus.includes('AVAILABLE')) return 'online';
   if (providerStatus.includes('DELETED') || providerStatus.includes('REMOVED')) return 'app-deleted';
   return 'offline';
+}
+
+function preferredPartnerDisplayName(booking: AdminBookingDetail) {
+  return displayMarketplaceText(
+    booking.preferredProvider?.displayName ??
+      booking.preferredProvider?.user?.fullName ??
+      booking.preferredProvider?.user?.phone ??
+      'No Partner',
+  );
 }
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
