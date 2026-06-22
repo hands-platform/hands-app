@@ -261,3 +261,101 @@ describe('CustomersService favorite partners', () => {
     expect(prisma.customerFavoriteProvider.deleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe('CustomersService viewed partners', () => {
+  it('lists recently viewed partners for the authenticated customer', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      customerProviderProfileView: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'view-1',
+            providerProfileId: 'partner-1',
+            viewCount: 2,
+          },
+        ]),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.listViewedProviders('user-1')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'view-1',
+        providerProfileId: 'partner-1',
+        viewCount: 2,
+      }),
+    ]);
+
+    expect(prisma.customerProviderProfileView.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { customerProfileId: 'customer-1' },
+        orderBy: { lastViewedAt: 'desc' },
+        take: 100,
+      }),
+    );
+  });
+
+  it('records a partner profile view with an idempotent count update', async () => {
+    const now = new Date('2026-06-22T09:30:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      providerProfile: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'partner-1' }),
+      },
+      customerProviderProfileView: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'view-1',
+          providerProfileId: 'partner-1',
+          viewCount: 3,
+          lastViewedAt: now,
+        }),
+      },
+    };
+
+    const service = new CustomersService(prisma as never);
+
+    await expect(service.recordProviderProfileView('user-1', 'partner-1')).resolves.toMatchObject({
+      id: 'view-1',
+      providerProfileId: 'partner-1',
+      viewCount: 3,
+    });
+
+    expect(prisma.providerProfile.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'partner-1',
+        blockedAt: null,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(prisma.customerProviderProfileView.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          customerProfileId_providerProfileId: {
+            customerProfileId: 'customer-1',
+            providerProfileId: 'partner-1',
+          },
+        },
+        create: {
+          customerProfileId: 'customer-1',
+          providerProfileId: 'partner-1',
+          firstViewedAt: now,
+          lastViewedAt: now,
+          viewCount: 1,
+        },
+        update: {
+          lastViewedAt: now,
+          viewCount: { increment: 1 },
+        },
+      }),
+    );
+
+    jest.useRealTimers();
+  });
+});

@@ -418,7 +418,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
   const customerCountry = customerCountryDisplay(readCustomerDeviceLanguageLabel(appSessions));
-  const overviewPartnerRails = buildCustomerPartnerRails(bookings, customer.favoriteProviders ?? []);
+  const overviewPartnerRails = buildCustomerPartnerRails(
+    bookings,
+    customer.favoriteProviders ?? [],
+    customer.viewedProviders ?? [],
+  );
   const overviewStatusBadges = [
     activeBooking ? 'Active booking' : 'No live booking',
     pushDevices.some((device) => device.enabled) ? 'Push ready' : 'No push device',
@@ -3021,8 +3025,9 @@ function buildSavedAddressListValue(addresses: Array<{ key: string; label: strin
 function buildCustomerPartnerRails(
   bookings: AdminBookingDetail[],
   favoriteProviders: NonNullable<AdminCustomerDetail['favoriteProviders']>,
+  viewedProviders: NonNullable<AdminCustomerDetail['viewedProviders']>,
 ): CustomerDetailPartnerRail[] {
-  const viewedPartners = buildViewedPartnerAvatars(bookings);
+  const viewedPartners = buildViewedPartnerAvatars(viewedProviders);
   const favoritePartners = buildFavoritePartnerAvatars(favoriteProviders);
   const completedPartners = buildCompletedPartnerAvatars(bookings);
 
@@ -3069,28 +3074,26 @@ function buildFavoritePartnerAvatars(
     .slice(0, 8);
 }
 
-function buildViewedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {
-  const partners = new Map<string, CustomerDetailPartnerAvatar>();
-  const requestedBookings = [...bookings]
-    .filter((booking) => booking.preferredProviderId ?? booking.preferredProvider?.id)
-    .sort((left, right) => dateMs(bookingRecordCreatedAt(right)) - dateMs(bookingRecordCreatedAt(left)));
-
-  for (const booking of requestedBookings) {
-    const partnerId = booking.preferredProviderId ?? booking.preferredProvider?.id;
-    if (!partnerId || partners.has(partnerId)) {
-      continue;
-    }
-
-    partners.set(partnerId, {
-      id: `viewed-${partnerId}-${booking.id}`,
-      href: `/partners/${partnerId}`,
-      label: preferredPartnerDisplayName(booking),
-      helper: `Requested ${formatDate(bookingRequestOpenedAt(booking) ?? bookingRecordCreatedAt(booking))}`,
-      status: partnerAvatarStatusFromProviderStatus(booking.preferredProvider?.status, booking.status),
-    });
-  }
-
-  return [...partners.values()].slice(0, 8);
+function buildViewedPartnerAvatars(
+  views: NonNullable<AdminCustomerDetail['viewedProviders']>,
+): CustomerDetailPartnerAvatar[] {
+  return views
+    .filter((view) => view.providerProfileId || view.providerProfile?.id)
+    .map((view) => {
+      const partner = view.providerProfile;
+      const partnerId = view.providerProfileId ?? partner?.id ?? null;
+      const viewCountLabel = view.viewCount > 1 ? ` / ${view.viewCount} views` : '';
+      return {
+        id: `viewed-${view.id}`,
+        href: partnerId ? `/partners/${partnerId}` : null,
+        label: displayMarketplaceText(
+          partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'Viewed Partner',
+        ),
+        helper: `Last viewed ${formatDate(view.lastViewedAt)}${viewCountLabel}`,
+        status: partnerAvatarStatusFromProviderStatus(partner?.status, 'CREATED'),
+      };
+    })
+    .slice(0, 8);
 }
 
 function buildCompletedPartnerAvatars(bookings: AdminBookingDetail[]): CustomerDetailPartnerAvatar[] {

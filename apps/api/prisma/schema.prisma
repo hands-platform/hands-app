@@ -300,6 +300,7 @@ model CustomerProfile {
   bookings          Booking[]
   bookingSnapshots  BookingAddressSnapshot[]
   favoriteProviders CustomerFavoriteProvider[]
+  viewedProviders   CustomerProviderProfileView[]
   reviews           Review[]
   selectedLocations CustomerSelectedLocation[]
 }
@@ -316,6 +317,23 @@ model CustomerFavoriteProvider {
   @@unique([customerProfileId, providerProfileId])
   @@index([customerProfileId, createdAt])
   @@index([providerProfileId, createdAt])
+}
+
+model CustomerProviderProfileView {
+  id                String          @id @default(cuid())
+  customerProfileId String
+  providerProfileId String
+  firstViewedAt     DateTime        @default(now())
+  lastViewedAt      DateTime        @default(now())
+  viewCount         Int             @default(1)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id], onDelete: Cascade)
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([customerProfileId, providerProfileId])
+  @@index([customerProfileId, lastViewedAt])
+  @@index([providerProfileId, lastViewedAt])
 }
 
 model ProviderProfile {
@@ -363,6 +381,7 @@ model ProviderProfile {
   services                 ProviderService[]
   participants             BookingParticipant[]
   favoritedByCustomers     CustomerFavoriteProvider[]
+  viewedByCustomers        CustomerProviderProfileView[]
   preferredBookings        Booking[]                   @relation("PreferredProvider")
   selectedBookings         Booking[]                   @relation("SelectedProvider")
   locationSnapshots        LocationSnapshot[]

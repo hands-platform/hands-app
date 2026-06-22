@@ -22,6 +22,28 @@ const customerFavoriteProviderSelect = {
   },
 } satisfies Prisma.CustomerFavoriteProviderSelect;
 
+const customerViewedProviderSelect = {
+  id: true,
+  providerProfileId: true,
+  firstViewedAt: true,
+  lastViewedAt: true,
+  viewCount: true,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      status: true,
+      ratingAvg: true,
+      reviewCount: true,
+      user: {
+        select: {
+          fullName: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.CustomerProviderProfileViewSelect;
+
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -33,6 +55,53 @@ export class CustomersService {
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: customerFavoriteProviderSelect,
+    });
+  }
+
+  async listViewedProviders(userId: string | undefined) {
+    const customer = await this.requireCustomer(userId);
+    return this.prisma.customerProviderProfileView.findMany({
+      where: { customerProfileId: customer.id },
+      orderBy: { lastViewedAt: 'desc' },
+      take: 100,
+      select: customerViewedProviderSelect,
+    });
+  }
+
+  async recordProviderProfileView(userId: string | undefined, providerProfileId: string) {
+    const customer = await this.requireCustomer(userId);
+    const provider = await this.prisma.providerProfile.findFirst({
+      where: {
+        id: providerProfileId,
+        blockedAt: null,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!provider) {
+      throw new NotFoundException('Partner profile not found');
+    }
+
+    const now = new Date();
+    return this.prisma.customerProviderProfileView.upsert({
+      where: {
+        customerProfileId_providerProfileId: {
+          customerProfileId: customer.id,
+          providerProfileId,
+        },
+      },
+      create: {
+        customerProfileId: customer.id,
+        providerProfileId,
+        firstViewedAt: now,
+        lastViewedAt: now,
+        viewCount: 1,
+      },
+      update: {
+        lastViewedAt: now,
+        viewCount: { increment: 1 },
+      },
+      select: customerViewedProviderSelect,
     });
   }
 

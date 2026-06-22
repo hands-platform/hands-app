@@ -2,6 +2,7 @@ import { adminCustomerDetailBookingSelect } from './admin-booking-selects';
 import {
   ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
   ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT,
+  ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT,
   adminCustomerDetailSelect,
   adminCustomerNotificationSelect,
 } from './admin-customer-selects';
@@ -37,6 +38,16 @@ describe('admin customer selects', () => {
     expect(adminCustomerDetailSelect.favoriteProviders).toMatchObject({
       take: ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT,
       select: expect.objectContaining({
+        providerProfile: expect.objectContaining({
+          select: expect.objectContaining({ displayName: true, status: true }),
+        }),
+      }),
+    });
+    expect(adminCustomerDetailSelect.viewedProviders).toMatchObject({
+      orderBy: { lastViewedAt: 'desc' },
+      take: ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT,
+      select: expect.objectContaining({
+        viewCount: true,
         providerProfile: expect.objectContaining({
           select: expect.objectContaining({ displayName: true, status: true }),
         }),

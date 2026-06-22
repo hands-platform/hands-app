@@ -27,6 +27,7 @@ export const adminCustomerNotificationSelect = {
 
 export const ADMIN_CUSTOMER_DETAIL_PUSH_DEVICE_LIMIT = 10;
 export const ADMIN_CUSTOMER_DETAIL_FAVORITE_PROVIDER_LIMIT = 25;
+export const ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT = 25;
 
 export const adminCustomerDetailSelect = {
   id: true,
@@ -89,6 +90,18 @@ export const adminCustomerDetailSelect = {
       id: true,
       providerProfileId: true,
       createdAt: true,
+      providerProfile: { select: adminProviderSummarySelect },
+    },
+  },
+  viewedProviders: {
+    orderBy: { lastViewedAt: 'desc' },
+    take: ADMIN_CUSTOMER_DETAIL_VIEWED_PROVIDER_LIMIT,
+    select: {
+      id: true,
+      providerProfileId: true,
+      firstViewedAt: true,
+      lastViewedAt: true,
+      viewCount: true,
       providerProfile: { select: adminProviderSummarySelect },
     },
   },

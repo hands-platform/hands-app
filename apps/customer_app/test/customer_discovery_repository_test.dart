@@ -48,6 +48,26 @@ void main() {
     expect(services.first['id'], 'svc-foot-60');
     expect(services.last['durationMin'], 90);
   });
+
+  test('recordProviderProfileView posts a lightweight profile view event',
+      () async {
+    final api = _FakeApiClient({'ok': true});
+    final repository = CustomerDiscoveryRepositoryImpl(
+      api,
+      AppSessionReporter(
+        api: api,
+        addressStorageKey: 'test-customer-address',
+        storage: const FlutterSecureStorage(),
+        role: 'CUSTOMER',
+        storageKey: 'test-customer-device',
+      ),
+    );
+
+    await repository.recordProviderProfileView('partner-1');
+
+    expect(api.postPath, '/customer/partners/partner-1/view');
+    expect(api.postBody, isEmpty);
+  });
 }
 
 class _FakeApiClient extends ApiClient {
@@ -55,10 +75,19 @@ class _FakeApiClient extends ApiClient {
 
   final dynamic response;
   String? getPath;
+  String? postPath;
+  Map<String, dynamic>? postBody;
 
   @override
   Future<dynamic> getJson(String path) async {
     getPath = path;
+    return response;
+  }
+
+  @override
+  Future<dynamic> postJson(String path, Map<String, dynamic> body) async {
+    postPath = path;
+    postBody = body;
     return response;
   }
 }

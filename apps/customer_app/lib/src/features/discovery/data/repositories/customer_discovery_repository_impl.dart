@@ -46,6 +46,11 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
   }
 
   @override
+  Future<void> recordProviderProfileView(String providerId) async {
+    await _api.postJson('/customer/partners/$providerId/view', {});
+  }
+
+  @override
   Future<Set<String>> listFavoriteProviderIds() async {
     final result = await _api.getJson('/customer/partner-favorites');
     if (result is! List<dynamic>) {

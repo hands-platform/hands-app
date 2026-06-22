@@ -38,6 +38,23 @@ export class CustomersController {
     return this.customers.listFavoriteProviders(user.id);
   }
 
+  @Get('partner-profile-views')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  listViewedProviders(@CurrentUser() user: AuthenticatedUser) {
+    return this.customers.listViewedProviders(user.id);
+  }
+
+  @Post('partners/:providerId/view')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  recordProviderProfileView(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('providerId') providerId: string,
+  ) {
+    return this.customers.recordProviderProfileView(user.id, providerId);
+  }
+
   @Post('partners/:providerId/favorite')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)

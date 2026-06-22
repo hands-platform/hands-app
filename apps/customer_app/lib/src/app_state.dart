@@ -68,7 +68,13 @@ class CustomerRepository {
   }
 
   Future<Map<String, dynamic>> getProviderDetail(String providerId) async {
-    return _discoveryRepository.getProviderDetail(providerId);
+    final detail = await _discoveryRepository.getProviderDetail(providerId);
+    try {
+      await _discoveryRepository.recordProviderProfileView(providerId);
+    } catch (_) {
+      // Partner profile viewing should stay available if optional analytics sync fails.
+    }
+    return detail;
   }
 
   Future<bool> isFavoriteProvider(String providerId) async {
@@ -84,6 +90,10 @@ class CustomerRepository {
       providerId: providerId,
       favorite: favorite,
     );
+  }
+
+  Future<void> recordProviderProfileView(String providerId) async {
+    await _discoveryRepository.recordProviderProfileView(providerId);
   }
 
   Future<Map<String, dynamic>> getBooking(String bookingId) async {

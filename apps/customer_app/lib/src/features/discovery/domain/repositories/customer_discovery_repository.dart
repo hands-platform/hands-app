@@ -14,6 +14,8 @@ abstract class CustomerDiscoveryRepository {
 
   Future<Map<String, dynamic>> getProviderDetail(String providerId);
 
+  Future<void> recordProviderProfileView(String providerId);
+
   Future<Set<String>> listFavoriteProviderIds();
 
   Future<void> setFavoriteProvider({

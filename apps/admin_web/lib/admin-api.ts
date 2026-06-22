@@ -146,6 +146,14 @@ export type AdminCustomer = {
     createdAt: string;
     providerProfile?: AdminProvider | null;
   }>;
+  viewedProviders?: Array<{
+    id: string;
+    providerProfileId: string;
+    firstViewedAt: string;
+    lastViewedAt: string;
+    viewCount: number;
+    providerProfile?: AdminProvider | null;
+  }>;
   auditLogs?: AdminAuditLog[];
   auditLogCount?: number;
 };
