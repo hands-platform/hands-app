@@ -3034,23 +3034,50 @@ function buildCustomerPartnerRails(
   return [
     {
       title: 'Viewed Partners',
-      helper: 'Booking-sourced Partner profile selections and requests.',
+      helper: 'Partner profiles this customer opened in the app.',
       emptyMessage: 'No viewed Partner rows are captured for this customer yet.',
       partners: viewedPartners,
+      totalCount: countCustomerViewedPartners(viewedProviders),
     },
     {
       title: 'Favorite Partners',
       helper: 'Partners the customer saved for direct requests.',
       emptyMessage: 'No favorite Partner rows are captured for this customer yet.',
       partners: favoritePartners,
+      totalCount: countCustomerFavoritePartners(favoriteProviders),
     },
     {
       title: 'Completed Partners',
       helper: 'Partners with completed customer work.',
       emptyMessage: 'No completed Partner history is loaded yet.',
       partners: completedPartners,
+      totalCount: countCustomerCompletedPartners(bookings),
     },
   ];
+}
+
+function countCustomerFavoritePartners(
+  favorites: NonNullable<AdminCustomerDetail['favoriteProviders']>,
+) {
+  return favorites.filter((favorite) => favorite.providerProfileId || favorite.providerProfile?.id).length;
+}
+
+function countCustomerViewedPartners(views: NonNullable<AdminCustomerDetail['viewedProviders']>) {
+  return views.filter((view) => view.providerProfileId || view.providerProfile?.id).length;
+}
+
+function countCustomerCompletedPartners(bookings: AdminBookingDetail[]) {
+  const partnerIds = new Set<string>();
+
+  for (const booking of bookings) {
+    if (booking.status !== 'COMPLETED') continue;
+    const partnerId = booking.selectedProviderId ?? booking.selectedProvider?.id ?? booking.preferredProviderId;
+    if (partnerId) {
+      partnerIds.add(partnerId);
+    }
+  }
+
+  return partnerIds.size;
 }
 
 function buildFavoritePartnerAvatars(

@@ -27,6 +27,7 @@ export type CustomerDetailPartnerRail = {
   readonly helper: string;
   readonly partners: readonly CustomerDetailPartnerAvatar[];
   readonly title: string;
+  readonly totalCount?: number;
 };
 
 type CustomerDetailOverviewShellProps = {
@@ -95,43 +96,49 @@ export function CustomerDetailOverviewShell({
 
       {partnerRails.length > 0 ? (
         <div className="customer-detail-partner-rail-grid">
-          {partnerRails.map((rail) => (
-            <section className="customer-detail-partner-rail" key={rail.title}>
-              <div className="customer-detail-partner-rail-header">
-                <div>
-                  <span>{rail.title}</span>
-                  <small>{rail.helper}</small>
-                </div>
-                <strong>{rail.partners.length}</strong>
-              </div>
+          {partnerRails.map((rail) => {
+            const totalCount = rail.totalCount ?? rail.partners.length;
+            const countLabel =
+              totalCount > rail.partners.length ? `${rail.partners.length}/${totalCount}` : String(totalCount);
 
-              {rail.partners.length > 0 ? (
-                <div className="customer-detail-partner-avatar-list">
-                  {rail.partners.map((partner) => (
-                    <div className="customer-detail-partner-avatar-item" key={partner.id}>
-                      <AdminAvatar
-                        className="vuexy-booking-avatar is-partner"
-                        initials={readInitials(partner.label)}
-                        status={partner.status}
-                      />
-                      <div className="customer-detail-partner-avatar-copy">
-                        {partner.href ? (
-                          <Link className="vuexy-booking-person-link" href={partner.href}>
-                            {partner.label}
-                          </Link>
-                        ) : (
-                          <strong>{partner.label}</strong>
-                        )}
-                        <small>{partner.helper}</small>
-                      </div>
-                    </div>
-                  ))}
+            return (
+              <section className="customer-detail-partner-rail" key={rail.title}>
+                <div className="customer-detail-partner-rail-header">
+                  <div>
+                    <span>{rail.title}</span>
+                    <small>{rail.helper}</small>
+                  </div>
+                  <strong>{countLabel}</strong>
                 </div>
-              ) : (
-                <p className="customer-detail-partner-empty">{rail.emptyMessage}</p>
-              )}
-            </section>
-          ))}
+
+                {rail.partners.length > 0 ? (
+                  <div className="customer-detail-partner-avatar-list">
+                    {rail.partners.map((partner) => (
+                      <div className="customer-detail-partner-avatar-item" key={partner.id}>
+                        <AdminAvatar
+                          className="vuexy-booking-avatar is-partner"
+                          initials={readInitials(partner.label)}
+                          status={partner.status}
+                        />
+                        <div className="customer-detail-partner-avatar-copy">
+                          {partner.href ? (
+                            <Link className="vuexy-booking-person-link" href={partner.href}>
+                              {partner.label}
+                            </Link>
+                          ) : (
+                            <strong>{partner.label}</strong>
+                          )}
+                          <small>{partner.helper}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="customer-detail-partner-empty">{rail.emptyMessage}</p>
+                )}
+              </section>
+            );
+          })}
         </div>
       ) : null}
     </section>

@@ -24,6 +24,7 @@ describe('CustomerDetailOverviewShell', () => {
     expect(rendered).toContain('Captured spend');
     expect(rendered).toContain('Favorite Partners');
     expect(rendered).toContain('Smoke Partner');
+    expect(rendered).toContain('1/3');
     expect(rendered).toContain('No viewed Partner profile data is loaded for this customer yet.');
     expect(rendered).not.toContain('Customer record navigation');
     expect(rendered).not.toContain('Open latest booking');
@@ -66,6 +67,7 @@ function buildPartnerRails(): readonly CustomerDetailPartnerRail[] {
       title: 'Favorite Partners',
       helper: 'Partners the customer saved for direct requests.',
       emptyMessage: 'No favorite Partner data is loaded for this customer yet.',
+      totalCount: 3,
       partners: [
         {
           helper: 'Latest completed Jun 12, 2026',
