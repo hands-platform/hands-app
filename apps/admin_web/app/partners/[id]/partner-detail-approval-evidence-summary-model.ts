@@ -44,7 +44,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
     (row) => row.status === 'REJECTED',
   ).length;
   const kycStatus = provider.kyc?.status ?? 'MISSING';
-  const bankStatus = primaryBank?.status ?? 'MISSING';
+  const bankStatus = primaryBank?.status ?? 'ON_REQUEST';
   const taxStatus = provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED');
 
   return [
@@ -93,7 +93,7 @@ export function buildPartnerApprovalEvidenceSummaryRows({
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(
             primaryBank.accountHolderName,
           )} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'account missing'}.`
-        : 'No payout bank account has been submitted.',
+        : 'Collected only when the Partner requests wallet withdrawal/deposit or manual settlement.',
       status: bankStatus,
       tone: approvalEvidenceStatusTone(bankStatus),
       href: '#bank',
@@ -125,6 +125,6 @@ export function buildPartnerApprovalEvidenceSummaryRows({
 export function approvalEvidenceStatusTone(status: string): PartnerApprovalEvidenceSummaryRow['tone'] {
   if (status === 'APPROVED') return 'pill-success';
   if (status === 'REJECTED' || status === 'MISSING') return 'pill-danger';
-  if (status === 'DEFERRED') return 'pill-neutral';
+  if (status === 'DEFERRED' || status === 'ON_REQUEST') return 'pill-neutral';
   return 'pill-warn';
 }

@@ -1708,7 +1708,7 @@ function buildPartnerOperatorCommandQueue({
       {
         label: 'First revenue',
         value: hasFirstRevenue ? 'Yes' : 'No',
-        helper: hasFirstRevenue ? 'Tax/payout gates apply.' : 'Keep onboarding light.',
+        helper: hasFirstRevenue ? 'Wallet payout follow-up applies.' : 'Keep onboarding light.',
       },
       {
         label: 'App reachability',
@@ -3144,16 +3144,16 @@ function buildPartnerAcceptanceUnblockPlaybook(
       id: 'tax-after-first-earning',
       step: '7',
       owner: 'Finance',
-      title: 'Review withdrawal setup after first earning',
+      title: 'Review withdrawal setup when requested',
       status: payoutGateOpen ? (hasFirstRevenue ? 'PAYOUT READY' : 'DEFERRED') : 'PAYOUT GATE',
       detail: hasFirstRevenue
         ? (payoutOps.blockers[0] ??
-          'First earning exists; verify withdrawal address, payout agreements, bank details, and payout holds.')
-        : 'Do not force bank or tax setup during initial signup. Collect withdrawal details when payout is requested.',
+          'Wallet payout follow-up is active; verify withdrawal address, payout agreements, bank details, and payout holds.')
+        : 'Do not force bank or tax setup during initial signup. Collect withdrawal details when wallet withdrawal/deposit is requested.',
       bookingImpact: 'This should not block the partner from receiving the first booking.',
       payoutImpact: payoutGateOpen
         ? 'No withdrawal setup blocker is currently visible.'
-        : 'Blocks withdrawal or payout until address, bank, required agreements, and holds are complete.',
+        : 'Blocks manual withdrawal/deposit release until address, bank, required agreements, and holds are complete.',
       action: hasFirstRevenue ? 'Open payout gate' : 'Review payout policy',
       href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/cash-settlements',
       tone: payoutGateOpen ? 'done' : 'pending',
@@ -3242,7 +3242,7 @@ function buildPartnerDetailOpsBadges(
       detail:
         payoutOps.blockers[0] ??
         payoutOps.hold?.reason ??
-        'Payout gate is deferred until first earning or already clear.',
+        'Payout gate is deferred until wallet action or already clear.',
     },
   ];
 }
@@ -3337,14 +3337,14 @@ function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFA
           ? 'Partner has completed service, approved bank, address, and agreements.'
           : hasFirstRevenue
             ? payoutBlockers(provider).join(' ')
-            : 'Withdrawal details and payout gate stay deferred until first earning.',
+            : 'Withdrawal details stay deferred until wallet withdrawal/deposit is requested.',
       action: payoutHold
         ? 'Lift the control only after finance or account-control follow-up is resolved.'
         : payoutReady
           ? 'Partner can request payout when earnings are available.'
           : hasFirstRevenue
             ? 'Clear payout blockers before approving withdrawal.'
-            : 'No action until first earning.',
+            : 'No action until wallet request.',
       tone: payoutReady ? 'done' : hasFirstRevenue || payoutHold ? 'blocked' : 'pending',
     },
     {
@@ -3686,7 +3686,7 @@ function nextProviderAction(
     return {
       title: 'Next admin action',
       status: 'WITHDRAWAL ADDRESS',
-      detail: 'Partner has first earning, but withdrawal address is missing.',
+      detail: 'Partner needs a withdrawal address before payout release.',
       action: 'Ask partner to add the address needed for withdrawal records.',
       tone: 'blocked',
     };
@@ -3806,10 +3806,10 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
           ? 'READY'
           : 'MISSING',
       detail: !hasFirstRevenue
-        ? 'Withdrawal address and payout agreements can stay deferred until first earning or withdrawal request.'
+        ? 'Withdrawal address and payout agreements stay deferred until wallet withdrawal/deposit is requested.'
         : Boolean(provider.residentialAddress?.trim()) && (provider.agreements?.length ?? 0) >= 5
           ? 'Withdrawal address and payout agreements are ready.'
-          : 'First earning exists, so withdrawal address and payout agreements need follow-up before withdrawal.',
+          : 'Wallet payout follow-up is active, so withdrawal address and payout agreements need review before release.',
     },
     {
       label: 'Location freshness',

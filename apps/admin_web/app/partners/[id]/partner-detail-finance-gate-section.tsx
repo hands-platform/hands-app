@@ -43,14 +43,19 @@ export function PartnerDetailBankPayoutGateCard({ bank }: PartnerDetailBankPayou
       className={partnerDetailReviewCardClassName}
       description="Manual wallet withdrawal/deposit evidence for operator checks. This does not gate Level 2 matching."
       id="bank"
-      resultLabel={bank?.status ?? 'MISSING'}
+      resultLabel={bank?.status ?? 'ON_REQUEST'}
       resultTone={financeEvidenceStatusBadgeTone(bank?.status)}
       title="Withdrawal details"
     >
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}
-          emptyMessage={<FinanceEvidenceEmptyState message="No bank account submitted." />}
+          emptyMessage={
+            <FinanceEvidenceEmptyState
+              message="Collect bank details when the Partner requests wallet withdrawal/deposit or manual settlement."
+              title="No withdrawal details found"
+            />
+          }
           headers={financeEvidenceHeaders}
           rowCount={rowCount}
         >
@@ -141,10 +146,16 @@ function EvidenceLine({ label, value }: { readonly label: string; readonly value
   );
 }
 
-function FinanceEvidenceEmptyState({ message }: { readonly message: string }) {
+function FinanceEvidenceEmptyState({
+  message,
+  title = 'No finance evidence found',
+}: {
+  readonly message: string;
+  readonly title?: string;
+}) {
   return (
     <>
-      <strong>No finance evidence found</strong>
+      <strong>{title}</strong>
       <p className="muted">{message}</p>
     </>
   );
@@ -153,13 +164,13 @@ function FinanceEvidenceEmptyState({ message }: { readonly message: string }) {
 function financeEvidenceStatusTone(status?: string | null) {
   if (status === 'APPROVED') return 'pill-success';
   if (status === 'REJECTED' || status === 'MISSING') return 'pill-danger';
-  if (status === 'DEFERRED' || !status) return 'pill-neutral';
+  if (status === 'DEFERRED' || status === 'ON_REQUEST' || !status) return 'pill-neutral';
   return 'pill-warn';
 }
 
 function financeEvidenceStatusBadgeTone(status?: string | null): StatusBadgeTone {
   if (status === 'APPROVED') return 'success';
   if (status === 'REJECTED' || status === 'MISSING') return 'danger';
-  if (status === 'DEFERRED' || !status) return 'neutral';
+  if (status === 'DEFERRED' || status === 'ON_REQUEST' || !status) return 'neutral';
   return 'warning';
 }

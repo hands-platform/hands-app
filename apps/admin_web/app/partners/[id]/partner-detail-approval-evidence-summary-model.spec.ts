@@ -74,7 +74,7 @@ describe('partner detail approval evidence summary model', () => {
     });
   });
 
-  it('keeps tax evidence deferred until first earning and marks missing payout evidence clearly', () => {
+  it('keeps tax and withdrawal evidence deferred until the wallet flow requests them', () => {
     const rows = buildPartnerApprovalEvidenceSummaryRows({
       hasFirstRevenue: false,
       kycEvidence: { ...kycEvidence, rows: [] },
@@ -88,8 +88,9 @@ describe('partner detail approval evidence summary model', () => {
     });
     expect(rows.find((row) => row.id === 'bank-evidence-summary')).toMatchObject({
       title: 'Withdrawal details on request',
-      status: 'MISSING',
-      tone: 'pill-danger',
+      detail: 'Collected only when the Partner requests wallet withdrawal/deposit or manual settlement.',
+      status: 'ON_REQUEST',
+      tone: 'pill-neutral',
     });
     expect(rows.find((row) => row.id === 'tax-evidence-summary')).toMatchObject({
       title: 'Tax profile optional',

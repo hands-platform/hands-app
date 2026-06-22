@@ -63,6 +63,18 @@ describe('partner detail finance gate sections', () => {
       ]),
     );
   });
+
+  it('keeps missing withdrawal details neutral until the wallet flow requests them', () => {
+    const section = PartnerDetailBankPayoutGateCard({ bank: null });
+    const rendered = normalizeSpaces(textContent(section));
+
+    expect(rendered).toContain('Withdrawal details');
+    expect(rendered).toContain('ON_REQUEST');
+    expect(rendered).toContain('No withdrawal details found');
+    expect(rendered).toContain('Collect bank details when the Partner requests wallet withdrawal/deposit or manual settlement.');
+    expect(rendered).not.toContain('MISSING');
+    expect(classNamesIn(section)).toEqual(expect.arrayContaining(['pill pill-neutral']));
+  });
 });
 
 function textContent(value: unknown): string {

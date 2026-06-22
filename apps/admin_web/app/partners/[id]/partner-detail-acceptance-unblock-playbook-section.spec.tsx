@@ -40,6 +40,10 @@ describe('PartnerDetailAcceptanceUnblockPlaybookSection', () => {
     const rendered = normalizeSpaces(textContent(section));
 
     expect(rendered).toContain('Partner approval, settlement, and payout playbook');
+    expect(rendered).toContain(
+      'Tax profile remains optional for current Vietnam operations and does not block Level 2 approval, matching, work, or wallet withdrawal.',
+    );
+    expect(rendered).not.toContain('tax stays deferred until first earning and then blocks payout');
     expect(rendered).toContain('0 booking blocker(s)');
     expect(rendered).toContain('Step');
     expect(rendered).toContain('Unblock item');

@@ -41,7 +41,7 @@ export function PartnerDetailAcceptanceUnblockPlaybookSection({
   return (
     <AdminFilterPanel
       className={`${partnerDetailReviewCardClassName} admin-mb-16`}
-      description="Operator order for approval holds, settlement warnings, booking gates, and payout release. Finance warnings stay visible without hiding marketplace participation; tax stays deferred until first earning and then blocks payout, not initial dispatch."
+      description="Operator order for approval holds, settlement warnings, booking gates, and payout release. Finance warnings stay visible without hiding marketplace participation. Tax profile remains optional for current Vietnam operations and does not block Level 2 approval, matching, work, or wallet withdrawal."
       id="payout"
       resultLabel={`${bookingBlockerCount} booking blocker(s)`}
       resultTone={bookingBlockerCount ? 'danger' : 'success'}
