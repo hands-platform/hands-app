@@ -5,13 +5,13 @@ import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import {
   bookingAddressSnapshotLabel,
   bookingServiceOptionLabel,
-  coordinateLabel,
   formatDate,
   money,
   shortId,
 } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingCustomerSelectableParticipantsForFinalChoice } from './booking-participant-rules';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 export type BookingHandoffChecklistItem = {
   readonly id: string;
@@ -40,7 +40,7 @@ export function bookingHandoffChecklist(
     ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`
     : 'No chat room is linked yet. Matched or active bookings should create one.';
   const locationDetail = latestLocation
-    ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${bookingProviderLocationMetricHelper(latestLocation.recordedAt)}`
+    ? `${latestLocationLabel(latestLocation)} / ${bookingProviderLocationMetricHelper(latestLocation.recordedAt)}`
     : 'No Partner service location has been shared yet.';
 
   return [
@@ -87,4 +87,9 @@ export function bookingHandoffChecklist(
       href: '#finance',
     },
   ];
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot) {
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

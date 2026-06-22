@@ -87,7 +87,8 @@ describe('booking handoff checklist', () => {
       title: 'Selected Partner',
     });
     expect(rows[3].detail).toContain('3 retained message(s)');
-    expect(rows[3].detail).toContain('10.7626, 106.6602');
+    expect(rows[3].detail).toContain('Location recorded without readable address');
+    expect(JSON.stringify(rows)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
     expect(rows[4]).toMatchObject({
       id: 'finance-closeout',
       title: 'CASH / CAPTURED / 300.000 VND',
