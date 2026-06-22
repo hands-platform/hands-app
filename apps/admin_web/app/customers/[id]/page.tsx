@@ -671,30 +671,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </AdminFormControlLink>
           </div>
         </form>
-        <div className="service-trace-summary admin-mt-12">
-          <div>
-            <span>Filtered bookings</span>
-            <strong>{filteredBookings.length}</strong>
-            <small>Matching, completed, cancelled, and refunded records.</small>
-          </div>
-          <div>
-            <span>Filtered chat rooms</span>
-            <strong>{filteredChatBookings.length}</strong>
-            <small>Rooms with booking or message dates in this period.</small>
-          </div>
-          <div>
-            <span>Filtered activity</span>
-            <strong>{filteredCustomerActivityRecords.length}</strong>
-            <small>
-              {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)} in this period.
-            </small>
-          </div>
-          <div>
-            <span>Filtered notices</span>
-            <strong>{filteredNotifications.length}</strong>
-            <small>Customer notification rows.</small>
-          </div>
-        </div>
       </section>
 
       <section className="card admin-mb-16">

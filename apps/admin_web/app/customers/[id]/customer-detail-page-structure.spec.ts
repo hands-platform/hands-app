@@ -49,5 +49,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Loaded attempts');
     expect(pageSource).not.toContain('Filtered attempts');
     expect(pageSource).not.toContain('Latest gate');
+    expect(pageSource).not.toContain('Filtered bookings');
+    expect(pageSource).not.toContain('Filtered chat rooms');
+    expect(pageSource).not.toContain('Filtered activity');
+    expect(pageSource).not.toContain('Filtered notices');
   });
 });
