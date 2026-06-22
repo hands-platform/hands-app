@@ -5,10 +5,10 @@ import { bookingCashDebtNeedsSettlement } from './booking-cash-wallet-gate';
 import { bookingChatReady } from './booking-chat-evidence';
 import {
   bookingAddressSnapshotLabel,
-  coordinateLabel,
   money,
 } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 
 type CloseoutReadinessInput = {
   readonly booking: AdminBookingDetail;
@@ -147,8 +147,8 @@ export function bookingCloseoutReadiness({
       label: 'Location',
       status: locationReady ? 'Location state valid' : 'Partner location missing',
       detail: latestLocation
-        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${bookingProviderLocationMetricHelper(latestLocation.recordedAt)}`
-        : 'No Partner service pin is saved for this active booking.',
+        ? `${latestLocationLabel(latestLocation)} / ${bookingProviderLocationMetricHelper(latestLocation.recordedAt)}`
+        : 'No Partner service location is saved for this active booking.',
       owner: 'Dispatch',
       href: '#location',
       ready: locationReady,
@@ -190,4 +190,9 @@ export function bookingCloseoutReadiness({
     items,
     openItems,
   };
+}
+
+function latestLocationLabel(latestLocation: AdminLocationSnapshot) {
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

@@ -56,6 +56,10 @@ describe('booking closeout readiness', () => {
     expect(readiness.tone).toBe('pill-success');
     expect(readiness.openItems).toEqual([]);
     expect(readiness.helper).toBe('All factual records needed for this booking stage are aligned.');
+    expect(readiness.items.find((item) => item.id === 'location-signal')?.detail).toMatch(
+      /^Location recorded without readable address \//,
+    );
+    expect(JSON.stringify(readiness)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 
   it('keeps active booking monitor gaps visible without forcing payment or finance closeout', () => {
