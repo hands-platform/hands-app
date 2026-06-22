@@ -1167,49 +1167,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       <section className="card" id="notifications">
         <div className="ops-section-header">
           <div>
-            <h2>Support and device trace</h2>
+            <h2>Notification and audit trace</h2>
             <p className="muted">
-              Device reachability, app sessions, notification delivery, and customer audit rows in one
-              support trace.
+              Customer notification delivery and audit rows for support review.
             </p>
           </div>
           <div className="participant-list">
-            <span className="pill pill-info">{pushDevices.length} device(s)</span>
-            <span className="pill pill-info">
-              {appSessions.filter((session) => session.active).length}/{appSessions.length} active session(s)
-            </span>
             <span className="pill pill-info">{filteredNotifications.length} notification row(s)</span>
             <span className="pill pill-info">{filteredAuditLogs.length} audit log(s)</span>
-          </div>
-        </div>
-        <div className="admin-mt-16">
-          <h3>Device and session state</h3>
-          <div className="setup-stage-list admin-mt-12">
-            {pushDevices.length > 0 ? (
-              pushDevices.map((device) => (
-                <div className="ops-row" key={device.id}>
-                  <strong>{device.platform}</strong>
-                  <span>
-                    {device.enabled ? 'Enabled' : 'Disabled'} /{' '}
-                    {formatDate(device.updatedAt ?? device.createdAt)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="muted">No customer push device recorded.</p>
-            )}
-            {appSessions.length > 0 ? (
-              appSessions.slice(0, 8).map((session) => (
-                <div className="ops-row" key={session.id}>
-                  <strong>{session.platform ?? session.role}</strong>
-                  <span>
-                    {session.active ? 'Active' : 'Inactive'} / {formatDate(session.lastSeenAt)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="muted">No app session recorded.</p>
-            )}
           </div>
         </div>
 

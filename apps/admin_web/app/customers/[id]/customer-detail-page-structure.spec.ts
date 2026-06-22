@@ -82,5 +82,9 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain('Bookings and work');
     expect(pageSource).not.toContain('Payment records');
     expect(pageSource).not.toContain('Support trail');
+    expect(pageSource).not.toContain('Support and device trace');
+    expect(pageSource).not.toContain('Device and session state');
+    expect(pageSource).not.toContain('No customer push device recorded.');
+    expect(pageSource).not.toContain('active session(s)');
   });
 });
