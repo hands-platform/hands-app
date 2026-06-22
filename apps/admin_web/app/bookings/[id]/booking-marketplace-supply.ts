@@ -7,7 +7,6 @@ import type {
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import {
   approximateDistanceMeters,
-  coordinateLabel,
   distanceLabel,
 } from './booking-formatters';
 import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
@@ -244,9 +243,25 @@ export function bookingDispatchPin(booking: AdminBookingDetail) {
     lat,
     lng,
     source: hasSnapshotPin ? 'BookingAddressSnapshot' : 'Stored booking pin',
-    label: coordinateLabel(lat, lng),
+    label: bookingDispatchPinLabel({ hasSnapshotPin, lat, lng }),
     legacyDriftMeters,
   };
+}
+
+function bookingDispatchPinLabel({
+  hasSnapshotPin,
+  lat,
+  lng,
+}: {
+  hasSnapshotPin: boolean;
+  lat: number | null;
+  lng: number | null;
+}) {
+  if (lat === null || lng === null) {
+    return 'No service address location';
+  }
+
+  return hasSnapshotPin ? 'Service address snapshot saved' : 'Stored booking location saved';
 }
 
 function bookingMarketplacePartnerExcludedGroups(
