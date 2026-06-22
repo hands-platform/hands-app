@@ -27,6 +27,7 @@ describe('CustomerDetailOverviewShell', () => {
         'admin-person-avatar-shell',
         'admin-avatar-status-dot is-online',
         'card customer-detail-overview-card',
+        'vuexy-booking-avatar customer-detail-avatar',
       ]),
     );
   });

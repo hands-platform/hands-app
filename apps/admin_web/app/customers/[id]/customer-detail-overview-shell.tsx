@@ -32,20 +32,27 @@ export function CustomerDetailOverviewShell({
 }: CustomerDetailOverviewShellProps) {
   return (
     <section className="card customer-detail-overview-card">
-      <div className="customer-detail-identity">
-        <AdminAvatar className="customer-detail-avatar" initials={readInitials(name)} status={avatarStatus} />
-        <div>
-          <h2>{name}</h2>
-          <p>{subtitle}</p>
+      <div className="customer-detail-overview-main">
+        <div className="customer-detail-identity">
+          <AdminAvatar
+            className="vuexy-booking-avatar customer-detail-avatar"
+            initials={readInitials(name)}
+            status={avatarStatus}
+          />
+          <div className="customer-detail-identity-copy">
+            <span>Customer profile</span>
+            <h2>{name}</h2>
+            <p>{subtitle}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="participant-list customer-detail-badges">
-        {statusBadges.map((badge) => (
-          <span className="pill pill-info" key={badge}>
-            {badge}
-          </span>
-        ))}
+        <div className="participant-list customer-detail-badges">
+          {statusBadges.map((badge) => (
+            <span className="pill pill-info" key={badge}>
+              {badge}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="customer-detail-highlight-grid">

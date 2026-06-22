@@ -457,9 +457,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   ];
   const overviewHighlights: CustomerDetailOverviewHighlight[] = [
     {
-      label: 'Bookings',
-      value: String(bookings.length),
-      helper: `${bookingStats.active} active / ${bookingStats.completed} completed`,
+      label: 'Current booking',
+      value: activeBooking ? activeBooking.status : 'None',
+      helper: activeBooking
+        ? `${bookingServiceLabel(activeBooking)} / ${shortId(activeBooking.id)}`
+        : `${bookingStats.active} active / ${bookings.length} total`,
+    },
+    {
+      label: 'Last completed work',
+      value: lastCompletedBooking ? formatDate(bookingLatestActivityAt(lastCompletedBooking)) : 'None',
+      helper: `${bookingStats.completed} completed booking(s)`,
     },
     {
       label: 'Captured spend',
@@ -467,22 +474,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       helper: `${wallet.refundCount} refund row(s) / ${formatMoney(wallet.refundAmount)} refunded`,
     },
     {
-      label: 'Retained chat',
-      value: `${chatMessageCount} messages`,
-      helper: `${chatRooms.length} room(s) linked to this customer`,
-    },
-    {
-      label: 'Saved locations',
-      value: `${addresses.length}`,
-      helper: addresses[0]?.value ?? 'No saved location loaded yet',
+      label: 'Reachability',
+      value: latestSession ? 'Seen' : 'No session',
+      helper: `${pushDevices.filter((device) => device.enabled).length} push target(s) / ${chatMessageCount} chat messages`,
     },
   ];
   const overviewFacts: CustomerDetailOverviewFact[] = [
-    {
-      label: 'Customer ID',
-      value: customer.id,
-      helper: 'Stable admin customer profile id.',
-    },
     {
       label: 'Phone',
       value: customer.user?.phone ?? 'No phone',
@@ -496,11 +493,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         : 'No account update timestamp loaded.',
     },
     {
-      label: 'Last session',
-      value: latestSession ? formatDate(latestSession.lastSeenAt) : 'No session',
-      helper: latestSession
-        ? `${latestSession.platform ?? 'Unknown'} / ${latestSession.appVersion ?? 'No app version'}`
-        : 'No app session or device heartbeat loaded.',
+      label: 'Latest booking',
+      value: latestBooking ? shortId(latestBooking.id) : 'None',
+      helper: latestBooking
+        ? `${latestBooking.status} / ${formatDate(bookingLatestActivityAt(latestBooking))}`
+        : 'No booking has been created for this customer.',
     },
     {
       label: 'Frequent service',
@@ -508,6 +505,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       helper:
         mostCommonLabel(bookings.map((booking) => bookingAddressEvidenceLabel(booking))) ??
         'No repeated service area found.',
+    },
+    {
+      label: 'Saved locations',
+      value: `${addresses.length} saved`,
+      helper: addresses[0]?.value ?? 'No saved location loaded yet.',
+    },
+    {
+      label: 'Customer ID',
+      value: customer.id,
+      helper: 'Stable admin customer profile id.',
     },
   ];
   const detailShortcuts: CustomerDetailShortcut[] = [
