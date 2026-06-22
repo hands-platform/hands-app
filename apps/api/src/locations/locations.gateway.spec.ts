@@ -92,6 +92,28 @@ describe('LocationsGateway provider location updates', () => {
     expect(emit).not.toHaveBeenCalled();
   });
 
+  it('does not write active booking location updates before the active interval passes', async () => {
+    const { gateway, redisState, emit } = createGateway();
+    redisState.getProviderLocation.mockResolvedValue({
+      lat: 10.7769,
+      lng: 106.7009,
+      recordedAt: new Date().toISOString(),
+    });
+
+    const result = await gateway.updateProviderLocation({} as never, {
+      bookingId: 'booking-1',
+      lat: 10.7769,
+      lng: 106.7409,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'TOO_FREQUENT_ACTIVE_BOOKING_LOCATION_UPDATE',
+    });
+    expect(redisState.setProviderLocation).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
   it('does not write booking-specific location updates after the booking is closed', async () => {
     const { gateway, redisState, prisma, emit } = createGateway();
     prisma.booking.findFirst.mockResolvedValue({ id: 'booking-1', status: BookingStatus.COMPLETED });
