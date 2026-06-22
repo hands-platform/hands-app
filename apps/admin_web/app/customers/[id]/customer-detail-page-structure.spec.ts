@@ -76,5 +76,11 @@ describe('customer detail page structure', () => {
     expect(pageSource).not.toContain("formatMoney(Number(booking.payment.amount ?? 0))");
     expect(pageSource).not.toContain('booking.chatRoom.messages?.length ?? 0');
     expect(pageSource.match(/href=\{row\.chatHref\}/g)?.length).toBe(1);
+    expect(pageSource).not.toContain('customerActivitySummary');
+    expect(pageSource).not.toContain('buildCustomerActivitySummary');
+    expect(pageSource).not.toContain('Loaded range');
+    expect(pageSource).not.toContain('Bookings and work');
+    expect(pageSource).not.toContain('Payment records');
+    expect(pageSource).not.toContain('Support trail');
   });
 });

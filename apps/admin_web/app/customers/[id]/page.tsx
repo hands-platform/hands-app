@@ -287,7 +287,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     ),
     activityOrder,
   );
-  const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const visibleCustomerActivityRecords = filteredCustomerActivityRecords.slice(0, CUSTOMER_RECENT_ACTIVITY_LIMIT);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
@@ -1119,22 +1118,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer chronological activity</h2>
             <p className="muted">
-              Latest customer events across bookings, work, chat, payment, address, app, notification,
-              review, and staff records.
+              Latest customer events across the selected date and activity filters.
             </p>
           </div>
           <span className="pill pill-info">
             {visibleCustomerActivityRecords.length}/{filteredCustomerActivityRecords.length} latest
           </span>
-        </div>
-        <div className="service-trace-summary admin-mt-14">
-          {customerActivitySummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
         </div>
         <div className="setup-stage-list admin-mt-12">
           {visibleCustomerActivityRecords.length > 0 ? (
@@ -2655,47 +2644,6 @@ function buildCustomerActivityRecords(
   return records
     .filter((record) => Boolean(record.at))
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
-}
-
-function buildCustomerActivitySummary(
-  records: Array<{ id: string; type: string; at: string; title: string; detail: string }>,
-) {
-  const count = (types: string[]) => records.filter((record) => types.includes(record.type)).length;
-  const latestAt = orderCustomerActivityRecords(records, 'newest')[0]?.at;
-  const oldestAt = orderCustomerActivityRecords(records, 'oldest')[0]?.at;
-
-  return [
-    {
-      label: 'Loaded range',
-      value: latestAt ? formatDate(latestAt) : 'None',
-      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No customer activity in this period.',
-    },
-    {
-      label: 'Bookings and work',
-      value: count(['BOOKING', 'WORK']).toString(),
-      helper: 'Booking creation, status, and completed service records.',
-    },
-    {
-      label: 'Chat archive',
-      value: count(['CHAT']).toString(),
-      helper: 'Messages retained for admin after mobile chat is hidden.',
-    },
-    {
-      label: 'Payment records',
-      value: count(['PAYMENT', 'REFUND']).toString(),
-      helper: 'Captured, pending, refunded, or disputed payment events.',
-    },
-    {
-      label: 'Address and app',
-      value: count(['ADDRESS', 'SESSION', 'DEVICE']).toString(),
-      helper: 'Saved locations, app sessions, and push device changes.',
-    },
-    {
-      label: 'Support trail',
-      value: count(['NOTICE', 'REVIEW', 'OPS', 'AUDIT']).toString(),
-      helper: 'Notifications, reviews, staff notes, and audit records.',
-    },
-  ];
 }
 
 function buildCustomerBookingGateAttemptRows(
