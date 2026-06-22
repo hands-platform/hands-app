@@ -546,10 +546,23 @@ function bookingAddressLabel(payment: AdminPaymentDetail) {
 
 function bookingCoordinateLabel(payment: AdminPaymentDetail) {
   const snapshot = payment.booking?.addressSnapshot;
-  if (snapshot) {
-    return coordinateLabel(snapshot.latitude, snapshot.longitude);
+  if (
+    snapshot?.latitude !== undefined &&
+    snapshot.latitude !== null &&
+    snapshot?.longitude !== undefined &&
+    snapshot.longitude !== null
+  ) {
+    return 'Service address snapshot saved';
   }
-  return coordinateLabel(payment.booking?.lat, payment.booking?.lng);
+  if (
+    payment.booking?.lat !== undefined &&
+    payment.booking.lat !== null &&
+    payment.booking?.lng !== undefined &&
+    payment.booking.lng !== null
+  ) {
+    return 'Stored booking location saved';
+  }
+  return 'No pin';
 }
 
 function customerLabel(payment: AdminPaymentDetail) {
@@ -583,16 +596,4 @@ function addressLabel(address: unknown) {
   }
   const value = record.addressText ?? record.address_text ?? record.address ?? record.label ?? record.name ?? record.line1;
   return typeof value === 'string' && value.trim() ? value.trim() : 'Address pending';
-}
-
-function coordinateLabel(lat?: string | number | null, lng?: string | number | null) {
-  if (lat === undefined || lat === null || lng === undefined || lng === null) {
-    return 'No pin';
-  }
-  const parsedLat = Number(lat);
-  const parsedLng = Number(lng);
-  if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) {
-    return 'No pin';
-  }
-  return `${parsedLat.toFixed(4)}, ${parsedLng.toFixed(4)}`;
 }
