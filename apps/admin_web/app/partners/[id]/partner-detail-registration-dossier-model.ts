@@ -67,15 +67,10 @@ export function buildProviderRegistrationDossier(
         (provider.documents ?? []).some((document) => document.type === 'PROFILE_PHOTO')) ||
       hasProfileQuality,
   );
-  const addressComplete = Boolean(provider.residentialAddress?.trim() && provider.city?.trim());
-  const hasFirstRevenue = partnerHasFirstRevenueSignal(provider);
   const serviceAreaComplete =
     Boolean(provider.serviceArea) || Boolean(provider.currentLat && provider.currentLng);
   const identityComplete =
     provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
-  const bankComplete = hasApprovedBankAccount(provider);
-  const taxDeferredOrComplete = true;
-  const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
   const securityClear =
     !provider.blockedAt &&
     !(provider.devices ?? []).some((device) => device.blockedAt) &&
@@ -114,9 +109,7 @@ export function buildProviderRegistrationDossier(
       status: serviceAreaComplete ? 'READY' : 'MISSING',
       detail:
         serviceAreaComplete
-          ? addressComplete
-            ? 'Service area/location data and withdrawal address are available.'
-            : 'Service area/location data is available. Withdrawal address can stay deferred until wallet withdrawal.'
+          ? 'Service area/location data is available for dispatch review.'
           : 'GPS location or service area still needs confirmation before dispatch.',
       operatorAction:
         serviceAreaComplete
@@ -138,52 +131,6 @@ export function buildProviderRegistrationDossier(
         : 'Review typed documents first, then approve or reject KYC.',
     },
     {
-      label: 'Withdrawal details',
-      ok: true,
-      status: bankComplete ? bankAccountStatusLabel(provider) : 'DEFERRED',
-      detail: bankComplete
-        ? 'An approved bank account is available for future payouts.'
-        : 'Bank details are collected and approved when the Partner requests wallet withdrawal.',
-      operatorAction: bankComplete
-        ? 'No bank action unless partner changes account.'
-        : 'Wait for a wallet withdrawal request before approving bank details.',
-    },
-    {
-      label: 'Tax profile optional',
-      ok: taxDeferredOrComplete,
-      status: provider.taxProfile?.status ?? 'NOT_REQUIRED',
-      detail: taxDeferredOrComplete
-        ? 'Tax profile registration is not required for Vietnam MVP operations.'
-        : 'Optional tax profile is present but does not block partner approval or withdrawal.',
-      operatorAction: taxDeferredOrComplete
-        ? provider.taxProfile
-          ? 'Review only if finance keeps optional tax records.'
-          : 'Do not force tax fields during onboarding or withdrawal.'
-        : 'Review only if finance keeps optional tax records.',
-    },
-    {
-      label: 'Legal agreements',
-      ok: agreementsDeferredOrComplete,
-      status:
-        (provider.agreements?.length ?? 0) >= 5
-          ? 'READY'
-          : hasFirstRevenue
-            ? `${provider.agreements?.length ?? 0}/5`
-            : 'DEFERRED',
-      detail:
-        (provider.agreements?.length ?? 0) >= 5
-          ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
-          : hasFirstRevenue
-            ? 'Partner has first earning and must accept service, privacy, location, and payout policy versions.'
-            : 'Payout agreement collection is intentionally deferred until first earning or withdrawal request.',
-      operatorAction:
-        (provider.agreements?.length ?? 0) >= 5
-          ? 'Keep agreement versions visible for audit.'
-          : hasFirstRevenue
-            ? 'Show agreement completion flow before payout-level access.'
-            : 'Do not force payout agreements during initial signup.',
-    },
-    {
       label: 'Device and session',
       ok: securityClear,
       status: securityClear ? 'CLEAR' : 'CHECK',
@@ -203,18 +150,6 @@ export function buildProviderRegistrationDossier(
   };
 }
 
-function approvedBankAccount(provider: PartnerRegistrationDossierProvider) {
-  return (provider.bankAccounts ?? []).find((bankAccount) => bankAccount.status === 'APPROVED') ?? null;
-}
-
-function hasApprovedBankAccount(provider: PartnerRegistrationDossierProvider) {
-  return Boolean(approvedBankAccount(provider));
-}
-
-function bankAccountStatusLabel(provider: PartnerRegistrationDossierProvider) {
-  return approvedBankAccount(provider)?.status ?? provider.bankAccounts?.[0]?.status ?? 'MISSING';
-}
-
 function hasApprovedRequiredKycDocuments(provider: PartnerRegistrationDossierProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
@@ -226,10 +161,4 @@ function missingApprovedRequiredKycDocuments(provider: PartnerRegistrationDossie
       .map((document) => document.type),
   );
   return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
-}
-
-function partnerHasFirstRevenueSignal(provider: PartnerRegistrationDossierProvider) {
-  return (provider.earnings ?? []).some((earning) =>
-    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
-  );
 }

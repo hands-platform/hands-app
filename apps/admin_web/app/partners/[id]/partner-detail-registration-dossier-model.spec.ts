@@ -34,18 +34,13 @@ describe('partner detail registration dossier model', () => {
       blockers: 0,
       ready: true,
     });
-    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
-      ok: true,
-      operatorAction: 'Do not force tax fields during onboarding or withdrawal.',
-      status: 'NOT_REQUIRED',
-    });
-    expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
-      ok: true,
-      status: 'DEFERRED',
-    });
+    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toBeUndefined();
+    expect(dossier.items.map((item) => item.label)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional', 'Legal agreements']),
+    );
   });
 
-  it('requires agreements after the first earning without requiring tax profile', () => {
+  it('keeps first-earning payout follow-up out of the registration approval dossier', () => {
     const dossier = buildProviderRegistrationDossier({
       activityNickname: 'Moon',
       bankAccounts: [{ status: 'APPROVED' }],
@@ -63,31 +58,22 @@ describe('partner detail registration dossier model', () => {
       user: { phone: '+84000000001' },
     });
 
-    expect(dossier.ready).toBe(false);
+    expect(dossier.ready).toBe(true);
     expect(dossier.items.find((item) => item.label === 'Address and service area')).toMatchObject({
       ok: true,
       status: 'READY',
     });
-    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
-      ok: true,
-      status: 'NOT_REQUIRED',
-    });
-    expect(dossier.items.find((item) => item.label === 'Legal agreements')).toMatchObject({
-      ok: false,
-      status: '0/5',
-    });
+    expect(dossier.items.map((item) => item.label)).not.toEqual(
+      expect.arrayContaining(['Withdrawal details', 'Tax profile optional', 'Legal agreements']),
+    );
   });
 
-  it('labels submitted optional tax profile as a finance-only review', () => {
+  it('omits submitted optional tax profile from the registration approval dossier', () => {
     const dossier = buildProviderRegistrationDossier({
       taxProfile: { status: 'PENDING' },
     });
 
-    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toMatchObject({
-      ok: true,
-      operatorAction: 'Review only if finance keeps optional tax records.',
-      status: 'PENDING',
-    });
+    expect(dossier.items.find((item) => item.label === 'Tax profile optional')).toBeUndefined();
   });
 
   it('surfaces document and device/session blockers without blocking on bank review', () => {
@@ -104,10 +90,7 @@ describe('partner detail registration dossier model', () => {
       ok: false,
       status: 'PENDING',
     });
-    expect(dossier.items.find((item) => item.label === 'Withdrawal details')).toMatchObject({
-      ok: true,
-      status: 'DEFERRED',
-    });
+    expect(dossier.items.find((item) => item.label === 'Withdrawal details')).toBeUndefined();
     expect(dossier.items.find((item) => item.label === 'Device and session')).toMatchObject({
       ok: false,
       status: 'CHECK',

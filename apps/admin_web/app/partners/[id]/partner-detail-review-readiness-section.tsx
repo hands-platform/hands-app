@@ -87,7 +87,7 @@ export function PartnerDetailRegistrationDossierSection({
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
-      description="Structured view of the signup profile, public working profile, identity evidence, payout gate, legal consent, and account activity. Use this as the first review map before approving or rejecting a partner."
+      description="Structured view of the signup profile, public working profile, service area, identity evidence, and account activity. Finance-only rows stay in the wallet and payout sections."
       id="partner-registration-dossier"
       resultLabel={dossier.ready ? 'Dossier complete' : `${dossier.blockers} gap(s)`}
       resultTone={dossier.ready ? 'success' : 'warning'}

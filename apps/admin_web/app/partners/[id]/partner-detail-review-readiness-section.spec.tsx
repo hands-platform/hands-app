@@ -60,11 +60,11 @@ describe('Partner detail review readiness sections', () => {
             status: 'MISSING',
           },
           {
-            detail: 'Tax profile is not required for Vietnam MVP operations.',
-            label: 'Tax profile optional',
+            detail: 'KYC and required documents are approved.',
+            label: 'KYC evidence',
             ok: true,
-            operatorAction: 'No action needed.',
-            status: 'NOT_REQUIRED',
+            operatorAction: 'Identity gate is clear.',
+            status: 'APPROVED',
           },
         ],
       },
@@ -76,9 +76,10 @@ describe('Partner detail review readiness sections', () => {
     expect(rendered).toContain('1 gap(s)');
     expect(rendered).toContain('Dossier item');
     expect(rendered).toContain('Operator action');
-    expect(rendered).toContain('Tax profile optional');
-    expect(rendered).toContain('Tax profile is not required for Vietnam MVP operations.');
-    expect(rendered).toContain('No action needed.');
+    expect(rendered).toContain('KYC evidence');
+    expect(rendered).toContain('KYC and required documents are approved.');
+    expect(rendered).toContain('Identity gate is clear.');
+    expect(rendered).not.toContain('Tax profile optional');
     expect(classNamesIn(section)).toEqual(
       expect.arrayContaining([
         'card admin-filter-panel booking-monitor-filter-panel admin-mt-16 vuexy-booking-table-card vuexy-partner-detail-review-card',
