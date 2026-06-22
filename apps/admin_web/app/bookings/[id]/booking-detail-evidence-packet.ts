@@ -10,11 +10,11 @@ import type { BookingActivityRecord } from './booking-activity-records';
 import { bookingChatReady } from './booking-chat-evidence';
 import {
   bookingAddressSnapshotLabel,
-  coordinateLabel,
   formatDate,
   money,
   shortId,
 } from './booking-formatters';
+import { readAddressText, serviceAddressAreaLabel } from '../booking-address-readers';
 import type { bookingFinanceTrace } from './booking-finance-trace';
 import type { bookingNotificationTrace } from './booking-notification-trace';
 import { bookingPaymentEvidence } from './booking-payment-evidence';
@@ -43,6 +43,7 @@ export function bookingDetailEvidencePacket({
 }: BookingDetailEvidencePacketInput) {
   const trail = bookingLocationTrail(booking.snapshots, latestProviderLocation(booking));
   const paymentEvidence = bookingPaymentEvidence(booking);
+  const addressSnapshotLabel = bookingAddressSnapshotLabel(booking);
 
   return buildBookingEvidencePacket({
     chatReady: bookingChatReady(booking),
@@ -50,7 +51,7 @@ export function bookingDetailEvidencePacket({
     latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
     locationTrailCount: trail.length,
     latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
-    latestLocationCoordinateLabel: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : null,
+    latestLocationCoordinateLabel: latestLocationLabel(latestLocation),
     paymentStatus: booking.payment?.status ?? 'NONE',
     paymentMethod: booking.payment?.method ?? 'No method',
     paymentAmountLabel: money(booking.payment?.amount, booking.payment?.currency),
@@ -65,10 +66,8 @@ export function bookingDetailEvidencePacket({
     auditLogCount: booking.auditLogs?.length ?? 0,
     opsTaskCount: booking.opsTasks?.length ?? 0,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
-    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
-    addressPinLabel: booking.addressSnapshot
-      ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
-      : null,
+    addressSnapshotLabel,
+    addressPinLabel: booking.addressSnapshot ? addressSnapshotLabel : null,
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
     customerPriceLabel: financeTrace.customerPrice,
     walletLedgerLabel: financeTrace.walletLedger,
@@ -77,4 +76,13 @@ export function bookingDetailEvidencePacket({
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
+}
+
+function latestLocationLabel(latestLocation?: AdminLocationSnapshot | null) {
+  if (!latestLocation) {
+    return null;
+  }
+
+  const address = readAddressText(latestLocation);
+  return address ? serviceAddressAreaLabel(address) : 'Location recorded without readable address';
 }

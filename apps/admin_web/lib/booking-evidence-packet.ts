@@ -87,8 +87,8 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Location evidence',
         value: input.latestLocationAtLabel ?? `${input.locationTrailCount} row(s)`,
         helper: input.latestLocationCoordinateLabel
-          ? `${input.latestLocationCoordinateLabel} latest Partner pin.`
-          : 'No Partner pin is saved for this booking yet.',
+          ? `${input.latestLocationCoordinateLabel} latest Partner location.`
+          : 'No Partner location is saved for this booking yet.',
       },
       {
         label: 'Payment evidence',
@@ -122,7 +122,7 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
           ? `Locked address snapshot: ${input.addressSnapshotLabel}.`
           : 'No immutable address snapshot is attached yet.',
         evidence: input.hasAddressSnapshot
-          ? `Pin ${input.addressPinLabel ?? 'missing'}`
+          ? `Address snapshot ${input.addressPinLabel ?? input.addressSnapshotLabel}`
           : 'Stored-address fallback or missing booking address needs operator review.',
         href: '#address-radius-contract',
       },
@@ -143,8 +143,8 @@ export function bookingEvidencePacket(input: BookingEvidencePacketInput): Bookin
         label: 'Location',
         title: 'Location evidence',
         detail: input.latestLocationCoordinateLabel
-          ? `Latest Partner pin is ${input.latestLocationCoordinateLabel}.`
-          : 'No Partner location pin has been retained.',
+          ? `Latest Partner location is ${input.latestLocationCoordinateLabel}.`
+          : 'No Partner location has been retained.',
         evidence: input.latestLocationAtLabel
           ? `Recorded ${input.latestLocationAtLabel}`
           : 'No location timestamp.',

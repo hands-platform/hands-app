@@ -68,7 +68,7 @@ describe('bookingEvidencePacket', () => {
       chatReady: true,
       messageCount: 4,
       latestLocationAtLabel: '07 Jun 2026 10:30',
-      latestLocationCoordinateLabel: '10.7769, 106.7009',
+      latestLocationCoordinateLabel: 'District 1, Ho Chi Minh City',
       paymentStatus: 'AUTHORIZED',
       paymentMethod: 'MOMO',
       paymentAmountLabel: '450.000 VND',
@@ -92,7 +92,7 @@ describe('bookingEvidencePacket', () => {
     ]);
     expect(packet.metrics[1]).toMatchObject({
       value: '07 Jun 2026 10:30',
-      helper: '10.7769, 106.7009 latest Partner pin.',
+      helper: 'District 1, Ho Chi Minh City latest Partner location.',
     });
     expect(packet.metrics[3].helper).toBe('PENDING 120.000 VND, APPROVED 50.000 VND');
   });
@@ -102,13 +102,13 @@ describe('bookingEvidencePacket', () => {
       ...baseInput,
       hasAddressSnapshot: true,
       addressSnapshotLabel: 'District 1, Ho Chi Minh City',
-      addressPinLabel: '10.7769, 106.7009',
+      addressPinLabel: 'District 1, Ho Chi Minh City',
       chatReady: true,
       chatRoomShortId: 'abc123',
       messageCount: 2,
       latestMessageAtLabel: '07 Jun 2026 10:35',
       latestLocationAtLabel: '07 Jun 2026 10:30',
-      latestLocationCoordinateLabel: '10.7769, 106.7009',
+      latestLocationCoordinateLabel: 'District 1, Ho Chi Minh City',
       customerPriceLabel: '450.000 VND customer price',
       walletLedgerLabel: 'No wallet block',
       refundEvidence: 'No refund row is attached.',
@@ -135,8 +135,15 @@ describe('bookingEvidencePacket', () => {
     expect(packet.records[0].detail).toBe(
       'Locked address snapshot: District 1, Ho Chi Minh City.',
     );
+    expect(packet.records[0].evidence).toBe(
+      'Address snapshot District 1, Ho Chi Minh City',
+    );
+    expect(packet.records[2].detail).toBe(
+      'Latest Partner location is District 1, Ho Chi Minh City.',
+    );
     expect(packet.records[8].evidence).toBe(
       'Latest event: booking.matched / 07 Jun 2026 10:40',
     );
+    expect(JSON.stringify(packet)).not.toMatch(/\bpin\b/i);
   });
 });

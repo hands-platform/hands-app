@@ -132,7 +132,7 @@ describe('bookingDetailEvidencePacket', () => {
       value: '2 message(s)',
     });
     expect(packet.metrics.find((metric) => metric.label === 'Location evidence')).toMatchObject({
-      helper: '10.7627, 106.6603 latest Partner pin.',
+      helper: 'Location recorded without readable address latest Partner location.',
     });
     expect(packet.metrics.find((metric) => metric.label === 'Refund evidence')).toMatchObject({
       helper: 'PENDING 120.000 VND',
@@ -147,6 +147,10 @@ describe('bookingDetailEvidencePacket', () => {
     expect(packet.records.find((record) => record.id === 'audit-evidence')?.evidence).toContain(
       'booking.matched',
     );
+    expect(packet.records.find((record) => record.id === 'address-evidence')).toMatchObject({
+      evidence: 'Address snapshot District 3 service address',
+    });
+    expect(JSON.stringify(packet)).not.toMatch(/\d{1,3}\.\d{4},\s*\d{1,3}\.\d{4}/);
   });
 
   it('keeps missing evidence visible before manual outcome changes', () => {
