@@ -123,33 +123,17 @@ function ReviewActionLink({
   readonly onSelect: () => void;
 }) {
   const Icon = actionIcons[action.label as keyof typeof actionIcons] ?? Flag;
-  const className = `admin-action-item vuexy-review-action-item is-${action.tone}${
-    action.disabled ? ' is-disabled' : ''
-  }`;
-  const content = (
-    <>
-      <Icon aria-hidden="true" size={16} />
-      <span>{action.label}</span>
-    </>
-  );
-
-  if (action.disabled) {
-    return (
-      <span aria-disabled="true" className={className} role="menuitem" title={action.description}>
-        {content}
-      </span>
-    );
-  }
 
   return (
     <Link
-      className={className}
+      className={`admin-action-item vuexy-review-action-item is-${action.tone}`}
       href={action.href}
       onClick={onSelect}
       role="menuitem"
       title={action.description}
     >
-      {content}
+      <Icon aria-hidden="true" size={16} />
+      <span>{action.label}</span>
     </Link>
   );
 }
