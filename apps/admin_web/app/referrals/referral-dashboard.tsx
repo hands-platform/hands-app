@@ -14,6 +14,7 @@ import {
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { updateReferralPolicy } from './actions';
+import { referralParentDetailHref } from './referral-detail';
 
 type ReferralDashboardProps =
   | {
@@ -276,7 +277,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                   className="vuexy-booking-person"
                   copyClassName="vuexy-booking-person-copy"
                   helper={row.referrer.user?.phone}
-                  href={`/customers/${row.referrer.id}`}
+                  href={referralParentDetailHref('customer', row.referrer.id)}
                   label={userLabel(row.referrer.user, 'Unknown customer')}
                   linkClassName="vuexy-booking-person-link"
                 />
@@ -329,7 +330,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                   className="vuexy-booking-person"
                   copyClassName="vuexy-booking-person-copy"
                   helper={row.referrer.user?.phone}
-                  href={`/partners/${row.referrer.id}`}
+                  href={referralParentDetailHref('partner', row.referrer.id)}
                   label={row.referrer.displayName ?? userLabel(row.referrer.user, 'Unknown Partner')}
                   linkClassName="vuexy-booking-person-link"
                 />
