@@ -266,6 +266,36 @@ export const setupOrder = [
     ],
   },
   {
+    id: 'referrals',
+    title: 'Referral app links',
+    phase: 'Referral E2E',
+    operatorAction:
+      'Set customer and Partner Android/iOS store URLs only when referral link testing starts.',
+    exitCriteria:
+      'Customer and Partner referral links open the correct app store by device platform.',
+    purpose:
+      'Required before enabling customer or Partner referral sharing outside Admin.',
+    env: [
+      'REFERRAL_PUBLIC_BASE_URL',
+      'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+      'REFERRAL_CUSTOMER_IOS_STORE_URL',
+      'REFERRAL_PARTNER_ANDROID_STORE_URL',
+      'REFERRAL_PARTNER_IOS_STORE_URL',
+    ],
+    notes: [
+      'Admin referral policy can be configured without enabling public referral rewards.',
+      'Referral link clicks must not call SMS, maps, push, or payment APIs.',
+      'Android Play Store links carry referral metadata through the referrer parameter.',
+      'iOS App Store links need the configured store or deep-link URL and a later app/API attribution handshake.',
+      'Keep referral rewards disabled until attribution and wallet-credit smoke checks pass.',
+    ],
+    commands: [
+      'npm.cmd run external:check:referrals',
+      'Open http://localhost:3101/r/customer/<referral-code>',
+      'Open http://localhost:3101/r/partner/<referral-code>',
+    ],
+  },
+  {
     id: 'storage',
     title: 'File storage and CDN',
     phase: 'Media operations',
@@ -399,6 +429,24 @@ export const externalRegistrationPlan = [
     detail:
       'Track FCM app config, server-side Firebase Admin credentials, token registration, and real-device delivery without exposing secrets.',
     env: fcmEnvKeys,
+  },
+  {
+    id: 'referral-app-links',
+    groupId: 'referrals',
+    title: 'Referral store links',
+    provider: 'Google Play + Apple App Store',
+    owner: 'administration@hands.vn',
+    status: 'Deferred',
+    statusClass: 'pill-neutral',
+    detail:
+      'Public referral routes are scaffolded. Configure customer/Partner Android and iOS store URLs only before referral launch E2E.',
+    env: [
+      'REFERRAL_PUBLIC_BASE_URL',
+      'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+      'REFERRAL_CUSTOMER_IOS_STORE_URL',
+      'REFERRAL_PARTNER_ANDROID_STORE_URL',
+      'REFERRAL_PARTNER_IOS_STORE_URL',
+    ],
   },
   {
     id: 'storage-cdn',

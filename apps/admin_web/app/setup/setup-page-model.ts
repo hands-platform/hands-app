@@ -237,7 +237,9 @@ export function isReadinessUnavailable(readiness: AdminExternalReadiness) {
 }
 
 function isDeferredSetupGroup(groupId: string) {
-  return ['supabase-auth', 'notifications', 'payments', 'storage', 'mobile-release'].includes(groupId);
+  return ['supabase-auth', 'notifications', 'payments', 'storage', 'mobile-release', 'referrals'].includes(
+    groupId,
+  );
 }
 
 function setupGroupMatches(groupId: string, category: string) {

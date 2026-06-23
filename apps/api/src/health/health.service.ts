@@ -64,6 +64,13 @@ export class HealthService {
         { key: 'MAPTILER_API_KEY' },
         { key: 'GEOAPIFY_API_KEY' },
       ]),
+      this.externalGroup('Referral app links', 'referrals', [
+        { key: 'REFERRAL_PUBLIC_BASE_URL', validator: 'https-url' },
+        { key: 'REFERRAL_CUSTOMER_ANDROID_STORE_URL', validator: 'https-url' },
+        { key: 'REFERRAL_CUSTOMER_IOS_STORE_URL', validator: 'https-url' },
+        { key: 'REFERRAL_PARTNER_ANDROID_STORE_URL', validator: 'https-url' },
+        { key: 'REFERRAL_PARTNER_IOS_STORE_URL', validator: 'https-url' },
+      ]),
       this.externalGroup('MoMo payments', 'payments', [
         { key: 'MOMO_PARTNER_CODE' },
         { key: 'MOMO_ACCESS_KEY' },
@@ -515,7 +522,9 @@ function isSupportedSmsProvider(value: string) {
 }
 
 function isDeferredExternalCategory(category: string) {
-  return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage'].includes(category);
+  return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage', 'referrals'].includes(
+    category,
+  );
 }
 
 function externalCheckStatus(input: {
@@ -637,6 +646,16 @@ function externalReadinessMetadata(category: string, name: string) {
         'npm.cmd run fcm:token-smoke -- --dry-run',
         'npm.cmd run fcm:push-smoke -- --dry-run',
       ],
+    };
+  }
+
+  if (category === 'referrals') {
+    return {
+      detailPrefix:
+        'Referral policy can be configured in Admin without enabling public referral links yet.',
+      operatorAction:
+        'Set the public referral base URL and customer/Partner Android/iOS store URLs before referral link E2E.',
+      commands: ['npm.cmd run external:check:referrals'],
     };
   }
 

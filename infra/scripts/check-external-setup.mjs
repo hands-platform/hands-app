@@ -45,6 +45,15 @@ const storageRequiredEnvKeys = [
   'S3_PUBLIC_BASE_URL',
 ];
 const storageSplitBucketEnvKeys = ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET'];
+const referralStoreEnvKeys = [
+  'REFERRAL_PUBLIC_BASE_URL',
+  'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+  'REFERRAL_CUSTOMER_IOS_STORE_URL',
+  'REFERRAL_PARTNER_ANDROID_STORE_URL',
+  'REFERRAL_PARTNER_IOS_STORE_URL',
+];
+const referralStoreFix =
+  'Set REFERRAL_PUBLIC_BASE_URL and customer/Partner Android/iOS store URLs before referral link E2E. Keep referral rewards disabled until admin policy and attribution checks pass.';
 const validPhases = new Set([
   'advisory',
   'supabase-core',
@@ -53,6 +62,7 @@ const validPhases = new Set([
   'payments',
   'push',
   'storage',
+  'referrals',
   'production',
 ]);
 
@@ -333,6 +343,20 @@ addPhaseRequired(
   ['storage', 'production'],
 );
 
+addRecommended(
+  'referrals',
+  'Referral app store URLs',
+  allAreHttpsUrls(referralStoreEnvKeys),
+  'Deferred: fill public referral base URL and app store URLs before customer/Partner referral E2E.',
+);
+addPhaseRequired(
+  'referrals',
+  'Referral app store URLs for referral E2E',
+  allAreHttpsUrls(referralStoreEnvKeys),
+  referralStoreFix,
+  ['referrals', 'production'],
+);
+
 const scopedChecks = checks.filter((check) => checkIncludedInPhase(check.category));
 const requiredFailures = scopedChecks.filter((check) => check.required && check.status !== 'PASS');
 const recommendedFailures = scopedChecks.filter((check) => !check.required && check.status !== 'PASS');
@@ -388,6 +412,7 @@ function checkIncludedInPhase(category) {
     maps: new Set(['workspace', 'maps', 'geocoding']),
     payments: new Set(['workspace', 'payments']),
     push: new Set(['workspace', 'push']),
+    referrals: new Set(['workspace', 'referrals']),
     storage: new Set(['workspace', 'storage']),
     'supabase-auth': new Set(['workspace', 'supabase', 'sms']),
     'supabase-core': new Set(['workspace', 'supabase']),
@@ -455,6 +480,10 @@ function hasVietnamE164Phone(key) {
 
 function allHaveValue(keys) {
   return keys.every(hasValue);
+}
+
+function allAreHttpsUrls(keys) {
+  return keys.every(isHttpsUrl);
 }
 
 function hasRealSmsProvider() {

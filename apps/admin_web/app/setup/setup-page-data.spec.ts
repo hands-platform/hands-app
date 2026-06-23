@@ -25,6 +25,7 @@ describe('setup page data', () => {
         'mobile',
         'supabase',
         'operations-policy',
+        'referrals',
         'payments',
         'notifications',
         'storage',
@@ -34,6 +35,7 @@ describe('setup page data', () => {
       expect.arrayContaining(['PUSH_PROVIDER', 'FIREBASE_PROJECT_ID']),
     );
     expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('notifications'));
+    expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('referrals'));
     expect(ids.indexOf('payments')).toBeGreaterThan(ids.indexOf('storage'));
     const mapsSetup = setupOrder.find((item) => item.id === 'maps');
     expect(mapsSetup?.notes).toEqual(
@@ -124,14 +126,32 @@ describe('setup page data', () => {
     expect(operationsPolicySetup?.notes.join(' ')).not.toContain(
       'marketplace alerts, participation',
     );
+    const referralSetup = setupOrder.find((item) => item.id === 'referrals');
+    expect(referralSetup?.env).toEqual([
+      'REFERRAL_PUBLIC_BASE_URL',
+      'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+      'REFERRAL_CUSTOMER_IOS_STORE_URL',
+      'REFERRAL_PARTNER_ANDROID_STORE_URL',
+      'REFERRAL_PARTNER_IOS_STORE_URL',
+    ]);
+    expect(referralSetup?.commands).toEqual(
+      expect.arrayContaining(['npm.cmd run external:check:referrals']),
+    );
   });
 
   it('keeps external registration and baseline handoff data populated', () => {
     const planIds = externalRegistrationPlan.map((item) => item.id);
     expect(planIds).toEqual(
-      expect.arrayContaining(['github-org', 'operations-policy', 'fcm', 'payments-vn']),
+      expect.arrayContaining([
+        'github-org',
+        'operations-policy',
+        'fcm',
+        'referral-app-links',
+        'payments-vn',
+      ]),
     );
     expect(planIds.indexOf('payments-vn')).toBeGreaterThan(planIds.indexOf('fcm'));
+    expect(planIds.indexOf('payments-vn')).toBeGreaterThan(planIds.indexOf('referral-app-links'));
     expect(planIds.indexOf('payments-vn')).toBeGreaterThan(planIds.indexOf('storage-cdn'));
     const fcmPlan = externalRegistrationPlan.find((item) => item.id === 'fcm');
     expect(fcmPlan).toMatchObject({
@@ -158,6 +178,13 @@ describe('setup page data', () => {
     ]);
     const storagePlan = externalRegistrationPlan.find((item) => item.id === 'storage-cdn');
     expect(storagePlan?.detail).toContain('Local MinIO upload/read smoke passes for development.');
+    const referralPlan = externalRegistrationPlan.find((item) => item.id === 'referral-app-links');
+    expect(referralPlan).toMatchObject({
+      groupId: 'referrals',
+      provider: 'Google Play + Apple App Store',
+      status: 'Deferred',
+      statusClass: 'pill-neutral',
+    });
     expect(projectControlSequence.map((item) => item.phase)).toEqual([
       'Phase A',
       'Phase B',

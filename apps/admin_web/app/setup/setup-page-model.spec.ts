@@ -52,14 +52,27 @@ describe('setup page model', () => {
             'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
           commands: ['npm.cmd run external:check:push'],
         },
+        {
+          category: 'referrals',
+          name: 'Referral app links',
+          status: 'BLOCKED',
+          configured: [],
+          missing: ['REFERRAL_CUSTOMER_ANDROID_STORE_URL'],
+          invalid: [],
+          detail: 'Store links are not configured.',
+          scope: 'DEFERRED',
+          operatorAction: 'Set referral store URLs before referral E2E.',
+          commands: ['npm.cmd run external:check:referrals'],
+        },
       ],
     });
 
-    expect(buildSummary(readiness)).toEqual({ ready: 0, partial: 1, blocked: 2, missing: 3 });
+    expect(buildSummary(readiness)).toEqual({ ready: 0, partial: 1, blocked: 3, missing: 4 });
     expect(buildGroupStatuses(readiness, setupOrderFixture)).toEqual([
       expect.objectContaining({ id: 'operations-policy', status: 'Blocked' }),
       expect.objectContaining({ id: 'payments', status: 'Partial' }),
       expect.objectContaining({ id: 'notifications', status: 'Blocked' }),
+      expect.objectContaining({ id: 'referrals', status: 'Blocked' }),
     ]);
     expect(buildExternalBacklog(readiness, setupOrderFixture)).toEqual(
       expect.arrayContaining([
@@ -74,6 +87,12 @@ describe('setup page model', () => {
           name: 'Firebase Admin project does not match mobile app project',
           reason:
             'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
+        }),
+        expect.objectContaining({
+          groupId: 'referrals',
+          groupTitle: 'Referral app links',
+          name: 'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+          reason: 'Set referral store URLs before referral E2E.',
         }),
       ]),
     );
@@ -95,6 +114,10 @@ describe('setup page model', () => {
         action: 'Install matching Firebase Admin credentials before live push testing.',
         reason:
           'Validate the Firebase Admin service account JSON from the same Firebase project as the mobile google-services.json files, then install it.',
+      }),
+      expect.objectContaining({
+        groupId: 'referrals',
+        action: 'Set customer and Partner store URLs before referral E2E.',
       }),
     ]);
     expect(buildCurrentStageStatus(readiness, setupOrderFixture)).toMatchObject({
@@ -166,6 +189,17 @@ const setupOrderFixture: SetupOrderItem[] = [
     env: ['PUSH_PROVIDER', 'FIREBASE_SERVICE_ACCOUNT_JSON'],
     notes: ['Keep Firebase Admin credentials server-side only.'],
     commands: ['npm.cmd run external:check:push'],
+  },
+  {
+    id: 'referrals',
+    title: 'Referral app links',
+    phase: 'Referral E2E',
+    operatorAction: 'Set customer and Partner store URLs before referral E2E.',
+    exitCriteria: 'Referral links open the correct app store.',
+    purpose: 'Required before public referral sharing.',
+    env: ['REFERRAL_CUSTOMER_ANDROID_STORE_URL'],
+    notes: ['Store URLs are deferred until referral E2E.'],
+    commands: ['npm.cmd run external:check:referrals'],
   },
 ];
 

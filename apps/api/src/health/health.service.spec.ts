@@ -32,6 +32,12 @@ function smsCheck(values: Record<string, string> = {}) {
     .checks.find((check) => check.category === 'sms');
 }
 
+function referralCheck(values: Record<string, string> = {}) {
+  return service(values)
+    .externalReadiness()
+    .checks.find((check) => check.category === 'referrals');
+}
+
 describe('HealthService external storage readiness', () => {
   it('keeps storage blocked when no storage values are configured', () => {
     const check = storageCheck();
@@ -168,6 +174,50 @@ describe('HealthService external SMS readiness', () => {
     expect(check?.status).toBe('PARTIAL');
     expect(check?.configured).toEqual(['SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY', 'SMS_SENDER_ID']);
     expect(check?.invalid).toEqual(['SMS_API_SECRET']);
+  });
+});
+
+describe('HealthService external referral readiness', () => {
+  it('tracks referral app store links as a deferred setup gap before referral E2E', () => {
+    const check = referralCheck();
+    const readiness = service().externalReadiness();
+
+    expect(check).toMatchObject({
+      name: 'Referral app links',
+      category: 'referrals',
+      status: 'BLOCKED',
+      scope: 'DEFERRED',
+      deferred: true,
+    });
+    expect(check?.missing).toEqual([
+      'REFERRAL_PUBLIC_BASE_URL',
+      'REFERRAL_CUSTOMER_ANDROID_STORE_URL',
+      'REFERRAL_CUSTOMER_IOS_STORE_URL',
+      'REFERRAL_PARTNER_ANDROID_STORE_URL',
+      'REFERRAL_PARTNER_IOS_STORE_URL',
+    ]);
+    expect(check?.commands).toEqual(['npm.cmd run external:check:referrals']);
+    expect(readiness.blockingCategories).not.toContain('referrals');
+    expect(readiness.deferredCategories).toContain('referrals');
+  });
+
+  it('marks referral app store links ready when customer and Partner store URLs are HTTPS', () => {
+    const check = referralCheck({
+      REFERRAL_PUBLIC_BASE_URL: 'https://hands.vn',
+      REFERRAL_CUSTOMER_ANDROID_STORE_URL:
+        'https://play.google.com/store/apps/details?id=com.massagevn.customer.customer_app',
+      REFERRAL_CUSTOMER_IOS_STORE_URL: 'https://apps.apple.com/app/hands-customer/id123456789',
+      REFERRAL_PARTNER_ANDROID_STORE_URL:
+        'https://play.google.com/store/apps/details?id=com.massagevn.provider.provider_app',
+      REFERRAL_PARTNER_IOS_STORE_URL: 'https://apps.apple.com/app/hands-partner/id987654321',
+    });
+
+    expect(check).toMatchObject({
+      status: 'READY',
+      scope: 'DEFERRED',
+    });
+    expect(check?.missing).toEqual([]);
+    expect(check?.invalid).toEqual([]);
   });
 });
 

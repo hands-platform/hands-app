@@ -32,6 +32,7 @@ Canonical operator order:
 | Firebase        | FCM allowed for push only                                                                                  | Do not use Firebase DB/Auth/Firestore                               |
 | Push            | Server-side FCM path live-smoked with a registered device                                                  | Keep broad rollout behind audit evidence and token freshness checks |
 | SMS             | Vonage credentials send OTP through current provider route                                                 | SMS sender-channel refinement deferred                              |
+| Referrals       | Admin policy and public link scaffolding exist                                                            | Store URLs and attribution smoke deferred                           |
 | Storage         | Local MinIO upload/read smoke passes                                                                       | Supabase Storage S3/R2 production choice later                      |
 | Android signing | Local helper ready                                                                                         | Production keystores stay in secrets folder                         |
 | Payments        | Cash active, MoMo/VNPay adapters exist                                                                     | Merchant sandbox credentials last                                   |
@@ -45,6 +46,11 @@ API_PUBLIC_URL=https://api.hands.vn
 ADMIN_PUBLIC_URL=https://admin.hands.vn
 ADMIN_EMAIL=administration@hands.vn
 SUPPORT_EMAIL=administration@hands.vn
+REFERRAL_PUBLIC_BASE_URL=https://hands.vn
+REFERRAL_CUSTOMER_ANDROID_STORE_URL=
+REFERRAL_CUSTOMER_IOS_STORE_URL=
+REFERRAL_PARTNER_ANDROID_STORE_URL=
+REFERRAL_PARTNER_IOS_STORE_URL=
 ```
 
 ```dotenv
@@ -97,6 +103,7 @@ npm.cmd run fcm:token-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --dry-run
 npm.cmd run fcm:push-smoke -- --preflight
 npm.cmd run external:check:maps
+npm.cmd run external:check:referrals
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices
 ```
 
@@ -114,6 +121,8 @@ For Docker, the installer also writes `FIREBASE_ADMIN_CREDENTIALS_HOST_PATH`; `d
 `google-services.json` belongs in the Android app folders as local client config only. It does not replace server-side Firebase Admin credentials for the NestJS API.
 
 Payment gateway credentials are intentionally last in the external setup order:
+
+Referral store links are deferred until referral E2E. Public referral link clicks should only route to the correct customer or Partner app store URL by device platform; they must not call SMS, maps, push, payment, or wallet-credit APIs on click.
 
 ```dotenv
 MOMO_PARTNER_CODE=
