@@ -360,9 +360,15 @@ export default async function VietnamOverviewPage({
                 : `Numeric distribution by region for ${overview.rangeLabel}. This section does not add map dots.`}
             </p>
           </div>
+          <div className="actions vietnam-overview-region-actions">
+            <span className="pill pill-info">{overview.rangeLabel}</span>
+            <span className={activeRegion ? 'pill pill-primary' : 'pill pill-neutral'}>
+              {activeRegion ? `Map focus: ${activeRegion.shortName}` : `${visibleRegions.length} regions`}
+            </span>
+          </div>
         </div>
         <div className="admin-table-scroll vietnam-overview-table-wrap">
-          <table className="table vietnam-overview-table">
+          <table className="table vuexy-data-table vietnam-overview-table">
             <thead>
               <tr>
                 <th>Region</th>
@@ -382,43 +388,54 @@ export default async function VietnamOverviewPage({
                 const operatingScore = vietnamRegionOperatingScore(region);
                 const loadLevel = vietnamRegionLoadLevel(operatingScore, maxRegionOperatingScore);
                 const loadPercent = Math.round((operatingScore / maxRegionOperatingScore) * 100);
+                const isFocusedRegion = region.regionCode === activeRegionCode;
 
                 return (
                   <tr
                     key={region.regionCode}
-                    className={region.regionCode === activeRegionCode ? 'is-focused-region' : ''}
+                    aria-current={isFocusedRegion ? 'true' : undefined}
+                    className={isFocusedRegion ? 'is-focused-region' : ''}
                   >
                     <td>
                       <div className="vietnam-region-name">
                         <span>{region.shortName}</span>
                         <div>
                           <strong>{region.regionName}</strong>
+                          {isFocusedRegion ? (
+                            <span className="vietnam-region-focus-status">Selected on map</span>
+                          ) : null}
                           <div
                             className="vietnam-region-signal-row"
                             aria-label={`${region.regionName} realtime signals`}
                           >
                             <span className="is-active">
                               <i aria-hidden="true" />
-                              {formatNumber(region.activeCustomerCount)}
+                              <strong>{formatNumber(region.activeCustomerCount)}</strong>
+                              {' '}
+                              <small>Active</small>
                             </span>
                             <span className="is-online">
                               <i aria-hidden="true" />
-                              {formatNumber(region.onlinePartnerCount)}
+                              <strong>{formatNumber(region.onlinePartnerCount)}</strong>
+                              {' '}
+                              <small>Online</small>
                             </span>
                             <span className="is-bookings">
                               <i aria-hidden="true" />
-                              {formatNumber(region.activeBookingCount)}
+                              <strong>{formatNumber(region.activeBookingCount)}</strong>
+                              {' '}
+                              <small>Bookings</small>
                             </span>
                           </div>
                           <a
                             className="vietnam-region-focus-link"
                             href={
-                              region.regionCode === activeRegionCode
+                              isFocusedRegion
                                 ? clearRegionHref
                                 : regionFocusHrefs[region.regionCode]
                             }
                           >
-                            {region.regionCode === activeRegionCode ? 'Clear focus' : 'Focus region'}
+                            {isFocusedRegion ? 'Clear focus' : 'Focus on map'}
                           </a>
                         </div>
                       </div>
