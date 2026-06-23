@@ -5,6 +5,7 @@ import {
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
+  PaymentStatus,
   ProviderStatus,
   ProviderWalletLedgerType,
   ReferralAudience,
@@ -24,13 +25,14 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function createAdminService(prisma: unknown, deps: { notifications?: unknown } = {}) {
+function createAdminService(prisma: unknown, deps: { earnings?: unknown; notifications?: unknown; referrals?: unknown } = {}) {
   return new AdminService(
     prisma as never,
-    {} as never,
+    (deps.earnings ?? {}) as never,
     (deps.notifications ?? {}) as never,
     {} as never,
     {} as never,
+    (deps.referrals ?? {}) as never,
   );
 }
 
@@ -348,6 +350,56 @@ describe('AdminService query orchestration', () => {
       }),
     ).rejects.toThrow('Partner referral policy must use fixed amount rewards');
     expect(prisma.referralPolicy.upsert).not.toHaveBeenCalled();
+  });
+
+  it('creates referral reward candidates after completed booking closeout', async () => {
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          notes: null,
+          selectedProviderId: 'partner-1',
+          payment: { id: 'payment-1', status: PaymentStatus.CAPTURED },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'booking-1' }),
+      },
+    };
+    const earnings = {
+      createForCompletedBooking: jest.fn().mockResolvedValue({
+        id: 'earning-1',
+        netAmount: 700_000,
+      }),
+    };
+    const referrals = {
+      createRewardsForCompletedBooking: jest.fn().mockResolvedValue({
+        customerReward: { id: 'customer-reward-1' },
+        partnerReward: null,
+      }),
+    };
+    const service = createAdminService(prisma, { earnings, referrals });
+
+    await expect(
+      service.closeoutCompletedBooking('admin-1', 'booking-1', {
+        note: 'Closeout checked',
+      }),
+    ).resolves.toEqual({ id: 'booking-1' });
+
+    expect(referrals.createRewardsForCompletedBooking).toHaveBeenCalledWith('booking-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'booking.completed.closeout',
+        metadata: expect.objectContaining({
+          referralRewards: {
+            customerRewardId: 'customer-reward-1',
+            partnerRewardId: null,
+          },
+        }),
+      }),
+    });
   });
 
   it('lists only customer referral parents and summarizes reward exposure', async () => {

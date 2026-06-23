@@ -36,6 +36,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { notificationRetryAuditMetadata } from '../notifications/notification-retry-audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { ReferralsService } from '../referrals/referrals.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 import {
   minutesBetween,
@@ -439,6 +440,7 @@ export class AdminService {
     private readonly notifications: NotificationsService,
     private readonly supabaseAdmin: SupabaseAdminService,
     private readonly redisState: RedisStateService,
+    private readonly referrals: ReferralsService,
   ) {}
 
   listUsers() {
@@ -2531,6 +2533,7 @@ export class AdminService {
       },
       select: adminBookingDetailSelect,
     });
+    const referralRewards = await this.referrals.createRewardsForCompletedBooking(bookingId);
 
     await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {
       bookingId,
@@ -2539,6 +2542,10 @@ export class AdminService {
       earningId: earning.id,
       netAmount: earning.netAmount,
       note,
+      referralRewards: {
+        customerRewardId: referralRewards.customerReward?.id ?? null,
+        partnerRewardId: referralRewards.partnerReward?.id ?? null,
+      },
     });
 
     return updated;
