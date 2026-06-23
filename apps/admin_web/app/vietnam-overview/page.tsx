@@ -15,9 +15,10 @@ import {
 } from '../../lib/admin-api';
 import {
   normalizeVietnamOverviewRange,
-  type VietnamOverviewMapMarker,
+  type VietnamOverviewMapPoint,
   vietnamOverviewMetricDotLegend,
-  vietnamOverviewMapMarkers,
+  vietnamOverviewMapPoints,
+  vietnamOverviewMetricPointCounts,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -46,6 +47,7 @@ const emptyVietnamOverview: AdminVietnamOverview = {
     currency: 'VND',
   },
   regions: [],
+  points: [],
 };
 
 export default async function VietnamOverviewPage({
@@ -60,7 +62,8 @@ export default async function VietnamOverviewPage({
     emptyVietnamOverview,
   );
   const regions = overview.regions;
-  const mapMarkers = vietnamOverviewMapMarkers(regions);
+  const mapPoints = vietnamOverviewMapPoints(overview.points ?? []);
+  const mapPointCounts = vietnamOverviewMetricPointCounts(mapPoints);
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
   const metrics = [
     {
@@ -113,8 +116,8 @@ export default async function VietnamOverviewPage({
         <div>
           <h1>Vietnam Overview</h1>
           <p className="muted">
-            Region-level operating view built from stored service addresses, customer address records, and
-            Partner profile areas. Individual GPS points are intentionally excluded.
+            Stored event-location view for customers, Partners, bookings, completions, and cancellations
+            across Vietnam. No live polling or paid map lookup is used here.
           </p>
         </div>
         <div className="actions">
@@ -128,8 +131,7 @@ export default async function VietnamOverviewPage({
           <div>
             <h2>Overview range</h2>
             <p className="muted">
-              Bound booking aggregates by date while keeping region output free of individual location
-              coordinates.
+              Bound the map points and regional counters by the event time stored in the system.
             </p>
           </div>
           <span className="pill pill-info">{overview.rangeLabel}</span>
@@ -167,9 +169,8 @@ export default async function VietnamOverviewPage({
           <div>
             <h2>Vietnam operating map</h2>
             <p className="muted">
-              Map overlay using saved region signals only. It avoids paid map lookups while keeping
-              customer, Partner, booking, completion, and cancellation distribution visible directly on
-              the Vietnam map.
+              Every dot is projected from an existing stored coordinate at the time that event was recorded.
+              Points outside Vietnam are not rendered.
             </p>
           </div>
           <span className="pill pill-info">Generated {lastGeneratedAt}</span>
@@ -179,25 +180,25 @@ export default async function VietnamOverviewPage({
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <div className="vietnam-map-context-chip">
               <MapPinned size={16} aria-hidden="true" />
-              Dot distribution by region
+              Stored event dots
             </div>
             <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
               {vietnamOverviewMetricDotLegend.map((item) => (
                 <span key={item.key}>
                   <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
-                  {item.label}
+                  {item.label} {formatNumber(mapPointCounts[item.key])}
                 </span>
               ))}
             </div>
             <VietnamMapOutline />
-            {mapMarkers.map((marker) => (
-              <RegionMapMarker key={marker.regionCode} marker={marker} />
+            {mapPoints.map((point) => (
+              <EventMapPoint key={point.id} point={point} />
             ))}
-            {mapMarkers.length === 0 ? (
+            {mapPoints.length === 0 ? (
               <div className="vietnam-map-tile-empty">
                 <ShieldCheck size={22} aria-hidden="true" />
-                <strong>No regional map markers loaded</strong>
-                <p className="muted">Check API availability or seed stored address records.</p>
+                <strong>No event-location dots loaded</strong>
+                <p className="muted">Check API availability or seed stored location records.</p>
               </div>
             ) : null}
           </div>
@@ -286,52 +287,26 @@ function VietnamMapOutline() {
   );
 }
 
-function RegionMapMarker({ marker }: { marker: VietnamOverviewMapMarker }) {
-  const markerStyle = {
-    '--marker-x': `${marker.mapXPercent}%`,
-    '--marker-y': `${marker.mapYPercent}%`,
-  } as CSSProperties & Record<'--marker-x' | '--marker-y', string>;
+function EventMapPoint({ point }: { point: VietnamOverviewMapPoint }) {
+  const pointStyle = {
+    '--point-x': `${point.mapXPercent}%`,
+    '--point-y': `${point.mapYPercent}%`,
+  } as CSSProperties & Record<'--point-x' | '--point-y', string>;
+  const title = [
+    `${metricLabel(point.kind)}: ${point.label}`,
+    point.addressText,
+    formatDateTime(point.occurredAt),
+  ].filter(Boolean).join(' | ');
 
   return (
-    <div
-      aria-label={`${marker.regionName} distribution dots`}
-      className={`vietnam-map-dot-cluster is-${marker.tone}${marker.featured ? ' is-featured' : ''}`}
-      style={markerStyle}
-    >
-      <span className="vietnam-map-region-label">{marker.shortName}</span>
-      <div className="vietnam-map-dot-cloud">
-        {marker.metricDots.map((dot, index) => {
-          const offset = metricDotOffsets[index % metricDotOffsets.length];
-          const dotStyle = {
-            '--dot-size': `${dot.size}px`,
-            '--dot-x': `${offset.x}%`,
-            '--dot-y': `${offset.y}%`,
-          } as CSSProperties & Record<'--dot-size' | '--dot-x' | '--dot-y', string>;
-
-          return (
-            <span
-              key={dot.key}
-              aria-label={`${marker.regionName} ${dot.label}: ${formatNumber(dot.value)}`}
-              className={`vietnam-map-metric-dot is-${dot.key}`}
-              style={dotStyle}
-              title={`${marker.regionName} ${dot.label}: ${formatNumber(dot.value)}`}
-            />
-          );
-        })}
-      </div>
-    </div>
+    <span
+      aria-label={title}
+      className={`vietnam-map-event-point vietnam-map-metric-dot is-${point.kind}`}
+      style={pointStyle}
+      title={title}
+    />
   );
 }
-
-const metricDotOffsets = [
-  { x: 50, y: 7 },
-  { x: 78, y: 22 },
-  { x: 81, y: 56 },
-  { x: 56, y: 80 },
-  { x: 21, y: 66 },
-  { x: 15, y: 30 },
-  { x: 49, y: 45 },
-] as const;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
@@ -356,4 +331,8 @@ function formatDateTime(value: string) {
     minute: '2-digit',
     hour12: false,
   }).format(date);
+}
+
+function metricLabel(value: VietnamOverviewMapPoint['kind']) {
+  return vietnamOverviewMetricDotLegend.find((item) => item.key === value)?.label ?? value;
 }

@@ -309,18 +309,21 @@ describe('AdminService query orchestration', () => {
     );
   });
 
-  it('returns Vietnam overview aggregates without exposing individual GPS fields', async () => {
+  it('returns Vietnam overview aggregates with stored event-location points', async () => {
     const now = new Date();
     const prisma = {
       customerProfile: {
         findMany: jest.fn().mockResolvedValue([
           {
+            id: 'customer-1',
             addresses: ['85/9 Pham Viet Chanh, Ho Chi Minh City'],
             selectedLocations: [
               {
+                id: 'location-1',
                 addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
                 latitude: 10.7769,
                 longitude: 106.7009,
+                createdAt: now,
               },
             ],
             user: {
@@ -337,6 +340,8 @@ describe('AdminService query orchestration', () => {
       providerProfile: {
         findMany: jest.fn().mockResolvedValue([
           {
+            id: 'provider-1',
+            displayName: 'Smoke Partner',
             city: 'Ho Chi Minh City',
             residentialAddress: null,
             serviceArea: null,
@@ -350,16 +355,30 @@ describe('AdminService query orchestration', () => {
       booking: {
         findMany: jest.fn().mockResolvedValue([
           {
+            id: 'booking-1',
             status: BookingStatus.COMPLETED,
             address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
             lat: 10.7769,
             lng: 106.7009,
+            createdAt: now,
+            updatedAt: now,
+            closedAt: now,
             addressSnapshot: {
               address: null,
               addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
               latitude: 10.7769,
               longitude: 106.7009,
             },
+            snapshots: [
+              {
+                id: 'snapshot-1',
+                providerProfileId: 'provider-1',
+                addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+                lat: 10.777,
+                lng: 106.701,
+                recordedAt: now,
+              },
+            ],
             payment: null,
           },
         ]),
@@ -380,8 +399,31 @@ describe('AdminService query orchestration', () => {
       partnerCount: 1,
       completedBookingCount: 1,
     });
-    expect(serialized).not.toContain('latitude');
-    expect(serialized).not.toContain('longitude');
+    expect(overview.points).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'customers',
+          latitude: 10.7769,
+          longitude: 106.7009,
+          customerProfileId: 'customer-1',
+        }),
+        expect.objectContaining({
+          kind: 'online',
+          latitude: 10.7769,
+          longitude: 106.7009,
+          providerProfileId: 'provider-1',
+        }),
+        expect.objectContaining({
+          bookingId: 'booking-1',
+          kind: 'done',
+          latitude: 10.777,
+          longitude: 106.701,
+          source: 'partner-action-location-snapshot',
+        }),
+      ]),
+    );
+    expect(serialized).toContain('latitude');
+    expect(serialized).toContain('longitude');
     expect(serialized).not.toContain('currentLat');
     expect(serialized).not.toContain('currentLng');
   });

@@ -38,6 +38,26 @@ export type VietnamOverviewMapMarker = {
   readonly tone: 'high' | 'medium' | 'low';
 };
 
+export type VietnamOverviewPointInput = {
+  readonly id: string;
+  readonly kind: VietnamOverviewMetricDotKey;
+  readonly label: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly occurredAt: string;
+  readonly regionCode: string;
+  readonly source: string;
+  readonly addressText?: string | null;
+  readonly bookingId?: string | null;
+  readonly customerProfileId?: string | null;
+  readonly providerProfileId?: string | null;
+};
+
+export type VietnamOverviewMapPoint = VietnamOverviewPointInput & {
+  readonly mapXPercent: number;
+  readonly mapYPercent: number;
+};
+
 export type VietnamOverviewMetricDotKey =
   | 'customers'
   | 'active'
@@ -136,6 +156,38 @@ export function vietnamOverviewMapMarkers(
   });
 }
 
+export function vietnamOverviewMapPoints(
+  points: readonly VietnamOverviewPointInput[] = [],
+): VietnamOverviewMapPoint[] {
+  return points
+    .map((point) => {
+      const position = vietnamCoordinateMapPosition(point.latitude, point.longitude);
+      if (!position) {
+        return null;
+      }
+
+      return {
+        ...point,
+        mapXPercent: position.x,
+        mapYPercent: position.y,
+      };
+    })
+    .filter((point): point is VietnamOverviewMapPoint => Boolean(point))
+    .sort((left, right) => new Date(left.occurredAt).getTime() - new Date(right.occurredAt).getTime());
+}
+
+export function vietnamOverviewMetricPointCounts(
+  points: readonly Pick<VietnamOverviewMapPoint, 'kind'>[],
+) {
+  return vietnamOverviewMetricDotLegend.reduce(
+    (counts, item) => ({
+      ...counts,
+      [item.key]: points.filter((point) => point.kind === item.key).length,
+    }),
+    {} as Record<VietnamOverviewMetricDotKey, number>,
+  );
+}
+
 function demandCount(region: VietnamOverviewRegionMarkerInput) {
   return region.activeBookingCount + region.completedBookingCount;
 }
@@ -176,6 +228,37 @@ function vietnamMapPosition(
   return fallbackVietnamMapPosition(index);
 }
 
+function vietnamCoordinateMapPosition(latitude: number, longitude: number) {
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < VIETNAM_MAP_BOUNDS.minLat ||
+    latitude > VIETNAM_MAP_BOUNDS.maxLat ||
+    longitude < VIETNAM_MAP_BOUNDS.minLng ||
+    longitude > VIETNAM_MAP_BOUNDS.maxLng
+  ) {
+    return null;
+  }
+
+  return {
+    x: clampPercent(
+      ((longitude - VIETNAM_MAP_BOUNDS.minLng) /
+        (VIETNAM_MAP_BOUNDS.maxLng - VIETNAM_MAP_BOUNDS.minLng)) *
+        100,
+    ),
+    y: clampPercent(
+      (1 -
+        (latitude - VIETNAM_MAP_BOUNDS.minLat) /
+          (VIETNAM_MAP_BOUNDS.maxLat - VIETNAM_MAP_BOUNDS.minLat)) *
+        100,
+    ),
+  };
+}
+
+function clampPercent(value: number) {
+  return Math.max(4, Math.min(96, value));
+}
+
 function normalizeRegionKey(value: string) {
   return value
     .normalize('NFD')
@@ -192,6 +275,13 @@ const knownVietnamMapPositions = [
   { keys: ['vung tau', 'ba ria'], x: 68, y: 84 },
   { keys: ['can tho', 'mekong'], x: 47, y: 86 },
 ] as const;
+
+const VIETNAM_MAP_BOUNDS = {
+  minLat: 8.0,
+  maxLat: 23.5,
+  minLng: 102.0,
+  maxLng: 110.0,
+} as const;
 
 function fallbackVietnamMapPosition(index: number) {
   const xOffsets = [50, 58, 44, 62, 48, 56];

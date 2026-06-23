@@ -1200,6 +1200,30 @@ export type AdminVietnamOverviewRegion = {
   currency: string;
 };
 
+export type AdminVietnamOverviewPointKind =
+  | 'customers'
+  | 'active'
+  | 'partners'
+  | 'online'
+  | 'bookings'
+  | 'done'
+  | 'cancel';
+
+export type AdminVietnamOverviewPoint = {
+  id: string;
+  kind: AdminVietnamOverviewPointKind;
+  label: string;
+  latitude: number;
+  longitude: number;
+  occurredAt: string;
+  regionCode: string;
+  source: string;
+  addressText?: string | null;
+  bookingId?: string | null;
+  customerProfileId?: string | null;
+  providerProfileId?: string | null;
+};
+
 export type AdminVietnamOverview = {
   generatedAt: string;
   refreshSeconds: number;
@@ -1220,6 +1244,7 @@ export type AdminVietnamOverview = {
     currency: string;
   };
   regions: AdminVietnamOverviewRegion[];
+  points: AdminVietnamOverviewPoint[];
 };
 
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {

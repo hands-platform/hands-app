@@ -3575,6 +3575,22 @@ a.action-button-card:hover {
   width: var(--dot-size);
 }
 
+.vietnam-map-event-point {
+  --dot-size: 12px;
+  cursor: help;
+  left: var(--point-x);
+  top: var(--point-y);
+  z-index: 4;
+}
+
+.vietnam-map-event-point:hover {
+  box-shadow:
+    0 10px 22px rgb(var(--admin-shadow-channel) / 0.24),
+    0 0 0 7px rgb(var(--admin-surface-channel) / 0.48),
+    0 0 0 10px rgb(var(--admin-primary-channel) / 0.12);
+  transform: translate(-50%, -50%) scale(1.18);
+}
+
 .vietnam-map-legend-dot.is-customers,
 .vietnam-map-metric-dot.is-customers {
   background: #7367f0;

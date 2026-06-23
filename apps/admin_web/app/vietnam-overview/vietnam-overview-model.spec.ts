@@ -1,6 +1,9 @@
 import {
   normalizeVietnamOverviewRange,
+  type VietnamOverviewPointInput,
   vietnamOverviewMapMarkers,
+  vietnamOverviewMapPoints,
+  vietnamOverviewMetricPointCounts,
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
@@ -95,6 +98,40 @@ describe('Vietnam overview page model', () => {
     expect(markers[1].intensity).toBeGreaterThanOrEqual(12);
     expect(markers[1].mapYPercent).toBeLessThan(markers[0].mapYPercent);
   });
+
+  it('projects stored Vietnam event coordinates onto the map and drops out-of-country points', () => {
+    const points = vietnamOverviewMapPoints([
+      pointFixture({
+        id: 'hcm-booking',
+        kind: 'bookings',
+        latitude: 10.7769,
+        longitude: 106.7009,
+        occurredAt: '2026-06-20T09:30:00.000Z',
+      }),
+      pointFixture({
+        id: 'hanoi-done',
+        kind: 'done',
+        latitude: 21.0285,
+        longitude: 105.8542,
+        occurredAt: '2026-06-20T10:30:00.000Z',
+      }),
+      pointFixture({
+        id: 'outside-vietnam',
+        kind: 'cancel',
+        latitude: 35.6895,
+        longitude: 139.6917,
+      }),
+    ]);
+
+    expect(points.map((point) => point.id)).toEqual(['hcm-booking', 'hanoi-done']);
+    expect(points[0].mapYPercent).toBeGreaterThan(points[1].mapYPercent);
+    expect(points[0].mapXPercent).toBeGreaterThan(points[1].mapXPercent);
+    expect(vietnamOverviewMetricPointCounts(points)).toMatchObject({
+      bookings: 1,
+      done: 1,
+      cancel: 0,
+    });
+  });
 });
 
 function regionFixture(input: Partial<Parameters<typeof vietnamOverviewMapMarkers>[0][number]> = {}) {
@@ -111,6 +148,24 @@ function regionFixture(input: Partial<Parameters<typeof vietnamOverviewMapMarker
     regionName: 'Region',
     revenueAmount: 0,
     shortName: 'RG',
+    ...input,
+  };
+}
+
+function pointFixture(input: Partial<VietnamOverviewPointInput> = {}): VietnamOverviewPointInput {
+  return {
+    id: 'point',
+    kind: 'customers',
+    label: 'Point',
+    latitude: 10.7769,
+    longitude: 106.7009,
+    occurredAt: '2026-06-20T09:00:00.000Z',
+    regionCode: 'hcm',
+    source: 'test',
+    addressText: 'Ho Chi Minh City',
+    bookingId: null,
+    customerProfileId: null,
+    providerProfileId: null,
     ...input,
   };
 }

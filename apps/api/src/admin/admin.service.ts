@@ -262,6 +262,30 @@ type AdminVietnamOverviewRegion = {
   currency: string;
 };
 
+type AdminVietnamOverviewPointKind =
+  | 'customers'
+  | 'active'
+  | 'partners'
+  | 'online'
+  | 'bookings'
+  | 'done'
+  | 'cancel';
+
+type AdminVietnamOverviewPoint = {
+  id: string;
+  kind: AdminVietnamOverviewPointKind;
+  label: string;
+  latitude: number;
+  longitude: number;
+  occurredAt: string;
+  regionCode: string;
+  source: string;
+  addressText?: string | null;
+  bookingId?: string | null;
+  customerProfileId?: string | null;
+  providerProfileId?: string | null;
+};
+
 type AdminAuditLogSummaryRow = {
   id: string;
   action: string;
@@ -475,14 +499,17 @@ export class AdminService {
         orderBy: { id: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
         select: {
+          id: true,
           addresses: true,
           selectedLocations: {
             orderBy: { createdAt: 'desc' },
             take: 1,
             select: {
+              id: true,
               addressText: true,
               latitude: true,
               longitude: true,
+              createdAt: true,
             },
           },
           user: {
@@ -507,6 +534,8 @@ export class AdminService {
         orderBy: { updatedAt: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
         select: {
+          id: true,
+          displayName: true,
           city: true,
           residentialAddress: true,
           serviceArea: true,
@@ -521,16 +550,32 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         take: ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT,
         select: {
+          id: true,
           status: true,
           address: true,
           lat: true,
           lng: true,
+          createdAt: true,
+          updatedAt: true,
+          closedAt: true,
           addressSnapshot: {
             select: {
               address: true,
               addressText: true,
               latitude: true,
               longitude: true,
+            },
+          },
+          snapshots: {
+            orderBy: { recordedAt: 'desc' },
+            take: 1,
+            select: {
+              id: true,
+              providerProfileId: true,
+              addressText: true,
+              lat: true,
+              lng: true,
+              recordedAt: true,
             },
           },
           payment: {
@@ -543,27 +588,58 @@ export class AdminService {
         },
       }),
     ]);
+    const points: AdminVietnamOverviewPoint[] = [];
 
     for (const customer of customers) {
+      const selectedLocation = customer.selectedLocations[0];
       const region = ensureVietnamOverviewRegion(
         regions,
         vietnamRegionCodeFromValues(
           [
-            customer.selectedLocations[0]?.addressText,
+            selectedLocation?.addressText,
             customer.addresses,
             customer.user.appSessions[0]?.lastLoginAddress,
           ],
           {
-            latitude: customer.selectedLocations[0]?.latitude,
-            longitude: customer.selectedLocations[0]?.longitude,
+            latitude: selectedLocation?.latitude,
+            longitude: selectedLocation?.longitude,
           },
         ),
       );
       region.customerCount += 1;
 
+      const customerPoint = vietnamOverviewEventPoint({
+        id: `customer:${customer.id}:location:${selectedLocation?.id ?? 'latest'}`,
+        kind: 'customers',
+        label: 'Customer saved service location',
+        latitude: selectedLocation?.latitude,
+        longitude: selectedLocation?.longitude,
+        occurredAt: selectedLocation?.createdAt,
+        source: 'customer-selected-location',
+        addressText: selectedLocation?.addressText,
+        customerProfileId: customer.id,
+      });
+      if (customerPoint && isDateInVietnamOverviewWindow(customerPoint.occurredAt, window)) {
+        points.push(customerPoint);
+      }
+
       const lastSeenAt = customer.user.appSessions[0]?.lastSeenAt;
       if (lastSeenAt && (!dateWhere || lastSeenAt >= activeCustomerSince)) {
         region.activeCustomerCount += 1;
+        const activePoint = vietnamOverviewEventPoint({
+          id: `active-customer:${customer.id}:${lastSeenAt.toISOString()}`,
+          kind: 'active',
+          label: 'Active customer session anchored to saved location',
+          latitude: selectedLocation?.latitude,
+          longitude: selectedLocation?.longitude,
+          occurredAt: lastSeenAt,
+          source: 'customer-session-selected-location',
+          addressText: selectedLocation?.addressText ?? customer.user.appSessions[0]?.lastLoginAddress,
+          customerProfileId: customer.id,
+        });
+        if (activePoint) {
+          points.push(activePoint);
+        }
       }
     }
 
@@ -584,16 +660,49 @@ export class AdminService {
       );
       region.partnerCount += 1;
 
+      const partnerPoint = vietnamOverviewEventPoint({
+        id: `partner:${provider.id}:current-location`,
+        kind: 'partners',
+        label: provider.displayName,
+        latitude: provider.currentLat,
+        longitude: provider.currentLng,
+        occurredAt: provider.currentLocationUpdatedAt,
+        source: 'partner-current-location',
+        addressText: provider.residentialAddress ?? provider.city,
+        providerProfileId: provider.id,
+      });
+      if (partnerPoint && isDateInVietnamOverviewWindow(partnerPoint.occurredAt, window)) {
+        points.push(partnerPoint);
+      }
+
       if (
         provider.status !== ProviderStatus.OFFLINE &&
         provider.currentLocationUpdatedAt &&
         provider.currentLocationUpdatedAt >= onlinePartnerSince
       ) {
         region.onlinePartnerCount += 1;
+        const onlinePoint = vietnamOverviewEventPoint({
+          id: `online-partner:${provider.id}:${provider.currentLocationUpdatedAt.toISOString()}`,
+          kind: 'online',
+          label: provider.displayName,
+          latitude: provider.currentLat,
+          longitude: provider.currentLng,
+          occurredAt: provider.currentLocationUpdatedAt,
+          source: 'partner-online-heartbeat-location',
+          addressText: provider.residentialAddress ?? provider.city,
+          providerProfileId: provider.id,
+        });
+        if (onlinePoint) {
+          points.push(onlinePoint);
+        }
       }
     }
 
     for (const booking of bookings) {
+      const bookingAddressLatitude = booking.addressSnapshot?.latitude ?? booking.lat;
+      const bookingAddressLongitude = booking.addressSnapshot?.longitude ?? booking.lng;
+      const bookingAddressText = booking.addressSnapshot?.addressText ?? null;
+      const closeoutSnapshot = booking.snapshots[0];
       const region = ensureVietnamOverviewRegion(
         regions,
         vietnamRegionCodeFromValues(
@@ -603,22 +712,66 @@ export class AdminService {
             booking.addressSnapshot?.address,
           ],
           {
-            latitude: booking.addressSnapshot?.latitude ?? booking.lat,
-            longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+            latitude: bookingAddressLatitude,
+            longitude: bookingAddressLongitude,
           },
         ),
       );
 
       if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(booking.status)) {
         region.activeBookingCount += 1;
+        const activeBookingPoint = vietnamOverviewEventPoint({
+          id: `booking:${booking.id}:active`,
+          kind: 'bookings',
+          label: 'Active booking service address',
+          latitude: bookingAddressLatitude,
+          longitude: bookingAddressLongitude,
+          occurredAt: latestDate(booking.updatedAt, booking.createdAt),
+          source: 'booking-address-snapshot',
+          addressText: bookingAddressText,
+          bookingId: booking.id,
+        });
+        if (activeBookingPoint) {
+          points.push(activeBookingPoint);
+        }
       }
 
       if (booking.status === BookingStatus.COMPLETED) {
         region.completedBookingCount += 1;
+        const completedBookingPoint = vietnamOverviewEventPoint({
+          id: `booking:${booking.id}:completed`,
+          kind: 'done',
+          label: 'Completed booking closeout location',
+          latitude: closeoutSnapshot?.lat ?? bookingAddressLatitude,
+          longitude: closeoutSnapshot?.lng ?? bookingAddressLongitude,
+          occurredAt: booking.closedAt ?? closeoutSnapshot?.recordedAt ?? booking.updatedAt,
+          source: closeoutSnapshot ? 'partner-action-location-snapshot' : 'booking-address-snapshot',
+          addressText: closeoutSnapshot?.addressText ?? bookingAddressText,
+          bookingId: booking.id,
+          providerProfileId: closeoutSnapshot?.providerProfileId,
+        });
+        if (completedBookingPoint) {
+          points.push(completedBookingPoint);
+        }
       }
 
       if (ADMIN_VIETNAM_CANCELLATION_STATUSES.has(booking.status)) {
         region.cancellationCount += 1;
+        const cancellationPoint = vietnamOverviewEventPoint({
+          id: `booking:${booking.id}:cancelled`,
+          kind: 'cancel',
+          label: 'Cancelled booking review location',
+          latitude: closeoutSnapshot?.lat ?? bookingAddressLatitude,
+          longitude: closeoutSnapshot?.lng ?? bookingAddressLongitude,
+          occurredAt: booking.closedAt ?? closeoutSnapshot?.recordedAt ?? booking.updatedAt,
+          source: closeoutSnapshot ? 'partner-action-location-snapshot' : 'booking-address-snapshot',
+          addressText: closeoutSnapshot?.addressText ?? bookingAddressText,
+          bookingId: booking.id,
+          providerProfileId: closeoutSnapshot?.providerProfileId,
+        });
+        if (cancellationPoint) {
+          points.push(cancellationPoint);
+        }
       }
 
       if (booking.payment && ADMIN_VIETNAM_REVENUE_STATUSES.has(booking.payment.status)) {
@@ -649,6 +802,7 @@ export class AdminService {
         currency: 'VND',
       },
       regions: regionRows,
+      points,
     };
   }
 
@@ -3574,6 +3728,87 @@ function ensureVietnamOverviewRegion(
     revenueAmount: 0,
     currency: 'VND',
   };
+}
+
+function isDateInVietnamOverviewWindow(
+  value: Date | string | null | undefined,
+  window: { startAt: Date | null; endAt: Date | null },
+) {
+  if (!window.startAt || !window.endAt) {
+    return true;
+  }
+
+  const date = value instanceof Date ? value : value ? new Date(value) : null;
+  const timestamp = date?.getTime() ?? Number.NaN;
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+
+  return timestamp >= window.startAt.getTime() && timestamp < window.endAt.getTime();
+}
+
+function vietnamOverviewEventPoint(input: {
+  id: string;
+  kind: AdminVietnamOverviewPointKind;
+  label: string;
+  latitude: unknown;
+  longitude: unknown;
+  occurredAt: Date | string | null | undefined;
+  source: string;
+  addressText?: string | null;
+  bookingId?: string | null;
+  customerProfileId?: string | null;
+  providerProfileId?: string | null;
+}): AdminVietnamOverviewPoint | null {
+  const latitude = coordinateValue(input.latitude);
+  const longitude = coordinateValue(input.longitude);
+  const occurredAt = input.occurredAt instanceof Date
+    ? input.occurredAt
+    : input.occurredAt
+      ? new Date(input.occurredAt)
+      : null;
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    !isStoredVietnamCoordinate(latitude, longitude) ||
+    !occurredAt ||
+    !Number.isFinite(occurredAt.getTime())
+  ) {
+    return null;
+  }
+
+  const regionCode = vietnamRegionCodeFromValues([input.addressText, input.label], {
+    latitude,
+    longitude,
+  });
+
+  return {
+    id: input.id,
+    kind: input.kind,
+    label: input.label,
+    latitude,
+    longitude,
+    occurredAt: occurredAt.toISOString(),
+    regionCode,
+    source: input.source,
+    addressText: input.addressText ?? null,
+    bookingId: input.bookingId ?? null,
+    customerProfileId: input.customerProfileId ?? null,
+    providerProfileId: input.providerProfileId ?? null,
+  };
+}
+
+function coordinateValue(value: unknown) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isStoredVietnamCoordinate(latitude: number, longitude: number) {
+  return latitude >= 8 && latitude <= 24 && longitude >= 102 && longitude <= 110;
 }
 
 function integerValue(value: unknown) {
