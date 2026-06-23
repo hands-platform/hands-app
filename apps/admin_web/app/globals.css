@@ -9590,6 +9590,13 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.vuexy-partner-active-filters {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .vuexy-partner-filter-group-label {
   color: var(--admin-muted);
   font-size: 13px;

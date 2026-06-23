@@ -47,6 +47,8 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Status: ONLINE_AVAILABLE');
     expect(rendered).toContain('Review: Unapproved Partners');
     expect(rendered).toContain('Sort: booking count');
+    expect(rendered).toContain('Active partner filters');
+    expect(rendered).toContain('Clear filters');
     expect(rendered).toContain('type="hidden" name="sort" value="booking-count"');
     expect(rendered).toContain('type="hidden" name="review" value="unapproved"');
     expect(rendered).toContain(

@@ -47,18 +47,17 @@ export function PartnerFilterBoard({
       footer={
         <div className="vuexy-partner-filter-footer">
           {activeFilters.length > 0 ? (
-            <>
+            <div className="vuexy-partner-active-filters" aria-label="Active partner filters">
               {activeFilters.map((filter) => (
                 <span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>
                   {filter.label}
                 </span>
               ))}
-            </>
-          ) : (
-            <AdminFormControlLink className="vuexy-partner-button is-ghost" href="/partners">
-              Clear filters
-            </AdminFormControlLink>
-          )}
+            </div>
+          ) : null}
+          <AdminFormControlLink className="vuexy-partner-button is-ghost" href="/partners">
+            Clear filters
+          </AdminFormControlLink>
         </div>
       }
     >
