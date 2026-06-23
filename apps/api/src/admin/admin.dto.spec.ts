@@ -31,6 +31,15 @@ describe('admin request DTO validation', () => {
     );
   });
 
+  it('uses concrete DTOs for referral reward state changes', () => {
+    expect((bodyMetatype('holdReferralReward', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardDecisionDto',
+    );
+    expect((bodyMetatype('reverseReferralReward', 2) as { name?: string })?.name).toBe(
+      'ReferralRewardDecisionDto',
+    );
+  });
+
   it('strips unsupported operational policy fields while preserving value', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
@@ -69,6 +78,21 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('currency', 'vnd');
     expect(transformed).toHaveProperty('reason', 'referral policy setup');
     expect(transformed).not.toHaveProperty('payoutImmediately');
+  });
+
+  it('normalizes referral reward decision reasons and strips payout fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        reason: '  suspicious referral activity  ',
+        walletCreditCreated: true,
+      },
+      { type: 'body', metatype: bodyMetatype('holdReferralReward', 2) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('reason', 'suspicious referral activity');
+    expect(transformed).not.toHaveProperty('walletCreditCreated');
   });
 
   it('uses concrete DTOs for payout administration payloads', () => {

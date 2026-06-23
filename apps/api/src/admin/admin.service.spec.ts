@@ -381,6 +381,90 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('holds a referral reward candidate without creating wallet ledger entries', async () => {
+    const referrals = {
+      holdRewardCandidate: jest.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: ReferralRewardStatus.HELD,
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.holdReferralReward('admin-1', 'reward-1', {
+        reason: ' suspicious signup pattern ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.HELD,
+    });
+
+    expect(referrals.holdRewardCandidate).toHaveBeenCalledWith('reward-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.hold',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          currency: 'VND',
+          reason: 'suspicious signup pattern',
+          status: ReferralRewardStatus.HELD,
+          walletCreditCreated: false,
+        },
+      },
+    });
+  });
+
+  it('reverses a referral reward candidate without creating wallet ledger entries', async () => {
+    const referrals = {
+      reverseRewardCandidate: jest.fn().mockResolvedValue({
+        id: 'reward-1',
+        amount: 25000,
+        currency: 'VND',
+        status: ReferralRewardStatus.REVERSED,
+      }),
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const service = createAdminService(prisma, { referrals });
+
+    await expect(
+      service.reverseReferralReward('admin-1', 'reward-1', {
+        reason: ' invalid referral attribution ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.REVERSED,
+    });
+
+    expect(referrals.reverseRewardCandidate).toHaveBeenCalledWith('reward-1');
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        actorId: 'admin-1',
+        action: 'referral_reward.reverse',
+        target: 'referral_reward:reward-1',
+        metadata: {
+          amount: 25000,
+          currency: 'VND',
+          reason: 'invalid referral attribution',
+          status: ReferralRewardStatus.REVERSED,
+          walletCreditCreated: false,
+        },
+      },
+    });
+  });
+
   it('creates referral reward candidates after completed booking closeout', async () => {
     const prisma = {
       adminAuditLog: {

@@ -24,6 +24,7 @@ import {
   ModerateReviewDto,
   OperationsHandoffNoteDto,
   PartnerOpsNoteDto,
+  ReferralRewardDecisionDto,
   UpdateAdminServiceDto,
   UpdateCouponDto,
   UpdateOperationalPolicyDto,
@@ -97,6 +98,24 @@ export class AdminController {
   @Post('referrals/rewards/release-available')
   releaseAvailableReferralRewards(@CurrentUser() user: AuthenticatedUser) {
     return this.admin.releaseAvailableReferralRewards(user.id);
+  }
+
+  @Post('referrals/rewards/:id/hold')
+  holdReferralReward(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardDecisionDto,
+  ) {
+    return this.admin.holdReferralReward(user.id, rewardId, body);
+  }
+
+  @Post('referrals/rewards/:id/reverse')
+  reverseReferralReward(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') rewardId: string,
+    @Body() body: ReferralRewardDecisionDto,
+  ) {
+    return this.admin.reverseReferralReward(user.id, rewardId, body);
   }
 
   @Get('referrals/customers')

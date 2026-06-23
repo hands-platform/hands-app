@@ -601,6 +601,14 @@ export class UpdateReferralPolicyDto {
   reason?: string;
 }
 
+export class ReferralRewardDecisionDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
 export class MarkEarningPaidDto {
   @IsOptional()
   @Transform(({ value }) => trimString(value))

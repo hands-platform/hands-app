@@ -116,6 +116,27 @@ const referralRewardSelect = {
 
 type ReferralRewardRecord = Prisma.ReferralRewardGetPayload<{ select: typeof referralRewardSelect }>;
 
+const referralRewardCandidateStateSelect = {
+  id: true,
+  status: true,
+  walletLedgerReference: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+type ReferralRewardCandidateState = Prisma.ReferralRewardGetPayload<{
+  select: typeof referralRewardCandidateStateSelect;
+}>;
+
+const HOLDABLE_REWARD_CANDIDATE_STATUSES = new Set<ReferralRewardStatus>([
+  ReferralRewardStatus.PENDING,
+  ReferralRewardStatus.AVAILABLE,
+]);
+
+const REVERSIBLE_REWARD_CANDIDATE_STATUSES = new Set<ReferralRewardStatus>([
+  ReferralRewardStatus.PENDING,
+  ReferralRewardStatus.AVAILABLE,
+  ReferralRewardStatus.HELD,
+]);
+
 type ClaimReferralCodeInput = {
   code: string;
   installSource?: string;
@@ -355,6 +376,14 @@ export class ReferralsService {
     });
 
     return { releasedCount: result.count };
+  }
+
+  async holdRewardCandidate(rewardId: string) {
+    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.HELD);
+  }
+
+  async reverseRewardCandidate(rewardId: string) {
+    return this.updateRewardCandidateStatus(rewardId, ReferralRewardStatus.REVERSED);
   }
 
   async createRewardsForCompletedBooking(bookingId: string) {
@@ -642,6 +671,48 @@ export class ReferralsService {
       },
       select: referralRewardSelect,
     });
+  }
+
+  private async updateRewardCandidateStatus(rewardId: string, status: ReferralRewardStatus) {
+    const reward = await this.referralRewardCandidateState(rewardId);
+    this.assertRewardCandidateCanChangeStatus(reward, status);
+
+    return this.prisma.referralReward.update({
+      data: { status },
+      where: { id: rewardId },
+      select: referralRewardSelect,
+    });
+  }
+
+  private async referralRewardCandidateState(rewardId: string) {
+    const reward = await this.prisma.referralReward.findUnique({
+      where: { id: rewardId },
+      select: referralRewardCandidateStateSelect,
+    });
+    if (!reward) {
+      throw new NotFoundException('Referral reward was not found');
+    }
+
+    return reward;
+  }
+
+  private assertRewardCandidateCanChangeStatus(reward: ReferralRewardCandidateState, nextStatus: ReferralRewardStatus) {
+    if (reward.walletLedgerReference) {
+      throw new BadRequestException('Credited referral rewards require a wallet reversal flow');
+    }
+
+    if (nextStatus === ReferralRewardStatus.HELD) {
+      if (!HOLDABLE_REWARD_CANDIDATE_STATUSES.has(reward.status)) {
+        throw new BadRequestException('Only pending or available referral reward candidates can be held');
+      }
+      return;
+    }
+
+    if (nextStatus === ReferralRewardStatus.REVERSED) {
+      if (!REVERSIBLE_REWARD_CANDIDATE_STATUSES.has(reward.status)) {
+        throw new BadRequestException('Only uncredited referral reward candidates can be reversed');
+      }
+    }
   }
 }
 

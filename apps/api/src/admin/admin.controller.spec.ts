@@ -21,7 +21,9 @@ describe('AdminController notification and push actions', () => {
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
     listPartnerDirectoryProviders: jest.fn(),
+    holdReferralReward: jest.fn(),
     releaseAvailableReferralRewards: jest.fn(),
+    reverseReferralReward: jest.fn(),
     retryNotification: jest.fn(),
     updateReferralPolicy: jest.fn(),
   };
@@ -199,6 +201,36 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/rewards/release-available',
     });
     expect(admin.releaseAvailableReferralRewards).toHaveBeenCalledWith('admin-1');
+  });
+
+  it('exposes referral reward hold as a POST action', async () => {
+    admin.holdReferralReward.mockResolvedValue({ id: 'reward-1', status: 'HELD' });
+
+    await expect(controller.holdReferralReward(user, 'reward-1', { reason: 'review' })).resolves.toEqual({
+      id: 'reward-1',
+      status: 'HELD',
+    });
+
+    expect(routeMetadata('holdReferralReward')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/hold',
+    });
+    expect(admin.holdReferralReward).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'review' });
+  });
+
+  it('exposes referral reward reverse as a POST action', async () => {
+    admin.reverseReferralReward.mockResolvedValue({ id: 'reward-1', status: 'REVERSED' });
+
+    await expect(controller.reverseReferralReward(user, 'reward-1', { reason: 'invalid' })).resolves.toEqual({
+      id: 'reward-1',
+      status: 'REVERSED',
+    });
+
+    expect(routeMetadata('reverseReferralReward')).toEqual({
+      method: RequestMethod.POST,
+      path: 'referrals/rewards/:id/reverse',
+    });
+    expect(admin.reverseReferralReward).toHaveBeenCalledWith('admin-1', 'reward-1', { reason: 'invalid' });
   });
 
   it('exposes a partner referral parent detail only for referral activity drilldown', async () => {

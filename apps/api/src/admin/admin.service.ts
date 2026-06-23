@@ -706,6 +706,34 @@ export class AdminService {
     return result;
   }
 
+  async holdReferralReward(actorId: string, rewardId: string, input: { reason?: string } = {}) {
+    const reward = await this.referrals.holdRewardCandidate(rewardId);
+
+    await this.writeAudit(actorId, 'referral_reward.hold', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      walletCreditCreated: false,
+    });
+
+    return reward;
+  }
+
+  async reverseReferralReward(actorId: string, rewardId: string, input: { reason?: string } = {}) {
+    const reward = await this.referrals.reverseRewardCandidate(rewardId);
+
+    await this.writeAudit(actorId, 'referral_reward.reverse', `referral_reward:${rewardId}`, {
+      amount: reward.amount,
+      currency: reward.currency,
+      reason: normalizeAuditReason(input.reason),
+      status: reward.status,
+      walletCreditCreated: false,
+    });
+
+    return reward;
+  }
+
   async listCustomerReferralParents() {
     const rows = await this.prisma.customerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },

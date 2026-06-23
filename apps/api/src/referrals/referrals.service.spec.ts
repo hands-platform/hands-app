@@ -682,6 +682,87 @@ describe('ReferralsService', () => {
     });
   });
 
+  it('holds an uncredited pending reward candidate', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          status: ReferralRewardStatus.PENDING,
+          walletLedgerReference: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 25000,
+          availableAt: now,
+          currency: 'VND',
+          sourceKey: 'referral:CUSTOMER:attr-1:booking-1',
+          status: ReferralRewardStatus.HELD,
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.holdRewardCandidate('reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.HELD,
+    });
+    expect(prisma.referralReward.update).toHaveBeenCalledWith({
+      data: { status: ReferralRewardStatus.HELD },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('rejects reward candidate state changes after wallet credit exists', async () => {
+    const prisma = {
+      referralReward: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          status: ReferralRewardStatus.AVAILABLE,
+          walletLedgerReference: 'wallet-ledger-1',
+        }),
+        update: jest.fn(),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.reverseRewardCandidate('reward-1')).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.referralReward.update).not.toHaveBeenCalled();
+  });
+
+  it('reverses held or available reward candidates without wallet ledger writes', async () => {
+    const now = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      referralReward: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          status: ReferralRewardStatus.HELD,
+          walletLedgerReference: null,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 25000,
+          availableAt: now,
+          currency: 'VND',
+          sourceKey: 'referral:CUSTOMER:attr-1:booking-1',
+          status: ReferralRewardStatus.REVERSED,
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.reverseRewardCandidate('reward-1')).resolves.toMatchObject({
+      id: 'reward-1',
+      status: ReferralRewardStatus.REVERSED,
+    });
+    expect(prisma.referralReward.update).toHaveBeenCalledWith({
+      data: { status: ReferralRewardStatus.REVERSED },
+      where: { id: 'reward-1' },
+      select: expect.any(Object),
+    });
+  });
+
   it('creates a pending Partner referral reward only on the referred Partner first completed booking', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
