@@ -181,7 +181,6 @@ describe('review page model', () => {
       status: 'REPORTED',
       statusClassName: 'review-status-chip review-status-reported',
       statusLabel: 'Reported',
-      statusMeaning: 'Moderation follow-up',
     });
     expect(rows[0]?.bookingRequestTimeLabel).toContain('16 Jun 2026');
     expect(rows[0]?.createdAtLabel).toBe('16 Jun 2026, 16:08');

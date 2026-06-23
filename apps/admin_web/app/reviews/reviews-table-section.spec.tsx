@@ -218,11 +218,9 @@ function buildRow(): ReviewTableRow {
     reportReasonValue: '',
     reportReasonLabel: '',
     serviceLabel: 'Aromatherapy',
-    shortIdLabel: 'review',
     status: 'PUBLISHED',
     statusClassName: 'review-status-chip review-status-published',
     statusLabel: 'Published',
-    statusMeaning: 'Visible in app',
   };
 }
 

@@ -51,11 +51,9 @@ export type ReviewTableRow = {
   readonly reportReasonValue: string;
   readonly reportReasonLabel: string;
   readonly serviceLabel: string;
-  readonly shortIdLabel: string;
   readonly status: string;
   readonly statusClassName: string;
   readonly statusLabel: string;
-  readonly statusMeaning: string;
 };
 
 type ReviewsTableSectionProps = {

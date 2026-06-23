@@ -133,11 +133,9 @@ export function buildReviewTableRows(reviews: readonly AdminReview[]): ReviewTab
     reportReasonValue: review.reportReason?.trim() ?? '',
     reportReasonLabel: review.reportReason?.trim() ? `Reason: ${review.reportReason}` : '',
     serviceLabel: reviewServiceLabel(review),
-    shortIdLabel: shortId(review.id),
     status: review.status,
     statusClassName: reviewStatusClassName(review.status),
     statusLabel: reviewStatusLabel(review.status),
-    statusMeaning: statusMeaning(review.status),
   }));
 }
 
