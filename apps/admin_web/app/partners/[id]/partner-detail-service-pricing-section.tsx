@@ -26,6 +26,18 @@ export function PartnerDetailServicePricingSection({
   readyCount,
   rows,
 }: PartnerDetailServicePricingSectionProps) {
+  const hiddenCount = rows.length - readyCount;
+  const firstHiddenRow = rows.find((row) => !row.bookable);
+  const customerVisibility = readyCount
+    ? `${readyCount} customer-visible option(s)`
+    : 'No customer-visible option';
+  const approvalGate = readyCount ? 'Approval clear' : rows.length ? 'Fix before approval' : 'Add service pricing';
+  const nextFix = firstHiddenRow
+    ? `${firstHiddenRow.name}: ${marketplaceDisplayText(firstHiddenRow.issue)}`
+    : readyCount
+      ? 'Service pricing can proceed to final Partner approval.'
+      : 'Create an active service duration and matching payout rule.';
+
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
@@ -35,6 +47,23 @@ export function PartnerDetailServicePricingSection({
       resultTone={readyCount ? 'success' : 'warning'}
       title="Service price readiness"
     >
+      <div className="service-trace-summary admin-mt-12" aria-label="Service pricing approval gate">
+        <div>
+          <span>Customer visibility</span>
+          <strong>{customerVisibility}</strong>
+          <small>{hiddenCount} hidden option(s).</small>
+        </div>
+        <div>
+          <span>Approval gate</span>
+          <strong>{approvalGate}</strong>
+          <small>Approval requires at least one customer-visible service option.</small>
+        </div>
+        <div>
+          <span>Next fix</span>
+          <strong>{nextFix}</strong>
+          <small>Use the row issue before approving this Partner.</small>
+        </div>
+      </div>
       <AdminTableScroll>
         <AdminDataTable
           className={partnerDetailReviewTableClassName}

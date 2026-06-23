@@ -30,6 +30,14 @@ describe('PartnerDetailServicePricingSection', () => {
 
     expect(rendered).toContain('Service price readiness');
     expect(rendered).toContain('1/2 bookable');
+    expect(rendered).toContain('Customer visibility');
+    expect(rendered).toContain('1 customer-visible option(s)');
+    expect(rendered).toContain('1 hidden option(s).');
+    expect(rendered).toContain('Approval gate');
+    expect(rendered).toContain('Approval clear');
+    expect(rendered).toContain('Next fix');
+    expect(rendered).toContain('Deep tissue massage: Missing payout rule.');
+    expect(rendered).toContain('Use the row issue before approving this Partner.');
     expect(rendered).toContain('Relaxing massage');
     expect(rendered).toContain('CUSTOMER VISIBLE');
     expect(rendered).toContain('Deep tissue massage');
