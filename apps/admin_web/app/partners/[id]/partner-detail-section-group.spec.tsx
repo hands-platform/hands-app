@@ -1,4 +1,7 @@
-import { PartnerDetailSectionGroup } from './partner-detail-section-group';
+import {
+  PartnerDetailReferenceDetails,
+  PartnerDetailSectionGroup,
+} from './partner-detail-section-group';
 
 describe('PartnerDetailSectionGroup', () => {
   it('renders a titled operations section with status and children', () => {
@@ -23,6 +26,28 @@ describe('PartnerDetailSectionGroup', () => {
         'partner-detail-section-band partner-detail-section-group',
         'partner-detail-section-band-header',
         'partner-detail-section-band-body partner-detail-section-group-body',
+      ]),
+    );
+  });
+
+  it('renders collapsible reference details for secondary summaries', () => {
+    const section = PartnerDetailReferenceDetails({
+      children: <div>Reference ledger</div>,
+      helper: 'Secondary facts stay available without competing with approval work.',
+      label: 'Reference summaries',
+      status: '6 blocks',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Reference summaries');
+    expect(rendered).toContain('Secondary facts stay available without competing with approval work.');
+    expect(rendered).toContain('6 blocks');
+    expect(rendered).toContain('Reference ledger');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'partner-detail-reference-details',
+        'partner-detail-reference-details-body',
       ]),
     );
   });

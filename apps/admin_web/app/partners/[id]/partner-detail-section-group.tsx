@@ -9,6 +9,13 @@ type PartnerDetailSectionGroupProps = {
   readonly title: string;
 };
 
+type PartnerDetailReferenceDetailsProps = {
+  readonly children: ReactNode;
+  readonly helper: string;
+  readonly label: string;
+  readonly status: string;
+};
+
 export function PartnerDetailSectionGroup({
   children,
   description,
@@ -31,5 +38,25 @@ export function PartnerDetailSectionGroup({
         {children}
       </div>
     </section>
+  );
+}
+
+export function PartnerDetailReferenceDetails({
+  children,
+  helper,
+  label,
+  status,
+}: PartnerDetailReferenceDetailsProps) {
+  return (
+    <details className="partner-detail-reference-details">
+      <summary>
+        <span>
+          <strong>{label}</strong>
+          <small>{helper}</small>
+        </span>
+        <em>{status}</em>
+      </summary>
+      <div className="partner-detail-reference-details-body">{children}</div>
+    </details>
   );
 }

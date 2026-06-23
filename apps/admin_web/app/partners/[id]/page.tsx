@@ -267,7 +267,10 @@ import {
   buildPartnerUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
-import { PartnerDetailSectionGroup } from './partner-detail-section-group';
+import {
+  PartnerDetailReferenceDetails,
+  PartnerDetailSectionGroup,
+} from './partner-detail-section-group';
 import {
   amountValue,
   dateValue,
@@ -802,26 +805,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
 
       <PartnerDetailSectionGroup
-        description="Operator queue, review controls, staff notes, master facts, and filter controls grouped before the longer evidence ledgers."
+        description="Approval, hold, and staff follow-up come first. Secondary digest and index blocks stay available below as reference material."
         eyebrow="Control"
         id="partner-control-section"
         status={`${partnerOperatorCommandQueue.commands.length} command(s)`}
         title="Partner control workspace"
       >
-        <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
-        <PartnerDetailOperationsDigestSection
-          description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
-          formatLatestAt={formatDate}
-          id="partner-operations-digest"
-          rows={partnerOperationsDigest}
-          title="Partner operations digest"
-        />
-        <PartnerDetailConnectedRecordsSection
-          description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
-          id="partner-connected-operations-records"
-          links={connectedPartnerRecordLinks}
-          title="Partner connected operations records"
-        />
         <PartnerDetailOperatorCommandQueueSection
           pillClassForTone={pillClass}
           providerId={provider.id}
@@ -834,28 +823,48 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           providerId={provider.id}
           totalCount={partnerOpsNotes.length}
         />
-        <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
-        <PartnerDetailFullRecordIndexSection
-          appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
-          bookingRecordCount={partnerBookingArchive.length}
-          cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
-          dailyDigestCount={partnerDailyActivityDigest.length}
-          missingKycDocumentCount={missingKycDocumentCount}
+        <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
+        <PartnerDetailConnectedRecordsSection
+          description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
+          id="partner-connected-operations-records"
+          links={connectedPartnerRecordLinks}
+          title="Partner connected operations records"
         />
-        <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
-        <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
-        <PartnerDetailRecordDateFilterSection
-          activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
-          activityOrder={activityOrder}
-          activityType={activityType}
-          dateFilters={dateFilters}
-          filteredActivityCount={filteredPartnerActivityRecords.length}
-          filteredActivityCsvHref={filteredActivityCsvHref}
-          filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
-          partnerId={provider.id}
-          totalActivityCount={partnerActivityRecords.length}
-          totalBookingArchiveCount={partnerBookingArchive.length}
-        />
+        <PartnerDetailReferenceDetails
+          helper="Digest, master facts, indexes, and filter controls are still available, but no longer compete with approval work."
+          label="Reference summaries and filters"
+          status="6 blocks"
+        >
+          <PartnerDetailOperationsDigestSection
+            description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
+            formatLatestAt={formatDate}
+            id="partner-operations-digest"
+            rows={partnerOperationsDigest}
+            title="Partner operations digest"
+          />
+          <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
+          <PartnerDetailFullRecordIndexSection
+            appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
+            bookingRecordCount={partnerBookingArchive.length}
+            cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
+            dailyDigestCount={partnerDailyActivityDigest.length}
+            missingKycDocumentCount={missingKycDocumentCount}
+          />
+          <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
+          <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
+          <PartnerDetailRecordDateFilterSection
+            activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
+            activityOrder={activityOrder}
+            activityType={activityType}
+            dateFilters={dateFilters}
+            filteredActivityCount={filteredPartnerActivityRecords.length}
+            filteredActivityCsvHref={filteredActivityCsvHref}
+            filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
+            partnerId={provider.id}
+            totalActivityCount={partnerActivityRecords.length}
+            totalBookingArchiveCount={partnerBookingArchive.length}
+          />
+        </PartnerDetailReferenceDetails>
       </PartnerDetailSectionGroup>
 
       <PartnerDetailSectionGroup
