@@ -1,4 +1,5 @@
 import {
+  PartnerDetailDossierCluster,
   PartnerDetailReferenceDetails,
   PartnerDetailSectionGroup,
 } from './partner-detail-section-group';
@@ -68,6 +69,29 @@ describe('PartnerDetailSectionGroup', () => {
     expect(rendered).toContain('Finance-only evidence');
     expect(rendered).toContain('Open finance reference');
     expect(props?.open).toBe(true);
+  });
+
+  it('renders a focused dossier cluster for required evidence cards', () => {
+    const section = PartnerDetailDossierCluster({
+      children: <div>Required KYC and profile cards</div>,
+      helper: 'Only the Level 2 approval evidence sits here.',
+      label: 'Required approval evidence',
+      status: '5 cards',
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Required approval evidence');
+    expect(rendered).toContain('Only the Level 2 approval evidence sits here.');
+    expect(rendered).toContain('5 cards');
+    expect(rendered).toContain('Required KYC and profile cards');
+    expect(classNamesIn(section)).toEqual(
+      expect.arrayContaining([
+        'partner-detail-dossier-cluster',
+        'partner-detail-dossier-cluster-header',
+        'partner-detail-dossier-cluster-body',
+      ]),
+    );
   });
 });
 

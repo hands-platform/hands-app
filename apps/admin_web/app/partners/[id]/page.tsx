@@ -268,6 +268,7 @@ import {
 } from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
 import {
+  PartnerDetailDossierCluster,
   PartnerDetailReferenceDetails,
   PartnerDetailSectionGroup,
 } from './partner-detail-section-group';
@@ -969,46 +970,60 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           rows={reviewHistoryRows}
           totalCount={provider.verificationLogs?.length ?? 0}
         />
-        <section className="detail-grid partner-detail-dossier-grid">
-          <PartnerDetailBasicProfileCard
-            note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
-            rows={partnerBasicProfileRows}
-          />
+        <PartnerDetailDossierCluster
+          helper="Name, public profile, service setup, required documents, and KYC evidence used for Level 2 approval."
+          label="Required approval evidence"
+          status="5 cards"
+        >
+          <section className="detail-grid partner-detail-dossier-grid">
+            <PartnerDetailBasicProfileCard
+              note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
+              rows={partnerBasicProfileRows}
+            />
 
-          <PartnerDetailKycDecisionSection
-            canApprove={canApproveKyc}
-            cccdNumberLast4={provider.kyc?.cccdNumberLast4}
-            evidence={kycEvidence}
-            rejectionReason={provider.kyc?.rejectionReason}
-            reviewActions={partnerKycReviewActions}
-            reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
-            status={provider.kyc?.status}
-            submittedLabel={formatDate(provider.kyc?.submittedAt)}
-          />
+            <PartnerDetailKycDecisionSection
+              canApprove={canApproveKyc}
+              cccdNumberLast4={provider.kyc?.cccdNumberLast4}
+              evidence={kycEvidence}
+              rejectionReason={provider.kyc?.rejectionReason}
+              reviewActions={partnerKycReviewActions}
+              reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
+              status={provider.kyc?.status}
+              submittedLabel={formatDate(provider.kyc?.submittedAt)}
+            />
 
-          <PartnerDetailServicePricingSection
-            readyCount={providerServicePricing.readyCount}
-            rows={partnerServicePricingDisplayRows}
-          />
+            <PartnerDetailServicePricingSection
+              readyCount={providerServicePricing.readyCount}
+              rows={partnerServicePricingDisplayRows}
+            />
 
-          <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
+            <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
 
-          <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
+            <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
+          </section>
+        </PartnerDetailDossierCluster>
 
-          <PartnerDetailLocationActivityCard
-            coordinatesLabel={
-              provider.currentLat && provider.currentLng
-                ? partnerLocationSavedLabel()
-                : null
-            }
-            lastLocationLabel={
-              provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
-            }
-            snapshots={partnerLocationSnapshotBadges}
-          />
+        <PartnerDetailReferenceDetails
+          helper="Location freshness and accepted agreements support operations, but they are not the first approval read."
+          label="Profile and activity references"
+          status="2 cards"
+        >
+          <section className="detail-grid partner-detail-dossier-grid">
+            <PartnerDetailLocationActivityCard
+              coordinatesLabel={
+                provider.currentLat && provider.currentLng
+                  ? partnerLocationSavedLabel()
+                  : null
+              }
+              lastLocationLabel={
+                provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
+              }
+              snapshots={partnerLocationSnapshotBadges}
+            />
 
-          <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
-        </section>
+            <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
+          </section>
+        </PartnerDetailReferenceDetails>
 
         <PartnerDetailReferenceDetails
           defaultOpen={hasCashFeeDebt}

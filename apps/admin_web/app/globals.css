@@ -3110,6 +3110,51 @@ a.action-button-card:hover {
   margin-top: 0;
 }
 
+.partner-detail-dossier-cluster {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.partner-detail-dossier-cluster-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 2px 2px 0;
+}
+
+.partner-detail-dossier-cluster-header > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.partner-detail-dossier-cluster-header strong {
+  color: var(--admin-text);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.partner-detail-dossier-cluster-header small {
+  color: var(--admin-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.partner-detail-dossier-cluster-body {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.partner-detail-dossier-cluster-body > .detail-grid {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
 .partner-detail-page #partner-control-section {
   order: 10;
 }

@@ -17,6 +17,13 @@ type PartnerDetailReferenceDetailsProps = {
   readonly status: string;
 };
 
+type PartnerDetailDossierClusterProps = {
+  readonly children: ReactNode;
+  readonly helper: string;
+  readonly label: string;
+  readonly status: string;
+};
+
 export function PartnerDetailSectionGroup({
   children,
   description,
@@ -60,5 +67,25 @@ export function PartnerDetailReferenceDetails({
       </summary>
       <div className="partner-detail-reference-details-body">{children}</div>
     </details>
+  );
+}
+
+export function PartnerDetailDossierCluster({
+  children,
+  helper,
+  label,
+  status,
+}: PartnerDetailDossierClusterProps) {
+  return (
+    <section className="partner-detail-dossier-cluster">
+      <div className="partner-detail-dossier-cluster-header">
+        <div>
+          <strong>{label}</strong>
+          <small>{helper}</small>
+        </div>
+        <span className="pill pill-info">{status}</span>
+      </div>
+      <div className="partner-detail-dossier-cluster-body">{children}</div>
+    </section>
   );
 }
