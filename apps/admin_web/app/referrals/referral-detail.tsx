@@ -12,6 +12,7 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { referralRewardCreditState } from '../../lib/referral-reward-credit-state';
 import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 
 type ReferralParentDetailPageProps =
@@ -56,7 +57,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
     {
       label: 'Available rewards',
       value: formatMoney(props.row.totals.availableRewardAmount, 'VND', '0 VND'),
-      helper: 'Amount currently ready for wallet credit.',
+      helper: 'Reward candidates ready for credit, not necessarily wallet-ledgered.',
     },
     {
       label: 'Pending / held',
@@ -188,7 +189,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
           <AdminDataTable
             className="vuexy-booking-table"
             emptyMessage="No referral reward records for this parent."
-            headers={['Referred', 'Reward', 'Status', 'Booking', 'Wallet Reference', 'Created']}
+            headers={['Referred', 'Reward', 'Status', 'Booking', 'Credit State', 'Created']}
             rowCount={rewardRows.length}
           >
             {rewardRows.map(({ attributionId, referredLabel, reward }) => (
@@ -214,7 +215,7 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
                   )}
                 </td>
                 <td>
-                  <span className="muted">{reward.walletLedgerReference ?? 'Not credited yet'}</span>
+                  <ReferralCreditStateCell reward={reward} />
                 </td>
                 <td>
                   <span className="muted">{formatDateTime(reward.createdAt)}</span>
@@ -225,6 +226,17 @@ export function ReferralParentDetailPage(props: ReferralParentDetailPageProps) {
         </AdminTableScroll>
       </AdminFilterPanel>
     </AdminPageTemplate>
+  );
+}
+
+function ReferralCreditStateCell({ reward }: { readonly reward: AdminReferralReward }) {
+  const creditState = referralRewardCreditState(reward);
+
+  return (
+    <div className="participant-list">
+      <StatusBadge tone={creditState.tone}>{creditState.label}</StatusBadge>
+      <p className="muted">{creditState.helper}</p>
+    </div>
   );
 }
 
