@@ -63,6 +63,7 @@ describe('ReferralDashboard', () => {
 
     expect(markup).toContain('Customer Referrals');
     expect(markup).toContain('Release ready rewards');
+    expect(markup).toContain('Reward candidates ready for credit');
     expect(markup).toContain('Wallet credit is separate');
     expect(markup).toContain('Parent Customer');
     expect(markup).toContain('HANDSCUST');

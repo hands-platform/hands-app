@@ -57,7 +57,7 @@ export function ReferralDashboard(props: ReferralDashboardProps) {
     {
       label: 'Available rewards',
       value: formatMoney(availableRewards, props.policy.currency, '0 VND'),
-      helper: 'Reward amount currently available for wallet credit.',
+      helper: 'Reward candidates ready for credit; wallet ledger is separate.',
     },
     {
       label: 'Pending / held',
