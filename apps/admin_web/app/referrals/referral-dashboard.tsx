@@ -12,6 +12,7 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { referralShareUrl, type ReferralAudienceSlug } from '../../lib/referral-links';
 import { updateReferralPolicy } from './actions';
 
 type ReferralDashboardProps =
@@ -281,7 +282,7 @@ function CustomerReferralParentTable({ rows }: { readonly rows: readonly AdminCu
                 />
               </td>
               <td>
-                <ReferralCodeCell code={row.referralCode} />
+                <ReferralCodeCell audience="customer" code={row.referralCode} />
               </td>
               <td>
                 <ReferralTotalsCell referralCount={row.totals.referralCount} rewardCount={row.totals.rewardCount} />
@@ -334,7 +335,7 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
                 />
               </td>
               <td>
-                <ReferralCodeCell code={row.referralCode} />
+                <ReferralCodeCell audience="partner" code={row.referralCode} />
               </td>
               <td>
                 <ReferralTotalsCell referralCount={row.totals.referralCount} rewardCount={row.totals.rewardCount} />
@@ -357,13 +358,17 @@ function PartnerReferralParentTable({ rows }: { readonly rows: readonly AdminPar
 }
 
 function ReferralCodeCell({
+  audience,
   code,
 }: {
+  readonly audience: ReferralAudienceSlug;
   readonly code?: { readonly active: boolean; readonly code: string; readonly createdAt: string } | null;
 }) {
   if (!code) {
     return <span className="muted">No code</span>;
   }
+
+  const shareUrl = referralShareUrl(audience, code.code);
 
   return (
     <div>
@@ -372,6 +377,9 @@ function ReferralCodeCell({
         <StatusBadge tone={code.active ? 'success' : 'neutral'}>{code.active ? 'Active' : 'Paused'}</StatusBadge>
         <small className="muted">{formatDateTime(code.createdAt)}</small>
       </div>
+      <Link className="text-link admin-mt-8" href={shareUrl}>
+        Referral link
+      </Link>
     </div>
   );
 }
