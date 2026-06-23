@@ -66,7 +66,10 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
     expect(rendered).toContain('Command');
     expect(rendered).toContain('Owner');
     expect(rendered).toContain('Action');
-    expect(rendered).toContain('Primary review actions');
+    expect(rendered).toContain('Next decision');
+    expect(rendered).toContain('Approve KYC');
+    expect(rendered).toContain('KYC approval / Review');
+    expect(rendered).toContain('Decision shortcuts');
     expect(rendered).toContain(
       'Hold and reject actions open a confirmation step with a required reason for the Partner app and audit trail.',
     );
@@ -79,6 +82,7 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
         '#wallet',
+        '#partner-approval-evidence-summary',
         '/partners/partner-1?section=full&providerId=partner-1&reviewAction=approve-kyc',
         '/partners/partner-1?section=full&confirm=block&providerId=partner-1',
       ]),
@@ -89,6 +93,9 @@ describe('PartnerDetailOperatorCommandQueueSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'partner-command-decision-bar is-pending',
+        'partner-command-decision-button is-pending',
+        'partner-command-decision-link',
         'pill pill-blocked',
         'pill pill-pending',
         'text-link',

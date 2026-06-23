@@ -53,6 +53,8 @@ export function PartnerDetailOperatorCommandQueueSection({
   queue,
 }: PartnerDetailOperatorCommandQueueSectionProps) {
   const primaryCommands = queue.commands.filter((command) => command.action.type !== 'link').slice(0, 4);
+  const nextCommand = primaryCommands[0] ?? queue.commands[0];
+  const shortcutCommands = primaryCommands.filter((command) => command.id !== nextCommand?.id);
 
   return (
     <AdminFilterPanel
@@ -72,11 +74,34 @@ export function PartnerDetailOperatorCommandQueueSection({
           </div>
         ))}
       </div>
-      {primaryCommands.length > 0 ? (
-        <div className="admin-mt-12">
+      {nextCommand ? (
+        <div className={`partner-command-decision-bar is-${nextCommand.tone}`}>
+          <div className="partner-command-decision-copy">
+            <span>Next decision</span>
+            <strong>{nextCommand.action.label}</strong>
+            <small>
+              {nextCommand.title} / {nextCommand.owner}
+            </small>
+            <p className="muted">{nextCommand.detail}</p>
+          </div>
+          <div className="partner-command-decision-actions">
+            <Link
+              className={`partner-command-decision-button is-${nextCommand.tone}`}
+              href={partnerOperatorCommandActionHref(providerId, nextCommand.action)}
+            >
+              {nextCommand.action.label}
+            </Link>
+            <a className="partner-command-decision-link" href="#partner-approval-evidence-summary">
+              Review evidence
+            </a>
+          </div>
+        </div>
+      ) : null}
+      {shortcutCommands.length > 0 ? (
+        <div className="partner-command-shortcuts admin-mt-12">
           <div className="participant-list">
-            <span className="muted">Primary review actions</span>
-            {primaryCommands.map((command) => (
+            <span className="muted">Decision shortcuts</span>
+            {shortcutCommands.map((command) => (
               <Link
                 className={`pill ${pillClassForTone(command.tone)}`}
                 href={partnerOperatorCommandActionHref(providerId, command.action)}
@@ -87,8 +112,7 @@ export function PartnerDetailOperatorCommandQueueSection({
             ))}
           </div>
           <p className="muted admin-mt-8">
-            Hold and reject actions open a confirmation step with a required reason for the Partner app and audit
-            trail.
+            Hold and reject actions open a confirmation step with a required reason for the Partner app and audit trail.
           </p>
         </div>
       ) : null}
