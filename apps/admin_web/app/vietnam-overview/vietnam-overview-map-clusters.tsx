@@ -187,6 +187,8 @@ function ClusterDetailPanel({
   readonly onClose: () => void;
 }) {
   const latestPoint = cluster.primaryPoint;
+  const latestTargetHref = signalTargetHref(latestPoint);
+  const signalSummary = clusterKindSummary(cluster.points);
   const visibleEvents = cluster.points.slice(0, vietnamMapClusterPanelLimit);
   const hiddenCount = cluster.points.length - visibleEvents.length;
 
@@ -207,18 +209,44 @@ function ClusterDetailPanel({
         </button>
       </div>
 
-      <div className="vietnam-map-cluster-summary">
-        {clusterKindSummary(cluster.points).map((item) => (
-          <span key={item.key}>
-            <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
-            {item.label} <strong>{formatNumber(item.count)}</strong>
+      <div className="vietnam-map-cluster-latest">
+        <i className={`vietnam-map-legend-dot is-${latestPoint.kind}`} aria-hidden="true" />
+        <div>
+          <small>Latest signal</small>
+          <strong>{latestPoint.label}</strong>
+          <span>
+            {metricLabel(latestPoint.kind)} / {formatDateTime(latestPoint.occurredAt)} /{' '}
+            {formatSourceLabel(latestPoint.source)}
           </span>
+        </div>
+        {latestTargetHref ? (
+          <a className="vietnam-map-cluster-latest-link" href={latestTargetHref}>
+            Open latest
+          </a>
+        ) : null}
+      </div>
+
+      <div className="vietnam-map-cluster-summary-grid">
+        {signalSummary.map((item) => (
+          <article key={item.key} className={`vietnam-map-cluster-summary-card is-${item.key}`}>
+            <span>
+              <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
+              {item.label}
+            </span>
+            <strong>{formatNumber(item.count)}</strong>
+            <small>
+              Latest {item.latestPoint ? formatDateTime(item.latestPoint.occurredAt) : 'pending'}
+            </small>
+          </article>
         ))}
       </div>
 
       <div className="vietnam-map-cluster-location">
         <MapPin size={15} aria-hidden="true" />
-        <span>{latestPoint.addressText || 'Stored operating coordinate'}</span>
+        <span>
+          <strong>{formatRegionCode(latestPoint.regionCode)}</strong>
+          {latestPoint.addressText || 'Stored operating coordinate'}
+        </span>
       </div>
 
       {focusHref ? (
@@ -252,6 +280,10 @@ function ClusterEventRow({ point }: { readonly point: VietnamOverviewMapPoint })
           <Clock3 size={12} aria-hidden="true" />
           {formatDateTime(point.occurredAt)}
         </small>
+        <p>
+          {formatSourceLabel(point.source)} / {formatRegionCode(point.regionCode)}
+          {point.addressText ? ` / ${point.addressText}` : ''}
+        </p>
       </div>
       {targetHref ? (
         <a className="vietnam-map-cluster-event-link" href={targetHref}>
@@ -273,7 +305,9 @@ function signalTargetHref(point: VietnamOverviewMapPoint) {
 function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
   const latestPoint = cluster.primaryPoint;
   const previewLines = cluster.points.slice(0, vietnamMapClusterPreviewLimit).map((point) => (
-    `${metricLabel(point.kind)} - ${point.label} - ${formatDateTime(point.occurredAt)}`
+    `${metricLabel(point.kind)} - ${point.label} - ${formatDateTime(point.occurredAt)} - ${formatSourceLabel(
+      point.source,
+    )}`
   ));
   const hiddenCount = cluster.points.length - previewLines.length;
 
@@ -282,6 +316,9 @@ function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
       ? `${formatNumber(cluster.points.length)} realtime signals`
       : `${metricLabel(latestPoint.kind)} signal`,
     ...clusterKindSummary(cluster.points).map((item) => `${item.label} ${formatNumber(item.count)}`),
+    `Latest: ${latestPoint.label}`,
+    `Source: ${formatSourceLabel(latestPoint.source)}`,
+    `Region: ${formatRegionCode(latestPoint.regionCode)}`,
     latestPoint.addressText ? `Latest area: ${latestPoint.addressText}` : '',
     ...previewLines,
     hiddenCount > 0 ? `+ ${formatNumber(hiddenCount)} more` : '',
@@ -290,11 +327,18 @@ function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
 
 function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
   return vietnamOverviewRealtimeMetricDotLegend
-    .map((item) => ({
-      count: points.filter((point) => point.kind === item.key).length,
-      key: item.key,
-      label: item.label,
-    }))
+    .map((item) => {
+      const matchingPoints = points
+        .filter((point) => point.kind === item.key)
+        .sort((left, right) => eventTimeMs(right.occurredAt) - eventTimeMs(left.occurredAt));
+
+      return {
+        count: matchingPoints.length,
+        key: item.key,
+        label: item.label,
+        latestPoint: matchingPoints[0] ?? null,
+      };
+    })
     .filter((item) => item.count > 0);
 }
 
@@ -338,6 +382,24 @@ function formatDateTime(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(date);
+}
+
+function eventTimeMs(value: string) {
+  const time = new Date(value).getTime();
+
+  return Number.isFinite(time) ? time : 0;
+}
+
+function formatRegionCode(value: string) {
+  return value.trim().toUpperCase() || 'VN';
+}
+
+function formatSourceLabel(value: string) {
+  return value
+    .split(/[_\-\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ') || 'Stored Signal';
 }
 
 function metricLabel(value: VietnamOverviewMetricDotKey) {
