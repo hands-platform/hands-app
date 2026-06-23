@@ -38,6 +38,9 @@ export type AdminProviderWalletLedgerType =
   | 'PAYOUT_PAID'
   | 'REFUND_REVERSAL'
   | 'ADMIN_ADJUSTMENT';
+export type AdminReferralAudience = 'CUSTOMER' | 'PARTNER';
+export type AdminReferralRewardMode = 'COMMISSION_PERCENT' | 'FIXED_AMOUNT';
+export type AdminReferralRewardStatus = 'PENDING' | 'AVAILABLE' | 'HELD' | 'REVERSED' | 'CANCELLED';
 
 export type AdminUser = {
   id: string;
@@ -74,6 +77,119 @@ export type AdminUser = {
       response?: unknown;
     }>;
   }>;
+};
+
+export type AdminReferralPolicy = {
+  audience: AdminReferralAudience;
+  commissionPercentBps?: number | null;
+  currency: string;
+  enabled: boolean;
+  fixedRewardAmount?: number | null;
+  holdPeriodDays: number;
+  maxRewardedReferrals?: number | null;
+  maxRewardsPerReferred?: number | null;
+  notes?: string | null;
+  perRewardCapAmount?: number | null;
+  policyId?: string | null;
+  rewardMode: AdminReferralRewardMode;
+  source: 'stored-policy' | 'default-disabled';
+  totalRewardCapAmount?: number | null;
+  updatedAt?: string | null;
+};
+
+export type AdminReferralPolicies = {
+  customer: AdminReferralPolicy;
+  partner: AdminReferralPolicy;
+};
+
+export type AdminReferralUserSummary = {
+  id: string;
+  phone?: string | null;
+  email?: string | null;
+  fullName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AdminReferralCode = {
+  id: string;
+  code: string;
+  active: boolean;
+  createdAt: string;
+};
+
+export type AdminReferralReward = {
+  id: string;
+  amount: number;
+  availableAt?: string | null;
+  createdAt: string;
+  currency: string;
+  qualifyingBookingId?: string | null;
+  status: AdminReferralRewardStatus;
+  walletLedgerReference?: string | null;
+};
+
+export type AdminReferralTotals = {
+  availableRewardAmount: number;
+  availableRewardCount: number;
+  cancelledRewardAmount: number;
+  cancelledRewardCount: number;
+  heldRewardAmount: number;
+  heldRewardCount: number;
+  pendingRewardAmount: number;
+  pendingRewardCount: number;
+  referralCount: number;
+  reversedRewardAmount: number;
+  reversedRewardCount: number;
+  rewardCount: number;
+  totalRewardAmount: number;
+};
+
+export type AdminCustomerReferralParent = {
+  referrer: {
+    id: string;
+    user?: AdminReferralUserSummary | null;
+  };
+  referralCode?: AdminReferralCode | null;
+  referrals: Array<{
+    id: string;
+    createdAt: string;
+    fraudReviewStatus: string;
+    installSource?: string | null;
+    platform?: string | null;
+    referredCustomer?: { id: string; user?: AdminReferralUserSummary | null } | null;
+    rewards: AdminReferralReward[];
+    status: string;
+  }>;
+  totals: AdminReferralTotals;
+};
+
+export type AdminPartnerReferralParent = {
+  referrer: {
+    id: string;
+    displayName?: string | null;
+    level?: string | null;
+    status?: string | null;
+    user?: AdminReferralUserSummary | null;
+  };
+  referralCode?: AdminReferralCode | null;
+  referrals: Array<{
+    id: string;
+    createdAt: string;
+    fraudReviewStatus: string;
+    installSource?: string | null;
+    platform?: string | null;
+    referredPartner?: {
+      id: string;
+      displayName?: string | null;
+      level?: string | null;
+      status?: string | null;
+      user?: AdminReferralUserSummary | null;
+    } | null;
+    rewards: AdminReferralReward[];
+    status: string;
+  }>;
+  totals: AdminReferralTotals;
 };
 
 export type AdminAppSession = {

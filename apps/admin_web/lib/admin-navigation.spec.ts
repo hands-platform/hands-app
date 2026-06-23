@@ -56,16 +56,23 @@ describe('admin navigation', () => {
     expect(adminNavSections.map((section) => section.label)).not.toContain('Users');
     expect(customerSection?.links.map((link) => link.href)).toEqual([
       '/customers',
+      '/referrals/customers',
     ]);
     expect(partnerSection?.links.map((link) => link.href)).toEqual([
       '/partners',
       '/partners?review=unapproved',
       '/partners?review=unsettled',
+      '/referrals/partners',
     ]);
     expect(partnerSection?.links.map((link) => link.label)).toEqual([
       'Partners',
       'Unapproved Partners',
       'Unsettled Partners',
+      'Partner Referrals',
+    ]);
+    expect(customerSection?.links.map((link) => link.label)).toEqual([
+      'Customers',
+      'Customer Referrals',
     ]);
     expect(partnerSection?.links[1]?.description).toContain('registration, KYC, required documents');
     expect(partnerSection?.links[1]?.description).not.toContain('bank, tax');

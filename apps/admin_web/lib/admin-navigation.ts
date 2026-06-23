@@ -80,6 +80,11 @@ export const adminNavSections: AdminNavSection[] = [
         label: 'Customers',
         description: 'Customer account list with booking and payment facts.',
       },
+      {
+        href: '/referrals/customers',
+        label: 'Customer Referrals',
+        description: 'Parent customer accounts with referred customer sign-ups and wallet reward exposure.',
+      },
     ],
   },
   {
@@ -101,6 +106,11 @@ export const adminNavSections: AdminNavSection[] = [
         href: '/partners?review=unsettled',
         label: 'Unsettled Partners',
         description: 'Partners whose wallet balance is negative from unpaid HANDS commission.',
+      },
+      {
+        href: '/referrals/partners',
+        label: 'Partner Referrals',
+        description: 'Parent Partner accounts with referred Partner onboarding and fixed reward exposure.',
       },
     ],
   },
