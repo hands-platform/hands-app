@@ -3618,6 +3618,52 @@ a.action-button-card:hover {
   line-height: 16px;
 }
 
+.vietnam-map-signal-filter {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--admin-muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  line-height: 16px;
+  padding: 5px 8px;
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+}
+
+.vietnam-map-signal-filter:hover,
+.vietnam-map-signal-filter:focus-visible {
+  background: rgb(var(--admin-primary-channel) / 0.08);
+  border-color: rgb(var(--admin-primary-channel) / 0.16);
+  color: var(--admin-text);
+  outline: 0;
+}
+
+.vietnam-map-signal-filter:not(.is-active) {
+  opacity: 0.54;
+}
+
+.vietnam-map-signal-filter span {
+  color: inherit;
+}
+
+.vietnam-map-signal-filter.is-active {
+  background: rgb(var(--admin-primary-channel) / 0.1);
+  border-color: rgb(var(--admin-primary-channel) / 0.18);
+  color: var(--admin-text);
+}
+
+.vietnam-map-signal-filter strong {
+  color: inherit;
+  font-weight: 800;
+}
+
 .vietnam-map-legend-dot {
   border-radius: 999px;
   display: inline-flex;

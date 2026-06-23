@@ -17,6 +17,7 @@ import {
   normalizeVietnamOverviewRange,
   type VietnamOverviewGeoapifyTileGrid,
   type VietnamOverviewMapPoint,
+  type VietnamOverviewMetricDotKey,
   vietnamOverviewGeoapifyTileGrid,
   vietnamOverviewRealtimeMetricDotLegend,
   vietnamOverviewRealtimeMapPoints,
@@ -60,13 +61,16 @@ export default async function VietnamOverviewPage({
 }) {
   const params = await searchParams;
   const range = normalizeVietnamOverviewRange(params?.range);
+  const activeSignalKeys = normalizeVietnamOverviewSignalFilters(params?.signals);
+  const activeSignalSet = new Set<VietnamOverviewMetricDotKey>(activeSignalKeys);
   const overview = await adminGet<AdminVietnamOverview>(
     `/admin/vietnam-overview?range=${range}`,
     emptyVietnamOverview,
   );
   const regions = overview.regions;
-  const mapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
-  const mapPointCounts = vietnamOverviewRealtimePointCounts(mapPoints);
+  const allMapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
+  const mapPoints = allMapPoints.filter((point) => activeSignalSet.has(point.kind));
+  const allMapPointCounts = vietnamOverviewRealtimePointCounts(allMapPoints);
   const mapPointClusters = clusterVietnamOverviewMapPoints(mapPoints);
   const geoapifyTileGrid = vietnamOverviewGeoapifyTileGrid();
   const hasGeoapifyTileKey = Boolean(process.env.GEOAPIFY_API_KEY?.trim());
@@ -148,15 +152,26 @@ export default async function VietnamOverviewPage({
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <div className="vietnam-map-context-chip">
               <MapPinned size={16} aria-hidden="true" />
-              Realtime dots
+              Realtime dots {formatNumber(mapPoints.length)}/{formatNumber(allMapPoints.length)}
             </div>
             <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
-              {vietnamOverviewRealtimeMetricDotLegend.map((item) => (
-                <span key={item.key}>
-                  <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
-                  {item.label} {formatNumber(mapPointCounts[item.key])}
-                </span>
-              ))}
+              {vietnamOverviewRealtimeMetricDotLegend.map((item) => {
+                const isActive = activeSignalSet.has(item.key);
+
+                return (
+                  <a
+                    key={item.key}
+                    aria-pressed={isActive}
+                    className={`vietnam-map-signal-filter${isActive ? ' is-active' : ''}`}
+                    href={vietnamOverviewSignalHref(range, item.key, activeSignalKeys)}
+                    role="button"
+                  >
+                    <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
+                    <span>{item.label}</span>
+                    <strong>{formatNumber(allMapPointCounts[item.key])}</strong>
+                  </a>
+                );
+              })}
             </div>
             <div
               className={`vietnam-map-geo-layer ${
@@ -178,8 +193,8 @@ export default async function VietnamOverviewPage({
               {mapPoints.length === 0 ? (
                 <div className="vietnam-map-tile-empty">
                   <ShieldCheck size={22} aria-hidden="true" />
-                  <strong>No realtime operating dots loaded</strong>
-                  <p className="muted">Check active sessions, Partner heartbeats, or active booking records.</p>
+                  <strong>No realtime dots for selected filters</strong>
+                  <p className="muted">Use the signal filters to show active sessions, Partner heartbeats, or bookings.</p>
                 </div>
               ) : null}
             </div>
@@ -368,6 +383,48 @@ type VietnamOverviewMapPointCluster = {
 
 const vietnamMapClusterBucketPercent = 0.35;
 const vietnamMapClusterPreviewLimit = 3;
+const vietnamOverviewAllSignalKeys = vietnamOverviewRealtimeMetricDotLegend.map((item) => item.key);
+
+function normalizeVietnamOverviewSignalFilters(
+  value: string | string[] | undefined,
+): VietnamOverviewMetricDotKey[] {
+  const rawValue = Array.isArray(value) ? value.join(',') : value;
+  const requestedKeys = new Set(
+    rawValue
+      ?.split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+  const activeKeys = vietnamOverviewAllSignalKeys.filter((key) => requestedKeys.has(key));
+
+  return activeKeys.length > 0 ? activeKeys : vietnamOverviewAllSignalKeys;
+}
+
+function vietnamOverviewSignalHref(
+  range: ReturnType<typeof normalizeVietnamOverviewRange>,
+  signalKey: VietnamOverviewMetricDotKey,
+  activeSignalKeys: readonly VietnamOverviewMetricDotKey[],
+) {
+  const nextSignalKeys = new Set(activeSignalKeys);
+
+  if (nextSignalKeys.has(signalKey)) {
+    nextSignalKeys.delete(signalKey);
+  } else {
+    nextSignalKeys.add(signalKey);
+  }
+
+  const normalizedNextSignalKeys = vietnamOverviewAllSignalKeys.filter((key) => nextSignalKeys.has(key));
+  const params = new URLSearchParams({ range });
+
+  if (
+    normalizedNextSignalKeys.length > 0 &&
+    normalizedNextSignalKeys.length < vietnamOverviewAllSignalKeys.length
+  ) {
+    params.set('signals', normalizedNextSignalKeys.join(','));
+  }
+
+  return `/vietnam-overview?${params.toString()}`;
+}
 
 function clusterVietnamOverviewMapPoints(
   points: readonly VietnamOverviewMapPoint[],
