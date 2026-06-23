@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ReferralAudience } from '@prisma/client';
 import { ReferralsService } from './referrals.service';
 
@@ -87,6 +87,138 @@ describe('ReferralsService', () => {
     );
   });
 
+  it('claims a customer referral code once for the signed-in customer profile', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+      },
+      referralAttribution: {
+        create: jest.fn().mockResolvedValue({
+          id: 'attribution-1',
+          audience: ReferralAudience.CUSTOMER,
+          referralCodeId: 'code-1',
+          referrerCustomerProfileId: 'referrer-customer-1',
+          referredCustomerProfileId: 'referred-customer-1',
+          installSource: 'referral-link',
+          platform: 'android',
+          status: 'REGISTERED',
+          fraudReviewStatus: 'CLEAR',
+          createdAt,
+          updatedAt: createdAt,
+          referralCode: { id: 'code-1', code: 'HCUSTOMER' },
+        }),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.CUSTOMER,
+          code: 'HCUSTOMER',
+          ownerCustomerProfileId: 'referrer-customer-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.claimCustomerReferralCode('user-1', {
+        code: ' hcustomer ',
+        installSource: ' referral-link ',
+        platform: ' android ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'attribution-1',
+      audience: ReferralAudience.CUSTOMER,
+      referralCode: { code: 'HCUSTOMER' },
+      referrerCustomerProfileId: 'referrer-customer-1',
+      referredCustomerProfileId: 'referred-customer-1',
+    });
+    expect(prisma.referralCode.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          active: true,
+          audience: ReferralAudience.CUSTOMER,
+          code: 'HCUSTOMER',
+        }),
+      }),
+    );
+    expect(prisma.referralAttribution.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          audience: ReferralAudience.CUSTOMER,
+          installSource: 'referral-link',
+          platform: 'android',
+          referredCustomerProfileId: 'referred-customer-1',
+          referrerCustomerProfileId: 'referrer-customer-1',
+        }),
+      }),
+    );
+  });
+
+  it('returns the existing customer referral attribution without creating a duplicate', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'referred-customer-1' }),
+      },
+      referralAttribution: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'attribution-1',
+          audience: ReferralAudience.CUSTOMER,
+          referralCodeId: 'code-1',
+          referrerCustomerProfileId: 'referrer-customer-1',
+          referredCustomerProfileId: 'referred-customer-1',
+          status: 'REGISTERED',
+          fraudReviewStatus: 'CLEAR',
+          createdAt,
+          updatedAt: createdAt,
+          referralCode: { id: 'code-1', code: 'HCUSTOMER' },
+        }),
+      },
+      referralCode: {
+        findFirst: jest.fn(),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.claimCustomerReferralCode('user-1', { code: 'HCUSTOMER' })).resolves.toMatchObject({
+      id: 'attribution-1',
+      referralCode: { code: 'HCUSTOMER' },
+    });
+    expect(prisma.referralCode.findFirst).not.toHaveBeenCalled();
+    expect(prisma.referralAttribution.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects customer self-referral claims', async () => {
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      },
+      referralAttribution: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.CUSTOMER,
+          code: 'HCUSTOMER',
+          ownerCustomerProfileId: 'customer-profile-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.claimCustomerReferralCode('user-1', { code: 'HCUSTOMER' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    expect(prisma.referralAttribution.create).not.toHaveBeenCalled();
+  });
+
   it('creates a Partner referral code with Partner owner linkage', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
@@ -116,6 +248,67 @@ describe('ReferralsService', () => {
         data: expect.objectContaining({
           audience: ReferralAudience.PARTNER,
           ownerProviderProfileId: 'provider-profile-1',
+        }),
+      }),
+    );
+  });
+
+  it('claims a Partner referral code once for the signed-in Partner profile', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'referred-partner-1' }),
+      },
+      referralAttribution: {
+        create: jest.fn().mockResolvedValue({
+          id: 'attribution-1',
+          audience: ReferralAudience.PARTNER,
+          referralCodeId: 'code-1',
+          referrerProviderProfileId: 'referrer-partner-1',
+          referredProviderProfileId: 'referred-partner-1',
+          installSource: 'referral-link',
+          platform: 'ios',
+          status: 'REGISTERED',
+          fraudReviewStatus: 'CLEAR',
+          createdAt,
+          updatedAt: createdAt,
+          referralCode: { id: 'code-1', code: 'HPARTNER' },
+        }),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.PARTNER,
+          code: 'HPARTNER',
+          ownerProviderProfileId: 'referrer-partner-1',
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(
+      service.claimPartnerReferralCode('user-1', {
+        code: ' hpartner ',
+        installSource: ' referral-link ',
+        platform: ' ios ',
+      }),
+    ).resolves.toMatchObject({
+      id: 'attribution-1',
+      audience: ReferralAudience.PARTNER,
+      referralCode: { code: 'HPARTNER' },
+      referrerProviderProfileId: 'referrer-partner-1',
+      referredProviderProfileId: 'referred-partner-1',
+    });
+    expect(prisma.referralAttribution.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          audience: ReferralAudience.PARTNER,
+          installSource: 'referral-link',
+          platform: 'ios',
+          referredProviderProfileId: 'referred-partner-1',
+          referrerProviderProfileId: 'referrer-partner-1',
         }),
       }),
     );

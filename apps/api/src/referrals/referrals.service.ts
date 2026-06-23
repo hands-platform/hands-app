@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ReferralAudience } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -13,6 +13,45 @@ const referralCodeSelect = {
 } satisfies Prisma.ReferralCodeSelect;
 
 type ReferralCodeRecord = Prisma.ReferralCodeGetPayload<{ select: typeof referralCodeSelect }>;
+
+const referralClaimCodeSelect = {
+  id: true,
+  active: true,
+  audience: true,
+  code: true,
+  ownerCustomerProfileId: true,
+  ownerProviderProfileId: true,
+} satisfies Prisma.ReferralCodeSelect;
+
+const referralAttributionSelect = {
+  id: true,
+  audience: true,
+  referralCodeId: true,
+  referrerCustomerProfileId: true,
+  referrerProviderProfileId: true,
+  referredCustomerProfileId: true,
+  referredProviderProfileId: true,
+  installSource: true,
+  platform: true,
+  status: true,
+  fraudReviewStatus: true,
+  createdAt: true,
+  updatedAt: true,
+  referralCode: {
+    select: {
+      id: true,
+      code: true,
+    },
+  },
+} satisfies Prisma.ReferralAttributionSelect;
+
+type ReferralAttributionRecord = Prisma.ReferralAttributionGetPayload<{ select: typeof referralAttributionSelect }>;
+
+type ClaimReferralCodeInput = {
+  code: string;
+  installSource?: string;
+  platform?: string;
+};
 
 @Injectable()
 export class ReferralsService {
@@ -50,6 +89,50 @@ export class ReferralsService {
     return referralCodeView(code);
   }
 
+  async claimCustomerReferralCode(userId: string, input: ClaimReferralCodeInput) {
+    const profile = await this.customerProfileForUser(userId);
+    const existing = await this.prisma.referralAttribution.findFirst({
+      where: {
+        audience: ReferralAudience.CUSTOMER,
+        referredCustomerProfileId: profile.id,
+      },
+      select: referralAttributionSelect,
+    });
+    if (existing) {
+      return referralAttributionView(existing);
+    }
+
+    const claim = normalizeReferralClaim(input);
+    const code = await this.prisma.referralCode.findFirst({
+      where: {
+        active: true,
+        audience: ReferralAudience.CUSTOMER,
+        code: claim.code,
+      },
+      select: referralClaimCodeSelect,
+    });
+    if (!code?.ownerCustomerProfileId) {
+      throw new BadRequestException('Referral code was not found or is inactive');
+    }
+    if (code.ownerCustomerProfileId === profile.id) {
+      throw new BadRequestException('Customers cannot claim their own referral code');
+    }
+
+    const attribution = await this.prisma.referralAttribution.create({
+      data: {
+        audience: ReferralAudience.CUSTOMER,
+        referralCodeId: code.id,
+        referrerCustomerProfileId: code.ownerCustomerProfileId,
+        referredCustomerProfileId: profile.id,
+        installSource: claim.installSource,
+        platform: claim.platform,
+      },
+      select: referralAttributionSelect,
+    });
+
+    return referralAttributionView(attribution);
+  }
+
   async getPartnerReferralCode(userId: string) {
     const profile = await this.partnerProfileForUser(userId);
     const code = await this.prisma.referralCode.findFirst({
@@ -80,6 +163,50 @@ export class ReferralsService {
     });
 
     return referralCodeView(code);
+  }
+
+  async claimPartnerReferralCode(userId: string, input: ClaimReferralCodeInput) {
+    const profile = await this.partnerProfileForUser(userId);
+    const existing = await this.prisma.referralAttribution.findFirst({
+      where: {
+        audience: ReferralAudience.PARTNER,
+        referredProviderProfileId: profile.id,
+      },
+      select: referralAttributionSelect,
+    });
+    if (existing) {
+      return referralAttributionView(existing);
+    }
+
+    const claim = normalizeReferralClaim(input);
+    const code = await this.prisma.referralCode.findFirst({
+      where: {
+        active: true,
+        audience: ReferralAudience.PARTNER,
+        code: claim.code,
+      },
+      select: referralClaimCodeSelect,
+    });
+    if (!code?.ownerProviderProfileId) {
+      throw new BadRequestException('Referral code was not found or is inactive');
+    }
+    if (code.ownerProviderProfileId === profile.id) {
+      throw new BadRequestException('Partners cannot claim their own referral code');
+    }
+
+    const attribution = await this.prisma.referralAttribution.create({
+      data: {
+        audience: ReferralAudience.PARTNER,
+        referralCodeId: code.id,
+        referrerProviderProfileId: code.ownerProviderProfileId,
+        referredProviderProfileId: profile.id,
+        installSource: claim.installSource,
+        platform: claim.platform,
+      },
+      select: referralAttributionSelect,
+    });
+
+    return referralAttributionView(attribution);
   }
 
   private async customerProfileForUser(userId: string) {
@@ -114,6 +241,34 @@ function referralCodeView(code: ReferralCodeRecord) {
     ...code,
     sharePath: `/r/${audienceSlug}/${encodeURIComponent(code.code)}`,
   };
+}
+
+function referralAttributionView(attribution: ReferralAttributionRecord) {
+  return attribution;
+}
+
+function normalizeReferralClaim(input: ClaimReferralCodeInput) {
+  const code = normalizeRequiredText(input.code).toUpperCase();
+
+  return {
+    code,
+    installSource: normalizeOptionalText(input.installSource),
+    platform: normalizeOptionalText(input.platform),
+  };
+}
+
+function normalizeRequiredText(value: string) {
+  const normalized = normalizeOptionalText(value);
+  if (!normalized) {
+    throw new BadRequestException('Referral code is required');
+  }
+
+  return normalized;
+}
+
+function normalizeOptionalText(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
 }
 
 function referralCodeForOwner(audience: ReferralAudience, ownerProfileId: string) {

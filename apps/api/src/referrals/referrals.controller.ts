@@ -1,10 +1,11 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { ClaimReferralCodeDto } from './referrals.dto';
 import { ReferralsService } from './referrals.service';
 
 @Controller()
@@ -25,6 +26,13 @@ export class ReferralsController {
     return this.referrals.issueCustomerReferralCode(user.id);
   }
 
+  @Post('customer/referrals/claim')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  claimCustomerReferralCode(@CurrentUser() user: AuthenticatedUser, @Body() body: ClaimReferralCodeDto) {
+    return this.referrals.claimCustomerReferralCode(user.id, body);
+  }
+
   @Get(['partner/referral-code', 'provider/referral-code'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
@@ -37,5 +45,12 @@ export class ReferralsController {
   @Roles(Role.PROVIDER)
   issuePartnerReferralCode(@CurrentUser() user: AuthenticatedUser) {
     return this.referrals.issuePartnerReferralCode(user.id);
+  }
+
+  @Post(['partner/referrals/claim', 'provider/referrals/claim'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  claimPartnerReferralCode(@CurrentUser() user: AuthenticatedUser, @Body() body: ClaimReferralCodeDto) {
+    return this.referrals.claimPartnerReferralCode(user.id, body);
   }
 }

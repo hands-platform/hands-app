@@ -8,6 +8,8 @@ import type { ReferralsService } from './referrals.service';
 
 describe('ReferralsController', () => {
   const referrals = {
+    claimCustomerReferralCode: jest.fn(),
+    claimPartnerReferralCode: jest.fn(),
     getCustomerReferralCode: jest.fn(),
     getPartnerReferralCode: jest.fn(),
     issueCustomerReferralCode: jest.fn(),
@@ -44,6 +46,19 @@ describe('ReferralsController', () => {
     expect(referrals.issueCustomerReferralCode).toHaveBeenCalledWith('user-1');
   });
 
+  it('claims customer referral attribution through an explicit POST action', async () => {
+    referrals.claimCustomerReferralCode.mockResolvedValue({ id: 'attribution-1' });
+    const body = { code: 'HCUSTOMER', platform: 'android', installSource: 'referral-link' } as const;
+
+    await expect(controller.claimCustomerReferralCode(user, body)).resolves.toEqual({ id: 'attribution-1' });
+
+    expect(routeMetadata('claimCustomerReferralCode')).toEqual({
+      method: RequestMethod.POST,
+      path: 'customer/referrals/claim',
+    });
+    expect(referrals.claimCustomerReferralCode).toHaveBeenCalledWith('user-1', body);
+  });
+
   it('exposes existing Partner referral code under partner and provider aliases', async () => {
     referrals.getPartnerReferralCode.mockResolvedValue({ code: 'HPARTNER' });
 
@@ -66,6 +81,19 @@ describe('ReferralsController', () => {
       path: ['partner/referral-code', 'provider/referral-code'],
     });
     expect(referrals.issuePartnerReferralCode).toHaveBeenCalledWith('user-1');
+  });
+
+  it('claims Partner referral attribution through partner and provider aliases', async () => {
+    referrals.claimPartnerReferralCode.mockResolvedValue({ id: 'attribution-1' });
+    const body = { code: 'HPARTNER', platform: 'ios', installSource: 'referral-link' } as const;
+
+    await expect(controller.claimPartnerReferralCode(user, body)).resolves.toEqual({ id: 'attribution-1' });
+
+    expect(routeMetadata('claimPartnerReferralCode')).toEqual({
+      method: RequestMethod.POST,
+      path: ['partner/referrals/claim', 'provider/referrals/claim'],
+    });
+    expect(referrals.claimPartnerReferralCode).toHaveBeenCalledWith('user-1', body);
   });
 });
 
