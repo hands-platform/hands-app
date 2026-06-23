@@ -7,6 +7,9 @@ import {
   ParticipantStatus,
   ProviderStatus,
   ProviderWalletLedgerType,
+  ReferralAudience,
+  ReferralRewardMode,
+  ReferralRewardStatus,
   Role,
 } from '@prisma/client';
 import { ADMIN_BOOKING_DETAIL_CHAT_MESSAGE_LIMIT } from './admin-booking-detail-selects';
@@ -224,6 +227,109 @@ describe('AdminService query orchestration', () => {
             }),
           }),
         }),
+      }),
+    );
+  });
+
+  it('returns disabled referral defaults when no admin policy exists yet', async () => {
+    const prisma = {
+      referralPolicy: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listReferralPolicies()).resolves.toMatchObject({
+      customer: {
+        audience: ReferralAudience.CUSTOMER,
+        enabled: false,
+        rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        source: 'default-disabled',
+      },
+      partner: {
+        audience: ReferralAudience.PARTNER,
+        enabled: false,
+        rewardMode: ReferralRewardMode.FIXED_AMOUNT,
+        source: 'default-disabled',
+      },
+    });
+    expect(prisma.referralPolicy.findMany).toHaveBeenCalledWith({
+      orderBy: { audience: 'asc' },
+    });
+  });
+
+  it('lists only customer referral parents and summarizes reward exposure', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'parent-customer',
+            user: { id: 'user-parent', phone: '+84000000001', fullName: 'Parent Customer' },
+            referralCodes: [{ id: 'code-1', code: 'HANDSCUST', active: true, createdAt }],
+            referralsMade: [
+              {
+                id: 'attribution-1',
+                status: 'QUALIFIED',
+                fraudReviewStatus: 'CLEAR',
+                installSource: 'referral-link',
+                platform: 'android',
+                createdAt,
+                referredCustomerProfile: {
+                  id: 'referred-customer',
+                  user: { id: 'user-referred', phone: '+84000000002', fullName: 'Referred Customer' },
+                },
+                rewards: [
+                  {
+                    id: 'reward-available',
+                    amount: 25_000,
+                    currency: 'VND',
+                    status: ReferralRewardStatus.AVAILABLE,
+                    qualifyingBookingId: 'booking-1',
+                    walletLedgerReference: null,
+                    availableAt: createdAt,
+                    createdAt,
+                  },
+                  {
+                    id: 'reward-pending',
+                    amount: 10_000,
+                    currency: 'VND',
+                    status: ReferralRewardStatus.PENDING,
+                    qualifyingBookingId: 'booking-2',
+                    walletLedgerReference: null,
+                    availableAt: null,
+                    createdAt,
+                  },
+                ],
+              },
+            ],
+          },
+        ]),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.listCustomerReferralParents()).resolves.toEqual([
+      expect.objectContaining({
+        referrer: expect.objectContaining({ id: 'parent-customer' }),
+        referralCode: expect.objectContaining({ code: 'HANDSCUST' }),
+        referrals: [
+          expect.objectContaining({
+            referredCustomer: expect.objectContaining({ id: 'referred-customer' }),
+          }),
+        ],
+        totals: expect.objectContaining({
+          availableRewardAmount: 25_000,
+          pendingRewardAmount: 10_000,
+          referralCount: 1,
+          rewardCount: 2,
+          totalRewardAmount: 35_000,
+        }),
+      }),
+    ]);
+    expect(prisma.customerProfile.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
       }),
     );
   });

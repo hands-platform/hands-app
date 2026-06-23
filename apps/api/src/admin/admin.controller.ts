@@ -79,6 +79,21 @@ export class AdminController {
     return this.admin.getUsageOverview(range);
   }
 
+  @Get('referrals/policies')
+  referralPolicies() {
+    return this.admin.listReferralPolicies();
+  }
+
+  @Get('referrals/customers')
+  customerReferralParents() {
+    return this.admin.listCustomerReferralParents();
+  }
+
+  @Get('referrals/partners')
+  partnerReferralParents() {
+    return this.admin.listPartnerReferralParents();
+  }
+
   @Get(['providers', 'partners'])
   providers() {
     return this.admin.listProviders();

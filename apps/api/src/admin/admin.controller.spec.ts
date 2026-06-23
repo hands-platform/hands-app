@@ -11,6 +11,9 @@ describe('AdminController notification and push actions', () => {
     listFileReviewProviders: jest.fn(),
     getUsageOverview: jest.fn(),
     getVietnamOverview: jest.fn(),
+    listCustomerReferralParents: jest.fn(),
+    listPartnerReferralParents: jest.fn(),
+    listReferralPolicies: jest.fn(),
     listOperationsHandoffProviders: jest.fn(),
     listOperationsPolicyProviders: jest.fn(),
     listPartnerControlProviders: jest.fn(),
@@ -104,6 +107,45 @@ describe('AdminController notification and push actions', () => {
       path: 'usage-overview',
     });
     expect(admin.getUsageOverview).toHaveBeenCalledWith('month');
+  });
+
+  it('exposes referral policy settings as a read-only GET endpoint', async () => {
+    admin.listReferralPolicies.mockResolvedValue({ customer: { enabled: false }, partner: { enabled: false } });
+
+    await expect(controller.referralPolicies()).resolves.toEqual({
+      customer: { enabled: false },
+      partner: { enabled: false },
+    });
+
+    expect(routeMetadata('referralPolicies')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/policies',
+    });
+    expect(admin.listReferralPolicies).toHaveBeenCalledWith();
+  });
+
+  it('exposes customer referral parent accounts without listing every customer', async () => {
+    admin.listCustomerReferralParents.mockResolvedValue([{ referrer: { id: 'customer-1' } }]);
+
+    await expect(controller.customerReferralParents()).resolves.toEqual([{ referrer: { id: 'customer-1' } }]);
+
+    expect(routeMetadata('customerReferralParents')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/customers',
+    });
+    expect(admin.listCustomerReferralParents).toHaveBeenCalledWith();
+  });
+
+  it('exposes partner referral parent accounts without listing every partner', async () => {
+    admin.listPartnerReferralParents.mockResolvedValue([{ referrer: { id: 'partner-1' } }]);
+
+    await expect(controller.partnerReferralParents()).resolves.toEqual([{ referrer: { id: 'partner-1' } }]);
+
+    expect(routeMetadata('partnerReferralParents')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/partners',
+    });
+    expect(admin.listPartnerReferralParents).toHaveBeenCalledWith();
   });
 
   it('exposes operations handoff providers as a lightweight GET list', async () => {

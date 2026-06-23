@@ -11,6 +11,9 @@ import {
   PayoutBatchStatus,
   PaymentStatus,
   Prisma,
+  ReferralAudience,
+  ReferralRewardMode,
+  ReferralRewardStatus,
   ProviderReportSeverity,
   ProviderReportSource,
   ProviderReportStatus,
@@ -150,6 +153,8 @@ const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_REFERRAL_PARENT_LIST_LIMIT = 100;
+const ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT = 50;
 const ADMIN_VIETNAM_OVERVIEW_LIST_LIMIT = 500;
 const ADMIN_USAGE_OVERVIEW_RANK_LIMIT = 10;
 const ADMIN_USAGE_OVERVIEW_REGION_LIMIT = 500;
@@ -203,7 +208,123 @@ const adminBookingMarketplaceProviderSelect = {
   },
 } satisfies Prisma.ProviderProfileSelect;
 
+const adminReferralRewardSelect = {
+  id: true,
+  amount: true,
+  currency: true,
+  status: true,
+  qualifyingBookingId: true,
+  walletLedgerReference: true,
+  availableAt: true,
+  createdAt: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+const adminReferralCodeSelect = {
+  id: true,
+  code: true,
+  active: true,
+  createdAt: true,
+} satisfies Prisma.ReferralCodeSelect;
+
+const adminCustomerReferralParentSelect = {
+  id: true,
+  user: { select: adminUserSummarySelect },
+  referralCodes: {
+    where: { audience: ReferralAudience.CUSTOMER },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: adminReferralCodeSelect,
+  },
+  referralsMade: {
+    where: { audience: ReferralAudience.CUSTOMER },
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT,
+    select: {
+      id: true,
+      status: true,
+      fraudReviewStatus: true,
+      installSource: true,
+      platform: true,
+      createdAt: true,
+      referredCustomerProfile: {
+        select: { id: true, user: { select: adminUserSummarySelect } },
+      },
+      rewards: {
+        orderBy: { createdAt: 'desc' },
+        select: adminReferralRewardSelect,
+      },
+    },
+  },
+} satisfies Prisma.CustomerProfileSelect;
+
+const adminPartnerReferralParentSelect = {
+  id: true,
+  displayName: true,
+  level: true,
+  status: true,
+  user: { select: adminUserSummarySelect },
+  referralCodes: {
+    where: { audience: ReferralAudience.PARTNER },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: adminReferralCodeSelect,
+  },
+  referralsMade: {
+    where: { audience: ReferralAudience.PARTNER },
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_REFERRAL_ATTRIBUTION_LIST_LIMIT,
+    select: {
+      id: true,
+      status: true,
+      fraudReviewStatus: true,
+      installSource: true,
+      platform: true,
+      createdAt: true,
+      referredProviderProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          level: true,
+          status: true,
+          user: { select: adminUserSummarySelect },
+        },
+      },
+      rewards: {
+        orderBy: { createdAt: 'desc' },
+        select: adminReferralRewardSelect,
+      },
+    },
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
 type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+
+type AdminReferralPolicyRecord = {
+  id: string;
+  audience: ReferralAudience;
+  enabled: boolean;
+  rewardMode: ReferralRewardMode;
+  commissionPercentBps: number | null;
+  fixedRewardAmount: number | null;
+  perRewardCapAmount: number | null;
+  totalRewardCapAmount: number | null;
+  maxRewardedReferrals: number | null;
+  maxRewardsPerReferred: number | null;
+  holdPeriodDays: number;
+  currency: string;
+  notes: string | null;
+  updatedAt: Date;
+};
+
+type AdminReferralRewardSummary = Prisma.ReferralRewardGetPayload<{ select: typeof adminReferralRewardSelect }>;
+
+type AdminCustomerReferralParent = Prisma.CustomerProfileGetPayload<{
+  select: typeof adminCustomerReferralParentSelect;
+}>;
+
+type AdminPartnerReferralParent = Prisma.ProviderProfileGetPayload<{
+  select: typeof adminPartnerReferralParentSelect;
+}>;
 
 type AdminProviderActivitySummary = {
   availablePayout: number;
@@ -465,6 +586,45 @@ export class AdminService {
       take: ADMIN_APP_SESSION_LIST_LIMIT,
       select: adminAppSessionListSelect,
     });
+  }
+
+  async listReferralPolicies() {
+    const policies = await this.prisma.referralPolicy.findMany({
+      orderBy: { audience: 'asc' },
+    });
+
+    return {
+      customer: adminReferralPolicyView(
+        ReferralAudience.CUSTOMER,
+        policies.find((policy) => policy.audience === ReferralAudience.CUSTOMER) ?? null,
+      ),
+      partner: adminReferralPolicyView(
+        ReferralAudience.PARTNER,
+        policies.find((policy) => policy.audience === ReferralAudience.PARTNER) ?? null,
+      ),
+    };
+  }
+
+  async listCustomerReferralParents() {
+    const rows = await this.prisma.customerProfile.findMany({
+      where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
+      orderBy: { id: 'desc' },
+      take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
+      select: adminCustomerReferralParentSelect,
+    });
+
+    return rows.map(adminCustomerReferralParentView);
+  }
+
+  async listPartnerReferralParents() {
+    const rows = await this.prisma.providerProfile.findMany({
+      where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
+      orderBy: { id: 'desc' },
+      take: ADMIN_REFERRAL_PARENT_LIST_LIMIT,
+      select: adminPartnerReferralParentSelect,
+    });
+
+    return rows.map(adminPartnerReferralParentView);
   }
 
   async getVietnamOverview(rangeInput?: string) {
@@ -3824,6 +3984,109 @@ function latestDate(...values: Array<Date | string | null | undefined>) {
   }
 
   return latest;
+}
+
+function adminReferralPolicyView(audience: ReferralAudience, policy: AdminReferralPolicyRecord | null) {
+  return {
+    policyId: policy?.id ?? null,
+    audience,
+    enabled: policy?.enabled ?? false,
+    rewardMode: policy?.rewardMode ?? defaultReferralRewardMode(audience),
+    commissionPercentBps: policy?.commissionPercentBps ?? null,
+    fixedRewardAmount: policy?.fixedRewardAmount ?? null,
+    perRewardCapAmount: policy?.perRewardCapAmount ?? null,
+    totalRewardCapAmount: policy?.totalRewardCapAmount ?? null,
+    maxRewardedReferrals: policy?.maxRewardedReferrals ?? null,
+    maxRewardsPerReferred: policy?.maxRewardsPerReferred ?? null,
+    holdPeriodDays: policy?.holdPeriodDays ?? 7,
+    currency: policy?.currency ?? 'VND',
+    notes: policy?.notes ?? null,
+    source: policy ? 'stored-policy' : 'default-disabled',
+    updatedAt: policy?.updatedAt ?? null,
+  };
+}
+
+function defaultReferralRewardMode(audience: ReferralAudience) {
+  return audience === ReferralAudience.CUSTOMER
+    ? ReferralRewardMode.COMMISSION_PERCENT
+    : ReferralRewardMode.FIXED_AMOUNT;
+}
+
+function adminCustomerReferralParentView(row: AdminCustomerReferralParent) {
+  const rewards = row.referralsMade.flatMap((referral) => referral.rewards);
+
+  return {
+    referrer: {
+      id: row.id,
+      user: row.user,
+    },
+    referralCode: row.referralCodes[0] ?? null,
+    totals: adminReferralRewardTotals(row.referralsMade.length, rewards),
+    referrals: row.referralsMade.map((referral) => ({
+      id: referral.id,
+      status: referral.status,
+      fraudReviewStatus: referral.fraudReviewStatus,
+      installSource: referral.installSource,
+      platform: referral.platform,
+      createdAt: referral.createdAt,
+      referredCustomer: referral.referredCustomerProfile,
+      rewards: referral.rewards,
+    })),
+  };
+}
+
+function adminPartnerReferralParentView(row: AdminPartnerReferralParent) {
+  const rewards = row.referralsMade.flatMap((referral) => referral.rewards);
+
+  return {
+    referrer: {
+      id: row.id,
+      displayName: row.displayName,
+      level: row.level,
+      status: row.status,
+      user: row.user,
+    },
+    referralCode: row.referralCodes[0] ?? null,
+    totals: adminReferralRewardTotals(row.referralsMade.length, rewards),
+    referrals: row.referralsMade.map((referral) => ({
+      id: referral.id,
+      status: referral.status,
+      fraudReviewStatus: referral.fraudReviewStatus,
+      installSource: referral.installSource,
+      platform: referral.platform,
+      createdAt: referral.createdAt,
+      referredPartner: referral.referredProviderProfile,
+      rewards: referral.rewards,
+    })),
+  };
+}
+
+function adminReferralRewardTotals(referralCount: number, rewards: AdminReferralRewardSummary[]) {
+  return {
+    referralCount,
+    rewardCount: rewards.length,
+    pendingRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.PENDING),
+    availableRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.AVAILABLE),
+    heldRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.HELD),
+    reversedRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.REVERSED),
+    cancelledRewardCount: countReferralRewardsByStatus(rewards, ReferralRewardStatus.CANCELLED),
+    pendingRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.PENDING),
+    availableRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.AVAILABLE),
+    heldRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.HELD),
+    reversedRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.REVERSED),
+    cancelledRewardAmount: sumReferralRewardsByStatus(rewards, ReferralRewardStatus.CANCELLED),
+    totalRewardAmount: rewards.reduce((total, reward) => total + reward.amount, 0),
+  };
+}
+
+function countReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], status: ReferralRewardStatus) {
+  return rewards.filter((reward) => reward.status === status).length;
+}
+
+function sumReferralRewardsByStatus(rewards: AdminReferralRewardSummary[], status: ReferralRewardStatus) {
+  return rewards
+    .filter((reward) => reward.status === status)
+    .reduce((total, reward) => total + reward.amount, 0);
 }
 
 function adminBookingMarketplacePin(booking: {
