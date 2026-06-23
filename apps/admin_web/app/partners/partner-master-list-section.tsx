@@ -285,7 +285,7 @@ function renderAccountCell(
   return (
     <div className="vuexy-partner-stack">
       <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
-        {row.accountBlocked ? 'Blocked' : 'Open'}
+        {row.accountBlocked ? 'Account blocked' : 'Account clear'}
       </span>
       <small>{row.accountNote}</small>
       {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}

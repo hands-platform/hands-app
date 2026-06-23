@@ -33,7 +33,7 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).not.toContain('verification review');
     expect(rendered).not.toContain('bank MISSING');
     expect(rendered).toContain('12 review(s)');
-    expect(rendered).toContain('Open');
+    expect(rendered).toContain('Account clear');
     expect(rendered).toContain('Showing 1 to 10 of 12 entries');
     expect(hrefsIn(section)).toEqual(
       expect.arrayContaining([
@@ -70,6 +70,26 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('0 visible row(s)');
     expect(rendered).toContain('No partner rows found');
     expect(rendered).toContain('Change the filters or clear search to view partner records.');
+  });
+
+  it('renders blocked account state with explicit operations copy', () => {
+    const row = buildRows()[0]!;
+    const section = PartnerMasterListSection({
+      filters: buildFilters(),
+      pagination: pagination([
+        {
+          ...row,
+          accountBlocked: true,
+          accountNote: 'Manual hold for safety review',
+        },
+      ]),
+    });
+
+    const rendered = normalizedText(section);
+
+    expect(rendered).toContain('Account blocked');
+    expect(rendered).toContain('Manual hold for safety review');
+    expect(rendered).not.toContain('Account clear');
   });
 
   it('renders approval-focused copy for unapproved partners', () => {
