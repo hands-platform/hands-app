@@ -48,7 +48,7 @@ export function PartnerOpsReadinessCell({
       {hasOpenControl ? (
         <AdminFormControlLink
           className="button button-secondary admin-inline-action admin-mt-8"
-          href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+          href={`/partners?review=reports&q=${encodeURIComponent(provider.id)}`}
         >
           <ExternalLink aria-hidden="true" size={14} />
           Open reports

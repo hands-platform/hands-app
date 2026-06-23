@@ -68,7 +68,7 @@ describe('PartnerOpsReadinessCell', () => {
     expect(rendered).toContain('Location:');
     expect(rendered).toContain('Fix blockers before relying on marketplace participation.');
     expect(rendered).toContain('Open reports');
-    expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partner-controls?q=partner-ready']));
+    expect(hrefsIn(cell)).toEqual(expect.arrayContaining(['/partners?review=reports&q=partner-ready']));
     expect(classNamesIn(cell)).toEqual(
       expect.arrayContaining([
         'pill pill-danger',

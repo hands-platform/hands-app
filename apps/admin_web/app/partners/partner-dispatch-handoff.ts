@@ -102,7 +102,7 @@ export function buildPartnerDispatchHandoff(
         title: 'Reports desk',
         value: reportReview.length.toString(),
         detail: 'Partners with reports or account controls that should be checked before dispatch.',
-        href: '/partner-controls',
+        href: '/partners?review=reports',
         tone: reportReview.length ? 'danger' : 'info',
       },
     ],

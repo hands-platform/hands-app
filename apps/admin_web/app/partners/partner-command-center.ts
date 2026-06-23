@@ -111,7 +111,7 @@ export function buildPartnerCommandCenter(
         accountBlocks > 0 || openControlItems > 0
           ? 'Account blocks, reports, or active account controls need operator attention.'
           : 'No filtered partner has open reports, active account controls, or device follow-up items.',
-      href: openControlItems > 0 ? '/partner-controls' : '/partners?review=security',
+      href: openControlItems > 0 ? '/partners?review=reports' : '/partners?review=security',
       metrics: [
         partnerCommandMetric('blocked', accountBlocks),
         partnerCommandMetric('open reports', openControlItems),
