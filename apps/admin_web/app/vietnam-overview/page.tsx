@@ -161,7 +161,11 @@ export default async function VietnamOverviewPage({
               className={`vietnam-map-geo-layer ${
                 hasGeoapifyTileKey ? 'is-geoapify-map' : 'is-static-map'
               }`}
-              style={{ aspectRatio: `${geoapifyTileGrid.viewAspectRatio}` }}
+              style={
+                {
+                  '--vietnam-map-view-aspect-ratio': `${geoapifyTileGrid.viewAspectRatio}`,
+                } as CSSProperties & Record<'--vietnam-map-view-aspect-ratio', string>
+              }
             >
               <VietnamOverviewMapZoom>
                 {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
@@ -343,6 +347,7 @@ function GeoapifyVietnamTileLayer({
           alt=""
           className="vietnam-geoapify-tile"
           decoding="async"
+          draggable={false}
           loading="lazy"
           src={tile.src}
         />
