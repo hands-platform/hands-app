@@ -495,14 +495,51 @@ export default async function VietnamOverviewPage({
                         </div>
                       </div>
                     </td>
-                    <td>{formatNumber(region.customerCount)}</td>
-                    <td>{formatNumber(region.activeCustomerCount)}</td>
-                    <td>{formatNumber(region.partnerCount)}</td>
-                    <td>{formatNumber(region.onlinePartnerCount)}</td>
-                    <td>{formatNumber(region.activeBookingCount)}</td>
-                    <td>{formatNumber(region.completedBookingCount)}</td>
-                    <td>{formatNumber(region.cancellationCount)}</td>
-                    <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell value={formatNumber(region.customerCount)} />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.activeCustomerCount)}
+                        tone="info"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.partnerCount)}
+                        tone="primary"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.onlinePartnerCount)}
+                        tone="success"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.activeBookingCount)}
+                        tone="warning"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.completedBookingCount)}
+                        tone="success"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatNumber(region.cancellationCount)}
+                        tone="danger"
+                      />
+                    </td>
+                    <td className="vietnam-region-numeric-cell">
+                      <VietnamRegionMetricCell
+                        value={formatCurrency(region.revenueAmount, region.currency)}
+                        tone="primary"
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -522,6 +559,22 @@ export default async function VietnamOverviewPage({
         </div>
       </section>
     </div>
+  );
+}
+
+type VietnamRegionMetricTone = 'neutral' | 'primary' | 'info' | 'success' | 'warning' | 'danger';
+
+function VietnamRegionMetricCell({
+  value,
+  tone = 'neutral',
+}: {
+  readonly value: string;
+  readonly tone?: VietnamRegionMetricTone;
+}) {
+  return (
+    <span className={`vietnam-region-number-cell is-${tone}`}>
+      <strong>{value}</strong>
+    </span>
   );
 }
 

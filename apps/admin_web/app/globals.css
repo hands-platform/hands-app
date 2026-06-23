@@ -4805,16 +4805,18 @@ a.action-button-card:hover {
 .vietnam-region-name > span {
   align-items: center;
   background: rgb(var(--admin-primary-channel) / 0.12);
-  border-radius: 999px;
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.18);
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgb(var(--admin-primary-channel) / 0.08);
   color: var(--admin-accent-strong);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 12px;
   font-weight: 700;
-  height: 32px;
+  height: 38px;
   justify-content: center;
-  min-width: 44px;
-  padding: 0 10px;
+  min-width: 38px;
+  padding: 0 8px;
 }
 
 .vietnam-region-name > div > strong {
@@ -4957,7 +4959,12 @@ a.action-button-card:hover {
   box-shadow: none;
   color: var(--admin-text);
   margin: 0;
-  min-width: 1100px;
+  min-width: 100%;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.vietnam-overview-table-wrap > .vietnam-overview-table {
   width: 100%;
 }
 
@@ -4965,8 +4972,23 @@ a.action-button-card:hover {
 .vietnam-overview-table td {
   background: var(--admin-surface-raised);
   border-bottom: 1px solid var(--admin-border);
-  padding: 10px 16px;
+  padding: 10px 12px;
   vertical-align: middle;
+}
+
+.vietnam-overview-table th:nth-child(1),
+.vietnam-overview-table td:nth-child(1) {
+  width: 24%;
+}
+
+.vietnam-overview-table th:nth-child(2),
+.vietnam-overview-table td:nth-child(2) {
+  width: 14%;
+}
+
+.vietnam-overview-table th:nth-child(10),
+.vietnam-overview-table td:nth-child(10) {
+  width: 12%;
 }
 
 .vietnam-overview-table th {
@@ -4994,11 +5016,66 @@ a.action-button-card:hover {
   background: rgb(var(--admin-primary-channel) / 0.1);
 }
 
+.vietnam-overview-table td.vietnam-region-numeric-cell {
+  text-align: right;
+}
+
 .vietnam-region-name {
   align-items: center;
   display: flex;
   gap: 10px;
   min-width: 0;
+}
+
+.vietnam-region-number-cell {
+  align-items: center;
+  background: rgb(var(--admin-main-channel) / 0.045);
+  border: 1px solid rgb(var(--admin-main-channel) / 0.08);
+  border-radius: 999px;
+  color: var(--admin-text);
+  display: inline-flex;
+  justify-content: flex-end;
+  min-height: 30px;
+  min-width: 50px;
+  padding: 5px 8px;
+}
+
+.vietnam-region-number-cell strong {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.vietnam-region-number-cell.is-primary {
+  background: rgb(var(--admin-primary-channel) / 0.1);
+  border-color: rgb(var(--admin-primary-channel) / 0.18);
+  color: var(--admin-accent-strong);
+}
+
+.vietnam-region-number-cell.is-info {
+  background: rgb(var(--admin-info-channel) / 0.1);
+  border-color: rgb(var(--admin-info-channel) / 0.18);
+  color: var(--admin-info-strong);
+}
+
+.vietnam-region-number-cell.is-success {
+  background: rgb(var(--admin-success-channel) / 0.1);
+  border-color: rgb(var(--admin-success-channel) / 0.18);
+  color: var(--admin-success-strong);
+}
+
+.vietnam-region-number-cell.is-warning {
+  background: rgb(var(--admin-warning-channel) / 0.13);
+  border-color: rgb(var(--admin-warning-channel) / 0.22);
+  color: var(--admin-warning-strong);
+}
+
+.vietnam-region-number-cell.is-danger {
+  background: rgb(var(--admin-danger-channel) / 0.1);
+  border-color: rgb(var(--admin-danger-channel) / 0.18);
+  color: var(--admin-danger-strong);
 }
 
 .vietnam-region-load {
