@@ -426,6 +426,124 @@ describe('AdminService query orchestration', () => {
     );
   });
 
+  it('loads one customer referral parent detail only when referral activity exists', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'parent-customer',
+          user: { id: 'user-parent', phone: '+84000000001', fullName: 'Parent Customer' },
+          referralCodes: [{ id: 'code-1', code: 'HANDSCUST', active: true, createdAt }],
+          referralsMade: [
+            {
+              id: 'attribution-1',
+              status: 'REGISTERED',
+              fraudReviewStatus: 'CLEAR',
+              installSource: 'referral-link',
+              platform: 'ios',
+              createdAt,
+              referredCustomerProfile: {
+                id: 'referred-customer',
+                user: { id: 'user-referred', phone: '+84000000002', fullName: 'Referred Customer' },
+              },
+              rewards: [],
+            },
+          ],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getCustomerReferralParent('parent-customer')).resolves.toEqual(
+      expect.objectContaining({
+        referrer: expect.objectContaining({ id: 'parent-customer' }),
+        referrals: [expect.objectContaining({ id: 'attribution-1' })],
+      }),
+    );
+    expect(prisma.customerProfile.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'parent-customer',
+          referralsMade: { some: { audience: ReferralAudience.CUSTOMER } },
+        },
+      }),
+    );
+  });
+
+  it('rejects customer referral parent detail when the customer has no referral activity', async () => {
+    const prisma = {
+      customerProfile: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getCustomerReferralParent('customer-without-referrals')).rejects.toThrow(
+      'Customer referral parent was not found',
+    );
+  });
+
+  it('loads one partner referral parent detail only when referral activity exists', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'parent-partner',
+          displayName: 'Parent Partner',
+          level: 2,
+          status: ProviderStatus.ONLINE_AVAILABLE,
+          user: { id: 'user-parent', phone: '+84000000003', fullName: 'Parent Partner' },
+          referralCodes: [{ id: 'code-1', code: 'HANDSPARTNER', active: true, createdAt }],
+          referralsMade: [
+            {
+              id: 'attribution-1',
+              status: 'QUALIFIED',
+              fraudReviewStatus: 'CLEAR',
+              installSource: 'referral-link',
+              platform: 'android',
+              createdAt,
+              referredProviderProfile: {
+                id: 'referred-partner',
+                displayName: 'Referred Partner',
+                level: 2,
+                status: ProviderStatus.ONLINE_AVAILABLE,
+                user: { id: 'user-referred', phone: '+84000000004', fullName: 'Referred Partner' },
+              },
+              rewards: [
+                {
+                  id: 'reward-available',
+                  amount: 100_000,
+                  currency: 'VND',
+                  status: ReferralRewardStatus.AVAILABLE,
+                  qualifyingBookingId: 'booking-1',
+                  walletLedgerReference: null,
+                  availableAt: createdAt,
+                  createdAt,
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(service.getPartnerReferralParent('parent-partner')).resolves.toEqual(
+      expect.objectContaining({
+        referrer: expect.objectContaining({ id: 'parent-partner' }),
+        totals: expect.objectContaining({ availableRewardAmount: 100_000 }),
+      }),
+    );
+    expect(prisma.providerProfile.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'parent-partner',
+          referralsMade: { some: { audience: ReferralAudience.PARTNER } },
+        },
+      }),
+    );
+  });
+
   it('lists booking notification evidence by booking id without loading the global notification board', async () => {
     const prisma = {
       notification: {

@@ -704,6 +704,21 @@ export class AdminService {
     return rows.map(adminCustomerReferralParentView);
   }
 
+  async getCustomerReferralParent(customerProfileId: string) {
+    const row = await this.prisma.customerProfile.findFirst({
+      where: {
+        id: customerProfileId,
+        referralsMade: { some: { audience: ReferralAudience.CUSTOMER } },
+      },
+      select: adminCustomerReferralParentSelect,
+    });
+    if (!row) {
+      throw new NotFoundException('Customer referral parent was not found');
+    }
+
+    return adminCustomerReferralParentView(row);
+  }
+
   async listPartnerReferralParents() {
     const rows = await this.prisma.providerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.PARTNER } } },
@@ -713,6 +728,21 @@ export class AdminService {
     });
 
     return rows.map(adminPartnerReferralParentView);
+  }
+
+  async getPartnerReferralParent(providerProfileId: string) {
+    const row = await this.prisma.providerProfile.findFirst({
+      where: {
+        id: providerProfileId,
+        referralsMade: { some: { audience: ReferralAudience.PARTNER } },
+      },
+      select: adminPartnerReferralParentSelect,
+    });
+    if (!row) {
+      throw new NotFoundException('Partner referral parent was not found');
+    }
+
+    return adminPartnerReferralParentView(row);
   }
 
   async getVietnamOverview(rangeInput?: string) {

@@ -12,6 +12,8 @@ describe('AdminController notification and push actions', () => {
     listFileReviewProviders: jest.fn(),
     getUsageOverview: jest.fn(),
     getVietnamOverview: jest.fn(),
+    getCustomerReferralParent: jest.fn(),
+    getPartnerReferralParent: jest.fn(),
     listCustomerReferralParents: jest.fn(),
     listPartnerReferralParents: jest.fn(),
     listReferralPolicies: jest.fn(),
@@ -160,6 +162,20 @@ describe('AdminController notification and push actions', () => {
     expect(admin.listCustomerReferralParents).toHaveBeenCalledWith();
   });
 
+  it('exposes a customer referral parent detail only for referral activity drilldown', async () => {
+    admin.getCustomerReferralParent.mockResolvedValue({ referrer: { id: 'customer-1' } });
+
+    await expect(controller.customerReferralParent('customer-1')).resolves.toEqual({
+      referrer: { id: 'customer-1' },
+    });
+
+    expect(routeMetadata('customerReferralParent')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/customers/:id',
+    });
+    expect(admin.getCustomerReferralParent).toHaveBeenCalledWith('customer-1');
+  });
+
   it('exposes partner referral parent accounts without listing every partner', async () => {
     admin.listPartnerReferralParents.mockResolvedValue([{ referrer: { id: 'partner-1' } }]);
 
@@ -170,6 +186,20 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/partners',
     });
     expect(admin.listPartnerReferralParents).toHaveBeenCalledWith();
+  });
+
+  it('exposes a partner referral parent detail only for referral activity drilldown', async () => {
+    admin.getPartnerReferralParent.mockResolvedValue({ referrer: { id: 'partner-1' } });
+
+    await expect(controller.partnerReferralParent('partner-1')).resolves.toEqual({
+      referrer: { id: 'partner-1' },
+    });
+
+    expect(routeMetadata('partnerReferralParent')).toEqual({
+      method: RequestMethod.GET,
+      path: 'referrals/partners/:id',
+    });
+    expect(admin.getPartnerReferralParent).toHaveBeenCalledWith('partner-1');
   });
 
   it('exposes operations handoff providers as a lightweight GET list', async () => {

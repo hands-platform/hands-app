@@ -99,9 +99,19 @@ export class AdminController {
     return this.admin.listCustomerReferralParents();
   }
 
+  @Get('referrals/customers/:id')
+  customerReferralParent(@Param('id') customerProfileId: string) {
+    return this.admin.getCustomerReferralParent(customerProfileId);
+  }
+
   @Get('referrals/partners')
   partnerReferralParents() {
     return this.admin.listPartnerReferralParents();
+  }
+
+  @Get('referrals/partners/:id')
+  partnerReferralParent(@Param('id') providerProfileId: string) {
+    return this.admin.getPartnerReferralParent(providerProfileId);
   }
 
   @Get(['providers', 'partners'])
