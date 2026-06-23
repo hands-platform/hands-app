@@ -696,10 +696,6 @@ export class AdminService {
         ),
       );
 
-      if (ADMIN_VIETNAM_ACTIVE_BOOKING_STATUSES.has(booking.status)) {
-        region.activeBookingCount += 1;
-      }
-
       if (booking.status === BookingStatus.COMPLETED) {
         region.completedBookingCount += 1;
       }
@@ -723,18 +719,31 @@ export class AdminService {
             : typeof booking.address === 'string'
               ? booking.address
               : null;
+      const activeBookingLatitude = booking.addressSnapshot?.latitude ?? booking.lat;
+      const activeBookingLongitude = booking.addressSnapshot?.longitude ?? booking.lng;
+      const region = ensureVietnamOverviewRegion(
+        regions,
+        vietnamRegionCodeFromValues(
+          [activeBookingAddressText],
+          {
+            latitude: activeBookingLatitude,
+            longitude: activeBookingLongitude,
+          },
+        ),
+      );
       const activeBookingPoint = vietnamOverviewEventPoint({
         id: `booking:${booking.id}:active`,
         kind: 'bookings',
         label: 'Active booking service address',
-        latitude: booking.addressSnapshot?.latitude ?? booking.lat,
-        longitude: booking.addressSnapshot?.longitude ?? booking.lng,
+        latitude: activeBookingLatitude,
+        longitude: activeBookingLongitude,
         occurredAt: latestDate(booking.updatedAt, booking.createdAt),
         source: 'booking-address-snapshot',
         addressText: activeBookingAddressText,
         bookingId: booking.id,
       });
       if (activeBookingPoint) {
+        region.activeBookingCount += 1;
         points.push(activeBookingPoint);
       }
     }

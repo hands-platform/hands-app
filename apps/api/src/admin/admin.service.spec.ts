@@ -357,6 +357,23 @@ describe('AdminService query orchestration', () => {
           .mockResolvedValueOnce([
             {
               id: 'booking-1',
+              status: BookingStatus.OPEN_MATCHING,
+              address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+              lat: 10.7769,
+              lng: 106.7009,
+              createdAt: now,
+              updatedAt: now,
+              closedAt: now,
+              addressSnapshot: {
+                address: null,
+                addressText: '85/9 Pham Viet Chanh, Ho Chi Minh City',
+                latitude: 10.7769,
+                longitude: 106.7009,
+              },
+              payment: null,
+            },
+            {
+              id: 'booking-closed',
               status: BookingStatus.COMPLETED,
               address: '85/9 Pham Viet Chanh, Ho Chi Minh City',
               lat: 10.7769,
@@ -402,6 +419,7 @@ describe('AdminService query orchestration', () => {
       source: 'stored-address-aggregates',
     });
     expect(hcm).toMatchObject({
+      activeBookingCount: 1,
       customerCount: 1,
       partnerCount: 1,
       completedBookingCount: 1,
