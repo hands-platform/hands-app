@@ -593,15 +593,7 @@ function searchableReviewText(review: AdminReview) {
 }
 
 function formatReviewDate(value?: string | null) {
-  const timestamp = value ? new Date(value) : null;
-  if (!timestamp || Number.isNaN(timestamp.getTime())) {
-    return 'No date';
-  }
-
-  return [
-    `${pad(timestamp.getHours())}:${pad(timestamp.getMinutes())}`,
-    `${pad(timestamp.getDate())}/${pad(timestamp.getMonth() + 1)}/${timestamp.getFullYear()}`,
-  ].join(' ');
+  return formatDateTime(value, 'No date');
 }
 
 function initials(value?: string | null) {
@@ -705,8 +697,4 @@ function addDays(timestamp: number, days: number) {
   const date = new Date(timestamp);
   date.setDate(date.getDate() + days);
   return date.getTime();
-}
-
-function pad(value: number) {
-  return String(value).padStart(2, '0');
 }

@@ -34,7 +34,7 @@ describe('ReviewsTableSection', () => {
     expect(rendered).toContain('Request Time');
     expect(rendered).toContain('booking');
     expect(rendered).toContain('19 Jun 2026, 14:40');
-    expect(rendered).toContain('Review submitted 16:08 23/02/2026');
+    expect(rendered).toContain('Review submitted 23 Feb 2026, 16:08');
     expect(rendered).toContain('Massage Partner');
     expect(rendered).toContain('Visible review');
     expect(rendered).toContain('Customer One');
@@ -198,7 +198,7 @@ function buildRow(): ReviewTableRow {
     bookingRequestTimeLabel: '19 Jun 2026, 14:40',
     commentLabel: 'The service arrived late but recovered well.',
     commentValue: 'The service arrived late but recovered well.',
-    createdAtLabel: '16:08 23/02/2026',
+    createdAtLabel: '23 Feb 2026, 16:08',
     customerHref: '/customers/customer-1',
     customerInitials: 'CO',
     customerAvatarStatus: 'offline',

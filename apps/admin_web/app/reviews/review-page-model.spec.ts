@@ -184,6 +184,7 @@ describe('review page model', () => {
       statusMeaning: 'Moderation follow-up',
     });
     expect(rows[0]?.bookingRequestTimeLabel).toContain('16 Jun 2026');
+    expect(rows[0]?.createdAtLabel).toBe('16 Jun 2026, 16:08');
     expect(rows[0]?.actions.map((action) => (action.kind === 'link' ? action.href : ''))).toEqual([
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=PUBLISHED',
       '/reviews?confirm=moderate&reviewId=review-row-123456&status=HIDDEN&reportReason=Held+by+admin',
@@ -219,7 +220,11 @@ describe('review page model', () => {
     expect(emptyReviewMessage('held')).toContain('held from app visibility');
     expect(reviewToneClass('warn')).toBe('signal-warn');
     expect(reviewToneLabel('ok')).toBe('Clear');
-    expect(exported[0]).toMatchObject({ 'App Visibility': 'Not visible', Status: 'Held' });
+    expect(exported[0]).toMatchObject({
+      'App Visibility': 'Not visible',
+      'Created At': 'No date',
+      Status: 'Held',
+    });
   });
 });
 
