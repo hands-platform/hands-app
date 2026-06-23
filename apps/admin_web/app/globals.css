@@ -3682,18 +3682,149 @@ a.action-button-card:hover {
 
 .vietnam-map-event-point {
   --dot-size: 12px;
+  appearance: none;
+  background: transparent;
   cursor: help;
+  display: block;
+  font: inherit;
   left: var(--point-x);
+  outline: 0;
+  padding: 0;
+  pointer-events: auto;
   top: var(--point-y);
   z-index: 4;
 }
 
-.vietnam-map-event-point:hover {
+.vietnam-map-event-point:hover,
+.vietnam-map-event-point:focus,
+.vietnam-map-event-point:focus-visible {
   box-shadow:
     0 10px 22px rgb(var(--admin-shadow-channel) / 0.24),
     0 0 0 7px rgb(var(--admin-surface-channel) / 0.48),
     0 0 0 10px rgb(var(--admin-primary-channel) / 0.12);
   transform: translate(-50%, -50%) scale(1.18);
+  z-index: 8;
+}
+
+.vietnam-map-event-point::before,
+.vietnam-map-event-point::after {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  z-index: 9;
+}
+
+.vietnam-map-event-point::before {
+  background: rgb(var(--admin-surface-channel) / 0.96);
+  border-bottom: 1px solid var(--admin-border);
+  border-right: 1px solid var(--admin-border);
+  bottom: calc(100% + 7px);
+  content: "";
+  height: 10px;
+  left: 50%;
+  transform: translate(-50%, 6px) rotate(45deg);
+  width: 10px;
+}
+
+.vietnam-map-event-point::after {
+  background: rgb(var(--admin-surface-channel) / 0.96);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  bottom: calc(100% + 12px);
+  box-shadow: var(--admin-shadow-sm);
+  color: var(--admin-text);
+  content: attr(data-tooltip);
+  font-size: 12px;
+  font-weight: 700;
+  left: 50%;
+  line-height: 18px;
+  max-width: 260px;
+  min-width: 190px;
+  padding: 10px 12px;
+  text-align: left;
+  transform: translate(-50%, 6px);
+  white-space: pre-line;
+  width: max-content;
+}
+
+.vietnam-map-event-point:hover::before,
+.vietnam-map-event-point:hover::after,
+.vietnam-map-event-point:focus::before,
+.vietnam-map-event-point:focus::after,
+.vietnam-map-event-point:focus-visible::before,
+.vietnam-map-event-point:focus-visible::after {
+  opacity: 1;
+}
+
+.vietnam-map-event-point:hover::before,
+.vietnam-map-event-point:focus::before,
+.vietnam-map-event-point:focus-visible::before {
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+.vietnam-map-event-point:hover::after,
+.vietnam-map-event-point:focus::after,
+.vietnam-map-event-point:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
+.vietnam-map-event-point.is-tooltip-below::before {
+  bottom: auto;
+  top: calc(100% + 7px);
+  transform: translate(-50%, -6px) rotate(225deg);
+}
+
+.vietnam-map-event-point.is-tooltip-below::after {
+  bottom: auto;
+  top: calc(100% + 12px);
+  transform: translate(-50%, -6px);
+}
+
+.vietnam-map-event-point.is-tooltip-below:hover::before,
+.vietnam-map-event-point.is-tooltip-below:focus::before,
+.vietnam-map-event-point.is-tooltip-below:focus-visible::before {
+  transform: translate(-50%, 0) rotate(225deg);
+}
+
+.vietnam-map-event-point.is-tooltip-below:hover::after,
+.vietnam-map-event-point.is-tooltip-below:focus::after,
+.vietnam-map-event-point.is-tooltip-below:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
+.vietnam-map-event-point.is-tooltip-right::after {
+  left: -16px;
+  transform: translate(0, 6px);
+}
+
+.vietnam-map-event-point.is-tooltip-right::before {
+  left: 4px;
+}
+
+.vietnam-map-event-point.is-tooltip-right:hover::after,
+.vietnam-map-event-point.is-tooltip-right:focus::after,
+.vietnam-map-event-point.is-tooltip-right:focus-visible::after {
+  transform: translate(0, 0);
+}
+
+.vietnam-map-event-point.is-tooltip-left::after {
+  left: auto;
+  right: -16px;
+  transform: translate(0, 6px);
+}
+
+.vietnam-map-event-point.is-tooltip-left::before {
+  left: auto;
+  right: 4px;
+}
+
+.vietnam-map-event-point.is-tooltip-left:hover::after,
+.vietnam-map-event-point.is-tooltip-left:focus::after,
+.vietnam-map-event-point.is-tooltip-left:focus-visible::after {
+  transform: translate(0, 0);
 }
 
 .vietnam-map-legend-dot.is-customers,

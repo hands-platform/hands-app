@@ -46,6 +46,7 @@ export function VietnamOverviewMapZoom({ children }: VietnamOverviewMapZoomProps
 
   const startDrag = (event: PointerEvent<HTMLDivElement>) => {
     if (!event.isPrimary || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest('.vietnam-map-event-point')) return;
 
     dragStateRef.current = {
       originX: pan.x,

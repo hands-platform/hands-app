@@ -361,18 +361,26 @@ function EventMapPoint({ point }: { point: VietnamOverviewMapPoint }) {
     '--point-x': `${point.mapXPercent}%`,
     '--point-y': `${point.mapYPercent}%`,
   } as CSSProperties & Record<'--point-x' | '--point-y', string>;
-  const title = [
-    `${metricLabel(point.kind)}: ${point.label}`,
+  const tooltipLines = [
+    `${metricLabel(point.kind)} signal`,
+    point.label,
     point.addressText,
     formatDateTime(point.occurredAt),
-  ].filter(Boolean).join(' | ');
+  ].filter(Boolean);
+  const tooltipPlacement = [
+    point.mapYPercent < 18 ? 'is-tooltip-below' : '',
+    point.mapXPercent < 22 ? 'is-tooltip-right' : '',
+    point.mapXPercent > 78 ? 'is-tooltip-left' : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <span
-      aria-label={title}
-      className={`vietnam-map-event-point vietnam-map-metric-dot is-${point.kind}`}
+    <button
+      aria-label={tooltipLines.join(', ')}
+      className={`vietnam-map-event-point vietnam-map-metric-dot is-${point.kind} ${tooltipPlacement}`}
+      data-tooltip={tooltipLines.join('\n')}
       style={pointStyle}
-      title={title}
+      tabIndex={0}
+      type="button"
     />
   );
 }
