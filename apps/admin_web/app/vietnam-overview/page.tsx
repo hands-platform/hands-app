@@ -79,7 +79,12 @@ export default async function VietnamOverviewPage({
   const mapPoints = regionalMapPoints.filter((point) => activeSignalSet.has(point.kind));
   const allMapPointCounts = vietnamOverviewRealtimePointCounts(regionalMapPoints);
   const mapPointClusters = clusterVietnamOverviewMapPoints(mapPoints);
-  const visibleRegions = activeRegion ? [activeRegion] : regions;
+  const visibleRegions = activeRegion
+    ? [activeRegion]
+    : [...regions].sort(
+        (left, right) => vietnamRegionOperatingScore(right) - vietnamRegionOperatingScore(left),
+      );
+  const maxRegionOperatingScore = Math.max(1, ...visibleRegions.map(vietnamRegionOperatingScore));
   const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions);
   const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys });
   const geoapifyTileGrid = vietnamOverviewGeoapifyTileGrid();
@@ -326,6 +331,7 @@ export default async function VietnamOverviewPage({
             <thead>
               <tr>
                 <th>Region</th>
+                <th>Load</th>
                 <th>Customers</th>
                 <th>Active</th>
                 <th>Partners</th>
@@ -337,42 +343,76 @@ export default async function VietnamOverviewPage({
               </tr>
             </thead>
             <tbody>
-              {visibleRegions.map((region) => (
-                <tr
-                  key={region.regionCode}
-                  className={region.regionCode === activeRegionCode ? 'is-focused-region' : ''}
-                >
-                  <td>
-                    <div className="vietnam-region-name">
-                      <span>{region.shortName}</span>
-                      <div>
-                        <strong>{region.regionName}</strong>
-                        <a
-                          className="vietnam-region-focus-link"
-                          href={
-                            region.regionCode === activeRegionCode
-                              ? clearRegionHref
-                              : regionFocusHrefs[region.regionCode]
-                          }
-                        >
-                          {region.regionCode === activeRegionCode ? 'Clear focus' : 'Focus region'}
-                        </a>
+              {visibleRegions.map((region) => {
+                const operatingScore = vietnamRegionOperatingScore(region);
+                const loadLevel = vietnamRegionLoadLevel(operatingScore, maxRegionOperatingScore);
+                const loadPercent = Math.round((operatingScore / maxRegionOperatingScore) * 100);
+
+                return (
+                  <tr
+                    key={region.regionCode}
+                    className={region.regionCode === activeRegionCode ? 'is-focused-region' : ''}
+                  >
+                    <td>
+                      <div className="vietnam-region-name">
+                        <span>{region.shortName}</span>
+                        <div>
+                          <strong>{region.regionName}</strong>
+                          <div
+                            className="vietnam-region-signal-row"
+                            aria-label={`${region.regionName} realtime signals`}
+                          >
+                            <span className="is-active">
+                              <i aria-hidden="true" />
+                              {formatNumber(region.activeCustomerCount)}
+                            </span>
+                            <span className="is-online">
+                              <i aria-hidden="true" />
+                              {formatNumber(region.onlinePartnerCount)}
+                            </span>
+                            <span className="is-bookings">
+                              <i aria-hidden="true" />
+                              {formatNumber(region.activeBookingCount)}
+                            </span>
+                          </div>
+                          <a
+                            className="vietnam-region-focus-link"
+                            href={
+                              region.regionCode === activeRegionCode
+                                ? clearRegionHref
+                                : regionFocusHrefs[region.regionCode]
+                            }
+                          >
+                            {region.regionCode === activeRegionCode ? 'Clear focus' : 'Focus region'}
+                          </a>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>{formatNumber(region.customerCount)}</td>
-                  <td>{formatNumber(region.activeCustomerCount)}</td>
-                  <td>{formatNumber(region.partnerCount)}</td>
-                  <td>{formatNumber(region.onlinePartnerCount)}</td>
-                  <td>{formatNumber(region.activeBookingCount)}</td>
-                  <td>{formatNumber(region.completedBookingCount)}</td>
-                  <td>{formatNumber(region.cancellationCount)}</td>
-                  <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
-                </tr>
-              ))}
+                    </td>
+                    <td>
+                      <div className={`vietnam-region-load is-${loadLevel}`}>
+                        <div className="vietnam-region-load-header">
+                          <span>{vietnamRegionLoadLabel(loadLevel)}</span>
+                          <strong>{formatNumber(operatingScore)}</strong>
+                        </div>
+                        <div className="vietnam-region-load-bar" aria-hidden="true">
+                          <i style={{ width: `${loadPercent}%` }} />
+                        </div>
+                      </div>
+                    </td>
+                    <td>{formatNumber(region.customerCount)}</td>
+                    <td>{formatNumber(region.activeCustomerCount)}</td>
+                    <td>{formatNumber(region.partnerCount)}</td>
+                    <td>{formatNumber(region.onlinePartnerCount)}</td>
+                    <td>{formatNumber(region.activeBookingCount)}</td>
+                    <td>{formatNumber(region.completedBookingCount)}</td>
+                    <td>{formatNumber(region.cancellationCount)}</td>
+                    <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
+                  </tr>
+                );
+              })}
               {visibleRegions.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <div className="empty-state">
                       <ShieldCheck size={22} aria-hidden="true" />
                       <strong>No regional aggregates loaded</strong>
@@ -556,6 +596,38 @@ function vietnamOverviewSignalHref(
     regionCode,
     signalKeys: normalizedNextSignalKeys,
   });
+}
+
+function vietnamRegionOperatingScore(region: AdminVietnamOverview['regions'][number]) {
+  return (
+    region.activeBookingCount * 4 +
+    region.activeCustomerCount * 2 +
+    region.onlinePartnerCount * 2 +
+    region.completedBookingCount +
+    region.cancellationCount
+  );
+}
+
+function vietnamRegionLoadLevel(score: number, maxScore: number) {
+  const ratio = maxScore > 0 ? score / maxScore : 0;
+
+  if (ratio >= 0.66) return 'high';
+  if (ratio >= 0.33) return 'medium';
+  if (score > 0) return 'low';
+  return 'quiet';
+}
+
+function vietnamRegionLoadLabel(level: ReturnType<typeof vietnamRegionLoadLevel>) {
+  switch (level) {
+    case 'high':
+      return 'High load';
+    case 'medium':
+      return 'Medium load';
+    case 'low':
+      return 'Low load';
+    default:
+      return 'Quiet';
+  }
 }
 
 function clusterVietnamOverviewMapPoints(
