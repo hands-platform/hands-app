@@ -1,6 +1,13 @@
 import { createHash } from 'crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ReferralAudience, ReferralRewardStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  Prisma,
+  ReferralAttributionStatus,
+  ReferralAudience,
+  ReferralRewardMode,
+  ReferralRewardStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const referralCodeSelect = {
@@ -46,6 +53,66 @@ const referralAttributionSelect = {
 } satisfies Prisma.ReferralAttributionSelect;
 
 type ReferralAttributionRecord = Prisma.ReferralAttributionGetPayload<{ select: typeof referralAttributionSelect }>;
+
+const completedBookingReferralSelect = {
+  id: true,
+  status: true,
+  customerProfileId: true,
+  selectedProviderId: true,
+  updatedAt: true,
+  earning: {
+    select: {
+      id: true,
+      grossAmount: true,
+      platformFee: true,
+      currency: true,
+    },
+  },
+} satisfies Prisma.BookingSelect;
+
+type CompletedBookingReferralRecord = Prisma.BookingGetPayload<{ select: typeof completedBookingReferralSelect }>;
+type CompletedBookingReferralWithEarning = CompletedBookingReferralRecord & {
+  earning: NonNullable<CompletedBookingReferralRecord['earning']>;
+  selectedProviderId: string;
+};
+
+const referralPolicySelect = {
+  audience: true,
+  commissionPercentBps: true,
+  currency: true,
+  enabled: true,
+  fixedRewardAmount: true,
+  holdPeriodDays: true,
+  maxRewardedReferrals: true,
+  perRewardCapAmount: true,
+  rewardMode: true,
+} satisfies Prisma.ReferralPolicySelect;
+
+type ReferralPolicyRecord = Prisma.ReferralPolicyGetPayload<{ select: typeof referralPolicySelect }>;
+
+const rewardAttributionCandidateSelect = {
+  id: true,
+  audience: true,
+  referrerCustomerProfileId: true,
+  referrerProviderProfileId: true,
+  referredCustomerProfileId: true,
+  referredProviderProfileId: true,
+} satisfies Prisma.ReferralAttributionSelect;
+
+type RewardAttributionCandidate = Prisma.ReferralAttributionGetPayload<{
+  select: typeof rewardAttributionCandidateSelect;
+}>;
+
+const referralRewardSelect = {
+  id: true,
+  amount: true,
+  availableAt: true,
+  currency: true,
+  sourceKey: true,
+  status: true,
+} satisfies Prisma.ReferralRewardSelect;
+
+type ReferralRewardRecord = Prisma.ReferralRewardGetPayload<{ select: typeof referralRewardSelect }>;
 
 type ClaimReferralCodeInput = {
   code: string;
@@ -276,6 +343,25 @@ export class ReferralsService {
     return referralAttributionView(attribution);
   }
 
+  async createRewardsForCompletedBooking(bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: completedBookingReferralSelect,
+    });
+    if (!booking) {
+      throw new NotFoundException('Booking was not found');
+    }
+    if (booking.status !== BookingStatus.COMPLETED || !booking.earning || !booking.selectedProviderId) {
+      throw new BadRequestException('Referral rewards require a completed booking with settled earning data');
+    }
+    const completedBooking = booking as CompletedBookingReferralWithEarning;
+
+    const customerReward = await this.createCustomerRewardForCompletedBooking(completedBooking);
+    const partnerReward = await this.createPartnerRewardForCompletedBooking(completedBooking);
+
+    return { customerReward, partnerReward };
+  }
+
   private async customerProfileForUser(userId: string) {
     const profile = await this.prisma.customerProfile.findUnique({
       where: { userId },
@@ -298,6 +384,179 @@ export class ReferralsService {
     }
 
     return profile;
+  }
+
+  private async createCustomerRewardForCompletedBooking(booking: CompletedBookingReferralWithEarning) {
+    const [policy, attribution] = await Promise.all([
+      this.referralPolicyFor(ReferralAudience.CUSTOMER),
+      this.prisma.referralAttribution.findFirst({
+        where: {
+          audience: ReferralAudience.CUSTOMER,
+          referredCustomerProfileId: booking.customerProfileId,
+          referrerCustomerProfileId: { not: null },
+          status: { in: [ReferralAttributionStatus.REGISTERED, ReferralAttributionStatus.QUALIFIED] },
+        },
+        select: rewardAttributionCandidateSelect,
+      }),
+    ]);
+    if (!policy || !attribution?.referrerCustomerProfileId) {
+      return null;
+    }
+    if (policy.rewardMode !== ReferralRewardMode.COMMISSION_PERCENT || !policy.commissionPercentBps) {
+      return null;
+    }
+    const rewardSlotsAvailable = await this.referrerRewardSlotsAvailable({
+      audience: ReferralAudience.CUSTOMER,
+      maxRewardedReferrals: policy.maxRewardedReferrals,
+      walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
+    });
+    if (!rewardSlotsAvailable) {
+      return null;
+    }
+
+    const amount = cappedRewardAmount(
+      Math.round((booking.earning.platformFee * policy.commissionPercentBps) / 10_000),
+      policy.perRewardCapAmount,
+    );
+    if (amount <= 0) {
+      return null;
+    }
+
+    return this.createReferralReward({
+      amount,
+      attribution,
+      booking,
+      policy,
+      sourceKey: referralRewardSourceKey(ReferralAudience.CUSTOMER, attribution.id, booking.id),
+      walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
+    });
+  }
+
+  private async createPartnerRewardForCompletedBooking(booking: CompletedBookingReferralWithEarning) {
+    const [policy, attribution] = await Promise.all([
+      this.referralPolicyFor(ReferralAudience.PARTNER),
+      this.prisma.referralAttribution.findFirst({
+        where: {
+          audience: ReferralAudience.PARTNER,
+          referredProviderProfileId: booking.selectedProviderId,
+          referrerProviderProfileId: { not: null },
+          status: { in: [ReferralAttributionStatus.REGISTERED, ReferralAttributionStatus.QUALIFIED] },
+        },
+        select: rewardAttributionCandidateSelect,
+      }),
+    ]);
+    if (!policy || !attribution?.referrerProviderProfileId || !attribution.referredProviderProfileId) {
+      return null;
+    }
+    if (policy.rewardMode !== ReferralRewardMode.FIXED_AMOUNT || !policy.fixedRewardAmount) {
+      return null;
+    }
+
+    const [alreadyCompletedBookings, rewardSlotsAvailable] = await Promise.all([
+      this.prisma.providerEarning.count({
+        where: {
+          providerProfileId: attribution.referredProviderProfileId,
+          bookingId: { not: booking.id },
+          booking: { status: BookingStatus.COMPLETED },
+        },
+      }),
+      this.referrerRewardSlotsAvailable({
+        audience: ReferralAudience.PARTNER,
+        maxRewardedReferrals: policy.maxRewardedReferrals,
+        walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
+      }),
+    ]);
+    if (alreadyCompletedBookings > 0 || !rewardSlotsAvailable) {
+      return null;
+    }
+
+    const amount = cappedRewardAmount(policy.fixedRewardAmount, policy.perRewardCapAmount);
+    if (amount <= 0) {
+      return null;
+    }
+
+    return this.createReferralReward({
+      amount,
+      attribution,
+      booking,
+      policy,
+      sourceKey: referralRewardSourceKey(ReferralAudience.PARTNER, attribution.id, booking.id),
+      walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
+    });
+  }
+
+  private async referralPolicyFor(audience: ReferralAudience) {
+    const policy = await this.prisma.referralPolicy.findUnique({
+      where: { audience },
+      select: referralPolicySelect,
+    });
+
+    return policy?.enabled ? policy : null;
+  }
+
+  private async referrerRewardSlotsAvailable(input: {
+    audience: ReferralAudience;
+    maxRewardedReferrals: number | null;
+    walletOwnerCustomerProfileId?: string;
+    walletOwnerProviderProfileId?: string;
+  }) {
+    if (!input.maxRewardedReferrals) {
+      return true;
+    }
+
+    const rewardCount = await this.prisma.referralReward.count({
+      where: {
+        status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
+        walletOwnerCustomerProfileId: input.walletOwnerCustomerProfileId,
+        walletOwnerProviderProfileId: input.walletOwnerProviderProfileId,
+        attribution: { audience: input.audience },
+      },
+    });
+
+    return rewardCount < input.maxRewardedReferrals;
+  }
+
+  private async createReferralReward(input: {
+    amount: number;
+    attribution: RewardAttributionCandidate;
+    booking: CompletedBookingReferralWithEarning;
+    policy: ReferralPolicyRecord;
+    sourceKey: string;
+    walletOwnerCustomerProfileId?: string;
+    walletOwnerProviderProfileId?: string;
+  }): Promise<ReferralRewardRecord> {
+    const existing = await this.prisma.referralReward.findUnique({
+      where: { sourceKey: input.sourceKey },
+      select: referralRewardSelect,
+    });
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.referralReward.create({
+      data: {
+        amount: input.amount,
+        attributionId: input.attribution.id,
+        availableAt: referralRewardAvailableAt(input.booking.updatedAt, input.policy.holdPeriodDays),
+        calculationSnapshot: {
+          audience: input.attribution.audience,
+          basePlatformFee: input.booking.earning.platformFee,
+          bookingId: input.booking.id,
+          commissionPercentBps: input.policy.commissionPercentBps,
+          fixedRewardAmount: input.policy.fixedRewardAmount,
+          grossAmount: input.booking.earning.grossAmount,
+          perRewardCapAmount: input.policy.perRewardCapAmount,
+          rewardMode: input.policy.rewardMode,
+        },
+        currency: input.policy.currency || input.booking.earning.currency,
+        qualifyingBookingId: input.booking.id,
+        sourceKey: input.sourceKey,
+        status: ReferralRewardStatus.PENDING,
+        walletOwnerCustomerProfileId: input.walletOwnerCustomerProfileId,
+        walletOwnerProviderProfileId: input.walletOwnerProviderProfileId,
+      },
+      select: referralRewardSelect,
+    });
   }
 }
 
@@ -379,4 +638,20 @@ function referralCodeForOwner(audience: ReferralAudience, ownerProfileId: string
     .toUpperCase();
 
   return `${prefix}${digest}`;
+}
+
+function cappedRewardAmount(amount: number, capAmount: number | null) {
+  if (capAmount && capAmount > 0) {
+    return Math.min(amount, capAmount);
+  }
+
+  return amount;
+}
+
+function referralRewardAvailableAt(referenceDate: Date, holdPeriodDays: number) {
+  return new Date(referenceDate.getTime() + Math.max(holdPeriodDays, 0) * 24 * 60 * 60 * 1000);
+}
+
+function referralRewardSourceKey(audience: ReferralAudience, attributionId: string, bookingId: string) {
+  return `referral:${audience}:${attributionId}:${bookingId}`;
 }

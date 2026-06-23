@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { ReferralAudience } from '@prisma/client';
+import { BookingStatus, ReferralAudience, ReferralRewardMode, ReferralRewardStatus } from '@prisma/client';
 import { ReferralsService } from './referrals.service';
 
 function createService(prisma: unknown) {
@@ -437,6 +437,192 @@ describe('ReferralsService', () => {
         where: { walletOwnerProviderProfileId: 'provider-profile-1' },
       }),
     );
+  });
+
+  it('creates a pending customer referral reward from completed booking platform fee', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const availableAt = new Date('2026-06-29T10:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'referred-customer-1',
+          selectedProviderId: 'provider-1',
+          updatedAt: createdAt,
+          earning: {
+            id: 'earning-1',
+            grossAmount: 1_000_000,
+            platformFee: 200_000,
+            currency: 'VND',
+          },
+        }),
+      },
+      providerEarning: {
+        count: jest.fn().mockResolvedValue(1),
+      },
+      referralAttribution: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'customer-attribution-1',
+            audience: ReferralAudience.CUSTOMER,
+            referrerCustomerProfileId: 'referrer-customer-1',
+            referredCustomerProfileId: 'referred-customer-1',
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralPolicy: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.CUSTOMER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+            commissionPercentBps: 1_000,
+            fixedRewardAmount: null,
+            perRewardCapAmount: 15_000,
+            maxRewardedReferrals: 5,
+            holdPeriodDays: 5,
+            currency: 'VND',
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralReward: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 15_000,
+          currency: 'VND',
+          status: ReferralRewardStatus.PENDING,
+          sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
+          availableAt,
+        }),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-1')).resolves.toMatchObject({
+      customerReward: {
+        id: 'reward-1',
+        amount: 15_000,
+        sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
+      },
+      partnerReward: null,
+    });
+    expect(prisma.referralReward.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          amount: 15_000,
+          attributionId: 'customer-attribution-1',
+          qualifyingBookingId: 'booking-1',
+          sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
+          status: ReferralRewardStatus.PENDING,
+          walletOwnerCustomerProfileId: 'referrer-customer-1',
+        }),
+      }),
+    );
+  });
+
+  it('creates a pending Partner referral reward only on the referred Partner first completed booking', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'referred-partner-1',
+          updatedAt: createdAt,
+          earning: {
+            id: 'earning-1',
+            grossAmount: 1_000_000,
+            platformFee: 200_000,
+            currency: 'VND',
+          },
+        }),
+      },
+      providerEarning: {
+        count: jest.fn().mockResolvedValue(0),
+      },
+      referralAttribution: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({
+            id: 'partner-attribution-1',
+            audience: ReferralAudience.PARTNER,
+            referrerProviderProfileId: 'referrer-partner-1',
+            referredProviderProfileId: 'referred-partner-1',
+          }),
+      },
+      referralPolicy: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.PARTNER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.FIXED_AMOUNT,
+            commissionPercentBps: null,
+            fixedRewardAmount: 100_000,
+            perRewardCapAmount: 80_000,
+            maxRewardedReferrals: 10,
+            holdPeriodDays: 7,
+            currency: 'VND',
+          }),
+      },
+      referralReward: {
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 80_000,
+          currency: 'VND',
+          status: ReferralRewardStatus.PENDING,
+          sourceKey: 'referral:PARTNER:partner-attribution-1:booking-1',
+        }),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-1')).resolves.toMatchObject({
+      customerReward: null,
+      partnerReward: {
+        amount: 80_000,
+        sourceKey: 'referral:PARTNER:partner-attribution-1:booking-1',
+      },
+    });
+    expect(prisma.referralReward.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          amount: 80_000,
+          attributionId: 'partner-attribution-1',
+          qualifyingBookingId: 'booking-1',
+          sourceKey: 'referral:PARTNER:partner-attribution-1:booking-1',
+          walletOwnerProviderProfileId: 'referrer-partner-1',
+        }),
+      }),
+    );
+  });
+
+  it('rejects referral reward creation for non-completed bookings', async () => {
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.MATCHED,
+          customerProfileId: 'customer-1',
+          selectedProviderId: 'provider-1',
+          updatedAt: new Date('2026-06-24T10:00:00.000Z'),
+          earning: null,
+        }),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-1')).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects referral code lookup when the role profile is missing', async () => {
