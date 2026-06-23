@@ -109,6 +109,7 @@ describe('PartnerFilterBoard', () => {
     expect(rendered).toContain('Booking flow');
     expect(rendered).toContain('Review lane');
     expect(rendered).toContain('Review: Marketplace ready');
+    expect(rendered).not.toContain('Tax profile optional');
     expect(rendered).not.toContain('type="hidden" name="review"');
   });
 });
