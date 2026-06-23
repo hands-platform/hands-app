@@ -282,37 +282,71 @@ export default async function VietnamOverviewPage({
             </div>
           </div>
           <div className="vietnam-region-focus-summary-grid" aria-label="Focused region summary">
-            {regionRealtimeSummary.map((item) => (
-              <article key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
-                <small>Realtime</small>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </article>
-            ))}
-            {regionPeriodSummary.map((item) => (
-              <article key={item.label} className="vietnam-region-focus-summary-item">
-                <small>{overview.rangeLabel}</small>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </article>
-            ))}
+            <div className="vietnam-region-focus-summary-group">
+              <div className="vietnam-region-focus-summary-group-label">
+                <strong>Realtime map signals</strong>
+                <span>Current operating dots only</span>
+              </div>
+              <div className="vietnam-region-focus-summary-items is-realtime">
+                {regionRealtimeSummary.map((item) => (
+                  <article key={item.label} className={`vietnam-region-focus-summary-item is-${item.tone}`}>
+                    <small>Realtime</small>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+            <div className="vietnam-region-focus-summary-group">
+              <div className="vietnam-region-focus-summary-group-label">
+                <strong>Period totals</strong>
+                <span>{overview.rangeLabel} stored event totals</span>
+              </div>
+              <div className="vietnam-region-focus-summary-items is-period">
+                {regionPeriodSummary.map((item) => (
+                  <article key={item.label} className="vietnam-region-focus-summary-item">
+                    <small>{overview.rangeLabel}</small>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       ) : null}
 
-      <section className="vietnam-overview-metric-grid" aria-label="Period metric summary">
-        {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
-          <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
-            <span className="metric-card-icon">
-              <Icon size={18} aria-hidden="true" />
-            </span>
-            <div className="metric-card-content">
-              <p>{label}</p>
-              <h2>{value}</h2>
-              <small>{detail}</small>
-            </div>
-          </article>
-        ))}
+      <section className="vietnam-overview-report-band" aria-labelledby="vietnam-period-report-title">
+        <div className="ops-section-header vietnam-overview-report-header">
+          <div>
+            <span className="vietnam-overview-section-kicker">Period report</span>
+            <h2 id="vietnam-period-report-title">
+              {activeRegion ? `${activeRegion.regionName} period report` : 'Vietnam period report'}
+            </h2>
+            <p className="muted">
+              Stored customer, Partner, booking, cancellation, and revenue totals for {overview.rangeLabel}.
+              These cards are separate from the realtime map dots above.
+            </p>
+          </div>
+          <div className="actions">
+            <span className="pill pill-info">{overview.rangeLabel}</span>
+            <span className="pill pill-success">Stored totals</span>
+          </div>
+        </div>
+        <div className="vietnam-overview-metric-grid" aria-label="Period metric summary">
+          {metrics.map(({ label, value, detail, icon: Icon, tone }) => (
+            <article key={label} className={`metric-card vietnam-overview-metric is-${tone}`}>
+              <span className="metric-card-icon">
+                <Icon size={18} aria-hidden="true" />
+              </span>
+              <div className="metric-card-content">
+                <p>{label}</p>
+                <h2>{value}</h2>
+                <small>{detail}</small>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="card vietnam-overview-region-card">

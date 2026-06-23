@@ -3377,6 +3377,29 @@ a.action-button-card:hover {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.vietnam-overview-report-band {
+  border-bottom: 1px solid var(--admin-border);
+  border-top: 1px solid var(--admin-border);
+  display: grid;
+  gap: 16px;
+  padding: 18px 0;
+}
+
+.vietnam-overview-report-header {
+  padding: 0 2px;
+}
+
+.vietnam-overview-section-kicker {
+  color: var(--admin-accent-strong);
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 16px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
 .vietnam-overview-metric {
   min-height: 132px;
 }
@@ -3462,7 +3485,52 @@ a.action-button-card:hover {
 .vietnam-region-focus-summary-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.55fr);
+}
+
+.vietnam-region-focus-summary-group {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.vietnam-region-focus-summary-group-label {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.vietnam-region-focus-summary-group-label strong {
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 18px;
+}
+
+.vietnam-region-focus-summary-group-label span {
+  color: var(--admin-muted);
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+}
+
+.vietnam-region-focus-summary-items {
+  display: grid;
+  gap: 10px;
+}
+
+.vietnam-region-focus-summary-items.is-realtime {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vietnam-region-focus-summary-items.is-period {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .vietnam-region-focus-summary-item {
