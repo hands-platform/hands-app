@@ -175,6 +175,27 @@ export function PartnerDetailApprovalEvidenceSummarySection({
 export function PartnerDetailReviewControlPanelSection({
   panel,
 }: PartnerDetailReviewControlPanelSectionProps) {
+  const approvalDecision = panel.items.find((item) => item.id === 'approval-decision');
+  const resubmissionNeeds = panel.items.find((item) => item.id === 'resubmission-needs');
+  const latestReview = panel.items.find((item) => item.id === 'latest-review-event');
+  const correctionLoopItems = [
+    {
+      item: resubmissionNeeds,
+      label: 'Partner correction',
+      fallback: 'No correction request is currently open.',
+    },
+    {
+      item: approvalDecision,
+      label: 'Admin gate',
+      fallback: 'No admin approval gate is currently open.',
+    },
+    {
+      item: latestReview,
+      label: 'Audit trail',
+      fallback: 'No review event is loaded yet.',
+    },
+  ] as const;
+
   return (
     <AdminFilterPanel
       className={partnerDetailReviewCardClassName}
@@ -209,6 +230,23 @@ export function PartnerDetailReviewControlPanelSection({
         {panel.reviewIssues.length > 5 ? (
           <span className="pill pill-neutral">+{panel.reviewIssues.length - 5} more</span>
         ) : null}
+      </div>
+      <div className="partner-review-correction-loop" aria-label="Partner correction loop">
+        {correctionLoopItems.map(({ fallback, item, label }) => (
+          <div className="partner-review-correction-card" key={label}>
+            <div>
+              <span>{label}</span>
+              <strong>{item?.title ?? fallback}</strong>
+            </div>
+            {item ? <span className={`pill ${item.tone}`}>{item.status}</span> : null}
+            <p className="muted">{item?.detail ?? fallback}</p>
+            {item?.href ? (
+              <Link className="text-link" href={item.href}>
+                Open related section
+              </Link>
+            ) : null}
+          </div>
+        ))}
       </div>
       <AdminTableScroll>
         <AdminDataTable

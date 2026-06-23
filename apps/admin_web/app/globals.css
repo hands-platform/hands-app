@@ -3380,6 +3380,48 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.partner-review-correction-loop {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.partner-review-correction-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.partner-review-correction-card > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.partner-review-correction-card span:not(.pill) {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.partner-review-correction-card strong {
+  color: var(--admin-text);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.partner-review-correction-card .pill {
+  justify-self: start;
+}
+
 .partner-detail-summary-rail-grid {
   margin: 0;
 }

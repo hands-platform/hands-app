@@ -24,6 +24,10 @@ describe('PartnerDetailReviewControlPanelSection', () => {
     expect(rendered).toContain('bank MISSING');
     expect(rendered).toContain('Submitted');
     expect(rendered).toContain('Hold state');
+    expect(rendered).toContain('Partner correction');
+    expect(rendered).toContain('Admin gate');
+    expect(rendered).toContain('Audit trail');
+    expect(rendered).toContain('Open related section');
     expect(rendered).toContain('KYC identity review');
     expect(rendered).toContain('Partner must upload a clearer selfie.');
     expect(rendered).toContain('Decision area');
@@ -48,6 +52,8 @@ describe('PartnerDetailReviewControlPanelSection', () => {
         'admin-table-scroll',
         'table vuexy-data-table vuexy-booking-table vuexy-partner-detail-review-table',
         'vuexy-booking-table-footer vuexy-partner-detail-review-footer',
+        'partner-review-correction-loop',
+        'partner-review-correction-card',
         'pill pill-danger',
         'pill pill-warn',
         'pill pill-info',
