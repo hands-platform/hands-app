@@ -30,20 +30,29 @@ const vietnamMapClusterPanelLimit = 25;
 
 export function VietnamOverviewMapClusters({ children, clusters }: VietnamOverviewMapClustersProps) {
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+  const [isDensityVisible, setIsDensityVisible] = useState(false);
   const selectedCluster = useMemo(
     () => clusters.find((cluster) => cluster.id === selectedClusterId) ?? null,
     [clusters, selectedClusterId],
   );
+  const heatCells = useMemo(() => vietnamOverviewHeatCells(clusters), [clusters]);
 
   return (
     <VietnamOverviewMapZoom
       overlay={
-        selectedCluster ? (
-          <ClusterDetailPanel cluster={selectedCluster} onClose={() => setSelectedClusterId(null)} />
-        ) : null
+        <>
+          <MapDensityToggle
+            isDensityVisible={isDensityVisible}
+            onToggle={() => setIsDensityVisible((current) => !current)}
+          />
+          {selectedCluster ? (
+            <ClusterDetailPanel cluster={selectedCluster} onClose={() => setSelectedClusterId(null)} />
+          ) : null}
+        </>
       }
     >
       {children}
+      {isDensityVisible ? <VietnamOverviewHeatLayer cells={heatCells} /> : null}
       {clusters.map((cluster) => (
         <EventMapCluster
           key={cluster.id}
@@ -53,6 +62,60 @@ export function VietnamOverviewMapClusters({ children, clusters }: VietnamOvervi
         />
       ))}
     </VietnamOverviewMapZoom>
+  );
+}
+
+function MapDensityToggle({
+  isDensityVisible,
+  onToggle,
+}: {
+  readonly isDensityVisible: boolean;
+  readonly onToggle: () => void;
+}) {
+  return (
+    <div className="vietnam-map-display-toggle" aria-label="Vietnam map display mode">
+      <span className={!isDensityVisible ? 'is-active' : ''}>Signals</span>
+      <button
+        aria-pressed={isDensityVisible}
+        className={isDensityVisible ? 'is-active' : ''}
+        onClick={onToggle}
+        type="button"
+      >
+        Density
+      </button>
+    </div>
+  );
+}
+
+type VietnamOverviewHeatCell = {
+  readonly id: string;
+  readonly intensity: number;
+  readonly mapXPercent: number;
+  readonly mapYPercent: number;
+  readonly size: number;
+};
+
+function VietnamOverviewHeatLayer({ cells }: { readonly cells: readonly VietnamOverviewHeatCell[] }) {
+  return (
+    <div className="vietnam-map-density-layer" aria-hidden="true">
+      {cells.map((cell) => (
+        <span
+          key={cell.id}
+          className="vietnam-map-density-cell"
+          style={
+            {
+              '--density-intensity': cell.intensity.toFixed(2),
+              '--density-size': `${cell.size}px`,
+              '--density-x': `${cell.mapXPercent}%`,
+              '--density-y': `${cell.mapYPercent}%`,
+            } as CSSProperties & Record<
+              '--density-intensity' | '--density-size' | '--density-x' | '--density-y',
+              string
+            >
+          }
+        />
+      ))}
+    </div>
   );
 }
 
@@ -216,6 +279,24 @@ function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
       label: item.label,
     }))
     .filter((item) => item.count > 0);
+}
+
+function vietnamOverviewHeatCells(
+  clusters: readonly VietnamOverviewMapPointCluster[],
+): VietnamOverviewHeatCell[] {
+  const maxClusterCount = Math.max(1, ...clusters.map((cluster) => cluster.points.length));
+
+  return clusters.map((cluster) => {
+    const intensity = cluster.points.length / maxClusterCount;
+
+    return {
+      id: cluster.id,
+      intensity,
+      mapXPercent: cluster.mapXPercent,
+      mapYPercent: cluster.mapYPercent,
+      size: Math.round(72 + intensity * 128),
+    };
+  });
 }
 
 function formatClusterCount(value: number) {
