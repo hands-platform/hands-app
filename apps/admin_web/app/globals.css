@@ -9465,7 +9465,6 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table-card .admin-table-scroll,
-.partners-page .vuexy-partner-table-card .admin-table-scroll,
 .vuexy-partner-table-card .admin-table-scroll {
   border: 0;
   border-radius: 0;
@@ -9566,10 +9565,6 @@ textarea:focus-visible {
 .vuexy-customer-table td:nth-child(8) {
   min-width: 160px;
   width: 12%;
-}
-
-.vuexy-partner-table {
-  min-width: 1440px;
 }
 
 .vuexy-partner-table th:nth-child(2),
