@@ -22,7 +22,6 @@ import {
   vietnamOverviewRealtimeMetricDotLegend,
   vietnamOverviewRealtimeMapPoints,
   vietnamOverviewRealtimePointCounts,
-  vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
 import {
@@ -71,52 +70,62 @@ export default async function VietnamOverviewPage({
     emptyVietnamOverview,
   );
   const regions = overview.regions;
+  const activeRegion = normalizeVietnamOverviewRegionFilter(params?.region, regions);
+  const activeRegionCode = activeRegion?.regionCode ?? null;
   const allMapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
-  const mapPoints = allMapPoints.filter((point) => activeSignalSet.has(point.kind));
-  const allMapPointCounts = vietnamOverviewRealtimePointCounts(allMapPoints);
+  const regionalMapPoints = activeRegionCode
+    ? allMapPoints.filter((point) => point.regionCode === activeRegionCode)
+    : allMapPoints;
+  const mapPoints = regionalMapPoints.filter((point) => activeSignalSet.has(point.kind));
+  const allMapPointCounts = vietnamOverviewRealtimePointCounts(regionalMapPoints);
   const mapPointClusters = clusterVietnamOverviewMapPoints(mapPoints);
+  const visibleRegions = activeRegion ? [activeRegion] : regions;
+  const regionFocusHrefs = vietnamOverviewRegionFocusHrefs(range, activeSignalKeys, regions);
+  const clearRegionHref = vietnamOverviewHrefWithState({ range, signalKeys: activeSignalKeys });
   const geoapifyTileGrid = vietnamOverviewGeoapifyTileGrid();
   const hasGeoapifyTileKey = Boolean(process.env.GEOAPIFY_API_KEY?.trim());
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
+  const metricTotals = activeRegion ?? overview.totals;
+  const metricRangeLabel = activeRegion ? activeRegion.regionName : overview.rangeLabel;
   const metrics = [
     {
       label: 'Customers',
-      value: formatNumber(overview.totals.customerCount),
-      detail: `${formatNumber(overview.totals.activeCustomerCount)} active in ${overview.rangeLabel}`,
+      value: formatNumber(metricTotals.customerCount),
+      detail: `${formatNumber(metricTotals.activeCustomerCount)} active in ${metricRangeLabel}`,
       icon: Users,
       tone: 'info',
     },
     {
       label: 'Partners',
-      value: formatNumber(overview.totals.partnerCount),
-      detail: `${formatNumber(overview.totals.onlinePartnerCount)} online from stored heartbeat`,
+      value: formatNumber(metricTotals.partnerCount),
+      detail: `${formatNumber(metricTotals.onlinePartnerCount)} online from stored heartbeat`,
       icon: UserCheck,
       tone: 'success',
     },
     {
       label: 'Active bookings',
-      value: formatNumber(overview.totals.activeBookingCount),
+      value: formatNumber(metricTotals.activeBookingCount),
       detail: 'Request, matching, travel, arrival, or in service',
       icon: CalendarClock,
       tone: 'warning',
     },
     {
       label: 'Completed',
-      value: formatNumber(overview.totals.completedBookingCount),
+      value: formatNumber(metricTotals.completedBookingCount),
       detail: 'Stored address closeout count',
       icon: CheckCircle2,
       tone: 'success',
     },
     {
       label: 'Cancellations',
-      value: formatNumber(overview.totals.cancellationCount),
+      value: formatNumber(metricTotals.cancellationCount),
       detail: 'Cancelled, no-show, expired, or refunded',
       icon: XCircle,
       tone: 'danger',
     },
     {
       label: 'Revenue',
-      value: formatCurrency(overview.totals.revenueAmount, overview.totals.currency),
+      value: formatCurrency(metricTotals.revenueAmount, metricTotals.currency),
       detail: 'Captured or released payments only',
       icon: WalletCards,
       tone: 'primary',
@@ -135,6 +144,7 @@ export default async function VietnamOverviewPage({
         </div>
         <div className="actions">
           <span className="pill pill-success">Vietnam only</span>
+          {activeRegion ? <span className="pill pill-primary">Focused: {activeRegion.regionName}</span> : null}
           <span className="pill pill-info">Refreshes every {overview.refreshSeconds}s</span>
         </div>
       </section>
@@ -155,8 +165,15 @@ export default async function VietnamOverviewPage({
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <div className="vietnam-map-context-chip">
               <MapPinned size={16} aria-hidden="true" />
-              Realtime dots {formatNumber(mapPoints.length)}/{formatNumber(allMapPoints.length)}
+              Realtime dots {formatNumber(mapPoints.length)}/{formatNumber(regionalMapPoints.length)}
             </div>
+            {activeRegion ? (
+              <div className="vietnam-map-region-focus-chip">
+                <span>{activeRegion.shortName}</span>
+                {activeRegion.regionName}
+                <a href={clearRegionHref}>Clear</a>
+              </div>
+            ) : null}
             <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
               {vietnamOverviewRealtimeMetricDotLegend.map((item) => {
                 const isActive = activeSignalSet.has(item.key);
@@ -166,7 +183,7 @@ export default async function VietnamOverviewPage({
                     key={item.key}
                     aria-pressed={isActive}
                     className={`vietnam-map-signal-filter${isActive ? ' is-active' : ''}`}
-                    href={vietnamOverviewSignalHref(range, item.key, activeSignalKeys)}
+                    href={vietnamOverviewSignalHref(range, item.key, activeSignalKeys, activeRegionCode)}
                     role="button"
                   >
                     <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
@@ -186,7 +203,7 @@ export default async function VietnamOverviewPage({
                 } as CSSProperties & Record<'--vietnam-map-view-aspect-ratio', string>
               }
             >
-              <VietnamOverviewMapClusters clusters={mapPointClusters}>
+              <VietnamOverviewMapClusters clusters={mapPointClusters} regionFocusHrefs={regionFocusHrefs}>
                 {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
                 {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
               </VietnamOverviewMapClusters>
@@ -210,14 +227,25 @@ export default async function VietnamOverviewPage({
               The numbers below are bounded by the selected period and use stored event timestamps.
             </p>
           </div>
-          <span className="pill pill-info">{overview.rangeLabel}</span>
+          <div className="actions">
+            {activeRegion ? (
+              <a className="pill pill-primary vietnam-overview-clear-focus" href={clearRegionHref}>
+                Clear {activeRegion.shortName}
+              </a>
+            ) : null}
+            <span className="pill pill-info">{overview.rangeLabel}</span>
+          </div>
         </div>
         <div className="booking-date-filter-buttons vietnam-overview-range-buttons">
           {vietnamOverviewRangeOptions.map((option) => (
             <a
               key={option.value}
               className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
-              href={vietnamOverviewHref(option.value)}
+              href={vietnamOverviewHrefWithState({
+                range: option.value,
+                regionCode: activeRegionCode,
+                signalKeys: activeSignalKeys,
+              })}
             >
               {option.label}
             </a>
@@ -243,9 +271,11 @@ export default async function VietnamOverviewPage({
       <section className="card vietnam-overview-region-card">
         <div className="ops-section-header">
           <div>
-            <h2>Period regional metrics</h2>
+            <h2>{activeRegion ? `${activeRegion.regionName} metrics` : 'Period regional metrics'}</h2>
             <p className="muted">
-              Numeric distribution by region for {overview.rangeLabel}. This section does not add map dots.
+              {activeRegion
+                ? 'Focused numeric distribution for the selected region. Clear focus to return to all regions.'
+                : `Numeric distribution by region for ${overview.rangeLabel}. This section does not add map dots.`}
             </p>
           </div>
         </div>
@@ -265,12 +295,27 @@ export default async function VietnamOverviewPage({
               </tr>
             </thead>
             <tbody>
-              {regions.map((region) => (
-                <tr key={region.regionCode}>
+              {visibleRegions.map((region) => (
+                <tr
+                  key={region.regionCode}
+                  className={region.regionCode === activeRegionCode ? 'is-focused-region' : ''}
+                >
                   <td>
                     <div className="vietnam-region-name">
                       <span>{region.shortName}</span>
-                      <strong>{region.regionName}</strong>
+                      <div>
+                        <strong>{region.regionName}</strong>
+                        <a
+                          className="vietnam-region-focus-link"
+                          href={
+                            region.regionCode === activeRegionCode
+                              ? clearRegionHref
+                              : regionFocusHrefs[region.regionCode]
+                          }
+                        >
+                          {region.regionCode === activeRegionCode ? 'Clear focus' : 'Focus region'}
+                        </a>
+                      </div>
                     </div>
                   </td>
                   <td>{formatNumber(region.customerCount)}</td>
@@ -283,7 +328,7 @@ export default async function VietnamOverviewPage({
                   <td>{formatCurrency(region.revenueAmount, region.currency)}</td>
                 </tr>
               ))}
-              {regions.length === 0 ? (
+              {visibleRegions.length === 0 ? (
                 <tr>
                   <td colSpan={9}>
                     <div className="empty-state">
@@ -390,10 +435,69 @@ function normalizeVietnamOverviewSignalFilters(
   return activeKeys.length > 0 ? activeKeys : vietnamOverviewAllSignalKeys;
 }
 
+function normalizeVietnamOverviewRegionFilter(
+  value: string | string[] | undefined,
+  regions: readonly AdminVietnamOverview['regions'][number][],
+) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+
+  if (!candidate) {
+    return null;
+  }
+
+  return regions.find((region) => region.regionCode === candidate) ?? null;
+}
+
+function vietnamOverviewRegionFocusHrefs(
+  range: ReturnType<typeof normalizeVietnamOverviewRange>,
+  signalKeys: readonly VietnamOverviewMetricDotKey[],
+  regions: readonly AdminVietnamOverview['regions'][number][],
+) {
+  return regions.reduce(
+    (hrefs, region) => ({
+      ...hrefs,
+      [region.regionCode]: vietnamOverviewHrefWithState({
+        range,
+        regionCode: region.regionCode,
+        signalKeys,
+      }),
+    }),
+    {} as Record<string, string>,
+  );
+}
+
+function vietnamOverviewHrefWithState({
+  range,
+  regionCode,
+  signalKeys,
+}: {
+  readonly range: ReturnType<typeof normalizeVietnamOverviewRange>;
+  readonly regionCode?: string | null;
+  readonly signalKeys: readonly VietnamOverviewMetricDotKey[];
+}) {
+  const params = new URLSearchParams({ range });
+
+  if (regionCode) {
+    params.set('region', regionCode);
+  }
+
+  const normalizedSignalKeys = vietnamOverviewAllSignalKeys.filter((key) => signalKeys.includes(key));
+
+  if (
+    normalizedSignalKeys.length > 0 &&
+    normalizedSignalKeys.length < vietnamOverviewAllSignalKeys.length
+  ) {
+    params.set('signals', normalizedSignalKeys.join(','));
+  }
+
+  return `/vietnam-overview?${params.toString()}`;
+}
+
 function vietnamOverviewSignalHref(
   range: ReturnType<typeof normalizeVietnamOverviewRange>,
   signalKey: VietnamOverviewMetricDotKey,
   activeSignalKeys: readonly VietnamOverviewMetricDotKey[],
+  regionCode?: string | null,
 ) {
   const nextSignalKeys = new Set(activeSignalKeys);
 
@@ -404,16 +508,12 @@ function vietnamOverviewSignalHref(
   }
 
   const normalizedNextSignalKeys = vietnamOverviewAllSignalKeys.filter((key) => nextSignalKeys.has(key));
-  const params = new URLSearchParams({ range });
 
-  if (
-    normalizedNextSignalKeys.length > 0 &&
-    normalizedNextSignalKeys.length < vietnamOverviewAllSignalKeys.length
-  ) {
-    params.set('signals', normalizedNextSignalKeys.join(','));
-  }
-
-  return `/vietnam-overview?${params.toString()}`;
+  return vietnamOverviewHrefWithState({
+    range,
+    regionCode,
+    signalKeys: normalizedNextSignalKeys,
+  });
 }
 
 function clusterVietnamOverviewMapPoints(

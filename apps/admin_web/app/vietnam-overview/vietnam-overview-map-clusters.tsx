@@ -23,12 +23,17 @@ export type VietnamOverviewMapPointCluster = {
 type VietnamOverviewMapClustersProps = {
   readonly children: ReactNode;
   readonly clusters: readonly VietnamOverviewMapPointCluster[];
+  readonly regionFocusHrefs?: Readonly<Record<string, string>>;
 };
 
 const vietnamMapClusterPreviewLimit = 3;
 const vietnamMapClusterPanelLimit = 25;
 
-export function VietnamOverviewMapClusters({ children, clusters }: VietnamOverviewMapClustersProps) {
+export function VietnamOverviewMapClusters({
+  children,
+  clusters,
+  regionFocusHrefs = {},
+}: VietnamOverviewMapClustersProps) {
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [isDensityVisible, setIsDensityVisible] = useState(false);
   const selectedCluster = useMemo(
@@ -46,7 +51,11 @@ export function VietnamOverviewMapClusters({ children, clusters }: VietnamOvervi
             onToggle={() => setIsDensityVisible((current) => !current)}
           />
           {selectedCluster ? (
-            <ClusterDetailPanel cluster={selectedCluster} onClose={() => setSelectedClusterId(null)} />
+            <ClusterDetailPanel
+              cluster={selectedCluster}
+              focusHref={regionFocusHrefs[selectedCluster.primaryPoint.regionCode] ?? null}
+              onClose={() => setSelectedClusterId(null)}
+            />
           ) : null}
         </>
       }
@@ -170,9 +179,11 @@ function EventMapCluster({
 
 function ClusterDetailPanel({
   cluster,
+  focusHref,
   onClose,
 }: {
   readonly cluster: VietnamOverviewMapPointCluster;
+  readonly focusHref: string | null;
   readonly onClose: () => void;
 }) {
   const latestPoint = cluster.primaryPoint;
@@ -209,6 +220,12 @@ function ClusterDetailPanel({
         <MapPin size={15} aria-hidden="true" />
         <span>{latestPoint.addressText || 'Stored operating coordinate'}</span>
       </div>
+
+      {focusHref ? (
+        <a className="vietnam-map-cluster-focus-link" href={focusHref}>
+          Focus this region
+        </a>
+      ) : null}
 
       <div className="vietnam-map-cluster-events">
         {visibleEvents.map((point) => (

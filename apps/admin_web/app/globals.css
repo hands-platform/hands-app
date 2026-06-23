@@ -4109,6 +4109,21 @@ a.action-button-card:hover {
   margin-top: 1px;
 }
 
+.vietnam-map-cluster-focus-link {
+  align-items: center;
+  background: rgb(var(--admin-primary-channel) / 0.12);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.18);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 16px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
 .vietnam-map-cluster-events {
   display: grid;
   gap: 8px;
@@ -4207,6 +4222,37 @@ a.action-button-card:hover {
   z-index: 5;
 }
 
+.vietnam-map-region-focus-chip {
+  align-items: center;
+  background: rgb(var(--admin-primary-channel) / 0.12);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.22);
+  border-radius: 999px;
+  box-shadow: var(--admin-shadow-xs);
+  color: var(--admin-accent-strong);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 8px;
+  left: 22px;
+  line-height: 16px;
+  padding: 7px 10px;
+  position: absolute;
+  top: 118px;
+  z-index: 6;
+}
+
+.vietnam-map-region-focus-chip span {
+  background: rgb(var(--admin-surface-channel) / 0.82);
+  border-radius: 999px;
+  color: var(--admin-text);
+  padding: 3px 7px;
+}
+
+.vietnam-map-region-focus-chip a {
+  color: var(--admin-accent-strong);
+  text-decoration: none;
+}
+
 .vietnam-region-name span {
   align-items: center;
   background: rgb(var(--admin-primary-channel) / 0.12);
@@ -4232,6 +4278,24 @@ a.action-button-card:hover {
   white-space: nowrap;
 }
 
+.vietnam-region-name div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vietnam-region-focus-link,
+.vietnam-overview-clear-focus {
+  text-decoration: none;
+}
+
+.vietnam-region-focus-link {
+  color: var(--admin-accent-strong);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 15px;
+}
+
 .vietnam-overview-table-wrap {
   border-radius: var(--admin-radius-lg);
   margin-top: 0;
@@ -4251,6 +4315,10 @@ a.action-button-card:hover {
   font-size: 0.75rem;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.vietnam-overview-table tr.is-focused-region td {
+  background: rgb(var(--admin-primary-channel) / 0.06);
 }
 
 .vietnam-region-name {
