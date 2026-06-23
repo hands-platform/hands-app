@@ -11,7 +11,9 @@ describe('ReferralsController', () => {
     claimCustomerReferralCode: jest.fn(),
     claimPartnerReferralCode: jest.fn(),
     getCustomerReferralCode: jest.fn(),
+    getCustomerReferralSummary: jest.fn(),
     getPartnerReferralCode: jest.fn(),
+    getPartnerReferralSummary: jest.fn(),
     issueCustomerReferralCode: jest.fn(),
     issuePartnerReferralCode: jest.fn(),
   };
@@ -59,6 +61,18 @@ describe('ReferralsController', () => {
     expect(referrals.claimCustomerReferralCode).toHaveBeenCalledWith('user-1', body);
   });
 
+  it('exposes customer referral summary as a read-only customer endpoint', async () => {
+    referrals.getCustomerReferralSummary.mockResolvedValue({ totals: { referralCount: 1 } });
+
+    await expect(controller.customerReferralSummary(user)).resolves.toEqual({ totals: { referralCount: 1 } });
+
+    expect(routeMetadata('customerReferralSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: 'customer/referrals/summary',
+    });
+    expect(referrals.getCustomerReferralSummary).toHaveBeenCalledWith('user-1');
+  });
+
   it('exposes existing Partner referral code under partner and provider aliases', async () => {
     referrals.getPartnerReferralCode.mockResolvedValue({ code: 'HPARTNER' });
 
@@ -94,6 +108,18 @@ describe('ReferralsController', () => {
       path: ['partner/referrals/claim', 'provider/referrals/claim'],
     });
     expect(referrals.claimPartnerReferralCode).toHaveBeenCalledWith('user-1', body);
+  });
+
+  it('exposes Partner referral summary under partner and provider aliases', async () => {
+    referrals.getPartnerReferralSummary.mockResolvedValue({ totals: { referralCount: 1 } });
+
+    await expect(controller.partnerReferralSummary(user)).resolves.toEqual({ totals: { referralCount: 1 } });
+
+    expect(routeMetadata('partnerReferralSummary')).toEqual({
+      method: RequestMethod.GET,
+      path: ['partner/referrals/summary', 'provider/referrals/summary'],
+    });
+    expect(referrals.getPartnerReferralSummary).toHaveBeenCalledWith('user-1');
   });
 });
 

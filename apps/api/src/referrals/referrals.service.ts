@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ReferralAudience } from '@prisma/client';
+import { Prisma, ReferralAudience, ReferralRewardStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const referralCodeSelect = {
@@ -53,6 +53,13 @@ type ClaimReferralCodeInput = {
   platform?: string;
 };
 
+type ReferralRewardSummaryGroup = {
+  status: ReferralRewardStatus;
+  currency: string;
+  _count: { _all: number };
+  _sum: { amount: number | null };
+};
+
 @Injectable()
 export class ReferralsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -68,6 +75,36 @@ export class ReferralsService {
     });
 
     return code ? referralCodeView(code) : null;
+  }
+
+  async getCustomerReferralSummary(userId: string) {
+    const profile = await this.customerProfileForUser(userId);
+    const [referralCode, referralCount, rewardGroups] = await Promise.all([
+      this.prisma.referralCode.findFirst({
+        where: {
+          audience: ReferralAudience.CUSTOMER,
+          ownerCustomerProfileId: profile.id,
+        },
+        select: referralCodeSelect,
+      }),
+      this.prisma.referralAttribution.count({
+        where: {
+          audience: ReferralAudience.CUSTOMER,
+          referrerCustomerProfileId: profile.id,
+        },
+      }),
+      this.prisma.referralReward.groupBy({
+        by: ['status', 'currency'],
+        where: { walletOwnerCustomerProfileId: profile.id },
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      referralCode: referralCode ? referralCodeView(referralCode) : null,
+      totals: referralRewardTotals(referralCount, rewardGroups),
+    };
   }
 
   async issueCustomerReferralCode(userId: string) {
@@ -144,6 +181,36 @@ export class ReferralsService {
     });
 
     return code ? referralCodeView(code) : null;
+  }
+
+  async getPartnerReferralSummary(userId: string) {
+    const profile = await this.partnerProfileForUser(userId);
+    const [referralCode, referralCount, rewardGroups] = await Promise.all([
+      this.prisma.referralCode.findFirst({
+        where: {
+          audience: ReferralAudience.PARTNER,
+          ownerProviderProfileId: profile.id,
+        },
+        select: referralCodeSelect,
+      }),
+      this.prisma.referralAttribution.count({
+        where: {
+          audience: ReferralAudience.PARTNER,
+          referrerProviderProfileId: profile.id,
+        },
+      }),
+      this.prisma.referralReward.groupBy({
+        by: ['status', 'currency'],
+        where: { walletOwnerProviderProfileId: profile.id },
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      referralCode: referralCode ? referralCodeView(referralCode) : null,
+      totals: referralRewardTotals(referralCount, rewardGroups),
+    };
   }
 
   async issuePartnerReferralCode(userId: string) {
@@ -245,6 +312,38 @@ function referralCodeView(code: ReferralCodeRecord) {
 
 function referralAttributionView(attribution: ReferralAttributionRecord) {
   return attribution;
+}
+
+function referralRewardTotals(referralCount: number, groups: ReferralRewardSummaryGroup[]) {
+  const totals = {
+    availableAmount: 0,
+    cancelledAmount: 0,
+    currency: 'VND',
+    heldAmount: 0,
+    pendingAmount: 0,
+    referralCount,
+    reversedAmount: 0,
+    rewardCount: 0,
+  };
+
+  for (const group of groups) {
+    const amount = group._sum.amount ?? 0;
+    totals.currency = group.currency || totals.currency;
+    totals.rewardCount += group._count._all;
+    if (group.status === ReferralRewardStatus.AVAILABLE) {
+      totals.availableAmount += amount;
+    } else if (group.status === ReferralRewardStatus.CANCELLED) {
+      totals.cancelledAmount += amount;
+    } else if (group.status === ReferralRewardStatus.HELD) {
+      totals.heldAmount += amount;
+    } else if (group.status === ReferralRewardStatus.PENDING) {
+      totals.pendingAmount += amount;
+    } else if (group.status === ReferralRewardStatus.REVERSED) {
+      totals.reversedAmount += amount;
+    }
+  }
+
+  return totals;
 }
 
 function normalizeReferralClaim(input: ClaimReferralCodeInput) {

@@ -53,6 +53,69 @@ describe('ReferralsService', () => {
     await expect(service.getCustomerReferralCode('user-1')).resolves.toBeNull();
   });
 
+  it('summarizes customer referral code and reward totals without listing every customer', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-profile-1' }),
+      },
+      referralAttribution: {
+        count: jest.fn().mockResolvedValue(2),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.CUSTOMER,
+          code: 'HCUSTOMER',
+          createdAt,
+          updatedAt: createdAt,
+        }),
+      },
+      referralReward: {
+        groupBy: jest.fn().mockResolvedValue([
+          { status: 'PENDING', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 25_000 } },
+          { status: 'AVAILABLE', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 75_000 } },
+        ]),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.getCustomerReferralSummary('user-1')).resolves.toEqual({
+      referralCode: {
+        id: 'code-1',
+        active: true,
+        audience: ReferralAudience.CUSTOMER,
+        code: 'HCUSTOMER',
+        sharePath: '/r/customer/HCUSTOMER',
+        createdAt,
+        updatedAt: createdAt,
+      },
+      totals: {
+        availableAmount: 75_000,
+        cancelledAmount: 0,
+        currency: 'VND',
+        heldAmount: 0,
+        pendingAmount: 25_000,
+        referralCount: 2,
+        reversedAmount: 0,
+        rewardCount: 2,
+      },
+    });
+    expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
+      where: {
+        audience: ReferralAudience.CUSTOMER,
+        referrerCustomerProfileId: 'customer-profile-1',
+      },
+    });
+    expect(prisma.referralReward.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['status', 'currency'],
+        where: { walletOwnerCustomerProfileId: 'customer-profile-1' },
+      }),
+    );
+  });
+
   it('creates a customer referral code only through the issue action', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {
@@ -310,6 +373,68 @@ describe('ReferralsService', () => {
           referredProviderProfileId: 'referred-partner-1',
           referrerProviderProfileId: 'referrer-partner-1',
         }),
+      }),
+    );
+  });
+
+  it('summarizes Partner referral code and reward totals without listing every Partner', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'provider-profile-1' }),
+      },
+      referralAttribution: {
+        count: jest.fn().mockResolvedValue(3),
+      },
+      referralCode: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'code-1',
+          active: true,
+          audience: ReferralAudience.PARTNER,
+          code: 'HPARTNER',
+          createdAt,
+          updatedAt: createdAt,
+        }),
+      },
+      referralReward: {
+        groupBy: jest.fn().mockResolvedValue([
+          { status: 'HELD', currency: 'VND', _count: { _all: 1 }, _sum: { amount: 100_000 } },
+        ]),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.getPartnerReferralSummary('user-1')).resolves.toEqual({
+      referralCode: {
+        id: 'code-1',
+        active: true,
+        audience: ReferralAudience.PARTNER,
+        code: 'HPARTNER',
+        sharePath: '/r/partner/HPARTNER',
+        createdAt,
+        updatedAt: createdAt,
+      },
+      totals: {
+        availableAmount: 0,
+        cancelledAmount: 0,
+        currency: 'VND',
+        heldAmount: 100_000,
+        pendingAmount: 0,
+        referralCount: 3,
+        reversedAmount: 0,
+        rewardCount: 1,
+      },
+    });
+    expect(prisma.referralAttribution.count).toHaveBeenCalledWith({
+      where: {
+        audience: ReferralAudience.PARTNER,
+        referrerProviderProfileId: 'provider-profile-1',
+      },
+    });
+    expect(prisma.referralReward.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['status', 'currency'],
+        where: { walletOwnerProviderProfileId: 'provider-profile-1' },
       }),
     );
   });

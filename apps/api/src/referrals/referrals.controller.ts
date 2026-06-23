@@ -19,6 +19,13 @@ export class ReferralsController {
     return this.referrals.getCustomerReferralCode(user.id);
   }
 
+  @Get('customer/referrals/summary')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  customerReferralSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.referrals.getCustomerReferralSummary(user.id);
+  }
+
   @Post('customer/referral-code')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
@@ -38,6 +45,13 @@ export class ReferralsController {
   @Roles(Role.PROVIDER)
   partnerReferralCode(@CurrentUser() user: AuthenticatedUser) {
     return this.referrals.getPartnerReferralCode(user.id);
+  }
+
+  @Get(['partner/referrals/summary', 'provider/referrals/summary'])
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  partnerReferralSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.referrals.getPartnerReferralSummary(user.id);
   }
 
   @Post(['partner/referral-code', 'provider/referral-code'])
