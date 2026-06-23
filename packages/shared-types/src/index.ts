@@ -1,5 +1,21 @@
 export type Role = 'CUSTOMER' | 'PROVIDER' | 'ADMIN';
 
+export type ReferralAudience = 'CUSTOMER' | 'PARTNER';
+
+export type ReferralAudienceSlug = 'customer' | 'partner';
+
+export type ReferralCodeSelfService = {
+  id: string;
+  audience: ReferralAudience;
+  code: string;
+  active: boolean;
+  sharePath: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+};
+
+export type ReferralCodeSelfServiceResponse = ReferralCodeSelfService | null;
+
 export type BookingStatus =
   | 'CREATED'
   | 'OPEN_MATCHING'
