@@ -525,6 +525,82 @@ describe('ReferralsService', () => {
     );
   });
 
+  it('caps customer referral reward by remaining lifetime reward allowance', async () => {
+    const createdAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          status: BookingStatus.COMPLETED,
+          customerProfileId: 'referred-customer-1',
+          selectedProviderId: 'provider-1',
+          updatedAt: createdAt,
+          earning: {
+            id: 'earning-1',
+            grossAmount: 1_000_000,
+            platformFee: 200_000,
+            currency: 'VND',
+          },
+        }),
+      },
+      referralAttribution: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'customer-attribution-1',
+            audience: ReferralAudience.CUSTOMER,
+            referrerCustomerProfileId: 'referrer-customer-1',
+            referredCustomerProfileId: 'referred-customer-1',
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralPolicy: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({
+            audience: ReferralAudience.CUSTOMER,
+            enabled: true,
+            rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+            commissionPercentBps: 1_000,
+            fixedRewardAmount: null,
+            perRewardCapAmount: null,
+            totalRewardCapAmount: 500_000,
+            maxRewardedReferrals: 10,
+            holdPeriodDays: 5,
+            currency: 'VND',
+          })
+          .mockResolvedValueOnce(null),
+      },
+      referralReward: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 490_000 } }),
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn().mockResolvedValue({
+          id: 'reward-1',
+          amount: 10_000,
+          currency: 'VND',
+          status: ReferralRewardStatus.PENDING,
+          sourceKey: 'referral:CUSTOMER:customer-attribution-1:booking-1',
+        }),
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = createService(prisma);
+
+    await expect(service.createRewardsForCompletedBooking('booking-1')).resolves.toMatchObject({
+      customerReward: {
+        amount: 10_000,
+      },
+      partnerReward: null,
+    });
+    expect(prisma.referralReward.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          amount: 10_000,
+        }),
+      }),
+    );
+  });
+
   it('creates a pending Partner referral reward only on the referred Partner first completed booking', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {

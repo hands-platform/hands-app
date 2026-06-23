@@ -86,6 +86,7 @@ const referralPolicySelect = {
   maxRewardedReferrals: true,
   perRewardCapAmount: true,
   rewardMode: true,
+  totalRewardCapAmount: true,
 } satisfies Prisma.ReferralPolicySelect;
 
 type ReferralPolicyRecord = Prisma.ReferralPolicyGetPayload<{ select: typeof referralPolicySelect }>;
@@ -414,9 +415,16 @@ export class ReferralsService {
       return null;
     }
 
-    const amount = cappedRewardAmount(
-      Math.round((booking.earning.platformFee * policy.commissionPercentBps) / 10_000),
-      policy.perRewardCapAmount,
+    const amount = await this.rewardAmountAfterLifetimeCap(
+      cappedRewardAmount(
+        Math.round((booking.earning.platformFee * policy.commissionPercentBps) / 10_000),
+        policy.perRewardCapAmount,
+      ),
+      {
+        audience: ReferralAudience.CUSTOMER,
+        totalRewardCapAmount: policy.totalRewardCapAmount,
+        walletOwnerCustomerProfileId: attribution.referrerCustomerProfileId,
+      },
     );
     if (amount <= 0) {
       return null;
@@ -470,7 +478,14 @@ export class ReferralsService {
       return null;
     }
 
-    const amount = cappedRewardAmount(policy.fixedRewardAmount, policy.perRewardCapAmount);
+    const amount = await this.rewardAmountAfterLifetimeCap(
+      cappedRewardAmount(policy.fixedRewardAmount, policy.perRewardCapAmount),
+      {
+        audience: ReferralAudience.PARTNER,
+        totalRewardCapAmount: policy.totalRewardCapAmount,
+        walletOwnerProviderProfileId: attribution.referrerProviderProfileId,
+      },
+    );
     if (amount <= 0) {
       return null;
     }
@@ -516,6 +531,33 @@ export class ReferralsService {
     return rewardCount < input.maxRewardedReferrals;
   }
 
+  private async rewardAmountAfterLifetimeCap(
+    amount: number,
+    input: {
+      audience: ReferralAudience;
+      totalRewardCapAmount: number | null;
+      walletOwnerCustomerProfileId?: string;
+      walletOwnerProviderProfileId?: string;
+    },
+  ) {
+    if (!input.totalRewardCapAmount) {
+      return amount;
+    }
+
+    const existingRewards = await this.prisma.referralReward.aggregate({
+      where: {
+        status: { notIn: [ReferralRewardStatus.CANCELLED, ReferralRewardStatus.REVERSED] },
+        walletOwnerCustomerProfileId: input.walletOwnerCustomerProfileId,
+        walletOwnerProviderProfileId: input.walletOwnerProviderProfileId,
+        attribution: { audience: input.audience },
+      },
+      _sum: { amount: true },
+    });
+    const remainingAmount = Math.max(input.totalRewardCapAmount - (existingRewards._sum.amount ?? 0), 0);
+
+    return Math.min(amount, remainingAmount);
+  }
+
   private async createReferralReward(input: {
     amount: number;
     attribution: RewardAttributionCandidate;
@@ -547,6 +589,7 @@ export class ReferralsService {
           grossAmount: input.booking.earning.grossAmount,
           perRewardCapAmount: input.policy.perRewardCapAmount,
           rewardMode: input.policy.rewardMode,
+          totalRewardCapAmount: input.policy.totalRewardCapAmount,
         },
         currency: input.policy.currency || input.booking.earning.currency,
         qualifyingBookingId: input.booking.id,
