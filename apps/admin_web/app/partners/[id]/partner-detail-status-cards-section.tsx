@@ -9,13 +9,13 @@ type PartnerDetailStatusCardsSectionProps = {
 
 export function PartnerDetailStatusCardsSection({ cards }: PartnerDetailStatusCardsSectionProps) {
   return (
-    <div className="grid admin-mb-16">
+    <section className="partner-detail-metric-grid admin-mb-16" aria-label="Partner status summary">
       {cards.map((card) => (
-        <div className="card" key={card.label}>
-          <p>{card.label}</p>
+        <div className="partner-detail-metric-card" key={card.label}>
+          <span>{card.label}</span>
           <h2>{card.value}</h2>
         </div>
       ))}
-    </div>
+    </section>
   );
 }

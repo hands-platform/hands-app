@@ -697,7 +697,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
 
   return (
-    <div className="partners-page">
+    <div className="partners-page partner-detail-page">
       {accountConfirmation ? (
         <ConfirmDialog
           action={partnerDetailAccountServerAction(accountConfirmation.action)}

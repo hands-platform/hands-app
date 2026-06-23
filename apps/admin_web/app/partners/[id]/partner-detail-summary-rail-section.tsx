@@ -22,52 +22,55 @@ export function PartnerDetailSummaryRailSection({
   usageSummary,
 }: PartnerDetailSummaryRailSectionProps) {
   return (
-    <div className="card admin-mb-16" id={id}>
-      <div className="ops-section-header">
+    <section className="partner-detail-section-band admin-mb-16" id={id}>
+      <div className="partner-detail-section-band-header">
         <div>
+          <span>Partner operations</span>
           <h2>{title}</h2>
           <p className="muted">{description}</p>
         </div>
         <span className="pill pill-info">{statusLabel}</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {items.map((item) => (
-          <Link href={item.href} key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.detail}</small>
-          </Link>
-        ))}
-      </div>
-      {usageSummary ? (
-        <section className="partner-detail-usage-summary admin-mt-12">
-          <div className="partner-detail-usage-summary-header">
-            <div>
-              <span>{usageSummary.title}</span>
-              <p className="muted">{usageSummary.helper}</p>
+      <div className="partner-detail-section-band-body">
+        <div className="service-trace-summary partner-detail-summary-rail-grid">
+          {items.map((item) => (
+            <Link href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
+        {usageSummary ? (
+          <section className="partner-detail-usage-summary admin-mt-12">
+            <div className="partner-detail-usage-summary-header">
+              <div>
+                <span>{usageSummary.title}</span>
+                <p className="muted">{usageSummary.helper}</p>
+              </div>
+              <strong>{usageSummary.regionRows.length} region(s)</strong>
             </div>
-            <strong>{usageSummary.regionRows.length} region(s)</strong>
-          </div>
-          <div className="partner-detail-usage-summary-grid">
-            {usageSummary.items.map((item) => (
-              <div key={item.label}>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <small>{item.detail}</small>
-              </div>
-            ))}
-          </div>
-          <div className="partner-detail-usage-region-list">
-            {usageSummary.regionRows.map((region) => (
-              <div key={region.label}>
-                <span>{region.label}</span>
-                <strong>{region.value}</strong>
-                <small>{region.detail}</small>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-    </div>
+            <div className="partner-detail-usage-summary-grid">
+              {usageSummary.items.map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.detail}</small>
+                </div>
+              ))}
+            </div>
+            <div className="partner-detail-usage-region-list">
+              {usageSummary.regionRows.map((region) => (
+                <div key={region.label}>
+                  <span>{region.label}</span>
+                  <strong>{region.value}</strong>
+                  <small>{region.detail}</small>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </section>
   );
 }

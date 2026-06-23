@@ -3018,6 +3018,119 @@ a.action-button-card:hover {
   overflow-wrap: normal;
 }
 
+.partner-detail-page {
+  gap: 18px;
+}
+
+.partner-detail-page > .toolbar {
+  margin-bottom: 0;
+}
+
+.partner-detail-page > .card,
+.partner-detail-page > section.card {
+  max-height: none;
+}
+
+.partner-detail-section-band {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--admin-text);
+  display: grid;
+  gap: 16px;
+  padding: 0;
+}
+
+.partner-detail-section-band-header {
+  align-items: flex-start;
+  background: var(--admin-surface-raised);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  color: var(--admin-text);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 18px 22px;
+}
+
+.partner-detail-section-band-header > div {
+  min-width: 0;
+}
+
+.partner-detail-section-band-header > div > span {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.partner-detail-section-band-header h2 {
+  color: var(--admin-text);
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.partner-detail-section-band-header p {
+  color: var(--admin-muted);
+  margin: 10px 0 0;
+  max-width: 820px;
+}
+
+.partner-detail-section-band-body {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.partner-detail-section-band .service-trace-summary > div,
+.partner-detail-section-band .service-trace-summary > a {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--admin-shadow-xs);
+}
+
+.partner-detail-summary-rail-grid {
+  margin: 0;
+}
+
+.partner-detail-metric-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.partner-detail-metric-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-xs);
+  min-width: 0;
+  padding: 16px;
+}
+
+.partner-detail-metric-card span {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.partner-detail-metric-card h2 {
+  color: var(--admin-text);
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .audit-log-page .form-grid {
   align-items: end;
   background: var(--admin-action-hover);

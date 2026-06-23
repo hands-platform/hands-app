@@ -13,9 +13,10 @@ export function PartnerDetailCommandSnapshotSection({
   items,
 }: PartnerDetailCommandSnapshotSectionProps) {
   return (
-    <div className="card admin-mb-16" id="partner-activity-command-snapshot">
-      <div className="ops-section-header">
+    <section className="partner-detail-section-band admin-mb-16" id="partner-activity-command-snapshot">
+      <div className="partner-detail-section-band-header">
         <div>
+          <span>Partner facts</span>
           <h2>Partner command snapshot</h2>
           <p className="muted">
             Filter-aware facts for this partner: completed work, retained chat, marketplace participation,
@@ -24,15 +25,17 @@ export function PartnerDetailCommandSnapshotSection({
         </div>
         <span className="pill pill-info">{items.length} fact groups</span>
       </div>
-      <div className="service-trace-summary admin-mt-12">
-        {items.map((item) => (
-          <a href={item.href} key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.helper}</small>
-          </a>
-        ))}
+      <div className="partner-detail-section-band-body">
+        <div className="service-trace-summary partner-detail-summary-rail-grid">
+          {items.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </a>
+          ))}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
