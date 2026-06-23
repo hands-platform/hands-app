@@ -25,7 +25,10 @@ import {
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
-import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
+import {
+  type VietnamOverviewMapPointCluster,
+  VietnamOverviewMapClusters,
+} from './vietnam-overview-map-clusters';
 
 export const dynamic = 'force-dynamic';
 
@@ -183,13 +186,10 @@ export default async function VietnamOverviewPage({
                 } as CSSProperties & Record<'--vietnam-map-view-aspect-ratio', string>
               }
             >
-              <VietnamOverviewMapZoom>
+              <VietnamOverviewMapClusters clusters={mapPointClusters}>
                 {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
                 {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
-                {mapPointClusters.map((cluster) => (
-                  <EventMapCluster key={cluster.id} cluster={cluster} />
-                ))}
-              </VietnamOverviewMapZoom>
+              </VietnamOverviewMapClusters>
               {mapPoints.length === 0 ? (
                 <div className="vietnam-map-tile-empty">
                   <ShieldCheck size={22} aria-hidden="true" />
@@ -372,17 +372,7 @@ function GeoapifyVietnamTileLayer({
   );
 }
 
-type VietnamOverviewMapPointCluster = {
-  readonly id: string;
-  readonly isMixed: boolean;
-  readonly mapXPercent: number;
-  readonly mapYPercent: number;
-  readonly points: readonly VietnamOverviewMapPoint[];
-  readonly primaryPoint: VietnamOverviewMapPoint;
-};
-
 const vietnamMapClusterBucketPercent = 0.35;
-const vietnamMapClusterPreviewLimit = 3;
 const vietnamOverviewAllSignalKeys = vietnamOverviewRealtimeMetricDotLegend.map((item) => item.key);
 
 function normalizeVietnamOverviewSignalFilters(
@@ -464,72 +454,6 @@ function clusterVietnamOverviewMapPoints(
     .sort((left, right) => left.points.length - right.points.length);
 }
 
-function EventMapCluster({ cluster }: { cluster: VietnamOverviewMapPointCluster }) {
-  const point = cluster.primaryPoint;
-  const pointStyle = {
-    '--point-x': `${cluster.mapXPercent}%`,
-    '--point-y': `${cluster.mapYPercent}%`,
-  } as CSSProperties & Record<'--point-x' | '--point-y', string>;
-  const tooltipLines = clusterTooltipLines(cluster);
-  const tooltipPlacement = [
-    cluster.mapYPercent < 18 ? 'is-tooltip-below' : '',
-    cluster.mapXPercent < 22 ? 'is-tooltip-right' : '',
-    cluster.mapXPercent > 78 ? 'is-tooltip-left' : '',
-  ].filter(Boolean).join(' ');
-  const isCluster = cluster.points.length > 1;
-
-  return (
-    <button
-      aria-label={tooltipLines.join(', ')}
-      className={[
-        'vietnam-map-event-point vietnam-map-metric-dot',
-        `is-${point.kind}`,
-        cluster.isMixed ? 'is-mixed' : '',
-        isCluster ? 'is-cluster' : '',
-        tooltipPlacement,
-      ].filter(Boolean).join(' ')}
-      data-tooltip={tooltipLines.join('\n')}
-      style={pointStyle}
-      tabIndex={0}
-      type="button"
-    >
-      {isCluster ? (
-        <span className="vietnam-map-cluster-count" aria-hidden="true">
-          {formatClusterCount(cluster.points.length)}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-
-function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
-  const latestPoint = cluster.primaryPoint;
-  const previewLines = cluster.points.slice(0, vietnamMapClusterPreviewLimit).map((point) => (
-    `${metricLabel(point.kind)} - ${point.label} - ${formatDateTime(point.occurredAt)}`
-  ));
-  const hiddenCount = cluster.points.length - previewLines.length;
-
-  return [
-    cluster.points.length > 1
-      ? `${formatNumber(cluster.points.length)} realtime signals`
-      : `${metricLabel(latestPoint.kind)} signal`,
-    ...clusterKindSummary(cluster.points),
-    latestPoint.addressText ? `Latest area: ${latestPoint.addressText}` : '',
-    ...previewLines,
-    hiddenCount > 0 ? `+ ${formatNumber(hiddenCount)} more` : '',
-  ].filter(Boolean);
-}
-
-function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
-  return vietnamOverviewRealtimeMetricDotLegend
-    .map((item) => ({
-      count: points.filter((point) => point.kind === item.key).length,
-      label: item.label,
-    }))
-    .filter((item) => item.count > 0)
-    .map((item) => `${item.label} ${formatNumber(item.count)}`);
-}
-
 function averagePercent(values: readonly number[]) {
   if (values.length === 0) return 0;
 
@@ -540,10 +464,6 @@ function eventTimeMs(value: string) {
   const time = new Date(value).getTime();
 
   return Number.isFinite(time) ? time : 0;
-}
-
-function formatClusterCount(value: number) {
-  return value > 99 ? '99+' : formatNumber(value);
 }
 
 function formatNumber(value: number) {
@@ -569,8 +489,4 @@ function formatDateTime(value: string) {
     minute: '2-digit',
     hour12: false,
   }).format(date);
-}
-
-function metricLabel(value: VietnamOverviewMapPoint['kind']) {
-  return vietnamOverviewRealtimeMetricDotLegend.find((item) => item.key === value)?.label ?? value;
 }

@@ -8,6 +8,7 @@ import { vietnamOverviewMapZoomLevels } from './vietnam-overview-model';
 
 type VietnamOverviewMapZoomProps = {
   readonly children: ReactNode;
+  readonly overlay?: ReactNode;
 };
 
 type MapPan = {
@@ -25,7 +26,7 @@ type MapDragState = {
 
 const initialMapPan: MapPan = { x: 0, y: 0 };
 
-export function VietnamOverviewMapZoom({ children }: VietnamOverviewMapZoomProps) {
+export function VietnamOverviewMapZoom({ children, overlay }: VietnamOverviewMapZoomProps) {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [pan, setPan] = useState<MapPan>(initialMapPan);
   const [isDragging, setIsDragging] = useState(false);
@@ -100,6 +101,7 @@ export function VietnamOverviewMapZoom({ children }: VietnamOverviewMapZoomProps
       >
         {children}
       </div>
+      {overlay}
       <div className="vietnam-map-zoom-controls" aria-label="Map zoom controls">
         <button
           type="button"

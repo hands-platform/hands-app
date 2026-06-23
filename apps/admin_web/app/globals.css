@@ -3730,7 +3730,7 @@ a.action-button-card:hover {
   --dot-size: 12px;
   appearance: none;
   background: transparent;
-  cursor: help;
+  cursor: pointer;
   display: block;
   font: inherit;
   left: var(--point-x);
@@ -3741,6 +3741,7 @@ a.action-button-card:hover {
   z-index: 4;
 }
 
+.vietnam-map-event-point.is-selected,
 .vietnam-map-event-point:hover,
 .vietnam-map-event-point:focus,
 .vietnam-map-event-point:focus-visible {
@@ -3934,6 +3935,182 @@ a.action-button-card:hover {
   font-weight: 800;
   line-height: 1;
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+}
+
+.vietnam-map-cluster-panel {
+  background: rgb(var(--admin-surface-channel) / 0.96);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  bottom: 16px;
+  box-shadow: var(--admin-shadow-md);
+  display: grid;
+  gap: 14px;
+  left: 16px;
+  max-height: min(560px, calc(100% - 32px));
+  overflow: hidden;
+  padding: 16px;
+  position: absolute;
+  width: 380px;
+  z-index: 7;
+}
+
+.vietnam-map-cluster-panel-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.vietnam-map-cluster-panel-header h3 {
+  color: var(--admin-text);
+  font-size: 18px;
+  line-height: 24px;
+  margin: 2px 0 0;
+}
+
+.vietnam-map-cluster-panel-close {
+  align-items: center;
+  background: rgb(var(--admin-main-channel) / 0.08);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+  width: 30px;
+}
+
+.vietnam-map-cluster-panel-close:hover,
+.vietnam-map-cluster-panel-close:focus-visible {
+  background: rgb(var(--admin-danger-channel) / 0.12);
+  color: var(--admin-danger);
+  outline: 0;
+}
+
+.vietnam-map-cluster-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vietnam-map-cluster-summary span {
+  align-items: center;
+  background: rgb(var(--admin-main-channel) / 0.08);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  color: var(--admin-text);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  line-height: 16px;
+  padding: 6px 9px;
+}
+
+.vietnam-map-cluster-summary strong {
+  font-weight: 800;
+}
+
+.vietnam-map-cluster-location {
+  align-items: flex-start;
+  background: rgb(var(--admin-primary-channel) / 0.08);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.14);
+  border-radius: var(--admin-radius);
+  color: var(--admin-text);
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+  line-height: 18px;
+  padding: 10px 12px;
+}
+
+.vietnam-map-cluster-location svg {
+  color: var(--admin-accent-strong);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.vietnam-map-cluster-events {
+  display: grid;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.vietnam-map-cluster-event {
+  align-items: flex-start;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 10px 1fr auto;
+  padding: 10px;
+}
+
+.vietnam-map-cluster-event > i {
+  margin-top: 5px;
+}
+
+.vietnam-map-cluster-event div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.vietnam-map-cluster-event strong {
+  color: var(--admin-text);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.vietnam-map-cluster-event span {
+  color: var(--admin-muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-map-cluster-event small {
+  align-items: center;
+  color: var(--admin-muted);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 5px;
+  line-height: 15px;
+}
+
+.vietnam-map-cluster-event-link {
+  align-self: center;
+  background: rgb(var(--admin-primary-channel) / 0.1);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  padding: 5px 8px;
+  text-decoration: none;
+}
+
+.vietnam-map-cluster-more {
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 18px;
+  padding: 10px;
+  text-align: center;
 }
 
 .vietnam-map-tile-empty {
