@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { ReferralRewardMode } from '@prisma/client';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { AdminController } from './admin.controller';
 import type { AdminService } from './admin.service';
@@ -19,6 +20,7 @@ describe('AdminController notification and push actions', () => {
     listPartnerControlProviders: jest.fn(),
     listPartnerDirectoryProviders: jest.fn(),
     retryNotification: jest.fn(),
+    updateReferralPolicy: jest.fn(),
   };
   const controller = new AdminController(admin as unknown as AdminService);
   const user = { id: 'admin-1' } as AuthenticatedUser;
@@ -122,6 +124,28 @@ describe('AdminController notification and push actions', () => {
       path: 'referrals/policies',
     });
     expect(admin.listReferralPolicies).toHaveBeenCalledWith();
+  });
+
+  it('exposes referral policy updates as an audited PATCH action', async () => {
+    admin.updateReferralPolicy.mockResolvedValue({ audience: 'CUSTOMER', enabled: true });
+
+    await expect(
+      controller.updateReferralPolicy(user, 'customer', {
+        enabled: true,
+        rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        commissionPercentBps: 500,
+      }),
+    ).resolves.toEqual({ audience: 'CUSTOMER', enabled: true });
+
+    expect(routeMetadata('updateReferralPolicy')).toEqual({
+      method: RequestMethod.PATCH,
+      path: 'referrals/policies/:audience',
+    });
+    expect(admin.updateReferralPolicy).toHaveBeenCalledWith('admin-1', 'customer', {
+      enabled: true,
+      rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+      commissionPercentBps: 500,
+    });
   });
 
   it('exposes customer referral parent accounts without listing every customer', async () => {

@@ -258,6 +258,98 @@ describe('AdminService query orchestration', () => {
     });
   });
 
+  it('upserts referral policy settings and writes an audit trail', async () => {
+    const updatedAt = new Date('2026-06-24T10:00:00.000Z');
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+      referralPolicy: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        upsert: jest.fn().mockResolvedValue({
+          id: 'policy-customer',
+          audience: ReferralAudience.CUSTOMER,
+          enabled: true,
+          rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+          commissionPercentBps: 600,
+          fixedRewardAmount: null,
+          perRewardCapAmount: null,
+          totalRewardCapAmount: 500_000,
+          maxRewardedReferrals: 8,
+          maxRewardsPerReferred: 1,
+          holdPeriodDays: 7,
+          currency: 'VND',
+          notes: 'Customer referral launch',
+          updatedAt,
+        }),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateReferralPolicy('admin-1', 'customer', {
+        enabled: true,
+        rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        commissionPercentBps: 600,
+        totalRewardCapAmount: 500_000,
+        maxRewardedReferrals: 8,
+        maxRewardsPerReferred: 1,
+        notes: ' Customer referral launch ',
+        reason: 'launch referral program',
+      }),
+    ).resolves.toMatchObject({
+      audience: ReferralAudience.CUSTOMER,
+      enabled: true,
+      commissionPercentBps: 600,
+      totalRewardCapAmount: 500_000,
+      source: 'stored-policy',
+    });
+
+    expect(prisma.referralPolicy.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { audience: ReferralAudience.CUSTOMER },
+        create: expect.objectContaining({
+          createdById: 'admin-1',
+          updatedById: 'admin-1',
+          fixedRewardAmount: null,
+          rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        }),
+        update: expect.objectContaining({
+          updatedById: 'admin-1',
+          commissionPercentBps: 600,
+        }),
+      }),
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'referral_policy.update',
+          actorId: 'admin-1',
+          target: `referral_policy:${ReferralAudience.CUSTOMER}`,
+        }),
+      }),
+    );
+  });
+
+  it('rejects mismatched referral reward modes for the audience', async () => {
+    const prisma = {
+      referralPolicy: {
+        findUnique: jest.fn(),
+        upsert: jest.fn(),
+      },
+    };
+    const service = createAdminService(prisma);
+
+    await expect(
+      service.updateReferralPolicy('admin-1', 'partner', {
+        enabled: true,
+        rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        commissionPercentBps: 500,
+      }),
+    ).rejects.toThrow('Partner referral policy must use fixed amount rewards');
+    expect(prisma.referralPolicy.upsert).not.toHaveBeenCalled();
+  });
+
   it('lists only customer referral parents and summarizes reward exposure', async () => {
     const createdAt = new Date('2026-06-24T10:00:00.000Z');
     const prisma = {

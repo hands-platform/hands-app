@@ -605,6 +605,94 @@ export class AdminService {
     };
   }
 
+  async updateReferralPolicy(
+    actorId: string,
+    audienceInput: string,
+    input: {
+      commissionPercentBps?: number | null;
+      currency?: string;
+      enabled?: boolean;
+      fixedRewardAmount?: number | null;
+      holdPeriodDays?: number;
+      maxRewardedReferrals?: number | null;
+      maxRewardsPerReferred?: number | null;
+      notes?: string | null;
+      perRewardCapAmount?: number | null;
+      reason?: string;
+      rewardMode?: ReferralRewardMode;
+      totalRewardCapAmount?: number | null;
+    },
+  ) {
+    const audience = normalizeReferralAudienceInput(audienceInput);
+    const rewardMode = input.rewardMode ?? defaultReferralRewardMode(audience);
+    const expectedMode = defaultReferralRewardMode(audience);
+    if (rewardMode !== expectedMode) {
+      throw new BadRequestException(
+        audience === ReferralAudience.CUSTOMER
+          ? 'Customer referral policy must use commission percent rewards'
+          : 'Partner referral policy must use fixed amount rewards',
+      );
+    }
+
+    const enabled = input.enabled ?? false;
+    const commissionPercentBps =
+      rewardMode === ReferralRewardMode.COMMISSION_PERCENT ? input.commissionPercentBps ?? 0 : null;
+    const fixedRewardAmount =
+      rewardMode === ReferralRewardMode.FIXED_AMOUNT ? input.fixedRewardAmount ?? 0 : null;
+
+    if (enabled && rewardMode === ReferralRewardMode.COMMISSION_PERCENT && Number(commissionPercentBps) <= 0) {
+      throw new BadRequestException('Customer referral commission percent must be greater than zero when enabled');
+    }
+    if (enabled && rewardMode === ReferralRewardMode.FIXED_AMOUNT && Number(fixedRewardAmount) <= 0) {
+      throw new BadRequestException('Partner referral fixed reward amount must be greater than zero when enabled');
+    }
+
+    const previous = await this.prisma.referralPolicy.findUnique({ where: { audience } });
+    const policy = await this.prisma.referralPolicy.upsert({
+      where: { audience },
+      create: {
+        audience,
+        enabled,
+        rewardMode,
+        commissionPercentBps,
+        fixedRewardAmount,
+        perRewardCapAmount: input.perRewardCapAmount ?? null,
+        totalRewardCapAmount: input.totalRewardCapAmount ?? null,
+        maxRewardedReferrals: input.maxRewardedReferrals ?? null,
+        maxRewardsPerReferred: input.maxRewardsPerReferred ?? null,
+        holdPeriodDays: input.holdPeriodDays ?? 7,
+        currency: normalizeReferralCurrency(input.currency),
+        notes: normalizeNullable(input.notes),
+        createdById: actorId,
+        updatedById: actorId,
+      },
+      update: {
+        enabled,
+        rewardMode,
+        commissionPercentBps,
+        fixedRewardAmount,
+        perRewardCapAmount: input.perRewardCapAmount ?? null,
+        totalRewardCapAmount: input.totalRewardCapAmount ?? null,
+        maxRewardedReferrals: input.maxRewardedReferrals ?? null,
+        maxRewardsPerReferred: input.maxRewardsPerReferred ?? null,
+        holdPeriodDays: input.holdPeriodDays ?? 7,
+        currency: normalizeReferralCurrency(input.currency),
+        notes: normalizeNullable(input.notes),
+        updatedById: actorId,
+      },
+    });
+    const result = adminReferralPolicyView(audience, policy);
+
+    await this.writeAudit(actorId, 'referral_policy.update', `referral_policy:${audience}`, {
+      audience,
+      previous: previous ? adminReferralPolicyView(audience, previous) : null,
+      value: result,
+      reason: normalizeAuditReason(input.reason),
+    });
+
+    return result;
+  }
+
   async listCustomerReferralParents() {
     const rows = await this.prisma.customerProfile.findMany({
       where: { referralsMade: { some: { audience: ReferralAudience.CUSTOMER } } },
@@ -4010,6 +4098,25 @@ function defaultReferralRewardMode(audience: ReferralAudience) {
   return audience === ReferralAudience.CUSTOMER
     ? ReferralRewardMode.COMMISSION_PERCENT
     : ReferralRewardMode.FIXED_AMOUNT;
+}
+
+function normalizeReferralAudienceInput(input: string) {
+  const value = input.trim().toUpperCase();
+  if (value === ReferralAudience.CUSTOMER) {
+    return ReferralAudience.CUSTOMER;
+  }
+  if (value === ReferralAudience.PARTNER) {
+    return ReferralAudience.PARTNER;
+  }
+  throw new BadRequestException('Unsupported referral policy audience');
+}
+
+function normalizeReferralCurrency(input?: string) {
+  const value = (input ?? 'VND').trim().toUpperCase();
+  if (!/^[A-Z]{3,8}$/.test(value)) {
+    throw new BadRequestException('Referral policy currency must be an uppercase currency code');
+  }
+  return value;
 }
 
 function adminCustomerReferralParentView(row: AdminCustomerReferralParent) {

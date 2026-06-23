@@ -12,6 +12,7 @@ import {
   type AdminReferralUserSummary,
 } from '../../lib/admin-api';
 import { formatDateTime, formatMoney } from '../../lib/admin-format';
+import { updateReferralPolicy } from './actions';
 
 type ReferralDashboardProps =
   | {
@@ -138,7 +139,114 @@ function ReferralPolicyPanel({ label, policy }: ReferralPolicyPanelProps) {
           <small className="muted">Manual policy limit for rewardable referred accounts.</small>
         </div>
       </div>
+      <ReferralPolicyForm label={label} policy={policy} />
     </AdminFilterPanel>
+  );
+}
+
+function ReferralPolicyForm({ label, policy }: ReferralPolicyPanelProps) {
+  const audience = policy.audience === 'PARTNER' ? 'partner' : 'customer';
+  const commissionPercentValue =
+    policy.commissionPercentBps !== null && policy.commissionPercentBps !== undefined
+      ? Number(policy.commissionPercentBps) / 100
+      : '';
+
+  return (
+    <form action={updateReferralPolicy} className="form-grid compact-form admin-mt-16">
+      <input name="audience" type="hidden" value={audience} />
+      <label>
+        <span>Policy status</span>
+        <select defaultValue={policy.enabled ? 'on' : 'off'} name="enabledState">
+          <option value="on">Enabled</option>
+          <option value="off">Disabled</option>
+        </select>
+      </label>
+      {policy.audience === 'CUSTOMER' ? (
+        <label>
+          <span>Reward percent</span>
+          <input
+            defaultValue={commissionPercentValue}
+            min="0"
+            name="commissionPercent"
+            placeholder="5"
+            step="0.01"
+            type="number"
+          />
+        </label>
+      ) : (
+        <label>
+          <span>Fixed reward amount</span>
+          <input
+            defaultValue={policy.fixedRewardAmount ?? ''}
+            min="0"
+            name="fixedRewardAmount"
+            placeholder="100000"
+            step="1000"
+            type="number"
+          />
+        </label>
+      )}
+      <label>
+        <span>Total reward cap</span>
+        <input
+          defaultValue={policy.totalRewardCapAmount ?? ''}
+          min="0"
+          name="totalRewardCapAmount"
+          placeholder="Optional"
+          step="1000"
+          type="number"
+        />
+      </label>
+      <label>
+        <span>Max rewarded referrals</span>
+        <input
+          defaultValue={policy.maxRewardedReferrals ?? ''}
+          min="0"
+          name="maxRewardedReferrals"
+          placeholder="Optional"
+          type="number"
+        />
+      </label>
+      <label>
+        <span>Max rewards per referred</span>
+        <input
+          defaultValue={policy.maxRewardsPerReferred ?? ''}
+          min="0"
+          name="maxRewardsPerReferred"
+          placeholder="1"
+          type="number"
+        />
+      </label>
+      <label>
+        <span>Hold period days</span>
+        <input defaultValue={policy.holdPeriodDays} min="0" name="holdPeriodDays" type="number" />
+      </label>
+      <label>
+        <span>Currency</span>
+        <input defaultValue={policy.currency} maxLength={8} name="currency" />
+      </label>
+      <label className="full-span">
+        <span>Policy notes</span>
+        <textarea
+          defaultValue={policy.notes ?? ''}
+          name="notes"
+          placeholder={`${label} policy note for operators`}
+          rows={3}
+        />
+      </label>
+      <label className="full-span">
+        <span>Update reason</span>
+        <input
+          name="reason"
+          placeholder="Why this referral policy is being changed"
+        />
+      </label>
+      <div className="actions full-span">
+        <button className="button button-primary" type="submit">
+          Save referral policy
+        </button>
+      </div>
+    </form>
   );
 }
 

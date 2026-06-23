@@ -5,6 +5,7 @@ import {
   BookingOpsTaskType,
   PayoutBatchStatus,
   ProviderReportSeverity,
+  ReferralRewardMode,
 } from '@prisma/client';
 import { AdminController } from './admin.controller';
 
@@ -24,6 +25,12 @@ describe('admin request DTO validation', () => {
     );
   });
 
+  it('uses a concrete DTO for referral policy updates', () => {
+    expect((bodyMetatype('updateReferralPolicy', 2) as { name?: string })?.name).toBe(
+      'UpdateReferralPolicyDto',
+    );
+  });
+
   it('strips unsupported operational policy fields while preserving value', async () => {
     const pipe = new ValidationPipe({ whitelist: true, transform: true });
 
@@ -39,6 +46,29 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('value', 10);
     expect(transformed).toHaveProperty('reason', 'first-pick policy update');
     expect(transformed).not.toHaveProperty('dangerouslySetBy');
+  });
+
+  it('normalizes referral policy numeric fields and strips unsupported fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        enabled: true,
+        rewardMode: ReferralRewardMode.COMMISSION_PERCENT,
+        commissionPercentBps: '750',
+        maxRewardedReferrals: '5',
+        currency: ' vnd ',
+        reason: '  referral policy setup  ',
+        payoutImmediately: true,
+      },
+      { type: 'body', metatype: bodyMetatype('updateReferralPolicy', 2) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('commissionPercentBps', 750);
+    expect(transformed).toHaveProperty('maxRewardedReferrals', 5);
+    expect(transformed).toHaveProperty('currency', 'vnd');
+    expect(transformed).toHaveProperty('reason', 'referral policy setup');
+    expect(transformed).not.toHaveProperty('payoutImmediately');
   });
 
   it('uses concrete DTOs for payout administration payloads', () => {

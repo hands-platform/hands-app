@@ -27,6 +27,7 @@ import {
   UpdateAdminServiceDto,
   UpdateCouponDto,
   UpdateOperationalPolicyDto,
+  UpdateReferralPolicyDto,
   UpdatePartnerReportDto,
   UpdatePayoutBatchDto,
   UpdateServicePayoutRuleDto,
@@ -82,6 +83,15 @@ export class AdminController {
   @Get('referrals/policies')
   referralPolicies() {
     return this.admin.listReferralPolicies();
+  }
+
+  @Patch('referrals/policies/:audience')
+  updateReferralPolicy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('audience') audience: string,
+    @Body() body: UpdateReferralPolicyDto,
+  ) {
+    return this.admin.updateReferralPolicy(user.id, audience, body);
   }
 
   @Get('referrals/customers')

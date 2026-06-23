@@ -27,6 +27,7 @@ import {
   ProviderReportSource,
   ProviderReportStatus,
   ProviderSanctionType,
+  ReferralRewardMode,
   ReviewStatus,
 } from '@prisma/client';
 
@@ -520,6 +521,78 @@ export class UpdateOperationalPolicyDto {
   @IsOptional()
   @Allow()
   value?: unknown;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class UpdateReferralPolicyDto {
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @IsOptional()
+  @IsEnum(ReferralRewardMode)
+  rewardMode?: ReferralRewardMode;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  commissionPercentBps?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  fixedRewardAmount?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  perRewardCapAmount?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  totalRewardCapAmount?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  maxRewardedReferrals?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  maxRewardsPerReferred?: number | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Max(365)
+  holdPeriodDays?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(8)
+  currency?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  notes?: string | null;
 
   @IsOptional()
   @Transform(({ value }) => trimString(value))
