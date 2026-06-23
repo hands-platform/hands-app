@@ -53,6 +53,18 @@ Admin:
 - No direct database mutation from Admin or mobile clients.
 - No reward before the qualifying booking/payment event is confirmed by the API.
 
+## Current Implementation Boundary
+
+As of 2026-06-24, the implemented backend path creates referral reward candidates only:
+
+- Completed booking closeout asks the NestJS referral service to evaluate eligibility.
+- Eligible rewards are created as `PENDING` `ReferralReward` records with an immutable calculation snapshot.
+- Admin can release hold-window-cleared rewards from `PENDING` to `AVAILABLE`.
+- `AVAILABLE` means the reward candidate is ready for the future wallet-credit step. It does not mean money has already been posted.
+- Actual wallet credit is proven only by a wallet ledger reference on the reward.
+- Customer wallet ledger posting is intentionally not implemented yet. It requires a separate approved schema and money-movement plan.
+- Partner wallet posting must not be implemented independently from the customer wallet plan, otherwise customer and Partner referral accounting will diverge.
+
 ## Approaches Considered
 
 ### Option A: Simple referral code on user rows
@@ -94,7 +106,7 @@ Suggested domain objects:
   - max total reward amount per referrer
   - max rewarded referrals per referrer
   - optional customer max rewarded bookings per referred customer
-  - hold period before wallet credit becomes available
+  - hold period before the reward candidate becomes available for a future wallet-credit job
   - created/updated audit metadata
 
 - `ReferralCode`
@@ -137,8 +149,9 @@ The implementation can map these names to existing Provider-compatible schema na
 7. API creates one immutable attribution between the referrer and the referred customer.
 8. When the referred customer completes a paid booking, the booking/payment closeout flow asks the referral service to evaluate eligibility.
 9. API calculates reward from eligible net HANDS commission after partner tax/withholding rules and policy caps.
-10. API creates a pending reward and wallet ledger entry according to the hold policy.
-11. After the hold period and no reversal event, the reward becomes available in the customer wallet.
+10. API creates a pending reward candidate according to the hold policy.
+11. After the hold period and no reversal event, Admin can release the reward candidate to `AVAILABLE`.
+12. A later approved wallet-credit job posts the reward to the customer wallet ledger and writes the ledger reference back to the reward.
 
 Customer reward calculation:
 
@@ -162,7 +175,8 @@ The exact net commission formula must reuse the existing payment, fee, tax, and 
 7. The referred Partner completes Level 2 approval.
 8. After the referred Partner completes the first paid booking, the booking closeout flow evaluates referral eligibility.
 9. API creates a fixed VND reward for the referring Partner, subject to policy caps.
-10. Reward posts to the Partner wallet ledger as pending, then available after the configured hold period.
+10. Admin can release the reward candidate to `AVAILABLE` after the configured hold period.
+11. A later approved wallet-credit job posts the reward to the Partner wallet ledger and writes the ledger reference back to the reward.
 
 Partner reward calculation:
 
@@ -226,6 +240,7 @@ Admin:
 - `POST /admin/referrals/rewards/:rewardId/hold`
 - `POST /admin/referrals/rewards/:rewardId/release`
 - `POST /admin/referrals/rewards/:rewardId/reverse`
+- `POST /admin/referrals/rewards/release-available`
 
 Endpoint names can be adjusted to the existing Admin API route style during implementation.
 
@@ -240,7 +255,8 @@ Recommended lifecycle:
 5. `QUALIFYING_EVENT_MET`
 6. `REWARD_PENDING`
 7. `REWARD_AVAILABLE`
-8. `REWARD_REVERSED` or `REWARD_HELD`
+8. `REWARD_CREDITED`
+9. `REWARD_REVERSED` or `REWARD_HELD`
 
 Idempotency requirements:
 
@@ -248,6 +264,7 @@ Idempotency requirements:
 - One reward per qualifying booking and attribution.
 - Reward creation must be safe to retry after payment callback or booking closeout retries.
 - Wallet ledger writes must include a stable source key.
+- `AVAILABLE` rewards must stay visibly distinct from wallet-credited rewards until a wallet ledger reference exists.
 
 ## Fraud and Abuse Controls
 
@@ -287,8 +304,9 @@ API unit tests:
 
 API smoke:
 
-- Customer referral signup to completed booking to pending wallet reward.
-- Partner referral signup to Level 2 approval to first completed booking to pending wallet reward.
+- Customer referral signup to completed booking to pending reward candidate.
+- Partner referral signup to Level 2 approval to first completed booking to pending reward candidate.
+- Admin release action moves hold-window-cleared rewards to available without writing wallet ledger entries.
 - Admin policy update audit.
 - Admin hold, release, and reverse actions.
 
@@ -316,7 +334,8 @@ Mobile smoke:
 7. Add Partner referral list/detail pages.
 8. Add mobile share-link screens.
 9. Add redirect routes and app store URL configuration.
-10. Enable only after API, Admin, wallet, and smoke checks pass.
+10. Add a separate approved wallet-credit job after customer wallet ledger design is approved.
+11. Enable only after API, Admin, wallet, and smoke checks pass.
 
 ## Decisions Fixed By This Spec
 
