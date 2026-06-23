@@ -11,6 +11,7 @@ type PartnerDetailSectionGroupProps = {
 
 type PartnerDetailReferenceDetailsProps = {
   readonly children: ReactNode;
+  readonly defaultOpen?: boolean;
   readonly helper: string;
   readonly label: string;
   readonly status: string;
@@ -43,12 +44,13 @@ export function PartnerDetailSectionGroup({
 
 export function PartnerDetailReferenceDetails({
   children,
+  defaultOpen = false,
   helper,
   label,
   status,
 }: PartnerDetailReferenceDetailsProps) {
   return (
-    <details className="partner-detail-reference-details">
+    <details className="partner-detail-reference-details" open={defaultOpen ? true : undefined}>
       <summary>
         <span>
           <strong>{label}</strong>

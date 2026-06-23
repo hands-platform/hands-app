@@ -951,28 +951,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </PartnerDetailSectionGroup>
 
       <PartnerDetailSectionGroup
-        description="Approval path, KYC evidence, public profile, service pricing, media, location records, and wallet or payout readiness."
+        description="Level 2 approval evidence comes first. Finance-only withdrawal, wallet, and legacy tax records stay available below without blocking matching readiness."
         eyebrow="Dossier"
         id="partner-dossier-section"
-        status={`${partnerTypedDocumentRows.length + partnerPublicMediaRows.length} evidence row(s)`}
+        status={
+          reviewChecklist.ready && registrationDossier.ready
+            ? 'Level 2 ready'
+            : `${reviewChecklist.blockers + registrationDossier.blockers} blocker(s)`
+        }
         title="Approval, profile, and finance dossier"
       >
-        <PartnerDetailCashDebtOriginSection
-          hasCashFeeDebt={hasCashFeeDebt}
-          hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
-          openDebtLabel={formatCurrency(cashFeeDebtTotal)}
-          openRowCount={openCashDebtEarnings.length}
-          rows={cashDebtOriginRows}
-        />
-        <PartnerDetailPayoutOperationsSection
-          cardClassForTone={cardClass}
-          earningsRows={payoutEarningRows}
-          hasCashFeeDebt={hasCashFeeDebt}
-          operations={payoutOperationsView}
-          partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
-          payoutBatchRows={payoutBatchRows}
-          pillClassForTone={pillClass}
-        />
         <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
         <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
         <PartnerDetailLevelPathSection plan={levelPlan} />
@@ -1007,10 +995,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
           <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
 
-          <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
-
-          <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
-
           <PartnerDetailLocationActivityCard
             coordinatesLabel={
               provider.currentLat && provider.currentLng
@@ -1024,13 +1008,42 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           />
 
           <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
-
-          <PartnerDetailRecentPayoutRecordsCard
-            earningCount={partnerEarnings.length}
-            earnings={partnerRecentPayoutRecordLines}
-            payoutBatchCount={provider.payoutBatches?.length ?? 0}
-          />
         </section>
+
+        <PartnerDetailReferenceDetails
+          defaultOpen={hasCashFeeDebt}
+          helper="Wallet debt, withdrawal details, payout batches, and legacy tax rows are finance follow-up records. They do not gate Level 2 approval."
+          label="Finance-only evidence"
+          status={hasCashFeeDebt ? `${formatCurrency(cashFeeDebtTotal)} open debt` : 'Reference'}
+        >
+          <PartnerDetailCashDebtOriginSection
+            hasCashFeeDebt={hasCashFeeDebt}
+            hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
+            openDebtLabel={formatCurrency(cashFeeDebtTotal)}
+            openRowCount={openCashDebtEarnings.length}
+            rows={cashDebtOriginRows}
+          />
+          <PartnerDetailPayoutOperationsSection
+            cardClassForTone={cardClass}
+            earningsRows={payoutEarningRows}
+            hasCashFeeDebt={hasCashFeeDebt}
+            operations={payoutOperationsView}
+            partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+            payoutBatchRows={payoutBatchRows}
+            pillClassForTone={pillClass}
+          />
+          <section className="detail-grid partner-detail-dossier-grid">
+            <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
+
+            <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
+
+            <PartnerDetailRecentPayoutRecordsCard
+              earningCount={partnerEarnings.length}
+              earnings={partnerRecentPayoutRecordLines}
+              payoutBatchCount={provider.payoutBatches?.length ?? 0}
+            />
+          </section>
+        </PartnerDetailReferenceDetails>
       </PartnerDetailSectionGroup>
     </div>
   );

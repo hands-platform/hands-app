@@ -51,6 +51,24 @@ describe('PartnerDetailSectionGroup', () => {
       ]),
     );
   });
+
+  it('can open urgent reference details by default', () => {
+    const section = PartnerDetailReferenceDetails({
+      children: <div>Open finance reference</div>,
+      defaultOpen: true,
+      helper: 'Open when a finance blocker needs same-shift attention.',
+      label: 'Finance-only evidence',
+      status: 'Open debt',
+    });
+
+    const rendered = normalizedText(section);
+    const element = readRecord(resolveElement(section));
+    const props = readRecord(element?.props);
+
+    expect(rendered).toContain('Finance-only evidence');
+    expect(rendered).toContain('Open finance reference');
+    expect(props?.open).toBe(true);
+  });
 });
 
 function textContent(value: unknown): string {
