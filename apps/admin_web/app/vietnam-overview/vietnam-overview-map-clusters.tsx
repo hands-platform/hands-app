@@ -26,7 +26,6 @@ type VietnamOverviewMapClustersProps = {
   readonly regionFocusHrefs?: Readonly<Record<string, string>>;
 };
 
-const vietnamMapClusterPreviewLimit = 3;
 const vietnamMapClusterPanelLimit = 25;
 
 export function VietnamOverviewMapClusters({
@@ -152,7 +151,7 @@ function EventMapCluster({
 
   return (
     <button
-      aria-label={tooltipLines.join(', ')}
+      aria-label={clusterAriaLabel(cluster)}
       aria-pressed={isSelected}
       className={[
         'vietnam-map-event-point vietnam-map-metric-dot',
@@ -190,6 +189,7 @@ function ClusterDetailPanel({
   const latestTargetHref = signalTargetHref(latestPoint);
   const latestSignalSource = signalSourceCopy(latestPoint);
   const signalSummary = clusterKindSummary(cluster.points);
+  const latestAddress = latestPoint.addressText || 'Stored operating coordinate';
   const visibleEvents = cluster.points.slice(0, vietnamMapClusterPanelLimit);
   const hiddenCount = cluster.points.length - visibleEvents.length;
 
@@ -200,7 +200,12 @@ function ClusterDetailPanel({
           <p className="muted">Realtime map signal</p>
           <h3>{formatNumber(cluster.points.length)} current signal(s)</h3>
         </div>
-        <span className="vietnam-map-cluster-panel-badge">Current only</span>
+        <div className="vietnam-map-cluster-panel-badges">
+          <span className="vietnam-map-cluster-panel-badge">Current only</span>
+          <span className="vietnam-map-cluster-panel-badge is-region">
+            {formatRegionCode(latestPoint.regionCode)}
+          </span>
+        </div>
         <button
           aria-label="Close selected map signals"
           className="vietnam-map-cluster-panel-close"
@@ -243,18 +248,25 @@ function ClusterDetailPanel({
         ))}
       </div>
 
-      <div className="vietnam-map-cluster-source">
-        <span>Signal source</span>
-        <strong>{latestSignalSource.label}</strong>
-        <small>{latestSignalSource.detail}</small>
-      </div>
-
-      <div className="vietnam-map-cluster-location">
-        <MapPin size={15} aria-hidden="true" />
-        <span>
+      <div className="vietnam-map-cluster-context-grid" aria-label="Selected map signal context">
+        <article className="vietnam-map-cluster-context-card">
+          <span>Region</span>
           <strong>{formatRegionCode(latestPoint.regionCode)}</strong>
-          {latestPoint.addressText || 'Stored operating coordinate'}
-        </span>
+          <small>Vietnam service area</small>
+        </article>
+        <article className="vietnam-map-cluster-context-card">
+          <span>Source</span>
+          <strong>{latestSignalSource.label}</strong>
+          <small>{latestSignalSource.detail}</small>
+        </article>
+        <article className="vietnam-map-cluster-context-card is-wide">
+          <span>Latest area</span>
+          <strong>
+            <MapPin size={13} aria-hidden="true" />
+            {latestAddress}
+          </strong>
+          <small>Shown from stored operational coordinates only.</small>
+        </article>
       </div>
 
       {focusHref ? (
@@ -263,6 +275,13 @@ function ClusterDetailPanel({
         </a>
       ) : null}
 
+      <div className="vietnam-map-cluster-events-header">
+        <div>
+          <strong>Latest signal events</strong>
+          <span>Newest {formatNumber(visibleEvents.length)} of {formatNumber(cluster.points.length)}</span>
+        </div>
+        <small>Newest first</small>
+      </div>
       <div className="vietnam-map-cluster-events">
         {visibleEvents.map((point) => (
           <ClusterEventRow key={point.id} point={point} />
@@ -278,6 +297,7 @@ function ClusterDetailPanel({
 function ClusterEventRow({ point }: { readonly point: VietnamOverviewMapPoint }) {
   const targetHref = signalTargetHref(point);
   const sourceCopy = signalSourceCopy(point);
+  const regionCode = formatRegionCode(point.regionCode);
 
   return (
     <div className="vietnam-map-cluster-event">
@@ -289,10 +309,11 @@ function ClusterEventRow({ point }: { readonly point: VietnamOverviewMapPoint })
           <Clock3 size={12} aria-hidden="true" />
           {formatDateTime(point.occurredAt)}
         </small>
-        <p>
-          {sourceCopy.label} / {formatRegionCode(point.regionCode)}
-          {point.addressText ? ` / ${point.addressText}` : ''}
-        </p>
+        <div className="vietnam-map-cluster-event-meta">
+          <span>{sourceCopy.label}</span>
+          <span>{regionCode}</span>
+        </div>
+        {point.addressText ? <p>{point.addressText}</p> : null}
         <p className="vietnam-map-cluster-event-source-detail">{sourceCopy.detail}</p>
       </div>
       {targetHref ? (
@@ -315,12 +336,6 @@ function signalTargetHref(point: VietnamOverviewMapPoint) {
 function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
   const latestPoint = cluster.primaryPoint;
   const latestSource = signalSourceCopy(latestPoint);
-  const previewLines = cluster.points.slice(0, vietnamMapClusterPreviewLimit).map((point) => (
-    `${metricLabel(point.kind)} - ${point.label} - ${formatDateTime(point.occurredAt)} - ${
-      signalSourceCopy(point).label
-    }`
-  ));
-  const hiddenCount = cluster.points.length - previewLines.length;
 
   return [
     cluster.points.length > 1
@@ -331,9 +346,22 @@ function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
     `Source: ${latestSource.label}`,
     `Region: ${formatRegionCode(latestPoint.regionCode)}`,
     latestPoint.addressText ? `Latest area: ${latestPoint.addressText}` : '',
-    ...previewLines,
-    hiddenCount > 0 ? `+ ${formatNumber(hiddenCount)} more` : '',
+    'Click for details',
   ].filter(Boolean);
+}
+
+function clusterAriaLabel(cluster: VietnamOverviewMapPointCluster) {
+  const latestPoint = cluster.primaryPoint;
+
+  return [
+    cluster.points.length > 1
+      ? `${formatNumber(cluster.points.length)} realtime signals`
+      : `${metricLabel(latestPoint.kind)} signal`,
+    ...clusterKindSummary(cluster.points).map((item) => `${item.label} ${formatNumber(item.count)}`),
+    `Latest ${metricLabel(latestPoint.kind)} at ${formatDateTime(latestPoint.occurredAt)}`,
+    `Region ${formatRegionCode(latestPoint.regionCode)}`,
+    'Open map signal details',
+  ].join(', ');
 }
 
 function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
