@@ -267,6 +267,7 @@ import {
   buildPartnerUsageRegionSummary,
 } from './partner-detail-summary-rail-model';
 import { PartnerDetailCommandSnapshotSection } from './partner-detail-command-snapshot-section';
+import { PartnerDetailSectionGroup } from './partner-detail-section-group';
 import {
   amountValue,
   dateValue,
@@ -800,226 +801,228 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
       <PartnerDetailCommandSnapshotSection items={partnerActivityCommandSnapshot} />
 
-      <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
-
-      <PartnerDetailOperationsDigestSection
-        description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
-        formatLatestAt={formatDate}
-        id="partner-operations-digest"
-        rows={partnerOperationsDigest}
-        title="Partner operations digest"
-      />
-
-      <PartnerDetailBookingJourneySection
-        description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
-        emptyDetail="Use a wider date range to show older booking rows."
-        emptyTitle="No partner booking journey matched this filter"
-        formatLatestAt={formatDate}
-        id="partner-booking-journey"
-        rows={partnerBookingJourneyRows}
-        title="Partner booking journey"
-      />
-
-      <PartnerDetailBookingGateEvidenceSection
-        filteredAttempts={filteredPartnerBookingGateAttempts}
-        formatDate={formatDate}
-        loadedAttempts={partnerBookingGateAttempts}
-      />
-
-      <PartnerDetailConnectedRecordsSection
-        description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
-        id="partner-connected-operations-records"
-        links={connectedPartnerRecordLinks}
-        title="Partner connected operations records"
-      />
-
-      <PartnerDetailOperatorCommandQueueSection
-        pillClassForTone={pillClass}
-        providerId={provider.id}
-        queue={partnerOperatorCommandQueue}
-      />
-
-      <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
-
-      <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
-
-      <PartnerDetailOperatorNotesSection
-        notes={partnerOperatorNoteRows}
-        providerId={provider.id}
-        totalCount={partnerOpsNotes.length}
-      />
-
-      <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
-
-      <PartnerDetailBookingEvidenceBundlesSection
-        rows={partnerBookingEvidenceRows}
-        statusPillClass={partnerBookingStatusPillClass}
-      />
-
-      <PartnerDetailFullRecordIndexSection
-        appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
-        bookingRecordCount={partnerBookingArchive.length}
-        cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
-        dailyDigestCount={partnerDailyActivityDigest.length}
-        missingKycDocumentCount={missingKycDocumentCount}
-      />
-
-      <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
-
-      <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
-
-      <PartnerDetailRecordDateFilterSection
-        activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
-        activityOrder={activityOrder}
-        activityType={activityType}
-        dateFilters={dateFilters}
-        filteredActivityCount={filteredPartnerActivityRecords.length}
-        filteredActivityCsvHref={filteredActivityCsvHref}
-        filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
-        partnerId={provider.id}
-        totalActivityCount={partnerActivityRecords.length}
-        totalBookingArchiveCount={partnerBookingArchive.length}
-      />
-
-      <PartnerDetailChatRetentionLedgerSection
-        description="Customer final selection creates the Partner chat. Mobile apps can hide completed-service chats, while admin keeps the retained transcript for cancellation, no-show, payment, and service evidence review."
-        emptyMessage="No Partner chat retention row matched this date filter."
-        formatLatestMessageAt={formatDate}
-        id="partner-chat-retention-ledger"
-        rows={partnerChatRetentionRows}
-        statusPillClass={partnerBookingStatusPillClass}
-        summary={partnerChatRetentionSummary}
-        title="Partner chat retention ledger"
-      />
-
-      <PartnerDetailBookingChatRecordsSection
-        openBookingsHref={`/bookings?q=${encodeURIComponent(provider.id)}`}
-        rows={partnerBookingChatRecordRows}
-      />
-
-      <PartnerDetailBookingOpsLedgerSection
-        rows={partnerBookingOpsLedgerRows}
-        statusPillClass={partnerBookingStatusPillClass}
-      />
-
-      <PartnerDetailAppActivitySection rows={partnerAppActivityRows} summary={partnerActivitySummary} />
-
-      <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} formatDate={formatDate} />
-
-      <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
-
-      <PartnerDetailBookingGateDecisionSection
-        cardClassForTone={cardClass}
-        decision={bookingGateDecision}
-        pillClassForTone={pillClass}
-      />
-
-      <PartnerAcceptanceRepairCommandSection command={acceptanceRepairCommand} />
-
-      <PartnerDetailCashDebtOriginSection
-        hasCashFeeDebt={hasCashFeeDebt}
-        hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
-        openDebtLabel={formatCurrency(cashFeeDebtTotal)}
-        openRowCount={openCashDebtEarnings.length}
-        rows={cashDebtOriginRows}
-      />
-
-      <PartnerDetailAcceptanceUnblockPlaybookSection
-        pillClassForTone={pillClass}
-        steps={acceptanceUnblockPlaybook}
-      />
-
-      <PartnerDetailPayoutOperationsSection
-        cardClassForTone={cardClass}
-        earningsRows={payoutEarningRows}
-        hasCashFeeDebt={hasCashFeeDebt}
-        operations={payoutOperationsView}
-        partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
-        payoutBatchRows={payoutBatchRows}
-        pillClassForTone={pillClass}
-      />
-
-      <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
-
-      <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
-
-      <PartnerDetailDeviceSessionActivitySection
-        cardClassForTone={cardClass}
-        deviceRows={partnerDeviceRows}
-        followUpNeeded={securitySummary.followUpNeeded}
-        pillClassForTone={pillClass}
-        securityCards={securitySummary.cards}
-        sessionRows={partnerSessionRows}
-        sharedDeviceRows={partnerSharedDeviceRows}
-      />
-
-      <PartnerDetailReportsControlsSection
-        accountControls={partnerAccountControlRows}
-        payoutHold={reportControlPayoutHold}
-        providerId={provider.id}
-        reports={partnerReportRows}
-        reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
-      />
-
-      <PartnerDetailLevelPathSection plan={levelPlan} />
-
-      <PartnerDetailResubmissionGuidanceSection plan={resubmissionPlan} />
-
-      <PartnerDetailReviewHistorySection
-        rows={reviewHistoryRows}
-        totalCount={provider.verificationLogs?.length ?? 0}
-      />
-
-      <section className="detail-grid">
-        <PartnerDetailBasicProfileCard
-          note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
-          rows={partnerBasicProfileRows}
+      <PartnerDetailSectionGroup
+        description="Operator queue, review controls, staff notes, master facts, and filter controls grouped before the longer evidence ledgers."
+        eyebrow="Control"
+        id="partner-control-section"
+        status={`${partnerOperatorCommandQueue.commands.length} command(s)`}
+        title="Partner control workspace"
+      >
+        <PartnerDetailRecentTimelineSection formatDate={formatDate} records={partnerRecentTimelineRecords} />
+        <PartnerDetailOperationsDigestSection
+          description="One-screen factual digest for partner operations: identity, activity gate, bookings, chat, KYC, location, app reachability, and staff records."
+          formatLatestAt={formatDate}
+          id="partner-operations-digest"
+          rows={partnerOperationsDigest}
+          title="Partner operations digest"
         />
-
-        <PartnerDetailKycDecisionSection
-          canApprove={canApproveKyc}
-          cccdNumberLast4={provider.kyc?.cccdNumberLast4}
-          evidence={kycEvidence}
-          rejectionReason={provider.kyc?.rejectionReason}
-          reviewActions={partnerKycReviewActions}
-          reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
-          status={provider.kyc?.status}
-          submittedLabel={formatDate(provider.kyc?.submittedAt)}
+        <PartnerDetailConnectedRecordsSection
+          description={PARTNER_CONNECTED_RECORDS_DESCRIPTION}
+          id="partner-connected-operations-records"
+          links={connectedPartnerRecordLinks}
+          title="Partner connected operations records"
         />
-
-        <PartnerDetailServicePricingSection
-          readyCount={providerServicePricing.readyCount}
-          rows={partnerServicePricingDisplayRows}
+        <PartnerDetailOperatorCommandQueueSection
+          pillClassForTone={pillClass}
+          providerId={provider.id}
+          queue={partnerOperatorCommandQueue}
         />
-
-        <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
-
-        <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
-
-        <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
-
-        <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
-
-        <PartnerDetailLocationActivityCard
-          coordinatesLabel={
-            provider.currentLat && provider.currentLng
-              ? partnerLocationSavedLabel()
-              : null
-          }
-          lastLocationLabel={
-            provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
-          }
-          snapshots={partnerLocationSnapshotBadges}
+        <PartnerDetailReviewControlPanelSection panel={reviewControlPanel} />
+        <PartnerDetailApprovalEvidenceSummarySection rows={approvalEvidenceSummaryRows} />
+        <PartnerDetailOperatorNotesSection
+          notes={partnerOperatorNoteRows}
+          providerId={provider.id}
+          totalCount={partnerOpsNotes.length}
         />
-
-        <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
-
-        <PartnerDetailRecentPayoutRecordsCard
-          earningCount={partnerEarnings.length}
-          earnings={partnerRecentPayoutRecordLines}
-          payoutBatchCount={provider.payoutBatches?.length ?? 0}
+        <PartnerDetailMasterFactsSection facts={partnerMasterFacts} />
+        <PartnerDetailFullRecordIndexSection
+          appActivityCount={(provider.sessions ?? []).length + (provider.devices ?? []).length}
+          bookingRecordCount={partnerBookingArchive.length}
+          cashDebtLabel={formatCurrency(cashFeeDebtTotal)}
+          dailyDigestCount={partnerDailyActivityDigest.length}
+          missingKycDocumentCount={missingKycDocumentCount}
         />
-      </section>
+        <PartnerDetailOperatingLedgerSection rows={partnerOperatingLedger} />
+        <PartnerDetailOperatingChecklistSection pillClassForTone={pillClass} rows={partnerOperatingChecklist} />
+        <PartnerDetailRecordDateFilterSection
+          activityCsvDownloadName={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
+          activityOrder={activityOrder}
+          activityType={activityType}
+          dateFilters={dateFilters}
+          filteredActivityCount={filteredPartnerActivityRecords.length}
+          filteredActivityCsvHref={filteredActivityCsvHref}
+          filteredBookingArchiveCount={filteredPartnerBookingArchive.length}
+          partnerId={provider.id}
+          totalActivityCount={partnerActivityRecords.length}
+          totalBookingArchiveCount={partnerBookingArchive.length}
+        />
+      </PartnerDetailSectionGroup>
+
+      <PartnerDetailSectionGroup
+        description="Booking rows, first-pick and marketplace gate evidence, retained chat, and booking operations records for this Partner."
+        eyebrow="Bookings"
+        id="partner-booking-section"
+        status={`${partnerBookingArchive.length} booking record(s)`}
+        title="Booking and chat evidence"
+      >
+        <PartnerDetailBookingJourneySection
+          description="Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace participation, customer final selection, retained chat, money rows, and staff records."
+          emptyDetail="Use a wider date range to show older booking rows."
+          emptyTitle="No partner booking journey matched this filter"
+          formatLatestAt={formatDate}
+          id="partner-booking-journey"
+          rows={partnerBookingJourneyRows}
+          title="Partner booking journey"
+        />
+        <PartnerDetailBookingGateEvidenceSection
+          filteredAttempts={filteredPartnerBookingGateAttempts}
+          formatDate={formatDate}
+          loadedAttempts={partnerBookingGateAttempts}
+        />
+        <PartnerDetailBookingEvidenceBundlesSection
+          rows={partnerBookingEvidenceRows}
+          statusPillClass={partnerBookingStatusPillClass}
+        />
+        <PartnerDetailChatRetentionLedgerSection
+          description="Customer final selection creates the Partner chat. Mobile apps can hide completed-service chats, while admin keeps the retained transcript for cancellation, no-show, payment, and service evidence review."
+          emptyMessage="No Partner chat retention row matched this date filter."
+          formatLatestMessageAt={formatDate}
+          id="partner-chat-retention-ledger"
+          rows={partnerChatRetentionRows}
+          statusPillClass={partnerBookingStatusPillClass}
+          summary={partnerChatRetentionSummary}
+          title="Partner chat retention ledger"
+        />
+        <PartnerDetailBookingChatRecordsSection
+          openBookingsHref={`/bookings?q=${encodeURIComponent(provider.id)}`}
+          rows={partnerBookingChatRecordRows}
+        />
+        <PartnerDetailBookingOpsLedgerSection
+          rows={partnerBookingOpsLedgerRows}
+          statusPillClass={partnerBookingStatusPillClass}
+        />
+      </PartnerDetailSectionGroup>
+
+      <PartnerDetailSectionGroup
+        description="App activity, device reachability, readiness decisions, acceptance repair, reports, and access controls."
+        eyebrow="Access"
+        id="partner-access-section"
+        status={`${partnerAppActivityRows.length} activity row(s)`}
+        title="App activity and readiness"
+      >
+        <PartnerDetailAppActivitySection rows={partnerAppActivityRows} summary={partnerActivitySummary} />
+        <PartnerDetailDailyActivityDigestSection days={partnerDailyActivityDigest} formatDate={formatDate} />
+        <PartnerDetailReadinessSnapshotSection snapshot={readinessSnapshot} />
+        <PartnerDetailBookingGateDecisionSection
+          cardClassForTone={cardClass}
+          decision={bookingGateDecision}
+          pillClassForTone={pillClass}
+        />
+        <PartnerAcceptanceRepairCommandSection command={acceptanceRepairCommand} />
+        <PartnerDetailAcceptanceUnblockPlaybookSection
+          pillClassForTone={pillClass}
+          steps={acceptanceUnblockPlaybook}
+        />
+        <PartnerDetailDeviceSessionActivitySection
+          cardClassForTone={cardClass}
+          deviceRows={partnerDeviceRows}
+          followUpNeeded={securitySummary.followUpNeeded}
+          pillClassForTone={pillClass}
+          securityCards={securitySummary.cards}
+          sessionRows={partnerSessionRows}
+          sharedDeviceRows={partnerSharedDeviceRows}
+        />
+        <PartnerDetailReportsControlsSection
+          accountControls={partnerAccountControlRows}
+          payoutHold={reportControlPayoutHold}
+          providerId={provider.id}
+          reports={partnerReportRows}
+          reportsDeskHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+        />
+      </PartnerDetailSectionGroup>
+
+      <PartnerDetailSectionGroup
+        description="Approval path, KYC evidence, public profile, service pricing, media, location records, and wallet or payout readiness."
+        eyebrow="Dossier"
+        id="partner-dossier-section"
+        status={`${partnerTypedDocumentRows.length + partnerPublicMediaRows.length} evidence row(s)`}
+        title="Approval, profile, and finance dossier"
+      >
+        <PartnerDetailCashDebtOriginSection
+          hasCashFeeDebt={hasCashFeeDebt}
+          hasSettlementRef={openCashDebtEarnings.some((earning) => earning.settlementRef)}
+          openDebtLabel={formatCurrency(cashFeeDebtTotal)}
+          openRowCount={openCashDebtEarnings.length}
+          rows={cashDebtOriginRows}
+        />
+        <PartnerDetailPayoutOperationsSection
+          cardClassForTone={cardClass}
+          earningsRows={payoutEarningRows}
+          hasCashFeeDebt={hasCashFeeDebt}
+          operations={payoutOperationsView}
+          partnerControlsHref={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+          payoutBatchRows={payoutBatchRows}
+          pillClassForTone={pillClass}
+        />
+        <PartnerDetailApprovalChecklistSection checklist={reviewChecklist} />
+        <PartnerDetailRegistrationDossierSection dossier={registrationDossier} />
+        <PartnerDetailLevelPathSection plan={levelPlan} />
+        <PartnerDetailResubmissionGuidanceSection plan={resubmissionPlan} />
+        <PartnerDetailReviewHistorySection
+          rows={reviewHistoryRows}
+          totalCount={provider.verificationLogs?.length ?? 0}
+        />
+        <section className="detail-grid partner-detail-dossier-grid">
+          <PartnerDetailBasicProfileCard
+            note={provider.verification?.rejectionReason ?? provider.bio ?? 'No notes saved.'}
+            rows={partnerBasicProfileRows}
+          />
+
+          <PartnerDetailKycDecisionSection
+            canApprove={canApproveKyc}
+            cccdNumberLast4={provider.kyc?.cccdNumberLast4}
+            evidence={kycEvidence}
+            rejectionReason={provider.kyc?.rejectionReason}
+            reviewActions={partnerKycReviewActions}
+            reviewedLabel={formatDate(provider.kyc?.reviewedAt)}
+            status={provider.kyc?.status}
+            submittedLabel={formatDate(provider.kyc?.submittedAt)}
+          />
+
+          <PartnerDetailServicePricingSection
+            readyCount={providerServicePricing.readyCount}
+            rows={partnerServicePricingDisplayRows}
+          />
+
+          <PartnerDetailTypedDocumentsCard rows={partnerTypedDocumentRows} />
+
+          <PartnerDetailPublicProfileMediaCard rows={partnerPublicMediaRows} />
+
+          <PartnerDetailBankPayoutGateCard bank={partnerBankPayoutGate} />
+
+          <PartnerDetailTaxProfileCard taxProfile={partnerTaxProfile} />
+
+          <PartnerDetailLocationActivityCard
+            coordinatesLabel={
+              provider.currentLat && provider.currentLng
+                ? partnerLocationSavedLabel()
+                : null
+            }
+            lastLocationLabel={
+              provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : null
+            }
+            snapshots={partnerLocationSnapshotBadges}
+          />
+
+          <PartnerDetailAgreementsCard agreements={partnerAgreementBadges} />
+
+          <PartnerDetailRecentPayoutRecordsCard
+            earningCount={partnerEarnings.length}
+            earnings={partnerRecentPayoutRecordLines}
+            payoutBatchCount={provider.payoutBatches?.length ?? 0}
+          />
+        </section>
+      </PartnerDetailSectionGroup>
     </div>
   );
 }

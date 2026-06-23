@@ -3087,6 +3087,29 @@ a.action-button-card:hover {
   min-width: 0;
 }
 
+.partner-detail-section-group {
+  margin-bottom: 0;
+}
+
+.partner-detail-section-group-body > .card,
+.partner-detail-section-group-body > .detail-grid,
+.partner-detail-section-group-body > .grid,
+.partner-detail-section-group-body > .ops-task-grid,
+.partner-detail-section-group-body > section.card {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.partner-detail-section-group-body .detail-grid,
+.partner-detail-section-group-body .grid,
+.partner-detail-section-group-body .ops-task-grid {
+  min-width: 0;
+}
+
+.partner-detail-dossier-grid {
+  margin-top: 0;
+}
+
 .partner-detail-section-band .service-trace-summary > div,
 .partner-detail-section-band .service-trace-summary > a {
   background: var(--admin-surface);
