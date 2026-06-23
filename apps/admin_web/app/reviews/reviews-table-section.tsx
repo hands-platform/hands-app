@@ -291,16 +291,11 @@ export function ReviewsTableSection({
                     <ReviewRowActions
                       actions={row.actions}
                       editReview={{
-                        bookingHref: row.bookingHref,
-                        bookingLabel: row.bookingLabel,
                         commentLabel: row.commentLabel,
                         commentValue: row.commentValue,
-                        customerLabel: row.customerLabel,
-                        partnerLabel: row.partnerLabel,
                         rating: row.rating,
                         ratingLabel: row.ratingLabel,
                         reportReasonValue: row.reportReasonValue,
-                        requestTimeLabel: row.bookingRequestTimeLabel,
                         reviewId: row.id,
                         status: row.status,
                       }}

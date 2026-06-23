@@ -9,16 +9,11 @@ import { moderateReview } from './actions';
 import type { ReviewActionItem } from './review-page-actions';
 
 type ReviewEditModel = {
-  readonly bookingHref: string | null;
-  readonly bookingLabel: string;
   readonly commentLabel: string;
   readonly commentValue: string;
-  readonly customerLabel: string;
-  readonly partnerLabel: string;
   readonly rating: number;
   readonly ratingLabel: string;
   readonly reportReasonValue: string;
-  readonly requestTimeLabel: string;
   readonly reviewId: string;
   readonly status: string;
 };

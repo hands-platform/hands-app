@@ -97,17 +97,20 @@ describe('ReviewsTableSection', () => {
           }),
         ]),
         editReview: expect.objectContaining({
-          bookingHref: '/bookings/booking-1',
-          bookingLabel: 'booking',
+          commentLabel: 'The service arrived late but recovered well.',
           commentValue: 'The service arrived late but recovered well.',
-          customerLabel: 'Customer One',
-          partnerLabel: 'Massage Partner',
-          requestTimeLabel: '19 Jun 2026, 14:40',
+          rating: 5,
+          ratingLabel: '5/5',
+          reportReasonValue: '',
           reviewId: 'review-1',
+          status: 'PUBLISHED',
         }),
         label: 'Review actions for review',
       }),
     ]);
+    expect(Object.keys(rowActionPropsIn(section)[0]?.editReview as Record<string, unknown>)).not.toEqual(
+      expect.arrayContaining(['bookingHref', 'bookingLabel', 'customerLabel', 'partnerLabel', 'requestTimeLabel']),
+    );
   });
 
   it('renders booking-style custom date controls and active filter summary', () => {
