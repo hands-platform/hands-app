@@ -8,6 +8,7 @@ import {
   vietnamOverviewRealtimePointCounts,
   vietnamOverviewHref,
   vietnamOverviewGeoapifyTileGrid,
+  vietnamOverviewMapZoomLevels,
   vietnamOverviewRangeOptions,
   isVietnamOverviewGeoapifyTile,
 } from './vietnam-overview-model';
@@ -178,6 +179,16 @@ describe('Vietnam overview page model', () => {
     );
     expect(isVietnamOverviewGeoapifyTile(7, 99, 55)).toBe(false);
     expect(isVietnamOverviewGeoapifyTile(8, 100, 55)).toBe(false);
+  });
+
+  it('offers client-only map zoom steps without increasing tile requests', () => {
+    expect(vietnamOverviewMapZoomLevels).toEqual([
+      { label: '100%', scale: 1 },
+      { label: '125%', scale: 1.25 },
+      { label: '150%', scale: 1.5 },
+      { label: '175%', scale: 1.75 },
+      { label: '200%', scale: 2 },
+    ]);
   });
 });
 

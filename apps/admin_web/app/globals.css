@@ -3476,6 +3476,73 @@ a.action-button-card:hover {
   width: 100%;
 }
 
+.vietnam-map-zoom-shell {
+  inset: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.vietnam-map-zoom-content {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  transform: scale(var(--vietnam-map-zoom-scale, 1));
+  transform-origin: center;
+  transition: transform 180ms ease;
+  width: 100%;
+}
+
+.vietnam-map-zoom-controls {
+  align-items: center;
+  background: rgb(var(--admin-surface-channel) / 0.94);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  bottom: 14px;
+  box-shadow: var(--admin-shadow-xs);
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  position: absolute;
+  right: 14px;
+  z-index: 6;
+}
+
+.vietnam-map-zoom-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+  width: 30px;
+}
+
+.vietnam-map-zoom-button:hover:not(:disabled) {
+  background: rgb(var(--admin-primary-channel) / 0.12);
+  color: var(--admin-accent-strong);
+}
+
+.vietnam-map-zoom-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.vietnam-map-zoom-value {
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+  min-width: 42px;
+  text-align: center;
+}
+
 .vietnam-map-context-chip {
   align-items: center;
   background: rgb(var(--admin-surface-channel) / 0.92);

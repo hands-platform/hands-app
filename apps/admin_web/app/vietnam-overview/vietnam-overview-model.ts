@@ -78,6 +78,11 @@ export type VietnamOverviewGeoapifyTileGrid = {
   readonly zoom: number;
 };
 
+export type VietnamOverviewMapZoomLevel = {
+  readonly label: string;
+  readonly scale: number;
+};
+
 export type VietnamOverviewMetricDotKey =
   | 'customers'
   | 'active'
@@ -122,6 +127,14 @@ export const vietnamOverviewRangeOptions: Array<{ value: VietnamOverviewRange; l
   { value: '7d', label: '7 days' },
   { value: '30d', label: '30 days' },
   { value: 'all', label: 'All' },
+];
+
+export const vietnamOverviewMapZoomLevels: readonly VietnamOverviewMapZoomLevel[] = [
+  { label: '100%', scale: 1 },
+  { label: '125%', scale: 1.25 },
+  { label: '150%', scale: 1.5 },
+  { label: '175%', scale: 1.75 },
+  { label: '200%', scale: 2 },
 ];
 
 const vietnamOverviewRanges = new Set<VietnamOverviewRange>(

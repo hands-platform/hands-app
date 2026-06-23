@@ -24,6 +24,7 @@ import {
   vietnamOverviewHref,
   vietnamOverviewRangeOptions,
 } from './vietnam-overview-model';
+import { VietnamOverviewMapZoom } from './vietnam-overview-map-zoom';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,11 +163,13 @@ export default async function VietnamOverviewPage({
               }`}
               style={{ aspectRatio: `${geoapifyTileGrid.viewAspectRatio}` }}
             >
-              {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
-              {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
-              {mapPoints.map((point) => (
-                <EventMapPoint key={point.id} point={point} />
-              ))}
+              <VietnamOverviewMapZoom>
+                {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
+                {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
+                {mapPoints.map((point) => (
+                  <EventMapPoint key={point.id} point={point} />
+                ))}
+              </VietnamOverviewMapZoom>
               {mapPoints.length === 0 ? (
                 <div className="vietnam-map-tile-empty">
                   <ShieldCheck size={22} aria-hidden="true" />
