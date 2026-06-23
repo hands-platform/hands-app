@@ -67,6 +67,7 @@ export default async function VietnamOverviewPage({
   const regions = overview.regions;
   const mapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
   const mapPointCounts = vietnamOverviewRealtimePointCounts(mapPoints);
+  const mapPointClusters = clusterVietnamOverviewMapPoints(mapPoints);
   const geoapifyTileGrid = vietnamOverviewGeoapifyTileGrid();
   const hasGeoapifyTileKey = Boolean(process.env.GEOAPIFY_API_KEY?.trim());
   const lastGeneratedAt = formatDateTime(overview.generatedAt);
@@ -170,8 +171,8 @@ export default async function VietnamOverviewPage({
               <VietnamOverviewMapZoom>
                 {hasGeoapifyTileKey ? <GeoapifyVietnamTileLayer tileGrid={geoapifyTileGrid} /> : null}
                 {!hasGeoapifyTileKey ? <VietnamMapOutline /> : null}
-                {mapPoints.map((point) => (
-                  <EventMapPoint key={point.id} point={point} />
+                {mapPointClusters.map((cluster) => (
+                  <EventMapCluster key={cluster.id} cluster={cluster} />
                 ))}
               </VietnamOverviewMapZoom>
               {mapPoints.length === 0 ? (
@@ -356,33 +357,136 @@ function GeoapifyVietnamTileLayer({
   );
 }
 
-function EventMapPoint({ point }: { point: VietnamOverviewMapPoint }) {
+type VietnamOverviewMapPointCluster = {
+  readonly id: string;
+  readonly isMixed: boolean;
+  readonly mapXPercent: number;
+  readonly mapYPercent: number;
+  readonly points: readonly VietnamOverviewMapPoint[];
+  readonly primaryPoint: VietnamOverviewMapPoint;
+};
+
+const vietnamMapClusterBucketPercent = 0.35;
+const vietnamMapClusterPreviewLimit = 3;
+
+function clusterVietnamOverviewMapPoints(
+  points: readonly VietnamOverviewMapPoint[],
+): VietnamOverviewMapPointCluster[] {
+  const clusters = new Map<string, VietnamOverviewMapPoint[]>();
+
+  for (const point of points) {
+    const clusterKey = [
+      Math.round(point.mapXPercent / vietnamMapClusterBucketPercent),
+      Math.round(point.mapYPercent / vietnamMapClusterBucketPercent),
+    ].join(':');
+    const existing = clusters.get(clusterKey) ?? [];
+
+    existing.push(point);
+    clusters.set(clusterKey, existing);
+  }
+
+  return [...clusters.entries()]
+    .map(([id, clusterPoints]) => {
+      const sortedPoints = [...clusterPoints].sort(
+        (left, right) => eventTimeMs(right.occurredAt) - eventTimeMs(left.occurredAt),
+      );
+      const primaryPoint = sortedPoints[0] ?? clusterPoints[0];
+      const mapXPercent = averagePercent(sortedPoints.map((point) => point.mapXPercent));
+      const mapYPercent = averagePercent(sortedPoints.map((point) => point.mapYPercent));
+      const metricKinds = new Set(sortedPoints.map((point) => point.kind));
+
+      return {
+        id,
+        isMixed: metricKinds.size > 1,
+        mapXPercent,
+        mapYPercent,
+        points: sortedPoints,
+        primaryPoint,
+      };
+    })
+    .sort((left, right) => left.points.length - right.points.length);
+}
+
+function EventMapCluster({ cluster }: { cluster: VietnamOverviewMapPointCluster }) {
+  const point = cluster.primaryPoint;
   const pointStyle = {
-    '--point-x': `${point.mapXPercent}%`,
-    '--point-y': `${point.mapYPercent}%`,
+    '--point-x': `${cluster.mapXPercent}%`,
+    '--point-y': `${cluster.mapYPercent}%`,
   } as CSSProperties & Record<'--point-x' | '--point-y', string>;
-  const tooltipLines = [
-    `${metricLabel(point.kind)} signal`,
-    point.label,
-    point.addressText,
-    formatDateTime(point.occurredAt),
-  ].filter(Boolean);
+  const tooltipLines = clusterTooltipLines(cluster);
   const tooltipPlacement = [
-    point.mapYPercent < 18 ? 'is-tooltip-below' : '',
-    point.mapXPercent < 22 ? 'is-tooltip-right' : '',
-    point.mapXPercent > 78 ? 'is-tooltip-left' : '',
+    cluster.mapYPercent < 18 ? 'is-tooltip-below' : '',
+    cluster.mapXPercent < 22 ? 'is-tooltip-right' : '',
+    cluster.mapXPercent > 78 ? 'is-tooltip-left' : '',
   ].filter(Boolean).join(' ');
+  const isCluster = cluster.points.length > 1;
 
   return (
     <button
       aria-label={tooltipLines.join(', ')}
-      className={`vietnam-map-event-point vietnam-map-metric-dot is-${point.kind} ${tooltipPlacement}`}
+      className={[
+        'vietnam-map-event-point vietnam-map-metric-dot',
+        `is-${point.kind}`,
+        cluster.isMixed ? 'is-mixed' : '',
+        isCluster ? 'is-cluster' : '',
+        tooltipPlacement,
+      ].filter(Boolean).join(' ')}
       data-tooltip={tooltipLines.join('\n')}
       style={pointStyle}
       tabIndex={0}
       type="button"
-    />
+    >
+      {isCluster ? (
+        <span className="vietnam-map-cluster-count" aria-hidden="true">
+          {formatClusterCount(cluster.points.length)}
+        </span>
+      ) : null}
+    </button>
   );
+}
+
+function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
+  const latestPoint = cluster.primaryPoint;
+  const previewLines = cluster.points.slice(0, vietnamMapClusterPreviewLimit).map((point) => (
+    `${metricLabel(point.kind)} - ${point.label} - ${formatDateTime(point.occurredAt)}`
+  ));
+  const hiddenCount = cluster.points.length - previewLines.length;
+
+  return [
+    cluster.points.length > 1
+      ? `${formatNumber(cluster.points.length)} realtime signals`
+      : `${metricLabel(latestPoint.kind)} signal`,
+    ...clusterKindSummary(cluster.points),
+    latestPoint.addressText ? `Latest area: ${latestPoint.addressText}` : '',
+    ...previewLines,
+    hiddenCount > 0 ? `+ ${formatNumber(hiddenCount)} more` : '',
+  ].filter(Boolean);
+}
+
+function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
+  return vietnamOverviewRealtimeMetricDotLegend
+    .map((item) => ({
+      count: points.filter((point) => point.kind === item.key).length,
+      label: item.label,
+    }))
+    .filter((item) => item.count > 0)
+    .map((item) => `${item.label} ${formatNumber(item.count)}`);
+}
+
+function averagePercent(values: readonly number[]) {
+  if (values.length === 0) return 0;
+
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function eventTimeMs(value: string) {
+  const time = new Date(value).getTime();
+
+  return Number.isFinite(time) ? time : 0;
+}
+
+function formatClusterCount(value: number) {
+  return value > 99 ? '99+' : formatNumber(value);
 }
 
 function formatNumber(value: number) {

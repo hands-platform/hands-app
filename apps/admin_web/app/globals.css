@@ -3862,6 +3862,34 @@ a.action-button-card:hover {
   background: #ff4c51;
 }
 
+.vietnam-map-event-point.is-cluster {
+  --dot-size: 30px;
+  align-items: center;
+  color: #fff;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  justify-content: center;
+  line-height: 1;
+}
+
+.vietnam-map-event-point.is-cluster::after {
+  min-width: 230px;
+}
+
+.vietnam-map-event-point.is-mixed {
+  background:
+    linear-gradient(135deg, #00bad1 0%, #72e128 46%, #ff9f43 100%);
+}
+
+.vietnam-map-cluster-count {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.28);
+}
+
 .vietnam-map-tile-empty {
   align-items: center;
   background: rgb(var(--admin-surface-channel) / 0.92);
