@@ -1,6 +1,5 @@
 import type { AdminReview } from '../../lib/admin-api';
 import {
-  buildReviewCommandBoard,
   buildReviewExportRows,
   buildReviewFilters,
   buildReviewListHref,
@@ -10,8 +9,6 @@ import {
   filterReviews,
   paginateReviewRows,
   reviewFilterDescription,
-  reviewToneClass,
-  reviewToneLabel,
   sortReviews,
 } from './review-page-model';
 
@@ -121,7 +118,7 @@ describe('review page model', () => {
     expect(sortReviews(reviews, 'rating-asc').map((item) => item.id)).toEqual(['newer', 'older']);
   });
 
-  it('builds summary and command board counts', () => {
+  it('builds review summary counts', () => {
     const reviews = [
       review({ id: 'reported', rating: 3, reportReason: 'Needs support call', status: 'REPORTED' }),
       review({ id: 'hidden', rating: 4, status: 'HIDDEN' }),
@@ -136,13 +133,6 @@ describe('review page model', () => {
       reported: 1,
       total: 3,
     });
-    expect(
-      buildReviewCommandBoard(reviews).map((item) => [item.title, item.reviews.length, item.tone]),
-    ).toEqual([
-      ['Reported reviews', 1, 'warn'],
-      ['Service follow-up', 1, 'warn'],
-      ['Held from app', 1, 'info'],
-    ]);
   });
 
   it('builds table rows and action links without changing moderation behavior', () => {
@@ -217,8 +207,6 @@ describe('review page model', () => {
 
     expect(reviewFilterDescription('published')).toBe('reviews currently visible in the app.');
     expect(emptyReviewMessage('held')).toContain('held from app visibility');
-    expect(reviewToneClass('warn')).toBe('signal-warn');
-    expect(reviewToneLabel('ok')).toBe('Clear');
     expect(exported[0]).toMatchObject({
       'App Visibility': 'Not visible',
       'Created At': 'No date',

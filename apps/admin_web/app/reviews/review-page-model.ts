@@ -52,18 +52,6 @@ export const REVIEW_EXPORT_COLUMNS = [
   'Service',
 ] as const;
 
-export type ReviewCommandTone = 'warn' | 'info' | 'ok';
-
-export type ReviewCommandItem = {
-  readonly detail: string;
-  readonly href: string;
-  readonly operatorAction: string;
-  readonly reviews: readonly AdminReview[];
-  readonly status: string;
-  readonly title: string;
-  readonly tone: ReviewCommandTone;
-};
-
 type ReviewAvatarUserSignal = {
   readonly appSessions?: readonly AdminAvatarSessionSignal[];
   readonly pushDevices?: readonly AdminAvatarPushDeviceSignal[];
@@ -176,44 +164,6 @@ export function sortReviews(
     const signalDiff = reviewPriority(left) - reviewPriority(right);
     return signalDiff || reviewRequestMs(right) - reviewRequestMs(left);
   });
-}
-
-export function buildReviewCommandBoard(reviews: readonly AdminReview[]): ReviewCommandItem[] {
-  const reported = reviews.filter((review) => review.status === 'REPORTED');
-  const followUp = reviews.filter(
-    (review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()),
-  );
-  const held = reviews.filter((review) => review.status === 'HIDDEN');
-
-  return [
-    {
-      title: 'Reported reviews',
-      detail: 'Customer or operator reports need moderation, support notes, and a visibility decision.',
-      status: 'Reported',
-      operatorAction: 'Open reported rows first, then publish, hold, or keep under follow-up.',
-      href: '/reviews?review=reported',
-      tone: reported.length > 0 ? 'warn' : 'ok',
-      reviews: reported,
-    },
-    {
-      title: 'Service follow-up',
-      detail: 'Records with report reasons need booking context, chat evidence, and support follow-up.',
-      status: 'Follow-up',
-      operatorAction: 'Check booking context, customer notes, and service evidence.',
-      href: '/reviews?review=follow-up',
-      tone: followUp.length > 0 ? 'warn' : 'ok',
-      reviews: followUp,
-    },
-    {
-      title: 'Held from app',
-      detail: 'Held reviews are not shown in the app, but remain retained for support and Partner coaching.',
-      status: 'Held',
-      operatorAction: 'Make sure held rows have a clear reason and audit trail.',
-      href: '/reviews?review=held',
-      tone: held.length > 0 ? 'info' : 'ok',
-      reviews: held,
-    },
-  ];
 }
 
 export function buildReviewFilters(params: Record<string, string | string[] | undefined>): ReviewFilters {
@@ -395,26 +345,6 @@ export function buildReviewExportRows(reviews: readonly AdminReview[]) {
 
 export function reviewProviderLabel(review: AdminReview) {
   return review.providerProfile?.displayName ?? 'Unknown Partner';
-}
-
-export function reviewToneClass(tone: ReviewCommandTone) {
-  if (tone === 'warn') {
-    return 'signal-warn';
-  }
-  if (tone === 'ok') {
-    return 'signal-ok';
-  }
-  return 'signal-info';
-}
-
-export function reviewToneLabel(tone: ReviewCommandTone) {
-  if (tone === 'warn') {
-    return 'Needs moderation';
-  }
-  if (tone === 'ok') {
-    return 'Clear';
-  }
-  return 'Monitor';
 }
 
 export function humanizeStatus(status: string) {
