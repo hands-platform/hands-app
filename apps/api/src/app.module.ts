@@ -17,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ProviderOnboardingModule } from './provider-onboarding/provider-onboarding.module';
 import { ProvidersModule } from './providers/providers.module';
 import { RedisModule } from './redis/redis.module';
+import { ReferralsModule } from './referrals/referrals.module';
 import { ServicesModule } from './services/services.module';
 import { UsersModule } from './users/users.module';
 
@@ -46,6 +47,7 @@ import { UsersModule } from './users/users.module';
     PaymentsModule,
     NotificationsModule,
     EarningsModule,
+    ReferralsModule,
     FilesModule,
     HealthModule,
     AdminModule,
