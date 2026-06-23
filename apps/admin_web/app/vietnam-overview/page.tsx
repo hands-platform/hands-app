@@ -72,12 +72,13 @@ export default async function VietnamOverviewPage({
   const regions = overview.regions;
   const activeRegion = normalizeVietnamOverviewRegionFilter(params?.region, regions);
   const activeRegionCode = activeRegion?.regionCode ?? null;
-  const allMapPoints = vietnamOverviewRealtimeMapPoints(overview.points ?? []);
-  const regionalMapPoints = activeRegionCode
-    ? allMapPoints.filter((point) => point.regionCode === activeRegionCode)
-    : allMapPoints;
-  const mapPoints = regionalMapPoints.filter((point) => activeSignalSet.has(point.kind));
-  const allMapPointCounts = vietnamOverviewRealtimePointCounts(regionalMapPoints);
+  const realtimePointSource = overview.realtimePoints ?? overview.points ?? [];
+  const allRealtimeMapPoints = vietnamOverviewRealtimeMapPoints(realtimePointSource);
+  const regionalRealtimeMapPoints = activeRegionCode
+    ? allRealtimeMapPoints.filter((point) => point.regionCode === activeRegionCode)
+    : allRealtimeMapPoints;
+  const mapPoints = regionalRealtimeMapPoints.filter((point) => activeSignalSet.has(point.kind));
+  const allMapPointCounts = vietnamOverviewRealtimePointCounts(regionalRealtimeMapPoints);
   const mapPointClusters = clusterVietnamOverviewMapPoints(mapPoints);
   const visibleRegions = activeRegion
     ? [activeRegion]
@@ -182,7 +183,7 @@ export default async function VietnamOverviewPage({
           <div className="vietnam-region-map vietnam-map-canvas" aria-label="Vietnam operating map">
             <div className="vietnam-map-context-chip">
               <MapPinned size={16} aria-hidden="true" />
-              Realtime dots {formatNumber(mapPoints.length)}/{formatNumber(regionalMapPoints.length)}
+              Realtime dots {formatNumber(mapPoints.length)}/{formatNumber(regionalRealtimeMapPoints.length)}
             </div>
             {activeRegion ? (
               <div className="vietnam-map-region-focus-chip">

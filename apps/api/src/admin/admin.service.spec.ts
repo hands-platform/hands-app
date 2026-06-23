@@ -424,7 +424,7 @@ describe('AdminService query orchestration', () => {
       partnerCount: 1,
       completedBookingCount: 1,
     });
-    expect(overview.points).toEqual(
+    expect(overview.realtimePoints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           kind: 'active',
@@ -447,7 +447,12 @@ describe('AdminService query orchestration', () => {
         }),
       ]),
     );
-    expect(overview.points.map((point) => point.kind).sort()).toEqual(['active', 'bookings', 'online']);
+    expect(overview.points).toEqual(overview.realtimePoints);
+    expect(overview.realtimePoints.map((point) => point.kind).sort()).toEqual([
+      'active',
+      'bookings',
+      'online',
+    ]);
     expect(serialized).toContain('latitude');
     expect(serialized).toContain('longitude');
     expect(serialized).not.toContain('currentLat');

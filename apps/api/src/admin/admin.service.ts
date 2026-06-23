@@ -271,6 +271,11 @@ type AdminVietnamOverviewPointKind =
   | 'done'
   | 'cancel';
 
+type AdminVietnamOverviewRealtimePointKind = Extract<
+  AdminVietnamOverviewPointKind,
+  'active' | 'online' | 'bookings'
+>;
+
 type AdminVietnamOverviewPoint = {
   id: string;
   kind: AdminVietnamOverviewPointKind;
@@ -284,6 +289,10 @@ type AdminVietnamOverviewPoint = {
   bookingId?: string | null;
   customerProfileId?: string | null;
   providerProfileId?: string | null;
+};
+
+type AdminVietnamOverviewRealtimePoint = AdminVietnamOverviewPoint & {
+  kind: AdminVietnamOverviewRealtimePointKind;
 };
 
 type AdminAuditLogSummaryRow = {
@@ -598,7 +607,7 @@ export class AdminService {
         },
       }),
     ]);
-    const points: AdminVietnamOverviewPoint[] = [];
+    const realtimePoints: AdminVietnamOverviewRealtimePoint[] = [];
 
     for (const customer of customers) {
       const selectedLocation = customer.selectedLocations[0];
@@ -633,7 +642,7 @@ export class AdminService {
           customerProfileId: customer.id,
         });
         if (activePoint) {
-          points.push(activePoint);
+          realtimePoints.push(activePoint);
         }
       }
     }
@@ -673,7 +682,7 @@ export class AdminService {
           providerProfileId: provider.id,
         });
         if (onlinePoint) {
-          points.push(onlinePoint);
+          realtimePoints.push(onlinePoint);
         }
       }
     }
@@ -744,7 +753,7 @@ export class AdminService {
       });
       if (activeBookingPoint) {
         region.activeBookingCount += 1;
-        points.push(activeBookingPoint);
+        realtimePoints.push(activeBookingPoint);
       }
     }
 
@@ -770,7 +779,8 @@ export class AdminService {
         currency: 'VND',
       },
       regions: regionRows,
-      points,
+      points: realtimePoints,
+      realtimePoints,
     };
   }
 
@@ -3698,9 +3708,9 @@ function ensureVietnamOverviewRegion(
   };
 }
 
-function vietnamOverviewEventPoint(input: {
+function vietnamOverviewEventPoint<TKind extends AdminVietnamOverviewPointKind>(input: {
   id: string;
-  kind: AdminVietnamOverviewPointKind;
+  kind: TKind;
   label: string;
   latitude: unknown;
   longitude: unknown;
@@ -3710,7 +3720,7 @@ function vietnamOverviewEventPoint(input: {
   bookingId?: string | null;
   customerProfileId?: string | null;
   providerProfileId?: string | null;
-}): AdminVietnamOverviewPoint | null {
+}): (AdminVietnamOverviewPoint & { kind: TKind }) | null {
   const latitude = coordinateValue(input.latitude);
   const longitude = coordinateValue(input.longitude);
   const occurredAt = input.occurredAt instanceof Date

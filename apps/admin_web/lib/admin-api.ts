@@ -1209,6 +1209,11 @@ export type AdminVietnamOverviewPointKind =
   | 'done'
   | 'cancel';
 
+export type AdminVietnamOverviewRealtimePointKind = Extract<
+  AdminVietnamOverviewPointKind,
+  'active' | 'online' | 'bookings'
+>;
+
 export type AdminVietnamOverviewPoint = {
   id: string;
   kind: AdminVietnamOverviewPointKind;
@@ -1222,6 +1227,10 @@ export type AdminVietnamOverviewPoint = {
   bookingId?: string | null;
   customerProfileId?: string | null;
   providerProfileId?: string | null;
+};
+
+export type AdminVietnamOverviewRealtimePoint = AdminVietnamOverviewPoint & {
+  kind: AdminVietnamOverviewRealtimePointKind;
 };
 
 export type AdminVietnamOverview = {
@@ -1245,6 +1254,7 @@ export type AdminVietnamOverview = {
   };
   regions: AdminVietnamOverviewRegion[];
   points: AdminVietnamOverviewPoint[];
+  realtimePoints?: AdminVietnamOverviewRealtimePoint[];
 };
 
 export async function apiGet<T>(path: string, fallback: T): Promise<T> {
