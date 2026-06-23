@@ -464,31 +464,51 @@ function checkAdminVisibleCopyGuardIsStrict() {
 }
 
 function checkAdminPeopleManagementIsFactual() {
-  const customerList = read('apps/admin_web/app/customers/page.tsx');
-  const customerDetail = read('apps/admin_web/app/customers/[id]/page.tsx');
-  const partnerList = read('apps/admin_web/app/partners/page.tsx');
+  const customerList = [
+    read('apps/admin_web/app/customers/page.tsx'),
+    read('apps/admin_web/app/customers/customer-list-model.ts'),
+    read('apps/admin_web/app/customers/customer-management-view-model.ts'),
+    read('apps/admin_web/app/customers/customers-table-section.tsx'),
+  ].join('\n');
+  const customerDetail = [
+    read('apps/admin_web/app/customers/[id]/page.tsx'),
+    read('apps/admin_web/app/customers/[id]/customer-booking-operation-board.tsx'),
+  ].join('\n');
+  const partnerList = [
+    read('apps/admin_web/app/partners/page.tsx'),
+    read('apps/admin_web/app/partners/partner-master-list-section.tsx'),
+    read('apps/admin_web/app/partners/partner-master-row.ts'),
+    read('apps/admin_web/app/partners/partner-filters.ts'),
+  ].join('\n');
   const partnerOperationsList = read('apps/admin_web/app/partners/partner-operations-list-section.tsx');
   const partnerDetail = read('apps/admin_web/app/partners/[id]/page.tsx');
   const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
 
   requireMarkers('apps/admin_web/app/customers/page.tsx', customerList, [
-    'factual customer activity',
+    'Total customers',
+    'Customer directory',
     'completed work',
-    'last app session',
+    'Last Login Date',
   ]);
   requireMarkers('apps/admin_web/app/customers/[id]/page.tsx', customerDetail, [
-    'Customer operating ledger',
-    'Customer chat retention ledger',
-    'Matched bookings must create a chat room',
-    'Mobile apps can hide the room after completion',
+    'Customer operating picture',
+    'Customer booking situation board',
+    'Current / In Progress',
+    'Pre-match Cancellations',
+    'Partner Cancellations',
+    'Payment Type',
+    'customer-chat-history-section',
+    'Admin archive for every matched booking',
   ]);
   requireMarkers('apps/admin_web/app/partners/page.tsx', partnerList, [
+    'PartnerMasterListSection',
+    'Work',
     'completed work',
   ]);
   requireMarkers('apps/admin_web/app/partners/partner-operations-list-section.tsx', partnerOperationsList, [
     'List-first partner control view',
-    'completed work',
-    'last work',
+    'row.completedWorkCount',
+    'Last work',
   ]);
   requireMarkers('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx', read('apps/admin_web/app/partners/[id]/partner-detail-operating-ledger-section.tsx'), [
     'Partner operating ledger',
@@ -506,7 +526,8 @@ function checkAdminPeopleManagementIsFactual() {
     'operator risk scoring wording',
     'operator risk exposure wording',
     'List-first partner control view',
-    'Customer operating ledger',
+    'Customer booking situation board',
+    'Customer operating picture',
     'Partner operating ledger',
   ]);
 }
@@ -610,7 +631,8 @@ function checkOperationsPolicyControlPlane() {
     "api: 'POST /customer/bookings'",
     "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
     'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
-    'Negative wallet gates marketplace alerts and participation',
+    'Negative wallet gates final acceptance and service start',
+    'Cash-service company fee debt is enforced before final acceptance',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/owner-decision-backlog.ts', operationsOwnerDecisionBacklog, [
     'Marketplace partner radius',
