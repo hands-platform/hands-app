@@ -76,8 +76,8 @@ export function buildPartnerAcceptanceBlockerBoard(
         detail:
           'Blocked accounts, blocked devices, shared devices, or session checks must stay out of matching.',
         operatorAction:
-          'Resolve account controls in Partner Controls before overriding any booking decision.',
-        href: '/partner-controls',
+          'Resolve account controls from the Partners security review before overriding any booking decision.',
+        href: '/partners?review=security',
         tone: accountOrSecurity.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(accountOrSecurity, deps),
       },
