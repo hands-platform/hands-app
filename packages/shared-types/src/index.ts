@@ -4,6 +4,12 @@ export type ReferralAudience = 'CUSTOMER' | 'PARTNER';
 
 export type ReferralAudienceSlug = 'customer' | 'partner';
 
+export type ReferralAttributionStatus = 'REGISTERED' | 'QUALIFIED' | 'REWARDED' | 'BLOCKED' | 'CANCELLED';
+
+export type ReferralFraudReviewStatus = 'CLEAR' | 'FLAGGED' | 'HELD';
+
+export type ReferralRewardStatus = 'PENDING' | 'AVAILABLE' | 'HELD' | 'REVERSED' | 'CANCELLED';
+
 export type ReferralCodeSelfService = {
   id: string;
   audience: ReferralAudience;
@@ -15,6 +21,42 @@ export type ReferralCodeSelfService = {
 };
 
 export type ReferralCodeSelfServiceResponse = ReferralCodeSelfService | null;
+
+export type ReferralCodeClaimResult = {
+  id: string;
+  audience: ReferralAudience;
+  referralCodeId: string;
+  referrerCustomerProfileId: string | null;
+  referrerProviderProfileId: string | null;
+  referredCustomerProfileId: string | null;
+  referredProviderProfileId: string | null;
+  installSource: string | null;
+  platform: string | null;
+  status: ReferralAttributionStatus;
+  fraudReviewStatus: ReferralFraudReviewStatus;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  referralCode: {
+    id: string;
+    code: string;
+  };
+};
+
+export type ReferralSummaryTotals = {
+  availableAmount: number;
+  cancelledAmount: number;
+  currency: string;
+  heldAmount: number;
+  pendingAmount: number;
+  referralCount: number;
+  reversedAmount: number;
+  rewardCount: number;
+};
+
+export type ReferralSummary = {
+  referralCode: ReferralCodeSelfServiceResponse;
+  totals: ReferralSummaryTotals;
+};
 
 export type BookingStatus =
   | 'CREATED'
