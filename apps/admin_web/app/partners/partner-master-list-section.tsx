@@ -157,122 +157,122 @@ function renderPartnerCell(row: PartnerMasterListSectionRow) {
     <AdminPersonCell
       avatarClassName="vuexy-booking-avatar is-partner"
       avatarStatus={row.avatarStatus}
-      className="vuexy-booking-person"
-      helper={`${row.legalName} | ${row.phone} | ${row.provider.id}`}
+      className="vuexy-booking-person vuexy-partner-person"
+      copyClassName="vuexy-booking-person-copy"
+      helper={<PartnerCellHelper row={row} />}
       href={`/partners/${row.provider.id}`}
       initials={row.initials}
       label={row.displayName}
-      linkClassName="table-link"
+      linkClassName="vuexy-booking-person-link"
     />
   );
 }
 
+function PartnerCellHelper({ row }: { readonly row: PartnerMasterListSectionRow }) {
+  return (
+    <div className="vuexy-partner-person-helper">
+      <span>{row.phone}</span>
+      <small>{row.legalName}</small>
+    </div>
+  );
+}
+
 function renderStateCell(row: PartnerMasterListSectionRow) {
-  return <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>;
+  return (
+    <div className="vuexy-partner-stack">
+      <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>{row.status}</span>
+      <small>{row.latestSessionPlatform}</small>
+    </div>
+  );
 }
 
 function renderLevelCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{row.level}</strong>
-      <p className="muted">KYC {row.kycStatus}</p>
-    </>
+      <small>KYC {row.kycStatus}</small>
+    </div>
   );
 }
 
 function renderAccessCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
-      <strong>{row.joinedAt ? formatDate(row.joinedAt) : 'Not recorded'}</strong>
-      <p className="muted">Recent access: {row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</p>
-      <p className="muted">{row.latestSessionDevice}</p>
-      <p className="muted">{row.latestSessionIp}</p>
-    </>
+    <div className="vuexy-partner-stack">
+      <strong>{row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</strong>
+      <small>Joined {row.joinedAt ? formatDate(row.joinedAt) : 'not recorded'}</small>
+      <small>{row.latestSessionIp}</small>
+    </div>
   );
 }
 
 function renderLocationCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{providerLocationLabel(row.locationState)}</strong>
-      <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
-    </>
+      <small>{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</small>
+    </div>
   );
 }
 
 function renderWorkCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{row.bookingCount} total</strong>
-      <p className="muted">
+      <small>
         {row.completedCount} completed / {row.closedCount} closed
-      </p>
-      <p className="muted">
-        Customer {row.customerClosedCount} / admin {row.adminClosedCount} / partner {row.partnerClosedCount}
-      </p>
-      <p className="muted">
-        {row.noShowCount} no-show / {row.reviewCount} feedback record(s)
-      </p>
-    </>
+      </small>
+      <small>{row.noShowCount} no-show / {row.reviewCount} review(s)</small>
+    </div>
   );
 }
 
 function renderWalletCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{formatProviderMoney(row.walletBalance)}</strong>
-      <p className="muted">
+      <small>
         {row.walletBalance < 0
-          ? 'Settlement required before final acceptance, service start, and payout release.'
-          : 'No negative wallet balance recorded.'}
-      </p>
-      <p className="muted">
+          ? 'Settlement required'
+          : 'No negative balance'}
+      </small>
+      <small>
         Pending {formatProviderMoney(row.pendingPayout)} / available {formatProviderMoney(row.availablePayout)}
-      </p>
-    </>
+      </small>
+    </div>
   );
 }
 
 function renderRevenueCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{formatProviderMoney(row.grossRevenue)}</strong>
-      <p className="muted">Platform fee {formatProviderMoney(row.platformFee)}</p>
-    </>
+      <small>Platform fee {formatProviderMoney(row.platformFee)}</small>
+    </div>
   );
 }
 
 function renderPayoutCell(row: PartnerMasterListSectionRow) {
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <strong>{formatProviderMoney(row.pendingPayout)}</strong>
-      <p className="muted">Available {formatProviderMoney(row.availablePayout)}</p>
-    </>
+      <small>Available {formatProviderMoney(row.availablePayout)}</small>
+    </div>
   );
 }
 
 function renderApprovalNeedsCell(row: PartnerMasterListSectionRow) {
   if (!row.approvalIssues.length) {
-    return <p className="muted">Approval clear</p>;
+    return <span className="pill pill-success">Approval clear</span>;
   }
 
   return (
-    <>
-      <div className="participant-list" aria-label="Approval needs">
-        <span className="pill pill-warn">{row.approvalIssues.length} approval need(s)</span>
-        {row.approvalIssues.slice(0, 4).map((issue) => (
-          <span
-            className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
-            key={issue.label}
-          >
-            {issue.label}
-          </span>
-        ))}
-      </div>
-      {row.approvalIssues.length > 4 ? (
-        <p className="muted">+{row.approvalIssues.length - 4} more approval item(s)</p>
-      ) : null}
-    </>
+    <span
+      className={`pill ${
+        row.approvalIssues.some((issue) => issue.severity === 'high') ? 'pill-danger' : 'pill-warn'
+      }`}
+    >
+      {row.approvalIssues.length} approval need(s)
+    </span>
   );
 }
 
@@ -283,16 +283,14 @@ function renderAccountCell(
   const showApprovalNeeds = options.showApprovalNeeds ?? true;
 
   return (
-    <>
+    <div className="vuexy-partner-stack">
       <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
         {row.accountBlocked ? 'Blocked' : 'Open'}
       </span>
-      <p className="muted">{row.accountNote}</p>
+      <small>{row.accountNote}</small>
       {showApprovalNeeds ? renderApprovalNeedsCell(row) : null}
-      <p className="muted admin-mt-8">{row.auditLogCount} memo/event(s)</p>
-      <p className="muted">{row.latestAuditTitle}</p>
-      <p className="muted">{row.latestAuditDetail}</p>
-    </>
+      <small>{row.auditLogCount} memo/event(s)</small>
+    </div>
   );
 }
 

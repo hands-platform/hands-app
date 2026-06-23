@@ -2823,15 +2823,9 @@ a.action-button-card:hover {
   scrollbar-gutter: auto;
 }
 
-.partners-page > h1 {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-lg);
-  box-shadow: var(--admin-shadow-md);
-  font-size: 26px;
-  line-height: 1.18;
+.partners-page > .vuexy-partner-page-header {
   margin-bottom: 0;
-  padding: 24px;
+  margin-top: 0;
 }
 
 .partner-primary-list-tabs {
@@ -8782,6 +8776,7 @@ textarea:focus-visible {
 .vuexy-customer-filter-card,
 .vuexy-partner-filter-card,
 .vuexy-customer-table-card,
+.vuexy-partner-table-card,
 .customer-detail-overview-card {
   background: var(--admin-surface-raised);
   border: 1px solid var(--admin-border);
@@ -8790,7 +8785,8 @@ textarea:focus-visible {
   color: var(--admin-text);
 }
 
-.vuexy-customer-table-card {
+.vuexy-customer-table-card,
+.vuexy-partner-table-card {
   overflow: hidden;
 }
 
@@ -9160,7 +9156,9 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
-.vuexy-customer-table-card .admin-table-scroll {
+.vuexy-customer-table-card .admin-table-scroll,
+.partners-page .vuexy-partner-table-card .admin-table-scroll,
+.vuexy-partner-table-card .admin-table-scroll {
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -9170,7 +9168,8 @@ textarea:focus-visible {
   overflow-y: visible;
 }
 
-.vuexy-customer-table {
+.vuexy-customer-table,
+.vuexy-partner-table {
   background: var(--admin-surface-raised);
   border: 0;
   border-radius: 0;
@@ -9182,7 +9181,9 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-table th,
-.vuexy-customer-table td {
+.vuexy-customer-table td,
+.vuexy-partner-table th,
+.vuexy-partner-table td {
   background: var(--admin-surface-raised);
   border-bottom: 1px solid var(--admin-border);
   min-width: 0;
@@ -9190,7 +9191,8 @@ textarea:focus-visible {
   vertical-align: top;
 }
 
-.vuexy-customer-table th {
+.vuexy-customer-table th,
+.vuexy-partner-table th {
   background: var(--admin-table-header-bg);
   color: var(--admin-text);
   font-size: 13px;
@@ -9206,17 +9208,21 @@ textarea:focus-visible {
   z-index: 2;
 }
 
-.vuexy-customer-table td {
+.vuexy-customer-table td,
+.vuexy-partner-table td {
   overflow-wrap: anywhere;
 }
 
 .vuexy-customer-table th:first-child,
-.vuexy-customer-table td:first-child {
+.vuexy-customer-table td:first-child,
+.vuexy-partner-table th:first-child,
+.vuexy-partner-table td:first-child {
   min-width: 240px;
   width: 20%;
 }
 
-.vuexy-customer-table tbody tr:hover td {
+.vuexy-customer-table tbody tr:hover td,
+.vuexy-partner-table tbody tr:hover td {
   background: var(--admin-action-hover);
 }
 
@@ -9254,13 +9260,51 @@ textarea:focus-visible {
   width: 12%;
 }
 
-.vuexy-customer-person {
+.vuexy-partner-table {
+  min-width: 1440px;
+}
+
+.vuexy-partner-table th:nth-child(2),
+.vuexy-partner-table td:nth-child(2) {
+  min-width: 120px;
+  width: 8%;
+}
+
+.vuexy-partner-table th:nth-child(3),
+.vuexy-partner-table td:nth-child(3),
+.vuexy-partner-table th:nth-child(4),
+.vuexy-partner-table td:nth-child(4) {
+  min-width: 140px;
+  width: 10%;
+}
+
+.vuexy-partner-table th:nth-child(5),
+.vuexy-partner-table td:nth-child(5),
+.vuexy-partner-table th:nth-child(6),
+.vuexy-partner-table td:nth-child(6),
+.vuexy-partner-table th:nth-child(7),
+.vuexy-partner-table td:nth-child(7),
+.vuexy-partner-table th:nth-child(8),
+.vuexy-partner-table td:nth-child(8) {
+  min-width: 160px;
+  width: 12%;
+}
+
+.vuexy-partner-table th:nth-child(9),
+.vuexy-partner-table td:nth-child(9) {
+  min-width: 200px;
+  width: 14%;
+}
+
+.vuexy-customer-person,
+.vuexy-partner-person {
   align-items: center;
   gap: 12px;
   min-width: 0;
 }
 
-.vuexy-customer-person > div {
+.vuexy-customer-person > div,
+.vuexy-partner-person > div {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -9288,7 +9332,9 @@ textarea:focus-visible {
 }
 
 .vuexy-customer-person strong,
-.vuexy-customer-stack strong {
+.vuexy-customer-stack strong,
+.vuexy-partner-person strong,
+.vuexy-partner-stack strong {
   color: var(--admin-text);
   display: block;
   font-size: 15px;
@@ -9309,6 +9355,10 @@ textarea:focus-visible {
 .vuexy-customer-person small,
 .vuexy-customer-stack span,
 .vuexy-customer-stack small,
+.vuexy-partner-person span,
+.vuexy-partner-person small,
+.vuexy-partner-stack span,
+.vuexy-partner-stack small,
 .customer-detail-overview-card span,
 .customer-detail-overview-card small,
 .customer-detail-nav-list small {
@@ -9319,15 +9369,27 @@ textarea:focus-visible {
 
 .vuexy-customer-person small,
 .vuexy-customer-stack small,
+.vuexy-partner-person small,
+.vuexy-partner-stack small,
 .customer-detail-overview-card small,
 .customer-detail-nav-list small {
   font-size: 12px;
 }
 
-.vuexy-customer-stack {
+.vuexy-customer-stack,
+.vuexy-partner-stack,
+.vuexy-partner-person-helper {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.vuexy-partner-stack > .pill {
+  width: fit-content;
+}
+
+.vuexy-partner-person-helper {
+  min-width: 0;
 }
 
 .vuexy-customer-inline-tags {

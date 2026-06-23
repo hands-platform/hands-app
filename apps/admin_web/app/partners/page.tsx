@@ -273,7 +273,15 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           tone={pushDeviceConfirmation.tone}
         />
       ) : null}
-      <h1>{partnerPageTitle}</h1>
+      <div className="toolbar admin-page-header vuexy-partner-page-header">
+        <div>
+          <h1>{partnerPageTitle}</h1>
+          <p className="muted">
+            {partnerReviewContent?.description ??
+              'Partner directory aligned to the Vuexy management table using live onboarding, wallet, app session, location, and booking data.'}
+          </p>
+        </div>
+      </div>
       <PartnerPrimaryListTabs activeMode={partnerListMode} />
       <PartnerFilterBoard
         activeFilters={activeFilters}

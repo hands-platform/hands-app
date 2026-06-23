@@ -13,11 +13,11 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Partners');
     expect(rendered).toContain('Compact admin list for ID, profile, contact');
     expect(rendered).toContain('12 visible row(s)');
-    expect(rendered).toContain('partner-1');
     expect(rendered).toContain('Linh Wellness');
-    expect(rendered).toContain('Linh Legal | 0865907184 | partner-1');
+    expect(rendered).toContain('0865907184 Linh Legal');
     expect(rendered).not.toContain('Partner ID');
     expect(rendered).not.toContain('Phone');
+    expect(rendered).not.toContain('partner-1');
     expect(rendered).toContain('State');
     expect(rendered).toContain('Access');
     expect(rendered).toContain('Work');
@@ -30,9 +30,9 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('ONLINE_AVAILABLE');
     expect(rendered).toContain('KYC APPROVED');
     expect(rendered).toContain('2 approval need(s)');
-    expect(rendered).toContain('verification review');
-    expect(rendered).toContain('bank MISSING');
-    expect(rendered).toContain('12 feedback record(s)');
+    expect(rendered).not.toContain('verification review');
+    expect(rendered).not.toContain('bank MISSING');
+    expect(rendered).toContain('12 review(s)');
     expect(rendered).toContain('Open');
     expect(rendered).toContain('Showing 1 to 10 of 12 entries');
     expect(hrefsIn(section)).toEqual(
@@ -50,8 +50,8 @@ describe('PartnerMasterListSection', () => {
         'vuexy-booking-table-footer vuexy-partner-table-footer',
         'vuexy-booking-pagination',
         'pill pill-success',
-        'table-link',
-        'vuexy-booking-person',
+        'vuexy-booking-person-link',
+        'vuexy-booking-person vuexy-partner-person',
       ]),
     );
     expect(classNamesIn(section)).toEqual(
@@ -107,7 +107,7 @@ describe('PartnerMasterListSection', () => {
     expect(rendered).toContain('Wallet');
     expect(rendered).toContain('Revenue');
     expect(rendered).toContain('Payout');
-    expect(rendered).toContain('Settlement required before final acceptance, service start, and payout release.');
+    expect(rendered).toContain('Settlement required');
     expect(rendered).not.toContain('Gender');
   });
 });
