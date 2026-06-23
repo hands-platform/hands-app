@@ -105,6 +105,36 @@ export default async function VietnamOverviewPage({
     { label: 'Canceled', value: formatNumber(metricTotals.cancellationCount) },
     { label: 'Revenue', value: formatCurrency(metricTotals.revenueAmount, metricTotals.currency) },
   ];
+  const periodFilterSummary = [
+    {
+      label: 'Period',
+      value: overview.rangeLabel,
+      detail: overview.windowStartAt && overview.windowEndAt
+        ? `${formatDateTime(overview.windowStartAt)} - ${formatDateTime(overview.windowEndAt)}`
+        : 'All stored event timestamps',
+      tone: 'info',
+    },
+    {
+      label: 'Map focus',
+      value: activeRegion ? activeRegion.regionName : 'All Vietnam',
+      detail: activeRegion
+        ? `${activeRegion.shortName} realtime and period readout`
+        : `${formatNumber(regions.length)} regions visible`,
+      tone: 'primary',
+    },
+    {
+      label: 'Realtime dots',
+      value: `${formatNumber(mapPoints.length)} / ${formatNumber(regionalRealtimeMapPoints.length)}`,
+      detail: 'Filtered current operating signals',
+      tone: 'success',
+    },
+    {
+      label: 'Metric source',
+      value: overview.source.replace(/-/g, ' '),
+      detail: `Generated ${lastGeneratedAt}`,
+      tone: 'neutral',
+    },
+  ];
   const metrics = [
     {
       label: 'Customers',
@@ -254,20 +284,34 @@ export default async function VietnamOverviewPage({
             <span className="pill pill-info">{overview.rangeLabel}</span>
           </div>
         </div>
-        <div className="booking-date-filter-buttons vietnam-overview-range-buttons">
-          {vietnamOverviewRangeOptions.map((option) => (
-            <a
-              key={option.value}
-              className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
-              href={vietnamOverviewHrefWithState({
-                range: option.value,
-                regionCode: activeRegionCode,
-                signalKeys: activeSignalKeys,
-              })}
-            >
-              {option.label}
-            </a>
-          ))}
+        <div className="vietnam-overview-filter-body">
+          <div
+            className="booking-date-filter-buttons vietnam-overview-range-buttons"
+            aria-label="Period metric range"
+          >
+            {vietnamOverviewRangeOptions.map((option) => (
+              <a
+                key={option.value}
+                className={`booking-date-filter-button${option.value === range ? ' is-active' : ''}`}
+                href={vietnamOverviewHrefWithState({
+                  range: option.value,
+                  regionCode: activeRegionCode,
+                  signalKeys: activeSignalKeys,
+                })}
+              >
+                {option.label}
+              </a>
+            ))}
+          </div>
+          <div className="vietnam-overview-filter-summary-grid" aria-label="Selected Vietnam overview filters">
+            {periodFilterSummary.map((item) => (
+              <article key={item.label} className={`vietnam-overview-filter-summary-card is-${item.tone}`}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

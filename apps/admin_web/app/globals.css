@@ -3442,6 +3442,87 @@ a.action-button-card:hover {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.vietnam-overview-filter-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.vietnam-overview-filter-body {
+  display: grid;
+  gap: 14px;
+}
+
+.vietnam-overview-range-buttons {
+  background: rgb(var(--admin-main-channel) / 0.035);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-self: flex-start;
+  padding: 8px;
+}
+
+.vietnam-overview-filter-summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.vietnam-overview-filter-summary-card {
+  background: rgb(var(--admin-surface-channel) / 0.74);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.vietnam-overview-filter-summary-card span {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.vietnam-overview-filter-summary-card strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 19px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-overview-filter-summary-card small {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vietnam-overview-filter-summary-card.is-info {
+  background: rgb(var(--admin-info-channel) / 0.08);
+  border-color: rgb(var(--admin-info-channel) / 0.16);
+}
+
+.vietnam-overview-filter-summary-card.is-primary {
+  background: rgb(var(--admin-primary-channel) / 0.08);
+  border-color: rgb(var(--admin-primary-channel) / 0.16);
+}
+
+.vietnam-overview-filter-summary-card.is-success {
+  background: rgb(var(--admin-success-channel) / 0.08);
+  border-color: rgb(var(--admin-success-channel) / 0.16);
+}
+
 .vietnam-region-focus-summary-card {
   align-items: center;
   display: grid;
