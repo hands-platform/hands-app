@@ -250,16 +250,6 @@ export function buildReviewListHref(filters: ReviewFilters, overrides: Partial<R
   return params.size ? `/reviews?${params.toString()}` : '/reviews';
 }
 
-export function reviewFilterLinks() {
-  return [
-    { label: 'All reviews', href: '/reviews', review: '' },
-    { label: 'Published', href: '/reviews?review=published', review: 'published' },
-    { label: 'Held', href: '/reviews?review=held', review: 'held' },
-    { label: 'Follow-up', href: '/reviews?review=follow-up', review: 'follow-up' },
-    { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
-  ] as const;
-}
-
 export function reviewFilterDescription(review: string) {
   if (review === 'reported') {
     return 'reviews that need moderation follow-up.';
@@ -345,10 +335,6 @@ export function buildReviewExportRows(reviews: readonly AdminReview[]) {
 
 export function reviewProviderLabel(review: AdminReview) {
   return review.providerProfile?.displayName ?? 'Unknown Partner';
-}
-
-export function humanizeStatus(status: string) {
-  return reviewStatusLabel(status);
 }
 
 function reviewPriority(review: AdminReview) {
@@ -574,11 +560,6 @@ function normalizeReviewSort(value: string): ReviewSortFilter {
 
 function normalizeDateParam(value: string) {
   return parseDateInput(value) === null ? '' : value;
-}
-
-function dateMs(value?: string | null) {
-  const timestamp = value ? new Date(value).getTime() : 0;
-  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function reviewRequestMs(review: AdminReview) {
