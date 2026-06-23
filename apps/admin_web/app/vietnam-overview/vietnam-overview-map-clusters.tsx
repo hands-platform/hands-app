@@ -188,6 +188,7 @@ function ClusterDetailPanel({
   const latestPoint = cluster.primaryPoint;
   const latestTargetHref = signalTargetHref(latestPoint);
   const latestSignalSource = signalSourceCopy(latestPoint);
+  const latestOperatorRead = signalOperatorRead(latestPoint);
   const signalSummary = clusterKindSummary(cluster.points);
   const latestAddress = latestPoint.addressText || 'Stored operating coordinate';
   const visibleEvents = cluster.points.slice(0, vietnamMapClusterPanelLimit);
@@ -197,11 +198,11 @@ function ClusterDetailPanel({
     <aside className="vietnam-map-cluster-panel" aria-label="Map cluster signal detail">
       <div className="vietnam-map-cluster-panel-header">
         <div>
-          <p className="muted">Realtime map signal</p>
-          <h3>{formatNumber(cluster.points.length)} current signal(s)</h3>
+          <p className="muted">Realtime operating signal</p>
+          <h3>{formatNumber(cluster.points.length)} live dot(s)</h3>
         </div>
         <div className="vietnam-map-cluster-panel-badges">
-          <span className="vietnam-map-cluster-panel-badge">Current only</span>
+          <span className="vietnam-map-cluster-panel-badge">Live now</span>
           <span className="vietnam-map-cluster-panel-badge is-region">
             {formatRegionCode(latestPoint.regionCode)}
           </span>
@@ -216,10 +217,16 @@ function ClusterDetailPanel({
         </button>
       </div>
 
+      <div className={`vietnam-map-cluster-operator-read is-${latestPoint.kind}`}>
+        <span>Operator read</span>
+        <strong>{latestOperatorRead.label}</strong>
+        <small>{latestOperatorRead.detail}</small>
+      </div>
+
       <div className="vietnam-map-cluster-latest">
         <i className={`vietnam-map-legend-dot is-${latestPoint.kind}`} aria-hidden="true" />
         <div>
-          <small>Latest realtime signal</small>
+          <small>Latest signal</small>
           <strong>{latestPoint.label}</strong>
           <span>
             {metricLabel(latestPoint.kind)} / {formatDateTime(latestPoint.occurredAt)}
@@ -336,17 +343,17 @@ function signalTargetHref(point: VietnamOverviewMapPoint) {
 function clusterTooltipLines(cluster: VietnamOverviewMapPointCluster) {
   const latestPoint = cluster.primaryPoint;
   const latestSource = signalSourceCopy(latestPoint);
+  const summaryLine = clusterKindSummary(cluster.points)
+    .map((item) => `${item.shortLabel}: ${formatNumber(item.count)}`)
+    .join(' / ');
 
   return [
-    cluster.points.length > 1
-      ? `${formatNumber(cluster.points.length)} realtime signals`
-      : `${metricLabel(latestPoint.kind)} signal`,
-    ...clusterKindSummary(cluster.points).map((item) => `${item.label} ${formatNumber(item.count)}`),
-    `Latest: ${latestPoint.label}`,
-    `Source: ${latestSource.label}`,
-    `Region: ${formatRegionCode(latestPoint.regionCode)}`,
-    latestPoint.addressText ? `Latest area: ${latestPoint.addressText}` : '',
-    'Click for details',
+    `${formatRegionCode(latestPoint.regionCode)} / ${formatNumber(cluster.points.length)} live dot(s)`,
+    summaryLine,
+    `Latest: ${metricLabel(latestPoint.kind)} - ${latestPoint.label}`,
+    `${formatDateTime(latestPoint.occurredAt)} / ${latestSource.label}`,
+    latestPoint.addressText ? latestPoint.addressText : '',
+    'Click to inspect details',
   ].filter(Boolean);
 }
 
@@ -375,10 +382,18 @@ function clusterKindSummary(points: readonly VietnamOverviewMapPoint[]) {
         count: matchingPoints.length,
         key: item.key,
         label: item.label,
+        shortLabel: signalShortLabel(item.key),
         latestPoint: matchingPoints[0] ?? null,
       };
     })
     .filter((item) => item.count > 0);
+}
+
+function signalShortLabel(value: VietnamOverviewMetricDotKey) {
+  if (value === 'active') return 'Customers';
+  if (value === 'online') return 'Partners';
+  if (value === 'bookings') return 'Bookings';
+  return metricLabel(value);
 }
 
 function vietnamOverviewHeatCells(
@@ -466,6 +481,34 @@ function signalSourceCopy(point: VietnamOverviewMapPoint) {
   return {
     label: formatSourceLabel(point.source),
     detail: 'Stored operating signal used by the admin overview only.',
+  };
+}
+
+function signalOperatorRead(point: VietnamOverviewMapPoint) {
+  if (point.kind === 'active') {
+    return {
+      label: 'Customer demand is active',
+      detail: 'Use this dot to read live customer demand without continuous GPS polling.',
+    };
+  }
+
+  if (point.kind === 'online') {
+    return {
+      label: 'Partner supply is available',
+      detail: 'This dot comes from the latest cost-controlled Partner heartbeat.',
+    };
+  }
+
+  if (point.kind === 'bookings') {
+    return {
+      label: 'Booking work is in progress',
+      detail: 'This dot uses the immutable booking address snapshot for active work.',
+    };
+  }
+
+  return {
+    label: 'Stored operating signal',
+    detail: 'Review the event source and linked record before acting.',
   };
 }
 

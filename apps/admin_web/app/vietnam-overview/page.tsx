@@ -223,23 +223,35 @@ export default async function VietnamOverviewPage({
               </div>
             ) : null}
             <div className="vietnam-map-dot-legend" aria-label="Vietnam map dot legend">
-              {vietnamOverviewRealtimeMetricDotLegend.map((item) => {
-                const isActive = activeSignalSet.has(item.key);
+              <div className="vietnam-map-dot-legend-header">
+                <div>
+                  <strong>Realtime signal legend</strong>
+                  <span>Click a row to show or hide that dot type.</span>
+                </div>
+                <small>{formatNumber(mapPoints.length)} shown</small>
+              </div>
+              <div className="vietnam-map-signal-filter-grid">
+                {vietnamOverviewRealtimeMetricDotLegend.map((item) => {
+                  const isActive = activeSignalSet.has(item.key);
 
-                return (
-                  <a
-                    key={item.key}
-                    aria-pressed={isActive}
-                    className={`vietnam-map-signal-filter${isActive ? ' is-active' : ''}`}
-                    href={vietnamOverviewSignalHref(range, item.key, activeSignalKeys, activeRegionCode)}
-                    role="button"
-                  >
-                    <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
-                    <span>{item.label}</span>
-                    <strong>{formatNumber(allMapPointCounts[item.key])}</strong>
-                  </a>
-                );
-              })}
+                  return (
+                    <a
+                      key={item.key}
+                      aria-pressed={isActive}
+                      className={`vietnam-map-signal-filter is-${item.key}${isActive ? ' is-active' : ''}`}
+                      href={vietnamOverviewSignalHref(range, item.key, activeSignalKeys, activeRegionCode)}
+                      role="button"
+                    >
+                      <i className={`vietnam-map-legend-dot is-${item.key}`} aria-hidden="true" />
+                      <span className="vietnam-map-signal-filter-copy">
+                        <span>{item.label}</span>
+                        <small>{vietnamOverviewSignalLegendDetail(item.key)}</small>
+                      </span>
+                      <strong>{formatNumber(allMapPointCounts[item.key])}</strong>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
             <div
               className={`vietnam-map-geo-layer ${
@@ -745,6 +757,19 @@ function vietnamOverviewSignalHref(
     regionCode,
     signalKeys: normalizedNextSignalKeys,
   });
+}
+
+function vietnamOverviewSignalLegendDetail(signalKey: VietnamOverviewMetricDotKey) {
+  switch (signalKey) {
+    case 'active':
+      return 'Customer app is active';
+    case 'online':
+      return 'Partner heartbeat is live';
+    case 'bookings':
+      return 'Booking address is in progress';
+    default:
+      return 'Stored operating signal';
+  }
 }
 
 function vietnamRegionOperatingScore(region: AdminVietnamOverview['regions'][number]) {

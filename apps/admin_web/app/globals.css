@@ -3842,44 +3842,104 @@ a.action-button-card:hover {
 }
 
 .vietnam-map-dot-legend {
-  align-items: center;
   background: rgb(var(--admin-surface-channel) / 0.92);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
   box-shadow: var(--admin-shadow-xs);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  justify-content: flex-end;
-  max-width: 380px;
-  padding: 10px 12px;
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+  padding: 12px;
   position: absolute;
   right: 22px;
   top: 22px;
   z-index: 3;
 }
 
-.vietnam-map-dot-legend span {
-  align-items: center;
+.vietnam-map-dot-legend-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 10px;
+}
+
+.vietnam-map-dot-legend-header div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vietnam-map-dot-legend-header strong {
+  color: var(--admin-text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+.vietnam-map-dot-legend-header span,
+.vietnam-map-dot-legend-header small {
   color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.vietnam-map-dot-legend-header small {
+  background: rgb(var(--admin-primary-channel) / 0.1);
+  border: 1px solid rgb(var(--admin-primary-channel) / 0.16);
+  border-radius: 999px;
+  color: var(--admin-accent-strong);
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.vietnam-map-signal-filter-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.vietnam-map-signal-filter-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vietnam-map-signal-filter-copy span {
+  align-items: center;
+  color: inherit;
   display: inline-flex;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   gap: 6px;
   line-height: 16px;
 }
 
+.vietnam-map-signal-filter-copy small {
+  color: var(--admin-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .vietnam-map-signal-filter {
   align-items: center;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  background: rgb(var(--admin-main-channel) / 0.04);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
   color: var(--admin-muted);
-  display: inline-flex;
+  display: grid;
   font-size: 12px;
   font-weight: 700;
-  gap: 6px;
+  gap: 8px;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
   line-height: 16px;
-  padding: 5px 8px;
+  padding: 8px 10px;
   text-decoration: none;
   transition:
     background-color 150ms ease,
@@ -3900,19 +3960,26 @@ a.action-button-card:hover {
   opacity: 0.54;
 }
 
-.vietnam-map-signal-filter span {
-  color: inherit;
-}
-
 .vietnam-map-signal-filter.is-active {
   background: rgb(var(--admin-primary-channel) / 0.1);
   border-color: rgb(var(--admin-primary-channel) / 0.18);
+  box-shadow: inset 3px 0 0 rgb(var(--admin-primary-channel) / 0.7);
   color: var(--admin-text);
 }
 
+.vietnam-map-signal-filter.is-active .vietnam-map-signal-filter-copy small {
+  color: var(--admin-muted);
+}
+
 .vietnam-map-signal-filter strong {
+  background: rgb(var(--admin-surface-channel) / 0.78);
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
   color: inherit;
   font-weight: 800;
+  min-width: 34px;
+  padding: 3px 7px;
+  text-align: center;
 }
 
 .vietnam-map-legend-dot {
@@ -4369,6 +4436,53 @@ a.action-button-card:hover {
 
 .vietnam-map-cluster-summary strong {
   font-weight: 800;
+}
+
+.vietnam-map-cluster-operator-read {
+  background: rgb(var(--admin-main-channel) / 0.05);
+  border: 1px solid var(--admin-border);
+  border-left: 4px solid rgb(var(--admin-primary-channel) / 0.72);
+  border-radius: var(--admin-radius);
+  display: grid;
+  gap: 4px;
+  padding: 11px 12px;
+}
+
+.vietnam-map-cluster-operator-read span {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.vietnam-map-cluster-operator-read strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 19px;
+}
+
+.vietnam-map-cluster-operator-read small {
+  color: var(--admin-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 17px;
+}
+
+.vietnam-map-cluster-operator-read.is-active {
+  background: rgb(var(--admin-info-channel) / 0.08);
+  border-left-color: var(--admin-info);
+}
+
+.vietnam-map-cluster-operator-read.is-online {
+  background: rgb(var(--admin-success-channel) / 0.08);
+  border-left-color: var(--admin-success);
+}
+
+.vietnam-map-cluster-operator-read.is-bookings {
+  background: rgb(var(--admin-warning-channel) / 0.1);
+  border-left-color: var(--admin-warning);
 }
 
 .vietnam-map-cluster-latest {
